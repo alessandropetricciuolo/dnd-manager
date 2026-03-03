@@ -1,0 +1,169 @@
+import Link from "next/link";
+import Image from "next/image";
+import { createSupabaseServerClient } from "@/utils/supabase/server";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
+const PLACEHOLDER_IMAGE = "https://placehold.co/600x400/1e293b/10b981/png?text=Campagna";
+
+type CampaignListVariant = "yours" | "all";
+
+type CampaignListProps = {
+  /** "yours" = campagne dove hai partecipato (GM: create da te, Player: almeno una sessione giocata). "all" = tutte quelle disponibili. */
+  variant?: CampaignListVariant;
+};
+
+function getEmptyMessage(variant: CampaignListVariant, isGmOrAdmin: boolean): string {
+  if (variant === "all") return "Nessuna campagna trovata. Crea la tua prima campagna o cerca campagne pubbliche.";
+  return isGmOrAdmin
+    ? "Non hai ancora creato nessuna campagna."
+    : "Nessuna campagna a cui hai ancora partecipato. Iscriviti a una sessione per iniziare.";
+}
+
+export async function CampaignList({ variant = "all" }: CampaignListProps) {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return (
+      <p className="text-sm text-slate-400">
+        Accedi per vedere le campagne.
+      </p>
+    );
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
+
+  let campaigns: { id: string; name: string; description: string | null; image_url: string | null; created_at: string }[] = [];
+  let error: { message: string } | null = null;
+
+  if (variant === "yours") {
+    /** Le tue campagne: GM = create da te, Player = almeno una sessione con status attended */
+    if (isGmOrAdmin) {
+      const res = await supabase
+        .from("campaigns")
+        .select("id, name, description, image_url, created_at")
+        .eq("gm_id", user.id)
+        .order("created_at", { ascending: false });
+      campaigns = res.data ?? [];
+      error = res.error;
+    } else {
+      const { data: signups } = await supabase
+        .from("session_signups")
+        .select("session_id")
+        .eq("player_id", user.id)
+        .eq("status", "attended");
+      const sessionIds = [...new Set((signups ?? []).map((s) => s.session_id).filter(Boolean))];
+      if (sessionIds.length === 0) {
+        campaigns = [];
+      } else {
+        const { data: sessions } = await supabase
+          .from("sessions")
+          .select("campaign_id")
+          .in("id", sessionIds);
+        const campaignIds = [...new Set((sessions ?? []).map((s) => s.campaign_id).filter(Boolean))];
+        if (campaignIds.length === 0) {
+          campaigns = [];
+        } else {
+          const res = await supabase
+            .from("campaigns")
+            .select("id, name, description, image_url, created_at")
+            .in("id", campaignIds)
+            .order("created_at", { ascending: false });
+          campaigns = res.data ?? [];
+          error = res.error;
+        }
+      }
+    }
+  } else {
+    /** Tutte le campagne disponibili: GM = tutte, Player = pubbliche o dove è membro */
+    if (isGmOrAdmin) {
+      const res = await supabase
+        .from("campaigns")
+        .select("id, name, description, image_url, created_at")
+        .order("created_at", { ascending: false });
+      campaigns = res.data ?? [];
+      error = res.error;
+    } else {
+      const { data: memberRows } = await supabase
+        .from("campaign_members")
+        .select("campaign_id")
+        .eq("player_id", user.id);
+      const myCampaignIds = (memberRows ?? []).map((r) => r.campaign_id);
+      const query = supabase
+        .from("campaigns")
+        .select("id, name, description, image_url, created_at")
+        .order("created_at", { ascending: false });
+      const res = myCampaignIds.length > 0
+        ? await query.or(`is_public.eq.true,id.in.(${myCampaignIds.join(",")})`)
+        : await query.eq("is_public", true);
+      campaigns = res.data ?? [];
+      error = res.error;
+    }
+  }
+
+  if (error) {
+    return (
+      <p className="text-sm text-red-400">
+        Errore nel caricamento delle campagne. Riprova più tardi.
+      </p>
+    );
+  }
+
+  if (!campaigns?.length) {
+    return (
+      <p className="rounded-xl border border-emerald-700/40 bg-slate-950/60 px-6 py-8 text-center text-slate-300">
+        {getEmptyMessage(variant, isGmOrAdmin)}
+      </p>
+    );
+  }
+
+  return (
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {campaigns.map((campaign) => (
+        <Link key={campaign.id} href={`/campaigns/${campaign.id}`}>
+          <Card className="overflow-hidden border-emerald-700/50 bg-slate-950/70 transition-colors hover:border-emerald-500/60 hover:bg-slate-900/80">
+            <div className="relative aspect-[3/2] w-full bg-slate-950">
+              <Image
+                src={campaign.image_url ?? PLACEHOLDER_IMAGE}
+                alt={campaign.name}
+                fill
+                className="object-contain"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                unoptimized={!!campaign.image_url}
+              />
+            </div>
+            <CardHeader className="pb-2">
+              <CardTitle className="line-clamp-1 text-lg text-slate-50">
+                {campaign.name}
+              </CardTitle>
+              {campaign.description && (
+                <CardDescription className="line-clamp-2 text-slate-400">
+                  {campaign.description}
+                </CardDescription>
+              )}
+            </CardHeader>
+            <CardContent className="pt-0">
+              <span className="text-xs text-emerald-400/80">
+                Entra nella campagna →
+              </span>
+            </CardContent>
+          </Card>
+        </Link>
+      ))}
+    </div>
+  );
+}

@@ -1,0 +1,2 @@
+ALTER TABLE wiki_entities
+  ADD COLUMN IF NOT EXISTS is_secret BOOLEAN NOT NULL DEFAULT false;

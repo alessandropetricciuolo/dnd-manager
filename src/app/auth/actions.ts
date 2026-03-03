@@ -1,0 +1,53 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { createSupabaseServerClient } from "@/utils/supabase/server";
+
+type AuthResult = {
+  error?: string;
+};
+
+export async function login(email: string, password: string): Promise<AuthResult> {
+  if (!email || !password) {
+    return { error: "Email e password sono obbligatorie." };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/dashboard");
+  return {};
+}
+
+export async function signup(email: string, password: string): Promise<AuthResult> {
+  if (!email || !password) {
+    return { error: "Email e password sono obbligatorie." };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  // Il trigger handle_new_user in Supabase crea automaticamente il record in public.profiles con ruolo 'player'
+  revalidatePath("/login");
+  return {};
+}
+
+export async function signout() {
+  const supabase = await createSupabaseServerClient();
+  await supabase.auth.signOut();
+
+  redirect("/login");
+}
+

@@ -1,0 +1,103 @@
+/**
+ * Database types for Supabase
+ * Generati/aggiornati da: supabase gen types typescript
+ */
+
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
+
+export interface Database {
+  public: {
+    Tables: {
+      profiles: {
+        Row: {
+          id: string;
+          display_name: string | null;
+          avatar_url: string | null;
+          role: "player" | "gm" | "admin";
+          first_name: string | null;
+          last_name: string | null;
+          date_of_birth: string | null;
+          phone: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          display_name?: string | null;
+          avatar_url?: string | null;
+          role?: "player" | "gm" | "admin";
+          first_name?: string | null;
+          last_name?: string | null;
+          date_of_birth?: string | null;
+          phone?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["profiles"]["Insert"]>;
+      };
+      campaigns: {
+        Row: {
+          id: string;
+          gm_id: string;
+          name: string;
+          description: string | null;
+          is_public: boolean;
+          type: "oneshot" | "quest" | "long" | null;
+          image_url: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database["public"]["Tables"]["campaigns"]["Row"], "created_at" | "updated_at">;
+        Update: Partial<Database["public"]["Tables"]["campaigns"]["Insert"]>;
+      };
+      sessions: {
+        Row: {
+          id: string;
+          campaign_id: string;
+          title: string | null;
+          scheduled_at: string;
+          status: "scheduled" | "completed" | "cancelled";
+          max_players: number;
+          notes: string | null;
+          location: string | null;
+          dm_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database["public"]["Tables"]["sessions"]["Row"], "created_at" | "updated_at">;
+        Update: Partial<Database["public"]["Tables"]["sessions"]["Insert"]>;
+      };
+      wiki_entities: {
+        Row: {
+          id: string;
+          campaign_id: string;
+          type: "npc" | "monster" | "item" | "location" | "lore";
+          name: string;
+          content: Json;
+          image_url: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database["public"]["Tables"]["wiki_entities"]["Row"], "created_at" | "updated_at">;
+        Update: Partial<Database["public"]["Tables"]["wiki_entities"]["Insert"]>;
+      };
+      maps: {
+        Row: {
+          id: string;
+          campaign_id: string;
+          name: string;
+          description: string | null;
+          image_url: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database["public"]["Tables"]["maps"]["Row"], "created_at" | "updated_at">;
+        Update: Partial<Database["public"]["Tables"]["maps"]["Insert"]>;
+      };
+    };
+  };
+}
