@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
+import type { Database } from "@/types/database.types";
 
 const ALLOWED_ROLES = ["player", "gm", "admin"] as const;
 
@@ -72,12 +73,13 @@ export async function createUser(formData: FormData): Promise<CreateUserResult> 
       return { success: false, message: "Utente creato ma ID non disponibile." };
     }
 
+    const profileUpdate: Database["public"]["Tables"]["profiles"]["Update"] = {
+      first_name: firstName,
+      last_name: lastName,
+    };
     const { error: updateError } = await admin
       .from("profiles")
-      .update({
-        first_name: firstName,
-        last_name: lastName,
-      })
+      .update(profileUpdate)
       .eq("id", newUser.user.id);
 
     if (updateError) {
