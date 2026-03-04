@@ -189,8 +189,9 @@ export async function listGmAttachments(campaignId: string): Promise<GmResult<Gm
   return { success: true, data: withUrls };
 }
 
-const ALLOWED_MIME =
-  /^image\//|^application\/pdf$|^application\/msword$|^application\/vnd\.openxmlformats-officedocument\./;
+const ALLOWED_MIME = new RegExp(
+  "^(image/|application/pdf$|application/msword$|application/vnd\\.openxmlformats-officedocument\\.)"
+);
 
 export async function uploadGmFile(campaignId: string, formData: FormData): Promise<GmResult<GmAttachmentRow>> {
   const check = await ensureGmOrAdmin();
