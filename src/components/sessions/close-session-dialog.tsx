@@ -158,7 +158,7 @@ export function CloseSessionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="border-emerald-700/50 bg-slate-950 text-slate-100 sm:max-w-lg">
+      <DialogContent className="border-barber-gold/40 bg-barber-dark text-barber-paper sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
             {step === 1 ? "Chiudi sessione e fai appello" : "Sblocco contenuti"}
@@ -174,33 +174,33 @@ export function CloseSessionDialog({
           <>
             <div className="max-h-64 space-y-2 overflow-y-auto py-2">
               {approvedSignups.length === 0 ? (
-                <p className="text-sm text-slate-400">Nessun giocatore approvato per questa sessione.</p>
+                <p className="text-sm text-barber-paper/70">Nessun giocatore approvato per questa sessione.</p>
               ) : (
                 approvedSignups.map((signup) => (
                   <div
                     key={signup.id}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-700/60 px-3 py-2"
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-barber-gold/30 px-3 py-2"
                   >
-                    <span className="text-sm font-medium text-slate-200">{signup.player_name}</span>
+                    <span className="text-sm font-medium text-barber-paper">{signup.player_name}</span>
                     <div className="flex items-center gap-3">
-                      <label className="flex cursor-pointer items-center gap-1.5 text-sm text-slate-300">
+                      <label className="flex cursor-pointer items-center gap-1.5 text-sm text-barber-paper/80">
                         <input
                           type="radio"
                           name={`attendance-${signup.player_id}`}
                           checked={attendance[signup.player_id] === "attended"}
                           onChange={() => setPresence(signup.player_id, "attended")}
-                          className="border-slate-600 text-emerald-500"
+                          className="border-barber-gold/40 text-barber-gold"
                         />
-                        <User className="h-4 w-4 text-emerald-400/80" />
+                        <User className="h-4 w-4 text-barber-gold" />
                         Presente
                       </label>
-                      <label className="flex cursor-pointer items-center gap-1.5 text-sm text-slate-300">
+                      <label className="flex cursor-pointer items-center gap-1.5 text-sm text-barber-paper/80">
                         <input
                           type="radio"
                           name={`attendance-${signup.player_id}`}
                           checked={attendance[signup.player_id] === "absent"}
                           onChange={() => setPresence(signup.player_id, "absent")}
-                          className="border-slate-600 text-red-500"
+                          className="border-barber-gold/40 text-red-500"
                         />
                         <UserX className="h-4 w-4 text-red-400/80" />
                         Assente
@@ -214,14 +214,14 @@ export function CloseSessionDialog({
               <Button
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                className="border-slate-600 text-slate-300"
+                className="border-barber-gold/40 text-barber-paper/80"
               >
                 Annulla
               </Button>
               <Button
                 onClick={() => setStep(2)}
                 disabled={!canGoToStep2}
-                className="bg-emerald-600 hover:bg-emerald-500"
+                className="bg-barber-red hover:bg-barber-red/90"
               >
                 Avanti – Sblocco contenuti
               </Button>
@@ -233,20 +233,20 @@ export function CloseSessionDialog({
           <>
             <div className="space-y-3">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-barber-paper/60" />
                 <Input
                   type="search"
                   placeholder="Cerca (es. Cripta…)"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="border-slate-600 bg-slate-900/80 pl-9 text-slate-200 placeholder:text-slate-500"
+                  className="border-barber-gold/30 bg-barber-dark pl-9 text-barber-paper placeholder:text-barber-paper/50"
                 />
               </div>
               <div className="max-h-72 space-y-4 overflow-y-auto py-2">
                 {itemsLoading ? (
-                  <p className="text-sm text-slate-400">Caricamento contenuti segreti…</p>
+                  <p className="text-sm text-barber-paper/70">Caricamento contenuti segreti…</p>
                 ) : filteredAndGrouped.length === 0 ? (
-                  <p className="text-sm text-slate-400">
+                  <p className="text-sm text-barber-paper/70">
                     {secretItems.length === 0
                       ? "Nessun contenuto segreto in questa campagna."
                       : "Nessun risultato per la ricerca."}
@@ -254,7 +254,7 @@ export function CloseSessionDialog({
                 ) : (
                   filteredAndGrouped.map(({ groupLabel, items }) => (
                     <div key={groupLabel} className="space-y-1.5">
-                      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-barber-paper/60">
                         {groupLabel === "Mappe" ? (
                           <MapIcon className="h-3.5 w-3.5" />
                         ) : (
@@ -267,14 +267,14 @@ export function CloseSessionDialog({
                           const key = itemKey(item);
                           return (
                             <li key={key}>
-                              <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-slate-700/60 px-3 py-2 transition-colors hover:bg-slate-800/60">
+                              <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-barber-gold/30 px-3 py-2 transition-colors hover:bg-barber-dark">
                                 <input
                                   type="checkbox"
                                   checked={selectedKeys.has(key)}
                                   onChange={() => toggleItem(key)}
-                                  className="h-4 w-4 rounded border-slate-600 text-emerald-600 focus:ring-emerald-500"
+                                  className="h-4 w-4 rounded border-barber-gold/40 text-barber-gold focus:ring-barber-gold"
                                 />
-                                <span className="text-sm font-medium text-slate-200">{item.name}</span>
+                                <span className="text-sm font-medium text-barber-paper">{item.name}</span>
                               </label>
                             </li>
                           );
@@ -290,14 +290,14 @@ export function CloseSessionDialog({
                 variant="outline"
                 onClick={() => setStep(1)}
                 disabled={loading}
-                className="border-slate-600 text-slate-300"
+                className="border-barber-gold/40 text-barber-paper/80"
               >
                 Indietro
               </Button>
               <Button
                 onClick={handleConfirmClose}
                 disabled={loading}
-                className="bg-emerald-600 hover:bg-emerald-500"
+                className="bg-barber-red hover:bg-barber-red/90"
               >
                 {loading ? "Chiusura…" : "Conferma chiusura"}
               </Button>

@@ -140,16 +140,16 @@ export function CreateEntityDialog({ campaignId }: CreateEntityDialogProps) {
       <DialogTrigger asChild>
         <Button
           type="button"
-          className="bg-emerald-500 text-slate-950 hover:bg-emerald-400"
+          className="bg-barber-red text-barber-paper hover:bg-barber-red/90"
         >
           <BookOpen className="mr-2 h-4 w-4" />
           Nuova voce
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto border-emerald-700/50 bg-slate-950 text-slate-50">
+      <DialogContent className="max-h-[90vh] overflow-y-auto border-barber-gold/40 bg-barber-dark text-barber-paper">
         <DialogHeader>
           <DialogTitle>Nuova voce wiki</DialogTitle>
-          <DialogDescription className="text-slate-400">
+          <DialogDescription className="text-barber-paper/70">
             Aggiungi un NPC, un luogo, un mostro, un oggetto o una voce di lore.
           </DialogDescription>
         </DialogHeader>
@@ -160,7 +160,7 @@ export function CreateEntityDialog({ campaignId }: CreateEntityDialogProps) {
               id="entity-title"
               name="title"
               placeholder="Es. Taverna del Drago"
-              className="bg-slate-900/70 border-slate-700 text-slate-50"
+              className="bg-barber-dark border-barber-gold/30 text-barber-paper"
               required
               disabled={isLoading}
             />
@@ -173,7 +173,7 @@ export function CreateEntityDialog({ campaignId }: CreateEntityDialogProps) {
               required
               value={type}
               onChange={(e) => onTypeChange(e.target.value)}
-              className="flex h-10 w-full rounded-md border border-slate-700 bg-slate-900/70 px-3 py-2 text-sm text-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
               disabled={isLoading}
             >
               {ENTITY_TYPES.map(({ value, label }) => (
@@ -194,13 +194,13 @@ export function CreateEntityDialog({ campaignId }: CreateEntityDialogProps) {
               name="image"
               type="file"
               accept="image/jpeg,image/png,image/webp,image/gif"
-              className="bg-slate-900/70 border-slate-700 text-slate-50 file:mr-2 file:rounded file:border-0 file:bg-emerald-500 file:px-3 file:py-1 file:text-slate-950"
+              className="bg-barber-dark border-barber-gold/30 text-barber-paper file:mr-2 file:rounded file:border-0 file:bg-barber-red file:px-3 file:py-1 file:text-barber-paper"
               disabled={isLoading}
               ref={fileInputRef}
               onChange={onFileChange}
             />
             {preview && (
-              <div className="relative mt-2 aspect-video w-full overflow-hidden rounded-lg border border-slate-700 bg-slate-900">
+              <div className="relative mt-2 aspect-video w-full overflow-hidden rounded-lg border border-barber-gold/30 bg-barber-dark">
                 <Image
                   src={preview}
                   alt="Anteprima"
@@ -221,7 +221,7 @@ export function CreateEntityDialog({ campaignId }: CreateEntityDialogProps) {
               id="entity-content"
               name="content"
               placeholder="Descrizione in Markdown..."
-              className="min-h-[120px] resize-y bg-slate-900/70 border-slate-700 text-slate-50"
+              className="min-h-[120px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
               disabled={isLoading}
             />
           </div>
@@ -236,7 +236,7 @@ export function CreateEntityDialog({ campaignId }: CreateEntityDialogProps) {
                   value={getAttr("relationships")}
                   onChange={(e) => setAttr("relationships", e.target.value)}
                   placeholder="Relazioni con altri NPC, fazioni..."
-                  className="min-h-[80px] resize-y bg-slate-900/70 border-slate-700 text-slate-50"
+                  className="min-h-[80px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
                   disabled={isLoading}
                 />
               </div>
@@ -247,7 +247,7 @@ export function CreateEntityDialog({ campaignId }: CreateEntityDialogProps) {
                   value={getAttr("loot")}
                   onChange={(e) => setAttr("loot", e.target.value)}
                   placeholder="Oggetti che può avere o lasciare..."
-                  className="min-h-[60px] resize-y bg-slate-900/70 border-slate-700 text-slate-50"
+                  className="min-h-[60px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
                   disabled={isLoading}
                 />
               </div>
@@ -262,7 +262,7 @@ export function CreateEntityDialog({ campaignId }: CreateEntityDialogProps) {
                 value={getAttr("loot")}
                 onChange={(e) => setAttr("loot", e.target.value)}
                 placeholder="Tesori nascosti, oggetti nel luogo..."
-                className="min-h-[80px] resize-y bg-slate-900/70 border-slate-700 text-slate-50"
+                className="min-h-[80px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
                 disabled={isLoading}
               />
             </div>
@@ -278,7 +278,7 @@ export function CreateEntityDialog({ campaignId }: CreateEntityDialogProps) {
                     value={getAttr("combat_stats.hp")}
                     onChange={(e) => setAttr("combat_stats.hp", e.target.value)}
                     placeholder="Es. 45"
-                    className="bg-slate-900/70 border-slate-700 text-slate-50"
+                    className="bg-barber-dark border-barber-gold/30 text-barber-paper"
                     disabled={isLoading}
                   />
                 </div>
@@ -289,7 +289,7 @@ export function CreateEntityDialog({ campaignId }: CreateEntityDialogProps) {
                     value={getAttr("combat_stats.ac")}
                     onChange={(e) => setAttr("combat_stats.ac", e.target.value)}
                     placeholder="Es. 15"
-                    className="bg-slate-900/70 border-slate-700 text-slate-50"
+                    className="bg-barber-dark border-barber-gold/30 text-barber-paper"
                     disabled={isLoading}
                   />
                 </div>
@@ -300,7 +300,7 @@ export function CreateEntityDialog({ campaignId }: CreateEntityDialogProps) {
                     value={getAttr("combat_stats.cr")}
                     onChange={(e) => setAttr("combat_stats.cr", e.target.value)}
                     placeholder="Es. 2"
-                    className="bg-slate-900/70 border-slate-700 text-slate-50"
+                    className="bg-barber-dark border-barber-gold/30 text-barber-paper"
                     disabled={isLoading}
                   />
                 </div>
@@ -312,7 +312,7 @@ export function CreateEntityDialog({ campaignId }: CreateEntityDialogProps) {
                   value={getAttr("combat_stats.attacks")}
                   onChange={(e) => setAttr("combat_stats.attacks", e.target.value)}
                   placeholder="Descrizione attacchi e azioni..."
-                  className="min-h-[80px] resize-y bg-slate-900/70 border-slate-700 text-slate-50"
+                  className="min-h-[80px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
                   disabled={isLoading}
                 />
               </div>
@@ -323,7 +323,7 @@ export function CreateEntityDialog({ campaignId }: CreateEntityDialogProps) {
                   value={getAttr("loot")}
                   onChange={(e) => setAttr("loot", e.target.value)}
                   placeholder="Tesoro che può lasciare..."
-                  className="min-h-[60px] resize-y bg-slate-900/70 border-slate-700 text-slate-50"
+                  className="min-h-[60px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
                   disabled={isLoading}
                 />
               </div>
@@ -341,10 +341,10 @@ export function CreateEntityDialog({ campaignId }: CreateEntityDialogProps) {
                   value={sortOrder}
                   onChange={(e) => setSortOrder(e.target.value)}
                   placeholder="Es. 1 (per ordinare come Capitolo 1)"
-                  className="bg-slate-900/70 border-slate-700 text-slate-50"
+                  className="bg-barber-dark border-barber-gold/30 text-barber-paper"
                   disabled={isLoading}
                 />
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-barber-paper/60">
                   Opzionale. Usato per mostrare le voci Lore come indice (Capitolo 1, 2, 3...).
                 </p>
               </div>
@@ -355,7 +355,7 @@ export function CreateEntityDialog({ campaignId }: CreateEntityDialogProps) {
                   value={getAttr("summary")}
                   onChange={(e) => setAttr("summary", e.target.value)}
                   placeholder="Breve riassunto (box collassabile nella lettura)..."
-                  className="min-h-[80px] resize-y bg-slate-900/70 border-slate-700 text-slate-50"
+                  className="min-h-[80px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
                   disabled={isLoading}
                 />
               </div>
@@ -368,10 +368,10 @@ export function CreateEntityDialog({ campaignId }: CreateEntityDialogProps) {
               id="entity-secret"
               name="is_secret"
               value="on"
-              className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500"
+              className="h-4 w-4 rounded border-barber-gold/40 bg-barber-dark text-barber-gold focus:ring-barber-gold"
               disabled={isLoading}
             />
-            <Label htmlFor="entity-secret" className="cursor-pointer text-slate-300">
+            <Label htmlFor="entity-secret" className="cursor-pointer text-barber-paper/80">
               Segreto (solo il GM può vedere questa voce)
             </Label>
           </div>
@@ -382,14 +382,14 @@ export function CreateEntityDialog({ campaignId }: CreateEntityDialogProps) {
               variant="outline"
               onClick={() => setOpen(false)}
               disabled={isLoading}
-              className="border-slate-600 text-slate-300"
+              className="border-barber-gold/40 text-barber-paper/80"
             >
               Annulla
             </Button>
             <Button
               type="submit"
               disabled={isLoading}
-              className="bg-emerald-500 text-slate-950 hover:bg-emerald-400"
+              className="bg-barber-red text-barber-paper hover:bg-barber-red/90"
             >
               {isLoading ? "Creazione..." : "Crea"}
             </Button>

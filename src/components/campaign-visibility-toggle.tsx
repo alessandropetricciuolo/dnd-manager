@@ -36,8 +36,8 @@ export function CampaignVisibilityToggle({ campaignId, isPublic: initialPublic }
       size="sm"
       className={
         isPublic
-          ? "border-emerald-600/60 text-emerald-300 hover:bg-emerald-500/10"
-          : "border-slate-600 text-slate-400 hover:bg-slate-500/10"
+          ? "border-barber-gold/50 text-barber-gold hover:bg-barber-gold/10"
+          : "border-barber-gold/30 text-barber-paper/70 hover:bg-barber-gold/10"
       }
       disabled={loading}
       onClick={handleToggle}

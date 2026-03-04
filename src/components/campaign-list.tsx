@@ -33,7 +33,7 @@ export async function CampaignList({ variant = "all" }: CampaignListProps) {
 
   if (!user) {
     return (
-      <p className="text-sm text-slate-400">
+      <p className="text-sm text-barber-paper/70">
         Accedi per vedere le campagne.
       </p>
     );
@@ -125,7 +125,7 @@ export async function CampaignList({ variant = "all" }: CampaignListProps) {
 
   if (!campaigns?.length) {
     return (
-      <p className="rounded-xl border border-emerald-700/40 bg-slate-950/60 px-6 py-8 text-center text-slate-300">
+      <p className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 px-6 py-8 text-center text-barber-paper/80">
         {getEmptyMessage(variant, isGmOrAdmin)}
       </p>
     );
@@ -135,8 +135,8 @@ export async function CampaignList({ variant = "all" }: CampaignListProps) {
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {campaigns.map((campaign) => (
         <Link key={campaign.id} href={`/campaigns/${campaign.id}`}>
-          <Card className="overflow-hidden border-emerald-700/50 bg-slate-950/70 transition-colors hover:border-emerald-500/60 hover:bg-slate-900/80">
-            <div className="relative aspect-[3/2] w-full bg-slate-950">
+          <Card className="overflow-hidden border-barber-gold/40 bg-barber-dark/90 transition-colors hover:border-barber-gold/50 hover:bg-barber-dark">
+            <div className="relative aspect-[3/2] w-full bg-barber-dark">
               <Image
                 src={campaign.image_url ?? PLACEHOLDER_IMAGE}
                 alt={campaign.name}
@@ -147,17 +147,17 @@ export async function CampaignList({ variant = "all" }: CampaignListProps) {
               />
             </div>
             <CardHeader className="pb-2">
-              <CardTitle className="line-clamp-1 text-lg text-slate-50">
+              <CardTitle className="line-clamp-1 text-lg text-barber-paper">
                 {campaign.name}
               </CardTitle>
               {campaign.description && (
-                <CardDescription className="line-clamp-2 text-slate-400">
+                <CardDescription className="line-clamp-2 text-barber-paper/70">
                   {campaign.description}
                 </CardDescription>
               )}
             </CardHeader>
             <CardContent className="pt-0">
-              <span className="text-xs text-emerald-400/80">
+              <span className="text-xs text-barber-gold">
                 Entra nella campagna →
               </span>
             </CardContent>

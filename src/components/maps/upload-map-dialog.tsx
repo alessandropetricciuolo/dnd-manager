@@ -117,16 +117,16 @@ export function UploadMapDialog({ campaignId }: UploadMapDialogProps) {
       <DialogTrigger asChild>
         <Button
           type="button"
-          className="bg-emerald-500 text-slate-950 hover:bg-emerald-400"
+          className="bg-barber-red text-barber-paper hover:bg-barber-red/90"
         >
           <Upload className="mr-2 h-4 w-4" />
           Carica mappa
         </Button>
       </DialogTrigger>
-      <DialogContent className="border-emerald-700/50 bg-slate-950 text-slate-50">
+      <DialogContent className="border-barber-gold/40 bg-barber-dark text-barber-paper">
         <DialogHeader>
           <DialogTitle>Carica mappa</DialogTitle>
-          <DialogDescription className="text-slate-400">
+          <DialogDescription className="text-barber-paper/70">
             Aggiungi un&apos;immagine per la mappa della campagna (JPG, PNG, WebP, GIF).
           </DialogDescription>
         </DialogHeader>
@@ -137,7 +137,7 @@ export function UploadMapDialog({ campaignId }: UploadMapDialogProps) {
               id="map-name"
               name="name"
               placeholder="Es. Taverna del Drago"
-              className="bg-slate-900/70 border-slate-700 text-slate-50"
+              className="bg-barber-dark border-barber-gold/30 text-barber-paper"
               disabled={isLoading}
               required
             />
@@ -150,15 +150,15 @@ export function UploadMapDialog({ campaignId }: UploadMapDialogProps) {
               onValueChange={setMapType}
               disabled={isLoading}
             >
-              <SelectTrigger className="bg-slate-900/70 border-slate-700 text-slate-50">
+              <SelectTrigger className="bg-barber-dark border-barber-gold/30 text-barber-paper">
                 <SelectValue placeholder="Seleziona categoria" />
               </SelectTrigger>
-              <SelectContent className="border-slate-700 bg-slate-900 text-slate-50">
+              <SelectContent className="border-barber-gold/30 bg-barber-dark text-barber-paper">
                 {MAP_TYPE_OPTIONS.map((opt) => (
                   <SelectItem
                     key={opt.value}
                     value={opt.value}
-                    className="focus:bg-slate-800 focus:text-slate-50"
+                    className="focus:bg-barber-dark focus:text-barber-paper"
                   >
                     {opt.label}
                   </SelectItem>
@@ -173,7 +173,7 @@ export function UploadMapDialog({ campaignId }: UploadMapDialogProps) {
               id="map-description"
               name="description"
               placeholder="Breve descrizione della mappa..."
-              className="min-h-[80px] resize-none bg-slate-900/70 border-slate-700 text-slate-50"
+              className="min-h-[80px] resize-none bg-barber-dark border-barber-gold/30 text-barber-paper"
               disabled={isLoading}
             />
           </div>
@@ -188,14 +188,14 @@ export function UploadMapDialog({ campaignId }: UploadMapDialogProps) {
               name="file"
               type="file"
               accept="image/jpeg,image/png,image/webp,image/gif"
-              className="bg-slate-900/70 border-slate-700 text-slate-50 file:mr-2 file:rounded file:border-0 file:bg-emerald-500 file:px-3 file:py-1 file:text-slate-950"
+              className="bg-barber-dark border-barber-gold/30 text-barber-paper file:mr-2 file:rounded file:border-0 file:bg-barber-red file:px-3 file:py-1 file:text-barber-paper"
               disabled={isLoading}
               ref={fileInputRef}
               onChange={handleFileChange}
               required
             />
             {preview && (
-              <div className="relative mt-2 aspect-video w-full overflow-hidden rounded-lg border border-slate-700 bg-slate-900">
+              <div className="relative mt-2 aspect-video w-full overflow-hidden rounded-lg border border-barber-gold/30 bg-barber-dark">
                 <Image
                   src={preview}
                   alt="Anteprima"
@@ -213,14 +213,14 @@ export function UploadMapDialog({ campaignId }: UploadMapDialogProps) {
               variant="outline"
               onClick={() => setOpen(false)}
               disabled={isLoading}
-              className="border-slate-600 text-slate-300"
+              className="border-barber-gold/40 text-barber-paper/80"
             >
               Annulla
             </Button>
             <Button
               type="submit"
               disabled={isLoading}
-              className="bg-emerald-500 text-slate-950 hover:bg-emerald-400"
+              className="bg-barber-red text-barber-paper hover:bg-barber-red/90"
             >
               {isLoading ? (
                 <>

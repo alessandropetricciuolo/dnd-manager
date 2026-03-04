@@ -77,9 +77,9 @@ export function WikiListClient({
 
   if (!entities.length) {
     return (
-      <div className="rounded-xl border border-emerald-700/40 bg-slate-950/60 px-6 py-10 text-center">
-        <BookOpen className="mx-auto h-12 w-12 text-slate-500" />
-        <p className="mt-3 text-slate-400">
+      <div className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 px-6 py-10 text-center">
+        <BookOpen className="mx-auto h-12 w-12 text-barber-paper/50" />
+        <p className="mt-3 text-barber-paper/70">
           {emptyMessage ?? "Nessuna voce nel wiki. Crea la prima entità per iniziare."}
         </p>
       </div>
@@ -89,10 +89,10 @@ export function WikiListClient({
   return (
     <div className="space-y-4">
       <Tabs value={typeFilter} onValueChange={setWikiFilter}>
-        <TabsList className="flex flex-wrap gap-1 rounded-xl border border-emerald-700/50 bg-slate-950/80 p-1">
+        <TabsList className="flex flex-wrap gap-1 rounded-xl border border-barber-gold/40 bg-barber-dark/90 p-1">
           <TabsTrigger
             value={ALL_TYPES}
-            className="data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300"
+            className="data-[state=active]:bg-barber-gold/20 data-[state=active]:text-barber-gold"
           >
             Tutti
           </TabsTrigger>
@@ -100,7 +100,7 @@ export function WikiListClient({
             <TabsTrigger
               key={value}
               value={value}
-              className="data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300"
+              className="data-[state=active]:bg-barber-gold/20 data-[state=active]:text-barber-gold"
             >
               {label}
             </TabsTrigger>
@@ -118,14 +118,14 @@ export function WikiListClient({
                 key={entity.id}
                 href={`/campaigns/${campaignId}/wiki/${entity.id}`}
               >
-                <Card className="h-full border-emerald-700/50 bg-slate-950/70 transition-colors hover:border-emerald-500/60">
+                <Card className="h-full border-barber-gold/40 bg-barber-dark/90 transition-colors hover:border-barber-gold/50">
                   <CardHeader className="flex flex-row items-start justify-between gap-2 pb-2">
-                    <CardTitle className="line-clamp-1 text-base text-slate-50">
+                    <CardTitle className="line-clamp-1 text-base text-barber-paper">
                       {displayName}
                     </CardTitle>
                     {isCreator && entity.isSecret && (
                       <Lock
-                        className="h-4 w-4 shrink-0 text-amber-400"
+                        className="h-4 w-4 shrink-0 text-barber-gold"
                         aria-label="Segreto"
                       />
                     )}

@@ -90,16 +90,16 @@ export function CreateSessionDialog({ campaignId, gmAdminUsers, defaultDmId }: C
       <DialogTrigger asChild>
         <Button
           type="button"
-          className="bg-emerald-500 text-slate-950 hover:bg-emerald-400"
+          className="bg-barber-red text-barber-paper hover:bg-barber-red/90"
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
           Nuova Sessione
         </Button>
       </DialogTrigger>
-      <DialogContent className="border-emerald-700/50 bg-slate-950 text-slate-50">
+      <DialogContent className="border-barber-gold/40 bg-barber-dark text-barber-paper">
         <DialogHeader>
           <DialogTitle>Nuova sessione</DialogTitle>
-          <DialogDescription className="text-slate-400">
+          <DialogDescription className="text-barber-paper/70">
             Pianifica una nuova sessione di gioco: data, orario e luogo.
           </DialogDescription>
         </DialogHeader>
@@ -112,7 +112,7 @@ export function CreateSessionDialog({ campaignId, gmAdminUsers, defaultDmId }: C
                   type="button"
                   variant="outline"
                   className={cn(
-                    "w-full justify-start text-left font-normal border-slate-700 bg-slate-900/70 text-slate-50 hover:bg-slate-800",
+                    "w-full justify-start text-left font-normal border-barber-gold/30 bg-barber-dark text-barber-paper hover:bg-barber-dark",
                     !date && "text-muted-foreground"
                   )}
                 >
@@ -120,7 +120,7 @@ export function CreateSessionDialog({ campaignId, gmAdminUsers, defaultDmId }: C
                   {date ? format(date, "PPP", { locale: it }) : "Scegli data"}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 border-slate-700 bg-slate-900" align="start">
+              <PopoverContent className="w-auto p-0 border-barber-gold/30 bg-barber-dark" align="start">
                 <Calendar
                   mode="single"
                   selected={date}
@@ -138,13 +138,13 @@ export function CreateSessionDialog({ campaignId, gmAdminUsers, defaultDmId }: C
               <Select value={dmId || undefined} onValueChange={setDmId} disabled={isLoading}>
                 <SelectTrigger
                   id="session-dm"
-                  className="bg-slate-900/70 border-slate-700 text-slate-50"
+                  className="bg-barber-dark border-barber-gold/30 text-barber-paper"
                 >
                   <SelectValue placeholder="Seleziona il DM" />
                 </SelectTrigger>
-                <SelectContent className="border-slate-700 bg-slate-900">
+                <SelectContent className="border-barber-gold/30 bg-barber-dark">
                   {gmAdminUsers.map((u) => (
-                    <SelectItem key={u.id} value={u.id} className="text-slate-50">
+                    <SelectItem key={u.id} value={u.id} className="text-barber-paper">
                       {u.label}
                     </SelectItem>
                   ))}
@@ -160,7 +160,7 @@ export function CreateSessionDialog({ campaignId, gmAdminUsers, defaultDmId }: C
               name="time"
               type="time"
               defaultValue="20:00"
-              className="bg-slate-900/70 border-slate-700 text-slate-50"
+              className="bg-barber-dark border-barber-gold/30 text-barber-paper"
               disabled={isLoading}
             />
           </div>
@@ -174,7 +174,7 @@ export function CreateSessionDialog({ campaignId, gmAdminUsers, defaultDmId }: C
               id="session-location"
               name="location"
               placeholder="Es. Taverna del Drago, Discord..."
-              className="bg-slate-900/70 border-slate-700 text-slate-50"
+              className="bg-barber-dark border-barber-gold/30 text-barber-paper"
               disabled={isLoading}
             />
           </div>
@@ -188,7 +188,7 @@ export function CreateSessionDialog({ campaignId, gmAdminUsers, defaultDmId }: C
               min={1}
               max={20}
               defaultValue={6}
-              className="bg-slate-900/70 border-slate-700 text-slate-50"
+              className="bg-barber-dark border-barber-gold/30 text-barber-paper"
               disabled={isLoading}
             />
           </div>
@@ -199,14 +199,14 @@ export function CreateSessionDialog({ campaignId, gmAdminUsers, defaultDmId }: C
               variant="outline"
               onClick={() => setOpen(false)}
               disabled={isLoading}
-              className="border-slate-600 text-slate-300"
+              className="border-barber-gold/40 text-barber-paper/80"
             >
               Annulla
             </Button>
             <Button
               type="submit"
               disabled={isLoading}
-              className="bg-emerald-500 text-slate-950 hover:bg-emerald-400"
+              className="bg-barber-red text-barber-paper hover:bg-barber-red/90"
             >
               {isLoading ? "Creazione..." : "Crea sessione"}
             </Button>

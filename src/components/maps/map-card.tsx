@@ -33,7 +33,7 @@ export function MapCard({ campaignId, map, isGmOrAdmin }: MapCardProps) {
   }
 
   return (
-    <Card className="overflow-hidden border-emerald-700/50 bg-slate-950/70 transition-colors hover:border-emerald-500/60 relative group">
+    <Card className="overflow-hidden border-barber-gold/40 bg-barber-dark/90 transition-colors hover:border-barber-gold/50 relative group">
       {isGmOrAdmin && (
         <>
           <EditMapDialog
@@ -67,16 +67,16 @@ export function MapCard({ campaignId, map, isGmOrAdmin }: MapCardProps) {
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent opacity-0 transition-opacity hover:opacity-100" />
         </div>
         <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-base text-slate-50">
-            <ImageIcon className="h-4 w-4 shrink-0 text-emerald-400" />
+          <CardTitle className="flex items-center gap-2 text-base text-barber-paper">
+            <ImageIcon className="h-4 w-4 shrink-0 text-barber-gold" />
             {map.name}
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
           {map.description ? (
-            <p className="line-clamp-2 text-xs text-slate-400">{map.description}</p>
+            <p className="line-clamp-2 text-xs text-barber-paper/70">{map.description}</p>
           ) : null}
-          <span className="mt-1 block text-xs text-emerald-400/80">
+          <span className="mt-1 block text-xs text-barber-gold">
             Apri mappa interattiva
           </span>
         </CardContent>

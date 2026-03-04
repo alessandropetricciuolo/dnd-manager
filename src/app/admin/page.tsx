@@ -56,11 +56,11 @@ export default async function AdminPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-900 px-4 py-10">
+      <div className="min-h-screen bg-barber-dark px-4 py-10">
         <div className="mx-auto max-w-4xl">
           <p className="text-red-400">Errore nel caricamento degli utenti.</p>
           <Link href="/dashboard">
-            <Button variant="ghost" size="sm" className="mt-4 text-slate-300">
+            <Button variant="ghost" size="sm" className="mt-4 text-barber-paper/80">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Dashboard
             </Button>
@@ -73,7 +73,7 @@ export default async function AdminPage() {
   const list = profiles;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-900 px-4 py-10">
+    <div className="min-h-screen bg-barber-dark px-4 py-10">
       <div className="mx-auto max-w-4xl space-y-6">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -81,30 +81,30 @@ export default async function AdminPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-slate-300 hover:text-slate-50"
+                className="text-barber-paper/80 hover:text-barber-paper"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Dashboard
               </Button>
             </Link>
-            <h1 className="flex items-center gap-2 text-xl font-semibold text-slate-50 sm:text-2xl">
-              <Shield className="h-6 w-6 text-emerald-400" />
+            <h1 className="flex items-center gap-2 text-xl font-semibold text-barber-paper sm:text-2xl">
+              <Shield className="h-6 w-6 text-barber-gold" />
               Admin Panel
             </h1>
           </div>
           <CreateUserDialog />
         </header>
 
-        <div className="rounded-xl border border-emerald-700/50 bg-slate-950/70 overflow-hidden">
+        <div className="rounded-xl border border-barber-gold/40 bg-barber-dark/90 overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow className="border-emerald-700/40 hover:bg-transparent">
-                <TableHead className="text-slate-300">Email / Nome</TableHead>
-                <TableHead className="text-slate-300">Nome</TableHead>
-                <TableHead className="text-slate-300">Cognome</TableHead>
-                <TableHead className="text-slate-300">Ruolo attuale</TableHead>
-                <TableHead className="text-slate-300">Data iscrizione</TableHead>
-                <TableHead className="text-slate-300 text-right">Azioni</TableHead>
+              <TableRow className="border-barber-gold/30 hover:bg-transparent">
+                <TableHead className="text-barber-paper/80">Email / Nome</TableHead>
+                <TableHead className="text-barber-paper/80">Nome</TableHead>
+                <TableHead className="text-barber-paper/80">Cognome</TableHead>
+                <TableHead className="text-barber-paper/80">Ruolo attuale</TableHead>
+                <TableHead className="text-barber-paper/80">Data iscrizione</TableHead>
+                <TableHead className="text-barber-paper/80 text-right">Azioni</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -116,7 +116,7 @@ export default async function AdminPage() {
         </div>
 
         {list.length === 0 && (
-          <p className="text-center text-slate-400">Nessun utente trovato.</p>
+          <p className="text-center text-barber-paper/60">Nessun utente trovato.</p>
         )}
       </div>
     </div>

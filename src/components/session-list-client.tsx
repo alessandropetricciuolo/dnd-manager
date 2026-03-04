@@ -135,7 +135,7 @@ export function SessionListClient({
           return (
             <Card
               key={session.id}
-              className="border-emerald-700/50 bg-slate-950/70"
+              className="border-barber-gold/40 bg-barber-dark/90"
             >
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between gap-2">
@@ -186,7 +186,7 @@ export function SessionListClient({
                 {isGmOrAdmin && isTodayOrPast && session.status === "scheduled" && (
                   <Button
                     size="sm"
-                    className="w-full bg-amber-600 hover:bg-amber-500 text-slate-950 font-medium text-xs"
+                    className="w-full bg-barber-red hover:bg-barber-red/90 text-barber-paper font-medium text-xs"
                     onClick={() => {
                       const approved = session.signups
                         .filter((s) => normalizeStatus(s.status) === "approved")
@@ -206,7 +206,7 @@ export function SessionListClient({
                       <Button
                         size="sm"
                         variant="default"
-                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-xs"
+                        className="w-full bg-barber-red hover:bg-barber-red/90 text-xs"
                         disabled={!!joinLoadingSessionId}
                         onClick={() => handleJoin(session.id)}
                       >
@@ -219,10 +219,10 @@ export function SessionListClient({
                           <span className="text-xs text-amber-300">In attesa di approvazione</span>
                         )}
                         {normalizeStatus(session.currentUserSignupStatus) === "approved" && (
-                          <span className="text-xs text-emerald-300">Approvato</span>
+                          <span className="text-xs text-barber-gold">Approvato</span>
                         )}
                         {normalizeStatus(session.currentUserSignupStatus) === "attended" && (
-                          <span className="text-xs text-emerald-400">Presente</span>
+                          <span className="text-xs text-barber-gold">Presente</span>
                         )}
                         {normalizeStatus(session.currentUserSignupStatus) === "rejected" && (
                           <span className="text-xs text-slate-500">Rifiutato</span>
@@ -256,7 +256,7 @@ export function SessionListClient({
                                     <Button
                                       size="sm"
                                       variant="default"
-                                      className="h-7 bg-emerald-600 hover:bg-emerald-500 text-xs"
+                                      className="h-7 bg-barber-red hover:bg-barber-red/90 text-xs"
                                       disabled={busy}
                                       onClick={() => handleStatus(signup.id, "approved", signup)}
                                     >
@@ -288,7 +288,7 @@ export function SessionListClient({
                                   </Button>
                                 )}
                                 {status === "attended" && (
-                                  <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-300 text-xs">
+                                  <Badge variant="secondary" className="bg-barber-gold/20 text-barber-gold text-xs">
                                     <User className="h-3 w-3 mr-0.5" />
                                     Presente
                                   </Badge>

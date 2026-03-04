@@ -70,7 +70,7 @@ export default async function CampaignMapPage({ params }: PageProps) {
 
   return (
     <div className="flex h-screen flex-col">
-      <header className="flex shrink-0 items-center gap-4 border-b border-emerald-700/50 bg-slate-950/90 px-4 py-3">
+      <header className="flex shrink-0 items-center gap-4 border-b border-barber-gold/40 bg-barber-dark px-4 py-3">
         <Link href={`/campaigns/${campaignId}?tab=mappe`}>
           <Button
             variant="ghost"

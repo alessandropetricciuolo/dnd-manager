@@ -20,7 +20,7 @@ export async function SessionList({ campaignId }: SessionListProps) {
   } = await supabase.auth.getUser();
   if (userError || !user) {
     return (
-      <p className="text-sm text-slate-400">Accedi per vedere le sessioni.</p>
+      <p className="text-sm text-barber-paper/70">Accedi per vedere le sessioni.</p>
     );
   }
 
@@ -56,7 +56,7 @@ export async function SessionList({ campaignId }: SessionListProps) {
 
   if (!sessions?.length) {
     return (
-      <p className="rounded-xl border border-emerald-700/40 bg-slate-950/60 px-6 py-8 text-center text-slate-400">
+      <p className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 px-6 py-8 text-center text-barber-paper/70">
         Nessuna sessione in programma.
       </p>
     );

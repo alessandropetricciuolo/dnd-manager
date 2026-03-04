@@ -90,7 +90,7 @@ function SessionHoverCard({
       {children}
       {open && (
         <div
-          className="absolute bottom-full left-1/2 z-50 mb-1 w-64 -translate-x-1/2 rounded-lg border border-slate-700 bg-slate-900 p-3 shadow-xl"
+          className="absolute bottom-full left-1/2 z-50 mb-1 w-64 -translate-x-1/2 rounded-lg border border-barber-gold/30 bg-barber-dark p-3 shadow-xl"
           onMouseEnter={handleEnter}
           onMouseLeave={handleLeave}
         >
@@ -127,7 +127,7 @@ function SessionHoverCard({
           </p>
           <Link
             href={`/campaigns/${session.campaign_id}`}
-            className="mt-2 block text-center text-xs font-medium text-emerald-400 hover:underline"
+            className="mt-2 block text-center text-xs font-medium text-barber-gold hover:underline"
           >
             Vai alla campagna →
           </Link>
@@ -156,10 +156,10 @@ export function SessionCalendar({ sessions }: SessionCalendarProps) {
     });
 
   return (
-    <div className="rounded-xl border border-emerald-700/50 bg-slate-950/70 overflow-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-700/50 p-3">
-        <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-50">
-          <CalendarIcon className="h-5 w-5 text-emerald-400" />
+    <div className="rounded-xl border border-barber-gold/40 bg-barber-dark/90 overflow-hidden">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-barber-gold/30 p-3">
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-barber-paper">
+          <CalendarIcon className="h-5 w-5 text-barber-gold" />
           Calendario sessioni
         </h2>
         <div className="flex items-center gap-1">
@@ -167,7 +167,7 @@ export function SessionCalendar({ sessions }: SessionCalendarProps) {
             type="button"
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-slate-300 hover:bg-emerald-500/20 hover:text-slate-50"
+            className="h-8 w-8 text-barber-paper/80 hover:bg-barber-gold/20 hover:text-barber-paper"
             onClick={() => setCurrentDate((d) => subMonths(d, 1))}
           >
             <ChevronLeft className="h-4 w-4" />
@@ -179,7 +179,7 @@ export function SessionCalendar({ sessions }: SessionCalendarProps) {
             type="button"
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-slate-300 hover:bg-emerald-500/20 hover:text-slate-50"
+            className="h-8 w-8 text-barber-paper/80 hover:bg-barber-gold/20 hover:text-barber-paper"
             onClick={() => setCurrentDate((d) => addMonths(d, 1))}
           >
             <ChevronRight className="h-4 w-4" />
@@ -205,14 +205,14 @@ export function SessionCalendar({ sessions }: SessionCalendarProps) {
               <div
                 key={day.toISOString()}
                 className={cn(
-                  "min-h-[72px] sm:min-h-[80px] rounded border border-slate-800/80 bg-slate-900/50 p-1",
+                  "min-h-[72px] sm:min-h-[80px] rounded border border-barber-gold/20 bg-barber-dark/80 p-1",
                   !isCurrentMonth && "opacity-50"
                 )}
               >
                 <span
                   className={cn(
                     "inline-flex h-6 w-6 items-center justify-center rounded text-xs",
-                    isDayToday && "bg-emerald-500/30 font-semibold text-emerald-200",
+                    isDayToday && "bg-barber-gold/30 font-semibold text-barber-gold",
                     isCurrentMonth && !isDayToday && "text-slate-300",
                     !isCurrentMonth && "text-slate-500"
                   )}

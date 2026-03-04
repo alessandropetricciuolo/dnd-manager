@@ -101,9 +101,9 @@ export async function MapGallery({ campaignId }: MapGalleryProps) {
       ? "Nessuna mappa ancora. Carica la prima mappa per iniziare."
       : "Nessuna conoscenza acquisita ancora. Gioca per scoprire il mondo.";
     return (
-      <div className="rounded-xl border border-emerald-700/40 bg-slate-950/60 px-6 py-10 text-center">
-        <MapIcon className="mx-auto h-12 w-12 text-slate-500" />
-        <p className="mt-3 text-slate-400">{emptyMessage}</p>
+      <div className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 px-6 py-10 text-center">
+        <MapIcon className="mx-auto h-12 w-12 text-barber-paper/50" />
+        <p className="mt-3 text-barber-paper/70">{emptyMessage}</p>
       </div>
     );
   }
@@ -128,8 +128,8 @@ export async function MapGallery({ campaignId }: MapGalleryProps) {
         if (!list?.length) return null;
         return (
           <section key={type}>
-            <h3 className="mb-3 flex items-center gap-2 border-b border-emerald-700/40 pb-2 text-base font-semibold text-slate-50">
-              <Icon className="h-4 w-4 text-emerald-400" />
+            <h3 className="mb-3 flex items-center gap-2 border-b border-barber-gold/30 pb-2 text-base font-semibold text-barber-paper">
+              <Icon className="h-4 w-4 text-barber-gold" />
               {label}
             </h3>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

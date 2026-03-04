@@ -199,57 +199,57 @@ export default async function AdminUserDossierPage({ params }: PageProps) {
   const presentBySession = new Map(presentCounts.map((p) => [p.sessionId, p.presentCount]));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-900 px-4 py-10">
+    <div className="min-h-screen bg-barber-dark px-4 py-10">
       <div className="mx-auto max-w-5xl space-y-6">
         <header className="flex flex-wrap items-center gap-4">
           <Link href="/admin">
-            <Button variant="ghost" size="sm" className="text-slate-300 hover:text-slate-50">
+            <Button variant="ghost" size="sm" className="text-barber-paper/80 hover:text-barber-paper">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Admin Panel
             </Button>
           </Link>
-          <h1 className="flex items-center gap-2 text-xl font-semibold text-slate-50 sm:text-2xl">
-            <Shield className="h-6 w-6 text-emerald-400" />
+          <h1 className="flex items-center gap-2 text-xl font-semibold text-barber-paper sm:text-2xl">
+            <Shield className="h-6 w-6 text-barber-gold" />
             Dossier utente
           </h1>
         </header>
 
-        <Card className="border-emerald-700/50 bg-slate-950/70">
+        <Card className="border-barber-gold/40 bg-barber-dark/90">
           <CardHeader>
-            <CardTitle className="text-slate-50">Dati anagrafici</CardTitle>
-            <CardDescription className="text-slate-400">
+            <CardTitle className="text-barber-paper">Dati anagrafici</CardTitle>
+            <CardDescription className="text-barber-paper/70">
               Profilo e informazioni di contatto
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-2">
             <div>
-              <p className="text-xs font-medium text-slate-500">Nome</p>
-              <p className="text-slate-100">{profile.first_name ?? "—"}</p>
+              <p className="text-xs font-medium text-barber-paper/60">Nome</p>
+              <p className="text-barber-paper">{profile.first_name ?? "—"}</p>
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-500">Cognome</p>
-              <p className="text-slate-100">{profile.last_name ?? "—"}</p>
+              <p className="text-xs font-medium text-barber-paper/60">Cognome</p>
+              <p className="text-barber-paper">{profile.last_name ?? "—"}</p>
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-500">Ruolo</p>
-              <p className="text-slate-100 capitalize">{profile.role}</p>
+              <p className="text-xs font-medium text-barber-paper/60">Ruolo</p>
+              <p className="text-barber-paper capitalize">{profile.role}</p>
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-500">Email</p>
-              <p className="text-slate-100">{email}</p>
+              <p className="text-xs font-medium text-barber-paper/60">Email</p>
+              <p className="text-barber-paper">{email}</p>
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-500">Telefono</p>
-              <p className="text-slate-100">{profile.phone ?? "—"}</p>
+              <p className="text-xs font-medium text-barber-paper/60">Telefono</p>
+              <p className="text-barber-paper">{profile.phone ?? "—"}</p>
             </div>
           </CardContent>
         </Card>
 
         <Tabs defaultValue="giocatore" className="w-full">
-          <TabsList className="mb-6 w-full justify-start rounded-xl border border-emerald-700/50 bg-slate-950/80 p-1">
+          <TabsList className="mb-6 w-full justify-start rounded-xl border border-barber-gold/40 bg-barber-dark/90 p-1">
             <TabsTrigger
               value="giocatore"
-              className="data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300"
+              className="data-[state=active]:bg-barber-gold/20 data-[state=active]:text-barber-gold"
             >
               <Gamepad2 className="mr-2 h-4 w-4" />
               Giocatore
@@ -257,7 +257,7 @@ export default async function AdminUserDossierPage({ params }: PageProps) {
             {isGmOrAdmin && (
               <TabsTrigger
                 value="master"
-                className="data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300"
+                className="data-[state=active]:bg-barber-gold/20 data-[state=active]:text-barber-gold"
               >
                 <Users className="mr-2 h-4 w-4" />
                 Master
@@ -267,19 +267,19 @@ export default async function AdminUserDossierPage({ params }: PageProps) {
 
           <TabsContent value="giocatore" className="mt-0 space-y-6">
             <div className="grid gap-4 sm:grid-cols-3">
-              <Card className="border-emerald-700/50 bg-slate-950/70">
+              <Card className="border-barber-gold/40 bg-barber-dark/90">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-slate-400">
+                  <CardTitle className="text-sm font-medium text-barber-paper/70">
                     Sessioni giocate
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-semibold text-emerald-400">{sessioniGiocate}</p>
+                  <p className="text-2xl font-semibold text-barber-gold">{sessioniGiocate}</p>
                 </CardContent>
               </Card>
-              <Card className="border-emerald-700/50 bg-slate-950/70">
+              <Card className="border-barber-gold/40 bg-barber-dark/90">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-slate-400">Assenze</CardTitle>
+                  <CardTitle className="text-sm font-medium text-barber-paper/70">Assenze</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-2xl font-semibold text-red-400">{assenze}</p>

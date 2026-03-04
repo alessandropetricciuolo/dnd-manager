@@ -107,9 +107,9 @@ export default async function CampaignPage({ params }: PageProps) {
   const campaignTypeLabel = campaign.type ? campaignTypeLabels[campaign.type] ?? campaign.type : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-900">
+    <div className="min-h-screen bg-barber-dark">
       <div className="relative">
-        <header className="relative h-48 overflow-hidden bg-slate-950 sm:h-56 md:h-64">
+        <header className="relative h-48 overflow-hidden bg-barber-dark sm:h-56 md:h-64">
           <Image
             src={campaign.image_url ?? PLACEHOLDER_IMAGE}
             alt=""
@@ -119,11 +119,11 @@ export default async function CampaignPage({ params }: PageProps) {
             sizes="100vw"
             unoptimized={!!campaign.image_url}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-barber-dark via-barber-dark/80 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
             <div className="mb-3 flex flex-wrap items-center gap-2">
-              <Link href="/dashboard" className="inline-flex text-slate-300 hover:text-slate-50">
-                <Button variant="ghost" size="sm" className="text-slate-300">
+              <Link href="/dashboard" className="inline-flex text-barber-paper/80 hover:text-barber-paper">
+                <Button variant="ghost" size="sm" className="text-barber-paper/80">
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Dashboard
                 </Button>
@@ -151,7 +151,7 @@ export default async function CampaignPage({ params }: PageProps) {
               {campaign.name}
             </h1>
             {campaign.description && (
-              <p className="mt-1 max-w-2xl text-sm text-slate-200 drop-shadow md:text-base">
+              <p className="mt-1 max-w-2xl text-sm text-barber-paper/90 drop-shadow md:text-base">
                 {campaign.description}
               </p>
             )}
@@ -174,7 +174,7 @@ export default async function CampaignPage({ params }: PageProps) {
           sessioniContent={
             <>
               <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-                <h2 className="text-lg font-semibold text-slate-50">
+                <h2 className="text-lg font-semibold text-barber-paper">
                   Prossime sessioni
                 </h2>
                 {isGmOrAdmin && (
@@ -192,7 +192,7 @@ export default async function CampaignPage({ params }: PageProps) {
             hasPlayedCampaign ? (
               <>
                 <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-                  <h2 className="text-lg font-semibold text-slate-50">
+                  <h2 className="text-lg font-semibold text-barber-paper">
                     Wiki della campagna
                   </h2>
                   {isGmOrAdmin && (
@@ -207,7 +207,7 @@ export default async function CampaignPage({ params }: PageProps) {
             hasPlayedCampaign ? (
               <>
                 <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-                  <h2 className="text-lg font-semibold text-slate-50">
+                  <h2 className="text-lg font-semibold text-barber-paper">
                     Mappe della campagna
                   </h2>
                   {isGmOrAdmin && (

@@ -70,17 +70,17 @@ export function CampaignTabsClient({
       onValueChange={setTab}
       className="w-full"
     >
-      <TabsList className="mb-6 w-full flex-wrap justify-start gap-1 rounded-xl border border-emerald-700/50 bg-slate-950/80 p-1">
+      <TabsList className="mb-6 w-full flex-wrap justify-start gap-1 rounded-xl border border-barber-gold/40 bg-barber-dark/90 p-1">
         <TabsTrigger
           value="overview"
-          className="data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300"
+          className="data-[state=active]:bg-barber-gold/20 data-[state=active]:text-barber-gold"
         >
           <LayoutDashboard className="mr-2 h-4 w-4" />
           Dettagli
         </TabsTrigger>
         <TabsTrigger
           value="sessioni"
-          className="data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300"
+          className="data-[state=active]:bg-barber-gold/20 data-[state=active]:text-barber-gold"
         >
           <CalendarDays className="mr-2 h-4 w-4" />
           Sessioni
@@ -88,7 +88,7 @@ export function CampaignTabsClient({
         <TabsTrigger
           value="wiki"
           disabled={!hasPlayedCampaign}
-          className="data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300 disabled:opacity-60"
+          className="data-[state=active]:bg-barber-gold/20 data-[state=active]:text-barber-gold disabled:opacity-60"
           title={!hasPlayedCampaign ? "Partecipa alla prima sessione per sbloccare" : undefined}
         >
           {!hasPlayedCampaign ? (
@@ -101,7 +101,7 @@ export function CampaignTabsClient({
         <TabsTrigger
           value="mappe"
           disabled={!hasPlayedCampaign}
-          className="data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300 disabled:opacity-60"
+          className="data-[state=active]:bg-barber-gold/20 data-[state=active]:text-barber-gold disabled:opacity-60"
           title={!hasPlayedCampaign ? "Partecipa alla prima sessione per sbloccare" : undefined}
         >
           {!hasPlayedCampaign ? (
@@ -123,8 +123,8 @@ export function CampaignTabsClient({
       </TabsList>
 
       <TabsContent value="overview" className="mt-0">
-        <div className="rounded-xl border border-emerald-700/40 bg-slate-950/60 overflow-hidden">
-          <div className="relative aspect-[21/9] min-h-[200px] w-full bg-slate-900">
+        <div className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 overflow-hidden">
+          <div className="relative aspect-[21/9] min-h-[200px] w-full bg-barber-dark">
             <Image
               src={campaign.image_url ?? PLACEHOLDER_IMAGE}
               alt=""
@@ -133,26 +133,26 @@ export function CampaignTabsClient({
               sizes="(max-width: 1024px) 100vw, 1024px"
               unoptimized={!!campaign.image_url}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-barber-dark via-barber-dark/50 to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 p-6">
               {campaignTypeLabel && (
-                <span className="inline-block rounded-full border border-emerald-500/60 bg-emerald-950/70 px-3 py-1 text-xs font-medium text-emerald-300">
+                <span className="inline-block rounded-full border border-barber-gold/50 bg-barber-dark/80 px-3 py-1 text-xs font-medium text-barber-gold">
                   {campaignTypeLabel}
                 </span>
               )}
             </div>
           </div>
           <div className="p-6 md:p-8">
-            <h2 className="text-xl font-semibold text-slate-50 md:text-2xl">{campaign.name}</h2>
+            <h2 className="text-xl font-semibold text-barber-paper md:text-2xl">{campaign.name}</h2>
             {campaign.description ? (
-              <p className="mt-4 text-slate-300 leading-relaxed whitespace-pre-wrap">
+              <p className="mt-4 text-barber-paper/80 leading-relaxed whitespace-pre-wrap">
                 {campaign.description}
               </p>
             ) : (
-              <p className="mt-4 text-slate-500 italic">Nessuna descrizione.</p>
+              <p className="mt-4 text-barber-paper/50 italic">Nessuna descrizione.</p>
             )}
             {!hasPlayedCampaign && (
-              <p className="mt-6 rounded-lg border border-amber-600/40 bg-amber-950/20 px-4 py-3 text-sm text-amber-200">
+              <p className="mt-6 rounded-lg border border-barber-gold/40 bg-barber-gold/10 px-4 py-3 text-sm text-barber-gold">
                 Partecipa alla prima sessione per sbloccare Wiki e Mappe e scoprire il mondo della campagna.
               </p>
             )}

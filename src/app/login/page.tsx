@@ -81,16 +81,16 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-900 flex items-center justify-center px-4">
-      <Card className="w-full max-w-md border-emerald-700/50 bg-slate-950/70 shadow-[0_0_40px_rgba(16,185,129,0.25)] backdrop-blur">
+    <div className="min-h-screen bg-barber-dark flex items-center justify-center px-4">
+      <Card className="w-full max-w-md border-barber-gold/40 bg-barber-dark/95 shadow-[0_0_40px_rgba(251,191,36,0.15)] backdrop-blur">
         <CardHeader className="space-y-2">
-          <p className="text-xs font-medium uppercase tracking-[0.3em] text-emerald-400/70">
+          <p className="text-xs font-medium uppercase tracking-[0.3em] text-barber-gold/70">
             Barber & Dragons
           </p>
-          <CardTitle className="text-2xl font-semibold text-slate-50">
+          <CardTitle className="text-2xl font-semibold text-barber-paper">
             Portale dell&apos;Avventuriero
           </CardTitle>
-          <CardDescription className="text-slate-300">
+          <CardDescription className="text-barber-paper/80">
             {mode === "login"
               ? "Accedi per continuare la tua campagna."
               : "Crea un account per iniziare una nuova avventura."}
@@ -98,14 +98,14 @@ export default function LoginPage() {
         </CardHeader>
 
         <CardContent className="space-y-6">
-          <div className="inline-flex w-full rounded-full border border-emerald-700/60 bg-slate-900/60 p-1 text-sm">
+          <div className="inline-flex w-full rounded-full border border-barber-gold/50 bg-barber-dark p-1 text-sm">
             <button
               type="button"
               onClick={() => setMode("login")}
               className={`flex-1 rounded-full px-3 py-1.5 transition ${
                 mode === "login"
-                  ? "bg-emerald-500 text-slate-950 shadow"
-                  : "text-slate-300 hover:text-emerald-200"
+                  ? "bg-barber-red text-barber-paper shadow"
+                  : "text-barber-paper/80 hover:text-barber-gold"
               }`}
             >
               Accedi
@@ -115,8 +115,8 @@ export default function LoginPage() {
               onClick={() => setMode("signup")}
               className={`flex-1 rounded-full px-3 py-1.5 transition ${
                 mode === "signup"
-                  ? "bg-emerald-500 text-slate-950 shadow"
-                  : "text-slate-300 hover:text-emerald-200"
+                  ? "bg-barber-red text-barber-paper shadow"
+                  : "text-barber-paper/80 hover:text-barber-gold"
               }`}
             >
               Registrati
@@ -127,7 +127,7 @@ export default function LoginPage() {
             {mode === "signup" && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="first_name" className="text-slate-200">
+                  <Label htmlFor="first_name" className="text-barber-paper/90">
                     Nome
                   </Label>
                   <Input
@@ -136,13 +136,13 @@ export default function LoginPage() {
                     type="text"
                     autoComplete="given-name"
                     placeholder="Mario"
-                    className="bg-slate-900/70 border-slate-700/70 text-slate-50 placeholder:text-slate-500"
+                    className="bg-barber-dark border-barber-gold/30 text-barber-paper placeholder:text-barber-paper/50"
                     disabled={isLoading}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="last_name" className="text-slate-200">
+                  <Label htmlFor="last_name" className="text-barber-paper/90">
                     Cognome
                   </Label>
                   <Input
@@ -151,7 +151,7 @@ export default function LoginPage() {
                     type="text"
                     autoComplete="family-name"
                     placeholder="Rossi"
-                    className="bg-slate-900/70 border-slate-700/70 text-slate-50 placeholder:text-slate-500"
+                    className="bg-barber-dark border-barber-gold/30 text-barber-paper placeholder:text-barber-paper/50"
                     disabled={isLoading}
                     required
                   />
@@ -176,7 +176,7 @@ export default function LoginPage() {
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-slate-200">
+              <Label htmlFor="email" className="text-barber-paper/90">
                 Email
               </Label>
               <Input
@@ -185,14 +185,14 @@ export default function LoginPage() {
                 type="email"
                 autoComplete="email"
                 placeholder="avventuriero@esempio.com"
-                className="bg-slate-900/70 border-slate-700/70 text-slate-50 placeholder:text-slate-500"
+                className="bg-barber-dark border-barber-gold/30 text-barber-paper placeholder:text-barber-paper/50"
                 disabled={isLoading}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-slate-200">
+              <Label htmlFor="password" className="text-barber-paper/90">
                 Password
               </Label>
               <Input
@@ -202,7 +202,7 @@ export default function LoginPage() {
                 autoComplete={
                   mode === "login" ? "current-password" : "new-password"
                 }
-                className="bg-slate-900/70 border-slate-700/70 text-slate-50 placeholder:text-slate-500"
+                className="bg-barber-dark border-barber-gold/30 text-barber-paper placeholder:text-barber-paper/50"
                 disabled={isLoading}
                 required
               />
@@ -210,7 +210,7 @@ export default function LoginPage() {
 
             <Button
               type="submit"
-              className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold"
+              className="w-full bg-barber-red hover:bg-barber-red/90 text-barber-paper font-semibold"
               disabled={isLoading}
             >
               {isLoading
@@ -222,10 +222,10 @@ export default function LoginPage() {
           </form>
         </CardContent>
 
-        <CardFooter className="flex flex-col items-start gap-1 text-xs text-slate-400">
+        <CardFooter className="flex flex-col items-start gap-1 text-xs text-barber-paper/60">
           <p>
             Con l&apos;accesso creiamo automaticamente un profilo{" "}
-            <span className="font-semibold text-emerald-300">player</span> per
+            <span className="font-semibold text-barber-gold">player</span> per
             te.
           </p>
           <p>In futuro potrai diventare Game Master dalle impostazioni.</p>

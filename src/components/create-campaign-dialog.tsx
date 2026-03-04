@@ -69,13 +69,13 @@ export function CreateCampaignDialog() {
       <DialogTrigger asChild>
         <Button
           type="button"
-          className="bg-emerald-500 text-slate-950 hover:bg-emerald-400"
+          className="bg-barber-red text-barber-paper hover:bg-barber-red/90"
         >
           <Plus className="h-4 w-4" />
           Nuova campagna
         </Button>
       </DialogTrigger>
-      <DialogContent className="border-emerald-700/50 bg-slate-950 text-slate-50">
+      <DialogContent className="border-barber-gold/40 bg-barber-dark text-barber-paper">
         <DialogHeader>
           <DialogTitle>Nuova campagna</DialogTitle>
           <DialogDescription className="text-slate-400">
@@ -90,7 +90,7 @@ export function CreateCampaignDialog() {
               id="campaign-title"
               name="title"
               placeholder="Es. La taverna del drago"
-              className="bg-slate-900/70 border-slate-700 text-slate-50"
+              className="bg-barber-dark border-barber-gold/30 text-barber-paper"
               required
               disabled={isLoading}
             />
@@ -104,13 +104,13 @@ export function CreateCampaignDialog() {
             >
               <SelectTrigger
                 id="campaign-type"
-                className="bg-slate-900/70 border-slate-700 text-slate-50"
+                className="bg-barber-dark border-barber-gold/30 text-barber-paper"
               >
                 <SelectValue placeholder="Seleziona tipo" />
               </SelectTrigger>
-              <SelectContent className="border-slate-700 bg-slate-900">
+              <SelectContent className="border-barber-gold/30 bg-barber-dark">
                 {CAMPAIGN_TYPES.map((t) => (
-                  <SelectItem key={t.value} value={t.value} className="text-slate-50">
+                  <SelectItem key={t.value} value={t.value} className="text-barber-paper">
                     {t.label}
                   </SelectItem>
                 ))}
@@ -123,7 +123,7 @@ export function CreateCampaignDialog() {
               id="campaign-description"
               name="description"
               placeholder="Breve descrizione della campagna..."
-              className="min-h-[100px] bg-slate-900/70 border-slate-700 text-slate-50 resize-none"
+              className="min-h-[100px] bg-barber-dark border-barber-gold/30 text-barber-paper resize-none"
               disabled={isLoading}
             />
           </div>
@@ -134,7 +134,7 @@ export function CreateCampaignDialog() {
               name="is_public"
               value="on"
               defaultChecked
-              className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-emerald-500"
+              className="h-4 w-4 rounded border-barber-gold/40 bg-barber-dark text-barber-gold"
             />
             <Label htmlFor="campaign-public" className="text-slate-300 font-normal cursor-pointer">
               Campagna pubblica (visibile a tutti i giocatori e sessioni in &quot;Sessioni disponibili&quot;)
@@ -153,7 +153,7 @@ export function CreateCampaignDialog() {
             <Button
               type="submit"
               disabled={isLoading}
-              className="bg-emerald-500 text-slate-950 hover:bg-emerald-400"
+              className="bg-barber-red text-barber-paper hover:bg-barber-red/90"
             >
               {isLoading ? "Creazione..." : "Crea campagna"}
             </Button>
