@@ -8,9 +8,16 @@ type AuthResult = {
   error?: string;
 };
 
+const ENV_ERROR =
+  "Configurazione mancante sul server. In Vercel: Settings → Environment Variables → aggiungi NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY.";
+
 export async function login(email: string, password: string): Promise<AuthResult> {
   if (!email || !password) {
     return { error: "Email e password sono obbligatorie." };
+  }
+
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    return { error: ENV_ERROR };
   }
 
   try {
@@ -36,6 +43,10 @@ export async function login(email: string, password: string): Promise<AuthResult
 export async function signup(email: string, password: string): Promise<AuthResult> {
   if (!email || !password) {
     return { error: "Email e password sono obbligatorie." };
+  }
+
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    return { error: ENV_ERROR };
   }
 
   try {
