@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect, useCallback, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { FileText, Plus, Pencil, Trash2, Loader2 } from "lucide-react";
@@ -18,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   listGmNotes,
   createGmNote,
@@ -42,17 +42,17 @@ export function GmNotes({ campaignId }: GmNotesProps) {
   const [formLoading, setFormLoading] = useState(false);
   const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null);
 
-  async function loadNotes() {
+  const loadNotes = useCallback(async () => {
     setLoading(true);
     const result = await listGmNotes(campaignId);
     setLoading(false);
     if (result.success && result.data) setNotes(result.data);
     else if (!result.success) toast.error(result.error);
-  }
+  }, [campaignId]);
 
   useEffect(() => {
     loadNotes();
-  }, [campaignId]);
+  }, [loadNotes]);
 
   function openCreate() {
     setEditingNote(null);

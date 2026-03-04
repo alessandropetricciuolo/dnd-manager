@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, type FormEvent } from "react";
+import { useState, useEffect, useCallback, useRef, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { FileIcon, Upload, Trash2, Loader2, Download } from "lucide-react";
@@ -26,17 +26,17 @@ export function GmFiles({ campaignId }: GmFilesProps) {
   const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  async function loadFiles() {
+  const loadFiles = useCallback(async () => {
     setLoading(true);
     const result = await listGmAttachments(campaignId);
     setLoading(false);
     if (result.success && result.data) setFiles(result.data);
     else if (!result.success) toast.error(result.error);
-  }
+  }, [campaignId]);
 
   useEffect(() => {
     loadFiles();
-  }, [campaignId]);
+  }, [loadFiles]);
 
   async function handleUpload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
