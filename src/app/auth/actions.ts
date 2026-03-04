@@ -40,9 +40,18 @@ export async function login(email: string, password: string): Promise<AuthResult
   }
 }
 
-export async function signup(email: string, password: string): Promise<AuthResult> {
+export async function signup(
+  email: string,
+  password: string,
+  firstName: string,
+  lastName: string,
+  phone: string
+): Promise<AuthResult> {
   if (!email || !password) {
     return { error: "Email e password sono obbligatorie." };
+  }
+  if (!firstName?.trim() || !lastName?.trim() || !phone?.trim()) {
+    return { error: "Nome, Cognome e Cellulare sono obbligatori." };
   }
 
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
@@ -51,16 +60,35 @@ export async function signup(email: string, password: string): Promise<AuthResul
 
   try {
     const supabase = await createSupabaseServerClient();
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          phone: phone.trim(),
+          role: "player",
+        },
+      },
     });
 
     if (error) {
       return { error: error.message };
     }
 
-    // Il trigger handle_new_user in Supabase crea automaticamente il record in public.profiles con ruolo 'player'
+    // Scrivi nome, cognome e telefono in profiles (il trigger crea il record con ruolo 'player')
+    if (data.user?.id) {
+      await supabase
+        .from("profiles")
+        .update({
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          phone: phone.trim(),
+        })
+        .eq("id", data.user.id);
+    }
+
     revalidatePath("/login");
     return {};
   } catch (e) {

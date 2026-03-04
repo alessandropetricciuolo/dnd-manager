@@ -38,25 +38,41 @@ export default function LoginPage() {
       return;
     }
 
+    if (mode === "signup") {
+      const firstName = (formData.get("first_name") as string | null)?.trim() ?? "";
+      const lastName = (formData.get("last_name") as string | null)?.trim() ?? "";
+      const phone = (formData.get("phone") as string | null)?.trim() ?? "";
+      if (!firstName || !lastName || !phone) {
+        toast.error("Inserisci Nome, Cognome e Cellulare.");
+        return;
+      }
+    }
+
     setIsLoading(true);
     try {
-      const action = mode === "login" ? login : signup;
-      const result = await action(email, password);
+      if (mode === "login") {
+        const result = await login(email, password);
+        if (result?.error) {
+          toast.error(result.error);
+          return;
+        }
+        toast.success("Accesso effettuato. Ben tornato, avventuriero!");
+        router.push("/dashboard");
+        return;
+      }
+      const firstName = (formData.get("first_name") as string | null)?.trim() ?? "";
+      const lastName = (formData.get("last_name") as string | null)?.trim() ?? "";
+      const phone = (formData.get("phone") as string | null)?.trim() ?? "";
+      const result = await signup(email, password, firstName, lastName, phone);
 
       if (result?.error) {
         toast.error(result.error);
         return;
       }
-
-      if (mode === "login") {
-        toast.success("Accesso effettuato. Ben tornato, avventuriero!");
-        router.push("/dashboard");
-      } else {
-        toast.success(
-          "Registrazione completata. Il tuo profilo 'player' è stato creato."
-        );
-        setMode("login");
-      }
+      toast.success(
+        "Registrazione completata. Il tuo profilo 'player' è stato creato."
+      );
+      setMode("login");
     } catch {
       toast.error("Qualcosa è andato storto. Riprova più tardi.");
     } finally {
@@ -108,6 +124,57 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {mode === "signup" && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="first_name" className="text-slate-200">
+                    Nome
+                  </Label>
+                  <Input
+                    id="first_name"
+                    name="first_name"
+                    type="text"
+                    autoComplete="given-name"
+                    placeholder="Mario"
+                    className="bg-slate-900/70 border-slate-700/70 text-slate-50 placeholder:text-slate-500"
+                    disabled={isLoading}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="last_name" className="text-slate-200">
+                    Cognome
+                  </Label>
+                  <Input
+                    id="last_name"
+                    name="last_name"
+                    type="text"
+                    autoComplete="family-name"
+                    placeholder="Rossi"
+                    className="bg-slate-900/70 border-slate-700/70 text-slate-50 placeholder:text-slate-500"
+                    disabled={isLoading}
+                    required
+                  />
+                </div>
+              </div>
+            )}
+            {mode === "signup" && (
+              <div className="space-y-2">
+                <Label htmlFor="phone" className="text-slate-200">
+                  Cellulare
+                </Label>
+                <Input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  autoComplete="tel"
+                  placeholder="+39 333 1234567"
+                  className="bg-slate-900/70 border-slate-700/70 text-slate-50 placeholder:text-slate-500"
+                  disabled={isLoading}
+                  required
+                />
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="email" className="text-slate-200">
                 Email
