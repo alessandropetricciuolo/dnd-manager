@@ -7,7 +7,7 @@ export async function createSupabaseServerClient() {
 
   if (!url || !anonKey) {
     throw new Error(
-      "Variabili mancanti: aggiungi NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local (nella root del progetto) e riavvia il dev server con: npm run dev"
+      "Variabili mancanti: imposta NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local (locale) oppure in Vercel → Project Settings → Environment Variables (deploy)."
     );
   }
 
