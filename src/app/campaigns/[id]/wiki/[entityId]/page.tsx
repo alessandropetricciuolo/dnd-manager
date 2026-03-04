@@ -50,7 +50,7 @@ export default async function WikiEntityPage({ params }: PageProps) {
   const maxWidth = isLore ? "max-w-4xl" : "max-w-5xl";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-900 px-4 py-8">
+    <div className="min-h-screen bg-barber-dark px-4 py-8">
       <div className={`mx-auto ${maxWidth}`}>
         <div className="mb-6 flex flex-wrap items-center gap-2">
           <Link
@@ -59,7 +59,7 @@ export default async function WikiEntityPage({ params }: PageProps) {
             <Button
               variant="ghost"
               size="sm"
-              className="text-slate-300 hover:text-slate-50"
+              className="text-barber-paper/80 hover:text-barber-paper"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Indietro alla campagna
@@ -73,9 +73,9 @@ export default async function WikiEntityPage({ params }: PageProps) {
             />
           )}
         </div>
-        <article className="rounded-xl border border-emerald-700/50 bg-slate-950/70 p-6 shadow-[0_0_40px_rgba(16,185,129,0.15)]">
+        <article className="rounded-xl border border-barber-gold/40 bg-barber-dark/90 p-6 shadow-[0_0_40px_rgba(251,191,36,0.1)]">
           {entity.type !== "lore" && (
-            <h1 className="mb-6 text-3xl font-bold tracking-tight text-slate-50 md:text-4xl">
+            <h1 className="mb-6 text-3xl font-bold tracking-tight text-barber-paper md:text-4xl">
               {entity.name}
             </h1>
           )}

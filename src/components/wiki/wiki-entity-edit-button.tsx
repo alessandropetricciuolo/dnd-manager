@@ -25,7 +25,7 @@ export function WikiEntityEditButton({
         type="button"
         variant="outline"
         size="sm"
-        className="border-emerald-600/60 text-emerald-200 hover:bg-emerald-500/10"
+        className="border-barber-gold/50 text-barber-gold hover:bg-barber-gold/10"
         onClick={() => setOpen(true)}
       >
         <Pencil className="mr-2 h-4 w-4" />

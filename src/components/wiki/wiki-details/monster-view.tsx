@@ -26,79 +26,79 @@ export function MonsterView({ name, body, attributes, isGmOrAdmin = false }: Mon
       {hasStats || attacks ? (
         <GmOnlySection isGmOrAdmin={isGmOrAdmin}>
           <div
-            className="rounded-xl border-2 border-amber-800/80 bg-[#f4e4c1] px-6 py-5 text-slate-900 shadow-lg"
+            className="rounded-xl border-2 border-barber-gold/50 bg-barber-dark px-6 py-5 text-barber-paper shadow-lg"
             style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
           >
-            <h2 className="border-b-2 border-slate-800 pb-2 text-xl font-bold tracking-wide">
+            <h2 className="border-b-2 border-barber-gold/50 pb-2 text-xl font-bold tracking-wide text-barber-paper">
               {name}
             </h2>
             <div className="mt-4 grid gap-4 sm:grid-cols-3">
               {stats.hp && (
                 <div>
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-barber-paper/70">
                     Punti vita
                   </span>
-                  <p className="text-lg font-bold">{stats.hp}</p>
+                  <p className="text-lg font-bold text-barber-paper">{stats.hp}</p>
                 </div>
               )}
               {stats.ac && (
                 <div>
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-barber-paper/70">
                     Classe armatura
                   </span>
-                  <p className="text-lg font-bold">{stats.ac}</p>
+                  <p className="text-lg font-bold text-barber-paper">{stats.ac}</p>
                 </div>
               )}
               {stats.cr && (
                 <div>
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-barber-paper/70">
                     Grado di sfida
                   </span>
-                  <p className="text-lg font-bold">{stats.cr}</p>
+                  <p className="text-lg font-bold text-barber-paper">{stats.cr}</p>
                 </div>
               )}
             </div>
             {attacks && (
-              <div className="mt-4 border-t border-amber-900/30 pt-4">
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+              <div className="mt-4 border-t border-barber-gold/30 pt-4">
+                <span className="text-xs font-semibold uppercase tracking-wider text-barber-paper/70">
                   Attacchi e azioni speciali
                 </span>
-                <div className="mt-1 whitespace-pre-wrap text-slate-800">{attacks}</div>
+                <div className="mt-1 whitespace-pre-wrap text-barber-paper">{attacks}</div>
               </div>
             )}
             {body && (
-              <div className="prose prose-sm mt-4 max-w-none border-t border-amber-900/30 pt-4 text-slate-800">
+              <div className="prose prose-sm mt-4 max-w-none border-t border-barber-gold/30 pt-4 prose-p:text-barber-paper/90 prose-headings:text-barber-gold">
                 <ReactMarkdown>{body}</ReactMarkdown>
               </div>
             )}
           </div>
         </GmOnlySection>
       ) : (
-        <div className="rounded-xl border border-emerald-700/40 bg-slate-900/60 px-6 py-5">
-          <h2 className="border-b border-emerald-700/40 pb-2 text-xl font-bold text-slate-100">
+        <div className="rounded-xl border border-barber-gold/40 bg-barber-dark/80 px-6 py-5">
+          <h2 className="border-b border-barber-gold/40 pb-2 text-xl font-bold text-barber-paper">
             {name}
           </h2>
           {body ? (
-            <div className="prose prose-invert prose-sm mt-4 max-w-none">
+            <div className="prose prose-invert prose-sm mt-4 max-w-none prose-p:text-barber-paper/90 prose-headings:text-barber-gold">
               <ReactMarkdown>{body}</ReactMarkdown>
             </div>
           ) : (
-            <p className="mt-4 text-slate-400 italic">Nessuna descrizione.</p>
+            <p className="mt-4 text-barber-paper/60 italic">Nessuna descrizione.</p>
           )}
         </div>
       )}
 
       {loot && (
         <GmOnlySection isGmOrAdmin={isGmOrAdmin}>
-          <Card className="border-emerald-700/50 bg-slate-900/60">
+          <Card className="border-barber-gold/40 bg-barber-dark/80">
             <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-base text-emerald-300">
+              <CardTitle className="flex items-center gap-2 text-base text-barber-gold">
                 <Coins className="h-4 w-4" />
                 Loot
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="whitespace-pre-wrap text-slate-300">{loot}</div>
+              <div className="whitespace-pre-wrap text-barber-paper/80">{loot}</div>
             </CardContent>
           </Card>
         </GmOnlySection>

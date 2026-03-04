@@ -13,13 +13,13 @@ export function GmOnlySection({ isGmOrAdmin, children, className }: GmOnlySectio
   return (
     <div
       className={cn(
-        "relative rounded-lg border-2 border-amber-600/70 bg-amber-950/20 p-1",
+        "relative rounded-lg border-2 border-barber-gold/50 bg-barber-dark/80 p-1",
         className
       )}
     >
       <Badge
         variant="outline"
-        className="absolute -top-2.5 left-3 border-amber-500/80 bg-amber-950/90 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-400"
+        className="absolute -top-2.5 left-3 border-barber-gold/60 bg-barber-dark px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-barber-gold"
       >
         GM ONLY
       </Badge>

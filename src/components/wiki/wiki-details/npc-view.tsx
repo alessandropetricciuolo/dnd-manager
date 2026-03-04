@@ -23,7 +23,7 @@ export function NpcView({ name, body, imageUrl, attributes, isGmOrAdmin = false 
     <div className="space-y-8">
       <div className="grid gap-8 md:grid-cols-[280px_1fr]">
         <div className="space-y-4">
-          <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl border border-emerald-700/40 bg-slate-900">
+          <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl border border-barber-gold/30 bg-barber-dark">
             <Image
               src={imageUrl ?? PLACEHOLDER}
               alt={name}
@@ -35,36 +35,36 @@ export function NpcView({ name, body, imageUrl, attributes, isGmOrAdmin = false 
           </div>
         </div>
         <div>
-          <h2 className="mb-4 text-lg font-semibold text-emerald-200">Storia</h2>
-          {body ? <EntityContent content={body} /> : <p className="text-slate-400 italic">Nessuna storia.</p>}
+          <h2 className="mb-4 text-lg font-semibold text-barber-gold">Storia</h2>
+          {body ? <EntityContent content={body} /> : <p className="text-barber-paper/60 italic">Nessuna storia.</p>}
         </div>
       </div>
       {relationships && (
         <GmOnlySection isGmOrAdmin={isGmOrAdmin}>
-          <Card className="border-amber-700/50 bg-slate-900/60">
+          <Card className="border-barber-gold/40 bg-barber-dark/80">
             <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-base text-amber-200">
+              <CardTitle className="flex items-center gap-2 text-base text-barber-gold">
                 <Users className="h-4 w-4" />
                 Rapporti interpersonali
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="whitespace-pre-wrap text-slate-300">{relationships}</div>
+              <div className="whitespace-pre-wrap text-barber-paper/80">{relationships}</div>
             </CardContent>
           </Card>
         </GmOnlySection>
       )}
       {loot && (
         <GmOnlySection isGmOrAdmin={isGmOrAdmin}>
-          <Card className="border-emerald-700/50 bg-slate-900/60">
+          <Card className="border-barber-gold/40 bg-barber-dark/80">
             <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-base text-emerald-300">
+              <CardTitle className="flex items-center gap-2 text-base text-barber-gold">
                 <Coins className="h-4 w-4" />
                 Loot
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="whitespace-pre-wrap text-slate-300">{loot}</div>
+              <div className="whitespace-pre-wrap text-barber-paper/80">{loot}</div>
             </CardContent>
           </Card>
         </GmOnlySection>

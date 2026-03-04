@@ -178,10 +178,10 @@ export function EditEntityDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto border-emerald-700/50 bg-slate-950 text-slate-50">
+      <DialogContent className="max-h-[90vh] overflow-y-auto border-barber-gold/40 bg-barber-dark text-barber-paper">
         <DialogHeader>
           <DialogTitle>Modifica voce wiki</DialogTitle>
-          <DialogDescription className="text-slate-400">
+          <DialogDescription className="text-barber-paper/70">
             Modifica titolo, contenuto, immagine e attributi della voce.
           </DialogDescription>
         </DialogHeader>
@@ -192,7 +192,7 @@ export function EditEntityDialog({
               id="edit-entity-title"
               name="title"
               defaultValue={entity.name}
-              className="bg-slate-900/70 border-slate-700 text-slate-50"
+              className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
               required
               disabled={isLoading}
             />
@@ -205,7 +205,7 @@ export function EditEntityDialog({
               required
               value={type}
               onChange={(e) => onTypeChange(e.target.value)}
-              className="flex h-10 w-full rounded-md border border-slate-700 bg-slate-900/70 px-3 py-2 text-sm text-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
               disabled={isLoading}
             >
               {ENTITY_TYPES.map(({ value, label }) => (
@@ -222,7 +222,7 @@ export function EditEntityDialog({
               Immagine
             </Label>
             {showCurrentImage && (
-              <div className="relative mb-2 aspect-video w-full max-w-xs overflow-hidden rounded-lg border border-slate-700 bg-slate-900">
+              <div className="relative mb-2 aspect-video w-full max-w-xs overflow-hidden rounded-lg border border-barber-gold/30 bg-barber-dark">
                 <Image
                   src={currentImageUrl}
                   alt="Attuale"
@@ -237,13 +237,13 @@ export function EditEntityDialog({
               name="image"
               type="file"
               accept="image/jpeg,image/png,image/webp,image/gif"
-              className="bg-slate-900/70 border-slate-700 text-slate-50 file:mr-2 file:rounded file:border-0 file:bg-emerald-500 file:px-3 file:py-1 file:text-slate-950"
+              className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper file:mr-2 file:rounded file:border-0 file:bg-barber-red file:px-3 file:py-1 file:text-barber-paper"
               disabled={isLoading}
               ref={fileInputRef}
               onChange={onFileChange}
             />
             {preview && (
-              <div className="relative mt-2 aspect-video w-full max-w-xs overflow-hidden rounded-lg border border-slate-700 bg-slate-900">
+              <div className="relative mt-2 aspect-video w-full max-w-xs overflow-hidden rounded-lg border border-barber-gold/30 bg-barber-dark">
                 <Image src={preview} alt="Nuova" fill className="object-contain" unoptimized />
               </div>
             )}
@@ -254,9 +254,9 @@ export function EditEntityDialog({
                   id="edit-remove-image"
                   checked={removeImage}
                   onChange={(e) => setRemoveImage(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-emerald-500"
+                  className="h-4 w-4 rounded border-barber-gold/40 bg-barber-dark text-barber-gold"
                 />
-                <Label htmlFor="edit-remove-image" className="text-slate-400">
+                <Label htmlFor="edit-remove-image" className="text-barber-paper/70">
                   Rimuovi immagine
                 </Label>
               </div>
@@ -271,7 +271,7 @@ export function EditEntityDialog({
               id="edit-entity-content"
               name="content"
               defaultValue={contentBody}
-              className="min-h-[120px] resize-y bg-slate-900/70 border-slate-700 text-slate-50"
+              className="min-h-[120px] resize-y bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
               disabled={isLoading}
             />
           </div>
@@ -283,7 +283,7 @@ export function EditEntityDialog({
                 <Textarea
                   value={getAttr("relationships")}
                   onChange={(e) => setAttr("relationships", e.target.value)}
-                  className="min-h-[80px] resize-y bg-slate-900/70 border-slate-700 text-slate-50"
+                  className="min-h-[80px] resize-y bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
                   disabled={isLoading}
                 />
               </div>
@@ -292,7 +292,7 @@ export function EditEntityDialog({
                 <Textarea
                   value={getAttr("loot")}
                   onChange={(e) => setAttr("loot", e.target.value)}
-                  className="min-h-[60px] resize-y bg-slate-900/70 border-slate-700 text-slate-50"
+                  className="min-h-[60px] resize-y bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
                   disabled={isLoading}
                 />
               </div>
@@ -305,7 +305,7 @@ export function EditEntityDialog({
               <Textarea
                 value={getAttr("loot")}
                 onChange={(e) => setAttr("loot", e.target.value)}
-                className="min-h-[80px] resize-y bg-slate-900/70 border-slate-700 text-slate-50"
+                className="min-h-[80px] resize-y bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
                 disabled={isLoading}
               />
             </div>
@@ -319,7 +319,7 @@ export function EditEntityDialog({
                   <Input
                     value={getAttr("combat_stats.hp")}
                     onChange={(e) => setAttr("combat_stats.hp", e.target.value)}
-                    className="bg-slate-900/70 border-slate-700 text-slate-50"
+                    className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
                     disabled={isLoading}
                   />
                 </div>
@@ -328,7 +328,7 @@ export function EditEntityDialog({
                   <Input
                     value={getAttr("combat_stats.ac")}
                     onChange={(e) => setAttr("combat_stats.ac", e.target.value)}
-                    className="bg-slate-900/70 border-slate-700 text-slate-50"
+                    className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
                     disabled={isLoading}
                   />
                 </div>
@@ -337,7 +337,7 @@ export function EditEntityDialog({
                   <Input
                     value={getAttr("combat_stats.cr")}
                     onChange={(e) => setAttr("combat_stats.cr", e.target.value)}
-                    className="bg-slate-900/70 border-slate-700 text-slate-50"
+                    className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
                     disabled={isLoading}
                   />
                 </div>
@@ -347,7 +347,7 @@ export function EditEntityDialog({
                 <Textarea
                   value={getAttr("combat_stats.attacks")}
                   onChange={(e) => setAttr("combat_stats.attacks", e.target.value)}
-                  className="min-h-[80px] resize-y bg-slate-900/70 border-slate-700 text-slate-50"
+                  className="min-h-[80px] resize-y bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
                   disabled={isLoading}
                 />
               </div>
@@ -356,7 +356,7 @@ export function EditEntityDialog({
                 <Textarea
                   value={getAttr("loot")}
                   onChange={(e) => setAttr("loot", e.target.value)}
-                  className="min-h-[60px] resize-y bg-slate-900/70 border-slate-700 text-slate-50"
+                  className="min-h-[60px] resize-y bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
                   disabled={isLoading}
                 />
               </div>
@@ -372,7 +372,7 @@ export function EditEntityDialog({
                   min={1}
                   value={sortOrder}
                   onChange={(e) => setSortOrder(e.target.value)}
-                  className="bg-slate-900/70 border-slate-700 text-slate-50"
+                  className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
                   disabled={isLoading}
                 />
               </div>
@@ -381,7 +381,7 @@ export function EditEntityDialog({
                 <Textarea
                   value={getAttr("summary")}
                   onChange={(e) => setAttr("summary", e.target.value)}
-                  className="min-h-[80px] resize-y bg-slate-900/70 border-slate-700 text-slate-50"
+                  className="min-h-[80px] resize-y bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
                   disabled={isLoading}
                 />
               </div>
@@ -395,10 +395,10 @@ export function EditEntityDialog({
               name="is_secret"
               value="on"
               defaultChecked={entity.is_secret}
-              className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500"
+              className="h-4 w-4 rounded border-barber-gold/40 bg-barber-dark text-barber-gold focus:ring-barber-gold"
               disabled={isLoading}
             />
-            <Label htmlFor="edit-entity-secret" className="cursor-pointer text-slate-300">
+            <Label htmlFor="edit-entity-secret" className="cursor-pointer text-barber-paper/80">
               Segreto
             </Label>
           </div>
@@ -409,14 +409,14 @@ export function EditEntityDialog({
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={isLoading}
-              className="border-slate-600 text-slate-300"
+              className="border-barber-gold/40 text-barber-paper/80"
             >
               Annulla
             </Button>
             <Button
               type="submit"
               disabled={isLoading}
-              className="bg-emerald-500 text-slate-950 hover:bg-emerald-400"
+              className="bg-barber-red text-barber-paper hover:bg-barber-red/90"
             >
               {isLoading ? "Salvataggio..." : "Salva"}
             </Button>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -192,9 +193,19 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-barber-paper/90">
-                Password
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password" className="text-barber-paper/90">
+                  Password
+                </Label>
+                {mode === "login" && (
+                  <Link
+                    href="/forgot-password"
+                    className="text-xs text-barber-gold hover:text-barber-gold/80 transition-colors"
+                  >
+                    Password dimenticata?
+                  </Link>
+                )}
+              </div>
               <Input
                 id="password"
                 name="password"

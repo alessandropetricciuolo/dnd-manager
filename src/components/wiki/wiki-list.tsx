@@ -28,7 +28,7 @@ export async function WikiList({ campaignId }: WikiListProps) {
 
   if (!user) {
     return (
-      <p className="text-sm text-slate-400">Accedi per vedere il wiki.</p>
+      <p className="text-sm text-barber-paper/70">Accedi per vedere il wiki.</p>
     );
   }
 

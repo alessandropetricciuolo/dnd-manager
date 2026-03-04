@@ -21,20 +21,20 @@ export function LoreView({ name, body, attributes, sortOrder }: LoreViewProps) {
   return (
     <div className="mx-auto max-w-[65ch] font-serif">
       {isChapter && sortOrder != null && sortOrder > 0 && (
-        <p className="mb-2 text-sm font-medium uppercase tracking-widest text-emerald-400/90">
+        <p className="mb-2 text-sm font-medium uppercase tracking-widest text-barber-gold">
           Capitolo {sortOrder}
         </p>
       )}
-      <h1 className="mb-8 text-3xl font-bold leading-tight text-slate-50 md:text-4xl">
+      <h1 className="mb-8 text-3xl font-bold leading-tight text-barber-paper md:text-4xl">
         {name}
       </h1>
 
       {summary && (
-        <div className="mb-8 rounded-lg border border-emerald-700/40 bg-slate-900/50">
+        <div className="mb-8 rounded-lg border border-barber-gold/40 bg-barber-dark/80">
           <button
             type="button"
             onClick={() => setSummaryOpen((o) => !o)}
-            className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left text-sm font-medium text-emerald-200"
+            className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left text-sm font-medium text-barber-gold"
           >
             Riassunto
             {summaryOpen ? (
@@ -44,18 +44,18 @@ export function LoreView({ name, body, attributes, sortOrder }: LoreViewProps) {
             )}
           </button>
           {summaryOpen && (
-            <div className="border-t border-emerald-700/30 px-4 py-3 text-slate-300">
+            <div className="border-t border-barber-gold/30 px-4 py-3 text-barber-paper/80">
               <p className="whitespace-pre-wrap text-sm leading-relaxed">{summary}</p>
             </div>
           )}
         </div>
       )}
 
-      <div className="prose prose-invert prose-slate max-w-none text-slate-200 prose-headings:text-emerald-100 prose-p:leading-relaxed prose-p:first-letter:float-left prose-p:first-letter:mr-2 prose-p:first-letter:text-4xl prose-p:first-letter:font-serif">
+      <div className="prose prose-invert max-w-none text-barber-paper/90 prose-headings:text-barber-gold prose-p:leading-relaxed prose-p:first-letter:float-left prose-p:first-letter:mr-2 prose-p:first-letter:text-4xl prose-p:first-letter:font-serif">
         {body ? (
           <EntityContent content={body} />
         ) : (
-          <p className="text-slate-400 italic">Nessun testo.</p>
+          <p className="text-barber-paper/60 italic">Nessun testo.</p>
         )}
       </div>
     </div>
