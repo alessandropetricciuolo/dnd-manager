@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,15 @@ type PageProps = {
 
 export default async function CampaignPage({ params }: PageProps) {
   const { id } = await params;
-  const supabase = await createSupabaseServerClient();
+
+  let supabase;
+  try {
+    supabase = await createSupabaseServerClient();
+  } catch (e) {
+    console.error("[campaigns/[id]] createSupabaseServerClient", e);
+    redirect("/dashboard");
+  }
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -56,29 +64,37 @@ export default async function CampaignPage({ params }: PageProps) {
   /** Lista GM/Admin per la select DM nel form Nuova Sessione (solo se isGmOrAdmin). */
   let gmAdminUsers: { id: string; label: string }[] = [];
   if (isGmOrAdmin) {
-    const admin = createSupabaseAdminClient();
-    const { data: gmAdminsRaw } = await admin
-      .from("profiles")
-      .select("id, first_name, last_name, display_name")
-      .in("role", ["gm", "admin"])
-      .order("first_name");
-    type GmProfileRow = { id: string; first_name: string | null; last_name: string | null; display_name: string | null };
-    const gmAdmins = (gmAdminsRaw ?? []) as GmProfileRow[];
-    gmAdminUsers = gmAdmins.map((p) => {
-      const full = [p.first_name, p.last_name].filter(Boolean).join(" ").trim();
-      const label = full || p.display_name?.trim() || `Utente ${p.id.slice(0, 8)}`;
-      return { id: p.id, label };
-    });
+    try {
+      const admin = createSupabaseAdminClient();
+      const { data: gmAdminsRaw } = await admin
+        .from("profiles")
+        .select("id, first_name, last_name, display_name")
+        .in("role", ["gm", "admin"])
+        .order("first_name");
+      type GmProfileRow = { id: string; first_name: string | null; last_name: string | null; display_name: string | null };
+      const gmAdmins = (gmAdminsRaw ?? []) as GmProfileRow[];
+      gmAdminUsers = gmAdmins.map((p) => {
+        const full = [p.first_name, p.last_name].filter(Boolean).join(" ").trim();
+        const label = full || p.display_name?.trim() || `Utente ${p.id.slice(0, 8)}`;
+        return { id: p.id, label };
+      });
+    } catch (e) {
+      console.error("[campaigns/[id]] admin client o lista GM", e);
+    }
   }
 
   /** Accesso ai contenuti (Wiki/Mappe): GM/Admin sempre; Player solo se ha giocato (RPC). */
   let hasPlayedCampaign = isGmOrAdmin;
   if (!hasPlayedCampaign) {
-    const { data: played } = await supabase.rpc("has_played_campaign", {
-      p_user_id: user.id,
-      p_campaign_id: id,
-    });
-    hasPlayedCampaign = played === true;
+    try {
+      const { data: played } = await supabase.rpc("has_played_campaign", {
+        p_user_id: user.id,
+        p_campaign_id: id,
+      });
+      hasPlayedCampaign = played === true;
+    } catch (e) {
+      console.error("[campaigns/[id]] has_played_campaign RPC", e);
+    }
   }
 
   const campaignTypeLabels: Record<string, string> = {
