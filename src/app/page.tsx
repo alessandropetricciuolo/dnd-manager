@@ -13,10 +13,10 @@ export default function HomePage() {
           <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
             <div className="text-center lg:text-left">
               <h1 className="font-serif text-4xl font-bold tracking-tight text-barber-gold sm:text-5xl lg:text-6xl">
-                Gestisci la tua Gilda con Stile
+                Barber & Dragons 
               </h1>
               <p className="mt-6 max-w-xl text-lg text-barber-paper/80">
-                Il tool definitivo per Master e Giocatori. Campagne, Personaggi e Lore in un unico posto.
+                La community di D&D di cui c&apos;era bisogno. 
               </p>
               <div className="mt-10">
                 <Button
@@ -49,7 +49,7 @@ export default function HomePage() {
       <section className="border-t border-barber-gold/20 bg-barber-dark/98 py-16 sm:py-24">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <h2 className="font-serif text-center text-2xl font-semibold text-barber-gold sm:text-3xl">
-            Tutto ciò che serve per la tua campagna
+            Tutto ciò che serve per giocare
           </h2>
           <div className="mt-12 grid gap-8 sm:grid-cols-3">
             <article className="rounded-xl border border-barber-gold/30 bg-barber-dark p-6 shadow-lg transition-colors hover:border-barber-gold/50">
@@ -60,7 +60,7 @@ export default function HomePage() {
                 Campagne Epiche
               </h3>
               <p className="mt-2 text-sm text-barber-paper/70">
-                Crea e gestisci le tue campagne, sessioni e iscrizioni. Un calendario e una bacheca per Master e giocatori.
+                Partecipa alle nostre campagne. Un calendario e una bacheca per Master e giocatori.
               </p>
             </article>
             <article className="rounded-xl border border-barber-gold/30 bg-barber-dark p-6 shadow-lg transition-colors hover:border-barber-gold/50">
@@ -71,7 +71,7 @@ export default function HomePage() {
                 Schede Personaggio
               </h3>
               <p className="mt-2 text-sm text-barber-paper/70">
-                Partecipa alle sessioni, gestisci le tue iscrizioni e scopri il mondo di gioco sbloccato dopo ogni avventura.
+                Gestisci le tue iscrizioni e scopri il mondo di gioco sbloccato dopo ogni avventura.
               </p>
             </article>
             <article className="rounded-xl border border-barber-gold/30 bg-barber-dark p-6 shadow-lg transition-colors hover:border-barber-gold/50">
@@ -82,7 +82,7 @@ export default function HomePage() {
                 Wiki del Mondo
               </h3>
               <p className="mt-2 text-sm text-barber-paper/70">
-                NPC, luoghi, mostri, oggetti e lore. Mappe interattive e area riservata GM per note e file.
+                NPC, luoghi, mostri, oggetti e lore. Mappe interattive e molto altro ancora.
               </p>
             </article>
           </div>
