@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { ProfileForm } from "@/components/profile/profile-form";
 import { ArrowLeft, User, UserCheck, UserX } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export default async function ProfilePage() {
   const supabase = await createSupabaseServerClient();
   const {

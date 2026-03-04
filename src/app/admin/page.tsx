@@ -14,6 +14,8 @@ import { CreateUserDialog } from "@/components/admin/create-user-dialog";
 import { AdminUserRow } from "@/components/admin/admin-user-row";
 import { ArrowLeft, Shield } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminPage() {
   const supabase = await createSupabaseServerClient();
   const {
