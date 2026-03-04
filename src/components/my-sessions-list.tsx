@@ -48,7 +48,7 @@ export async function MySessionsList() {
 
   const rows: SessionRow[] = (signups ?? [])
     .map((s) => {
-      const session = s.sessions as {
+      const session = s.sessions as unknown as {
         id: string;
         scheduled_at: string;
         title: string | null;

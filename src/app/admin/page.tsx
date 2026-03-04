@@ -26,20 +26,31 @@ export default async function AdminPage() {
 
   // Uso client admin per ruolo e lista profili: evita ricorsione RLS su profiles
   const admin = createSupabaseAdminClient();
-  const { data: myProfile } = await admin
+  const { data: myProfileRaw } = await admin
     .from("profiles")
     .select("role")
     .eq("id", user.id)
     .single();
+  const myProfile = myProfileRaw as { role?: string } | null;
 
   if (myProfile?.role !== "admin") {
     redirect("/dashboard");
   }
 
-  const { data: profiles, error } = await admin
+  const { data: profilesRaw, error } = await admin
     .from("profiles")
     .select("id, display_name, first_name, last_name, role, created_at")
     .order("created_at", { ascending: false });
+
+  type ProfileRow = {
+    id: string;
+    display_name: string | null;
+    first_name: string | null;
+    last_name: string | null;
+    role: string;
+    created_at: string;
+  };
+  const profiles = (profilesRaw ?? []) as ProfileRow[];
 
   if (error) {
     return (
@@ -57,7 +68,7 @@ export default async function AdminPage() {
     );
   }
 
-  const list = profiles ?? [];
+  const list = profiles;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-900 px-4 py-10">

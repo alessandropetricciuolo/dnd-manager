@@ -26,11 +26,12 @@ export async function SessionList({ campaignId }: SessionListProps) {
 
   // Ruolo letto con client admin per evitare blocchi RLS (es. ricorsione su profiles)
   const admin = createSupabaseAdminClient();
-  const { data: profile } = await admin
+  const { data: profileRaw } = await admin
     .from("profiles")
     .select("role")
     .eq("id", user.id)
     .single();
+  const profile = profileRaw as { role?: string } | null;
 
   /** Modello Guild: lista iscritti e bottoni Approva/Rifiuta visibili a chi ha ruolo gm o admin. */
   const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";

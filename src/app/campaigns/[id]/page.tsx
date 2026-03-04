@@ -57,12 +57,14 @@ export default async function CampaignPage({ params }: PageProps) {
   let gmAdminUsers: { id: string; label: string }[] = [];
   if (isGmOrAdmin) {
     const admin = createSupabaseAdminClient();
-    const { data: gmAdmins } = await admin
+    const { data: gmAdminsRaw } = await admin
       .from("profiles")
       .select("id, first_name, last_name, display_name")
       .in("role", ["gm", "admin"])
       .order("first_name");
-    gmAdminUsers = (gmAdmins ?? []).map((p) => {
+    type GmProfileRow = { id: string; first_name: string | null; last_name: string | null; display_name: string | null };
+    const gmAdmins = (gmAdminsRaw ?? []) as GmProfileRow[];
+    gmAdminUsers = gmAdmins.map((p) => {
       const full = [p.first_name, p.last_name].filter(Boolean).join(" ").trim();
       const label = full || p.display_name?.trim() || `Utente ${p.id.slice(0, 8)}`;
       return { id: p.id, label };

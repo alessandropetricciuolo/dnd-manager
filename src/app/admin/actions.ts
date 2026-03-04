@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
-import type { Database } from "@/types/database.types";
 
 const ALLOWED_ROLES = ["player", "gm", "admin"] as const;
 
@@ -73,13 +72,10 @@ export async function createUser(formData: FormData): Promise<CreateUserResult> 
       return { success: false, message: "Utente creato ma ID non disponibile." };
     }
 
-    const profileUpdate: Database["public"]["Tables"]["profiles"]["Update"] = {
-      first_name: firstName,
-      last_name: lastName,
-    };
+    // Assertione necessaria: in build i tipi Supabase inferiscono update come never
     const { error: updateError } = await admin
       .from("profiles")
-      .update(profileUpdate)
+      .update({ first_name: firstName, last_name: lastName } as never)
       .eq("id", newUser.user.id);
 
     if (updateError) {

@@ -373,7 +373,7 @@ export async function closeSession(
       if (signup.status === "approved") {
         await admin
           .from("session_signups")
-          .update({ status: newStatus })
+          .update({ status: newStatus } as never)
           .eq("id", signup.id);
         if (newStatus === "attended") {
           const { data: existing } = await admin
@@ -386,7 +386,7 @@ export async function closeSession(
             await admin.from("campaign_members").insert({
               campaign_id: session.campaign_id,
               player_id: signup.player_id,
-            });
+            } as never);
           }
         }
       }
@@ -394,7 +394,7 @@ export async function closeSession(
 
     const { error: updateSessionError } = await admin
       .from("sessions")
-      .update({ status: "completed" })
+      .update({ status: "completed" } as never)
       .eq("id", sessionId);
 
     if (updateSessionError) {
@@ -445,7 +445,7 @@ export async function setCampaignPublic(
     const admin = createSupabaseAdminClient();
     const { error } = await admin
       .from("campaigns")
-      .update({ is_public: isPublic })
+      .update({ is_public: isPublic } as never)
       .eq("id", campaignId);
 
     if (error) {

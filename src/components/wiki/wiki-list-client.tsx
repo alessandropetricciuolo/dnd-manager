@@ -126,7 +126,6 @@ export function WikiListClient({
                     {isCreator && entity.isSecret && (
                       <Lock
                         className="h-4 w-4 shrink-0 text-amber-400"
-                        title="Segreto"
                         aria-label="Segreto"
                       />
                     )}

@@ -54,7 +54,7 @@ export async function CalendarSessionsLoader() {
   });
 
   const sessions: SessionForCalendar[] = sessionsRaw.map((s) => {
-    const campaign = s.campaigns as { name: string; type: string | null; image_url: string | null } | null;
+    const campaign = s.campaigns as unknown as { name: string; type: string | null; image_url: string | null } | null;
     return {
       id: s.id,
       campaign_id: s.campaign_id,

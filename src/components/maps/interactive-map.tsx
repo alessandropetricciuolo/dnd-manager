@@ -78,13 +78,13 @@ export function InteractiveMap({
 
   return (
     <div className="h-full w-full bg-slate-950">
+      <div style={{ width: "100%", height: "100%" }}>
       <TransformWrapper
         initialScale={1}
         minScale={0.3}
         maxScale={4}
         centerOnInit
         limitToBounds={false}
-        style={{ width: "100%", height: "100%" }}
       >
         <TransformComponent
           wrapperStyle={{ width: "100%", height: "100%" }}
@@ -124,6 +124,7 @@ export function InteractiveMap({
           </div>
         </TransformComponent>
       </TransformWrapper>
+      </div>
 
       {isCreator && newPinCoords && (
         <NewPinDialog

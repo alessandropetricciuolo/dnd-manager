@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { User, UserX, Search, Map, BookOpen } from "lucide-react";
+import { User, UserX, Search, Map as MapIcon, BookOpen } from "lucide-react";
 import {
   closeSession,
   getUnlockableContent,
@@ -256,7 +256,7 @@ export function CloseSessionDialog({
                     <div key={groupLabel} className="space-y-1.5">
                       <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
                         {groupLabel === "Mappe" ? (
-                          <Map className="h-3.5 w-3.5" />
+                          <MapIcon className="h-3.5 w-3.5" />
                         ) : (
                           <BookOpen className="h-3.5 w-3.5" />
                         )}

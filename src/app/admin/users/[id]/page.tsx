@@ -59,26 +59,35 @@ export default async function AdminUserDossierPage({ params }: PageProps) {
   if (!currentUser) notFound();
 
   const admin = createSupabaseAdminClient();
-  const { data: myProfile } = await admin
+  const { data: myProfileRaw } = await admin
     .from("profiles")
     .select("role")
     .eq("id", currentUser.id)
     .single();
+  const myProfile = myProfileRaw as { role?: string } | null;
 
   if (myProfile?.role !== "admin") notFound();
 
-  const { data: profile } = await admin
+  const { data: profileRaw } = await admin
     .from("profiles")
     .select("id, first_name, last_name, role, phone, created_at")
     .eq("id", userId)
     .single();
+  const profile = profileRaw as {
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    role: string;
+    phone: string | null;
+    created_at: string;
+  } | null;
 
   if (!profile) notFound();
 
   const { data: authUser } = await admin.auth.admin.getUserById(userId);
   const email = authUser?.user?.email ?? "—";
 
-  const { data: signups } = await admin
+  const { data: signupsRaw } = await admin
     .from("session_signups")
     .select(
       `
@@ -111,9 +120,16 @@ export default async function AdminUserDossierPage({ params }: PageProps) {
     dm_id: string | null;
     campaigns: { name: string; type: CampaignType } | null;
   };
+  type SignupRow = {
+    id: string;
+    status: string;
+    signed_up_at: string;
+    sessions: SessionRow | null;
+  };
+  const signups = (signupsRaw ?? []) as SignupRow[];
 
-  const signupsList = (signups ?? []).map((s) => {
-    const session = s.sessions as SessionRow | null;
+  const signupsList = signups.map((s) => {
+    const session = s.sessions;
     return {
       id: s.id,
       status: s.status,
@@ -126,12 +142,14 @@ export default async function AdminUserDossierPage({ params }: PageProps) {
     };
   });
 
-  const dmIds = [...new Set(signupsList.map((s) => s.dm_id).filter(Boolean))] as string[];
-  const { data: dmProfiles } = dmIds.length > 0
+  const dmIds = Array.from(new Set(signupsList.map((s) => s.dm_id).filter(Boolean))) as string[];
+  const { data: dmProfilesRaw } = dmIds.length > 0
     ? await admin.from("profiles").select("id, first_name, last_name, display_name").in("id", dmIds)
     : { data: [] };
+  type DmProfileRow = { id: string; first_name: string | null; last_name: string | null; display_name: string | null };
+  const dmProfiles = (dmProfilesRaw ?? []) as DmProfileRow[];
   const dmNames = new Map(
-    (dmProfiles ?? []).map((p) => {
+    dmProfiles.map((p) => {
       const name = [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || p.display_name?.trim() || `Utente ${p.id.slice(0, 8)}`;
       return [p.id, name];
     })
@@ -145,25 +163,28 @@ export default async function AdminUserDossierPage({ params }: PageProps) {
 
   const isGmOrAdmin = profile.role === "gm" || profile.role === "admin";
 
-  const { data: campaignsCreated } = await admin
+  const { data: campaignsCreatedRaw } = await admin
     .from("campaigns")
     .select("id, name, type, created_at")
     .eq("gm_id", userId)
     .order("created_at", { ascending: false });
+  type CampaignRow = { id: string; name: string; type: CampaignType | null; created_at: string };
+  const campaignsCreated = (campaignsCreatedRaw ?? []) as CampaignRow[];
 
   const { data: sessionsMasterateRaw } = await admin
     .from("sessions")
     .select("id, scheduled_at, title, campaign_id, status")
     .eq("dm_id", userId)
     .order("scheduled_at", { ascending: false });
-
-  const sessionsMasterateList = sessionsMasterateRaw ?? [];
+  type SessionMasterRow = { id: string; scheduled_at: string; title: string | null; campaign_id: string; status: string };
+  const sessionsMasterateList = (sessionsMasterateRaw ?? []) as SessionMasterRow[];
   const sessioniMasterateCount = sessionsMasterateList.filter((s) => s.status === "completed").length;
-  const campaignIdsForMaster = [...new Set(sessionsMasterateList.map((s) => s.campaign_id))];
-  const { data: campaignsForMaster } = campaignIdsForMaster.length > 0
+  const campaignIdsForMaster = Array.from(new Set(sessionsMasterateList.map((s) => s.campaign_id)));
+  const { data: campaignsForMasterRaw } = campaignIdsForMaster.length > 0
     ? await admin.from("campaigns").select("id, name").in("id", campaignIdsForMaster)
     : { data: [] };
-  const campaignNamesMaster = new Map((campaignsForMaster ?? []).map((c) => [c.id, c.name]));
+  const campaignsForMaster = (campaignsForMasterRaw ?? []) as { id: string; name: string }[];
+  const campaignNamesMaster = new Map(campaignsForMaster.map((c) => [c.id, c.name]));
 
   const presentCounts = await Promise.all(
     sessionsMasterateList.map(async (s) => {
