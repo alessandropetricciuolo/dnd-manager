@@ -13,15 +13,24 @@ export async function login(email: string, password: string): Promise<AuthResult
     return { error: "Email e password sono obbligatorie." };
   }
 
-  const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-  if (error) {
-    return { error: error.message };
+    if (error) {
+      return { error: error.message };
+    }
+
+    revalidatePath("/dashboard");
+    return {};
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Errore di connessione.";
+    if (msg.includes("Variabili mancanti") || msg.includes("NEXT_PUBLIC_SUPABASE")) {
+      return { error: "Configurazione mancante sul server. Controlla le variabili d'ambiente (Supabase URL e Anon Key)." };
+    }
+    console.error("[login]", e);
+    return { error: "Impossibile connettersi al servizio di autenticazione. Riprova più tardi." };
   }
-
-  revalidatePath("/dashboard");
-  return {};
 }
 
 export async function signup(email: string, password: string): Promise<AuthResult> {
@@ -29,19 +38,28 @@ export async function signup(email: string, password: string): Promise<AuthResul
     return { error: "Email e password sono obbligatorie." };
   }
 
-  const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-  });
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
 
-  if (error) {
-    return { error: error.message };
+    if (error) {
+      return { error: error.message };
+    }
+
+    // Il trigger handle_new_user in Supabase crea automaticamente il record in public.profiles con ruolo 'player'
+    revalidatePath("/login");
+    return {};
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Errore di connessione.";
+    if (msg.includes("Variabili mancanti") || msg.includes("NEXT_PUBLIC_SUPABASE")) {
+      return { error: "Configurazione mancante sul server. Controlla le variabili d'ambiente (Supabase URL e Anon Key)." };
+    }
+    console.error("[signup]", e);
+    return { error: "Impossibile connettersi al servizio di autenticazione. Riprova più tardi." };
   }
-
-  // Il trigger handle_new_user in Supabase crea automaticamente il record in public.profiles con ruolo 'player'
-  revalidatePath("/login");
-  return {};
 }
 
 export async function signout() {
