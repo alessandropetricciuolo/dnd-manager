@@ -11,8 +11,13 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+        serif: ["var(--font-serif)", "Georgia", "serif"],
       },
       colors: {
+        "barber-red": "#991b1b",
+        "barber-gold": "#fbbf24",
+        "barber-dark": "#1c1917",
+        "barber-paper": "#f5f5f4",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {
