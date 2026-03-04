@@ -14,6 +14,8 @@ import { DeleteCampaignButton } from "@/components/delete-campaign-button";
 import { CampaignVisibilityToggle } from "@/components/campaign-visibility-toggle";
 import { EditCampaignDialog } from "@/components/campaigns/edit-campaign-dialog";
 import { CampaignTabsClient } from "@/components/campaigns/campaign-tabs-client";
+import { GmNotes } from "@/components/gm/gm-notes";
+import { GmFiles } from "@/components/gm/gm-files";
 import { ArrowLeft } from "lucide-react";
 
 const PLACEHOLDER_IMAGE =
@@ -215,6 +217,19 @@ export default async function CampaignPage({ params }: PageProps) {
                 <MapGallery campaignId={campaign.id} />
               </>
             ) : null
+          }
+          gmAreaContent={
+            isGmOrAdmin ? (
+              <div className="rounded-xl border-2 border-violet-800/60 bg-slate-950/80 p-6 shadow-inner">
+                <p className="mb-6 text-sm text-violet-200/80">
+                  Area riservata al Master. Note e file qui sono visibili solo a te (e agli admin).
+                </p>
+                <div className="space-y-8">
+                  <GmNotes campaignId={campaign.id} />
+                  <GmFiles campaignId={campaign.id} />
+                </div>
+              </div>
+            ) : undefined
           }
         />
       </div>

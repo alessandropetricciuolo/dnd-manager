@@ -3,12 +3,12 @@
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, BookOpen, CalendarDays, Map, Lock } from "lucide-react";
+import { LayoutDashboard, BookOpen, CalendarDays, Map, Lock, ScrollText } from "lucide-react";
 
 const PLACEHOLDER_IMAGE =
   "https://placehold.co/1200x400/1e293b/10b981/png?text=Campagna";
 
-const VALID_TABS = ["overview", "sessioni", "wiki", "mappe"] as const;
+const VALID_TABS = ["overview", "sessioni", "wiki", "mappe", "gm"] as const;
 type TabValue = (typeof VALID_TABS)[number];
 
 type CampaignTabsClientProps = {
@@ -26,6 +26,8 @@ type CampaignTabsClientProps = {
   sessioniContent: React.ReactNode;
   wikiContent: React.ReactNode;
   mappeContent: React.ReactNode;
+  /** Area GM: passato solo se user è GM o Admin; tab e contenuto visibili solo in quel caso */
+  gmAreaContent?: React.ReactNode | null;
 };
 
 export function CampaignTabsClient({
@@ -36,16 +38,19 @@ export function CampaignTabsClient({
   sessioniContent,
   wikiContent,
   mappeContent,
+  gmAreaContent,
 }: CampaignTabsClientProps) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const showGmTab = gmAreaContent != null;
 
   const tabParam = searchParams.get("tab");
-  const tab: TabValue =
+  let tab: TabValue =
     tabParam && VALID_TABS.includes(tabParam as TabValue)
       ? (tabParam as TabValue)
       : "overview";
+  if (tab === "gm" && !showGmTab) tab = "overview";
 
   const effectiveTab =
     (tab === "wiki" || tab === "mappe") && !hasPlayedCampaign
@@ -106,6 +111,15 @@ export function CampaignTabsClient({
           )}
           Mappe
         </TabsTrigger>
+        {showGmTab && (
+          <TabsTrigger
+            value="gm"
+            className="data-[state=active]:bg-violet-500/20 data-[state=active]:text-violet-300 border-violet-700/40"
+          >
+            <ScrollText className="mr-2 h-4 w-4" />
+            Area GM
+          </TabsTrigger>
+        )}
       </TabsList>
 
       <TabsContent value="overview" className="mt-0">
@@ -157,6 +171,11 @@ export function CampaignTabsClient({
       <TabsContent value="mappe" className="mt-0">
         {mappeContent}
       </TabsContent>
+      {showGmTab && (
+        <TabsContent value="gm" className="mt-0">
+          {gmAreaContent}
+        </TabsContent>
+      )}
     </Tabs>
   );
 }
