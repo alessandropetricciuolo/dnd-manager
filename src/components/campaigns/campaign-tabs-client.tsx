@@ -73,13 +73,14 @@ export function CampaignTabsClient({
       onValueChange={setTab}
       className="w-full"
     >
-      <TabsList className="mb-6 w-full flex-wrap justify-start gap-1 rounded-xl border border-barber-gold/40 bg-barber-dark/90 p-1">
+      <div className="sticky top-0 z-10 -mx-4 -mt-4 mb-4 bg-barber-dark/95 px-4 pt-4 backdrop-blur-md supports-[backdrop-filter]:bg-barber-dark/80 lg:-mx-6 lg:-mt-6 lg:px-6 lg:pt-6">
+        <TabsList className="w-full flex-wrap justify-start gap-1 rounded-xl border border-barber-gold/40 bg-barber-dark/90 p-1">
         <TabsTrigger
           value="overview"
           className="data-[state=active]:bg-barber-gold/20 data-[state=active]:text-barber-gold"
         >
           <LayoutDashboard className="mr-2 h-4 w-4" />
-          Dettagli
+          Panoramica
         </TabsTrigger>
         <TabsTrigger
           value="sessioni"
@@ -92,7 +93,7 @@ export function CampaignTabsClient({
           value="wiki"
           disabled={!hasPlayedCampaign}
           className="data-[state=active]:bg-barber-gold/20 data-[state=active]:text-barber-gold disabled:opacity-60"
-          title={!hasPlayedCampaign ? "Partecipa alla prima sessione per sbloccare" : undefined}
+          title={!hasPlayedCampaign ? "Sblocca partecipando a una sessione" : undefined}
         >
           {!hasPlayedCampaign ? (
             <Lock className="mr-2 h-4 w-4 shrink-0" />
@@ -105,7 +106,7 @@ export function CampaignTabsClient({
           value="mappe"
           disabled={!hasPlayedCampaign}
           className="data-[state=active]:bg-barber-gold/20 data-[state=active]:text-barber-gold disabled:opacity-60"
-          title={!hasPlayedCampaign ? "Partecipa alla prima sessione per sbloccare" : undefined}
+          title={!hasPlayedCampaign ? "Sblocca partecipando a una sessione" : undefined}
         >
           {!hasPlayedCampaign ? (
             <Lock className="mr-2 h-4 w-4 shrink-0" />
@@ -127,10 +128,11 @@ export function CampaignTabsClient({
             className="data-[state=active]:bg-violet-500/20 data-[state=active]:text-violet-300 border-violet-700/40"
           >
             <ScrollText className="mr-2 h-4 w-4" />
-            Area GM
+            Solo GM
           </TabsTrigger>
         )}
-      </TabsList>
+        </TabsList>
+      </div>
 
       <TabsContent value="overview" className="mt-0">
         <div className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 overflow-hidden">
@@ -163,7 +165,7 @@ export function CampaignTabsClient({
             )}
             {!hasPlayedCampaign && (
               <p className="mt-6 rounded-lg border border-barber-gold/40 bg-barber-gold/10 px-4 py-3 text-sm text-barber-gold">
-                Partecipa alla prima sessione per sbloccare Wiki e Mappe e scoprire il mondo della campagna.
+                Partecipa a una sessione per sbloccare Wiki e Mappe.
               </p>
             )}
           </div>

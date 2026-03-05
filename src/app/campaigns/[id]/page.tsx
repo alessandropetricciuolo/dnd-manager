@@ -18,6 +18,7 @@ import { GmNotes } from "@/components/gm/gm-notes";
 import { GmFiles } from "@/components/gm/gm-files";
 import { CharactersSection } from "@/components/characters/characters-section";
 import { getCampaignCharacters, getCampaignEligiblePlayers } from "@/app/campaigns/character-actions";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowLeft } from "lucide-react";
 
 const PLACEHOLDER_IMAGE =
@@ -54,6 +55,20 @@ export default async function CampaignPage({ params }: PageProps) {
 
   if (error || !campaign) {
     notFound();
+  }
+
+  /** Nome del GM per la colonna sinistra */
+  let gmDisplayName: string | null = null;
+  if (campaign.gm_id) {
+    const { data: gmProfile } = await supabase
+      .from("profiles")
+      .select("first_name, last_name, display_name")
+      .eq("id", campaign.gm_id)
+      .single();
+    if (gmProfile) {
+      const full = [gmProfile.first_name, gmProfile.last_name].filter(Boolean).join(" ").trim();
+      gmDisplayName = full || (gmProfile.display_name ?? "").trim() || null;
+    }
   }
 
   const { data: profile } = await supabase
@@ -117,61 +132,97 @@ export default async function CampaignPage({ params }: PageProps) {
   };
   const campaignTypeLabel = campaign.type ? campaignTypeLabels[campaign.type] ?? campaign.type : null;
 
+  const leftColumnContent = (
+    <>
+      <div className="relative aspect-[21/9] min-h-[140px] w-full shrink-0 overflow-hidden rounded-lg bg-barber-dark">
+        <Image
+          src={campaign.image_url ?? PLACEHOLDER_IMAGE}
+          alt=""
+          fill
+          className="object-cover"
+          sizes="320px"
+          unoptimized={!!campaign.image_url}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-barber-dark via-barber-dark/50 to-transparent" />
+      </div>
+      <div className="flex flex-col gap-3 p-4">
+        <Link href="/dashboard" className="inline-flex w-fit text-barber-paper/80 hover:text-barber-paper">
+          <Button variant="ghost" size="sm" className="text-barber-paper/80">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Indietro
+          </Button>
+        </Link>
+        <h1 className="text-xl font-semibold text-barber-paper md:text-2xl">
+          {campaign.name}
+        </h1>
+        {gmDisplayName && (
+          <p className="text-sm text-barber-gold/90">
+            GM · {gmDisplayName}
+          </p>
+        )}
+        {isGmOrAdmin && (
+          <div className="flex flex-wrap gap-2">
+            <EditCampaignDialog
+              campaign={{
+                id: campaign.id,
+                name: campaign.name,
+                description: campaign.description ?? null,
+                type: campaign.type ?? null,
+                image_url: campaign.image_url ?? null,
+              }}
+            />
+            <CampaignVisibilityToggle
+              campaignId={campaign.id}
+              isPublic={campaign.is_public ?? false}
+            />
+            <DeleteCampaignButton campaignId={campaign.id} campaignName={campaign.name} />
+          </div>
+        )}
+      </div>
+    </>
+  );
+
   return (
-    <div className="min-h-screen bg-barber-dark">
-      <div className="relative">
-        <header className="relative h-48 overflow-hidden bg-barber-dark sm:h-56 md:h-64">
+    <div className="h-[calc(100vh-theme(spacing.16))] overflow-hidden bg-barber-dark">
+      {/* Mobile: cover in alto, poi area scroll con tabs sticky + contenuto */}
+      <div className="flex h-full flex-col lg:flex-row">
+        {/* Colonna sinistra (solo desktop): fissa, scroll interna */}
+        <aside className="hidden min-h-0 w-80 shrink-0 flex-col border-r border-barber-gold/20 bg-barber-dark lg:flex">
+          <ScrollArea className="min-h-0 flex-1">
+            <div className="min-h-0">{leftColumnContent}</div>
+          </ScrollArea>
+        </aside>
+
+        {/* Mobile: cover in cima (scroll via con il contenuto) */}
+        <div className="relative h-40 shrink-0 overflow-hidden bg-barber-dark lg:hidden">
           <Image
             src={campaign.image_url ?? PLACEHOLDER_IMAGE}
             alt=""
             fill
-            className="object-contain"
-            priority
+            className="object-cover"
             sizes="100vw"
             unoptimized={!!campaign.image_url}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-barber-dark via-barber-dark/80 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
-            <div className="mb-3 flex flex-wrap items-center gap-2">
-              <Link href="/dashboard" className="inline-flex text-barber-paper/80 hover:text-barber-paper">
-                <Button variant="ghost" size="sm" className="text-barber-paper/80">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Dashboard
-                </Button>
-              </Link>
-              {isGmOrAdmin && (
-                <>
-                  <EditCampaignDialog
-                    campaign={{
-                      id: campaign.id,
-                      name: campaign.name,
-                      description: campaign.description ?? null,
-                      type: campaign.type ?? null,
-                      image_url: campaign.image_url ?? null,
-                    }}
-                  />
-                  <CampaignVisibilityToggle
-                    campaignId={campaign.id}
-                    isPublic={campaign.is_public ?? false}
-                  />
-                  <DeleteCampaignButton campaignId={campaign.id} campaignName={campaign.name} />
-                </>
-              )}
-            </div>
-            <h1 className="text-2xl font-semibold text-white drop-shadow-md md:text-3xl">
-              {campaign.name}
-            </h1>
-            {campaign.description && (
-              <p className="mt-1 max-w-2xl text-sm text-barber-paper/90 drop-shadow md:text-base">
-                {campaign.description}
-              </p>
+          <div className="absolute bottom-0 left-0 right-0 p-4">
+            <Link href="/dashboard" className="inline-flex text-barber-paper/80 hover:text-barber-paper">
+              <Button variant="ghost" size="sm" className="h-8 text-barber-paper/80">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Indietro
+              </Button>
+            </Link>
+            <h1 className="text-lg font-semibold text-white drop-shadow-md">{campaign.name}</h1>
+            {gmDisplayName && (
+              <p className="text-xs text-barber-gold/90">GM · {gmDisplayName}</p>
             )}
           </div>
-        </header>
-      </div>
+        </div>
 
-      <div className="mx-auto max-w-5xl px-4 py-8">
-        <CampaignTabsClient
+        {/* Colonna destra: scroll, tabs sticky in cima */}
+        <main className="min-h-0 min-w-0 flex-1 flex flex-col overflow-hidden">
+          <ScrollArea className="min-h-0 flex-1">
+            <div className="px-4 pb-8 pt-4 lg:px-6 lg:pt-6">
+              <CampaignTabsClient
           campaignId={campaign.id}
           campaign={{
             id: campaign.id,
@@ -186,7 +237,7 @@ export default async function CampaignPage({ params }: PageProps) {
             <>
               <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
                 <h2 className="text-lg font-semibold text-barber-paper">
-                  Prossime sessioni
+                  In programma
                 </h2>
                 {isGmOrAdmin && (
                   <CreateSessionDialog
@@ -204,7 +255,7 @@ export default async function CampaignPage({ params }: PageProps) {
               <>
                 <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
                   <h2 className="text-lg font-semibold text-barber-paper">
-                    Wiki della campagna
+                    Wiki
                   </h2>
                   {isGmOrAdmin && (
                     <CreateEntityDialog campaignId={campaign.id} />
@@ -219,7 +270,7 @@ export default async function CampaignPage({ params }: PageProps) {
               <>
                 <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
                   <h2 className="text-lg font-semibold text-barber-paper">
-                    Mappe della campagna
+                    Mappe
                   </h2>
                   {isGmOrAdmin && (
                     <UploadMapDialog campaignId={campaign.id} />
@@ -241,7 +292,7 @@ export default async function CampaignPage({ params }: PageProps) {
             isGmOrAdmin ? (
               <div className="rounded-xl border-2 border-violet-800/60 bg-slate-950/80 p-6 shadow-inner">
                 <p className="mb-6 text-sm text-violet-200/80">
-                  Area riservata al Master. Note e file qui sono visibili solo a te (e agli admin).
+                  Note e file privati, visibili solo a te.
                 </p>
                 <div className="space-y-8">
                   <GmNotes campaignId={campaign.id} />
@@ -251,6 +302,9 @@ export default async function CampaignPage({ params }: PageProps) {
             ) : undefined
           }
         />
+            </div>
+          </ScrollArea>
+        </main>
       </div>
     </div>
   );
