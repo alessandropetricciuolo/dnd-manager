@@ -3,6 +3,7 @@ import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { Navbar } from "@/components/navbar";
+import { CookieBanner } from "@/components/ui/cookie-banner";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -30,6 +31,7 @@ export default function RootLayout({
         <Navbar />
         <Toaster richColors closeButton />
         {children}
+        <CookieBanner />
       </body>
     </html>
   );

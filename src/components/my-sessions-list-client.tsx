@@ -27,17 +27,17 @@ export function MySessionsListClient({
 }) {
   return (
     <Tabs defaultValue="in-programma" className="w-full">
-      <TabsList className="mb-4 rounded-xl border border-emerald-700/50 bg-slate-950/80 p-1">
+      <TabsList className="mb-4 rounded-xl border border-barber-gold/40 bg-barber-dark/90 p-1">
         <TabsTrigger
           value="in-programma"
-          className="data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300"
+          className="data-[state=active]:bg-barber-gold/20 data-[state=active]:text-barber-gold"
         >
           <CalendarDays className="mr-2 h-4 w-4" />
           In programma ({inProgramma.length})
         </TabsTrigger>
         <TabsTrigger
           value="storico"
-          className="data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300"
+          className="data-[state=active]:bg-barber-gold/20 data-[state=active]:text-barber-gold"
         >
           <History className="mr-2 h-4 w-4" />
           Storico ({storico.length})
@@ -56,7 +56,7 @@ export function MySessionsListClient({
 function SessionCards({ rows }: { rows: SessionRowWithDate[] }) {
   if (rows.length === 0) {
     return (
-      <p className="rounded-xl border border-emerald-700/40 bg-slate-950/60 px-4 py-6 text-center text-slate-400">
+      <p className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 px-4 py-6 text-center text-barber-paper/70">
         Nessuna sessione in questa sezione.
       </p>
     );
@@ -66,28 +66,28 @@ function SessionCards({ rows }: { rows: SessionRowWithDate[] }) {
       {rows.map((r) => (
         <Card
           key={r.id}
-          className="border-emerald-700/50 bg-slate-950/70"
+          className="border-barber-gold/30 bg-barber-dark/80"
         >
           <CardHeader className="pb-2">
-            <CardTitle className="text-base text-slate-50">
+            <CardTitle className="text-base text-barber-paper">
               {r.campaign_name}
             </CardTitle>
             {r.session_title && (
-              <p className="text-sm text-slate-400">{r.session_title}</p>
+              <p className="text-sm text-barber-paper/70">{r.session_title}</p>
             )}
           </CardHeader>
-          <CardContent className="space-y-1 text-sm text-slate-300">
+          <CardContent className="space-y-1 text-sm text-barber-paper/80">
             <p className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 shrink-0 text-emerald-400/80" />
+              <CalendarDays className="h-4 w-4 shrink-0 text-barber-gold/80" />
               {r.formatted_date}
             </p>
             {r.location ? (
               <p className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 shrink-0 text-emerald-400/80" />
+                <MapPin className="h-4 w-4 shrink-0 text-barber-gold/80" />
                 {r.location}
               </p>
             ) : (
-              <p className="flex items-center gap-2 text-slate-500">
+              <p className="flex items-center gap-2 text-barber-paper/50">
                 <MapPin className="h-4 w-4 shrink-0" />
                 Luogo da definire
               </p>
