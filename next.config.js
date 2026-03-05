@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  serverActions: {
-    bodySizeLimit: "4mb",
-  },
   experimental: {
     serverActions: {
       bodySizeLimit: "4mb",
@@ -18,6 +15,17 @@ const nextConfig = {
       {
         protocol: "https",
         hostname: "placehold.co",
+        pathname: "/**",
+      },
+      // --- NUOVI DOMINI AGGIUNTI PER GOOGLE DRIVE ---
+      {
+        protocol: "https",
+        hostname: "drive.google.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "*.googleusercontent.com",
         pathname: "/**",
       },
     ],
