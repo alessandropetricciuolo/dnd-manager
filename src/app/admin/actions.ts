@@ -155,3 +155,149 @@ export async function updateUserRole(
     };
   }
 }
+
+export type UpdateUserProfileResult = {
+  success: boolean;
+  message: string;
+};
+
+type UpdateUserProfilePayload = {
+  first_name?: string | null;
+  last_name?: string | null;
+  phone?: string | null;
+  role?: (typeof ALLOWED_ROLES)[number];
+  email?: string | null;
+};
+
+/** Modifica anagrafica e/o email di un utente. Solo admin. */
+export async function updateUserProfile(
+  userId: string,
+  payload: UpdateUserProfilePayload
+): Promise<UpdateUserProfileResult> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return { success: false, message: "Non autenticato." };
+    }
+
+    const { data: callerProfile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (callerProfile?.role !== "admin") {
+      return { success: false, message: "Solo gli admin possono modificare gli utenti." };
+    }
+
+    const admin = createSupabaseAdminClient();
+
+    if (payload.email !== undefined && payload.email !== null && payload.email.trim() !== "") {
+      const { error: emailError } = await admin.auth.admin.updateUserById(userId, {
+        email: payload.email.trim(),
+      });
+      if (emailError) {
+        console.error("[updateUserProfile] email", emailError);
+        return { success: false, message: emailError.message ?? "Errore aggiornamento email." };
+      }
+    }
+
+    const profileUpdate: Record<string, unknown> = {};
+    if (payload.first_name !== undefined) profileUpdate.first_name = payload.first_name?.trim() || null;
+    if (payload.last_name !== undefined) profileUpdate.last_name = payload.last_name?.trim() || null;
+    if (payload.phone !== undefined) profileUpdate.phone = payload.phone?.trim() || null;
+    if (payload.role !== undefined && ALLOWED_ROLES.includes(payload.role)) {
+      profileUpdate.role = payload.role;
+    }
+
+    if (Object.keys(profileUpdate).length > 0) {
+      const { error: profileError } = await admin
+        .from("profiles")
+        .update(profileUpdate as never)
+        .eq("id", userId);
+
+      if (profileError) {
+        console.error("[updateUserProfile] profiles", profileError);
+        return { success: false, message: profileError.message ?? "Errore aggiornamento profilo." };
+      }
+    }
+
+    revalidatePath("/admin");
+    revalidatePath(`/admin/users/${userId}`);
+    return { success: true, message: "Utente aggiornato." };
+  } catch (err) {
+    console.error("[updateUserProfile]", err);
+    return { success: false, message: "Errore imprevisto. Riprova." };
+  }
+}
+
+export type DeleteUserResult = {
+  success: boolean;
+  message: string;
+};
+
+/** Elimina un utente (auth + profile). Blocca se è GM di campagne. Solo admin. */
+export async function deleteUser(userId: string): Promise<DeleteUserResult> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return { success: false, message: "Non autenticato." };
+    }
+
+    if (user.id === userId) {
+      return { success: false, message: "Non puoi eliminare il tuo account." };
+    }
+
+    const { data: callerProfile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (callerProfile?.role !== "admin") {
+      return { success: false, message: "Solo gli admin possono eliminare utenti." };
+    }
+
+    const admin = createSupabaseAdminClient();
+
+    const { data: campaignsAsGm } = await admin
+      .from("campaigns")
+      .select("id")
+      .eq("gm_id", userId)
+      .limit(1);
+
+    if (campaignsAsGm && campaignsAsGm.length > 0) {
+      return {
+        success: false,
+        message: "Impossibile eliminare: l'utente è GM di una o più campagne. Assegna un altro GM alle campagne prima di eliminare.",
+      };
+    }
+
+    await admin.from("sessions").update({ dm_id: null } as never).eq("dm_id", userId);
+    await admin.from("session_signups").delete().eq("player_id", userId);
+    await admin.from("profiles").delete().eq("id", userId);
+
+    const { error: authError } = await admin.auth.admin.deleteUser(userId);
+
+    if (authError) {
+      console.error("[deleteUser] auth", authError);
+      return { success: false, message: authError.message ?? "Errore durante l'eliminazione." };
+    }
+
+    revalidatePath("/admin");
+    return { success: true, message: "Utente eliminato." };
+  } catch (err) {
+    console.error("[deleteUser]", err);
+    return { success: false, message: "Errore imprevisto. Riprova." };
+  }
+}

@@ -22,6 +22,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { EditUserDialog } from "@/components/admin/edit-user-dialog";
+import { DeleteUserButton } from "@/components/admin/delete-user-button";
 import { ArrowLeft, Shield, Gamepad2, Users } from "lucide-react";
 
 type PageProps = {
@@ -201,17 +203,36 @@ export default async function AdminUserDossierPage({ params }: PageProps) {
   return (
     <div className="min-h-screen bg-barber-dark px-4 py-10">
       <div className="mx-auto max-w-5xl space-y-6">
-        <header className="flex flex-wrap items-center gap-4">
-          <Link href="/admin">
-            <Button variant="ghost" size="sm" className="text-barber-paper/80 hover:text-barber-paper">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Admin Panel
-            </Button>
-          </Link>
-          <h1 className="flex items-center gap-2 text-xl font-semibold text-barber-paper sm:text-2xl">
-            <Shield className="h-6 w-6 text-barber-gold" />
-            Dossier utente
-          </h1>
+        <header className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-4">
+            <Link href="/admin">
+              <Button variant="ghost" size="sm" className="text-barber-paper/80 hover:text-barber-paper">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Admin Panel
+              </Button>
+            </Link>
+            <h1 className="flex items-center gap-2 text-xl font-semibold text-barber-paper sm:text-2xl">
+              <Shield className="h-6 w-6 text-barber-gold" />
+              Dossier utente
+            </h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <EditUserDialog
+              userId={userId}
+              defaultValues={{
+                email: email === "—" ? "" : email,
+                first_name: profile.first_name,
+                last_name: profile.last_name,
+                phone: profile.phone,
+                role: profile.role,
+              }}
+            />
+            <DeleteUserButton
+              userId={userId}
+              userLabel={[profile.first_name, profile.last_name].filter(Boolean).join(" ") || email || `Utente ${userId.slice(0, 8)}`}
+              redirectAfter
+            />
+          </div>
         </header>
 
         <Card className="border-barber-gold/40 bg-barber-dark/90">
