@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { getPlayerEmails } from "@/lib/player-emails";
+import { sendEmail, wrapInTemplate, escapeHtml } from "@/lib/email";
 
 export type CreateCampaignResult = {
   success: boolean;
@@ -57,6 +59,22 @@ export async function createCampaign(
         success: false,
         message: error.message ?? "Errore durante la creazione della campagna.",
       };
+    }
+
+    try {
+      const playerEmails = await getPlayerEmails();
+      if (playerEmails.length > 0) {
+        void sendEmail({
+          to: process.env.GMAIL_USER ?? "",
+          bcc: playerEmails,
+          subject: `Nuova Campagna Disponibile: ${title}`,
+          html: wrapInTemplate(
+            `<p>È stata creata una nuova campagna: <strong>${escapeHtml(title)}</strong>.</p><p>Accedi al sito per scoprirla e iscriverti alle sessioni.</p>`
+          ),
+        });
+      }
+    } catch (mailErr) {
+      console.error("[createCampaign] invio email:", mailErr);
     }
 
     revalidatePath("/dashboard");

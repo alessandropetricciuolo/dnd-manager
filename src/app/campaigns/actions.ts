@@ -2,8 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
+import { format } from "date-fns";
+import { it } from "date-fns/locale";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
+import { getPlayerEmails } from "@/lib/player-emails";
+import { sendEmail, wrapInTemplate, escapeHtml } from "@/lib/email";
 
 const COVER_BUCKET = "campaign_covers";
 
@@ -67,6 +71,23 @@ export async function createSession(
         success: false,
         message: error.message ?? "Errore durante la creazione della sessione.",
       };
+    }
+
+    try {
+      const playerEmails = await getPlayerEmails();
+      if (playerEmails.length > 0) {
+        const dateLabel = format(new Date(scheduledAt), "EEEE d MMMM yyyy, HH:mm", { locale: it });
+        void sendEmail({
+          to: process.env.GMAIL_USER ?? "",
+          bcc: playerEmails,
+          subject: `Nuova Sessione in Calendario per ${dateLabel}`,
+          html: wrapInTemplate(
+            `<p>È stata inserita una nuova sessione in calendario per il <strong>${escapeHtml(dateLabel)}</strong>.</p><p>Accedi al sito per iscriverti.</p>`
+          ),
+        });
+      }
+    } catch (mailErr) {
+      console.error("[createSession] invio email:", mailErr);
     }
 
     revalidatePath(`/campaigns/${campaignId}`);
@@ -188,7 +209,7 @@ export async function updateSignupStatus(
 
     const { data: signup, error: signupError } = await supabase
       .from("session_signups")
-      .select("id, session_id")
+      .select("id, session_id, player_id")
       .eq("id", signupId)
       .single();
     if (signupError || !signup) {
@@ -217,6 +238,34 @@ export async function updateSignupStatus(
     if (updateError) {
       console.error("[updateSignupStatus]", updateError);
       return { success: false, message: updateError.message ?? "Errore durante l'aggiornamento." };
+    }
+
+    if (newStatus === "approved") {
+      try {
+        const admin = createSupabaseAdminClient();
+        const { data: sessionRow } = await admin
+          .from("sessions")
+          .select("title, scheduled_at")
+          .eq("id", signup.session_id)
+          .single();
+        const title = sessionRow?.title?.trim() || "Sessione";
+        const { data: authUser } = await admin.auth.admin.getUserById(signup.player_id);
+        const toEmail = authUser?.user?.email;
+        if (toEmail) {
+          const dateLabel = sessionRow?.scheduled_at
+            ? format(new Date(sessionRow.scheduled_at), "EEEE d MMMM yyyy, HH:mm", { locale: it })
+            : "";
+          void sendEmail({
+            to: toEmail,
+            subject: "Prenotazione Confermata!",
+            html: wrapInTemplate(
+              `<p>Il Master ti ha accettato per la sessione <strong>${escapeHtml(title)}</strong>${dateLabel ? ` del ${escapeHtml(dateLabel)}` : ""}.</p><p>Prepara i dadi!</p>`
+            ),
+          });
+        }
+      } catch (mailErr) {
+        console.error("[updateSignupStatus] invio email:", mailErr);
+      }
     }
 
     revalidatePath(`/campaigns/${session.campaign_id}`);

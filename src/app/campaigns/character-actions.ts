@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { createSupabaseAdminClient } from "@/utils/supabase/admin";
+import { sendEmail, wrapInTemplate, escapeHtml } from "@/lib/email";
 
 const CHARACTER_SHEETS_BUCKET = "character_sheets";
 const WIKI_IMAGES_BUCKET = "campaign_maps";
@@ -195,7 +197,7 @@ export async function assignCharacter(
 
   const { data: char, error: fetchErr } = await supabase
     .from("campaign_characters")
-    .select("campaign_id")
+    .select("campaign_id, name")
     .eq("id", characterId)
     .single();
 
@@ -209,6 +211,25 @@ export async function assignCharacter(
   if (error) {
     console.error("[assignCharacter]", error);
     return { success: false, error: error.message ?? "Errore nell'assegnazione." };
+  }
+
+  if (playerId) {
+    try {
+      const admin = createSupabaseAdminClient();
+      const { data: authUser } = await admin.auth.admin.getUserById(playerId);
+      const toEmail = authUser?.user?.email;
+      if (toEmail) {
+        void sendEmail({
+          to: toEmail,
+          subject: `Ti è stato assegnato un Personaggio: ${char.name}`,
+          html: wrapInTemplate(
+            `<p>Il Master ti ha assegnato il personaggio <strong>${escapeHtml(char.name)}</strong>.</p><p>Scopri il tuo background e la tua scheda sul sito.</p>`
+          ),
+        });
+      }
+    } catch (mailErr) {
+      console.error("[assignCharacter] invio email:", mailErr);
+    }
   }
 
   revalidatePath(`/campaigns/${char.campaign_id}`);
