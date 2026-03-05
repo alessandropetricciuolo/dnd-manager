@@ -22,6 +22,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { createCharacter } from "@/app/campaigns/character-actions";
 
 const PLACEHOLDER_AVATAR = "https://placehold.co/200x280/1c1917/fbbf24/png?text=PG";
+const MAX_TOTAL_MB = 4;
+const MAX_TOTAL_BYTES = MAX_TOTAL_MB * 1024 * 1024;
 
 type CreateCharacterDialogProps = {
   campaignId: string;
@@ -57,6 +59,16 @@ export function CreateCharacterDialog({ campaignId }: CreateCharacterDialogProps
     const name = (formData.get("name") as string | null)?.trim();
     if (!name) {
       toast.error("Il nome del personaggio è obbligatorio.");
+      return;
+    }
+
+    const imageFile = formData.get("image") as File | null;
+    const sheetFile = formData.get("sheet") as File | null;
+    let totalBytes = 0;
+    if (imageFile?.size) totalBytes += imageFile.size;
+    if (sheetFile?.size) totalBytes += sheetFile.size;
+    if (totalBytes > MAX_TOTAL_BYTES) {
+      toast.error(`Immagine + PDF non devono superare i ${MAX_TOTAL_MB} MB totali. Riduci le dimensioni e riprova.`);
       return;
     }
 
