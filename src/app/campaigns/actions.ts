@@ -248,12 +248,14 @@ export async function updateSignupStatus(
           .select("title, scheduled_at")
           .eq("id", signup.session_id)
           .single();
-        const title = sessionRow?.title?.trim() || "Sessione";
+        type SessionRow = { title: string | null; scheduled_at: string };
+        const row = sessionRow as SessionRow | null;
+        const title = row?.title?.trim() || "Sessione";
         const { data: authUser } = await admin.auth.admin.getUserById(signup.player_id);
         const toEmail = authUser?.user?.email;
         if (toEmail) {
-          const dateLabel = sessionRow?.scheduled_at
-            ? format(new Date(sessionRow.scheduled_at), "EEEE d MMMM yyyy, HH:mm", { locale: it })
+          const dateLabel = row?.scheduled_at
+            ? format(new Date(row.scheduled_at), "EEEE d MMMM yyyy, HH:mm", { locale: it })
             : "";
           void sendEmail({
             to: toEmail,
