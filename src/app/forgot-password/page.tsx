@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { requestPasswordReset } from "@/app/auth/actions";
+import { requestPasswordReset } from "@/app/auth/password-actions";
 
 export default function ForgotPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -32,7 +32,7 @@ export default function ForgotPasswordPage() {
         return;
       }
       setSent(true);
-      toast.success("Controlla la tua email.");
+      toast.success("Se l'email esiste, riceverai un link di reset.");
     } catch {
       toast.error("Qualcosa è andato storto. Riprova più tardi.");
     } finally {
@@ -50,15 +50,15 @@ export default function ForgotPasswordPage() {
             Recupero password
           </CardTitle>
           <CardDescription className="text-barber-paper/70">
-            Inserisci l&apos;email con cui ti sei registrato. Ti invieremo un link per reimpostare la password.
+            Inserisci l&apos;email con cui ti sei registrato. Se l&apos;email esiste, riceverai un link di reset.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {sent ? (
             <div className="rounded-lg border border-barber-gold/30 bg-barber-gold/10 px-4 py-6 text-center">
-              <p className="text-barber-paper font-medium">Controlla la tua email.</p>
+              <p className="text-barber-paper font-medium">Email inviata.</p>
               <p className="mt-1 text-sm text-barber-paper/70">
-                Clicca sul link che ti abbiamo inviato per impostare una nuova password.
+                Se l&apos;email esiste, riceverai un link di reset. Controlla la casella e la cartella spam.
               </p>
             </div>
           ) : (

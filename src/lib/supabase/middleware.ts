@@ -1,6 +1,28 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+/** Rotte di autenticazione: se l'utente è loggato, va reindirizzato a /dashboard */
+const AUTH_ROUTES = ["/login", "/signup", "/forgot-password", "/update-password"];
+
+/** Prefissi delle rotte protette: se l'utente non è loggato, va reindirizzato a /login */
+const PROTECTED_PREFIXES = ["/dashboard", "/campaigns", "/profile", "/admin"];
+
+/** Percorsi sempre accessibili (tutti) */
+const PUBLIC_PATHS = ["/", "/privacy"];
+
+function isAuthRoute(pathname: string): boolean {
+  return AUTH_ROUTES.some((route) => pathname === route || pathname.startsWith(`${route}/`));
+}
+
+function isProtectedRoute(pathname: string): boolean {
+  return PROTECTED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
+function isPublicPath(pathname: string): boolean {
+  const normalized = pathname.replace(/\/$/, "") || "/";
+  return PUBLIC_PATHS.includes(normalized);
+}
+
 export async function updateSession(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -26,7 +48,33 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const pathname = request.nextUrl.pathname;
+
+  // Caso C: Homepage, Privacy e risorse statiche (matcher già esclude static) → lascia passare
+  if (isPublicPath(pathname)) {
+    return supabaseResponse;
+  }
+
+  // Caso A: Utente loggato che accede a pagine di auth → redirect a /dashboard
+  if (user && isAuthRoute(pathname)) {
+    const redirectUrl = new URL("/dashboard", request.url);
+    const res = NextResponse.redirect(redirectUrl);
+    supabaseResponse.cookies.getAll().forEach((c) => res.cookies.set(c.name, c.value, { path: "/" }));
+    return res;
+  }
+
+  // Caso B: Utente ospite che accede a rotte protette → redirect a /login
+  if (!user && isProtectedRoute(pathname)) {
+    const redirectUrl = new URL("/login", request.url);
+    redirectUrl.searchParams.set("next", pathname);
+    const res = NextResponse.redirect(redirectUrl);
+    supabaseResponse.cookies.getAll().forEach((c) => res.cookies.set(c.name, c.value, { path: "/" }));
+    return res;
+  }
 
   return supabaseResponse;
 }

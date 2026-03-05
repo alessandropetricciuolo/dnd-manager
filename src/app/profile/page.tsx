@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { Button } from "@/components/ui/button";
 import { ProfileForm } from "@/components/profile/profile-form";
+import { ChangePasswordForm } from "@/components/profile/change-password-form";
 import { ArrowLeft, User, UserCheck, UserX } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -78,6 +79,8 @@ export default async function ProfilePage() {
             }}
           />
         </div>
+
+        <ChangePasswordForm />
       </div>
     </div>
   );

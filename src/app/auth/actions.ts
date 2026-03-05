@@ -108,65 +108,9 @@ export async function signout() {
   redirect("/login");
 }
 
-/** Base URL dell'app per il redirect dopo reset password (aggiungi in Supabase Auth → URL di redirect). */
-function getAppBaseUrl(): string {
-  if (process.env.NEXT_PUBLIC_APP_URL) {
-    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
-  }
-  return "http://localhost:3000";
-}
-
-export async function requestPasswordReset(email: string): Promise<AuthResult> {
-  if (!email?.trim()) {
-    return { error: "Inserisci l'email." };
-  }
-
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    return { error: ENV_ERROR };
-  }
-
-  try {
-    const supabase = await createSupabaseServerClient();
-    const redirectTo = `${getAppBaseUrl()}/auth/callback?next=/update-password`;
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo,
-    });
-
-    if (error) {
-      return { error: error.message };
-    }
-    return {};
-  } catch (e) {
-    console.error("[requestPasswordReset]", e);
-    return {
-      error: "Impossibile inviare l'email di recupero. Riprova più tardi.",
-    };
-  }
-}
-
-export async function updatePassword(newPassword: string): Promise<AuthResult> {
-  if (!newPassword || newPassword.length < 6) {
-    return { error: "La password deve avere almeno 6 caratteri." };
-  }
-
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    return { error: ENV_ERROR };
-  }
-
-  try {
-    const supabase = await createSupabaseServerClient();
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-
-    if (error) {
-      return { error: error.message };
-    }
-    revalidatePath("/dashboard");
-    return {};
-  } catch (e) {
-    console.error("[updatePassword]", e);
-    return {
-      error: "Impossibile aggiornare la password. Riprova più tardi.",
-    };
-  }
-}
+/** Re-export per compatibilità: logica in password-actions.ts */
+export {
+  requestPasswordReset,
+  updatePassword,
+} from "@/app/auth/password-actions";
 
