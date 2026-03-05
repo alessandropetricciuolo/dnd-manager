@@ -11,7 +11,9 @@ export async function getPlayerEmails(): Promise<string[]> {
       .from("profiles")
       .select("id")
       .eq("role", "player");
-    const playerIds = new Set((profiles ?? []).map((p) => p.id));
+    type ProfileRow = { id: string };
+    const list = (profiles ?? []) as ProfileRow[];
+    const playerIds = new Set(list.map((p) => p.id));
     if (playerIds.size === 0) return [];
 
     const emails: string[] = [];
