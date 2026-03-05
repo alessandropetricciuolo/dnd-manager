@@ -88,18 +88,18 @@ export async function importCampaignFull(json: ImportCampaignJson): Promise<Impo
       image_url: convertDriveLink(campaignData.image_url) ?? null,
     };
 
-    const { data: campaignData, error: campaignError } = await admin
+    const { data: insertedCampaign, error: campaignError } = await admin
       .from("campaigns")
       .insert(campaignInsert as never)
       .select("id")
       .single();
 
-    if (campaignError || !campaignData) {
+    if (campaignError || !insertedCampaign) {
       console.error("[importCampaignFull] campaign", campaignError);
       return { success: false, error: campaignError?.message ?? "Errore creazione campagna." };
     }
 
-    const campaignId = (campaignData as { id: string }).id;
+    const campaignId = (insertedCampaign as { id: string }).id;
 
     // —— Step B: Wiki ——
     const wikiList = json.wiki ?? [];
