@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
+import type { Database } from "@/types/database.types";
 
 /** Se l'URL è un link Google Drive, restituisce il direct link per visualizzazione (export=view). Altrimenti l'URL originale. */
 function convertDriveLink(url: string | null | undefined): string | null {
@@ -88,9 +89,10 @@ export async function importCampaignFull(json: ImportCampaignJson): Promise<Impo
       image_url: convertDriveLink(campaignData.image_url) ?? null,
     };
 
+    type CampaignInsert = Database["public"]["Tables"]["campaigns"]["Insert"];
     const { data: campaign, error: campaignError } = await admin
       .from("campaigns")
-      .insert(campaignInsert)
+      .insert(campaignInsert as CampaignInsert)
       .select("id")
       .single();
 
@@ -111,6 +113,7 @@ export async function importCampaignFull(json: ImportCampaignJson): Promise<Impo
           : typeof w.content === "string"
             ? { body: w.content }
             : { body: "" };
+      type WikiInsert = Database["public"]["Tables"]["wiki_entities"]["Insert"] & { attributes?: unknown; sort_order?: number | null };
       const { error: wikiErr } = await admin.from("wiki_entities").insert({
         campaign_id: campaignId,
         name: w.name.trim(),
@@ -120,7 +123,7 @@ export async function importCampaignFull(json: ImportCampaignJson): Promise<Impo
         attributes: w.attributes ?? {},
         is_secret: w.is_secret ?? false,
         sort_order: w.sort_order ?? null,
-      });
+      } as WikiInsert);
       if (wikiErr) {
         console.error("[importCampaignFull] wiki", w.name, wikiErr);
       }
@@ -131,12 +134,13 @@ export async function importCampaignFull(json: ImportCampaignJson): Promise<Impo
     for (const m of mapsList) {
       if (!m.name?.trim()) continue;
       const imageUrl = convertDriveLink(m.image_url);
+      type MapInsert = Database["public"]["Tables"]["maps"]["Insert"];
       const { error: mapErr } = await admin.from("maps").insert({
         campaign_id: campaignId,
         name: m.name.trim(),
         description: m.description ?? null,
         image_url: imageUrl ?? "",
-      });
+      } as MapInsert);
       if (mapErr) {
         console.error("[importCampaignFull] map", m.name, mapErr);
       }
@@ -148,6 +152,7 @@ export async function importCampaignFull(json: ImportCampaignJson): Promise<Impo
       if (!c.name?.trim()) continue;
       const imageUrl = convertDriveLink(c.image_url);
       const sheetUrl = c.sheet_url?.trim() || null;
+      type CharacterInsert = Database["public"]["Tables"]["campaign_characters"]["Insert"];
       const { error: charErr } = await admin.from("campaign_characters").insert({
         campaign_id: campaignId,
         name: c.name.trim(),
@@ -155,7 +160,7 @@ export async function importCampaignFull(json: ImportCampaignJson): Promise<Impo
         sheet_file_path: sheetUrl,
         background: c.background ?? null,
         assigned_to: null,
-      });
+      } as CharacterInsert);
       if (charErr) {
         console.error("[importCampaignFull] character", c.name, charErr);
       }
@@ -169,7 +174,7 @@ export async function importCampaignFull(json: ImportCampaignJson): Promise<Impo
         campaign_id: campaignId,
         title: g.title.trim(),
         content: g.content ?? "",
-      });
+      } as { campaign_id: string; title: string; content: string });
       if (noteErr) {
         console.error("[importCampaignFull] gm_note", g.title, noteErr);
       }
@@ -185,7 +190,7 @@ export async function importCampaignFull(json: ImportCampaignJson): Promise<Impo
           file_name: fileName,
           mime_type: null,
           file_size: null,
-        });
+        } as { campaign_id: string; file_path: string; file_name: string; mime_type: null; file_size: null });
         if (attErr) {
           console.error("[importCampaignFull] gm_attachment", fileName, attErr);
         }
