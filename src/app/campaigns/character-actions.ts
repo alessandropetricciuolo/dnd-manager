@@ -102,7 +102,7 @@ export async function getCampaignCharacters(
     return { success: false, error: error.message ?? "Errore nel caricamento." };
   }
 
-  const list = (rows ?? []).map((r) => ({ ...r, sheet_url: undefined as string | null }));
+  const list: CampaignCharacterRow[] = (rows ?? []).map((r) => ({ ...r, sheet_url: null }));
   return { success: true, data: list };
 }
 
