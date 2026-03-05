@@ -78,10 +78,14 @@ export async function getCampaignCharacters(
     for (const row of list) {
       let sheet_url: string | null = null;
       if (row.sheet_file_path) {
-        const { data: signed } = await supabase.storage
-          .from(CHARACTER_SHEETS_BUCKET)
-          .createSignedUrl(row.sheet_file_path, SIGNED_URL_EXPIRY_SEC);
-        sheet_url = signed?.signedUrl ?? null;
+        if (row.sheet_file_path.startsWith("http")) {
+          sheet_url = row.sheet_file_path;
+        } else {
+          const { data: signed } = await supabase.storage
+            .from(CHARACTER_SHEETS_BUCKET)
+            .createSignedUrl(row.sheet_file_path, SIGNED_URL_EXPIRY_SEC);
+          sheet_url = signed?.signedUrl ?? null;
+        }
       }
       const { sheet_file_path: _, ...rest } = row;
       withUrls.push({ ...rest, sheet_url });
@@ -252,7 +256,7 @@ export async function deleteCharacter(characterId: string): Promise<CharResult<{
 
   if (fetchErr || !row) return { success: false, error: "Personaggio non trovato." };
 
-  if (row.sheet_file_path) {
+  if (row.sheet_file_path && !row.sheet_file_path.startsWith("http")) {
     await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([row.sheet_file_path]);
   }
 

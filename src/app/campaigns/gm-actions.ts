@@ -177,13 +177,12 @@ export async function listGmAttachments(campaignId: string): Promise<GmResult<Gm
   const withUrls: GmAttachmentRow[] = [];
 
   for (const row of list) {
-    const { data: signed } = await supabase.storage
-      .from(GM_FILES_BUCKET)
-      .createSignedUrl(row.file_path, SIGNED_URL_EXPIRY_SEC);
-    withUrls.push({
-      ...row,
-      signed_url: signed?.signedUrl ?? undefined,
-    });
+    const isExternalUrl = row.file_path.startsWith("http");
+    const signed_url = isExternalUrl
+      ? row.file_path
+      : (await supabase.storage.from(GM_FILES_BUCKET).createSignedUrl(row.file_path, SIGNED_URL_EXPIRY_SEC)).data
+          ?.signedUrl ?? undefined;
+    withUrls.push({ ...row, signed_url });
   }
 
   return { success: true, data: withUrls };
@@ -260,7 +259,9 @@ export async function deleteGmAttachment(attachmentId: string): Promise<GmResult
     return { success: false, error: "Allegato non trovato." };
   }
 
-  await supabase.storage.from(GM_FILES_BUCKET).remove([att.file_path]);
+  if (!att.file_path.startsWith("http")) {
+    await supabase.storage.from(GM_FILES_BUCKET).remove([att.file_path]);
+  }
   const { error: deleteError } = await supabase.from("gm_attachments").delete().eq("id", attachmentId);
   if (deleteError) {
     console.error("[deleteGmAttachment]", deleteError);
