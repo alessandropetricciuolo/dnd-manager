@@ -98,6 +98,21 @@ export interface Database {
         Insert: Omit<Database["public"]["Tables"]["maps"]["Row"], "created_at" | "updated_at">;
         Update: Partial<Database["public"]["Tables"]["maps"]["Insert"]>;
       };
+      campaign_characters: {
+        Row: {
+          id: string;
+          campaign_id: string;
+          name: string;
+          image_url: string | null;
+          sheet_file_path: string | null;
+          background: string | null;
+          assigned_to: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database["public"]["Tables"]["campaign_characters"]["Row"], "created_at" | "updated_at">;
+        Update: Partial<Database["public"]["Tables"]["campaign_characters"]["Insert"]>;
+      };
     };
   };
 }

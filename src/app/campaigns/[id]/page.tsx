@@ -16,6 +16,8 @@ import { EditCampaignDialog } from "@/components/campaigns/edit-campaign-dialog"
 import { CampaignTabsClient } from "@/components/campaigns/campaign-tabs-client";
 import { GmNotes } from "@/components/gm/gm-notes";
 import { GmFiles } from "@/components/gm/gm-files";
+import { CharactersSection } from "@/components/characters/characters-section";
+import { getCampaignCharacters, getCampaignEligiblePlayers } from "@/app/campaigns/character-actions";
 import { ArrowLeft } from "lucide-react";
 
 const PLACEHOLDER_IMAGE =
@@ -97,6 +99,15 @@ export default async function CampaignPage({ params }: PageProps) {
     } catch (e) {
       console.error("[campaigns/[id]] has_played_campaign RPC", e);
     }
+  }
+
+  const charsResult = await getCampaignCharacters(id);
+  const characters = charsResult.success ? charsResult.data ?? [] : [];
+
+  let eligiblePlayers: { id: string; label: string }[] = [];
+  if (isGmOrAdmin) {
+    const playersResult = await getCampaignEligiblePlayers(id);
+    if (playersResult.success && playersResult.data) eligiblePlayers = playersResult.data;
   }
 
   const campaignTypeLabels: Record<string, string> = {
@@ -217,6 +228,14 @@ export default async function CampaignPage({ params }: PageProps) {
                 <MapGallery campaignId={campaign.id} />
               </>
             ) : null
+          }
+          pgContent={
+            <CharactersSection
+              campaignId={campaign.id}
+              characters={characters}
+              eligiblePlayers={eligiblePlayers}
+              isGm={isGmOrAdmin}
+            />
           }
           gmAreaContent={
             isGmOrAdmin ? (

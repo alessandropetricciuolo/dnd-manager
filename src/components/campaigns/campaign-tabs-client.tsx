@@ -3,12 +3,12 @@
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, BookOpen, CalendarDays, Map, Lock, ScrollText } from "lucide-react";
+import { LayoutDashboard, BookOpen, CalendarDays, Map, Lock, ScrollText, User } from "lucide-react";
 
 const PLACEHOLDER_IMAGE =
   "https://placehold.co/1200x400/1e293b/10b981/png?text=Campagna";
 
-const VALID_TABS = ["overview", "sessioni", "wiki", "mappe", "gm"] as const;
+const VALID_TABS = ["overview", "sessioni", "wiki", "mappe", "pg", "gm"] as const;
 type TabValue = (typeof VALID_TABS)[number];
 
 type CampaignTabsClientProps = {
@@ -26,6 +26,8 @@ type CampaignTabsClientProps = {
   sessioniContent: React.ReactNode;
   wikiContent: React.ReactNode;
   mappeContent: React.ReactNode;
+  /** Tab PG: Personaggi (GM) / Il Mio Personaggio (Player) */
+  pgContent: React.ReactNode;
   /** Area GM: passato solo se user è GM o Admin; tab e contenuto visibili solo in quel caso */
   gmAreaContent?: React.ReactNode | null;
 };
@@ -38,6 +40,7 @@ export function CampaignTabsClient({
   sessioniContent,
   wikiContent,
   mappeContent,
+  pgContent,
   gmAreaContent,
 }: CampaignTabsClientProps) {
   const pathname = usePathname();
@@ -111,6 +114,13 @@ export function CampaignTabsClient({
           )}
           Mappe
         </TabsTrigger>
+        <TabsTrigger
+          value="pg"
+          className="data-[state=active]:bg-barber-gold/20 data-[state=active]:text-barber-gold"
+        >
+          <User className="mr-2 h-4 w-4" />
+          PG
+        </TabsTrigger>
         {showGmTab && (
           <TabsTrigger
             value="gm"
@@ -170,6 +180,9 @@ export function CampaignTabsClient({
 
       <TabsContent value="mappe" className="mt-0">
         {mappeContent}
+      </TabsContent>
+      <TabsContent value="pg" className="mt-0">
+        {pgContent}
       </TabsContent>
       {showGmTab && (
         <TabsContent value="gm" className="mt-0">

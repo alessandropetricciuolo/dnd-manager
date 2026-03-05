@@ -43,13 +43,16 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const email = user.email ?? "avventuriero";
-
-  const { data: profile, error: profileError } = await supabase
+  const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, first_name, last_name")
     .eq("id", user.id)
     .single();
+
+  const displayName =
+    [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") ||
+    user.email ||
+    "avventuriero";
 
   const isAdmin = profile?.role === "admin";
   const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
@@ -60,7 +63,7 @@ export default async function DashboardPage() {
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-sm text-barber-gold/80">Benvenuto,</p>
-            <h1 className="text-2xl font-semibold text-barber-paper">{email}</h1>
+            <h1 className="text-2xl font-semibold text-barber-paper">{displayName}</h1>
           </div>
 
           <div className="flex items-center gap-2">
