@@ -108,9 +108,17 @@ export async function signout() {
   redirect("/login");
 }
 
-/** Re-export per compatibilità: logica in password-actions.ts */
-export {
-  requestPasswordReset,
-  updatePassword,
+import {
+  requestPasswordReset as requestPasswordResetImpl,
+  updatePassword as updatePasswordImpl,
 } from "@/app/auth/password-actions";
+
+/** Wrapper per compatibilità: logica in password-actions.ts */
+export async function requestPasswordReset(email: string): Promise<AuthResult> {
+  return requestPasswordResetImpl(email);
+}
+
+export async function updatePassword(newPassword: string): Promise<AuthResult> {
+  return updatePasswordImpl(newPassword);
+}
 
