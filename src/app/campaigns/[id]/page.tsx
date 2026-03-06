@@ -236,6 +236,11 @@ export default async function CampaignPage({ params }: PageProps) {
           campaignTypeLabel={campaignTypeLabel}
           sessioniContent={
             <>
+              {isGmOrAdmin && !(campaign.is_public ?? false) && (
+                <div className="mb-4 rounded-lg border border-amber-500/50 bg-amber-950/30 px-4 py-3 text-sm text-amber-200">
+                  <strong>Campagna privata.</strong> I player non vedono le sessioni in calendario e non possono prenotarsi. Usa il pulsante &quot;Privata&quot; in alto per renderla pubblica e permettere le prenotazioni.
+                </div>
+              )}
               <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
                 <h2 className="text-lg font-semibold text-barber-paper">
                   In programma

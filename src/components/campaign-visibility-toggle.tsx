@@ -41,7 +41,7 @@ export function CampaignVisibilityToggle({ campaignId, isPublic: initialPublic }
       }
       disabled={loading}
       onClick={handleToggle}
-      title={isPublic ? "Visibile a tutti i giocatori. Clicca per rendere privata." : "Solo iscritti. Clicca per rendere pubblica."}
+      title={isPublic ? "Visibile a tutti i giocatori (sessioni in calendario e prenotabili). Clicca per rendere privata." : "Privata: i player non vedono le sessioni né possono prenotarsi. Clicca per rendere pubblica."}
     >
       {isPublic ? (
         <>
