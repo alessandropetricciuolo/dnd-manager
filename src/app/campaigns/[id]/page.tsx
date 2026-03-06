@@ -19,7 +19,7 @@ import { GmFiles } from "@/components/gm/gm-files";
 import { CharactersSection } from "@/components/characters/characters-section";
 import { getCampaignCharacters, getCampaignEligiblePlayers } from "@/app/campaigns/character-actions";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowLeft } from "lucide-react";
+import { CampaignMobileHeader } from "@/components/campaigns/campaign-mobile-header";
 
 const PLACEHOLDER_IMAGE =
   "https://placehold.co/1200x400/1e293b/10b981/png?text=Campagna";
@@ -79,6 +79,7 @@ export default async function CampaignPage({ params }: PageProps) {
 
   /** Solo GM e Admin possono creare sessioni, wiki, mappe. I player solo visualizzano. */
   const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
+  const isAdmin = profile?.role === "admin";
 
   /** Lista GM/Admin per la select DM nel form Nuova Sessione (solo se isGmOrAdmin). */
   let gmAdminUsers: { id: string; label: string }[] = [];
@@ -193,8 +194,14 @@ export default async function CampaignPage({ params }: PageProps) {
           </ScrollArea>
         </aside>
 
-        {/* Mobile: cover in cima (scroll via con il contenuto) */}
-        <div className="relative h-40 shrink-0 overflow-hidden bg-barber-dark lg:hidden">
+        {/* Mobile: barra con hamburger + indietro + titolo */}
+        <CampaignMobileHeader
+          isAdmin={isAdmin}
+          isGmOrAdmin={isGmOrAdmin}
+          campaignName={campaign.name}
+        />
+        {/* Mobile: cover immagine + GM */}
+        <div className="relative h-28 shrink-0 overflow-hidden bg-barber-dark lg:hidden">
           <Image
             src={campaign.image_url ?? PLACEHOLDER_IMAGE}
             alt=""
@@ -204,18 +211,11 @@ export default async function CampaignPage({ params }: PageProps) {
             unoptimized={!!campaign.image_url}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-barber-dark via-barber-dark/80 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-4">
-            <Link href="/dashboard" className="inline-flex text-barber-paper/80 hover:text-barber-paper">
-              <Button variant="ghost" size="sm" className="h-8 text-barber-paper/80">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Indietro
-              </Button>
-            </Link>
-            <h1 className="text-lg font-semibold text-white drop-shadow-md">{campaign.name}</h1>
-            {gmDisplayName && (
+          {gmDisplayName && (
+            <div className="absolute bottom-0 left-0 right-0 p-4">
               <p className="text-xs text-barber-gold/90">GM · {gmDisplayName}</p>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Colonna destra: scroll, tabs sticky in cima */}

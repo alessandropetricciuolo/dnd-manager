@@ -1,19 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, User, Shield, LogOut } from "lucide-react";
+import { Menu, LayoutDashboard, User, Shield, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { MobileNavMenu } from "@/components/dashboard/mobile-nav-menu";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { CreateCampaignDialog } from "@/components/create-campaign-dialog";
 import { signout } from "@/app/auth/actions";
 import { cn } from "@/lib/utils";
-
-type DashboardShellProps = {
-  children: React.ReactNode;
-  isAdmin: boolean;
-  isGmOrAdmin: boolean;
-};
 
 function NavLinks({
   isAdmin,
@@ -70,31 +65,44 @@ function NavLinks({
   );
 }
 
-export function DashboardShell({ children, isAdmin, isGmOrAdmin }: DashboardShellProps) {
-  const pathname = usePathname();
-  const isCampaignPage = pathname?.startsWith("/campaigns");
+type MobileNavMenuProps = {
+  isAdmin: boolean;
+  isGmOrAdmin: boolean;
+  /** Se true, il trigger è solo l'icona (per inserirlo in header custom). Altrimenti mostra anche "Menu". */
+  iconOnly?: boolean;
+  className?: string;
+};
+
+export function MobileNavMenu({ isAdmin, isGmOrAdmin, iconOnly = false, className }: MobileNavMenuProps) {
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] w-full">
-      {/* Sidebar desktop: nascosta su mobile, visibile da md */}
-      <aside className="hidden w-56 shrink-0 flex-col border-r border-barber-gold/20 bg-barber-dark/50 md:flex md:flex-col">
-        <div className="flex flex-col gap-1 p-4">
-          <NavLinks isAdmin={isAdmin} isGmOrAdmin={isGmOrAdmin} />
+    <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+      <SheetTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(
+            "shrink-0 text-barber-paper hover:bg-barber-gold/20 hover:text-barber-gold",
+            className
+          )}
+          aria-label="Apri menu"
+        >
+          <Menu className="h-6 w-6" />
+        </Button>
+      </SheetTrigger>
+      <SheetContent
+        side="left"
+        className="w-[min(100vw-2rem,280px)] border-barber-gold/20 bg-barber-dark p-0"
+      >
+        <div className="flex flex-col gap-1 px-4 pb-4 pt-14">
+          <NavLinks
+            isAdmin={isAdmin}
+            isGmOrAdmin={isGmOrAdmin}
+            onNavigate={() => setSheetOpen(false)}
+          />
         </div>
-      </aside>
-
-      {/* Mobile: hamburger (nascosto nelle campagne: la pagina campagna ha il suo hamburger) */}
-      <div className="flex flex-1 flex-col md:contents">
-        {!isCampaignPage && (
-          <div className="flex items-center gap-2 border-b border-barber-gold/20 bg-barber-dark/80 px-4 py-3 md:hidden">
-            <MobileNavMenu isAdmin={isAdmin} isGmOrAdmin={isGmOrAdmin} />
-            <span className="text-sm font-medium text-barber-paper/90 truncate">Menu</span>
-          </div>
-        )}
-
-        {/* Main content */}
-        <main className="min-w-0 flex-1">{children}</main>
-      </div>
-    </div>
+      </SheetContent>
+    </Sheet>
   );
 }
