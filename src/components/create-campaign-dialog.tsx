@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import {
   Dialog,
   DialogContent,
@@ -158,13 +159,13 @@ export function CreateCampaignDialog() {
             >
               Annulla
             </Button>
-            <Button
-              type="submit"
-              disabled={isLoading}
+            <SubmitButton
+              pending={isLoading}
+              loadingText="Creazione..."
               className="bg-barber-red text-barber-paper hover:bg-barber-red/90"
             >
-              {isLoading ? "Creazione..." : "Crea campagna"}
-            </Button>
+              Crea campagna
+            </SubmitButton>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
+import NextTopLoader from "nextjs-toploader";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { Navbar } from "@/components/navbar";
@@ -28,6 +29,7 @@ export default function RootLayout({
   return (
     <html lang="it" className="dark">
       <body className={`${inter.variable} ${playfair.variable} font-sans antialiased`}>
+        <NextTopLoader color="#D4AF37" showSpinner={false} />
         <Navbar />
         <Toaster richColors closeButton />
         {children}

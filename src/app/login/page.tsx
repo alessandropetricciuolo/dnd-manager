@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import {
   Card,
   CardContent,
@@ -253,17 +254,13 @@ export default function LoginPage() {
               />
             </div>
 
-            <Button
-              type="submit"
+            <SubmitButton
+              pending={isLoading}
+              loadingText="Elaborazione..."
               className="w-full bg-barber-red hover:bg-barber-red/90 text-barber-paper font-semibold"
-              disabled={isLoading}
             >
-              {isLoading
-                ? "Elaborazione..."
-                : mode === "login"
-                  ? "Entra nella Taverna"
-                  : "Crea il tuo eroe"}
-            </Button>
+              {mode === "login" ? "Entra nella Taverna" : "Crea il tuo eroe"}
+            </SubmitButton>
           </form>
         </CardContent>
 

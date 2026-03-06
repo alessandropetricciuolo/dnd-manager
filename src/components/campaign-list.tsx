@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { IMAGE_BLUR_PLACEHOLDER } from "@/lib/utils";
 
 const PLACEHOLDER_IMAGE = "https://placehold.co/600x400/1e293b/10b981/png?text=Campagna";
 
@@ -133,7 +134,7 @@ export async function CampaignList({ variant = "all" }: CampaignListProps) {
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {campaigns.map((campaign) => (
+      {campaigns.map((campaign, index) => (
         <Link key={campaign.id} href={`/campaigns/${campaign.id}`}>
           <Card className="overflow-hidden border-barber-gold/40 bg-barber-dark/90 transition-colors hover:border-barber-gold/50 hover:bg-barber-dark">
             <div className="relative aspect-[3/2] w-full bg-barber-dark">
@@ -142,7 +143,10 @@ export async function CampaignList({ variant = "all" }: CampaignListProps) {
                 alt={campaign.name}
                 fill
                 className="object-contain"
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                priority={index === 0}
+                placeholder="blur"
+                blurDataURL={IMAGE_BLUR_PLACEHOLDER}
                 unoptimized={!!campaign.image_url}
               />
             </div>

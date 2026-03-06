@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import {
   Dialog,
   DialogContent,
@@ -384,13 +385,13 @@ export function EditEntityDialog({
             >
               Annulla
             </Button>
-            <Button
-              type="submit"
-              disabled={isLoading}
+            <SubmitButton
+              pending={isLoading}
+              loadingText="Salvataggio..."
               className="bg-barber-red text-barber-paper hover:bg-barber-red/90"
             >
-              {isLoading ? "Salvataggio..." : "Salva"}
-            </Button>
+              Salva
+            </SubmitButton>
           </DialogFooter>
         </form>
       </DialogContent>

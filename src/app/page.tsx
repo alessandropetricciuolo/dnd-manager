@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Sword, Map, Scroll } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { IMAGE_BLUR_PLACEHOLDER } from "@/lib/utils";
 
 export default function HomePage() {
   return (
@@ -38,6 +39,9 @@ export default function HomePage() {
                   height={160}
                   className="relative z-10 w-64 object-contain sm:w-80"
                   priority
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  placeholder="blur"
+                  blurDataURL={IMAGE_BLUR_PLACEHOLDER}
                 />
               </div>
             </div>

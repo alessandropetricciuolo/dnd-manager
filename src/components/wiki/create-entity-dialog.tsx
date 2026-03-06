@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { BookOpen } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import {
   Dialog,
   DialogContent,
@@ -360,13 +361,13 @@ export function CreateEntityDialog({ campaignId }: CreateEntityDialogProps) {
             >
               Annulla
             </Button>
-            <Button
-              type="submit"
-              disabled={isLoading}
+            <SubmitButton
+              pending={isLoading}
+              loadingText="Creazione..."
               className="bg-barber-red text-barber-paper hover:bg-barber-red/90"
             >
-              {isLoading ? "Creazione..." : "Crea"}
-            </Button>
+              Crea
+            </SubmitButton>
           </DialogFooter>
         </form>
       </DialogContent>

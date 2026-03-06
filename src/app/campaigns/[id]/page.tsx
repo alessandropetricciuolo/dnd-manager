@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
+import { IMAGE_BLUR_PLACEHOLDER } from "@/lib/utils";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { SessionList } from "@/components/session-list";
@@ -139,7 +140,10 @@ export default async function CampaignPage({ params }: PageProps) {
           alt=""
           fill
           className="object-cover"
-          sizes="320px"
+          priority
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          placeholder="blur"
+          blurDataURL={IMAGE_BLUR_PLACEHOLDER}
           unoptimized={!!campaign.image_url}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-barber-dark via-barber-dark/50 to-transparent" />
