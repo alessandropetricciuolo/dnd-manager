@@ -141,6 +141,7 @@ export async function updateEntity(
   const content = (formData.get("content") as string | null)?.trim() ?? "";
   const isSecret = formData.get("is_secret") === "on" || formData.get("is_secret") === "true";
   const imageFile = formData.get("image") as File | null;
+  const imageUrlFromForm = (formData.get("image_url") as string | null)?.trim() || null;
   const removeImage = formData.get("remove_image") === "on" || formData.get("remove_image") === "true";
   const attributes = parseAttributes(formData, type ?? "");
   const sortOrderRaw = formData.get("sort_order") as string | null;
@@ -201,6 +202,8 @@ export async function updateEntity(
       }
       const { data: urlData } = supabase.storage.from(WIKI_IMAGES_BUCKET).getPublicUrl(path);
       imageUrl = urlData.publicUrl;
+    } else if (imageUrlFromForm) {
+      imageUrl = imageUrlFromForm;
     }
 
     const updatePayload: Record<string, unknown> = {

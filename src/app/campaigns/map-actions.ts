@@ -28,6 +28,7 @@ export async function uploadMap(
     ? mapTypeRaw
     : "region";
   const file = formData.get("file") as File | null;
+  const imageUrlFromForm = (formData.get("image_url") as string | null)?.trim() || null;
 
   if (!campaignId) {
     return { success: false, message: "Campagna non valida." };
@@ -35,16 +36,21 @@ export async function uploadMap(
   if (!name) {
     return { success: false, message: "Il nome della mappa è obbligatorio." };
   }
-  if (!file || !(file instanceof File) || file.size === 0) {
-    return { success: false, message: "Seleziona un'immagine da caricare." };
-  }
 
-  const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-  if (!allowedTypes.includes(file.type)) {
-    return {
-      success: false,
-      message: "Formato non supportato. Usa JPG, PNG, WebP o GIF.",
-    };
+  let imageUrlToSave: string;
+  if (file && file instanceof File && file.size > 0) {
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowedTypes.includes(file.type)) {
+      return {
+        success: false,
+        message: "Formato non supportato. Usa JPG, PNG, WebP o GIF.",
+      };
+    }
+    imageUrlToSave = ""; // will be set after upload
+  } else if (imageUrlFromForm) {
+    imageUrlToSave = imageUrlFromForm;
+  } else {
+    return { success: false, message: "Carica un'immagine o incolla un URL (es. Google Drive)." };
   }
 
   try {
@@ -67,38 +73,42 @@ export async function uploadMap(
       return { success: false, message: "Non autorizzato. Solo GM e Admin possono caricare mappe." };
     }
 
-    const ext = file.name.split(".").pop()?.toLowerCase() || "png";
-    const safeName = sanitizeFileName(name);
-    const path = `${campaignId}/${randomUUID()}-${safeName}.${ext}`;
+    let finalImageUrl: string;
+    if (file && file instanceof File && file.size > 0) {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "png";
+      const safeName = sanitizeFileName(name);
+      const path = `${campaignId}/${randomUUID()}-${safeName}.${ext}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from(BUCKET)
-      .upload(path, file, {
-        cacheControl: "3600",
-        upsert: false,
-      });
+      const { error: uploadError } = await supabase.storage
+        .from(BUCKET)
+        .upload(path, file, {
+          cacheControl: "3600",
+          upsert: false,
+        });
 
-    if (uploadError) {
-      console.error("[uploadMap] storage", uploadError);
-      return {
-        success: false,
-        message:
-          uploadError.message === "The resource already exists"
-            ? "File con questo nome già presente. Riprova."
-            : uploadError.message ?? "Errore durante il caricamento del file.",
-      };
+      if (uploadError) {
+        console.error("[uploadMap] storage", uploadError);
+        return {
+          success: false,
+          message:
+            uploadError.message === "The resource already exists"
+              ? "File con questo nome già presente. Riprova."
+              : uploadError.message ?? "Errore durante il caricamento del file.",
+        };
+      }
+
+      const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(path);
+      finalImageUrl = urlData.publicUrl;
+    } else {
+      finalImageUrl = imageUrlToSave;
     }
-
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from(BUCKET).getPublicUrl(path);
 
     const { error: insertError } = await supabase.from("maps").insert({
       campaign_id: campaignId,
       name,
       description,
       map_type: mapType,
-      image_url: publicUrl,
+      image_url: finalImageUrl,
     });
 
     if (insertError) {

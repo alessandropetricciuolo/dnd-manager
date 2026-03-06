@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CompressedImageUpload } from "@/components/ui/compressed-image-upload";
+import { ImageSourceField } from "@/components/ui/image-source-field";
 import { Textarea } from "@/components/ui/textarea";
 import { createEntity } from "@/app/campaigns/wiki-actions";
 import { getEmptyAttributes } from "@/types/wiki";
@@ -160,11 +160,11 @@ export function CreateEntityDialog({ campaignId }: CreateEntityDialogProps) {
             </select>
           </div>
 
-          <CompressedImageUpload
-            name="image"
+          <ImageSourceField
+            fileInputName="image"
+            urlFieldName="image_url"
             label="Immagine (opzionale)"
             disabled={isLoading}
-            className="[&_button]:bg-barber-dark [&_button]:border-barber-gold/30 [&_button]:text-barber-paper"
           />
 
           {/* Contenuto principale (storia/descrizione) */}

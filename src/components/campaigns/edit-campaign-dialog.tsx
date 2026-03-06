@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CompressedImageUpload } from "@/components/ui/compressed-image-upload";
+import { ImageSourceField } from "@/components/ui/image-source-field";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -148,13 +148,14 @@ export function EditCampaignDialog({ campaign }: EditCampaignDialogProps) {
               disabled={isLoading}
             />
           </div>
-          <CompressedImageUpload
-            name="image"
+          <ImageSourceField
+            fileInputName="image"
+            urlFieldName="image_url"
             label="Immagine di copertina"
             previewUrl={campaign.image_url}
             disabled={isLoading}
-            hint="Lascia vuoto per mantenere l'immagine attuale. L'immagine verrà compressa (max 2 MB, WebP)."
-            className="[&_button]:bg-slate-900/70 [&_button]:border-slate-700 [&_button]:text-slate-50 [&_.aspect-video]:aspect-[3/1]"
+            hint="Lascia vuoto per mantenere l'attuale. Carica un file o incolla un URL (es. Google Drive)."
+            previewClassName="aspect-[3/1]"
           />
           <DialogFooter>
             <Button

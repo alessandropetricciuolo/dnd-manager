@@ -16,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { CompressedImageUpload } from "@/components/ui/compressed-image-upload";
+import { ImageSourceField } from "@/components/ui/image-source-field";
 import { updateEntity } from "@/app/campaigns/wiki-actions";
 import { getEmptyAttributes } from "@/types/wiki";
 import type { WikiEntity } from "@/app/campaigns/wiki-actions";
@@ -190,18 +190,20 @@ export function EditEntityDialog({
           </div>
 
           <div className="space-y-2">
-            <CompressedImageUpload
-              name="image"
+            <ImageSourceField
+              fileInputName="image"
+              urlFieldName="image_url"
               label="Immagine"
               previewUrl={removeImage ? undefined : entity.image_url}
               disabled={isLoading}
-              className="[&_button]:bg-barber-dark/80 [&_button]:border-barber-gold/30 [&_button]:text-barber-paper [&_.aspect-video]:max-w-xs"
+              previewClassName="max-w-xs"
             />
             {entity.image_url && (
               <div className="flex items-center gap-2 pt-1">
                 <input
                   type="checkbox"
                   id="edit-remove-image"
+                  name="remove_image"
                   checked={removeImage}
                   onChange={(e) => setRemoveImage(e.target.checked)}
                   className="h-4 w-4 rounded border-barber-gold/40 bg-barber-dark text-barber-gold"

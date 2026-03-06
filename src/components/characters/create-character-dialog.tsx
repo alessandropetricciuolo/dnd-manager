@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CompressedImageUpload } from "@/components/ui/compressed-image-upload";
+import { ImageSourceField } from "@/components/ui/image-source-field";
 import { Textarea } from "@/components/ui/textarea";
 import { createCharacter } from "@/app/campaigns/character-actions";
 
@@ -47,7 +47,13 @@ export function CreateCharacterDialog({ campaignId }: CreateCharacterDialogProps
     }
 
     const imageFile = formData.get("image") as File | null;
+    const imageUrl = (formData.get("image_url") as string | null)?.trim() || null;
     const sheetFile = formData.get("sheet") as File | null;
+    const hasImage = (imageFile && imageFile instanceof File && imageFile.size > 0) || !!imageUrl;
+    if (!hasImage) {
+      toast.error("Inserisci un avatar: carica un file o incolla un URL immagine.");
+      return;
+    }
     let totalBytes = 0;
     if (imageFile?.size) totalBytes += imageFile.size;
     if (sheetFile?.size) totalBytes += sheetFile.size;
@@ -106,12 +112,13 @@ export function CreateCharacterDialog({ campaignId }: CreateCharacterDialogProps
             />
           </div>
 
-          <CompressedImageUpload
-            name="image"
+          <ImageSourceField
+            fileInputName="image"
+            urlFieldName="image_url"
             label="Avatar (immagine)"
             required
             disabled={isLoading}
-            className="[&_.aspect-video]:aspect-[200/280] [&_.aspect-video]:w-32"
+            previewClassName="aspect-[200/280] w-32"
           />
 
           <div className="space-y-2">

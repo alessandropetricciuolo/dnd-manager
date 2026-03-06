@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import { addPin } from "@/app/campaigns/map-actions";
 import { NewPinDialog } from "./new-pin-dialog";
 import { cn } from "@/lib/utils";
+
+const DEFAULT_ASPECT_RATIO = 16 / 9;
 
 export type MapPinData = {
   id: string;
@@ -45,8 +47,18 @@ export function InteractiveMap({
 }: InteractiveMapProps) {
   const router = useRouter();
   const [newPinCoords, setNewPinCoords] = useState<{ x: number; y: number } | null>(null);
+  const [imageAspectRatio, setImageAspectRatio] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
+
+  const aspectRatio = imageAspectRatio ?? DEFAULT_ASPECT_RATIO;
+
+  const handleImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    if (img?.naturalWidth && img.naturalHeight) {
+      setImageAspectRatio(img.naturalWidth / img.naturalHeight);
+    }
+  }, []);
 
   const handleDoubleClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -76,41 +88,53 @@ export function InteractiveMap({
     }
   };
 
+  const isExternalUrl = useMemo(
+    () =>
+      imageUrl.startsWith("blob:") ||
+      imageUrl.includes("drive.google.com") ||
+      imageUrl.includes("googleusercontent.com"),
+    [imageUrl]
+  );
+
   return (
-    <div className="h-full w-full bg-slate-950">
-      <div style={{ width: "100%", height: "100%" }}>
-      <TransformWrapper
-        initialScale={1}
-        minScale={0.3}
-        maxScale={4}
-        centerOnInit
-        limitToBounds={false}
+    <div className="h-full w-full min-h-[300px] bg-slate-950">
+      {/* Robust container: defined aspect ratio prevents layout shift; matches image once loaded so pins align. */}
+      <div
+        className="relative w-full"
+        style={{ aspectRatio: String(aspectRatio), minHeight: 280 }}
       >
-        <TransformComponent
-          wrapperStyle={{ width: "100%", height: "100%" }}
-          contentStyle={{ width: "100%", height: "100%", position: "relative" }}
-        >
-          <div className="relative flex h-full w-full items-center justify-center">
+        <div className="w-full h-full min-h-0">
+          <TransformWrapper
+            initialScale={1}
+            minScale={0.3}
+            maxScale={4}
+            centerOnInit
+            limitToBounds={false}
+          >
+          <TransformComponent
+            wrapperStyle={{ width: "100%", height: "100%" }}
+            contentStyle={{ width: "100%", height: "100%", position: "relative" }}
+          >
+            {/* Map container: same size as wrapper; image + pin layer overlay exactly. */}
             <div
               ref={containerRef}
-              className="relative mx-auto h-full w-full"
+              className="relative w-full h-full"
               onDoubleClick={handleDoubleClick}
               style={{ cursor: isCreator ? "crosshair" : "default" }}
             >
               <Image
                 ref={imageRef}
-                  src={imageUrl}
-                  alt={mapName}
-                  fill
-                  className="object-contain"
-                  sizes="100vw"
-                  priority
-                  unoptimized={imageUrl.startsWith("blob:")}
-                />
-              <div
-                className="absolute inset-0 pointer-events-none"
-                aria-hidden
+                src={imageUrl}
+                alt={mapName}
+                fill
+                className="object-contain"
+                sizes="100vw"
+                priority
+                unoptimized={isExternalUrl}
+                onLoad={handleImageLoad}
               />
+              {/* Pin layer: absolute inset-0 so pins (left/top %) match the image coordinate system. */}
+              <div className="absolute inset-0 pointer-events-none" aria-hidden />
               <div className="absolute inset-0 pointer-events-auto">
                 {pins.map((pin) => (
                   <PinMarker
@@ -121,9 +145,9 @@ export function InteractiveMap({
                 ))}
               </div>
             </div>
-          </div>
-        </TransformComponent>
-      </TransformWrapper>
+          </TransformComponent>
+        </TransformWrapper>
+        </div>
       </div>
 
       {isCreator && newPinCoords && (

@@ -728,6 +728,7 @@ export async function updateCampaign(formData: FormData): Promise<UpdateCampaign
     ? (typeRaw as "oneshot" | "quest" | "long")
     : null;
   const imageFile = formData.get("image") as File | null;
+  const imageUrlFromForm = (formData.get("image_url") as string | null)?.trim() || null;
 
   if (!campaignId) {
     return { success: false, message: "Campagna non valida." };
@@ -776,6 +777,8 @@ export async function updateCampaign(formData: FormData): Promise<UpdateCampaign
 
       const { data: urlData } = supabase.storage.from(COVER_BUCKET).getPublicUrl(path);
       imageUrl = urlData.publicUrl;
+    } else if (imageUrlFromForm) {
+      imageUrl = imageUrlFromForm;
     }
 
     const { data: existing } = await supabase

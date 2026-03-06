@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CompressedImageUpload } from "@/components/ui/compressed-image-upload";
+import { ImageSourceField } from "@/components/ui/image-source-field";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -155,12 +155,13 @@ export function UploadMapDialog({ campaignId }: UploadMapDialogProps) {
             />
           </div>
 
-          <CompressedImageUpload
-            name="file"
+          <ImageSourceField
+            fileInputName="file"
+            urlFieldName="image_url"
             label="Immagine"
             required
             disabled={isLoading}
-            className="[&_button]:bg-barber-dark [&_button]:border-barber-gold/30 [&_button]:text-barber-paper"
+            hint="Carica un file o incolla un link (es. Google Drive) per risparmiare spazio."
           />
 
           <DialogFooter>

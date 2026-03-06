@@ -125,6 +125,7 @@ export async function createCharacter(
   const name = (formData.get("name") as string | null)?.trim();
   const background = (formData.get("background") as string | null)?.trim() ?? null;
   const imageFile = formData.get("image") as File | null;
+  const imageUrlFromForm = (formData.get("image_url") as string | null)?.trim() || null;
   const sheetFile = formData.get("sheet") as File | null;
 
   if (!name) return { success: false, error: "Il nome del personaggio è obbligatorio." };
@@ -146,6 +147,8 @@ export async function createCharacter(
     }
     const { data: urlData } = supabase.storage.from(WIKI_IMAGES_BUCKET).getPublicUrl(path);
     image_url = urlData.publicUrl;
+  } else if (imageUrlFromForm) {
+    image_url = imageUrlFromForm;
   }
 
   let sheet_file_path: string | null = null;
