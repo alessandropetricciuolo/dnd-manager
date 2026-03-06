@@ -82,9 +82,13 @@ export default function LoginPage() {
       });
 
       if (signUpError) {
-        const msg =
-          (signUpError as { message?: string }).message?.trim() ||
-          "Registrazione non riuscita. Controlla che l'email non sia già usata, che la password abbia almeno 6 caratteri e riprova.";
+        const err = signUpError as { message?: string; status?: number; code?: string };
+        const isRateLimit =
+          err.status === 429 || err.code === "over_email_send_rate_limit";
+        const msg = isRateLimit
+          ? "Troppi tentativi di invio email in poco tempo. Riprova tra un'ora o contatta il gestore del sito."
+          : (err.message?.trim() ||
+              "Registrazione non riuscita. Controlla che l'email non sia già usata, che la password abbia almeno 6 caratteri e riprova.");
         toast.error(msg);
         return;
       }

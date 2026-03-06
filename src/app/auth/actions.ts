@@ -11,13 +11,16 @@ type AuthResult = {
 const ENV_ERROR =
   "Configurazione mancante sul server. In Vercel: Settings → Environment Variables → aggiungi NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY.";
 
-/** Da oggetto errore Supabase Auth ricava un messaggio leggibile (gestisce 504 e message vuoto). */
+/** Da oggetto errore Supabase Auth ricava un messaggio leggibile (504, 429, message vuoto). */
 function authErrorMessage(
-  error: { message?: string; status?: number; msg?: string; error_description?: string },
+  error: { message?: string; status?: number; code?: string; msg?: string; error_description?: string },
   fallback: string
 ): string {
   if (error.status === 504) {
     return "Il servizio di registrazione non ha risposto in tempo. Riprova tra un minuto (problema temporaneo di rete).";
+  }
+  if (error.status === 429 || error.code === "over_email_send_rate_limit") {
+    return "Troppi tentativi di invio email in poco tempo. Riprova tra un'ora o contatta il gestore del sito.";
   }
   if (error.status && error.status >= 500) {
     return "Errore temporaneo del servizio. Riprova tra qualche minuto.";
@@ -49,9 +52,10 @@ export async function login(email: string, password: string): Promise<AuthResult
     revalidatePath("/dashboard");
     return {};
   } catch (e) {
-    const err = e as { message?: string; status?: number };
-    if (err.status === 504) {
-      return { error: "Il servizio non ha risposto in tempo. Riprova tra un minuto." };
+    const err = e as { message?: string; status?: number; code?: string };
+    if (err.status === 504) return { error: "Il servizio non ha risposto in tempo. Riprova tra un minuto." };
+    if (err.status === 429 || err.code === "over_email_send_rate_limit") {
+      return { error: "Troppi tentativi. Riprova tra un'ora." };
     }
     const msg = e instanceof Error ? e.message : "Errore di connessione.";
     if (msg.includes("Variabili mancanti") || msg.includes("NEXT_PUBLIC_SUPABASE")) {
@@ -97,7 +101,7 @@ export async function signup(
 
     if (error) {
       console.error("[signup] Supabase error:", error);
-      const err = error as { message?: string; status?: number; msg?: string; error_description?: string };
+      const err = error as { message?: string; status?: number; code?: string; msg?: string; error_description?: string };
       return {
         error: authErrorMessage(
           err,
@@ -121,9 +125,12 @@ export async function signup(
     revalidatePath("/login");
     return {};
   } catch (e) {
-    const err = e as { message?: string; status?: number };
+    const err = e as { message?: string; status?: number; code?: string };
     if (err.status === 504) {
       return { error: "Il servizio di registrazione non ha risposto in tempo. Riprova tra un minuto (problema temporaneo di rete)." };
+    }
+    if (err.status === 429 || err.code === "over_email_send_rate_limit") {
+      return { error: "Troppi tentativi di invio email in poco tempo. Riprova tra un'ora o contatta il gestore del sito." };
     }
     const msg = e instanceof Error ? e.message : "Errore di connessione.";
     if (msg.includes("Variabili mancanti") || msg.includes("NEXT_PUBLIC_SUPABASE")) {
