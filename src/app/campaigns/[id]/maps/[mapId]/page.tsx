@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { Button } from "@/components/ui/button";
 import { InteractiveMap } from "@/components/maps/interactive-map";
+import { MapDetailActions } from "@/components/maps/map-detail-actions";
 import { ArrowLeft } from "lucide-react";
 
 type PageProps = {
@@ -70,7 +71,7 @@ export default async function CampaignMapPage({ params }: PageProps) {
 
   return (
     <div className="flex h-screen flex-col">
-      <header className="flex shrink-0 items-center gap-4 border-b border-barber-gold/40 bg-barber-dark px-4 py-3">
+      <header className="flex shrink-0 flex-wrap items-center gap-3 border-b border-barber-gold/40 bg-barber-dark px-4 py-3">
         <Link href={`/campaigns/${campaignId}?tab=mappe`}>
           <Button
             variant="ghost"
@@ -81,9 +82,10 @@ export default async function CampaignMapPage({ params }: PageProps) {
             Campagna
           </Button>
         </Link>
-        <h1 className="truncate text-lg font-semibold text-slate-50">
+        <h1 className="min-w-0 flex-1 truncate text-lg font-semibold text-slate-50">
           {map.name}
         </h1>
+        <MapDetailActions imageUrl={map.image_url} mapName={map.name} />
       </header>
       <main className="min-h-0 flex-1 overflow-hidden">
         <InteractiveMap
