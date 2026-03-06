@@ -1,22 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { LayoutDashboard, BookOpen, CalendarDays, Map, Lock, ScrollText, User, ChevronDown } from "lucide-react";
+import { BookOpen, CalendarDays, Map, Lock, ScrollText, User, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const PLACEHOLDER_IMAGE =
-  "https://placehold.co/1200x400/1e293b/10b981/png?text=Campagna";
-
-const VALID_TABS = ["overview", "sessioni", "wiki", "mappe", "pg", "gm"] as const;
+const VALID_TABS = ["sessioni", "wiki", "mappe", "pg", "gm"] as const;
 type TabValue = (typeof VALID_TABS)[number];
 
 const TAB_LABELS: Record<TabValue, string> = {
-  overview: "Panoramica",
   sessioni: "Sessioni",
   wiki: "Wiki",
   mappe: "Mappe",
@@ -66,12 +61,12 @@ export function CampaignTabsClient({
   let tab: TabValue =
     tabParam && VALID_TABS.includes(tabParam as TabValue)
       ? (tabParam as TabValue)
-      : "overview";
-  if (tab === "gm" && !showGmTab) tab = "overview";
+      : "sessioni";
+  if (tab === "gm" && !showGmTab) tab = "sessioni";
 
   const effectiveTab =
     (tab === "wiki" || tab === "mappe") && !hasPlayedCampaign
-      ? "overview"
+      ? "sessioni"
       : tab;
 
   function setTab(newTab: string) {
@@ -106,7 +101,7 @@ export function CampaignTabsClient({
             >
               <p className="mb-4 px-1 text-sm font-medium text-barber-paper/70">Sezione campagna</p>
               <nav className="flex flex-col gap-1">
-                {(["overview", "sessioni", "wiki", "mappe", "pg"] as const).map((value) => {
+                {(["sessioni", "wiki", "mappe", "pg"] as const).map((value) => {
                   const disabled = (value === "wiki" || value === "mappe") && !hasPlayedCampaign;
                   const isActive = effectiveTab === value;
                   return (
@@ -127,7 +122,6 @@ export function CampaignTabsClient({
                         isActive && "bg-barber-gold/20 text-barber-gold"
                       )}
                     >
-                      {value === "overview" && <LayoutDashboard className="h-5 w-5 shrink-0" />}
                       {value === "sessioni" && <CalendarDays className="h-5 w-5 shrink-0" />}
                       {value === "wiki" && (hasPlayedCampaign ? <BookOpen className="h-5 w-5 shrink-0" /> : <Lock className="h-5 w-5 shrink-0" />)}
                       {value === "mappe" && (hasPlayedCampaign ? <Map className="h-5 w-5 shrink-0" /> : <Lock className="h-5 w-5 shrink-0" />)}
@@ -159,13 +153,6 @@ export function CampaignTabsClient({
 
         {/* Desktop: tab orizzontali */}
         <TabsList className="hidden md:flex w-full flex-wrap justify-start gap-1 rounded-xl border border-barber-gold/40 bg-barber-dark/90 p-1">
-          <TabsTrigger
-            value="overview"
-            className="data-[state=active]:bg-barber-gold/20 data-[state=active]:text-barber-gold"
-          >
-            <LayoutDashboard className="mr-2 h-4 w-4" />
-            Panoramica
-          </TabsTrigger>
           <TabsTrigger
             value="sessioni"
             className="data-[state=active]:bg-barber-gold/20 data-[state=active]:text-barber-gold"
@@ -217,44 +204,6 @@ export function CampaignTabsClient({
           )}
         </TabsList>
       </div>
-
-      <TabsContent value="overview" className="mt-0 min-w-0">
-        <div className="min-w-0 max-w-full rounded-xl border border-barber-gold/30 bg-barber-dark/80 overflow-hidden">
-          <div className="relative aspect-[21/9] min-h-[200px] min-w-0 w-full bg-barber-dark">
-            <Image
-              src={campaign.image_url ?? PLACEHOLDER_IMAGE}
-              alt=""
-              fill
-              className="object-cover"
-              sizes="(max-width: 1024px) 100vw, 1024px"
-              unoptimized={!!campaign.image_url}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-barber-dark via-barber-dark/50 to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-6">
-              {campaignTypeLabel && (
-                <span className="inline-block rounded-full border border-barber-gold/50 bg-barber-dark/80 px-3 py-1 text-xs font-medium text-barber-gold">
-                  {campaignTypeLabel}
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="p-6 md:p-8">
-            <h2 className="text-xl font-semibold text-barber-paper md:text-2xl">{campaign.name}</h2>
-            {campaign.description ? (
-              <p className="mt-4 text-barber-paper/80 leading-relaxed whitespace-pre-wrap">
-                {campaign.description}
-              </p>
-            ) : (
-              <p className="mt-4 text-barber-paper/50 italic">Nessuna descrizione.</p>
-            )}
-            {!hasPlayedCampaign && (
-              <p className="mt-6 rounded-lg border border-barber-gold/40 bg-barber-gold/10 px-4 py-3 text-sm text-barber-gold">
-                Partecipa a una sessione per sbloccare Wiki e Mappe.
-              </p>
-            )}
-          </div>
-        </div>
-      </TabsContent>
 
       <TabsContent value="sessioni" className="mt-0">
         {sessioniContent}

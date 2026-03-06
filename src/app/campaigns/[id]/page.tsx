@@ -1,9 +1,7 @@
-import Link from "next/link";
 import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
-import { Button } from "@/components/ui/button";
 import { SessionList } from "@/components/session-list";
 import { CreateSessionDialog } from "@/components/create-session-dialog";
 import { MapGallery } from "@/components/maps/map-gallery";
@@ -19,7 +17,6 @@ import { GmFiles } from "@/components/gm/gm-files";
 import { CharactersSection } from "@/components/characters/characters-section";
 import { getCampaignCharacters, getCampaignEligiblePlayers } from "@/app/campaigns/character-actions";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowLeft } from "lucide-react";
 import { CampaignMobileHeader } from "@/components/campaigns/campaign-mobile-header";
 
 const PLACEHOLDER_IMAGE =
@@ -148,18 +145,27 @@ export default async function CampaignPage({ params }: PageProps) {
         <div className="absolute inset-0 bg-gradient-to-t from-barber-dark via-barber-dark/50 to-transparent" />
       </div>
       <div className="flex flex-col gap-3 p-4">
-        <Link href="/dashboard" className="inline-flex w-fit text-barber-paper/80 hover:text-barber-paper">
-          <Button variant="ghost" size="sm" className="text-barber-paper/80">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Indietro
-          </Button>
-        </Link>
         <h1 className="text-xl font-semibold text-barber-paper md:text-2xl">
           {campaign.name}
         </h1>
+        {campaignTypeLabel && (
+          <span className="inline-block w-fit rounded-full border border-barber-gold/50 bg-barber-gold/10 px-3 py-1 text-xs font-medium text-barber-gold">
+            {campaignTypeLabel}
+          </span>
+        )}
+        {campaign.description ? (
+          <p className="text-sm text-barber-paper/80 leading-relaxed whitespace-pre-wrap">
+            {campaign.description}
+          </p>
+        ) : null}
         {gmDisplayName && (
           <p className="text-sm text-barber-gold/90">
             GM · {gmDisplayName}
+          </p>
+        )}
+        {!hasPlayedCampaign && (
+          <p className="rounded-lg border border-barber-gold/40 bg-barber-gold/10 px-3 py-2 text-xs text-barber-gold">
+            Partecipa a una sessione per sbloccare Wiki e Mappe.
           </p>
         )}
         {isGmOrAdmin && (

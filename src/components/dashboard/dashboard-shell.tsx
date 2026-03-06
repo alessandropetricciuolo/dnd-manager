@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, User, Shield, LogOut } from "lucide-react";
+import { LayoutDashboard, User, Shield, LogOut, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MobileNavMenu } from "@/components/dashboard/mobile-nav-menu";
 import { CreateCampaignDialog } from "@/components/create-campaign-dialog";
@@ -35,8 +35,16 @@ function NavLinks({
         : "text-barber-paper/80 hover:bg-barber-gold/10 hover:text-barber-gold"
     );
 
+  const isCampaignDetail = pathname?.match(/^\/campaigns\/[^/]+$/);
+
   return (
     <nav className={cn("flex flex-col gap-1", className)}>
+      {isCampaignDetail && (
+        <Link href="/dashboard" onClick={onNavigate} className={linkClass("/dashboard")}>
+          <ArrowLeft className="h-5 w-5 shrink-0" />
+          Indietro
+        </Link>
+      )}
       <Link href="/dashboard" onClick={onNavigate} className={linkClass("/dashboard")}>
         <LayoutDashboard className="h-5 w-5 shrink-0" />
         Dashboard
