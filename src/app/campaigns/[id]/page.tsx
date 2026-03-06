@@ -19,6 +19,7 @@ import { GmFiles } from "@/components/gm/gm-files";
 import { CharactersSection } from "@/components/characters/characters-section";
 import { getCampaignCharacters, getCampaignEligiblePlayers } from "@/app/campaigns/character-actions";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ArrowLeft } from "lucide-react";
 import { CampaignMobileHeader } from "@/components/campaigns/campaign-mobile-header";
 
 const PLACEHOLDER_IMAGE =
