@@ -1,6 +1,19 @@
 /**
- * Converte un URL Google Drive (condivisione) nel formato direct link per embedding/immagini.
- * Es: https://drive.google.com/file/d/FILE_ID/view?usp=sharing → https://drive.google.com/uc?export=view&id=FILE_ID
+ * Estrae il FILE_ID da un URL Google Drive (condivisione).
+ * Supporta: /file/d/FILE_ID/view, /open?id=FILE_ID, ecc.
+ */
+function extractGoogleDriveFileId(url: string): string | null {
+  const matchPath = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/i);
+  if (matchPath) return matchPath[1];
+  const matchQuery = url.match(/[?&]id=([a-zA-Z0-9_-]+)/i);
+  if (matchQuery) return matchQuery[1];
+  return null;
+}
+
+/**
+ * Converte un URL Google Drive (condivisione) in un link utilizzabile per <img>.
+ * Con "chiunque con il link" /uc?export=view può dare 403; l'endpoint thumbnail
+ * funziona in più casi. sz=w1920 chiede larghezza max 1920px (Full HD).
  */
 export function normalizeImageUrl(url: string): string {
   const trimmed = url.trim();
@@ -9,13 +22,9 @@ export function normalizeImageUrl(url: string): string {
   try {
     const lower = trimmed.toLowerCase();
     if (lower.includes("drive.google.com")) {
-      let fileId: string | null = null;
-      const matchPath = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/i);
-      if (matchPath) fileId = matchPath[1];
-      const matchQuery = trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/i);
-      if (!fileId && matchQuery) fileId = matchQuery[1];
+      const fileId = extractGoogleDriveFileId(trimmed);
       if (fileId) {
-        return `https://drive.google.com/uc?export=view&id=${fileId}`;
+        return `https://drive.google.com/thumbnail?id=${fileId}&sz=w1920`;
       }
     }
     return trimmed;

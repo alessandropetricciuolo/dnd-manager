@@ -3,17 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
+import { normalizeImageUrl } from "@/lib/image-url";
 
-/** Se l'URL è un link Google Drive, restituisce il direct link per visualizzazione (export=view). Altrimenti l'URL originale. */
+/** Se l'URL è un link Google Drive, restituisce l'URL thumbnail per visualizzazione; altrimenti l'URL normalizzato. */
 function convertDriveLink(url: string | null | undefined): string | null {
   if (!url || typeof url !== "string") return null;
   const trimmed = url.trim();
   if (!trimmed) return null;
-  if (!trimmed.includes("drive.google.com")) return trimmed;
-  const match = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-  const fileId = match?.[1];
-  if (!fileId) return trimmed;
-  return `https://drive.google.com/uc?export=view&id=${fileId}`;
+  return normalizeImageUrl(trimmed);
 }
 
 type ImportCampaignFullResult = { success: true; campaignId: string } | { success: false; error: string };
