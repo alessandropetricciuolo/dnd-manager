@@ -57,12 +57,15 @@ export function UploadMapDialog({ campaignId }: UploadMapDialogProps) {
 
     const name = (formData.get("name") as string)?.trim();
     const file = formData.get("file") as File;
+    const imageUrl = (formData.get("image_url") as string)?.trim();
     if (!name) {
       toast.error("Inserisci un nome per la mappa.");
       return;
     }
-    if (!file?.size) {
-      toast.error("Seleziona un'immagine.");
+    const hasFile = file && file instanceof File && file.size > 0;
+    const hasUrl = !!imageUrl;
+    if (!hasFile && !hasUrl) {
+      toast.error("Carica un'immagine o incolla un link (es. Google Drive).");
       return;
     }
 
