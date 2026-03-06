@@ -246,6 +246,74 @@ export async function updateEntity(
   }
 }
 
+export type DeleteEntityResult = { success: boolean; message: string };
+
+/** Elimina una voce wiki. Solo GM e Admin. Rimuove prima i record in explorations collegati. */
+export async function deleteEntity(
+  entityId: string,
+  campaignId: string
+): Promise<DeleteEntityResult> {
+  if (!entityId || !campaignId) {
+    return { success: false, message: "Voce o campagna non valida." };
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return { success: false, message: "Devi essere autenticato." };
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    if (profile?.role !== "gm" && profile?.role !== "admin") {
+      return { success: false, message: "Solo GM e Admin possono eliminare le voci wiki." };
+    }
+
+    const { data: existing } = await supabase
+      .from("wiki_entities")
+      .select("id")
+      .eq("id", entityId)
+      .eq("campaign_id", campaignId)
+      .maybeSingle();
+    if (!existing) {
+      return { success: false, message: "Voce non trovata." };
+    }
+
+    await supabase.from("explorations").delete().eq("entity_id", entityId);
+    const { error: deleteError } = await supabase
+      .from("wiki_entities")
+      .delete()
+      .eq("id", entityId)
+      .eq("campaign_id", campaignId);
+
+    if (deleteError) {
+      console.error("[deleteEntity]", deleteError);
+      return {
+        success: false,
+        message: deleteError.message ?? "Errore durante l'eliminazione.",
+      };
+    }
+
+    revalidatePath(`/campaigns/${campaignId}`);
+    revalidatePath(`/campaigns/${campaignId}/wiki/${entityId}`);
+    return { success: true, message: "Voce eliminata." };
+  } catch (err) {
+    console.error("[deleteEntity]", err);
+    return {
+      success: false,
+      message: "Si è verificato un errore imprevisto. Riprova.",
+    };
+  }
+}
+
 export type WikiEntity = {
   id: string;
   campaign_id: string;

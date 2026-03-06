@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { getEntity } from "@/app/campaigns/wiki-actions";
 import { WikiDetails } from "@/components/wiki/wiki-details";
 import { WikiEntityEditButton } from "@/components/wiki/wiki-entity-edit-button";
+import { WikiEntityDeleteButton } from "@/components/wiki/wiki-entity-delete-button";
 import { ArrowLeft } from "lucide-react";
 
 type PageProps = {
@@ -66,11 +67,18 @@ export default async function WikiEntityPage({ params }: PageProps) {
             </Button>
           </Link>
           {isGmOrAdmin && (
-            <WikiEntityEditButton
-              campaignId={campaignId}
-              entity={entityWithDefaults}
-              contentBody={contentBody}
-            />
+            <>
+              <WikiEntityEditButton
+                campaignId={campaignId}
+                entity={entityWithDefaults}
+                contentBody={contentBody}
+              />
+              <WikiEntityDeleteButton
+                campaignId={campaignId}
+                entityId={entity.id}
+                entityName={entity.name}
+              />
+            </>
           )}
         </div>
         <article className="rounded-xl border border-barber-gold/40 bg-barber-dark/90 p-6 shadow-[0_0_40px_rgba(251,191,36,0.1)]">

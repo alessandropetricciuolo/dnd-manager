@@ -151,14 +151,15 @@ export function EditEntityDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto border-barber-gold/40 bg-barber-dark text-barber-paper">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] flex-col gap-2 border-barber-gold/40 bg-barber-dark text-barber-paper">
+        <DialogHeader className="shrink-0">
           <DialogTitle>Modifica voce wiki</DialogTitle>
           <DialogDescription className="text-barber-paper/70">
             Modifica titolo, contenuto, immagine e attributi della voce.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col gap-0">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-scroll overflow-x-hidden py-1 pr-1">
           <div className="space-y-2">
             <Label htmlFor="edit-entity-title">Titolo</Label>
             <Input
@@ -354,8 +355,9 @@ export function EditEntityDialog({
               Segreto
             </Label>
           </div>
+          </div>
 
-          <DialogFooter>
+          <DialogFooter className="shrink-0 border-t border-barber-gold/20 pt-4">
             <Button
               type="button"
               variant="outline"

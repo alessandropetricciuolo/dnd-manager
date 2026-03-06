@@ -122,14 +122,15 @@ export function CreateEntityDialog({ campaignId }: CreateEntityDialogProps) {
           Nuova voce
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto border-barber-gold/40 bg-barber-dark text-barber-paper">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] flex-col gap-2 border-barber-gold/40 bg-barber-dark text-barber-paper">
+        <DialogHeader className="shrink-0">
           <DialogTitle>Nuova voce wiki</DialogTitle>
           <DialogDescription className="text-barber-paper/70">
             Aggiungi un NPC, un luogo, un mostro, un oggetto o una voce di lore.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col gap-0">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-scroll overflow-x-hidden py-1 pr-1">
           <div className="space-y-2">
             <Label htmlFor="entity-title">Titolo</Label>
             <Input
@@ -330,8 +331,9 @@ export function CreateEntityDialog({ campaignId }: CreateEntityDialogProps) {
               Segreto (solo il GM può vedere questa voce)
             </Label>
           </div>
+          </div>
 
-          <DialogFooter>
+          <DialogFooter className="shrink-0 border-t border-barber-gold/20 pt-4">
             <Button
               type="button"
               variant="outline"
