@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ImageSourceField } from "@/components/ui/image-source-field";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -127,6 +128,13 @@ export function CreateCampaignDialog() {
               disabled={isLoading}
             />
           </div>
+          <ImageSourceField
+            fileInputName="image"
+            urlFieldName="image_url"
+            label="Immagine di copertina (opzionale)"
+            disabled={isLoading}
+            hint="Carica un file o incolla un link (es. Google Drive)."
+          />
           <div className="flex items-center gap-2">
             <input
               type="checkbox"

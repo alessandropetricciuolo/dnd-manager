@@ -1,9 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { randomUUID } from "crypto";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { getPlayerEmails } from "@/lib/player-emails";
 import { sendEmail, wrapInTemplate, escapeHtml } from "@/lib/email";
+
+const COVER_BUCKET = "campaign_covers";
 
 export type CreateCampaignResult = {
   success: boolean;
@@ -20,6 +23,8 @@ export async function createCampaign(
   const type = typeRaw && ["oneshot", "quest", "long"].includes(typeRaw)
     ? (typeRaw as "oneshot" | "quest" | "long")
     : null;
+  const imageFile = formData.get("image") as File | null;
+  const imageUrlFromForm = (formData.get("image_url") as string | null)?.trim() || null;
 
   if (!title) {
     return { success: false, message: "Il titolo è obbligatorio." };
@@ -45,13 +50,31 @@ export async function createCampaign(
       return { success: false, message: "Solo GM e Admin possono creare campagne." };
     }
 
-    const { error } = await supabase.from("campaigns").insert({
+    const hasImageFile = imageFile && imageFile instanceof File && imageFile.size > 0;
+    if (hasImageFile) {
+      const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+      if (!allowedTypes.includes((imageFile as File).type)) {
+        return {
+          success: false,
+          message: "Formato immagine non supportato. Usa JPG, PNG, WebP o GIF.",
+        };
+      }
+    }
+
+    const insertPayload = {
       gm_id: user.id,
       name: title,
       description: description || null,
       is_public: isPublic,
       ...(type && { type }),
-    });
+      image_url: hasImageFile ? null : (imageUrlFromForm || null),
+    };
+
+    const { data: newCampaign, error } = await supabase
+      .from("campaigns")
+      .insert(insertPayload)
+      .select("id")
+      .single();
 
     if (error) {
       console.error("[createCampaign]", error);
@@ -59,6 +82,26 @@ export async function createCampaign(
         success: false,
         message: error.message ?? "Errore durante la creazione della campagna.",
       };
+    }
+
+    if (imageFile && imageFile instanceof File && imageFile.size > 0 && newCampaign?.id) {
+      const ext = imageFile.name.split(".").pop()?.toLowerCase() || "png";
+      const path = `${newCampaign.id}/${randomUUID()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from(COVER_BUCKET)
+        .upload(path, imageFile, { cacheControl: "3600", upsert: false });
+      if (uploadError) {
+        console.error("[createCampaign] storage", uploadError);
+        return {
+          success: false,
+          message: uploadError.message ?? "Errore durante il caricamento dell'immagine.",
+        };
+      }
+      const { data: urlData } = supabase.storage.from(COVER_BUCKET).getPublicUrl(path);
+      await supabase
+        .from("campaigns")
+        .update({ image_url: urlData.publicUrl })
+        .eq("id", newCampaign.id);
     }
 
     try {
