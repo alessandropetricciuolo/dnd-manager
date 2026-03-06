@@ -1,8 +1,11 @@
+import Image from "next/image";
 import ReactMarkdown from "react-markdown";
-import { EntityContent } from "../entity-content";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Coins, Swords } from "lucide-react";
+import { MapPopoutButton } from "@/components/maps/map-popout-button";
+import { Coins } from "lucide-react";
 import { GmOnlySection } from "./gm-only-section";
+
+const PLACEHOLDER = "https://placehold.co/400x500/1e293b/8b5a2b/png?text=Mostro";
 
 type CombatStats = { hp?: string; ac?: string; cr?: string; attacks?: string };
 type MonsterAttributes = { combat_stats?: CombatStats; loot?: string };
@@ -10,11 +13,12 @@ type MonsterAttributes = { combat_stats?: CombatStats; loot?: string };
 type MonsterViewProps = {
   name: string;
   body: string;
+  imageUrl: string | null;
   attributes: MonsterAttributes | null;
   isGmOrAdmin?: boolean;
 };
 
-export function MonsterView({ name, body, attributes, isGmOrAdmin = false }: MonsterViewProps) {
+export function MonsterView({ name, body, imageUrl, attributes, isGmOrAdmin = false }: MonsterViewProps) {
   const attrs = attributes ?? {};
   const stats = attrs.combat_stats ?? {};
   const hasStats = !!(stats.hp?.trim() || stats.ac?.trim() || stats.cr?.trim());
@@ -23,6 +27,24 @@ export function MonsterView({ name, body, attributes, isGmOrAdmin = false }: Mon
 
   return (
     <div className="space-y-8">
+      <div className="grid gap-8 md:grid-cols-[280px_1fr]">
+        <div className="space-y-4">
+          <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl border border-barber-gold/30 bg-barber-dark">
+            <Image
+              src={imageUrl ?? PLACEHOLDER}
+              alt={name}
+              fill
+              className="object-cover"
+              sizes="280px"
+              unoptimized={!!imageUrl}
+            />
+          </div>
+          <MapPopoutButton
+            imageUrl={imageUrl ?? PLACEHOLDER}
+            title={name}
+          />
+        </div>
+        <div className="min-w-0">
       {hasStats || attacks ? (
         <GmOnlySection isGmOrAdmin={isGmOrAdmin}>
           <div
@@ -87,6 +109,8 @@ export function MonsterView({ name, body, attributes, isGmOrAdmin = false }: Mon
           )}
         </div>
       )}
+        </div>
+      </div>
 
       {loot && (
         <GmOnlySection isGmOrAdmin={isGmOrAdmin}>

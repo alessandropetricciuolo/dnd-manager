@@ -32,6 +32,7 @@ export function WikiDetails({ entity, contentBody, isGmOrAdmin = false }: WikiDe
       <MonsterView
         name={entity.name}
         body={contentBody}
+        imageUrl={imageUrl}
         attributes={attrs as { combat_stats?: { hp?: string; ac?: string; cr?: string; attacks?: string }; loot?: string }}
         isGmOrAdmin={isGmOrAdmin}
       />
