@@ -15,14 +15,16 @@ import { MapPopoutButton } from "./map-popout-button";
 type MapDetailActionsProps = {
   imageUrl: string;
   mapName: string;
+  /** URL della pagina view (mappa + pin) per il popup Second Screen. */
+  viewUrl?: string;
 };
 
-export function MapDetailActions({ imageUrl, mapName }: MapDetailActionsProps) {
+export function MapDetailActions({ imageUrl, mapName, viewUrl }: MapDetailActionsProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <MapPopoutButton imageUrl={imageUrl} title={mapName} />
+      <MapPopoutButton imageUrl={imageUrl} title={mapName} viewUrl={viewUrl} />
       <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
         <DialogTrigger asChild>
           <Button

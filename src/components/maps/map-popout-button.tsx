@@ -9,11 +9,14 @@ const POPOUT_FEATURES =
 type MapPopoutButtonProps = {
   imageUrl: string;
   title: string;
+  /** Se fornito, apre questa URL (pagina con mappa + pin) invece della sola immagine. */
+  viewUrl?: string;
 };
 
-export function MapPopoutButton({ imageUrl, title }: MapPopoutButtonProps) {
+export function MapPopoutButton({ imageUrl, title, viewUrl }: MapPopoutButtonProps) {
   function handlePopout() {
-    window.open(imageUrl, "MapWindow", POPOUT_FEATURES);
+    const url = viewUrl ?? imageUrl;
+    window.open(url, "MapWindow", POPOUT_FEATURES);
   }
 
   return (

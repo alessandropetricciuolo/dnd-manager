@@ -38,7 +38,8 @@ export function MapCard({ campaignId, map, isGmOrAdmin }: MapCardProps) {
   function handlePopout(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    window.open(map.image_url, "MapWindow", POPOUT_FEATURES);
+    const viewUrl = `/campaigns/${campaignId}/maps/${map.id}/view`;
+    window.open(viewUrl, "MapWindow", POPOUT_FEATURES);
   }
 
   return (
