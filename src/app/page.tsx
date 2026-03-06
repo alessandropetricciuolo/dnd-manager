@@ -11,12 +11,12 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(251,191,36,0.12),transparent)]" />
         <div className="relative mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24 lg:py-32">
           <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
-            <div className="text-center lg:text-left">
+            <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
               <h1 className="font-serif text-4xl font-bold tracking-tight text-barber-gold sm:text-5xl lg:text-6xl">
-                Barber & Dragons 
+                Barber & Dragons
               </h1>
-              <p className="mt-6 max-w-xl text-lg text-barber-paper/80">
-                La community di D&D di cui c&apos;era bisogno. 
+              <p className="mt-6 max-w-xl text-center text-lg text-barber-paper/80 lg:text-left">
+                La community di D&D di cui c&apos;era bisogno.
               </p>
               <div className="mt-10">
                 <Button
