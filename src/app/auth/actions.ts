@@ -25,7 +25,10 @@ export async function login(email: string, password: string): Promise<AuthResult
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
-      return { error: error.message };
+      const msg =
+        (error as { message?: string }).message?.trim() ||
+        "Accesso non riuscito. Controlla email e password.";
+      return { error: msg };
     }
 
     revalidatePath("/dashboard");
@@ -74,7 +77,14 @@ export async function signup(
     });
 
     if (error) {
-      return { error: error.message };
+      console.error("[signup] Supabase error:", error);
+      const err = error as { message?: string; msg?: string; error_description?: string };
+      const msg =
+        err.message?.trim() ||
+        err.msg?.trim() ||
+        (typeof err.error_description === "string" ? err.error_description.trim() : null) ||
+        "Registrazione non riuscita. Controlla che l'email non sia già usata, che la password abbia almeno 6 caratteri e riprova.";
+      return { error: msg };
     }
 
     // Scrivi nome, cognome e telefono in profiles (il trigger crea il record con ruolo 'player')

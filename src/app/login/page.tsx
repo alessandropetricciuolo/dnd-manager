@@ -54,7 +54,8 @@ export default function LoginPage() {
       if (mode === "login") {
         const result = await login(email, password);
         if (result?.error) {
-          toast.error(result.error);
+          const msg = typeof result.error === "string" ? result.error : "Errore di accesso. Riprova.";
+          toast.error(msg);
           return;
         }
         toast.success("Accesso effettuato. Ben tornato, avventuriero!");
@@ -67,7 +68,8 @@ export default function LoginPage() {
       const result = await signup(email, password, firstName, lastName, phone);
 
       if (result?.error) {
-        toast.error(result.error);
+        const msg = typeof result.error === "string" ? result.error : "Errore durante la registrazione. Riprova o contatta il supporto.";
+        toast.error(msg);
         return;
       }
       toast.success(
