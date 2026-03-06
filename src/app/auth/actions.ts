@@ -134,6 +134,41 @@ export async function signup(
   }
 }
 
+/** Aggiorna nome, cognome e telefono nel profilo. Da chiamare dopo signUp lato client (così la chiamata auth non passa dal serverless ed evita 504). */
+export async function updateProfileAfterSignup(
+  firstName: string,
+  lastName: string,
+  phone: string
+): Promise<AuthResult> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { error: "Sessione non trovata. Ricarica la pagina e riprova." };
+    }
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        phone: phone.trim(),
+      })
+      .eq("id", user.id);
+    if (error) {
+      console.error("[updateProfileAfterSignup]", error);
+      return { error: "Impossibile aggiornare il profilo. Riprova più tardi." };
+    }
+    revalidatePath("/login");
+    return {};
+  } catch (e) {
+    console.error("[updateProfileAfterSignup]", e);
+    return { error: "Errore durante l'aggiornamento del profilo. Riprova." };
+  }
+}
+
 export async function signout() {
   const supabase = await createSupabaseServerClient();
   await supabase.auth.signOut();

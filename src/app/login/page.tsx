@@ -17,7 +17,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import { login, signup } from "@/app/auth/actions";
+import { login, signup, updateProfileAfterSignup } from "@/app/auth/actions";
+import { createSupabaseBrowserClient } from "@/utils/supabase/client";
 
 type Mode = "login" | "signup";
 
@@ -65,17 +66,44 @@ export default function LoginPage() {
       const firstName = (formData.get("first_name") as string | null)?.trim() ?? "";
       const lastName = (formData.get("last_name") as string | null)?.trim() ?? "";
       const phone = (formData.get("phone") as string | null)?.trim() ?? "";
-      const result = await signup(email, password, firstName, lastName, phone);
+      // Registrazione lato client: browser → Supabase (evita 504 del serverless Vercel)
+      const supabase = createSupabaseBrowserClient();
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+            phone,
+            role: "player",
+          },
+        },
+      });
 
-      if (result?.error) {
-        const msg = typeof result.error === "string" ? result.error : "Errore durante la registrazione. Riprova o contatta il supporto.";
+      if (signUpError) {
+        const msg =
+          (signUpError as { message?: string }).message?.trim() ||
+          "Registrazione non riuscita. Controlla che l'email non sia già usata, che la password abbia almeno 6 caratteri e riprova.";
         toast.error(msg);
         return;
+      }
+      // Se c'è sessione (email non richiede conferma), aggiorna il profilo dal server
+      if (data.session) {
+        const profileResult = await updateProfileAfterSignup(firstName, lastName, phone);
+        if (profileResult?.error) {
+          toast.warning("Account creato, ma profilo non aggiornato. Puoi completarlo dal profilo.");
+        }
       }
       toast.success(
         "Registrazione completata. Il tuo profilo 'player' è stato creato."
       );
-      setMode("login");
+      if (data.session) {
+        router.push("/dashboard");
+        router.refresh();
+      } else {
+        setMode("login");
+      }
     } catch {
       toast.error("Qualcosa è andato storto. Riprova più tardi.");
     } finally {
