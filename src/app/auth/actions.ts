@@ -11,6 +11,24 @@ type AuthResult = {
 const ENV_ERROR =
   "Configurazione mancante sul server. In Vercel: Settings → Environment Variables → aggiungi NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY.";
 
+/** Da oggetto errore Supabase Auth ricava un messaggio leggibile (gestisce 504 e message vuoto). */
+function authErrorMessage(
+  error: { message?: string; status?: number; msg?: string; error_description?: string },
+  fallback: string
+): string {
+  if (error.status === 504) {
+    return "Il servizio di registrazione non ha risposto in tempo. Riprova tra un minuto (problema temporaneo di rete).";
+  }
+  if (error.status && error.status >= 500) {
+    return "Errore temporaneo del servizio. Riprova tra qualche minuto.";
+  }
+  const msg =
+    error.message?.trim() ||
+    error.msg?.trim() ||
+    (typeof error.error_description === "string" ? error.error_description.trim() : null);
+  return msg || fallback;
+}
+
 export async function login(email: string, password: string): Promise<AuthResult> {
   if (!email || !password) {
     return { error: "Email e password sono obbligatorie." };
@@ -25,15 +43,16 @@ export async function login(email: string, password: string): Promise<AuthResult
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
-      const msg =
-        (error as { message?: string }).message?.trim() ||
-        "Accesso non riuscito. Controlla email e password.";
-      return { error: msg };
+      return { error: authErrorMessage(error as { message?: string; status?: number }, "Accesso non riuscito. Controlla email e password.") };
     }
 
     revalidatePath("/dashboard");
     return {};
   } catch (e) {
+    const err = e as { message?: string; status?: number };
+    if (err.status === 504) {
+      return { error: "Il servizio non ha risposto in tempo. Riprova tra un minuto." };
+    }
     const msg = e instanceof Error ? e.message : "Errore di connessione.";
     if (msg.includes("Variabili mancanti") || msg.includes("NEXT_PUBLIC_SUPABASE")) {
       return { error: "Configurazione mancante sul server. Controlla le variabili d'ambiente (Supabase URL e Anon Key)." };
@@ -78,13 +97,13 @@ export async function signup(
 
     if (error) {
       console.error("[signup] Supabase error:", error);
-      const err = error as { message?: string; msg?: string; error_description?: string };
-      const msg =
-        err.message?.trim() ||
-        err.msg?.trim() ||
-        (typeof err.error_description === "string" ? err.error_description.trim() : null) ||
-        "Registrazione non riuscita. Controlla che l'email non sia già usata, che la password abbia almeno 6 caratteri e riprova.";
-      return { error: msg };
+      const err = error as { message?: string; status?: number; msg?: string; error_description?: string };
+      return {
+        error: authErrorMessage(
+          err,
+          "Registrazione non riuscita. Controlla che l'email non sia già usata, che la password abbia almeno 6 caratteri e riprova."
+        ),
+      };
     }
 
     // Scrivi nome, cognome e telefono in profiles (il trigger crea il record con ruolo 'player')
@@ -102,6 +121,10 @@ export async function signup(
     revalidatePath("/login");
     return {};
   } catch (e) {
+    const err = e as { message?: string; status?: number };
+    if (err.status === 504) {
+      return { error: "Il servizio di registrazione non ha risposto in tempo. Riprova tra un minuto (problema temporaneo di rete)." };
+    }
     const msg = e instanceof Error ? e.message : "Errore di connessione.";
     if (msg.includes("Variabili mancanti") || msg.includes("NEXT_PUBLIC_SUPABASE")) {
       return { error: "Configurazione mancante sul server. Controlla le variabili d'ambiente (Supabase URL e Anon Key)." };
