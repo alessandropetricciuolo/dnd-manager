@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useRef, type FormEvent } from "react";
-import Image from "next/image";
+import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { Upload, ImageIcon, Loader2 } from "lucide-react";
+import { Upload, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CompressedImageUpload } from "@/components/ui/compressed-image-upload";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -44,22 +44,7 @@ type UploadMapDialogProps = {
 export function UploadMapDialog({ campaignId }: UploadMapDialogProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [preview, setPreview] = useState<string | null>(null);
   const [mapType, setMapType] = useState<string>("region");
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file?.type.startsWith("image/")) {
-      setPreview(null);
-      return;
-    }
-    const url = URL.createObjectURL(file);
-    setPreview((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return url;
-    });
-  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -88,10 +73,8 @@ export function UploadMapDialog({ campaignId }: UploadMapDialogProps) {
       if (result.success) {
         toast.success(result.message);
         setOpen(false);
-        setPreview(null);
         setMapType("region");
         form.reset();
-        if (fileInputRef.current) fileInputRef.current.value = "";
       } else {
         toast.error(result.message);
       }
@@ -103,12 +86,6 @@ export function UploadMapDialog({ campaignId }: UploadMapDialogProps) {
   }
 
   function handleOpenChange(next: boolean) {
-    if (!next) {
-      setPreview((prev) => {
-        if (prev) URL.revokeObjectURL(prev);
-        return null;
-      });
-    }
     setOpen(next);
   }
 
@@ -178,34 +155,13 @@ export function UploadMapDialog({ campaignId }: UploadMapDialogProps) {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="map-file">
-              <ImageIcon className="mr-1.5 inline h-4 w-4" />
-              Immagine
-            </Label>
-            <Input
-              id="map-file"
-              name="file"
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              className="bg-barber-dark border-barber-gold/30 text-barber-paper file:mr-2 file:rounded file:border-0 file:bg-barber-red file:px-3 file:py-1 file:text-barber-paper"
-              disabled={isLoading}
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              required
-            />
-            {preview && (
-              <div className="relative mt-2 aspect-video w-full overflow-hidden rounded-lg border border-barber-gold/30 bg-barber-dark">
-                <Image
-                  src={preview}
-                  alt="Anteprima"
-                  fill
-                  className="object-contain"
-                  unoptimized
-                />
-              </div>
-            )}
-          </div>
+          <CompressedImageUpload
+            name="file"
+            label="Immagine"
+            required
+            disabled={isLoading}
+            className="[&_button]:bg-barber-dark [&_button]:border-barber-gold/30 [&_button]:text-barber-paper"
+          />
 
           <DialogFooter>
             <Button

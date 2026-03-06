@@ -1,10 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect, type FormEvent } from "react";
-import Image from "next/image";
+import { useState, useEffect, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ImageIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { CompressedImageUpload } from "@/components/ui/compressed-image-upload";
 import { updateEntity } from "@/app/campaigns/wiki-actions";
 import { getEmptyAttributes } from "@/types/wiki";
 import type { WikiEntity } from "@/app/campaigns/wiki-actions";
@@ -78,34 +77,16 @@ export function EditEntityDialog({
   const [sortOrder, setSortOrder] = useState<string>(
     entity.sort_order != null ? String(entity.sort_order) : ""
   );
-  const [preview, setPreview] = useState<string | null>(null);
   const [removeImage, setRemoveImage] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
       setType((entity.type as EntityType) || "npc");
       setAttributes(mergeAttributes((entity.type as EntityType) || "npc", entity.attributes));
       setSortOrder(entity.sort_order != null ? String(entity.sort_order) : "");
-      setPreview(null);
       setRemoveImage(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }, [open, entity.type, entity.attributes, entity.sort_order]);
-
-  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file?.type.startsWith("image/")) {
-      setPreview(null);
-      return;
-    }
-    const url = URL.createObjectURL(file);
-    setPreview((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return url;
-    });
-    setRemoveImage(false);
-  }
 
   function onTypeChange(newType: string) {
     const t = newType as EntityType;
@@ -164,17 +145,9 @@ export function EditEntityDialog({
   }
 
   function handleOpenChange(next: boolean) {
-    if (!next) {
-      setPreview((prev) => {
-        if (prev) URL.revokeObjectURL(prev);
-        return null;
-      });
-    }
     onOpenChange(next);
   }
 
-  const currentImageUrl = preview ? null : entity.image_url;
-  const showCurrentImage = currentImageUrl && !removeImage;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -217,37 +190,14 @@ export function EditEntityDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-entity-image">
-              <ImageIcon className="mr-1.5 inline h-4 w-4" />
-              Immagine
-            </Label>
-            {showCurrentImage && (
-              <div className="relative mb-2 aspect-video w-full max-w-xs overflow-hidden rounded-lg border border-barber-gold/30 bg-barber-dark">
-                <Image
-                  src={currentImageUrl}
-                  alt="Attuale"
-                  fill
-                  className="object-contain"
-                  unoptimized
-                />
-              </div>
-            )}
-            <Input
-              id="edit-entity-image"
+            <CompressedImageUpload
               name="image"
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper file:mr-2 file:rounded file:border-0 file:bg-barber-red file:px-3 file:py-1 file:text-barber-paper"
+              label="Immagine"
+              previewUrl={removeImage ? undefined : entity.image_url}
               disabled={isLoading}
-              ref={fileInputRef}
-              onChange={onFileChange}
+              className="[&_button]:bg-barber-dark/80 [&_button]:border-barber-gold/30 [&_button]:text-barber-paper [&_.aspect-video]:max-w-xs"
             />
-            {preview && (
-              <div className="relative mt-2 aspect-video w-full max-w-xs overflow-hidden rounded-lg border border-barber-gold/30 bg-barber-dark">
-                <Image src={preview} alt="Nuova" fill className="object-contain" unoptimized />
-              </div>
-            )}
-            {(entity.image_url || preview) && (
+            {entity.image_url && (
               <div className="flex items-center gap-2 pt-1">
                 <input
                   type="checkbox"

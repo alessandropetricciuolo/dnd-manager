@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useRef, type FormEvent } from "react";
-import Image from "next/image";
+import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Pencil } from "lucide-react";
 
@@ -17,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CompressedImageUpload } from "@/components/ui/compressed-image-upload";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -32,8 +32,6 @@ const CAMPAIGN_TYPES = [
   { value: "quest", label: "Quest" },
   { value: "long", label: "Campagna Lunga" },
 ] as const;
-
-const PLACEHOLDER_COVER = "https://placehold.co/1200x400/1e293b/10b981/png?text=Campagna";
 
 export type CampaignForEdit = {
   id: string;
@@ -51,25 +49,6 @@ export function EditCampaignDialog({ campaign }: EditCampaignDialogProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [campaignType, setCampaignType] = useState<string>(campaign.type ?? "quest");
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const currentImageUrl = previewUrl ?? campaign.image_url ?? PLACEHOLDER_COVER;
-
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file && file.type.startsWith("image/")) {
-      setPreviewUrl((prev) => {
-        if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
-        return URL.createObjectURL(file);
-      });
-    } else {
-      setPreviewUrl((prev) => {
-        if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
-        return null;
-      });
-    }
-  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -80,11 +59,6 @@ export function EditCampaignDialog({ campaign }: EditCampaignDialogProps) {
     formData.set("campaign_id", campaign.id);
     formData.set("type", campaignType);
 
-    const file = fileInputRef.current?.files?.[0];
-    if (file && file.size > 0) {
-      formData.set("image", file);
-    }
-
     setIsLoading(true);
     try {
       const result = await updateCampaign(formData);
@@ -92,10 +66,8 @@ export function EditCampaignDialog({ campaign }: EditCampaignDialogProps) {
       if (result.success) {
         toast.success(result.message);
         setOpen(false);
-        setPreviewUrl(null);
         form.reset();
         setCampaignType(campaign.type ?? "quest");
-        if (fileInputRef.current) fileInputRef.current.value = "";
       } else {
         toast.error(result.message);
       }
@@ -107,10 +79,6 @@ export function EditCampaignDialog({ campaign }: EditCampaignDialogProps) {
   }
 
   function handleOpenChange(next: boolean) {
-    if (!next && previewUrl?.startsWith("blob:")) {
-      URL.revokeObjectURL(previewUrl);
-      setPreviewUrl(null);
-    }
     setOpen(next);
   }
 
@@ -180,31 +148,14 @@ export function EditCampaignDialog({ campaign }: EditCampaignDialogProps) {
               disabled={isLoading}
             />
           </div>
-          <div className="space-y-2">
-            <Label>Immagine di copertina</Label>
-            <div className="relative aspect-[3/1] w-full overflow-hidden rounded-lg bg-slate-950">
-              <Image
-                src={currentImageUrl}
-                alt="Copertina"
-                fill
-                className="object-contain"
-                sizes="(max-width: 768px) 100vw, 600px"
-                unoptimized={currentImageUrl.startsWith("blob:")}
-              />
-            </div>
-            <Input
-              ref={fileInputRef}
-              type="file"
-              name="image"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              className="bg-slate-900/70 border-slate-700 text-slate-50 file:mr-2 file:rounded file:border-0 file:bg-emerald-600 file:px-3 file:py-1 file:text-slate-950 file:text-sm"
-              disabled={isLoading}
-              onChange={handleFileChange}
-            />
-            <p className="text-xs text-slate-500">
-              Lascia vuoto per mantenere l&apos;immagine attuale. JPG, PNG, WebP, GIF.
-            </p>
-          </div>
+          <CompressedImageUpload
+            name="image"
+            label="Immagine di copertina"
+            previewUrl={campaign.image_url}
+            disabled={isLoading}
+            hint="Lascia vuoto per mantenere l'immagine attuale. L'immagine verrà compressa (max 2 MB, WebP)."
+            className="[&_button]:bg-slate-900/70 [&_button]:border-slate-700 [&_button]:text-slate-50 [&_.aspect-video]:aspect-[3/1]"
+          />
           <DialogFooter>
             <Button
               type="button"
