@@ -19,7 +19,7 @@ type DashboardShellProps = {
 function NavLinks({
   isAdmin,
   isGmOrAdmin,
-  onNavigate?: () => void,
+  onNavigate,
   className,
 }: {
   isAdmin: boolean;
