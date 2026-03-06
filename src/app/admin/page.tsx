@@ -65,18 +65,18 @@ export default async function AdminPage() {
   const list = profiles;
 
   return (
-    <div className="px-4 py-10">
-      <div className="mx-auto max-w-4xl space-y-6">
+    <div className="min-w-0 p-4 py-10 md:p-8">
+      <div className="mx-auto w-full max-w-4xl space-y-6">
         <header className="flex flex-wrap items-center justify-between gap-4">
-          <h1 className="flex items-center gap-2 text-xl font-semibold text-barber-paper sm:text-2xl">
+          <h1 className="flex min-w-0 items-center gap-2 break-words text-xl font-semibold text-barber-paper sm:text-2xl">
             <Shield className="h-6 w-6 text-barber-gold" />
             Utenti
           </h1>
           <CreateUserDialog />
         </header>
 
-        <div className="rounded-xl border border-barber-gold/40 bg-barber-dark/90 overflow-hidden">
-          <Table>
+        <div className="min-w-0 overflow-x-auto rounded-xl border border-barber-gold/40 bg-barber-dark/90">
+          <Table className="min-w-[600px]">
             <TableHeader>
               <TableRow className="border-barber-gold/30 hover:bg-transparent">
                 <TableHead className="text-barber-paper/80">Email / Nome</TableHead>

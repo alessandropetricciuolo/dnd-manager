@@ -36,8 +36,8 @@ export default async function ProfilePage() {
     .eq("status", "absent");
 
   return (
-    <div className="min-h-screen bg-barber-dark px-4 py-10">
-      <div className="mx-auto max-w-xl space-y-6">
+    <div className="min-h-screen bg-barber-dark p-4 py-10 md:p-8">
+      <div className="mx-auto w-full max-w-xl space-y-6">
         <header className="flex items-center gap-3">
           <Link href="/dashboard">
             <Button

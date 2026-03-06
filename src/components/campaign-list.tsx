@@ -132,7 +132,7 @@ export async function CampaignList({ variant = "all" }: CampaignListProps) {
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
       {campaigns.map((campaign) => (
         <Link key={campaign.id} href={`/campaigns/${campaign.id}`}>
           <Card className="overflow-hidden border-barber-gold/40 bg-barber-dark/90 transition-colors hover:border-barber-gold/50 hover:bg-barber-dark">
@@ -147,7 +147,7 @@ export async function CampaignList({ variant = "all" }: CampaignListProps) {
               />
             </div>
             <CardHeader className="pb-2">
-              <CardTitle className="line-clamp-1 text-lg text-barber-paper">
+              <CardTitle className="line-clamp-1 break-words text-lg text-barber-paper">
                 {campaign.name}
               </CardTitle>
               {campaign.description && (

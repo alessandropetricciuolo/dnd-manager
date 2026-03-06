@@ -156,7 +156,7 @@ export function SessionCalendar({ sessions }: SessionCalendarProps) {
     });
 
   return (
-    <div className="rounded-xl border border-barber-gold/40 bg-barber-dark/90 overflow-hidden">
+    <div className="w-full min-w-0 rounded-xl border border-barber-gold/40 bg-barber-dark/90 overflow-hidden">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-barber-gold/30 p-3">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-barber-paper">
           <CalendarIcon className="h-5 w-5 text-barber-gold" />

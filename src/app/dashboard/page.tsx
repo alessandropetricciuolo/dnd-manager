@@ -1,21 +1,16 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
-import { signout } from "@/app/auth/actions";
-import { CreateCampaignDialog } from "@/components/create-campaign-dialog";
 import { CampaignList } from "@/components/campaign-list";
 import { MySessionsList } from "@/components/my-sessions-list";
 import { CalendarSessionsLoader } from "@/components/dashboard/calendar-sessions-loader";
-import { Shield, User } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 function CampaignListFallback() {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
       {[1, 2, 3].map((i) => (
         <div
           key={i}
@@ -54,67 +49,35 @@ export default async function DashboardPage() {
     user.email ||
     "avventuriero";
 
-  const isAdmin = profile?.role === "admin";
   const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
 
   return (
-    <div className="min-h-screen bg-barber-dark px-4 py-10">
-      <div className="mx-auto flex max-w-5xl flex-col gap-8">
-        <header className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-sm text-barber-gold/80">Benvenuto,</p>
-            <h1 className="text-2xl font-semibold text-barber-paper">{displayName}</h1>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {isAdmin && (
-              <Link href="/admin">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-barber-gold/50 text-barber-gold hover:bg-barber-gold/10"
-                >
-                  <Shield className="mr-2 h-4 w-4" />
-                  Admin Panel
-                </Button>
-              </Link>
-            )}
-            <Link href="/profile">
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-barber-gold/40 text-barber-paper hover:bg-barber-gold/10"
-              >
-                <User className="mr-2 h-4 w-4" />
-                Profilo
-              </Button>
-            </Link>
-            {isGmOrAdmin && <CreateCampaignDialog />}
-            <form action={signout}>
-              <Button
-                type="submit"
-                variant="outline"
-                className="border-barber-gold/40 text-barber-paper hover:bg-barber-gold/10"
-              >
-                Logout
-              </Button>
-            </form>
-          </div>
+    <div className="min-h-full w-full bg-barber-dark p-4 md:p-8">
+      <div className="mx-auto flex max-w-5xl flex-col gap-6 md:gap-8">
+        <header>
+          <p className="text-sm text-barber-gold/80">Benvenuto,</p>
+          <h1 className="break-words text-xl font-semibold text-barber-paper sm:text-2xl">
+            {displayName}
+          </h1>
         </header>
 
-        <main className="space-y-6">
-          <section>
+        <div className="space-y-6">
+          <section className="w-full min-w-0 overflow-hidden">
             <Suspense
               fallback={
                 <div className="h-[320px] animate-pulse rounded-xl border border-barber-gold/30 bg-barber-dark/80" />
               }
             >
-              <CalendarSessionsLoader />
+              <div className="w-full overflow-x-auto">
+                <div className="min-w-[280px] max-w-full">
+                  <CalendarSessionsLoader />
+                </div>
+              </div>
             </Suspense>
           </section>
 
-          <section>
-            <h2 className="mb-4 text-lg font-semibold text-barber-paper">
+          <section className="min-w-0">
+            <h2 className="mb-4 break-words text-lg font-semibold text-barber-paper">
               Le tue campagne
             </h2>
             <p className="mb-4 text-sm text-barber-paper/70">
@@ -127,8 +90,8 @@ export default async function DashboardPage() {
             </Suspense>
           </section>
 
-          <section>
-            <h2 className="mb-4 text-lg font-semibold text-barber-paper">
+          <section className="min-w-0">
+            <h2 className="mb-4 break-words text-lg font-semibold text-barber-paper">
               Tutte le campagne
             </h2>
             <p className="mb-4 text-sm text-barber-paper/70">
@@ -141,8 +104,8 @@ export default async function DashboardPage() {
             </Suspense>
           </section>
 
-          <section>
-            <h2 className="mb-4 text-lg font-semibold text-barber-paper">
+          <section className="min-w-0">
+            <h2 className="mb-4 break-words text-lg font-semibold text-barber-paper">
               Le mie sessioni
             </h2>
             <Suspense fallback={<div className="h-32 animate-pulse rounded-xl border border-barber-gold/30 bg-barber-dark/80" />}>
@@ -169,7 +132,7 @@ export default async function DashboardPage() {
               )}
             </ul>
           </section>
-        </main>
+        </div>
       </div>
     </div>
   );
