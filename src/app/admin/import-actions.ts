@@ -15,15 +15,14 @@ function convertDriveLink(url: string | null | undefined): string | null {
 
 type ImportCampaignFullResult = { success: true; campaignId: string } | { success: false; error: string };
 
-/** Formato JSON atteso per l'import. */
+/** Formato JSON atteso per l'import (struttura piatta, no oggetto campaign nidificato). */
 export type ImportCampaignJson = {
-  campaign?: {
-    name: string;
-    description?: string | null;
-    is_public?: boolean;
-    type?: "oneshot" | "quest" | "long" | null;
-    image_url?: string | null;
-  };
+  /** Titolo campagna (mappato su campaigns.name nel DB). */
+  title: string;
+  description?: string | null;
+  type?: "oneshot" | "quest" | "long" | null;
+  image_url?: string | null;
+  is_public?: boolean;
   wiki?: Array<{
     name: string;
     type: "npc" | "monster" | "item" | "location" | "lore";
@@ -70,19 +69,19 @@ export async function importCampaignFull(json: ImportCampaignJson): Promise<Impo
     }
 
     const gmId = user.id;
-    const campaignData = json.campaign;
-    if (!campaignData?.name?.trim()) {
-      return { success: false, error: "Il JSON deve contenere campaign.name." };
+    const campaignName = (json.title ?? "").trim();
+    if (!campaignName) {
+      return { success: false, error: "Il JSON deve contenere title (titolo della campagna)." };
     }
 
-    // —— Step A: Campagna ——
+    // —— Step A: Campagna (title → name nel DB) ——
     const campaignInsert = {
       gm_id: gmId,
-      name: campaignData.name.trim(),
-      description: campaignData.description ?? null,
-      is_public: campaignData.is_public ?? false,
-      type: campaignData.type ?? null,
-      image_url: convertDriveLink(campaignData.image_url) ?? null,
+      name: campaignName,
+      description: json.description ?? null,
+      is_public: json.is_public ?? false,
+      type: json.type ?? null,
+      image_url: convertDriveLink(json.image_url) ?? null,
     };
 
     const { data: insertedCampaign, error: campaignError } = await admin

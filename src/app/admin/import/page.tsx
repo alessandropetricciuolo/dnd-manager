@@ -37,7 +37,7 @@ export default async function AdminImportPage() {
             Importa Campagna
           </h1>
           <p className="mt-2 text-sm text-barber-paper/70">
-            Incolla il JSON completo della campagna (campaign, wiki, maps, characters, gm_secrets). La campagna sarà creata con te come GM.
+            Incolla il JSON della campagna (struttura piatta: title, description, type, image_url, wiki, maps, characters, gm_secrets). La campagna sarà creata con te come GM.
           </p>
         </header>
         <ImportCampaignForm />
