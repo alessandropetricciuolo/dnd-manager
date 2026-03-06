@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { Navbar } from "@/components/navbar";
 import { CookieBanner } from "@/components/ui/cookie-banner";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -32,6 +33,7 @@ export default function RootLayout({
         <Toaster richColors closeButton />
         {children}
         <CookieBanner />
+        <SpeedInsights />
       </body>
     </html>
   );
