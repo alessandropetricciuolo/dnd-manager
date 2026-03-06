@@ -1,12 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { randomUUID } from "crypto";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { getPlayerEmails } from "@/lib/player-emails";
 import { sendEmail, wrapInTemplate, escapeHtml } from "@/lib/email";
-
-const COVER_BUCKET = "campaign_covers";
+import { uploadToTelegram } from "@/lib/telegram-storage";
 
 export type CreateCampaignResult = {
   success: boolean;
@@ -85,23 +83,20 @@ export async function createCampaign(
     }
 
     if (imageFile && imageFile instanceof File && imageFile.size > 0 && newCampaign?.id) {
-      const ext = imageFile.name.split(".").pop()?.toLowerCase() || "png";
-      const path = `${newCampaign.id}/${randomUUID()}.${ext}`;
-      const { error: uploadError } = await supabase.storage
-        .from(COVER_BUCKET)
-        .upload(path, imageFile, { cacheControl: "3600", upsert: false });
-      if (uploadError) {
-        console.error("[createCampaign] storage", uploadError);
+      try {
+        const fileId = await uploadToTelegram(imageFile);
+        const proxyUrl = `/api/tg-image/${fileId}`;
+        await supabase
+          .from("campaigns")
+          .update({ image_url: proxyUrl })
+          .eq("id", newCampaign.id);
+      } catch (uploadErr) {
+        console.error("[createCampaign] Telegram upload", uploadErr);
         return {
           success: false,
-          message: uploadError.message ?? "Errore durante il caricamento dell'immagine.",
+          message: uploadErr instanceof Error ? uploadErr.message : "Errore durante il caricamento dell'immagine.",
         };
       }
-      const { data: urlData } = supabase.storage.from(COVER_BUCKET).getPublicUrl(path);
-      await supabase
-        .from("campaigns")
-        .update({ image_url: urlData.publicUrl })
-        .eq("id", newCampaign.id);
     }
 
     try {

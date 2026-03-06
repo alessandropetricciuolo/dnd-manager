@@ -2,19 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
-import { randomUUID } from "crypto";
-
-/** Crea il bucket in Supabase: Storage → New bucket → id: campaign_maps, Public: on */
-const BUCKET = "campaign_maps";
 
 export type UploadMapResult = {
   success: boolean;
   message: string;
 };
-
-function sanitizeFileName(name: string): string {
-  return name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 100) || "map";
-}
 
 export async function uploadMap(
   formData: FormData
@@ -27,8 +19,8 @@ export async function uploadMap(
   const mapType = allowedMapTypes.includes(mapTypeRaw as (typeof allowedMapTypes)[number])
     ? mapTypeRaw
     : "region";
-  const file = formData.get("file") as File | null;
-  const imageUrlFromForm = (formData.get("image_url") as string | null)?.trim() || null;
+  const imageUrl = (formData.get("image_url") as string | null)?.trim() || null;
+  const imageUrlOverride = (formData.get("image_url_override") as string | null)?.trim() || null;
 
   if (!campaignId) {
     return { success: false, message: "Campagna non valida." };
@@ -37,20 +29,9 @@ export async function uploadMap(
     return { success: false, message: "Il nome della mappa è obbligatorio." };
   }
 
-  let imageUrlToSave: string;
-  if (file && file instanceof File && file.size > 0) {
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-    if (!allowedTypes.includes(file.type)) {
-      return {
-        success: false,
-        message: "Formato non supportato. Usa JPG, PNG, WebP o GIF.",
-      };
-    }
-    imageUrlToSave = ""; // will be set after upload
-  } else if (imageUrlFromForm) {
-    imageUrlToSave = imageUrlFromForm;
-  } else {
-    return { success: false, message: "Carica un'immagine o incolla un URL (es. Google Drive)." };
+  const finalImageUrl = imageUrlOverride || imageUrl;
+  if (!finalImageUrl) {
+    return { success: false, message: "Carica un'immagine, incolla un File ID Telegram o un link (es. Google Drive)." };
   }
 
   try {
@@ -71,36 +52,6 @@ export async function uploadMap(
       .single();
     if (profile?.role !== "gm" && profile?.role !== "admin") {
       return { success: false, message: "Non autorizzato. Solo GM e Admin possono caricare mappe." };
-    }
-
-    let finalImageUrl: string;
-    if (file && file instanceof File && file.size > 0) {
-      const ext = file.name.split(".").pop()?.toLowerCase() || "png";
-      const safeName = sanitizeFileName(name);
-      const path = `${campaignId}/${randomUUID()}-${safeName}.${ext}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from(BUCKET)
-        .upload(path, file, {
-          cacheControl: "3600",
-          upsert: false,
-        });
-
-      if (uploadError) {
-        console.error("[uploadMap] storage", uploadError);
-        return {
-          success: false,
-          message:
-            uploadError.message === "The resource already exists"
-              ? "File con questo nome già presente. Riprova."
-              : uploadError.message ?? "Errore durante il caricamento del file.",
-        };
-      }
-
-      const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(path);
-      finalImageUrl = urlData.publicUrl;
-    } else {
-      finalImageUrl = imageUrlToSave;
     }
 
     const { error: insertError } = await supabase.from("maps").insert({

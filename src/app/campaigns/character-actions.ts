@@ -5,13 +5,10 @@ import { randomUUID } from "crypto";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { sendEmail, wrapInTemplate, escapeHtml } from "@/lib/email";
+import { uploadToTelegram } from "@/lib/telegram-storage";
 
 const CHARACTER_SHEETS_BUCKET = "character_sheets";
-const WIKI_IMAGES_BUCKET = "campaign_maps";
 const SIGNED_URL_EXPIRY_SEC = 3600;
-
-/** Path per avatar PG: pubblico in campaign_maps */
-const CHARACTER_AVATAR_PREFIX = "characters";
 
 type CharResult<T = void> =
   | { success: true; data?: T }
@@ -136,17 +133,13 @@ export async function createCharacter(
     if (!allowed.includes(imageFile.type)) {
       return { success: false, error: "Formato immagine non supportato. Usa JPG, PNG, WebP o GIF." };
     }
-    const ext = imageFile.name.split(".").pop()?.toLowerCase() || "png";
-    const path = `${campaignId}/${CHARACTER_AVATAR_PREFIX}/${randomUUID()}.${ext}`;
-    const { error: uploadErr } = await supabase.storage
-      .from(WIKI_IMAGES_BUCKET)
-      .upload(path, imageFile, { cacheControl: "3600", upsert: false });
-    if (uploadErr) {
-      console.error("[createCharacter] image upload", uploadErr);
-      return { success: false, error: uploadErr.message ?? "Errore caricamento immagine." };
+    try {
+      const fileId = await uploadToTelegram(imageFile);
+      image_url = `/api/tg-image/${fileId}`;
+    } catch (uploadErr) {
+      console.error("[createCharacter] Telegram upload", uploadErr);
+      return { success: false, error: uploadErr instanceof Error ? uploadErr.message : "Errore caricamento immagine." };
     }
-    const { data: urlData } = supabase.storage.from(WIKI_IMAGES_BUCKET).getPublicUrl(path);
-    image_url = urlData.publicUrl;
   } else if (imageUrlFromForm) {
     image_url = imageUrlFromForm;
   }

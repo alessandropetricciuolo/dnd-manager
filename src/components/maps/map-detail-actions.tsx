@@ -48,7 +48,12 @@ export function MapDetailActions({ imageUrl, mapName, viewUrl }: MapDetailAction
               alt={mapName}
               fill
               className="object-contain"
-              unoptimized={imageUrl.startsWith("blob:") || imageUrl.includes("supabase")}
+              unoptimized={
+                imageUrl.startsWith("blob:") ||
+                imageUrl.startsWith("/api/tg-image/") ||
+                imageUrl.startsWith("/api/tg-file/") ||
+                imageUrl.includes("supabase")
+              }
             />
           </div>
         </DialogContent>

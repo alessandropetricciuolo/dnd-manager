@@ -1,13 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { randomUUID } from "crypto";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { uploadToTelegram } from "@/lib/telegram-storage";
 
 const ENTITY_TYPES = ["npc", "location", "monster", "item", "lore"] as const;
-
-/** Stesso bucket delle mappe, sottocartella wiki per immagini entità (NPC, luoghi, ecc.). */
-const WIKI_IMAGES_BUCKET = "campaign_maps";
 
 export type CreateEntityResult = {
   success: boolean;
@@ -79,20 +76,16 @@ export async function createEntity(
           message: "Formato immagine non supportato. Usa JPG, PNG, WebP o GIF.",
         };
       }
-      const ext = imageFile.name.split(".").pop()?.toLowerCase() || "png";
-      const path = `${campaignId}/wiki/${randomUUID()}.${ext}`;
-      const { error: uploadError } = await supabase.storage
-        .from(WIKI_IMAGES_BUCKET)
-        .upload(path, imageFile, { cacheControl: "3600", upsert: false });
-      if (uploadError) {
-        console.error("[createEntity] storage", uploadError);
+      try {
+        const fileId = await uploadToTelegram(imageFile);
+        imageUrl = `/api/tg-image/${fileId}`;
+      } catch (uploadErr) {
+        console.error("[createEntity] Telegram upload", uploadErr);
         return {
           success: false,
-          message: uploadError.message ?? "Errore durante il caricamento dell'immagine.",
+          message: uploadErr instanceof Error ? uploadErr.message : "Errore durante il caricamento dell'immagine.",
         };
       }
-      const { data: urlData } = supabase.storage.from(WIKI_IMAGES_BUCKET).getPublicUrl(path);
-      imageUrl = urlData.publicUrl;
     }
 
     const insertPayload: Record<string, unknown> = {
@@ -188,20 +181,16 @@ export async function updateEntity(
           message: "Formato immagine non supportato. Usa JPG, PNG, WebP o GIF.",
         };
       }
-      const ext = imageFile.name.split(".").pop()?.toLowerCase() || "png";
-      const path = `${campaignId}/wiki/${randomUUID()}.${ext}`;
-      const { error: uploadError } = await supabase.storage
-        .from(WIKI_IMAGES_BUCKET)
-        .upload(path, imageFile, { cacheControl: "3600", upsert: false });
-      if (uploadError) {
-        console.error("[updateEntity] storage", uploadError);
+      try {
+        const fileId = await uploadToTelegram(imageFile);
+        imageUrl = `/api/tg-image/${fileId}`;
+      } catch (uploadErr) {
+        console.error("[updateEntity] Telegram upload", uploadErr);
         return {
           success: false,
-          message: uploadError.message ?? "Errore durante il caricamento dell'immagine.",
+          message: uploadErr instanceof Error ? uploadErr.message : "Errore durante il caricamento dell'immagine.",
         };
       }
-      const { data: urlData } = supabase.storage.from(WIKI_IMAGES_BUCKET).getPublicUrl(path);
-      imageUrl = urlData.publicUrl;
     } else if (imageUrlFromForm) {
       imageUrl = imageUrlFromForm;
     }

@@ -1,15 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { randomUUID } from "crypto";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { getPlayerEmails } from "@/lib/player-emails";
 import { sendEmail, wrapInTemplate, escapeHtml } from "@/lib/email";
-
-const COVER_BUCKET = "campaign_covers";
+import { uploadToTelegram } from "@/lib/telegram-storage";
 
 export type CreateSessionResult = {
   success: boolean;
@@ -760,23 +758,16 @@ export async function updateCampaign(formData: FormData): Promise<UpdateCampaign
           message: "Formato immagine non supportato. Usa JPG, PNG, WebP o GIF.",
         };
       }
-      const ext = imageFile.name.split(".").pop()?.toLowerCase() || "png";
-      const path = `${campaignId}/${randomUUID()}.${ext}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from(COVER_BUCKET)
-        .upload(path, imageFile, { cacheControl: "3600", upsert: false });
-
-      if (uploadError) {
-        console.error("[updateCampaign] storage", uploadError);
+      try {
+        const fileId = await uploadToTelegram(imageFile);
+        imageUrl = `/api/tg-image/${fileId}`;
+      } catch (uploadErr) {
+        console.error("[updateCampaign] Telegram upload", uploadErr);
         return {
           success: false,
-          message: uploadError.message ?? "Errore durante il caricamento dell'immagine.",
+          message: uploadErr instanceof Error ? uploadErr.message : "Errore durante il caricamento dell'immagine.",
         };
       }
-
-      const { data: urlData } = supabase.storage.from(COVER_BUCKET).getPublicUrl(path);
-      imageUrl = urlData.publicUrl;
     } else if (imageUrlFromForm) {
       imageUrl = imageUrlFromForm;
     }

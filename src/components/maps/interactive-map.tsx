@@ -88,9 +88,11 @@ export function InteractiveMap({
     }
   };
 
-  const isExternalUrl = useMemo(
+  const isExternalOrProxyUrl = useMemo(
     () =>
       imageUrl.startsWith("blob:") ||
+      imageUrl.startsWith("/api/tg-image/") ||
+      imageUrl.startsWith("/api/tg-file/") ||
       imageUrl.includes("drive.google.com") ||
       imageUrl.includes("googleusercontent.com"),
     [imageUrl]
@@ -130,7 +132,7 @@ export function InteractiveMap({
                 className="object-contain"
                 sizes="100vw"
                 priority
-                unoptimized={isExternalUrl}
+                unoptimized={isExternalOrProxyUrl}
                 onLoad={handleImageLoad}
               />
               {/* Pin layer: absolute inset-0 so pins (left/top %) match the image coordinate system. */}
