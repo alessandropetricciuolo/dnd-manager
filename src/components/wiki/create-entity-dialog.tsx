@@ -50,7 +50,10 @@ export function CreateEntityDialog({ campaignId }: CreateEntityDialogProps) {
   function onTypeChange(newType: string) {
     const t = newType as EntityType;
     setType(t);
-    setAttributes(defaultAttributes(t));
+    const next = defaultAttributes(t) as Record<string, unknown>;
+    const currentGmNotes = attributes.gm_notes ?? "";
+    if (typeof currentGmNotes === "string") next.gm_notes = currentGmNotes;
+    setAttributes(next);
     setSortOrder("");
   }
 
@@ -330,6 +333,20 @@ export function CreateEntityDialog({ campaignId }: CreateEntityDialogProps) {
             <Label htmlFor="entity-secret" className="cursor-pointer text-barber-paper/80">
               Segreto (solo il GM può vedere questa voce)
             </Label>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="entity-gm-notes" className="text-barber-gold/90">
+              Note GM (solo visibili a te e agli admin)
+            </Label>
+            <Textarea
+              id="entity-gm-notes"
+              value={getAttr("gm_notes")}
+              onChange={(e) => setAttr("gm_notes", e.target.value)}
+              placeholder="Appunti, reminder, idee per la sessione..."
+              className="min-h-[80px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper placeholder:text-barber-paper/40"
+              disabled={isLoading}
+            />
           </div>
           </div>
 

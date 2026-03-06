@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { EntityContent } from "../entity-content";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MapPopoutButton } from "@/components/maps/map-popout-button";
 import { Users, Coins } from "lucide-react";
 import { GmOnlySection } from "./gm-only-section";
 
@@ -33,6 +34,10 @@ export function NpcView({ name, body, imageUrl, attributes, isGmOrAdmin = false 
               unoptimized={!!imageUrl}
             />
           </div>
+          <MapPopoutButton
+            imageUrl={imageUrl ?? PLACEHOLDER}
+            title={name}
+          />
         </div>
         <div>
           <h2 className="mb-4 text-lg font-semibold text-barber-gold">Storia</h2>

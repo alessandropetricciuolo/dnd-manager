@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { EntityContent } from "../entity-content";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MapPopoutButton } from "@/components/maps/map-popout-button";
 import { MapPin } from "lucide-react";
 import { GmOnlySection } from "./gm-only-section";
 
@@ -21,15 +22,21 @@ export function LocationView({ name, body, imageUrl, attributes, isGmOrAdmin = f
 
   return (
     <div className="space-y-8">
-      <div className="relative aspect-[2/1] w-full overflow-hidden rounded-xl border border-barber-gold/30 bg-barber-dark">
-        <Image
-          src={imageUrl ?? PLACEHOLDER}
-          alt={name}
-          fill
-          className="object-cover"
-          sizes="(max-width: 1024px) 100vw, 800px"
-          unoptimized={!!imageUrl}
-          priority
+      <div className="space-y-2">
+        <div className="relative aspect-[2/1] w-full overflow-hidden rounded-xl border border-barber-gold/30 bg-barber-dark">
+          <Image
+            src={imageUrl ?? PLACEHOLDER}
+            alt={name}
+            fill
+            className="object-cover"
+            sizes="(max-width: 1024px) 100vw, 800px"
+            unoptimized={!!imageUrl}
+            priority
+          />
+        </div>
+        <MapPopoutButton
+          imageUrl={imageUrl ?? PLACEHOLDER}
+          title={name}
         />
       </div>
 
