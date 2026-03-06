@@ -221,8 +221,8 @@ export default async function CampaignPage({ params }: PageProps) {
 
         {/* Colonna destra: scroll, tabs sticky in cima */}
         <main className="min-h-0 min-w-0 flex-1 flex flex-col overflow-hidden">
-          <ScrollArea className="min-h-0 flex-1">
-            <div className="px-4 pb-8 pt-4 lg:px-6 lg:pt-6">
+          <ScrollArea className="min-h-0 flex-1 overflow-x-hidden">
+            <div className="min-w-0 w-full max-w-full px-4 pb-8 pt-4 lg:px-6 lg:pt-6">
               <CampaignTabsClient
           campaignId={campaign.id}
           campaign={{

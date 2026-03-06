@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -9,8 +10,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lock, BookOpen } from "lucide-react";
+import { Lock, BookOpen, ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export type WikiEntityListItem = {
   id: string;
@@ -32,6 +36,15 @@ type WikiListClientProps = {
 const ALL_TYPES = "all";
 const WIKI_FILTER_VALUES = ["all", "npc", "location", "monster", "item", "lore"] as const;
 
+const FILTER_LABELS: Record<string, string> = {
+  all: "Tutti",
+  npc: "NPC",
+  location: "Luogo",
+  monster: "Mostro",
+  item: "Oggetto",
+  lore: "Lore",
+};
+
 export function WikiListClient({
   campaignId,
   entities,
@@ -43,11 +56,15 @@ export function WikiListClient({
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+
   const wikiFilterParam = searchParams.get("wiki_filter");
   const typeFilter =
     wikiFilterParam && WIKI_FILTER_VALUES.includes(wikiFilterParam as (typeof WIKI_FILTER_VALUES)[number])
       ? wikiFilterParam
       : ALL_TYPES;
+
+  const currentFilterLabel = FILTER_LABELS[typeFilter] ?? typeFilter;
 
   function setWikiFilter(value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -86,10 +103,58 @@ export function WikiListClient({
     );
   }
 
+  const filterOptions = [
+    { value: ALL_TYPES, label: FILTER_LABELS[ALL_TYPES] },
+    ...Object.entries(typeLabels).map(([value, label]) => ({ value, label })),
+  ];
+
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 max-w-full space-y-4">
       <Tabs value={typeFilter} onValueChange={setWikiFilter}>
-        <TabsList className="flex flex-wrap gap-1 rounded-xl border border-barber-gold/40 bg-barber-dark/90 p-1">
+        {/* Mobile: menu a tendina per il filtro (evita overflow e voci sotto le altre) */}
+        <div className="md:hidden w-full min-w-0">
+          <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full justify-between rounded-xl border-barber-gold/40 bg-barber-dark/90 py-6 text-left text-barber-paper hover:bg-barber-gold/10 hover:text-barber-gold"
+              >
+                <span className="font-medium">Filtro: {currentFilterLabel}</span>
+                <ChevronDown className="h-5 w-5 shrink-0 opacity-70" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent
+              side="bottom"
+              className="rounded-t-2xl border-t border-barber-gold/20 bg-barber-dark pb-8 pt-4"
+            >
+              <p className="mb-4 px-1 text-sm font-medium text-barber-paper/70">Tipologia voce wiki</p>
+              <nav className="flex flex-col gap-1">
+                {filterOptions.map(({ value, label }) => {
+                  const isActive = typeFilter === value;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => {
+                        setWikiFilter(value);
+                        setFilterSheetOpen(false);
+                      }}
+                      className={cn(
+                        "flex items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-medium transition-colors text-barber-paper hover:bg-barber-gold/10 hover:text-barber-gold",
+                        isActive && "bg-barber-gold/20 text-barber-gold"
+                      )}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </nav>
+            </SheetContent>
+          </Sheet>
+        </div>
+
+        {/* Desktop: tab orizzontali */}
+        <TabsList className="hidden md:flex w-full min-w-0 max-w-full flex-wrap justify-start gap-1 rounded-xl border border-barber-gold/40 bg-barber-dark/90 p-1">
           <TabsTrigger
             value={ALL_TYPES}
             className="data-[state=active]:bg-barber-gold/20 data-[state=active]:text-barber-gold"

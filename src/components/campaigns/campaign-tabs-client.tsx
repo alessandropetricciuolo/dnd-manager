@@ -85,11 +85,11 @@ export function CampaignTabsClient({
     <Tabs
       value={effectiveTab}
       onValueChange={setTab}
-      className="w-full"
+      className="min-w-0 w-full max-w-full"
     >
-      <div className="sticky top-0 z-10 -mx-4 -mt-4 mb-4 bg-barber-dark/95 px-4 pt-4 backdrop-blur-md supports-[backdrop-filter]:bg-barber-dark/80 lg:-mx-6 lg:-mt-6 lg:px-6 lg:pt-6">
+      <div className="sticky top-0 z-10 -mt-4 mb-4 min-w-0 max-w-full bg-barber-dark/95 px-4 pt-4 backdrop-blur-md supports-[backdrop-filter]:bg-barber-dark/80 md:-mx-4 md:px-4 lg:-mx-6 lg:-mt-6 lg:px-6 lg:pt-6">
         {/* Mobile: selettore tab a tendina (evita overflow/sovrapposizioni) */}
-        <div className="md:hidden w-full">
+        <div className="md:hidden w-full min-w-0">
           <Sheet open={tabSheetOpen} onOpenChange={setTabSheetOpen}>
             <SheetTrigger asChild>
               <Button
@@ -218,9 +218,9 @@ export function CampaignTabsClient({
         </TabsList>
       </div>
 
-      <TabsContent value="overview" className="mt-0">
-        <div className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 overflow-hidden">
-          <div className="relative aspect-[21/9] min-h-[200px] w-full bg-barber-dark">
+      <TabsContent value="overview" className="mt-0 min-w-0">
+        <div className="min-w-0 max-w-full rounded-xl border border-barber-gold/30 bg-barber-dark/80 overflow-hidden">
+          <div className="relative aspect-[21/9] min-h-[200px] min-w-0 w-full bg-barber-dark">
             <Image
               src={campaign.image_url ?? PLACEHOLDER_IMAGE}
               alt=""
