@@ -37,14 +37,24 @@ const MAP_TYPE_OPTIONS: { label: string; value: string }[] = [
   { label: "Edificio", value: "building" },
 ];
 
+const VISIBILITY_OPTIONS: { label: string; value: string }[] = [
+  { label: "Pubblico (tutti)", value: "public" },
+  { label: "Segreto (solo GM)", value: "secret" },
+  { label: "Selettivo (scegli giocatori)", value: "selective" },
+];
+
 type UploadMapDialogProps = {
   campaignId: string;
+  /** Giocatori iscritti alla campagna per la visibilità selettiva. */
+  eligiblePlayers?: { id: string; label: string }[];
 };
 
-export function UploadMapDialog({ campaignId }: UploadMapDialogProps) {
+export function UploadMapDialog({ campaignId, eligiblePlayers = [] }: UploadMapDialogProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [mapType, setMapType] = useState<string>("region");
+  const [visibility, setVisibility] = useState<string>("public");
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -54,6 +64,8 @@ export function UploadMapDialog({ campaignId }: UploadMapDialogProps) {
     const formData = new FormData(form);
     formData.set("campaign_id", campaignId);
     formData.set("map_type", mapType);
+    formData.set("visibility", visibility);
+    formData.set("allowed_user_ids", JSON.stringify(visibility === "selective" ? selectedPlayerIds : []));
 
     const name = (formData.get("name") as string)?.trim();
     const imageUrl = (formData.get("image_url") as string)?.trim();
@@ -76,6 +88,8 @@ export function UploadMapDialog({ campaignId }: UploadMapDialogProps) {
         toast.success(result.message);
         setOpen(false);
         setMapType("region");
+        setVisibility("public");
+        setSelectedPlayerIds([]);
         form.reset();
       } else {
         toast.error(result.message);
@@ -88,7 +102,17 @@ export function UploadMapDialog({ campaignId }: UploadMapDialogProps) {
   }
 
   function handleOpenChange(next: boolean) {
+    if (!next) {
+      setVisibility("public");
+      setSelectedPlayerIds([]);
+    }
     setOpen(next);
+  }
+
+  function togglePlayer(id: string) {
+    setSelectedPlayerIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
   }
 
   return (
@@ -144,6 +168,59 @@ export function UploadMapDialog({ campaignId }: UploadMapDialogProps) {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Visibilità</Label>
+            <Select
+              value={visibility}
+              onValueChange={setVisibility}
+              disabled={isLoading}
+            >
+              <SelectTrigger className="bg-barber-dark border-barber-gold/30 text-barber-paper">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="border-barber-gold/30 bg-barber-dark text-barber-paper">
+                {VISIBILITY_OPTIONS.map((opt) => (
+                  <SelectItem
+                    key={opt.value}
+                    value={opt.value}
+                    className="focus:bg-barber-dark focus:text-barber-paper"
+                  >
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {visibility === "selective" && (
+              <div className="mt-2 rounded-md border border-barber-gold/30 bg-barber-dark/60 p-3">
+                <p className="mb-2 text-xs font-medium text-barber-paper/80">
+                  Scegli i giocatori che possono vedere questa mappa
+                </p>
+                {eligiblePlayers.length === 0 ? (
+                  <p className="text-xs text-barber-paper/50">
+                    Nessun giocatore iscritto alla campagna. Iscriviti a una sessione per comparire qui.
+                  </p>
+                ) : (
+                  <div className="flex max-h-40 flex-col gap-2 overflow-y-auto">
+                    {eligiblePlayers.map((p) => (
+                      <label
+                        key={p.id}
+                        className="flex cursor-pointer items-center gap-2 text-sm text-barber-paper"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedPlayerIds.includes(p.id)}
+                          onChange={() => togglePlayer(p.id)}
+                          className="h-4 w-4 rounded border-barber-gold/40 bg-barber-dark text-barber-gold"
+                        />
+                        {p.label}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">

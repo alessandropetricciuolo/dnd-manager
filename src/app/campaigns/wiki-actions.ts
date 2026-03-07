@@ -3,8 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { uploadToTelegram } from "@/lib/telegram-storage";
+import { syncEntityPermissions, parseAllowedUserIds } from "@/lib/entity-permissions";
 
 const ENTITY_TYPES = ["npc", "location", "monster", "item", "lore"] as const;
+const VISIBILITY_VALUES = ["public", "secret", "selective"] as const;
+type Visibility = (typeof VISIBILITY_VALUES)[number];
 
 export type CreateEntityResult = {
   success: boolean;
@@ -31,7 +34,10 @@ export async function createEntity(
   const title = (formData.get("title") as string | null)?.trim();
   const type = (formData.get("type") as string | null)?.trim();
   const content = (formData.get("content") as string | null)?.trim() ?? "";
-  const isSecret = formData.get("is_secret") === "on" || formData.get("is_secret") === "true";
+  const visibilityRaw = (formData.get("visibility") as string | null)?.trim() || "public";
+  const visibility: Visibility = VISIBILITY_VALUES.includes(visibilityRaw as Visibility) ? visibilityRaw as Visibility : "public";
+  const isSecret = visibility === "secret";
+  const allowedUserIds = parseAllowedUserIds(formData, "allowed_user_ids");
   const imageFile = formData.get("image") as File | null;
   let imageUrl = (formData.get("image_url") as string | null)?.trim() || null;
   const attributes = parseAttributes(formData, type ?? "");
@@ -94,6 +100,7 @@ export async function createEntity(
       type: type as (typeof ENTITY_TYPES)[number],
       content: { body: content },
       is_secret: isSecret,
+      visibility,
       image_url: imageUrl,
       attributes: Object.keys(attributes).length ? attributes : {},
     };
@@ -101,14 +108,29 @@ export async function createEntity(
       insertPayload.sort_order = sortOrder;
     }
 
-    const { error } = await supabase.from("wiki_entities").insert(insertPayload);
+    const { data: inserted, error } = await supabase
+      .from("wiki_entities")
+      .insert(insertPayload)
+      .select("id")
+      .single();
 
-    if (error) {
+    if (error || !inserted) {
       console.error("[createEntity]", error);
       return {
         success: false,
-        message: error.message ?? "Errore durante la creazione.",
+        message: error?.message ?? "Errore durante la creazione.",
       };
+    }
+
+    if (visibility === "selective" && allowedUserIds.length > 0) {
+      const { error: permError } = await syncEntityPermissions(
+        supabase,
+        campaignId,
+        "wiki",
+        inserted.id,
+        allowedUserIds
+      );
+      if (permError) console.error("[createEntity] entity_permissions", permError);
     }
 
     revalidatePath(`/campaigns/${campaignId}`);
@@ -132,7 +154,10 @@ export async function updateEntity(
   const title = (formData.get("title") as string | null)?.trim();
   const type = (formData.get("type") as string | null)?.trim();
   const content = (formData.get("content") as string | null)?.trim() ?? "";
-  const isSecret = formData.get("is_secret") === "on" || formData.get("is_secret") === "true";
+  const visibilityRaw = (formData.get("visibility") as string | null)?.trim() || null;
+  const visibility: Visibility | null = visibilityRaw && VISIBILITY_VALUES.includes(visibilityRaw as Visibility) ? visibilityRaw as Visibility : null;
+  const isSecret = visibility === "secret" || (visibility === null && formData.get("is_secret") === "on");
+  const allowedUserIds = parseAllowedUserIds(formData, "allowed_user_ids");
   const imageFile = formData.get("image") as File | null;
   const imageUrlFromForm = (formData.get("image_url") as string | null)?.trim() || null;
   const removeImage = formData.get("remove_image") === "on" || formData.get("remove_image") === "true";
@@ -202,6 +227,9 @@ export async function updateEntity(
       is_secret: isSecret,
       attributes: Object.keys(attributes).length ? attributes : {},
     };
+    if (visibility !== null) {
+      updatePayload.visibility = visibility;
+    }
     if (imageUrl !== undefined) updatePayload.image_url = imageUrl;
     if (sortOrder != null && !Number.isNaN(sortOrder)) {
       updatePayload.sort_order = sortOrder;
@@ -221,6 +249,17 @@ export async function updateEntity(
         success: false,
         message: error.message ?? "Errore durante l'aggiornamento.",
       };
+    }
+
+    if (visibility !== null) {
+      const { error: permError } = await syncEntityPermissions(
+        supabase,
+        campaignId,
+        "wiki",
+        entityId,
+        visibility === "selective" ? allowedUserIds : []
+      );
+      if (permError) console.error("[updateEntity] entity_permissions", permError);
     }
 
     revalidatePath(`/campaigns/${campaignId}`);
@@ -311,6 +350,7 @@ export type WikiEntity = {
   content: { body?: string } | null;
   image_url: string | null;
   is_secret: boolean;
+  visibility?: string;
   attributes: Record<string, unknown> | null;
   sort_order: number | null;
   created_at: string;
@@ -357,7 +397,7 @@ export async function getEntity(
 
     const { data: entity, error } = await supabase
       .from("wiki_entities")
-      .select("id, campaign_id, name, type, content, image_url, is_secret, attributes, sort_order, created_at, updated_at")
+      .select("id, campaign_id, name, type, content, image_url, is_secret, visibility, attributes, sort_order, created_at, updated_at")
       .eq("id", entityId)
       .eq("campaign_id", campaignId)
       .single();

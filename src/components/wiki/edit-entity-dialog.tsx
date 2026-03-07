@@ -32,12 +32,21 @@ const ENTITY_TYPES = [
 
 type EntityType = (typeof ENTITY_TYPES)[number]["value"];
 
+const VISIBILITY_OPTIONS = [
+  { label: "Pubblico (tutti)", value: "public" },
+  { label: "Segreto (solo GM)", value: "secret" },
+  { label: "Selettivo (scegli giocatori)", value: "selective" },
+] as const;
+
 type EditEntityDialogProps = {
   campaignId: string;
   entity: WikiEntity;
   contentBody: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  eligiblePlayers?: { id: string; label: string }[];
+  initialVisibility?: string;
+  initialAllowedUserIds?: string[];
 };
 
 const defaultAttributes = (type: EntityType) =>
@@ -68,6 +77,9 @@ export function EditEntityDialog({
   contentBody,
   open,
   onOpenChange,
+  eligiblePlayers = [],
+  initialVisibility = "public",
+  initialAllowedUserIds = [],
 }: EditEntityDialogProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -79,6 +91,8 @@ export function EditEntityDialog({
     entity.sort_order != null ? String(entity.sort_order) : ""
   );
   const [removeImage, setRemoveImage] = useState(false);
+  const [visibility, setVisibility] = useState<string>(initialVisibility);
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>(initialAllowedUserIds);
 
   useEffect(() => {
     if (open) {
@@ -86,8 +100,10 @@ export function EditEntityDialog({
       setAttributes(mergeAttributes((entity.type as EntityType) || "npc", entity.attributes));
       setSortOrder(entity.sort_order != null ? String(entity.sort_order) : "");
       setRemoveImage(false);
+      setVisibility(initialVisibility);
+      setSelectedPlayerIds(initialAllowedUserIds);
     }
-  }, [open, entity.type, entity.attributes, entity.sort_order]);
+  }, [open, entity.type, entity.attributes, entity.sort_order, initialVisibility, initialAllowedUserIds]);
 
   function onTypeChange(newType: string) {
     const t = newType as EntityType;
@@ -127,6 +143,8 @@ export function EditEntityDialog({
     const form = event.currentTarget;
     const formData = new FormData(form);
     formData.set("attributes", JSON.stringify(attributes));
+    formData.set("visibility", visibility);
+    formData.set("allowed_user_ids", JSON.stringify(visibility === "selective" ? selectedPlayerIds : []));
     if (sortOrder.trim() !== "") formData.set("sort_order", sortOrder.trim());
     if (removeImage) formData.set("remove_image", "on");
 
@@ -345,19 +363,45 @@ export function EditEntityDialog({
             </>
           )}
 
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="edit-entity-secret"
-              name="is_secret"
-              value="on"
-              defaultChecked={entity.is_secret}
-              className="h-4 w-4 rounded border-barber-gold/40 bg-barber-dark text-barber-gold focus:ring-barber-gold"
+          <div className="space-y-2">
+            <Label>Visibilità</Label>
+            <select
+              value={visibility}
+              onChange={(e) => setVisibility(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
               disabled={isLoading}
-            />
-            <Label htmlFor="edit-entity-secret" className="cursor-pointer text-barber-paper/80">
-              Segreto
-            </Label>
+            >
+              {VISIBILITY_OPTIONS.map(({ value, label }) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            {visibility === "selective" && eligiblePlayers.length > 0 && (
+              <div className="mt-2 rounded-md border border-barber-gold/30 bg-barber-dark/60 p-3">
+                <Label className="text-barber-paper/80">Giocatori che possono vedere questa voce</Label>
+                <ul className="mt-2 space-y-2">
+                  {eligiblePlayers.map((player) => (
+                    <li key={player.id} className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id={`edit-entity-player-${player.id}`}
+                        checked={selectedPlayerIds.includes(player.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) setSelectedPlayerIds((prev) => [...prev, player.id]);
+                          else setSelectedPlayerIds((prev) => prev.filter((id) => id !== player.id));
+                        }}
+                        className="h-4 w-4 rounded border-barber-gold/40 bg-barber-dark text-barber-gold"
+                        disabled={isLoading}
+                      />
+                      <Label htmlFor={`edit-entity-player-${player.id}`} className="cursor-pointer text-barber-paper/90">
+                        {player.label}
+                      </Label>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">

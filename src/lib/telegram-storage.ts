@@ -8,11 +8,14 @@
 const TELEGRAM_API = "https://api.telegram.org/bot";
 
 function getConfig() {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
+  const token = (process.env.TELEGRAM_BOT_TOKEN ?? "").trim();
+  const chatId = (process.env.TELEGRAM_CHAT_ID ?? "").trim();
   if (!token || !chatId) {
+    const missing = [!token && "TELEGRAM_BOT_TOKEN", !chatId && "TELEGRAM_CHAT_ID"]
+      .filter(Boolean)
+      .join(", ");
     throw new Error(
-      "TELEGRAM_BOT_TOKEN e TELEGRAM_CHAT_ID devono essere impostati in .env.local"
+      `Variabili Telegram mancanti (${missing}). Verifica .env.local: nomi esatti, senza spazi. Dopo aver modificato .env.local riavvia il server (npm run dev). In produzione imposta le variabili in Vercel → Project Settings → Environment Variables.`
     );
   }
   return { token, chatId };

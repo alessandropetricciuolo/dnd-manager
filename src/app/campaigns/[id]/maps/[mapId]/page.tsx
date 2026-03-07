@@ -41,19 +41,33 @@ export default async function CampaignMapPage({ params }: PageProps) {
 
   const { data: mapMeta } = await supabase
     .from("maps")
-    .select("is_secret")
+    .select("is_secret, visibility")
     .eq("id", mapId)
     .single();
+  const visibility = (mapMeta as { visibility?: string } | null)?.visibility ?? "public";
   const isSecret = (mapMeta as { is_secret?: boolean } | null)?.is_secret ?? false;
-  if (!isGmOrAdmin && isSecret) {
-    const { data: exploration } = await supabase
-      .from("explorations")
-      .select("id")
-      .eq("player_id", user.id)
-      .eq("map_id", mapId)
-      .limit(1)
-      .maybeSingle();
-    if (!exploration) notFound();
+  if (!isGmOrAdmin && visibility !== "public") {
+    if (visibility === "selective") {
+      const { data: perm } = await supabase
+        .from("entity_permissions")
+        .select("id")
+        .eq("campaign_id", campaignId)
+        .eq("entity_type", "map")
+        .eq("entity_id", mapId)
+        .eq("user_id", user.id)
+        .limit(1)
+        .maybeSingle();
+      if (!perm) notFound();
+    } else {
+      const { data: exploration } = await supabase
+        .from("explorations")
+        .select("id")
+        .eq("player_id", user.id)
+        .eq("map_id", mapId)
+        .limit(1)
+        .maybeSingle();
+      if (!exploration) notFound();
+    }
   }
 
   const { data: pins } = await supabase

@@ -274,7 +274,7 @@ export default async function CampaignPage({ params }: PageProps) {
                     Wiki
                   </h2>
                   {isGmOrAdmin && (
-                    <CreateEntityDialog campaignId={campaign.id} />
+                    <CreateEntityDialog campaignId={campaign.id} eligiblePlayers={eligiblePlayers} />
                   )}
                 </div>
                 <WikiList campaignId={campaign.id} />
@@ -289,10 +289,10 @@ export default async function CampaignPage({ params }: PageProps) {
                     Mappe
                   </h2>
                   {isGmOrAdmin && (
-                    <UploadMapDialog campaignId={campaign.id} />
+                    <UploadMapDialog campaignId={campaign.id} eligiblePlayers={eligiblePlayers} />
                   )}
                 </div>
-                <MapGallery campaignId={campaign.id} />
+                <MapGallery campaignId={campaign.id} eligiblePlayers={eligiblePlayers} />
               </>
             ) : null
           }

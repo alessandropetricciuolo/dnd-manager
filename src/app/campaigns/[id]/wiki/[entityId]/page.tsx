@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { Button } from "@/components/ui/button";
 import { getEntity } from "@/app/campaigns/wiki-actions";
+import { getCampaignEligiblePlayers } from "@/app/campaigns/character-actions";
 import { WikiDetails } from "@/components/wiki/wiki-details";
 import { WikiEntityEditButton } from "@/components/wiki/wiki-entity-edit-button";
 import { WikiEntityDeleteButton } from "@/components/wiki/wiki-entity-delete-button";
@@ -35,6 +36,23 @@ export default async function WikiEntityPage({ params }: PageProps) {
     .eq("id", user.id)
     .single();
   const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
+
+  let eligiblePlayers: { id: string; label: string }[] = [];
+  let permittedUserIds: string[] = [];
+  if (isGmOrAdmin) {
+    const playersResult = await getCampaignEligiblePlayers(campaignId);
+    if (playersResult.success && playersResult.data) eligiblePlayers = playersResult.data;
+    const vis = (entity as { visibility?: string }).visibility;
+    if (vis === "selective") {
+      const { data: perms } = await supabase
+        .from("entity_permissions")
+        .select("user_id")
+        .eq("campaign_id", campaignId)
+        .eq("entity_type", "wiki")
+        .eq("entity_id", entityId);
+      if (perms?.length) permittedUserIds = perms.map((p) => p.user_id as string);
+    }
+  }
 
   const contentBody =
     entity.content && typeof entity.content === "object" && "body" in entity.content
@@ -72,6 +90,9 @@ export default async function WikiEntityPage({ params }: PageProps) {
                 campaignId={campaignId}
                 entity={entityWithDefaults}
                 contentBody={contentBody}
+                eligiblePlayers={eligiblePlayers}
+                initialVisibility={(entity as { visibility?: string }).visibility ?? (entity.is_secret ? "secret" : "public")}
+                initialAllowedUserIds={permittedUserIds}
               />
               <WikiEntityDeleteButton
                 campaignId={campaignId}

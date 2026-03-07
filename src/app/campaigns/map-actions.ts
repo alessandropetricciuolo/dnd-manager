@@ -2,6 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { syncEntityPermissions, parseAllowedUserIds } from "@/lib/entity-permissions";
+
+const VISIBILITY_VALUES = ["public", "secret", "selective"] as const;
+type Visibility = (typeof VISIBILITY_VALUES)[number];
 
 export type UploadMapResult = {
   success: boolean;
@@ -21,6 +25,9 @@ export async function uploadMap(
     : "region";
   const imageUrl = (formData.get("image_url") as string | null)?.trim() || null;
   const imageUrlOverride = (formData.get("image_url_override") as string | null)?.trim() || null;
+  const visibilityRaw = (formData.get("visibility") as string | null)?.trim() || "public";
+  const visibility: Visibility = VISIBILITY_VALUES.includes(visibilityRaw as Visibility) ? visibilityRaw as Visibility : "public";
+  const allowedUserIds = parseAllowedUserIds(formData, "allowed_user_ids");
 
   if (!campaignId) {
     return { success: false, message: "Campagna non valida." };
@@ -54,20 +61,39 @@ export async function uploadMap(
       return { success: false, message: "Non autorizzato. Solo GM e Admin possono caricare mappe." };
     }
 
-    const { error: insertError } = await supabase.from("maps").insert({
-      campaign_id: campaignId,
-      name,
-      description,
-      map_type: mapType,
-      image_url: finalImageUrl,
-    });
+    const { data: inserted, error: insertError } = await supabase
+      .from("maps")
+      .insert({
+        campaign_id: campaignId,
+        name,
+        description,
+        map_type: mapType,
+        image_url: finalImageUrl,
+        visibility,
+        is_secret: visibility === "secret",
+      })
+      .select("id")
+      .single();
 
-    if (insertError) {
+    if (insertError || !inserted) {
       console.error("[uploadMap] insert", insertError);
       return {
         success: false,
-        message: insertError.message ?? "Errore nel salvataggio della mappa.",
+        message: insertError?.message ?? "Errore nel salvataggio della mappa.",
       };
+    }
+
+    if (visibility === "selective" && allowedUserIds.length > 0) {
+      const { error: permError } = await syncEntityPermissions(
+        supabase,
+        campaignId,
+        "map",
+        inserted.id,
+        allowedUserIds
+      );
+      if (permError) {
+        console.error("[uploadMap] entity_permissions", permError);
+      }
     }
 
     revalidatePath(`/campaigns/${campaignId}`);
@@ -88,15 +114,23 @@ const MAP_TYPES = ["world", "continent", "region", "city", "dungeon", "district"
 export async function updateMap(
   mapId: string,
   campaignId: string,
-  payload: { name?: string; map_type?: string }
+  payload: {
+    name?: string;
+    map_type?: string;
+    visibility?: Visibility;
+    allowed_user_ids?: string[];
+  }
 ): Promise<UpdateMapResult> {
   if (!mapId || !campaignId) {
     return { success: false, message: "Mappa non valida." };
   }
   const name = payload.name?.trim();
   const mapType = payload.map_type?.trim();
-  if (!name && !mapType) {
-    return { success: false, message: "Inserisci nome o categoria da aggiornare." };
+  const visibility = payload.visibility && VISIBILITY_VALUES.includes(payload.visibility) ? payload.visibility : undefined;
+  const allowedUserIds = payload.allowed_user_ids ?? [];
+
+  if (!name && !mapType && visibility === undefined) {
+    return { success: false, message: "Inserisci nome, categoria o visibilità da aggiornare." };
   }
   try {
     const supabase = await createSupabaseServerClient();
@@ -115,22 +149,35 @@ export async function updateMap(
     if (profile?.role !== "gm" && profile?.role !== "admin") {
       return { success: false, message: "Solo GM e Admin possono modificare le mappe." };
     }
-    const updates: { name?: string; map_type?: string } = {};
+    const updates: { name?: string; map_type?: string; visibility?: Visibility; is_secret?: boolean } = {};
     if (name) updates.name = name;
     if (mapType && MAP_TYPES.includes(mapType as (typeof MAP_TYPES)[number])) {
       updates.map_type = mapType;
     }
-    if (Object.keys(updates).length === 0) {
-      return { success: false, message: "Nessuna modifica valida." };
+    if (visibility !== undefined) {
+      updates.visibility = visibility;
+      updates.is_secret = visibility === "secret";
     }
-    const { error } = await supabase
-      .from("maps")
-      .update(updates)
-      .eq("id", mapId)
-      .eq("campaign_id", campaignId);
-    if (error) {
-      console.error("[updateMap]", error);
-      return { success: false, message: error.message ?? "Errore durante l'aggiornamento." };
+    if (Object.keys(updates).length > 0) {
+      const { error } = await supabase
+        .from("maps")
+        .update(updates)
+        .eq("id", mapId)
+        .eq("campaign_id", campaignId);
+      if (error) {
+        console.error("[updateMap]", error);
+        return { success: false, message: error.message ?? "Errore durante l'aggiornamento." };
+      }
+    }
+    if (visibility !== undefined) {
+      const { error: permError } = await syncEntityPermissions(
+        supabase,
+        campaignId,
+        "map",
+        mapId,
+        visibility === "selective" ? allowedUserIds : []
+      );
+      if (permError) console.error("[updateMap] entity_permissions", permError);
     }
     revalidatePath(`/campaigns/${campaignId}`);
     revalidatePath(`/campaigns/${campaignId}/maps/${mapId}`);

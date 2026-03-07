@@ -4,6 +4,8 @@ import { MapCard } from "./map-card";
 
 type MapGalleryProps = {
   campaignId: string;
+  /** Per modale modifica mappa (visibilità selettiva). */
+  eligiblePlayers?: { id: string; label: string }[];
 };
 
 const CATEGORY_ORDER: { type: string; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
@@ -16,7 +18,7 @@ const CATEGORY_ORDER: { type: string; label: string; icon: React.ComponentType<{
   { type: "building", label: "Edifici", icon: Building2 },
 ];
 
-export async function MapGallery({ campaignId }: MapGalleryProps) {
+export async function MapGallery({ campaignId, eligiblePlayers = [] }: MapGalleryProps) {
   const supabase = await createSupabaseServerClient();
 
   const {
@@ -27,14 +29,14 @@ export async function MapGallery({ campaignId }: MapGalleryProps) {
   let hasMapType = false;
   const resWithType = await supabase
     .from("maps")
-    .select("id, name, image_url, description, created_at, map_type")
+    .select("id, name, image_url, description, created_at, map_type, visibility, is_secret")
     .eq("campaign_id", campaignId)
     .order("created_at", { ascending: false });
   if (resWithType.error) {
     if (resWithType.error.message?.includes("map_type")) {
       const resFallback = await supabase
         .from("maps")
-        .select("id, name, image_url, description, created_at")
+        .select("id, name, image_url, description, created_at, visibility, is_secret")
         .eq("campaign_id", campaignId)
         .order("created_at", { ascending: false });
       if (resFallback.error) {
@@ -72,28 +74,37 @@ export async function MapGallery({ campaignId }: MapGalleryProps) {
   const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
 
   if (user && maps?.length && !isGmOrAdmin) {
-    const { data: mapsWithSecret, error: secretError } = await supabase
-      .from("maps")
-      .select("id, is_secret")
-      .eq("campaign_id", campaignId);
-    if (!secretError && mapsWithSecret?.length) {
-      const secretMapIds = new Set(
-        mapsWithSecret.filter((m) => (m as { is_secret?: boolean }).is_secret).map((m) => m.id)
-      );
-      if (secretMapIds.size > 0) {
-        const { data: explorations } = await supabase
-          .from("explorations")
-          .select("map_id")
-          .eq("player_id", user.id)
-          .in("map_id", maps.map((m) => m.id));
-        const unlockedMapIds = new Set(
-          (explorations ?? []).map((e) => e.map_id).filter(Boolean) as string[]
-        );
-        visibleMaps = maps.filter(
-          (m) => !secretMapIds.has(m.id) || unlockedMapIds.has(m.id)
-        );
-      }
-    }
+    const visibilityByMap = new Map(
+      maps.map((m) => [m.id, (m as { visibility?: string }).visibility ?? "public"])
+    );
+    const secretMapIds = new Set(
+      maps.filter((m) => (m as { is_secret?: boolean }).is_secret).map((m) => m.id)
+    );
+    let permittedMapIds = new Set<string>();
+    const { data: perms } = await supabase
+      .from("entity_permissions")
+      .select("entity_id")
+      .eq("campaign_id", campaignId)
+      .eq("entity_type", "map")
+      .eq("user_id", user.id);
+    if (perms?.length) permittedMapIds = new Set(perms.map((p) => p.entity_id));
+
+    const { data: explorations } = await supabase
+      .from("explorations")
+      .select("map_id")
+      .eq("player_id", user.id)
+      .in("map_id", maps.map((m) => m.id));
+    const unlockedMapIds = new Set(
+      (explorations ?? []).map((e) => e.map_id).filter(Boolean) as string[]
+    );
+
+    visibleMaps = maps.filter((m) => {
+      const vis = visibilityByMap.get(m.id) ?? "public";
+      if (vis === "public") return true;
+      if (vis === "selective") return permittedMapIds.has(m.id);
+      if (vis === "secret") return unlockedMapIds.has(m.id);
+      return false;
+    });
   }
 
   if (!visibleMaps.length) {
@@ -106,6 +117,28 @@ export async function MapGallery({ campaignId }: MapGalleryProps) {
         <p className="mt-3 text-barber-paper/70">{emptyMessage}</p>
       </div>
     );
+  }
+
+  let permittedUserIdsByMapId: Record<string, string[]> = {};
+  if (isGmOrAdmin && visibleMaps.length > 0) {
+    const selectiveIds = visibleMaps
+      .filter((m) => ((m as { visibility?: string }).visibility ?? "public") === "selective")
+      .map((m) => m.id);
+    if (selectiveIds.length > 0) {
+      const { data: perms } = await supabase
+        .from("entity_permissions")
+        .select("entity_id, user_id")
+        .eq("campaign_id", campaignId)
+        .eq("entity_type", "map")
+        .in("entity_id", selectiveIds);
+      if (perms?.length) {
+        for (const row of perms) {
+          const eid = row.entity_id as string;
+          if (!permittedUserIdsByMapId[eid]) permittedUserIdsByMapId[eid] = [];
+          permittedUserIdsByMapId[eid].push(row.user_id as string);
+        }
+      }
+    }
   }
 
   const mapTypeFallback = (m: (typeof visibleMaps)[number]) => {
@@ -143,8 +176,11 @@ export async function MapGallery({ campaignId }: MapGalleryProps) {
                     image_url: map.image_url,
                     description: (map as { description?: string | null }).description ?? null,
                     map_type: (map as { map_type?: string }).map_type,
+                    visibility: (map as { visibility?: string }).visibility ?? "public",
                   }}
                   isGmOrAdmin={isGmOrAdmin}
+                  eligiblePlayers={eligiblePlayers}
+                  permittedUserIds={permittedUserIdsByMapId[map.id] ?? []}
                 />
               ))}
             </div>

@@ -33,20 +33,29 @@ const ENTITY_TYPES = [
 
 type EntityType = (typeof ENTITY_TYPES)[number]["value"];
 
+const VISIBILITY_OPTIONS = [
+  { label: "Pubblico (tutti)", value: "public" },
+  { label: "Segreto (solo GM)", value: "secret" },
+  { label: "Selettivo (scegli giocatori)", value: "selective" },
+] as const;
+
 type CreateEntityDialogProps = {
   campaignId: string;
+  eligiblePlayers?: { id: string; label: string }[];
 };
 
 const defaultAttributes = (type: EntityType) =>
   getEmptyAttributes(type) as Record<string, unknown>;
 
-export function CreateEntityDialog({ campaignId }: CreateEntityDialogProps) {
+export function CreateEntityDialog({ campaignId, eligiblePlayers = [] }: CreateEntityDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [type, setType] = useState<EntityType>("npc");
   const [attributes, setAttributes] = useState<Record<string, unknown>>(defaultAttributes("npc"));
   const [sortOrder, setSortOrder] = useState<string>("");
+  const [visibility, setVisibility] = useState<string>("public");
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
 
   function onTypeChange(newType: string) {
     const t = newType as EntityType;
@@ -87,6 +96,8 @@ export function CreateEntityDialog({ campaignId }: CreateEntityDialogProps) {
     const formData = new FormData(form);
     formData.set("campaign_id", campaignId);
     formData.set("attributes", JSON.stringify(attributes));
+    formData.set("visibility", visibility);
+    formData.set("allowed_user_ids", JSON.stringify(visibility === "selective" ? selectedPlayerIds : []));
     if (sortOrder.trim() !== "") formData.set("sort_order", sortOrder.trim());
 
     setIsLoading(true);
@@ -322,18 +333,47 @@ export function CreateEntityDialog({ campaignId }: CreateEntityDialogProps) {
             </>
           )}
 
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="entity-secret"
-              name="is_secret"
-              value="on"
-              className="h-4 w-4 rounded border-barber-gold/40 bg-barber-dark text-barber-gold focus:ring-barber-gold"
+          <div className="space-y-2">
+            <Label>Visibilità</Label>
+            <select
+              name="visibility"
+              value={visibility}
+              onChange={(e) => setVisibility(e.target.value)}
               disabled={isLoading}
-            />
-            <Label htmlFor="entity-secret" className="cursor-pointer text-barber-paper/80">
-              Segreto (solo il GM può vedere questa voce)
-            </Label>
+              className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-3 py-2 text-barber-paper"
+            >
+              {VISIBILITY_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            {visibility === "selective" && (
+              <div className="mt-2 max-h-40 overflow-y-auto rounded-md border border-barber-gold/30 bg-barber-dark/60 p-2">
+                <p className="mb-2 text-xs font-medium text-barber-paper/80">Giocatori che possono vedere questa voce</p>
+                {eligiblePlayers.length === 0 ? (
+                  <p className="text-xs text-barber-paper/50">Nessun giocatore iscritto alla campagna.</p>
+                ) : (
+                  <div className="flex flex-col gap-1">
+                    {eligiblePlayers.map((p) => (
+                      <label key={p.id} className="flex cursor-pointer items-center gap-2 text-sm text-barber-paper">
+                        <input
+                          type="checkbox"
+                          checked={selectedPlayerIds.includes(p.id)}
+                          onChange={() =>
+                            setSelectedPlayerIds((prev) =>
+                              prev.includes(p.id) ? prev.filter((x) => x !== p.id) : [...prev, p.id]
+                            )
+                          }
+                          className="h-4 w-4 rounded border-barber-gold/40 bg-barber-dark text-barber-gold"
+                        />
+                        {p.label}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">

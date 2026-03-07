@@ -15,11 +15,13 @@ const POPOUT_FEATURES =
 
 type MapCardProps = {
   campaignId: string;
-  map: { id: string; name: string; image_url: string; description?: string | null; map_type?: string };
+  map: { id: string; name: string; image_url: string; description?: string | null; map_type?: string; visibility?: string };
   isGmOrAdmin: boolean;
+  eligiblePlayers?: { id: string; label: string }[];
+  permittedUserIds?: string[];
 };
 
-export function MapCard({ campaignId, map, isGmOrAdmin }: MapCardProps) {
+export function MapCard({ campaignId, map, isGmOrAdmin, eligiblePlayers = [], permittedUserIds = [] }: MapCardProps) {
   const router = useRouter();
 
   async function handleDelete(e: React.MouseEvent) {
@@ -51,6 +53,9 @@ export function MapCard({ campaignId, map, isGmOrAdmin }: MapCardProps) {
             mapId={map.id}
             initialName={map.name}
             initialMapType={map.map_type ?? "region"}
+            initialVisibility={map.visibility ?? "public"}
+            initialAllowedUserIds={permittedUserIds}
+            eligiblePlayers={eligiblePlayers}
             onSuccess={() => router.refresh()}
           />
           <Button
