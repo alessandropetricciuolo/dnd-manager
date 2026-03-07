@@ -30,6 +30,8 @@ type CampaignTabsClientProps = {
   };
   hasPlayedCampaign: boolean;
   campaignTypeLabel: string | null;
+  /** Tab iniziale quando l'URL non ha ?tab= (es. player con PG → "pg", player senza PG → "sessioni") */
+  defaultTab?: TabValue;
   /** Contenuti passati dalla pagina server (Server Components) */
   sessioniContent: React.ReactNode;
   wikiContent: React.ReactNode;
@@ -45,6 +47,7 @@ export function CampaignTabsClient({
   campaign,
   hasPlayedCampaign,
   campaignTypeLabel,
+  defaultTab = "sessioni",
   sessioniContent,
   wikiContent,
   mappeContent,
@@ -61,8 +64,8 @@ export function CampaignTabsClient({
   let tab: TabValue =
     tabParam && VALID_TABS.includes(tabParam as TabValue)
       ? (tabParam as TabValue)
-      : "sessioni";
-  if (tab === "gm" && !showGmTab) tab = "sessioni";
+      : defaultTab;
+  if (tab === "gm" && !showGmTab) tab = defaultTab;
 
   const effectiveTab =
     (tab === "wiki" || tab === "mappe") && !hasPlayedCampaign

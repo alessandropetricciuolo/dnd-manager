@@ -24,35 +24,45 @@ export function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
-/** Colori brand: oro #fbbf24, rosso #991b1b. Template responsive con header scuro, body chiaro, footer brand. */
+const SITE_URL = "https://barberanddragons.com";
+
+/** Colori brand: scuro #1c1917, oro #fbbf24, rosso #991b1b. Template coerente al sito (dark, oro). */
 export function wrapInTemplate(content: string): string {
-  const logoHtml =
-    '<a href="#" style="color:#fbbf24;font-size:1.25rem;font-weight:700;text-decoration:none;">Barber &amp; Dragons</a>';
+  const logoHtml = `<a href="${SITE_URL}" style="color:#fbbf24;font-size:1.25rem;font-weight:700;text-decoration:none;">Barber &amp; Dragons</a>`;
+  const ctaButton = `
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:1.5rem auto 0;">
+      <tr>
+        <td style="border-radius:0.5rem;text-align:center;background:#fbbf24;">
+          <a href="${SITE_URL}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:0.75rem 1.5rem;color:#1c1917;font-size:1rem;font-weight:600;text-decoration:none;">Visita la gilda</a>
+        </td>
+      </tr>
+    </table>`;
   return `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Barber & Dragons</title>
+  <title>Barber &amp; Dragons</title>
 </head>
-<body style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f5f4;">
+<body style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#1c1917;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;">
     <tr>
-      <td style="background:#1c1917;padding:1.25rem 1.5rem;text-align:center;">
+      <td style="background:#1c1917;padding:1.25rem 1.5rem;text-align:center;border-bottom:1px solid rgba(251,191,36,0.3);">
         ${logoHtml}
       </td>
     </tr>
     <tr>
-      <td style="background:#f5f5f4;padding:1.5rem;color:#292524;line-height:1.6;">
+      <td style="background:#1c1917;padding:1.5rem;color:#fafaf9;line-height:1.6;">
         ${content}
+        ${ctaButton}
       </td>
     </tr>
     <tr>
-      <td style="background:#1c1917;padding:1rem 1.5rem;text-align:center;font-size:0.75rem;">
+      <td style="background:#1c1917;padding:1rem 1.5rem;text-align:center;font-size:0.75rem;border-top:1px solid rgba(251,191,36,0.2);">
         <span style="color:#fbbf24;">Barber &amp; Dragons</span>
-        <span style="color:rgba(245,245,244,0.7);"> · </span>
-        <span style="color:#991b1b;">D&amp;D Campaign Manager</span>
+        <span style="color:rgba(250,250,249,0.6);"> · </span>
+        <span style="color:#b91c1c;">D&amp;D Campaign Manager</span>
       </td>
     </tr>
   </table>

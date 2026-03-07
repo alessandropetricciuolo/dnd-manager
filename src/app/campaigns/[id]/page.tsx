@@ -132,6 +132,10 @@ export default async function CampaignPage({ params }: PageProps) {
   };
   const campaignTypeLabel = campaign.type ? campaignTypeLabels[campaign.type] ?? campaign.type : null;
 
+  /** Tab iniziale: player con PG assegnato → PG, player senza PG o GM → Sessioni */
+  const defaultTab =
+    isGmOrAdmin || characters.length === 0 ? "sessioni" : "pg";
+
   const leftColumnContent = (
     <>
       <div className="relative aspect-[21/9] min-h-[140px] w-full shrink-0 overflow-hidden rounded-lg bg-barber-dark">
@@ -244,6 +248,7 @@ export default async function CampaignPage({ params }: PageProps) {
           }}
           hasPlayedCampaign={hasPlayedCampaign}
           campaignTypeLabel={campaignTypeLabel}
+          defaultTab={defaultTab}
           sessioniContent={
             <>
               {isGmOrAdmin && !(campaign.is_public ?? false) && (
