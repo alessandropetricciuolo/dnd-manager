@@ -1,10 +1,13 @@
+import type { createSupabaseServerClient } from "@/utils/supabase/server";
+
+type SupabaseClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
+
 /**
  * Sincronizza i permessi selettivi per un'entità (mappa o wiki).
  * Elimina le righe esistenti per (campaign_id, entity_type, entity_id) e inserisce una riga per ogni user_id.
  */
 export async function syncEntityPermissions(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any,
+  supabase: SupabaseClient,
   campaignId: string,
   entityType: "map" | "wiki",
   entityId: string,

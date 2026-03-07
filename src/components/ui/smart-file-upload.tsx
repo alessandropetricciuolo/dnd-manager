@@ -86,7 +86,7 @@ export function SmartFileUpload({
         setError(result.error);
       }
     },
-    [type]
+    [type, setResult]
   );
 
   const handleDrop = useCallback(
