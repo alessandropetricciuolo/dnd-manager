@@ -109,6 +109,7 @@ export async function WikiList({ campaignId }: WikiListProps) {
     name: e.name,
     type: e.type,
     isSecret: !!e.is_secret,
+    visibility: e.visibility ?? (e.is_secret ? "secret" : "public"),
     sortOrder: e.sort_order ?? null,
   }));
 
@@ -120,7 +121,7 @@ export async function WikiList({ campaignId }: WikiListProps) {
     <WikiListClient
       campaignId={campaignId}
       entities={list}
-      isCreator={isGmOrAdmin ?? false}
+      isGmOrAdmin={isGmOrAdmin ?? false}
       typeLabels={TYPE_LABELS}
       emptyMessage={emptyMessage}
     />

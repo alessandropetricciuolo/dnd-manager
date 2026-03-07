@@ -44,15 +44,25 @@ CREATE POLICY "Users can read own entity_permissions"
 -- Aggiungi visibility a maps (public | secret | selective)
 ALTER TABLE maps
   ADD COLUMN IF NOT EXISTS visibility TEXT DEFAULT 'public';
-UPDATE maps SET visibility = 'secret' WHERE is_secret = true;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'maps' AND column_name = 'is_secret') THEN
+    UPDATE maps SET visibility = 'secret' WHERE is_secret = true;
+  END IF;
+END $$;
 UPDATE maps SET visibility = COALESCE(visibility, 'public') WHERE visibility IS NULL;
 ALTER TABLE maps ALTER COLUMN visibility SET NOT NULL;
-ALTER TABLE maps ADD CONSTRAINT maps_visibility_check CHECK (visibility IN ('public', 'secret', 'selective'));
+DO $$ BEGIN ALTER TABLE maps ADD CONSTRAINT maps_visibility_check CHECK (visibility IN ('public', 'secret', 'selective')); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- Aggiungi visibility a wiki_entities
 ALTER TABLE wiki_entities
   ADD COLUMN IF NOT EXISTS visibility TEXT DEFAULT 'public';
-UPDATE wiki_entities SET visibility = 'secret' WHERE is_secret = true;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'wiki_entities' AND column_name = 'is_secret') THEN
+    UPDATE wiki_entities SET visibility = 'secret' WHERE is_secret = true;
+  END IF;
+END $$;
 UPDATE wiki_entities SET visibility = COALESCE(visibility, 'public') WHERE visibility IS NULL;
 ALTER TABLE wiki_entities ALTER COLUMN visibility SET NOT NULL;
-ALTER TABLE wiki_entities ADD CONSTRAINT wiki_entities_visibility_check CHECK (visibility IN ('public', 'secret', 'selective'));
+DO $$ BEGIN ALTER TABLE wiki_entities ADD CONSTRAINT wiki_entities_visibility_check CHECK (visibility IN ('public', 'secret', 'selective')); EXCEPTION WHEN duplicate_object THEN NULL; END $$;

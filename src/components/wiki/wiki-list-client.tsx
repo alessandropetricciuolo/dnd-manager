@@ -3,31 +3,28 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lock, BookOpen, ChevronDown } from "lucide-react";
+import { Lock, BookOpen, ChevronDown, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { WikiEntityDeleteButton } from "./wiki-entity-delete-button";
 
 export type WikiEntityListItem = {
   id: string;
   name: string;
   type: string;
   isSecret: boolean;
+  /** public | secret | selective - per mostrare il lucchetto (solo GM/Admin) */
+  visibility?: string;
   sortOrder: number | null;
 };
 
 type WikiListClientProps = {
   campaignId: string;
   entities: WikiEntityListItem[];
-  isCreator: boolean;
+  isGmOrAdmin: boolean;
   typeLabels: Record<string, string>;
   /** Messaggio quando non ci sono entità (es. player senza contenuti sbloccati). */
   emptyMessage?: string;
@@ -48,7 +45,7 @@ const FILTER_LABELS: Record<string, string> = {
 export function WikiListClient({
   campaignId,
   entities,
-  isCreator,
+  isGmOrAdmin,
   typeLabels,
   emptyMessage,
 }: WikiListClientProps) {
@@ -91,6 +88,10 @@ export function WikiListClient({
     type: string
   ): "npc" | "location" | "monster" | "item" | "lore" | "secondary" =>
     type in typeLabels ? (type as "npc" | "location" | "monster" | "item" | "lore") : "secondary";
+
+  /** Lucchetto: visibile solo per GM quando la voce è segreta o selettiva (non pubblica). */
+  const showLock = (entity: WikiEntityListItem) =>
+    isGmOrAdmin && (entity.visibility === "secret" || entity.visibility === "selective");
 
   if (!entities.length) {
     return (
@@ -172,39 +173,57 @@ export function WikiListClient({
           ))}
         </TabsList>
       </Tabs>
-      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="mt-4 divide-y divide-barber-gold/20 rounded-xl border border-barber-gold/40 bg-barber-dark/90 overflow-hidden">
         {sorted.map((entity) => {
           const displayName =
             typeFilter === "lore" && entity.sortOrder != null && entity.sortOrder > 0
               ? `Capitolo ${entity.sortOrder}: ${entity.name}`
               : entity.name;
+          const entityUrl = `/campaigns/${campaignId}/wiki/${entity.id}`;
           return (
+            <li
+              key={entity.id}
+              className="flex flex-wrap items-center gap-2 sm:gap-3 px-4 py-3 hover:bg-barber-gold/5 transition-colors min-w-0"
+            >
               <Link
-                key={entity.id}
-                href={`/campaigns/${campaignId}/wiki/${entity.id}`}
+                href={entityUrl}
+                className="min-w-0 flex-1 font-medium text-barber-paper hover:text-barber-gold hover:underline truncate"
               >
-                <Card className="h-full border-barber-gold/40 bg-barber-dark/90 transition-colors hover:border-barber-gold/50">
-                  <CardHeader className="flex flex-row items-start justify-between gap-2 pb-2">
-                    <CardTitle className="line-clamp-1 text-base text-barber-paper">
-                      {displayName}
-                    </CardTitle>
-                    {isCreator && entity.isSecret && (
-                      <Lock
-                        className="h-4 w-4 shrink-0 text-barber-gold"
-                        aria-label="Segreto"
-                      />
-                    )}
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <Badge variant={badgeVariant(entity.type)}>
-                      {typeLabels[entity.type] ?? entity.type}
-                    </Badge>
-                  </CardContent>
-                </Card>
+                {displayName}
               </Link>
-            );
-            })}
-      </div>
+              <Badge variant={badgeVariant(entity.type)} className="shrink-0">
+                {typeLabels[entity.type] ?? entity.type}
+              </Badge>
+              {showLock(entity) && (
+                <Lock
+                  className="h-4 w-4 shrink-0 text-barber-gold/90"
+                  aria-label="Solo GM / visibilità limitata"
+                />
+              )}
+              {isGmOrAdmin && (
+                <span className="flex items-center gap-1 shrink-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 border-barber-gold/40 text-barber-paper/80 hover:text-barber-gold hover:bg-barber-gold/10"
+                    asChild
+                  >
+                    <Link href={entityUrl}>
+                      <Pencil className="mr-1.5 h-4 w-4" />
+                      Modifica
+                    </Link>
+                  </Button>
+                  <WikiEntityDeleteButton
+                    campaignId={campaignId}
+                    entityId={entity.id}
+                    entityName={entity.name}
+                  />
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
