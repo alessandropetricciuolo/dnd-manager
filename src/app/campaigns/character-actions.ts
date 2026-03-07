@@ -184,6 +184,100 @@ export async function createCharacter(
   return { success: true, data: { ...row, sheet_url: null } as CampaignCharacterRow };
 }
 
+/** Solo GM. Aggiorna nome, avatar, scheda PDF e background di un personaggio. */
+export async function updateCharacter(
+  characterId: string,
+  campaignId: string,
+  formData: FormData
+): Promise<CharResult<CampaignCharacterRow>> {
+  const ctx = await getCurrentUserAndRole();
+  if (!ctx) return { success: false, error: "Non autenticato." };
+  if (!ctx.isGmOrAdmin) return { success: false, error: "Solo il Master può modificare personaggi." };
+
+  const supabase = ctx.supabase;
+  const name = (formData.get("name") as string | null)?.trim();
+  if (!name) return { success: false, error: "Il nome del personaggio è obbligatorio." };
+
+  const background = (formData.get("background") as string | null)?.trim() ?? null;
+  const removeImage = formData.get("remove_image") === "on";
+  const removeSheet = formData.get("remove_sheet") === "on";
+  const imageFile = formData.get("image") as File | null;
+  const imageUrlFromForm = (formData.get("image_url") as string | null)?.trim() || null;
+  const sheetFile = formData.get("sheet") as File | null;
+
+  const { data: existing, error: fetchErr } = await supabase
+    .from("campaign_characters")
+    .select("image_url, sheet_file_path")
+    .eq("id", characterId)
+    .single();
+
+  if (fetchErr || !existing) return { success: false, error: "Personaggio non trovato." };
+
+  let image_url: string | null = existing.image_url;
+  if (removeImage) {
+    image_url = null;
+  } else if (imageFile && imageFile instanceof File && imageFile.size > 0) {
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowed.includes(imageFile.type)) {
+      return { success: false, error: "Formato immagine non supportato. Usa JPG, PNG, WebP o GIF." };
+    }
+    try {
+      const fileId = await uploadToTelegram(imageFile);
+      image_url = `/api/tg-image/${fileId}`;
+    } catch (uploadErr) {
+      console.error("[updateCharacter] Telegram upload", uploadErr);
+      return { success: false, error: uploadErr instanceof Error ? uploadErr.message : "Errore caricamento immagine." };
+    }
+  } else if (imageUrlFromForm) {
+    image_url = imageUrlFromForm;
+  }
+
+  let sheet_file_path: string | null = (existing as { sheet_file_path: string | null }).sheet_file_path;
+  if (removeSheet) {
+    if (sheet_file_path && !sheet_file_path.startsWith("http")) {
+      await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([sheet_file_path]);
+    }
+    sheet_file_path = null;
+  } else if (sheetFile && sheetFile instanceof File && sheetFile.size > 0) {
+    if (sheetFile.type !== "application/pdf") {
+      return { success: false, error: "La scheda tecnica deve essere un file PDF." };
+    }
+    if (sheet_file_path && !sheet_file_path.startsWith("http")) {
+      await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([sheet_file_path]);
+    }
+    const safeName = sheetFile.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80);
+    const path = `${campaignId}/${randomUUID()}-${safeName}`;
+    const { error: uploadErr } = await supabase.storage
+      .from(CHARACTER_SHEETS_BUCKET)
+      .upload(path, sheetFile, { contentType: "application/pdf", upsert: false });
+    if (uploadErr) {
+      console.error("[updateCharacter] sheet upload", uploadErr);
+      return { success: false, error: uploadErr.message ?? "Errore caricamento PDF." };
+    }
+    sheet_file_path = path;
+  }
+
+  const { data: row, error } = await supabase
+    .from("campaign_characters")
+    .update({
+      name,
+      image_url,
+      sheet_file_path,
+      background,
+    })
+    .eq("id", characterId)
+    .select("id, campaign_id, name, image_url, background, assigned_to, created_at, updated_at")
+    .single();
+
+  if (error) {
+    console.error("[updateCharacter]", error);
+    return { success: false, error: error.message ?? "Errore nell'aggiornamento." };
+  }
+
+  revalidatePath(`/campaigns/${campaignId}`);
+  return { success: true, data: { ...row, sheet_url: null } as CampaignCharacterRow };
+}
+
 /** Solo GM. Assegna un personaggio a un giocatore. */
 export async function assignCharacter(
   characterId: string,

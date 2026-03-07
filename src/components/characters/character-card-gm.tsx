@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { EditCharacterDialog } from "./edit-character-dialog";
 import { assignCharacter, deleteCharacter, type CampaignCharacterRow, type EligiblePlayer } from "@/app/campaigns/character-actions";
 
 const PLACEHOLDER_AVATAR = "https://placehold.co/200x280/1c1917/fbbf24/png?text=PG";
@@ -28,6 +29,7 @@ export function CharacterCardGm({ character, eligiblePlayers }: CharacterCardGmP
   const router = useRouter();
   const [assigning, setAssigning] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   const currentLabel = character.assigned_to
     ? eligiblePlayers.find((p) => p.id === character.assigned_to)?.label ?? "Assegnato"
@@ -97,10 +99,11 @@ export function CharacterCardGm({ character, eligiblePlayers }: CharacterCardGmP
             variant="outline"
             size="sm"
             className="border-barber-gold/40 text-barber-paper/80 hover:bg-barber-gold/10"
-            disabled
-            title="Modifica (in arrivo)"
+            onClick={() => setEditOpen(true)}
+            title="Modifica personaggio"
           >
-            <Pencil className="h-4 w-4" />
+            <Pencil className="mr-1.5 h-4 w-4" />
+            Modifica
           </Button>
           <Button
             variant="outline"
@@ -137,6 +140,11 @@ export function CharacterCardGm({ character, eligiblePlayers }: CharacterCardGmP
           </Select>
         </div>
       </CardContent>
+      <EditCharacterDialog
+        character={character}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+      />
     </Card>
   );
 }
