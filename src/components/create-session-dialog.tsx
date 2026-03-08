@@ -31,7 +31,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
 import { createSession, listCampaignParties, createCampaignParty } from "@/app/campaigns/actions";
 import { cn } from "@/lib/utils";
 
