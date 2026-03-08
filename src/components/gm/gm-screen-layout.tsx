@@ -42,11 +42,11 @@ export function GmScreenLayout({ campaignId }: GmScreenLayoutProps) {
         )}
       </div>
 
-      {/* Sidebar con Initiative Tracker */}
+      {/* Sidebar con Initiative Tracker: metà finestra quando aperta */}
       <aside
         className={cn(
           "flex h-full shrink-0 flex-col border-r border-amber-600/20 bg-zinc-950 transition-[width] duration-300 ease-in-out overflow-hidden",
-          sidebarOpen ? "w-[320px]" : "w-0"
+          sidebarOpen ? "w-1/2" : "w-0"
         )}
       >
         {sidebarOpen && (

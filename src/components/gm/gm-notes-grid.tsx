@@ -245,7 +245,7 @@ function NoteCard({
         </Card>
       </DialogTrigger>
       <DialogContent
-        className="flex max-h-[80vh] max-w-3xl flex-col border-amber-600/30 bg-zinc-900 text-zinc-100"
+        className="flex max-h-[80vh] max-w-3xl flex-col overflow-hidden border-amber-600/30 bg-zinc-900 text-zinc-100"
         onPointerDownOutside={() => setOpen(false)}
       >
         <DialogHeader className="shrink-0">
@@ -261,22 +261,24 @@ function NoteCard({
             )}
           </DialogTitle>
         </DialogHeader>
-        <ScrollArea className="min-h-0 flex-1 px-1">
-          {editMode ? (
-            <div className="space-y-3 py-2">
-              <Textarea
-                value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                rows={16}
-                className="min-h-[300px] resize-y bg-zinc-800 border-amber-600/30 text-zinc-100 text-lg leading-relaxed"
-              />
-            </div>
-          ) : (
-            <p className="py-4 text-lg leading-relaxed text-zinc-200 whitespace-pre-wrap">
-              {note.content || "—"}
-            </p>
-          )}
-        </ScrollArea>
+        <div className="min-h-0 flex-1 overflow-hidden">
+          <ScrollArea className="h-full px-1">
+            {editMode ? (
+              <div className="space-y-3 py-2">
+                <Textarea
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  rows={16}
+                  className="min-h-[300px] resize-y bg-zinc-800 border-amber-600/30 text-zinc-100 text-lg leading-relaxed"
+                />
+              </div>
+            ) : (
+              <p className="py-4 text-lg leading-relaxed text-zinc-200 whitespace-pre-wrap">
+                {note.content || "—"}
+              </p>
+            )}
+          </ScrollArea>
+        </div>
         <DialogFooter className="shrink-0 border-t border-amber-600/20 pt-4">
           {editMode ? (
             <>
