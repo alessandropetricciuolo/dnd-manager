@@ -244,74 +244,77 @@ export function InitiativeTracker({ campaignId }: InitiativeTrackerProps) {
   };
 
   return (
-    <div className="flex h-full w-full flex-col p-6 text-zinc-100">
-      <header className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-amber-600/30 pb-4">
-        <h1 className="text-2xl font-bold tracking-tight text-amber-400 md:text-3xl">
+    <div className="flex h-full w-full flex-col p-3 text-zinc-100">
+      <header className="mb-2 flex flex-wrap items-center justify-between gap-2 border-b border-amber-600/30 pb-2">
+        <h1 className="text-sm font-bold tracking-tight text-amber-400">
           Initiative Tracker
         </h1>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-1.5">
           <Button
             variant="outline"
             size="sm"
-            className="border-amber-600/40 text-amber-200 hover:bg-amber-600/20"
+            className="h-7 border-amber-600/40 px-2 text-xs text-amber-200 hover:bg-amber-600/20"
             onClick={sortByInitiative}
           >
-            <ArrowDownUp className="mr-2 h-4 w-4" />
-            Ordina Iniziativa
+            <ArrowDownUp className="mr-1 h-3 w-3" />
+            Ordina
           </Button>
           {entries.length > 0 && (
             <Button
               variant="outline"
               size="sm"
-              className="border-amber-600/40 text-amber-200 hover:bg-amber-600/20"
+              className="h-7 border-amber-600/40 px-2 text-xs text-amber-200 hover:bg-amber-600/20"
               onClick={nextTurn}
             >
-              <SkipForward className="mr-2 h-4 w-4" />
-              Prossimo Turno
+              <SkipForward className="mr-1 h-3 w-3" />
+              Turno
             </Button>
           )}
         </div>
       </header>
 
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="mb-2 flex flex-wrap gap-1.5">
         <Button
-          className="bg-amber-700 text-white hover:bg-amber-600"
+          size="sm"
+          className="h-7 bg-amber-700 px-2 text-xs text-white hover:bg-amber-600"
           onClick={openAddPc}
         >
-          <UserPlus className="mr-2 h-4 w-4" />
-          Aggiungi PG
+          <UserPlus className="mr-1 h-3 w-3" />
+          PG
         </Button>
         <Button
-          className="bg-amber-700 text-white hover:bg-amber-600"
+          size="sm"
+          className="h-7 bg-amber-700 px-2 text-xs text-white hover:bg-amber-600"
           onClick={openAddMonster}
         >
-          <Swords className="mr-2 h-4 w-4" />
-          Aggiungi Mostro
+          <Swords className="mr-1 h-3 w-3" />
+          Mostro
         </Button>
         <Button
           variant="outline"
-          className="border-amber-600/40 text-amber-200 hover:bg-amber-600/20"
+          size="sm"
+          className="h-7 border-amber-600/40 px-2 text-xs text-amber-200 hover:bg-amber-600/20"
           onClick={addManualEntry}
         >
-          <Edit3 className="mr-2 h-4 w-4" />
-          Aggiungi Manuale
+          <Edit3 className="mr-1 h-3 w-3" />
+          Manuale
         </Button>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-amber-600/30 bg-zinc-900/80">
+      <div className="min-h-0 flex-1 overflow-auto rounded border border-amber-600/30 bg-zinc-900/80">
         <Table>
           <TableHeader>
             <TableRow className="border-amber-600/20 hover:bg-transparent">
-              <TableHead className="h-12 px-4 text-base font-semibold text-amber-400">
+              <TableHead className="h-8 px-2 text-xs font-semibold text-amber-400">
                 Nome
               </TableHead>
-              <TableHead className="h-12 px-4 text-base font-semibold text-amber-400">
+              <TableHead className="h-8 px-2 text-xs font-semibold text-amber-400">
                 HP
               </TableHead>
-              <TableHead className="h-12 px-4 text-base font-semibold text-amber-400">
-                Iniziativa
+              <TableHead className="h-8 px-2 text-xs font-semibold text-amber-400">
+                Init
               </TableHead>
-              <TableHead className="h-12 px-4 text-base font-semibold text-amber-400">
+              <TableHead className="h-8 w-12 px-1 text-xs font-semibold text-amber-400">
                 Azioni
               </TableHead>
             </TableRow>
@@ -321,9 +324,9 @@ export function InitiativeTracker({ campaignId }: InitiativeTrackerProps) {
               <TableRow className="border-amber-600/20">
                 <TableCell
                   colSpan={4}
-                  className="py-12 text-center text-lg text-zinc-500"
+                  className="py-6 text-center text-xs text-zinc-500"
                 >
-                  Nessun partecipante. Aggiungi PG, mostri o nemici manuali.
+                  Nessun partecipante.
                 </TableCell>
               </TableRow>
             ) : (
@@ -331,17 +334,17 @@ export function InitiativeTracker({ campaignId }: InitiativeTrackerProps) {
                 <TableRow
                   key={entry.id}
                   className={cn(
-                    "border-amber-600/20 text-lg",
+                    "border-amber-600/20 text-sm",
                     index === currentTurnIndex &&
                       "bg-amber-600/25 ring-1 ring-amber-500/50"
                   )}
                 >
-                  <TableCell className="px-4 py-3">
+                  <TableCell className="px-2 py-1.5">
                     {editingCell?.id === entry.id &&
                     editingCell?.field === "name" ? (
                       <Input
                         type="text"
-                        className="h-9 min-w-[120px] bg-zinc-800 text-zinc-100"
+                        className="h-7 min-w-[80px] bg-zinc-800 text-xs text-zinc-100"
                         defaultValue={entry.name}
                         autoFocus
                         onBlur={(e) =>
@@ -360,21 +363,22 @@ export function InitiativeTracker({ campaignId }: InitiativeTrackerProps) {
                     ) : (
                       <button
                         type="button"
-                        className="min-w-[80px] rounded px-2 py-1 text-left font-medium text-zinc-100 transition-colors hover:bg-zinc-700/80 hover:text-amber-200"
+                        className="min-w-0 max-w-[140px] truncate rounded px-1.5 py-0.5 text-left text-xs font-medium text-zinc-100 transition-colors hover:bg-zinc-700/80 hover:text-amber-200"
                         onClick={() =>
                           setEditingCell({ id: entry.id, field: "name" })
                         }
+                        title={entry.name}
                       >
                         {entry.name}
                       </button>
                     )}
                   </TableCell>
-                  <TableCell className="px-4 py-3">
+                  <TableCell className="px-2 py-1.5">
                     {editingCell?.id === entry.id &&
                     editingCell?.field === "hp" ? (
                       <Input
                         type="number"
-                        className="h-9 w-24 bg-zinc-800 text-zinc-100"
+                        className="h-7 w-16 bg-zinc-800 text-xs text-zinc-100"
                         defaultValue={entry.hp}
                         autoFocus
                         onBlur={(e) =>
@@ -394,7 +398,7 @@ export function InitiativeTracker({ campaignId }: InitiativeTrackerProps) {
                       <button
                         type="button"
                         className={cn(
-                          "min-w-[4rem] rounded px-2 py-1 text-left text-lg font-medium transition-colors hover:bg-zinc-700/80",
+                          "min-w-[3rem] rounded px-1.5 py-0.5 text-left text-xs font-medium transition-colors hover:bg-zinc-700/80",
                           hpColor(entry)
                         )}
                         onClick={() =>
@@ -405,12 +409,12 @@ export function InitiativeTracker({ campaignId }: InitiativeTrackerProps) {
                       </button>
                     )}
                   </TableCell>
-                  <TableCell className="px-4 py-3">
+                  <TableCell className="px-2 py-1.5">
                     {editingCell?.id === entry.id &&
                     editingCell?.field === "initiative" ? (
                       <Input
                         type="number"
-                        className="h-9 w-20 bg-zinc-800 text-zinc-100"
+                        className="h-7 w-12 bg-zinc-800 text-xs text-zinc-100"
                         defaultValue={entry.initiative}
                         autoFocus
                         onBlur={(e) =>
@@ -433,7 +437,7 @@ export function InitiativeTracker({ campaignId }: InitiativeTrackerProps) {
                     ) : (
                       <button
                         type="button"
-                        className="min-w-[3rem] rounded px-2 py-1 text-left text-lg font-medium text-zinc-200 transition-colors hover:bg-zinc-700/80"
+                        className="min-w-[2rem] rounded px-1.5 py-0.5 text-left text-xs font-medium text-zinc-200 transition-colors hover:bg-zinc-700/80"
                         onClick={() =>
                           setEditingCell({
                             id: entry.id,
@@ -445,26 +449,26 @@ export function InitiativeTracker({ campaignId }: InitiativeTrackerProps) {
                       </button>
                     )}
                   </TableCell>
-                  <TableCell className="px-4 py-3">
-                    <div className="flex items-center gap-1">
+                  <TableCell className="px-1 py-1.5">
+                    <div className="flex items-center gap-0.5">
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-9 w-9 text-amber-400 hover:bg-amber-500/20 hover:text-amber-200"
+                        className="h-7 w-7 text-amber-400 hover:bg-amber-500/20 hover:text-amber-200"
                         onClick={() => duplicateEntry(entry)}
                         aria-label="Duplica"
                         title="Duplica (nome con numero progressivo)"
                       >
-                        <Copy className="h-4 w-4" />
+                        <Copy className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-9 w-9 text-red-400 hover:bg-red-500/20 hover:text-red-300"
+                        className="h-7 w-7 text-red-400 hover:bg-red-500/20 hover:text-red-300"
                         onClick={() => removeEntry(entry.id)}
                         aria-label="Rimuovi"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </TableCell>
