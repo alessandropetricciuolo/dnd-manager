@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { getCampaignCharacters } from "@/app/campaigns/character-actions";
 import { getMonstersForInitiative } from "@/app/campaigns/wiki-actions";
-import { UserPlus, Swords, Edit3, Trash2, ArrowDownUp, SkipForward, Copy } from "lucide-react";
+import { UserPlus, Swords, Edit3, Trash2, ArrowDownUp, SkipForward, Copy, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type InitiativeEntry = {
@@ -136,6 +136,16 @@ export function InitiativeTracker({ campaignId }: InitiativeTrackerProps) {
     if (entries.length === 0) return;
     setCurrentTurnIndex((i) => (i + 1) % entries.length);
   }, [entries.length]);
+
+  const resetTracker = useCallback(() => {
+    setEntries([]);
+    setCurrentTurnIndex(0);
+    try {
+      localStorage.removeItem(storageKey);
+    } catch {
+      // ignore
+    }
+  }, [storageKey]);
 
   const openAddPc = useCallback(async () => {
     setAddPcOpen(true);
@@ -260,15 +270,27 @@ export function InitiativeTracker({ campaignId }: InitiativeTrackerProps) {
             Ordina
           </Button>
           {entries.length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 border-amber-600/40 px-2 text-xs text-amber-200 hover:bg-amber-600/20"
-              onClick={nextTurn}
-            >
-              <SkipForward className="mr-1 h-3 w-3" />
-              Turno
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 border-amber-600/40 px-2 text-xs text-amber-200 hover:bg-amber-600/20"
+                onClick={nextTurn}
+              >
+                <SkipForward className="mr-1 h-3 w-3" />
+                Turno
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 border-red-500/40 px-2 text-xs text-red-300 hover:bg-red-500/20"
+                onClick={resetTracker}
+                title="Cancella tutte le righe e inizia un nuovo incontro"
+              >
+                <RotateCcw className="mr-1 h-3 w-3" />
+                Reset
+              </Button>
+            </>
           )}
         </div>
       </header>

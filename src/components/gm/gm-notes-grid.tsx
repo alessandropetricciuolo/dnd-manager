@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   listGmNotes,
@@ -261,23 +260,21 @@ function NoteCard({
             )}
           </DialogTitle>
         </DialogHeader>
-        <div className="min-h-0 flex-1 overflow-hidden">
-          <ScrollArea className="h-full px-1">
-            {editMode ? (
-              <div className="space-y-3 py-2">
-                <Textarea
-                  value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
-                  rows={16}
-                  className="min-h-[300px] resize-y bg-zinc-800 border-amber-600/30 text-zinc-100 text-lg leading-relaxed"
-                />
-              </div>
-            ) : (
-              <p className="py-4 text-lg leading-relaxed text-zinc-200 whitespace-pre-wrap">
-                {note.content || "—"}
-              </p>
-            )}
-          </ScrollArea>
+        <div className="max-h-[55vh] min-h-0 overflow-y-auto overflow-x-hidden px-1">
+          {editMode ? (
+            <div className="space-y-3 py-2">
+              <Textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                rows={16}
+                className="min-h-[300px] resize-y bg-zinc-800 border-amber-600/30 text-zinc-100 text-lg leading-relaxed"
+              />
+            </div>
+          ) : (
+            <p className="py-4 text-lg leading-relaxed text-zinc-200 whitespace-pre-wrap">
+              {note.content || "—"}
+            </p>
+          )}
         </div>
         <DialogFooter className="shrink-0 border-t border-amber-600/20 pt-4">
           {editMode ? (
