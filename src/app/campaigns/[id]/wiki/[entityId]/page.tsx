@@ -25,6 +25,11 @@ export default async function WikiEntityPage({ params }: PageProps) {
   }
 
   const entity = await getEntity(entityId, campaignId);
+  const { data: campaign } = await supabase
+    .from("campaigns")
+    .select("type")
+    .eq("id", campaignId)
+    .single();
 
   if (!entity) {
     notFound();
@@ -88,6 +93,7 @@ export default async function WikiEntityPage({ params }: PageProps) {
             <>
               <WikiEntityEditButton
                 campaignId={campaignId}
+                campaignType={campaign?.type ?? null}
                 entity={entityWithDefaults}
                 contentBody={contentBody}
                 eligiblePlayers={eligiblePlayers}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect, useCallback, type FormEvent } from "react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { toast } from "sonner";
@@ -31,24 +31,73 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createSession } from "@/app/campaigns/actions";
+import { toast } from "sonner";
+import { createSession, listCampaignParties, createCampaignParty } from "@/app/campaigns/actions";
 import { cn } from "@/lib/utils";
 
 type CreateSessionDialogProps = {
   campaignId: string;
+  campaignType?: "oneshot" | "quest" | "long" | null;
   gmAdminUsers: { id: string; label: string }[];
   defaultDmId: string | null;
 };
 
-export function CreateSessionDialog({ campaignId, gmAdminUsers, defaultDmId }: CreateSessionDialogProps) {
+export function CreateSessionDialog({
+  campaignId,
+  campaignType,
+  gmAdminUsers,
+  defaultDmId,
+}: CreateSessionDialogProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [dmId, setDmId] = useState<string>(defaultDmId ?? "");
+  const [partyId, setPartyId] = useState<string>("");
+  const [chapterTitle, setChapterTitle] = useState("");
+  const [parties, setParties] = useState<{ id: string; name: string }[]>([]);
+  const [newPartyName, setNewPartyName] = useState("");
+  const [creatingParty, setCreatingParty] = useState(false);
+  const isLongCampaign = campaignType === "long";
 
   useEffect(() => {
     if (open) setDmId(defaultDmId ?? "");
   }, [open, defaultDmId]);
+
+  const loadParties = useCallback(() => {
+    if (!campaignId) return;
+    listCampaignParties(campaignId).then((res) => {
+      if (res.success && res.data) {
+        setParties(res.data.map((p) => ({ id: p.id, name: p.name })));
+      } else {
+        setParties([]);
+      }
+    });
+  }, [campaignId]);
+
+  useEffect(() => {
+    if (open && isLongCampaign && campaignId) {
+      loadParties();
+    } else if (!open) {
+      setPartyId("");
+      setChapterTitle("");
+      setNewPartyName("");
+    }
+  }, [open, isLongCampaign, campaignId, loadParties]);
+
+  async function handleCreateParty() {
+    if (!newPartyName.trim() || creatingParty) return;
+    setCreatingParty(true);
+    const res = await createCampaignParty(campaignId, { name: newPartyName.trim() });
+    setCreatingParty(false);
+    if (res.success && res.data) {
+      setParties((prev) => [...prev, { id: res.data!.id, name: res.data!.name }]);
+      setPartyId(res.data!.id);
+      setNewPartyName("");
+      toast.success("Gruppo creato.");
+    } else {
+      toast.error(res.message ?? "Errore nella creazione del gruppo.");
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -64,6 +113,8 @@ export function CreateSessionDialog({ campaignId, gmAdminUsers, defaultDmId }: C
 
     formData.set("date", format(date, "yyyy-MM-dd"));
     if (dmId) formData.set("dm_id", dmId);
+    if (isLongCampaign && partyId) formData.set("party_id", partyId);
+    if (isLongCampaign && chapterTitle.trim()) formData.set("chapter_title", chapterTitle.trim());
 
     setIsLoading(true);
     try {
@@ -74,6 +125,8 @@ export function CreateSessionDialog({ campaignId, gmAdminUsers, defaultDmId }: C
         setOpen(false);
         setDate(undefined);
         setDmId(defaultDmId ?? "");
+        setPartyId("");
+        setChapterTitle("");
         form.reset();
       } else {
         toast.error(result.message);
@@ -131,6 +184,63 @@ export function CreateSessionDialog({ campaignId, gmAdminUsers, defaultDmId }: C
               </PopoverContent>
             </Popover>
           </div>
+
+          {isLongCampaign && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="session-party">Scegli Gruppo</Label>
+                <Select value={partyId || undefined} onValueChange={setPartyId} disabled={isLoading}>
+                  <SelectTrigger
+                    id="session-party"
+                    className="bg-barber-dark border-barber-gold/30 text-barber-paper"
+                  >
+                    <SelectValue placeholder={parties.length === 0 ? "Crea un gruppo sotto" : "Seleziona un gruppo (opzionale)"} />
+                  </SelectTrigger>
+                  <SelectContent className="border-barber-gold/30 bg-barber-dark">
+                    {parties.map((p) => (
+                      <SelectItem key={p.id} value={p.id} className="text-barber-paper">
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  value={newPartyName}
+                  onChange={(e) => setNewPartyName(e.target.value)}
+                  placeholder="Nome nuovo gruppo"
+                  className="bg-barber-dark border-barber-gold/30 text-barber-paper"
+                  disabled={isLoading || creatingParty}
+                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleCreateParty())}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCreateParty}
+                  disabled={!newPartyName.trim() || isLoading || creatingParty}
+                  className="shrink-0 border-barber-gold/40 text-barber-paper"
+                >
+                  {creatingParty ? "..." : "Crea gruppo"}
+                </Button>
+              </div>
+            </>
+          )}
+
+          {isLongCampaign && (
+            <div className="space-y-2">
+              <Label htmlFor="session-chapter">Capitolo (opzionale)</Label>
+              <Input
+                id="session-chapter"
+                name="chapter_title"
+                value={chapterTitle}
+                onChange={(e) => setChapterTitle(e.target.value)}
+                placeholder="Es. Il Ritorno del Re"
+                className="bg-barber-dark border-barber-gold/30 text-barber-paper"
+                disabled={isLoading}
+              />
+            </div>
+          )}
 
           {gmAdminUsers.length > 0 && (
             <div className="space-y-2">

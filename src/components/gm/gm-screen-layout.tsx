@@ -17,6 +17,7 @@ import {
 
 type GmScreenLayoutProps = {
   campaignId: string;
+  campaignType?: "oneshot" | "quest" | "long" | null;
 };
 
 function formatSessionLabel(s: CampaignSessionOption): string {
@@ -29,7 +30,7 @@ function formatSessionLabel(s: CampaignSessionOption): string {
   return s.title?.trim() ? `${s.title} — ${dateStr}` : dateStr;
 }
 
-export function GmScreenLayout({ campaignId }: GmScreenLayoutProps) {
+export function GmScreenLayout({ campaignId, campaignType }: GmScreenLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sessions, setSessions] = useState<CampaignSessionOption[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
@@ -83,7 +84,7 @@ export function GmScreenLayout({ campaignId }: GmScreenLayoutProps) {
       >
         {sidebarOpen && (
           <div className="h-full min-w-0 flex-1">
-            <InitiativeTracker campaignId={campaignId} />
+            <InitiativeTracker campaignId={campaignId} campaignType={campaignType} />
           </div>
         )}
       </aside>

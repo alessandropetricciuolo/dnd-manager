@@ -24,11 +24,16 @@ export default async function GmScreenPage({ params }: PageProps) {
 
   const { data: campaign } = await supabase
     .from("campaigns")
-    .select("id")
+    .select("id, type")
     .eq("id", campaignId)
     .single();
 
   if (!campaign || !isGmOrAdmin) notFound();
 
-  return <GmScreenLayout campaignId={campaignId} />;
+  return (
+    <GmScreenLayout
+      campaignId={campaignId}
+      campaignType={(campaign as { type?: string }).type ?? null}
+    />
+  );
 }

@@ -18,8 +18,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { getCampaignCharacters } from "@/app/campaigns/character-actions";
-import { getMonstersForInitiative } from "@/app/campaigns/wiki-actions";
+import { getMonstersForInitiative, setWikiEntityGlobalStatus } from "@/app/campaigns/wiki-actions";
 import { UserPlus, Swords, Edit3, Trash2, ArrowDownUp, SkipForward, Copy, RotateCcw } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export type InitiativeEntry = {
@@ -30,6 +31,9 @@ export type InitiativeEntry = {
   maxHp: number;
   initiative: number;
   playerId?: string;
+  /** Wiki entity id quando aggiunto da lista mostri (campagne Long: per aggiornare global_status). */
+  entityId?: string;
+  isCore?: boolean;
 };
 
 const STORAGE_KEY_PREFIX = "gm-screen-initiative-";
@@ -38,12 +42,22 @@ function generateId(): string {
   return `init-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-type InitiativeTrackerProps = {
-  campaignId: string;
+type MonsterForInitiative = {
+  id: string;
+  name: string;
+  hp: number;
+  is_core?: boolean;
+  global_status?: "alive" | "dead";
 };
 
-export function InitiativeTracker({ campaignId }: InitiativeTrackerProps) {
+type InitiativeTrackerProps = {
+  campaignId: string;
+  campaignType?: "oneshot" | "quest" | "long" | null;
+};
+
+export function InitiativeTracker({ campaignId, campaignType }: InitiativeTrackerProps) {
   const storageKey = `${STORAGE_KEY_PREFIX}${campaignId}`;
+  const isLongCampaign = campaignType === "long";
 
   const [entries, setEntries] = useState<InitiativeEntry[]>([]);
   const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
@@ -51,7 +65,7 @@ export function InitiativeTracker({ campaignId }: InitiativeTrackerProps) {
   const [addPcOpen, setAddPcOpen] = useState(false);
   const [addMonsterOpen, setAddMonsterOpen] = useState(false);
   const [pcList, setPcList] = useState<{ id: string; name: string }[]>([]);
-  const [monsterList, setMonsterList] = useState<{ id: string; name: string; hp: number }[]>([]);
+  const [monsterList, setMonsterList] = useState<MonsterForInitiative[]>([]);
   const [monsterQuantity, setMonsterQuantity] = useState(1);
 
   // Restore from localStorage on mount
@@ -188,22 +202,23 @@ export function InitiativeTracker({ campaignId }: InitiativeTrackerProps) {
   }, [campaignId]);
 
   const addMonsterEntry = useCallback(
-    (monsterId: string, name: string, hp: number, count: number) => {
+    (monster: MonsterForInitiative, count: number) => {
       const newEntries: InitiativeEntry[] = [];
       for (let i = 0; i < count; i++) {
         newEntries.push({
           id: generateId(),
-          name: count > 1 ? `${name} ${i + 1}` : name,
+          name: count > 1 ? `${monster.name} ${i + 1}` : monster.name,
           type: "monster",
-          hp,
-          maxHp: hp,
+          hp: monster.hp,
+          maxHp: monster.hp,
           initiative: 0,
+          ...(isLongCampaign && monster.is_core && { entityId: monster.id, isCore: true }),
         });
       }
       setEntries((prev) => [...prev, ...newEntries]);
       setAddMonsterOpen(false);
     },
-    []
+    [isLongCampaign]
   );
 
   const addManualEntry = useCallback(() => {
@@ -221,13 +236,14 @@ export function InitiativeTracker({ campaignId }: InitiativeTrackerProps) {
   }, []);
 
   const handleCellSave = useCallback(
-    (id: string, field: "name" | "hp" | "initiative", value: string) => {
+    async (id: string, field: "name" | "hp" | "initiative", value: string) => {
       if (field === "name") {
         updateEntry(id, { name: value.trim() || "Senza nome" });
       } else {
         const num = parseInt(value, 10);
         const v = Number.isNaN(num) ? 0 : num;
         if (field === "hp") {
+          const entry = entries.find((e) => e.id === id);
           setEntries((prev) =>
             prev.map((e) => {
               if (e.id !== id) return e;
@@ -236,13 +252,22 @@ export function InitiativeTracker({ campaignId }: InitiativeTrackerProps) {
               return { ...e, hp, maxHp };
             })
           );
+          if (
+            isLongCampaign &&
+            entry?.entityId &&
+            entry.isCore &&
+            v === 0
+          ) {
+            const res = await setWikiEntityGlobalStatus(entry.entityId, campaignId, "dead");
+            if (res.success) toast.success(res.message);
+          }
         } else {
           updateEntry(id, { initiative: v });
         }
       }
       setEditingCell(null);
     },
-    [updateEntry]
+    [updateEntry, entries, isLongCampaign, campaignId]
   );
 
   const hpColor = (entry: InitiativeEntry) => {
@@ -566,22 +591,33 @@ export function InitiativeTracker({ campaignId }: InitiativeTrackerProps) {
                 </p>
               ) : (
                 <ul className="space-y-1">
-                  {monsterList.map((m) => (
-                    <li key={m.id}>
-                      <button
-                        type="button"
-                        className="w-full rounded-lg px-3 py-2 text-left text-base hover:bg-amber-600/20 hover:text-amber-200"
-                        onClick={() =>
-                          addMonsterEntry(m.id, m.name, m.hp, monsterQuantity)
-                        }
-                      >
-                        <span className="font-medium">{m.name}</span>
-                        <span className="ml-2 text-sm text-zinc-500">
-                          HP {m.hp}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
+                  {monsterList.map((m) => {
+                    const isDead = isLongCampaign && m.global_status === "dead";
+                    return (
+                      <li key={m.id}>
+                        <button
+                          type="button"
+                          className="w-full rounded-lg px-3 py-2 text-left text-base hover:bg-amber-600/20 hover:text-amber-200"
+                          onClick={() => {
+                            if (isDead && m.is_core) {
+                              toast.warning("Questo mostro è già segnato come morto nella campagna (Core).");
+                            }
+                            addMonsterEntry(m, monsterQuantity);
+                          }}
+                        >
+                          <span className="font-medium">{m.name}</span>
+                          <span className="ml-2 text-sm text-zinc-500">
+                            HP {m.hp}
+                          </span>
+                          {isDead && (
+                            <span className="ml-2 rounded bg-red-500/30 px-1.5 py-0.5 text-xs text-red-300">
+                              Morto
+                            </span>
+                          )}
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>

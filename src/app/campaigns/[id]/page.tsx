@@ -264,6 +264,7 @@ export default async function CampaignPage({ params }: PageProps) {
                 {isGmOrAdmin && (
                   <CreateSessionDialog
                     campaignId={campaign.id}
+                    campaignType={campaign.type ?? null}
                     gmAdminUsers={gmAdminUsers}
                     defaultDmId={profile?.role === "gm" || profile?.role === "admin" ? user.id : null}
                   />
@@ -280,7 +281,7 @@ export default async function CampaignPage({ params }: PageProps) {
                     Wiki
                   </h2>
                   {isGmOrAdmin && (
-                    <CreateEntityDialog campaignId={campaign.id} eligiblePlayers={eligiblePlayers} />
+                    <CreateEntityDialog campaignId={campaign.id} campaignType={campaign.type ?? null} eligiblePlayers={eligiblePlayers} />
                   )}
                 </div>
                 <WikiList campaignId={campaign.id} />

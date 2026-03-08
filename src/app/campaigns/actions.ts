@@ -24,6 +24,8 @@ export async function createSession(
   const maxPlayersStr = (formData.get("max_players") as string | null)?.trim();
   const maxPlayers = maxPlayersStr ? parseInt(maxPlayersStr, 10) : 6;
   const dmId = (formData.get("dm_id") as string | null)?.trim() || null;
+  const partyIdRaw = (formData.get("party_id") as string | null)?.trim() || null;
+  const chapterTitle = (formData.get("chapter_title") as string | null)?.trim() || null;
 
   if (!date) {
     return { success: false, message: "La data è obbligatoria." };
@@ -53,6 +55,16 @@ export async function createSession(
       return { success: false, message: "Data o orario non validi." };
     }
 
+    const { data: campaign } = await supabase
+      .from("campaigns")
+      .select("id, type")
+      .eq("id", campaignId)
+      .single();
+
+    const isLongCampaign = campaign?.type === "long";
+    const party_id = isLongCampaign && partyIdRaw ? partyIdRaw : null;
+    const chapter_title = isLongCampaign && chapterTitle ? chapterTitle : null;
+
     const { error } = await supabase.from("sessions").insert({
       campaign_id: campaignId,
       title: null,
@@ -61,6 +73,8 @@ export async function createSession(
       max_players: Math.max(1, Math.min(20, maxPlayers)),
       notes: location || null,
       ...(dmId && { dm_id: dmId }),
+      ...(party_id && { party_id: party_id }),
+      ...(chapter_title != null && { chapter_title }),
     });
 
     if (error) {
@@ -96,6 +110,77 @@ export async function createSession(
       success: false,
       message: "Si è verificato un errore imprevisto. Riprova.",
     };
+  }
+}
+
+export type CampaignPartyRow = {
+  id: string;
+  campaign_id: string;
+  name: string;
+  color: string | null;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export async function listCampaignParties(
+  campaignId: string
+): Promise<{ success: boolean; data?: CampaignPartyRow[]; message?: string }> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const can = await isGmOrAdmin(supabase, campaignId);
+    if (!can) {
+      return { success: false, message: "Non autorizzato." };
+    }
+    const { data, error } = await supabase
+      .from("campaign_parties")
+      .select("id, campaign_id, name, color, description, created_at, updated_at")
+      .eq("campaign_id", campaignId)
+      .order("name");
+    if (error) {
+      console.error("[listCampaignParties]", error);
+      return { success: false, message: error.message ?? "Errore nel caricamento dei gruppi." };
+    }
+    return { success: true, data: (data ?? []) as CampaignPartyRow[] };
+  } catch (err) {
+    console.error("[listCampaignParties]", err);
+    return { success: false, message: "Errore imprevisto." };
+  }
+}
+
+export type CreatePartyResult = { success: boolean; data?: CampaignPartyRow; message?: string };
+
+export async function createCampaignParty(
+  campaignId: string,
+  payload: { name: string; color?: string | null; description?: string | null }
+): Promise<CreatePartyResult> {
+  const name = payload.name?.trim() ?? "";
+  if (!name) return { success: false, message: "Il nome del gruppo è obbligatorio." };
+  try {
+    const supabase = await createSupabaseServerClient();
+    const can = await isGmOrAdmin(supabase, campaignId);
+    if (!can) {
+      return { success: false, message: "Non autorizzato." };
+    }
+    const { data, error } = await supabase
+      .from("campaign_parties")
+      .insert({
+        campaign_id: campaignId,
+        name,
+        color: payload.color?.trim() || null,
+        description: payload.description?.trim() || null,
+      })
+      .select("id, campaign_id, name, color, description, created_at, updated_at")
+      .single();
+    if (error) {
+      console.error("[createCampaignParty]", error);
+      return { success: false, message: error.message ?? "Errore nella creazione del gruppo." };
+    }
+    revalidatePath(`/campaigns/${campaignId}`);
+    return { success: true, data: data as CampaignPartyRow };
+  } catch (err) {
+    console.error("[createCampaignParty]", err);
+    return { success: false, message: "Errore imprevisto." };
   }
 }
 

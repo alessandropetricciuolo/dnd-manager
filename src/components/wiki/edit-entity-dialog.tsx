@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageSourceField } from "@/components/ui/image-source-field";
-import { updateEntity } from "@/app/campaigns/wiki-actions";
+import { updateEntity, setWikiEntityGlobalStatus } from "@/app/campaigns/wiki-actions";
 import { getEmptyAttributes } from "@/types/wiki";
 import type { WikiEntity } from "@/app/campaigns/wiki-actions";
 
@@ -40,6 +40,7 @@ const VISIBILITY_OPTIONS = [
 
 type EditEntityDialogProps = {
   campaignId: string;
+  campaignType?: "oneshot" | "quest" | "long" | null;
   entity: WikiEntity;
   contentBody: string;
   open: boolean;
@@ -73,6 +74,7 @@ function mergeAttributes(
 
 export function EditEntityDialog({
   campaignId,
+  campaignType,
   entity,
   contentBody,
   open,
@@ -93,6 +95,13 @@ export function EditEntityDialog({
   const [removeImage, setRemoveImage] = useState(false);
   const [visibility, setVisibility] = useState<string>(initialVisibility);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>(initialAllowedUserIds);
+  const [isCore, setIsCore] = useState<boolean>(entity.is_core ?? false);
+  const [globalStatus, setGlobalStatus] = useState<"alive" | "dead">(
+    entity.global_status === "dead" ? "dead" : "alive"
+  );
+  const [statusLoading, setStatusLoading] = useState(false);
+  const isLongCampaign = campaignType === "long";
+  const showCoreFields = isLongCampaign && (type === "npc" || type === "monster");
 
   useEffect(() => {
     if (open) {
@@ -102,8 +111,10 @@ export function EditEntityDialog({
       setRemoveImage(false);
       setVisibility(initialVisibility);
       setSelectedPlayerIds(initialAllowedUserIds);
+      setIsCore(entity.is_core ?? false);
+      setGlobalStatus(entity.global_status === "dead" ? "dead" : "alive");
     }
-  }, [open, entity.type, entity.attributes, entity.sort_order, initialVisibility, initialAllowedUserIds]);
+  }, [open, entity.type, entity.attributes, entity.sort_order, entity.is_core, entity.global_status, initialVisibility, initialAllowedUserIds]);
 
   function onTypeChange(newType: string) {
     const t = newType as EntityType;
@@ -147,6 +158,7 @@ export function EditEntityDialog({
     formData.set("allowed_user_ids", JSON.stringify(visibility === "selective" ? selectedPlayerIds : []));
     if (sortOrder.trim() !== "") formData.set("sort_order", sortOrder.trim());
     if (removeImage) formData.set("remove_image", "on");
+    if (showCoreFields && isCore) formData.set("is_core", "on");
 
     setIsLoading(true);
     try {
@@ -193,6 +205,68 @@ export function EditEntityDialog({
               disabled={isLoading}
             />
           </div>
+          {showCoreFields && (
+            <div className="space-y-2 rounded-md border border-barber-gold/30 bg-barber-dark/50 p-3">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="edit-entity-is-core"
+                  checked={isCore}
+                  onChange={(e) => setIsCore(e.target.checked)}
+                  className="h-4 w-4 rounded border-barber-gold/40 bg-barber-dark text-barber-gold"
+                />
+                <Label htmlFor="edit-entity-is-core" className="text-barber-paper/90">
+                  NPC/Mostro Core (stato vita/morte condiviso nella campagna)
+                </Label>
+              </div>
+              {isCore && (
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <span className="text-sm text-barber-paper/70">
+                    Stato globale: <strong>{globalStatus === "dead" ? "Morto" : "Vivo"}</strong>
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="border-red-500/50 text-red-400 hover:bg-red-500/20"
+                    disabled={statusLoading || globalStatus === "dead"}
+                    onClick={async () => {
+                      setStatusLoading(true);
+                      const res = await setWikiEntityGlobalStatus(entity.id, campaignId, "dead");
+                      setStatusLoading(false);
+                      if (res.success) {
+                        setGlobalStatus("dead");
+                        toast.success(res.message);
+                        router.refresh();
+                      } else toast.error(res.message);
+                    }}
+                  >
+                    Segna morto
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/20"
+                    disabled={statusLoading || globalStatus === "alive"}
+                    onClick={async () => {
+                      setStatusLoading(true);
+                      const res = await setWikiEntityGlobalStatus(entity.id, campaignId, "alive");
+                      setStatusLoading(false);
+                      if (res.success) {
+                        setGlobalStatus("alive");
+                        toast.success(res.message);
+                        router.refresh();
+                      } else toast.error(res.message);
+                    }}
+                  >
+                    Segna vivo
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="edit-entity-type">Tipo</Label>
             <select

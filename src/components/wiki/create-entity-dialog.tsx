@@ -41,13 +41,18 @@ const VISIBILITY_OPTIONS = [
 
 type CreateEntityDialogProps = {
   campaignId: string;
+  campaignType?: "oneshot" | "quest" | "long" | null;
   eligiblePlayers?: { id: string; label: string }[];
 };
 
 const defaultAttributes = (type: EntityType) =>
   getEmptyAttributes(type) as Record<string, unknown>;
 
-export function CreateEntityDialog({ campaignId, eligiblePlayers = [] }: CreateEntityDialogProps) {
+export function CreateEntityDialog({
+  campaignId,
+  campaignType,
+  eligiblePlayers = [],
+}: CreateEntityDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -56,6 +61,8 @@ export function CreateEntityDialog({ campaignId, eligiblePlayers = [] }: CreateE
   const [sortOrder, setSortOrder] = useState<string>("");
   const [visibility, setVisibility] = useState<string>("public");
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
+  const [isCore, setIsCore] = useState(false);
+  const showCoreCheckbox = campaignType === "long" && (type === "npc" || type === "monster");
 
   function onTypeChange(newType: string) {
     const t = newType as EntityType;
@@ -99,6 +106,7 @@ export function CreateEntityDialog({ campaignId, eligiblePlayers = [] }: CreateE
     formData.set("visibility", visibility);
     formData.set("allowed_user_ids", JSON.stringify(visibility === "selective" ? selectedPlayerIds : []));
     if (sortOrder.trim() !== "") formData.set("sort_order", sortOrder.trim());
+    if (showCoreCheckbox && isCore) formData.set("is_core", "on");
 
     setIsLoading(true);
     try {
@@ -175,6 +183,21 @@ export function CreateEntityDialog({ campaignId, eligiblePlayers = [] }: CreateE
               ))}
             </select>
           </div>
+
+          {showCoreCheckbox && (
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="entity-is-core"
+                checked={isCore}
+                onChange={(e) => setIsCore(e.target.checked)}
+                className="h-4 w-4 rounded border-barber-gold/40 bg-barber-dark text-barber-gold"
+              />
+              <Label htmlFor="entity-is-core" className="text-barber-paper/90">
+                NPC/Mostro Core (stato vita/morte condiviso nella campagna)
+              </Label>
+            </div>
+          )}
 
           <ImageSourceField
             fileInputName="image"

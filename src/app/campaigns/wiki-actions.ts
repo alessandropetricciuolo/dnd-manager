@@ -43,6 +43,7 @@ export async function createEntity(
   const attributes = parseAttributes(formData, type ?? "");
   const sortOrderRaw = formData.get("sort_order") as string | null;
   const sortOrder = sortOrderRaw != null && sortOrderRaw !== "" ? parseInt(sortOrderRaw, 10) : null;
+  const isCore = formData.get("is_core") === "on" || formData.get("is_core") === "true";
 
   if (!title) {
     return { success: false, message: "Il titolo è obbligatorio." };
@@ -107,6 +108,11 @@ export async function createEntity(
     if (sortOrder != null && !Number.isNaN(sortOrder)) {
       insertPayload.sort_order = sortOrder;
     }
+    const { data: camp } = await supabase.from("campaigns").select("type").eq("id", campaignId).single();
+    if (camp?.type === "long" && (type === "npc" || type === "monster")) {
+      insertPayload.is_core = isCore;
+      insertPayload.global_status = "alive";
+    }
 
     const { data: inserted, error } = await supabase
       .from("wiki_entities")
@@ -164,6 +170,7 @@ export async function updateEntity(
   const attributes = parseAttributes(formData, type ?? "");
   const sortOrderRaw = formData.get("sort_order") as string | null;
   const sortOrder = sortOrderRaw != null && sortOrderRaw !== "" ? parseInt(sortOrderRaw, 10) : null;
+  const isCore = formData.get("is_core") === "on" || formData.get("is_core") === "true";
 
   if (!title) {
     return { success: false, message: "Il titolo è obbligatorio." };
@@ -235,6 +242,16 @@ export async function updateEntity(
       updatePayload.sort_order = sortOrder;
     } else {
       updatePayload.sort_order = null;
+    }
+
+    const { data: campaign } = await supabase
+      .from("campaigns")
+      .select("type")
+      .eq("id", campaignId)
+      .single();
+    if (campaign?.type === "long" && (type === "npc" || type === "monster")) {
+      updatePayload.is_core = isCore;
+      if (!isCore) updatePayload.global_status = "alive";
     }
 
     const { error } = await supabase
@@ -342,6 +359,67 @@ export async function deleteEntity(
   }
 }
 
+/** Imposta lo stato globale (alive/dead) di un NPC/Mostro core. Solo campagne Long, solo entità con is_core = true. */
+export async function setWikiEntityGlobalStatus(
+  entityId: string,
+  campaignId: string,
+  status: "alive" | "dead"
+): Promise<{ success: boolean; message: string }> {
+  if (!entityId || !campaignId) {
+    return { success: false, message: "Entità o campagna non valida." };
+  }
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { success: false, message: "Devi essere autenticato." };
+    }
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    if (profile?.role !== "gm" && profile?.role !== "admin") {
+      return { success: false, message: "Solo il Master può modificare lo stato." };
+    }
+    const { data: campaign } = await supabase
+      .from("campaigns")
+      .select("type")
+      .eq("id", campaignId)
+      .single();
+    if (campaign?.type !== "long") {
+      return { success: true, message: "Ignorato (solo campagne Long)." };
+    }
+    const { data: entity } = await supabase
+      .from("wiki_entities")
+      .select("id, is_core, type")
+      .eq("id", entityId)
+      .eq("campaign_id", campaignId)
+      .single();
+    if (!entity || !(entity as { is_core?: boolean }).is_core) {
+      return { success: false, message: "Solo gli NPC/Mostri contrassegnati come Core hanno stato globale." };
+    }
+    const { error } = await supabase
+      .from("wiki_entities")
+      .update({ global_status: status })
+      .eq("id", entityId)
+      .eq("campaign_id", campaignId);
+    if (error) {
+      console.error("[setWikiEntityGlobalStatus]", error);
+      return { success: false, message: error.message ?? "Errore nell'aggiornamento." };
+    }
+    revalidatePath(`/campaigns/${campaignId}`);
+    revalidatePath(`/campaigns/${campaignId}/wiki/${entityId}`);
+    return { success: true, message: status === "dead" ? "Segnato come morto." : "Segnato come vivo." };
+  } catch (err) {
+    console.error("[setWikiEntityGlobalStatus]", err);
+    return { success: false, message: "Errore imprevisto." };
+  }
+}
+
 export type WikiEntity = {
   id: string;
   campaign_id: string;
@@ -353,6 +431,8 @@ export type WikiEntity = {
   visibility?: string;
   attributes: Record<string, unknown> | null;
   sort_order: number | null;
+  is_core?: boolean;
+  global_status?: "alive" | "dead";
   created_at: string;
   updated_at: string;
 };
@@ -397,7 +477,7 @@ export async function getEntity(
 
     const { data: entity, error } = await supabase
       .from("wiki_entities")
-      .select("id, campaign_id, name, type, content, image_url, is_secret, visibility, attributes, sort_order, created_at, updated_at")
+      .select("id, campaign_id, name, type, content, image_url, is_secret, visibility, attributes, sort_order, is_core, global_status, created_at, updated_at")
       .eq("id", entityId)
       .eq("campaign_id", campaignId)
       .single();
@@ -423,10 +503,13 @@ export async function getEntity(
   }
 }
 
-/** Per GM Screen Initiative Tracker: lista mostri della campagna con nome e HP (da combat_stats). Solo GM/Admin. */
+/** Per GM Screen Initiative Tracker: lista mostri della campagna con nome e HP (da combat_stats). Solo GM/Admin. Restituisce anche is_core e global_status per campagne Long. */
 export async function getMonstersForInitiative(
   campaignId: string
-): Promise<{ success: true; data: { id: string; name: string; hp: number }[] } | { success: false; error: string }> {
+): Promise<
+  | { success: true; data: { id: string; name: string; hp: number; is_core?: boolean; global_status?: "alive" | "dead" }[] }
+  | { success: false; error: string }
+> {
   try {
     const supabase = await createSupabaseServerClient();
     const {
@@ -444,7 +527,7 @@ export async function getMonstersForInitiative(
 
     const { data: rows, error } = await supabase
       .from("wiki_entities")
-      .select("id, name, attributes")
+      .select("id, name, attributes, is_core, global_status")
       .eq("campaign_id", campaignId)
       .eq("type", "monster")
       .order("name");
@@ -454,11 +537,17 @@ export async function getMonstersForInitiative(
       return { success: false, error: error.message ?? "Errore nel caricamento." };
     }
 
-    const list = (rows ?? []).map((r: { id: string; name: string; attributes: unknown }) => {
+    const list = (rows ?? []).map((r: { id: string; name: string; attributes: unknown; is_core?: boolean; global_status?: string }) => {
       const attrs = (r.attributes as { combat_stats?: { hp?: string } } | null) ?? {};
       const hpStr = attrs.combat_stats?.hp;
       const hp = hpStr != null && hpStr !== "" ? parseInt(String(hpStr), 10) : 0;
-      return { id: r.id, name: r.name, hp: Number.isNaN(hp) ? 0 : hp };
+      return {
+        id: r.id,
+        name: r.name,
+        hp: Number.isNaN(hp) ? 0 : hp,
+        ...(r.is_core != null && { is_core: r.is_core }),
+        ...(r.global_status === "alive" || r.global_status === "dead" ? { global_status: r.global_status as "alive" | "dead" } : {}),
+      };
     });
     return { success: true, data: list };
   } catch (err) {

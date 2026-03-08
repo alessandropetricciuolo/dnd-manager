@@ -8,6 +8,7 @@ import { Pencil } from "lucide-react";
 
 type WikiEntityEditButtonProps = {
   campaignId: string;
+  campaignType?: "oneshot" | "quest" | "long" | null;
   entity: WikiEntity;
   contentBody: string;
   eligiblePlayers?: { id: string; label: string }[];
@@ -17,6 +18,7 @@ type WikiEntityEditButtonProps = {
 
 export function WikiEntityEditButton({
   campaignId,
+  campaignType,
   entity,
   contentBody,
   eligiblePlayers = [],
@@ -39,6 +41,7 @@ export function WikiEntityEditButton({
       </Button>
       <EditEntityDialog
         campaignId={campaignId}
+        campaignType={campaignType}
         entity={entity}
         contentBody={contentBody}
         open={open}
