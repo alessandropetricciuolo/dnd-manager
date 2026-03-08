@@ -4,9 +4,10 @@ import { useState, useEffect, useCallback } from "react";
 import { InitiativeTracker } from "./initiative-tracker";
 import { GmNotesGrid } from "./gm-notes-grid";
 import { Button } from "@/components/ui/button";
-import { ListOrdered, Calendar } from "lucide-react";
+import { ListOrdered, Calendar, Flag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCampaignSessionsForGm, type CampaignSessionOption } from "@/app/campaigns/gm-actions";
+import { SessionDebriefDialog } from "./session-debrief-dialog";
 import {
   Select,
   SelectContent,
@@ -34,6 +35,7 @@ export function GmScreenLayout({ campaignId, campaignType }: GmScreenLayoutProps
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sessions, setSessions] = useState<CampaignSessionOption[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [debriefOpen, setDebriefOpen] = useState(false);
 
   const loadSessions = useCallback(async () => {
     const result = await getCampaignSessionsForGm(campaignId);
@@ -91,7 +93,7 @@ export function GmScreenLayout({ campaignId, campaignType }: GmScreenLayoutProps
 
       {/* Area principale: Note GM + selettore sessione */}
       <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="flex shrink-0 items-center gap-3 border-b border-amber-600/20 px-4 py-3 md:px-6">
+        <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-amber-600/20 px-4 py-3 md:px-6">
           <Calendar className="h-4 w-4 text-amber-400/80" />
           <Select
             value={selectedSessionId ?? "none"}
@@ -115,7 +117,28 @@ export function GmScreenLayout({ campaignId, campaignType }: GmScreenLayoutProps
               ))}
             </SelectContent>
           </Select>
+          {selectedSessionId && (
+            <Button
+              type="button"
+              onClick={() => setDebriefOpen(true)}
+              className="bg-amber-600 text-zinc-950 hover:bg-amber-500"
+            >
+              <Flag className="mr-2 h-4 w-4" />
+              Concludi Sessione
+            </Button>
+          )}
         </div>
+        {selectedSessionId && (
+          <SessionDebriefDialog
+            open={debriefOpen}
+            onOpenChange={setDebriefOpen}
+            sessionId={selectedSessionId}
+            sessionLabel={sessionLabel}
+            campaignId={campaignId}
+            campaignType={campaignType}
+            onSuccess={loadSessions}
+          />
+        )}
         <div className="min-h-0 flex-1 overflow-auto p-4 md:p-6">
           <GmNotesGrid
             campaignId={campaignId}

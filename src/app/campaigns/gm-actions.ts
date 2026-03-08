@@ -319,3 +319,111 @@ export async function deleteGmAttachment(attachmentId: string): Promise<GmResult
   revalidatePath(`/campaigns/${att.campaign_id}`);
   return { success: true, data: { campaignId: att.campaign_id } };
 }
+
+// ---------- Session Debrief (Chiusura Sessione GM Screen) ----------
+
+export type CoreEntityForDebrief = {
+  id: string;
+  name: string;
+  type: string;
+  global_status: "alive" | "dead";
+};
+
+/** Restituisce le voci Wiki (NPC/Mostri/Luoghi) core per il debrief: solo quelle in entityIds con is_core = true. */
+export async function getCoreEntitiesForDebrief(
+  campaignId: string,
+  entityIds: string[]
+): Promise<GmResult<CoreEntityForDebrief[]>> {
+  const check = await ensureGmOrAdmin();
+  if (!check.success) return check;
+  const supabase = check.data!;
+
+  if (!entityIds.length) {
+    return { success: true, data: [] };
+  }
+
+  const { data, error } = await supabase
+    .from("wiki_entities")
+    .select("id, name, type, global_status")
+    .eq("campaign_id", campaignId)
+    .eq("is_core", true)
+    .in("id", entityIds);
+
+  if (error) {
+    console.error("[getCoreEntitiesForDebrief]", error);
+    return { success: false, error: error.message ?? "Errore nel caricamento." };
+  }
+
+  const list = (data ?? []).map((r) => ({
+    id: r.id,
+    name: r.name,
+    type: r.type,
+    global_status: (r.global_status === "dead" ? "dead" : "alive") as "alive" | "dead",
+  }));
+  return { success: true, data: list };
+}
+
+/** Salva debrief: summary sulla sessione, status = completed, e (se campagna Long) aggiorna global_status sulle entità core. */
+export async function saveSessionDebrief(
+  sessionId: string,
+  payload: {
+    summary: string;
+    entityStatusUpdates: Record<string, "alive" | "dead">;
+  }
+): Promise<GmResult<{ campaignId: string }>> {
+  const check = await ensureGmOrAdmin();
+  if (!check.success) return check;
+  const supabase = check.data!;
+
+  const { data: session, error: sessionErr } = await supabase
+    .from("sessions")
+    .select("id, campaign_id, status")
+    .eq("id", sessionId)
+    .single();
+
+  if (sessionErr || !session) {
+    return { success: false, error: "Sessione non trovata." };
+  }
+  if (session.status !== "scheduled") {
+    return { success: false, error: "La sessione è già chiusa." };
+  }
+
+  const { data: campaign } = await supabase
+    .from("campaigns")
+    .select("type")
+    .eq("id", session.campaign_id)
+    .single();
+
+  const isLongCampaign = campaign?.type === "long";
+
+  const { error: updateSessionErr } = await supabase
+    .from("sessions")
+    .update({
+      status: "completed",
+      session_summary: payload.summary?.trim() || null,
+    })
+    .eq("id", sessionId);
+
+  if (updateSessionErr) {
+    console.error("[saveSessionDebrief] session", updateSessionErr);
+    return { success: false, error: updateSessionErr.message ?? "Errore nel salvataggio." };
+  }
+
+  if (isLongCampaign && Object.keys(payload.entityStatusUpdates).length > 0) {
+    for (const [entityId, status] of Object.entries(payload.entityStatusUpdates)) {
+      const { error: entityErr } = await supabase
+        .from("wiki_entities")
+        .update({ global_status: status })
+        .eq("id", entityId)
+        .eq("campaign_id", session.campaign_id)
+        .eq("is_core", true);
+      if (entityErr) {
+        console.error("[saveSessionDebrief] entity", entityId, entityErr);
+      }
+    }
+  }
+
+  revalidatePath(`/campaigns/${session.campaign_id}`);
+  revalidatePath("/dashboard");
+  return { success: true, data: { campaignId: session.campaign_id } };
+}
