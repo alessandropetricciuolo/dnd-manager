@@ -422,3 +422,47 @@ export async function getEntity(
     return null;
   }
 }
+
+/** Per GM Screen Initiative Tracker: lista mostri della campagna con nome e HP (da combat_stats). Solo GM/Admin. */
+export async function getMonstersForInitiative(
+  campaignId: string
+): Promise<{ success: true; data: { id: string; name: string; hp: number }[] } | { success: false; error: string }> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) return { success: false, error: "Non autenticato." };
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
+    if (!isGmOrAdmin) return { success: false, error: "Solo il Master può usare questa funzione." };
+
+    const { data: rows, error } = await supabase
+      .from("wiki_entities")
+      .select("id, name, attributes")
+      .eq("campaign_id", campaignId)
+      .eq("type", "monster")
+      .order("name");
+
+    if (error) {
+      console.error("[getMonstersForInitiative]", error);
+      return { success: false, error: error.message ?? "Errore nel caricamento." };
+    }
+
+    const list = (rows ?? []).map((r: { id: string; name: string; attributes: unknown }) => {
+      const attrs = (r.attributes as { combat_stats?: { hp?: string } } | null) ?? {};
+      const hpStr = attrs.combat_stats?.hp;
+      const hp = hpStr != null && hpStr !== "" ? parseInt(String(hpStr), 10) : 0;
+      return { id: r.id, name: r.name, hp: Number.isNaN(hp) ? 0 : hp };
+    });
+    return { success: true, data: list };
+  } catch (err) {
+    console.error("[getMonstersForInitiative]", err);
+    return { success: false, error: "Errore imprevisto." };
+  }
+}

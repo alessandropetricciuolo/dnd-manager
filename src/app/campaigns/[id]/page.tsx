@@ -15,6 +15,7 @@ import { EditCampaignDialog } from "@/components/campaigns/edit-campaign-dialog"
 import { CampaignTabsClient } from "@/components/campaigns/campaign-tabs-client";
 import { GmNotes } from "@/components/gm/gm-notes";
 import { GmFiles } from "@/components/gm/gm-files";
+import { GmScreenLauncher } from "@/components/gm/gm-screen-launcher";
 import { CharactersSection } from "@/components/characters/characters-section";
 import { getCampaignCharacters, getCampaignEligiblePlayers } from "@/app/campaigns/character-actions";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -312,9 +313,15 @@ export default async function CampaignPage({ params }: PageProps) {
           gmAreaContent={
             isGmOrAdmin ? (
               <div className="rounded-xl border-2 border-violet-800/60 bg-slate-950/80 p-6 shadow-inner">
-                <p className="mb-6 text-sm text-violet-200/80">
-                  Note e file privati, visibili solo a te.
-                </p>
+                <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+                  <p className="text-sm text-violet-200/80">
+                    Note e file privati, visibili solo a te.
+                  </p>
+                  <GmScreenLauncher
+                    campaignId={campaign.id}
+                    className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
+                  />
+                </div>
                 <div className="space-y-8">
                   <GmNotes campaignId={campaign.id} />
                   <GmFiles campaignId={campaign.id} />

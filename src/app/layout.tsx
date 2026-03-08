@@ -5,6 +5,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { Navbar } from "@/components/navbar";
 import { CookieBanner } from "@/components/ui/cookie-banner";
+import { LayoutConditionalNavbar } from "@/components/layout-conditional-navbar";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -30,9 +31,10 @@ export default function RootLayout({
     <html lang="it" className="dark">
       <body className={`${inter.variable} ${playfair.variable} font-sans antialiased`}>
         <NextTopLoader color="#D4AF37" showSpinner={false} />
-        <Navbar />
+        <LayoutConditionalNavbar navbar={<Navbar />}>
+          {children}
+        </LayoutConditionalNavbar>
         <Toaster richColors closeButton />
-        {children}
         <CookieBanner />
       </body>
     </html>

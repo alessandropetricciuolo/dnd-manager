@@ -81,6 +81,11 @@ function NavLinks({
 export function DashboardShell({ children, isAdmin, isGmOrAdmin }: DashboardShellProps) {
   const pathname = usePathname();
   const isCampaignPage = pathname?.startsWith("/campaigns");
+  const isGmScreen = pathname?.includes("/gm-screen");
+
+  if (isGmScreen) {
+    return <div className="min-h-screen w-full">{children}</div>;
+  }
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] w-full">
