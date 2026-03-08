@@ -461,6 +461,68 @@ export async function deleteSession(sessionId: string): Promise<DeleteSessionRes
   }
 }
 
+export type UpdateSessionResult = { success: boolean; message: string };
+
+/** Aggiorna titolo e/o riassunto di una sessione (es. concluse). Solo GM/Admin della campagna. */
+export async function updateSession(
+  sessionId: string,
+  payload: { title?: string | null; session_summary?: string | null }
+): Promise<UpdateSessionResult & { campaignId?: string }> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { success: false, message: "Devi essere autenticato." };
+    }
+
+    const allowed = await isGmOrAdminByRole(supabase);
+    if (!allowed) {
+      return { success: false, message: "Solo GM o Admin possono modificare sessioni." };
+    }
+
+    const { data: session, error: sessionError } = await supabase
+      .from("sessions")
+      .select("id, campaign_id")
+      .eq("id", sessionId)
+      .single();
+    if (sessionError || !session) {
+      return { success: false, message: "Sessione non trovata." };
+    }
+
+    const canEdit = await isGmOrAdmin(supabase, session.campaign_id);
+    if (!canEdit) {
+      return { success: false, message: "Non puoi modificare sessioni di questa campagna." };
+    }
+
+    const updates: { title?: string | null; session_summary?: string | null } = {};
+    if (payload.title !== undefined) updates.title = payload.title?.trim() || null;
+    if (payload.session_summary !== undefined) updates.session_summary = payload.session_summary?.trim() || null;
+
+    if (Object.keys(updates).length === 0) {
+      return { success: true, message: "Nessuna modifica.", campaignId: session.campaign_id };
+    }
+
+    const { error: updateError } = await supabase
+      .from("sessions")
+      .update(updates)
+      .eq("id", sessionId);
+
+    if (updateError) {
+      console.error("[updateSession]", updateError);
+      return { success: false, message: updateError.message ?? "Errore durante il salvataggio." };
+    }
+
+    revalidatePath(`/campaigns/${session.campaign_id}`);
+    return { success: true, message: "Sessione aggiornata.", campaignId: session.campaign_id };
+  } catch (err) {
+    console.error("[updateSession]", err);
+    return { success: false, message: "Errore imprevisto. Riprova." };
+  }
+}
+
 export type CloseSessionResult = { success: boolean; message: string };
 
 /** attendanceData: record player_id -> 'attended' | 'absent'. Solo per iscritti approved. Chiude la sessione e aggiorna le presenze. */

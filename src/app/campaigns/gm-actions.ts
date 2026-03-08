@@ -104,6 +104,52 @@ export async function getCampaignSessionsForGm(
   return { success: true, data: (data ?? []) as CampaignSessionOption[] };
 }
 
+export type CompletedSessionRow = {
+  id: string;
+  title: string | null;
+  scheduled_at: string;
+  session_summary: string | null;
+  party_id: string | null;
+  chapter_title: string | null;
+  campaign_parties?: { name: string; color: string | null } | null;
+};
+
+/** Sessioni concluse per Session History Manager (solo GM). Ordine: più recente prima. Se Long, include party. */
+export async function getCompletedSessionsForCampaign(
+  campaignId: string
+): Promise<GmResult<CompletedSessionRow[]>> {
+  const check = await ensureGmOrAdmin();
+  if (!check.success) return check;
+  const supabase = check.data!;
+
+  const { data, error } = await supabase
+    .from("sessions")
+    .select("id, title, scheduled_at, session_summary, party_id, chapter_title, campaign_parties(name, color)")
+    .eq("campaign_id", campaignId)
+    .eq("status", "completed")
+    .order("scheduled_at", { ascending: false });
+
+  if (error) {
+    console.error("[getCompletedSessionsForCampaign]", error);
+    return { success: false, error: error.message ?? "Errore nel caricamento." };
+  }
+
+  const rows = (data ?? []).map((r) => {
+    const rawParty = (r as { campaign_parties?: { name: string; color: string | null } | { name: string; color: string | null }[] | null }).campaign_parties;
+    const party = Array.isArray(rawParty) ? rawParty[0] ?? null : rawParty ?? null;
+    return {
+      id: r.id,
+      title: r.title ?? null,
+      scheduled_at: r.scheduled_at,
+      session_summary: r.session_summary ?? null,
+      party_id: r.party_id ?? null,
+      chapter_title: r.chapter_title ?? null,
+      campaign_parties: party,
+    };
+  });
+  return { success: true, data: rows as CompletedSessionRow[] };
+}
+
 export async function createGmNote(
   campaignId: string,
   payload: { title: string; content: string; session_id?: string | null }
