@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Sword, Map, Scroll } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { IMAGE_BLUR_PLACEHOLDER } from "@/lib/utils";
+import { CampaignCarousel } from "@/components/home/campaign-carousel";
 
 export default function HomePage() {
   return (
@@ -48,6 +49,9 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Carosello campagne in evidenza */}
+      <CampaignCarousel />
 
       {/* Features */}
       <section className="border-t border-barber-gold/20 bg-barber-dark/98 py-16 sm:py-24">
