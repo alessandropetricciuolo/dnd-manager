@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { getCampaignCharacters } from "@/app/campaigns/character-actions";
 import { getMonstersForInitiative } from "@/app/campaigns/wiki-actions";
-import { UserPlus, Swords, Edit3, Trash2, ArrowDownUp, SkipForward } from "lucide-react";
+import { UserPlus, Swords, Edit3, Trash2, ArrowDownUp, SkipForward, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type InitiativeEntry = {
@@ -47,7 +47,7 @@ export function InitiativeTracker({ campaignId }: InitiativeTrackerProps) {
 
   const [entries, setEntries] = useState<InitiativeEntry[]>([]);
   const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
-  const [editingCell, setEditingCell] = useState<{ id: string; field: "hp" | "initiative" } | null>(null);
+  const [editingCell, setEditingCell] = useState<{ id: string; field: "name" | "hp" | "initiative" } | null>(null);
   const [addPcOpen, setAddPcOpen] = useState(false);
   const [addMonsterOpen, setAddMonsterOpen] = useState(false);
   const [pcList, setPcList] = useState<{ id: string; name: string }[]>([]);
@@ -99,6 +99,31 @@ export function InitiativeTracker({ campaignId }: InitiativeTrackerProps) {
       return next;
     });
   }, []);
+
+  /** Restituisce il prossimo nome con numero progressivo (es. "Goblin" -> "Goblin 2", "Goblin 2" -> "Goblin 3"). */
+  const getNextDuplicateName = useCallback((currentName: string, allEntries: InitiativeEntry[]): string => {
+    const match = currentName.match(/^(.+?)\s+(\d+)$/);
+    const baseName = match ? match[1].trim() : currentName;
+    let maxNum = 0;
+    for (const e of allEntries) {
+      if (e.name === baseName) maxNum = Math.max(maxNum, 1);
+      const m = e.name.match(new RegExp(`^${baseName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s+(\\d+)$`));
+      if (m) maxNum = Math.max(maxNum, parseInt(m[1], 10));
+    }
+    return maxNum === 0 ? `${baseName} 2` : `${baseName} ${maxNum + 1}`;
+  }, []);
+
+  const duplicateEntry = useCallback((entry: InitiativeEntry) => {
+    const newName = getNextDuplicateName(entry.name, entries);
+    setEntries((prev) => [
+      ...prev,
+      {
+        ...entry,
+        id: generateId(),
+        name: newName,
+      },
+    ]);
+  }, [entries, getNextDuplicateName]);
 
   const sortByInitiative = useCallback(() => {
     setEntries((prev) =>
@@ -186,20 +211,24 @@ export function InitiativeTracker({ campaignId }: InitiativeTrackerProps) {
   }, []);
 
   const handleCellSave = useCallback(
-    (id: string, field: "hp" | "initiative", value: string) => {
-      const num = parseInt(value, 10);
-      const v = Number.isNaN(num) ? 0 : num;
-      if (field === "hp") {
-        setEntries((prev) =>
-          prev.map((e) => {
-            if (e.id !== id) return e;
-            const hp = v;
-            const maxHp = e.maxHp > 0 ? e.maxHp : Math.max(e.maxHp, hp);
-            return { ...e, hp, maxHp };
-          })
-        );
+    (id: string, field: "name" | "hp" | "initiative", value: string) => {
+      if (field === "name") {
+        updateEntry(id, { name: value.trim() || "Senza nome" });
       } else {
-        updateEntry(id, { initiative: v });
+        const num = parseInt(value, 10);
+        const v = Number.isNaN(num) ? 0 : num;
+        if (field === "hp") {
+          setEntries((prev) =>
+            prev.map((e) => {
+              if (e.id !== id) return e;
+              const hp = v;
+              const maxHp = e.maxHp > 0 ? e.maxHp : Math.max(e.maxHp, hp);
+              return { ...e, hp, maxHp };
+            })
+          );
+        } else {
+          updateEntry(id, { initiative: v });
+        }
       }
       setEditingCell(null);
     },
@@ -282,7 +311,7 @@ export function InitiativeTracker({ campaignId }: InitiativeTrackerProps) {
               <TableHead className="h-12 px-4 text-base font-semibold text-amber-400">
                 Iniziativa
               </TableHead>
-              <TableHead className="h-12 w-16 px-4 text-base font-semibold text-amber-400">
+              <TableHead className="h-12 px-4 text-base font-semibold text-amber-400">
                 Azioni
               </TableHead>
             </TableRow>
@@ -307,8 +336,38 @@ export function InitiativeTracker({ campaignId }: InitiativeTrackerProps) {
                       "bg-amber-600/25 ring-1 ring-amber-500/50"
                   )}
                 >
-                  <TableCell className="px-4 py-3 font-medium text-zinc-100">
-                    {entry.name}
+                  <TableCell className="px-4 py-3">
+                    {editingCell?.id === entry.id &&
+                    editingCell?.field === "name" ? (
+                      <Input
+                        type="text"
+                        className="h-9 min-w-[120px] bg-zinc-800 text-zinc-100"
+                        defaultValue={entry.name}
+                        autoFocus
+                        onBlur={(e) =>
+                          handleCellSave(entry.id, "name", e.target.value)
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handleCellSave(
+                              entry.id,
+                              "name",
+                              (e.target as HTMLInputElement).value
+                            );
+                          }
+                        }}
+                      />
+                    ) : (
+                      <button
+                        type="button"
+                        className="min-w-[80px] rounded px-2 py-1 text-left font-medium text-zinc-100 transition-colors hover:bg-zinc-700/80 hover:text-amber-200"
+                        onClick={() =>
+                          setEditingCell({ id: entry.id, field: "name" })
+                        }
+                      >
+                        {entry.name}
+                      </button>
+                    )}
                   </TableCell>
                   <TableCell className="px-4 py-3">
                     {editingCell?.id === entry.id &&
@@ -387,15 +446,27 @@ export function InitiativeTracker({ campaignId }: InitiativeTrackerProps) {
                     )}
                   </TableCell>
                   <TableCell className="px-4 py-3">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-9 w-9 text-red-400 hover:bg-red-500/20 hover:text-red-300"
-                      onClick={() => removeEntry(entry.id)}
-                      aria-label="Rimuovi"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 text-amber-400 hover:bg-amber-500/20 hover:text-amber-200"
+                        onClick={() => duplicateEntry(entry)}
+                        aria-label="Duplica"
+                        title="Duplica (nome con numero progressivo)"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 text-red-400 hover:bg-red-500/20 hover:text-red-300"
+                        onClick={() => removeEntry(entry.id)}
+                        aria-label="Rimuovi"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
