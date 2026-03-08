@@ -37,22 +37,37 @@ async function ensureGmOrAdmin(): Promise<GmResult<Awaited<ReturnType<typeof cre
 export type GmNoteRow = {
   id: string;
   campaign_id: string;
+  session_id: string | null;
   title: string;
   content: string;
   created_at: string;
   updated_at: string;
 };
 
-export async function listGmNotes(campaignId: string): Promise<GmResult<GmNoteRow[]>> {
+/**
+ * Lista note GM. Se sessionId è valorizzato: note della sessione + note globali (session_id NULL).
+ * Se sessionId è null/undefined: solo note globali.
+ */
+export async function listGmNotes(
+  campaignId: string,
+  sessionId?: string | null
+): Promise<GmResult<GmNoteRow[]>> {
   const check = await ensureGmOrAdmin();
   if (!check.success) return check;
   const supabase = check.data!;
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("gm_notes")
-    .select("id, campaign_id, title, content, created_at, updated_at")
-    .eq("campaign_id", campaignId)
-    .order("updated_at", { ascending: false });
+    .select("id, campaign_id, session_id, title, content, created_at, updated_at")
+    .eq("campaign_id", campaignId);
+
+  if (sessionId != null && sessionId !== "") {
+    query = query.or(`session_id.eq.${sessionId},session_id.is.null`);
+  } else {
+    query = query.is("session_id", null);
+  }
+
+  const { data, error } = await query.order("updated_at", { ascending: false });
 
   if (error) {
     console.error("[listGmNotes]", error);
@@ -61,9 +76,37 @@ export async function listGmNotes(campaignId: string): Promise<GmResult<GmNoteRo
   return { success: true, data: (data ?? []) as GmNoteRow[] };
 }
 
+export type CampaignSessionOption = {
+  id: string;
+  title: string | null;
+  scheduled_at: string;
+};
+
+/** Sessioni della campagna (scheduled) per il selettore GM Screen. */
+export async function getCampaignSessionsForGm(
+  campaignId: string
+): Promise<GmResult<CampaignSessionOption[]>> {
+  const check = await ensureGmOrAdmin();
+  if (!check.success) return check;
+  const supabase = check.data!;
+
+  const { data, error } = await supabase
+    .from("sessions")
+    .select("id, title, scheduled_at")
+    .eq("campaign_id", campaignId)
+    .eq("status", "scheduled")
+    .order("scheduled_at", { ascending: true });
+
+  if (error) {
+    console.error("[getCampaignSessionsForGm]", error);
+    return { success: false, error: error.message ?? "Errore nel caricamento delle sessioni." };
+  }
+  return { success: true, data: (data ?? []) as CampaignSessionOption[] };
+}
+
 export async function createGmNote(
   campaignId: string,
-  payload: { title: string; content: string }
+  payload: { title: string; content: string; session_id?: string | null }
 ): Promise<GmResult<GmNoteRow>> {
   const check = await ensureGmOrAdmin();
   if (!check.success) return check;
@@ -72,14 +115,17 @@ export async function createGmNote(
   const title = payload.title?.trim() ?? "";
   if (!title) return { success: false, error: "Il titolo è obbligatorio." };
 
+  const session_id = payload.session_id === undefined || payload.session_id === "" ? null : payload.session_id;
+
   const { data, error } = await supabase
     .from("gm_notes")
     .insert({
       campaign_id: campaignId,
       title,
       content: payload.content?.trim() ?? "",
+      session_id,
     })
-    .select("id, campaign_id, title, content, created_at, updated_at")
+    .select("id, campaign_id, session_id, title, content, created_at, updated_at")
     .single();
 
   if (error) {
@@ -92,7 +138,7 @@ export async function createGmNote(
 
 export async function updateGmNote(
   noteId: string,
-  payload: { title: string; content: string }
+  payload: { title: string; content: string; session_id?: string | null }
 ): Promise<GmResult<GmNoteRow>> {
   const check = await ensureGmOrAdmin();
   if (!check.success) return check;
@@ -101,14 +147,17 @@ export async function updateGmNote(
   const title = payload.title?.trim() ?? "";
   if (!title) return { success: false, error: "Il titolo è obbligatorio." };
 
+  const updatePayload: { title: string; content: string; session_id: string | null } = {
+    title,
+    content: payload.content?.trim() ?? "",
+    session_id: payload.session_id === undefined || payload.session_id === "" ? null : payload.session_id,
+  };
+
   const { data, error } = await supabase
     .from("gm_notes")
-    .update({
-      title,
-      content: payload.content?.trim() ?? "",
-    })
+    .update(updatePayload)
     .eq("id", noteId)
-    .select("id, campaign_id, title, content, created_at, updated_at")
+    .select("id, campaign_id, session_id, title, content, created_at, updated_at")
     .single();
 
   if (error) {
