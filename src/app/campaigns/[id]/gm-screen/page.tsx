@@ -30,10 +30,15 @@ export default async function GmScreenPage({ params }: PageProps) {
 
   if (!campaign || !isGmOrAdmin) notFound();
 
+  const campaignType =
+    campaign?.type && ["oneshot", "quest", "long"].includes(campaign.type)
+      ? (campaign.type as "oneshot" | "quest" | "long")
+      : null;
+
   return (
     <GmScreenLayout
       campaignId={campaignId}
-      campaignType={(campaign as { type?: string }).type ?? null}
+      campaignType={campaignType}
     />
   );
 }
