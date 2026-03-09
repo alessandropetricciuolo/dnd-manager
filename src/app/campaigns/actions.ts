@@ -463,10 +463,10 @@ export async function deleteSession(sessionId: string): Promise<DeleteSessionRes
 
 export type UpdateSessionResult = { success: boolean; message: string };
 
-/** Aggiorna titolo e/o riassunto di una sessione (es. concluse). Solo GM/Admin della campagna. */
+/** Aggiorna titolo, riassunto e/o note segrete GM di una sessione (es. concluse). Solo GM/Admin della campagna. */
 export async function updateSession(
   sessionId: string,
-  payload: { title?: string | null; session_summary?: string | null }
+  payload: { title?: string | null; session_summary?: string | null; gm_private_notes?: string | null }
 ): Promise<UpdateSessionResult & { campaignId?: string }> {
   try {
     const supabase = await createSupabaseServerClient();
@@ -497,9 +497,10 @@ export async function updateSession(
       return { success: false, message: "Non puoi modificare sessioni di questa campagna." };
     }
 
-    const updates: { title?: string | null; session_summary?: string | null } = {};
+    const updates: { title?: string | null; session_summary?: string | null; gm_private_notes?: string | null } = {};
     if (payload.title !== undefined) updates.title = payload.title?.trim() || null;
     if (payload.session_summary !== undefined) updates.session_summary = payload.session_summary?.trim() || null;
+    if (payload.gm_private_notes !== undefined) updates.gm_private_notes = payload.gm_private_notes?.trim() || null;
 
     if (Object.keys(updates).length === 0) {
       return { success: true, message: "Nessuna modifica.", campaignId: session.campaign_id };
@@ -520,6 +521,109 @@ export async function updateSession(
   } catch (err) {
     console.error("[updateSession]", err);
     return { success: false, message: "Errore imprevisto. Riprova." };
+  }
+}
+
+/** Sessione conclusa visibile al current user (GM: tutte con gm_private_notes; Player: solo stesso party o party_id null, senza gm_private_notes). */
+export type CompletedSessionForUser = {
+  id: string;
+  title: string | null;
+  scheduled_at: string;
+  session_summary: string | null;
+  party_id: string | null;
+  chapter_title: string | null;
+  campaign_parties?: { name: string; color: string | null } | null;
+  gm_private_notes?: string | null;
+};
+
+/** Lista sessioni concluse per l'utente corrente. GM vede tutto (con note segrete); player solo sessioni del proprio gruppo o senza gruppo (Opzione A: niente altre sessioni). */
+export async function getCompletedSessionsForCurrentUser(
+  campaignId: string
+): Promise<{ success: boolean; error?: string; data?: CompletedSessionForUser[] }> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { success: false, error: "Devi essere autenticato." };
+    }
+
+    const gmOrAdmin = await isGmOrAdmin(supabase, campaignId);
+
+    if (gmOrAdmin) {
+      const { data, error } = await supabase
+        .from("sessions")
+        .select("id, title, scheduled_at, session_summary, party_id, chapter_title, gm_private_notes, campaign_parties(name, color)")
+        .eq("campaign_id", campaignId)
+        .eq("status", "completed")
+        .order("scheduled_at", { ascending: false });
+      if (error) {
+        console.error("[getCompletedSessionsForCurrentUser] GM", error);
+        return { success: false, error: error.message ?? "Errore nel caricamento." };
+      }
+      const rows = (data ?? []).map((r) => {
+        const rawParty = (r as { campaign_parties?: { name: string; color: string | null } | { name: string; color: string | null }[] | null }).campaign_parties;
+        const party = Array.isArray(rawParty) ? rawParty[0] ?? null : rawParty ?? null;
+        return {
+          id: r.id,
+          title: r.title ?? null,
+          scheduled_at: r.scheduled_at,
+          session_summary: r.session_summary ?? null,
+          party_id: r.party_id ?? null,
+          chapter_title: r.chapter_title ?? null,
+          campaign_parties: party,
+          gm_private_notes: (r as { gm_private_notes?: string | null }).gm_private_notes ?? null,
+        };
+      });
+      return { success: true, data: rows };
+    }
+
+    const { data: member, error: memberErr } = await supabase
+      .from("campaign_members")
+      .select("party_id")
+      .eq("campaign_id", campaignId)
+      .eq("player_id", user.id)
+      .maybeSingle();
+    if (memberErr || !member) {
+      return { success: true, data: [] };
+    }
+    const userPartyId = member.party_id ?? null;
+
+    const q = supabase
+      .from("sessions")
+      .select("id, title, scheduled_at, session_summary, party_id, chapter_title, campaign_parties(name, color)")
+      .eq("campaign_id", campaignId)
+      .eq("status", "completed")
+      .order("scheduled_at", { ascending: false });
+    if (userPartyId === null) {
+      q.is("party_id", null);
+    } else {
+      q.or(`party_id.is.null,party_id.eq.${userPartyId}`);
+    }
+    const { data, error } = await q;
+    if (error) {
+      console.error("[getCompletedSessionsForCurrentUser] player", error);
+      return { success: false, error: error.message ?? "Errore nel caricamento." };
+    }
+    const rows = (data ?? []).map((r) => {
+      const rawParty = (r as { campaign_parties?: { name: string; color: string | null } | { name: string; color: string | null }[] | null }).campaign_parties;
+      const party = Array.isArray(rawParty) ? rawParty[0] ?? null : rawParty ?? null;
+      return {
+        id: r.id,
+        title: r.title ?? null,
+        scheduled_at: r.scheduled_at,
+        session_summary: r.session_summary ?? null,
+        party_id: r.party_id ?? null,
+        chapter_title: r.chapter_title ?? null,
+        campaign_parties: party,
+      };
+    });
+    return { success: true, data: rows };
+  } catch (err) {
+    console.error("[getCompletedSessionsForCurrentUser]", err);
+    return { success: false, error: "Errore imprevisto. Riprova." };
   }
 }
 

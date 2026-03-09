@@ -50,6 +50,7 @@ export function SessionDebriefDialog({
 }: SessionDebriefDialogProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const [summary, setSummary] = useState("");
+  const [gmPrivateNotes, setGmPrivateNotes] = useState("");
   const [coreEntities, setCoreEntities] = useState<CoreEntityForDebrief[]>([]);
   const [statusByEntityId, setStatusByEntityId] = useState<Record<string, "alive" | "dead">>({});
   const [loadingEntities, setLoadingEntities] = useState(false);
@@ -76,6 +77,7 @@ export function SessionDebriefDialog({
     if (!open) {
       setStep(1);
       setSummary("");
+      setGmPrivateNotes("");
       setCoreEntities([]);
       setStatusByEntityId({});
       return;
@@ -112,6 +114,7 @@ export function SessionDebriefDialog({
     const entityStatusUpdates = { ...statusByEntityId };
     const result = await saveSessionDebrief(sessionId, {
       summary: summary.trim(),
+      gm_private_notes: gmPrivateNotes.trim() || null,
       entityStatusUpdates,
     });
     setSaving(false);
@@ -153,18 +156,33 @@ export function SessionDebriefDialog({
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto py-2">
           {step === 1 && (
-            <div className="space-y-2">
-              <Label htmlFor="debrief-summary" className="text-zinc-300">
-                Riassunto narrativo
-              </Label>
-              <Textarea
-                id="debrief-summary"
-                value={summary}
-                onChange={(e) => setSummary(e.target.value)}
-                placeholder="Cosa è successo in questa sessione? Eventi principali, conseguenze..."
-                rows={10}
-                className="min-h-[200px] resize-y bg-zinc-800 border-amber-600/30 text-zinc-100"
-              />
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="debrief-summary" className="text-zinc-300">
+                  Riassunto pubblico
+                </Label>
+                <Textarea
+                  id="debrief-summary"
+                  value={summary}
+                  onChange={(e) => setSummary(e.target.value)}
+                  placeholder="Cosa è successo in questa sessione? Visibile ai partecipanti del gruppo."
+                  rows={8}
+                  className="min-h-[160px] resize-y bg-zinc-800 border-amber-600/30 text-zinc-100"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="debrief-gm-notes" className="text-red-300/90">
+                  Note segrete GM
+                </Label>
+                <Textarea
+                  id="debrief-gm-notes"
+                  value={gmPrivateNotes}
+                  onChange={(e) => setGmPrivateNotes(e.target.value)}
+                  placeholder="Appunti privati, piani futuri, segreti... Solo tu le vedrai."
+                  rows={4}
+                  className="min-h-[100px] resize-y border border-dashed border-red-500/50 bg-red-950/20 text-zinc-100 placeholder:text-zinc-500"
+                />
+              </div>
             </div>
           )}
 

@@ -94,6 +94,7 @@ function SessionHistoryCard({ session, campaignId, onSaved }: SessionHistoryCard
   const [expanded, setExpanded] = useState(false);
   const [title, setTitle] = useState(session.title ?? "");
   const [summary, setSummary] = useState(session.session_summary ?? "");
+  const [gmPrivateNotes, setGmPrivateNotes] = useState(session.gm_private_notes ?? "");
   const [saving, setSaving] = useState(false);
 
   const dateLabel = format(new Date(session.scheduled_at), "EEEE d MMMM yyyy", { locale: it });
@@ -104,6 +105,7 @@ function SessionHistoryCard({ session, campaignId, onSaved }: SessionHistoryCard
   function handleCancel() {
     setTitle(session.title ?? "");
     setSummary(session.session_summary ?? "");
+    setGmPrivateNotes(session.gm_private_notes ?? "");
     setEditing(false);
   }
 
@@ -112,6 +114,7 @@ function SessionHistoryCard({ session, campaignId, onSaved }: SessionHistoryCard
     const result = await updateSession(session.id, {
       title: title.trim() || null,
       session_summary: summary.trim() || null,
+      gm_private_notes: gmPrivateNotes.trim() || null,
     });
     setSaving(false);
     if (result.success) {
@@ -177,15 +180,28 @@ function SessionHistoryCard({ session, campaignId, onSaved }: SessionHistoryCard
           <>
             <div className="space-y-2">
               <Label htmlFor={`session-summary-${session.id}`} className="text-barber-paper/80">
-                Riassunto
+                Riassunto pubblico
               </Label>
               <Textarea
                 id={`session-summary-${session.id}`}
                 value={summary}
                 onChange={(e) => setSummary(e.target.value)}
-                placeholder="Riassunto narrativo della sessione..."
-                rows={8}
-                className="min-h-[160px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
+                placeholder="Riassunto narrativo visibile ai partecipanti..."
+                rows={6}
+                className="min-h-[120px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`session-gm-notes-${session.id}`} className="text-red-300/90">
+                Note segrete GM
+              </Label>
+              <Textarea
+                id={`session-gm-notes-${session.id}`}
+                value={gmPrivateNotes}
+                onChange={(e) => setGmPrivateNotes(e.target.value)}
+                placeholder="Appunti privati, solo per te..."
+                rows={4}
+                className="min-h-[80px] resize-y border border-dashed border-red-500/50 bg-red-950/20 text-barber-paper placeholder:text-barber-paper/50"
               />
             </div>
             <div className="flex flex-wrap items-center gap-2 border-t border-barber-gold/20 pt-4">

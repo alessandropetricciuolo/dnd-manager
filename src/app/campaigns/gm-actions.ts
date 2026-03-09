@@ -112,9 +112,11 @@ export type CompletedSessionRow = {
   party_id: string | null;
   chapter_title: string | null;
   campaign_parties?: { name: string; color: string | null } | null;
+  /** Presente solo per GM/Admin; non esporre ai player. */
+  gm_private_notes?: string | null;
 };
 
-/** Sessioni concluse per Session History Manager (solo GM). Ordine: più recente prima. Se Long, include party. */
+/** Sessioni concluse per Session History Manager (solo GM). Ordine: più recente prima. Include gm_private_notes. */
 export async function getCompletedSessionsForCampaign(
   campaignId: string
 ): Promise<GmResult<CompletedSessionRow[]>> {
@@ -124,7 +126,7 @@ export async function getCompletedSessionsForCampaign(
 
   const { data, error } = await supabase
     .from("sessions")
-    .select("id, title, scheduled_at, session_summary, party_id, chapter_title, campaign_parties(name, color)")
+    .select("id, title, scheduled_at, session_summary, party_id, chapter_title, gm_private_notes, campaign_parties(name, color)")
     .eq("campaign_id", campaignId)
     .eq("status", "completed")
     .order("scheduled_at", { ascending: false });
@@ -144,6 +146,7 @@ export async function getCompletedSessionsForCampaign(
       session_summary: r.session_summary ?? null,
       party_id: r.party_id ?? null,
       chapter_title: r.chapter_title ?? null,
+      gm_private_notes: (r as { gm_private_notes?: string | null }).gm_private_notes ?? null,
       campaign_parties: party,
     };
   });
@@ -409,11 +412,12 @@ export async function getCoreEntitiesForDebrief(
   return { success: true, data: list };
 }
 
-/** Salva debrief: summary sulla sessione, status = completed, e (se campagna Long) aggiorna global_status sulle entità core. */
+/** Salva debrief: summary sulla sessione, status = completed, note segrete GM, e (se campagna Long) aggiorna global_status sulle entità core. */
 export async function saveSessionDebrief(
   sessionId: string,
   payload: {
     summary: string;
+    gm_private_notes?: string | null;
     entityStatusUpdates: Record<string, "alive" | "dead">;
   }
 ): Promise<GmResult<{ campaignId: string }>> {
@@ -442,12 +446,16 @@ export async function saveSessionDebrief(
 
   const isLongCampaign = campaign?.type === "long";
 
+  const sessionUpdate: { status: string; session_summary: string | null; gm_private_notes?: string | null } = {
+    status: "completed",
+    session_summary: payload.summary?.trim() || null,
+  };
+  if (payload.gm_private_notes !== undefined) {
+    sessionUpdate.gm_private_notes = payload.gm_private_notes?.trim() || null;
+  }
   const { error: updateSessionErr } = await supabase
     .from("sessions")
-    .update({
-      status: "completed",
-      session_summary: payload.summary?.trim() || null,
-    })
+    .update(sessionUpdate)
     .eq("id", sessionId);
 
   if (updateSessionErr) {
