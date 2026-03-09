@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { toast } from "sonner";
 import { FileText, Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 

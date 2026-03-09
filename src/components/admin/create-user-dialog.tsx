@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {

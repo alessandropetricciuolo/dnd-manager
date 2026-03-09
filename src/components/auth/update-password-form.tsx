@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import Link from "next/link";
 import { toast } from "sonner";
 import { ArrowLeft, Lock } from "lucide-react";

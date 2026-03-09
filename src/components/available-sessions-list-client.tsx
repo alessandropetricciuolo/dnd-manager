@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { toast } from "sonner";

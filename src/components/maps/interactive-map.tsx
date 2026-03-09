@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useMemo } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { MapPin } from "lucide-react";
 import { toast } from "sonner";
