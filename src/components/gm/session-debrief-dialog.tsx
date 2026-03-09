@@ -52,7 +52,7 @@ export function SessionDebriefDialog({
   const [summary, setSummary] = useState("");
   const [gmPrivateNotes, setGmPrivateNotes] = useState("");
   const [coreEntities, setCoreEntities] = useState<CoreEntityForDebrief[]>([]);
-  const [statusByEntityId, setStatusByEntityId] = useState<Record<string, "alive" | "dead">>({});
+  const [statusByEntityId, setStatusByEntityId] = useState<Record<string, "alive" | "dead" | "missing">>({});
   const [loadingEntities, setLoadingEntities] = useState(false);
   const [saving, setSaving] = useState(false);
   const isLongCampaign = campaignType === "long";
@@ -93,9 +93,10 @@ export function SessionDebriefDialog({
         setLoadingEntities(false);
         if (res.success && res.data) {
           setCoreEntities(res.data);
-          const initial: Record<string, "alive" | "dead"> = {};
+          const initial: Record<string, "alive" | "dead" | "missing"> = {};
           for (const e of res.data) {
-            initial[e.id] = zeroHpEntityIds.has(e.id) ? "dead" : e.global_status;
+            const status = e.global_status === "missing" ? "missing" : e.global_status === "dead" ? "dead" : "alive";
+            initial[e.id] = zeroHpEntityIds.has(e.id) ? "dead" : status;
           }
           setStatusByEntityId(initial);
         } else {
@@ -222,7 +223,7 @@ export function SessionDebriefDialog({
                         <Select
                           value={statusByEntityId[entity.id] ?? entity.global_status}
                           onValueChange={(v) =>
-                            setStatusByEntityId((prev) => ({ ...prev, [entity.id]: v as "alive" | "dead" }))
+                            setStatusByEntityId((prev) => ({ ...prev, [entity.id]: v as "alive" | "dead" | "missing" }))
                           }
                         >
                           <SelectTrigger className="w-[140px] border-amber-600/30 bg-zinc-900 text-zinc-200">
@@ -234,6 +235,9 @@ export function SessionDebriefDialog({
                             </SelectItem>
                             <SelectItem value="dead" className="text-zinc-300 focus:bg-amber-600/20">
                               Morto
+                            </SelectItem>
+                            <SelectItem value="missing" className="text-zinc-300 focus:bg-amber-600/20">
+                              Scomparso
                             </SelectItem>
                           </SelectContent>
                         </Select>

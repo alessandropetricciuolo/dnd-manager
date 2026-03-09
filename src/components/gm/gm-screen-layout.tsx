@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ListOrdered, Calendar, Flag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCampaignSessionsForGm, type CampaignSessionOption } from "@/app/campaigns/gm-actions";
-import { SessionDebriefDialog } from "./session-debrief-dialog";
+import { EndSessionWizard } from "@/components/sessions/end-session-wizard";
 import {
   Select,
   SelectContent,
@@ -124,18 +124,18 @@ export function GmScreenLayout({ campaignId, campaignType }: GmScreenLayoutProps
               className="bg-amber-600 text-zinc-950 hover:bg-amber-500"
             >
               <Flag className="mr-2 h-4 w-4" />
-              Concludi Sessione
+              Chiudi Sessione
             </Button>
           )}
         </div>
         {selectedSessionId && (
-          <SessionDebriefDialog
+          <EndSessionWizard
             open={debriefOpen}
             onOpenChange={setDebriefOpen}
             sessionId={selectedSessionId}
-            sessionLabel={sessionLabel}
             campaignId={campaignId}
             campaignType={campaignType}
+            sessionLabel={sessionLabel}
             onSuccess={loadSessions}
           />
         )}

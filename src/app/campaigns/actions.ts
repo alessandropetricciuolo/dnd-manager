@@ -627,7 +627,187 @@ export async function getCompletedSessionsForCurrentUser(
   }
 }
 
+/** Iscritti approvati per una sessione (per wizard chiusura). Usato da EndSessionWizard quando aperto da GM Screen. */
+export async function getApprovedSignupsForSession(
+  sessionId: string
+): Promise<{ success: boolean; error?: string; data?: { id: string; player_id: string; player_name: string }[] }> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const allowed = await isGmOrAdminByRole(supabase);
+    if (!allowed) {
+      return { success: false, error: "Solo GM o Admin possono vedere gli iscritti." };
+    }
+    const admin = createSupabaseAdminClient();
+    const { data: signupsRaw, error: signupsErr } = await admin
+      .from("session_signups")
+      .select("id, player_id")
+      .eq("session_id", sessionId)
+      .in("status", ["approved", "confirmed"]);
+    const signups = (signupsRaw ?? []) as { id: string; player_id: string }[];
+    if (signupsErr || !signups.length) {
+      return { success: true, data: [] };
+    }
+    const playerIds = [...new Set(signups.map((s) => s.player_id))];
+    const { data: profilesData } = await admin
+      .from("profiles")
+      .select("id, first_name, last_name, display_name")
+      .in("id", playerIds);
+    const profilesList = (profilesData ?? []) as { id: string; first_name: string | null; last_name: string | null; display_name: string | null }[];
+    const nameMap = new Map<string, string>();
+    for (const p of profilesList) {
+      const full = [p.first_name, p.last_name].filter(Boolean).join(" ").trim();
+      nameMap.set(p.id, full || (p.display_name ?? "") || "Giocatore");
+    }
+    const data = signups.map((s) => ({
+      id: s.id,
+      player_id: s.player_id,
+      player_name: nameMap.get(s.player_id) ?? "Giocatore",
+    }));
+    return { success: true, data };
+  } catch (err) {
+    console.error("[getApprovedSignupsForSession]", err);
+    return { success: false, error: "Errore nel caricamento." };
+  }
+}
+
 export type CloseSessionResult = { success: boolean; message: string };
+
+/** Payload unificato per chiusura sessione (EndSessionWizard). */
+export type CloseSessionActionPayload = {
+  /** player_id -> attended | absent */
+  attendance: Record<string, "attended" | "absent">;
+  /** XP da assegnare a tutti i presenti (numero >= 0). */
+  xpGained: number;
+  /** Se true, sblocca i contenuti in unlockContentIds per i presenti. */
+  unlockContent: boolean;
+  /** Id e tipo dei contenuti da sbloccare (solo se unlockContent true). */
+  unlockContentIds: { id: string; type: "wiki" | "map" }[];
+  /** Riassunto pubblico sessione. */
+  summary: string;
+  /** Note segrete GM. */
+  gm_private_notes?: string | null;
+  /** entity_id -> alive | dead | missing (solo campagne Long). */
+  entityStatusUpdates: Record<string, "alive" | "dead" | "missing">;
+};
+
+/** Chiusura sessione unificata: sessioni, presenze, XP, summary, note GM, mondo (global_status), sblocco contenuti. */
+export async function closeSessionAction(
+  sessionId: string,
+  payload: CloseSessionActionPayload
+): Promise<CloseSessionResult & { campaignId?: string }> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { success: false, message: "Devi essere autenticato." };
+    }
+    const allowed = await isGmOrAdminByRole(supabase);
+    if (!allowed) {
+      return { success: false, message: "Solo GM o Admin possono chiudere sessioni." };
+    }
+
+    const { data: session, error: sessionError } = await supabase
+      .from("sessions")
+      .select("id, campaign_id, status")
+      .eq("id", sessionId)
+      .single();
+    if (sessionError || !session) {
+      return { success: false, message: "Sessione non trovata." };
+    }
+    if (session.status !== "scheduled") {
+      return { success: false, message: "La sessione è già chiusa." };
+    }
+
+    const { data: campaign } = await supabase
+      .from("campaigns")
+      .select("type")
+      .eq("id", session.campaign_id)
+      .single();
+    const isLongCampaign = campaign?.type === "long";
+
+    const admin = createSupabaseAdminClient();
+
+    const sessionUpdate: { status: string; session_summary: string | null; gm_private_notes?: string | null } = {
+      status: "completed",
+      session_summary: payload.summary?.trim() || null,
+    };
+    if (payload.gm_private_notes !== undefined) {
+      sessionUpdate.gm_private_notes = payload.gm_private_notes?.trim() || null;
+    }
+    const { error: updateSessionErr } = await admin
+      .from("sessions")
+      .update(sessionUpdate as never)
+      .eq("id", sessionId);
+    if (updateSessionErr) {
+      console.error("[closeSessionAction] session", updateSessionErr);
+      return { success: false, message: updateSessionErr.message ?? "Errore durante la chiusura." };
+    }
+
+    const { data: signupsData } = await admin
+      .from("session_signups")
+      .select("id, player_id, status")
+      .eq("session_id", sessionId);
+    const signupsList = (signupsData ?? []) as { id: string; player_id: string; status: string }[];
+    const xpToAdd = Math.max(0, Math.floor(payload.xpGained));
+
+    for (const signup of signupsList) {
+      const newStatus = payload.attendance[signup.player_id] ?? "attended";
+      if (signup.status === "approved" || signup.status === "confirmed") {
+        await admin.from("session_signups").update({ status: newStatus } as never).eq("id", signup.id);
+        if (newStatus === "attended") {
+          const { data: existingRow } = await admin
+            .from("campaign_members")
+            .select("id, xp_earned")
+            .eq("campaign_id", session.campaign_id)
+            .eq("player_id", signup.player_id)
+            .maybeSingle();
+          const existing = existingRow as { id: string; xp_earned?: number } | null;
+          const currentXp = existing?.xp_earned ?? 0;
+          if (!existing) {
+            await admin.from("campaign_members").insert({
+              campaign_id: session.campaign_id,
+              player_id: signup.player_id,
+              xp_earned: currentXp + xpToAdd,
+            } as never);
+          } else {
+            await admin.from("campaign_members").update({ xp_earned: currentXp + xpToAdd } as never).eq("id", existing.id);
+          }
+        }
+      }
+    }
+
+    if (isLongCampaign && Object.keys(payload.entityStatusUpdates).length > 0) {
+      for (const [entityId, status] of Object.entries(payload.entityStatusUpdates)) {
+        await admin
+          .from("wiki_entities")
+          .update({ global_status: status } as never)
+          .eq("id", entityId)
+          .eq("campaign_id", session.campaign_id)
+          .eq("is_core", true);
+      }
+    }
+
+    const presentUserIds = Object.entries(payload.attendance)
+      .filter(([, v]) => v === "attended")
+      .map(([pid]) => pid);
+    if (payload.unlockContent && presentUserIds.length > 0 && payload.unlockContentIds.length > 0) {
+      const batchRes = await batchUnlockContent(session.campaign_id, presentUserIds, payload.unlockContentIds);
+      if (!batchRes.success) {
+        console.warn("[closeSessionAction] batchUnlockContent", batchRes.message);
+      }
+    }
+
+    revalidatePath(`/campaigns/${session.campaign_id}`);
+    revalidatePath("/dashboard");
+    return { success: true, message: "Sessione chiusa. Appello, XP, diario e mondo aggiornati.", campaignId: session.campaign_id };
+  } catch (err) {
+    console.error("[closeSessionAction]", err);
+    return { success: false, message: "Errore imprevisto. Riprova." };
+  }
+}
 
 /** attendanceData: record player_id -> 'attended' | 'absent'. Solo per iscritti approved. Chiude la sessione e aggiorna le presenze. */
 export async function closeSession(

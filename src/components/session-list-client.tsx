@@ -17,7 +17,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { updateSignupStatus, deleteSignup, joinSession, deleteSession } from "@/app/campaigns/actions";
 import { UnlockContentDialog } from "@/components/sessions/unlock-content-dialog";
-import { CloseSessionDialog, type ApprovedSignup } from "@/components/sessions/close-session-dialog";
+import { EndSessionWizard } from "@/components/sessions/end-session-wizard";
+import type { ApprovedSignupForWizard } from "@/components/sessions/end-session-wizard";
 
 export type SignupWithPlayer = {
   id: string;
@@ -43,6 +44,7 @@ type SessionListClientProps = {
   sessions: SessionWithSignups[];
   isGmOrAdmin: boolean;
   campaignId: string;
+  campaignType?: "oneshot" | "quest" | "long" | null;
 };
 
 function normalizeStatus(s: string): string {
@@ -56,6 +58,7 @@ export function SessionListClient({
   sessions,
   isGmOrAdmin,
   campaignId,
+  campaignType,
 }: SessionListClientProps) {
   const router = useRouter();
   const [unlockOpen, setUnlockOpen] = useState(false);
@@ -64,10 +67,11 @@ export function SessionListClient({
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [joinLoadingSessionId, setJoinLoadingSessionId] = useState<string | null>(null);
   const [deleteSessionLoadingId, setDeleteSessionLoadingId] = useState<string | null>(null);
-  const [closeDialogOpen, setCloseDialogOpen] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
   const [sessionForClose, setSessionForClose] = useState<{
     sessionId: string;
-    approvedSignups: ApprovedSignup[];
+    approvedSignups: ApprovedSignupForWizard[];
+    campaignType?: "oneshot" | "quest" | "long" | null;
   } | null>(null);
 
   async function handleJoin(sessionId: string) {
@@ -191,12 +195,16 @@ export function SessionListClient({
                       const approved = session.signups
                         .filter((s) => normalizeStatus(s.status) === "approved")
                         .map((s) => ({ id: s.id, player_id: s.player_id, player_name: s.player_name }));
-                      setSessionForClose({ sessionId: session.id, approvedSignups: approved });
-                      setCloseDialogOpen(true);
+                      setSessionForClose({
+                        sessionId: session.id,
+                        approvedSignups: approved,
+                        campaignType: campaignType ?? undefined,
+                      });
+                      setWizardOpen(true);
                     }}
                   >
                     <ClipboardCheck className="h-3.5 w-3 mr-1.5" />
-                    Chiudi sessione e fai appello
+                    Chiudi sessione
                   </Button>
                 )}
                 {/* Player: bottone Iscriviti o stato iscrizione */}
@@ -339,12 +347,14 @@ export function SessionListClient({
         />
       )}
       {sessionForClose && (
-        <CloseSessionDialog
-          open={closeDialogOpen}
-          onOpenChange={setCloseDialogOpen}
+        <EndSessionWizard
+          open={wizardOpen}
+          onOpenChange={setWizardOpen}
           sessionId={sessionForClose.sessionId}
           campaignId={campaignId}
-          approvedSignups={sessionForClose.approvedSignups}
+          campaignType={sessionForClose.campaignType}
+          sessionLabel={sessions.find((s) => s.id === sessionForClose.sessionId)?.scheduled_at ? format(new Date(sessions.find((s) => s.id === sessionForClose.sessionId)!.scheduled_at), "d MMM yyyy", { locale: it }) : undefined}
+          initialApprovedSignups={sessionForClose.approvedSignups}
           onSuccess={() => setSessionForClose(null)}
         />
       )}

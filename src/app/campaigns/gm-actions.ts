@@ -375,7 +375,7 @@ export type CoreEntityForDebrief = {
   id: string;
   name: string;
   type: string;
-  global_status: "alive" | "dead";
+  global_status: "alive" | "dead" | "missing";
 };
 
 /** Restituisce le voci Wiki (NPC/Mostri/Luoghi) core per il debrief: solo quelle in entityIds con is_core = true. */
@@ -407,7 +407,7 @@ export async function getCoreEntitiesForDebrief(
     id: r.id,
     name: r.name,
     type: r.type,
-    global_status: (r.global_status === "dead" ? "dead" : "alive") as "alive" | "dead",
+    global_status: (r.global_status === "dead" ? "dead" : r.global_status === "missing" ? "missing" : "alive") as "alive" | "dead" | "missing",
   }));
   return { success: true, data: list };
 }
@@ -418,7 +418,7 @@ export async function saveSessionDebrief(
   payload: {
     summary: string;
     gm_private_notes?: string | null;
-    entityStatusUpdates: Record<string, "alive" | "dead">;
+    entityStatusUpdates: Record<string, "alive" | "dead" | "missing">;
   }
 ): Promise<GmResult<{ campaignId: string }>> {
   const check = await ensureGmOrAdmin();
@@ -465,9 +465,10 @@ export async function saveSessionDebrief(
 
   if (isLongCampaign && Object.keys(payload.entityStatusUpdates).length > 0) {
     for (const [entityId, status] of Object.entries(payload.entityStatusUpdates)) {
+      const safeStatus = status === "alive" || status === "dead" || status === "missing" ? status : "alive";
       const { error: entityErr } = await supabase
         .from("wiki_entities")
-        .update({ global_status: status })
+        .update({ global_status: safeStatus })
         .eq("id", entityId)
         .eq("campaign_id", session.campaign_id)
         .eq("is_core", true);

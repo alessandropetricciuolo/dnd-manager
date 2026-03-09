@@ -272,7 +272,7 @@ export default async function CampaignPage({ params }: PageProps) {
                   />
                 )}
               </div>
-              <SessionList campaignId={campaign.id} />
+              <SessionList campaignId={campaign.id} campaignType={campaign.type ?? null} />
               {isGmOrAdmin ? (
                 <div className="mt-10 border-t border-barber-gold/20 pt-10">
                   <SessionHistoryManager campaignId={campaign.id} />

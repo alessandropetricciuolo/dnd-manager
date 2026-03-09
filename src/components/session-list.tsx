@@ -4,6 +4,7 @@ import { SessionListClient, type SessionWithSignups } from "@/components/session
 
 type SessionListProps = {
   campaignId: string;
+  campaignType?: "oneshot" | "quest" | "long" | null;
 };
 
 function getPlayerName(p: { first_name?: string | null; last_name?: string | null; display_name?: string | null }) {
@@ -11,7 +12,7 @@ function getPlayerName(p: { first_name?: string | null; last_name?: string | nul
   return full || p.display_name || "Giocatore";
 }
 
-export async function SessionList({ campaignId }: SessionListProps) {
+export async function SessionList({ campaignId, campaignType }: SessionListProps) {
   const supabase = await createSupabaseServerClient();
 
   const {
@@ -138,6 +139,7 @@ export async function SessionList({ campaignId }: SessionListProps) {
       sessions={sessionsWithSignups}
       isGmOrAdmin={!!isGmOrAdmin}
       campaignId={campaignId}
+      campaignType={campaignType}
     />
   );
 }
