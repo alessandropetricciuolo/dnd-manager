@@ -135,6 +135,15 @@ export function CreateCharacterDialog({ campaignId }: CreateCharacterDialogProps
               disabled={isLoading}
               ref={sheetInputRef}
             />
+            <p className="text-xs text-barber-paper/60">Oppure inserisci un link alla scheda PDF:</p>
+            <Input
+              id="char-sheet-url"
+              name="sheet_url"
+              type="url"
+              placeholder="https://..."
+              className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper placeholder:text-barber-paper/40"
+              disabled={isLoading}
+            />
           </div>
 
           <div className="space-y-2">

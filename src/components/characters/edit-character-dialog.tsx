@@ -164,8 +164,17 @@ export function EditCharacterDialog({
               ref={sheetInputRef}
             />
             <p className="text-xs text-barber-paper/60">
-              Lascia vuoto per mantenere il PDF attuale. Carica un file per sostituirlo.
+              Oppure inserisci un link alla scheda PDF. Lascia vuoto per mantenere l&apos;attuale.
             </p>
+            <Input
+              id="edit-char-sheet-url"
+              name="sheet_url"
+              type="url"
+              placeholder="https://..."
+              defaultValue={character.sheet_url?.startsWith("http") ? character.sheet_url : ""}
+              className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper placeholder:text-barber-paper/40"
+              disabled={isLoading}
+            />
             {character.sheet_url && (
               <div className="flex items-center gap-2 pt-1">
                 <input

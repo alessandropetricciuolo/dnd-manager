@@ -124,6 +124,7 @@ export async function createCharacter(
   const imageFile = formData.get("image") as File | null;
   const imageUrlFromForm = (formData.get("image_url") as string | null)?.trim() || null;
   const sheetFile = formData.get("sheet") as File | null;
+  const sheetUrlFromForm = (formData.get("sheet_url") as string | null)?.trim() || null;
 
   if (!name) return { success: false, error: "Il nome del personaggio è obbligatorio." };
 
@@ -145,7 +146,12 @@ export async function createCharacter(
   }
 
   let sheet_file_path: string | null = null;
-  if (sheetFile && sheetFile instanceof File && sheetFile.size > 0) {
+  if (sheetUrlFromForm) {
+    if (!/^https?:\/\/.+/.test(sheetUrlFromForm)) {
+      return { success: false, error: "L'URL della scheda deve iniziare con https:// (o http://)." };
+    }
+    sheet_file_path = sheetUrlFromForm;
+  } else if (sheetFile && sheetFile instanceof File && sheetFile.size > 0) {
     if (sheetFile.type !== "application/pdf") {
       return { success: false, error: "La scheda tecnica deve essere un file PDF." };
     }
@@ -204,6 +210,7 @@ export async function updateCharacter(
   const imageFile = formData.get("image") as File | null;
   const imageUrlFromForm = (formData.get("image_url") as string | null)?.trim() || null;
   const sheetFile = formData.get("sheet") as File | null;
+  const sheetUrlFromForm = (formData.get("sheet_url") as string | null)?.trim() || null;
 
   const { data: existing, error: fetchErr } = await supabase
     .from("campaign_characters")
@@ -238,6 +245,14 @@ export async function updateCharacter(
       await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([sheet_file_path]);
     }
     sheet_file_path = null;
+  } else if (sheetUrlFromForm) {
+    if (!/^https?:\/\/.+/.test(sheetUrlFromForm)) {
+      return { success: false, error: "L'URL della scheda deve iniziare con https:// (o http://)." };
+    }
+    if (sheet_file_path && !sheet_file_path.startsWith("http")) {
+      await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([sheet_file_path]);
+    }
+    sheet_file_path = sheetUrlFromForm;
   } else if (sheetFile && sheetFile instanceof File && sheetFile.size > 0) {
     if (sheetFile.type !== "application/pdf") {
       return { success: false, error: "La scheda tecnica deve essere un file PDF." };
