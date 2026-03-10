@@ -21,6 +21,7 @@ import { ImageSourceField } from "@/components/ui/image-source-field";
 import { updateEntity, setWikiEntityGlobalStatus } from "@/app/campaigns/wiki-actions";
 import { getEmptyAttributes } from "@/types/wiki";
 import type { WikiEntity } from "@/app/campaigns/wiki-actions";
+import { CHALLENGE_RATING_OPTIONS } from "@/lib/dnd-constants";
 
 const ENTITY_TYPES = [
   { value: "npc", label: "NPC" },
@@ -100,6 +101,7 @@ export function EditEntityDialog({
     entity.global_status === "dead" ? "dead" : "alive"
   );
   const [statusLoading, setStatusLoading] = useState(false);
+  const [monsterXp, setMonsterXp] = useState<number>(entity.xp_value ?? 0);
   const isLongCampaign = campaignType === "long";
   const showCoreFields = isLongCampaign && (type === "npc" || type === "monster");
 
@@ -113,8 +115,9 @@ export function EditEntityDialog({
       setSelectedPlayerIds(initialAllowedUserIds);
       setIsCore(entity.is_core ?? false);
       setGlobalStatus(entity.global_status === "dead" ? "dead" : "alive");
+      setMonsterXp(entity.xp_value ?? 0);
     }
-  }, [open, entity.type, entity.attributes, entity.sort_order, entity.is_core, entity.global_status, initialVisibility, initialAllowedUserIds]);
+  }, [open, entity.type, entity.attributes, entity.sort_order, entity.is_core, entity.global_status, entity.xp_value, initialVisibility, initialAllowedUserIds]);
 
   function onTypeChange(newType: string) {
     const t = newType as EntityType;
@@ -382,13 +385,25 @@ export function EditEntityDialog({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>CR</Label>
-                  <Input
+                  <Label>Grado di Sfida (GS)</Label>
+                  <select
                     value={getAttr("combat_stats.cr")}
-                    onChange={(e) => setAttr("combat_stats.cr", e.target.value)}
-                    className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setAttr("combat_stats.cr", val);
+                      const xp = CHALLENGE_RATING_OPTIONS.find((o) => o.value === val)?.xp;
+                      if (xp != null) setMonsterXp(xp);
+                    }}
+                    className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
                     disabled={isLoading}
-                  />
+                  >
+                    <option value="">— Scegli GS —</option>
+                    {CHALLENGE_RATING_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="space-y-2">
                   <Label>Punti Esperienza (PE)</Label>
@@ -396,10 +411,13 @@ export function EditEntityDialog({
                     name="xp_value"
                     type="number"
                     min={0}
-                    defaultValue={entity.xp_value ?? 0}
+                    value={monsterXp || ""}
+                    onChange={(e) => setMonsterXp(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                    placeholder="Da GS o manuale"
                     className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
                     disabled={isLoading}
                   />
+                  <p className="text-xs text-barber-paper/60">Impostati dal GS; modificabili a mano se serve.</p>
                 </div>
               </div>
               <div className="space-y-2">

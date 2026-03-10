@@ -22,6 +22,7 @@ import { ImageSourceField } from "@/components/ui/image-source-field";
 import { Textarea } from "@/components/ui/textarea";
 import { createEntity } from "@/app/campaigns/wiki-actions";
 import { getEmptyAttributes } from "@/types/wiki";
+import { CHALLENGE_RATING_OPTIONS } from "@/lib/dnd-constants";
 
 const ENTITY_TYPES = [
   { value: "npc", label: "NPC" },
@@ -63,6 +64,7 @@ export function CreateEntityDialog({
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [isCore, setIsCore] = useState(false);
   const showCoreCheckbox = campaignType === "long" && (type === "npc" || type === "monster");
+  const [monsterXp, setMonsterXp] = useState<number>(0);
 
   function onTypeChange(newType: string) {
     const t = newType as EntityType;
@@ -72,6 +74,7 @@ export function CreateEntityDialog({
     if (typeof currentGmNotes === "string") next.gm_notes = currentGmNotes;
     setAttributes(next);
     setSortOrder("");
+    if (t === "monster") setMonsterXp(0);
   }
 
   function setAttr(path: string, value: unknown) {
@@ -288,15 +291,26 @@ export function CreateEntityDialog({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="attr-cr">CR (Grado di Sfida)</Label>
-                  <Input
+                  <Label htmlFor="attr-cr">Grado di Sfida (GS)</Label>
+                  <select
                     id="attr-cr"
                     value={getAttr("combat_stats.cr")}
-                    onChange={(e) => setAttr("combat_stats.cr", e.target.value)}
-                    placeholder="Es. 2"
-                    className="bg-barber-dark border-barber-gold/30 text-barber-paper"
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setAttr("combat_stats.cr", val);
+                      const xp = CHALLENGE_RATING_OPTIONS.find((o) => o.value === val)?.xp;
+                      if (xp != null) setMonsterXp(xp);
+                    }}
+                    className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
                     disabled={isLoading}
-                  />
+                  >
+                    <option value="">— Scegli GS —</option>
+                    {CHALLENGE_RATING_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="monster-xp">Punti Esperienza (PE)</Label>
@@ -305,10 +319,13 @@ export function CreateEntityDialog({
                     name="xp_value"
                     type="number"
                     min={0}
-                    placeholder="Es. 200"
+                    value={monsterXp || ""}
+                    onChange={(e) => setMonsterXp(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                    placeholder="Da GS o manuale"
                     className="bg-barber-dark border-barber-gold/30 text-barber-paper"
                     disabled={isLoading}
                   />
+                  <p className="text-xs text-barber-paper/60">Impostati dal GS sopra; modificabili a mano se serve.</p>
                 </div>
               </div>
               <div className="space-y-2">
