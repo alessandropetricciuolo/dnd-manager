@@ -44,6 +44,8 @@ export async function createEntity(
   const sortOrderRaw = formData.get("sort_order") as string | null;
   const sortOrder = sortOrderRaw != null && sortOrderRaw !== "" ? parseInt(sortOrderRaw, 10) : null;
   const isCore = formData.get("is_core") === "on" || formData.get("is_core") === "true";
+  const xpRaw = (formData.get("xp_value") as string | null)?.trim() ?? "";
+  const xpValue = xpRaw ? Math.max(0, parseInt(xpRaw, 10) || 0) : 0;
 
   if (!title) {
     return { success: false, message: "Il titolo è obbligatorio." };
@@ -113,6 +115,9 @@ export async function createEntity(
       insertPayload.is_core = isCore;
       insertPayload.global_status = "alive";
     }
+    if (type === "monster") {
+      insertPayload.xp_value = xpValue;
+    }
 
     const { data: inserted, error } = await supabase
       .from("wiki_entities")
@@ -171,6 +176,8 @@ export async function updateEntity(
   const sortOrderRaw = formData.get("sort_order") as string | null;
   const sortOrder = sortOrderRaw != null && sortOrderRaw !== "" ? parseInt(sortOrderRaw, 10) : null;
   const isCore = formData.get("is_core") === "on" || formData.get("is_core") === "true";
+  const xpRaw = (formData.get("xp_value") as string | null)?.trim() ?? "";
+  const xpValue = xpRaw ? Math.max(0, parseInt(xpRaw, 10) || 0) : 0;
 
   if (!title) {
     return { success: false, message: "Il titolo è obbligatorio." };
@@ -252,6 +259,9 @@ export async function updateEntity(
     if (campaign?.type === "long" && (type === "npc" || type === "monster")) {
       updatePayload.is_core = isCore;
       if (!isCore) updatePayload.global_status = "alive";
+    }
+    if (type === "monster") {
+      updatePayload.xp_value = xpValue;
     }
 
     const { error } = await supabase
@@ -433,6 +443,7 @@ export type WikiEntity = {
   sort_order: number | null;
   is_core?: boolean;
   global_status?: "alive" | "dead";
+  xp_value?: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -477,7 +488,7 @@ export async function getEntity(
 
     const { data: entity, error } = await supabase
       .from("wiki_entities")
-      .select("id, campaign_id, name, type, content, image_url, is_secret, visibility, attributes, sort_order, is_core, global_status, created_at, updated_at")
+    .select("id, campaign_id, name, type, content, image_url, is_secret, visibility, attributes, sort_order, is_core, global_status, xp_value, created_at, updated_at")
       .eq("id", entityId)
       .eq("campaign_id", campaignId)
       .single();

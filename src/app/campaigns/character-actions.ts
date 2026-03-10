@@ -19,6 +19,10 @@ export type CampaignCharacterRow = {
   campaign_id: string;
   name: string;
   image_url: string | null;
+  /** XP correnti del personaggio. */
+  current_xp: number;
+  /** Livello attuale (1-20). */
+  level: number;
   /** Solo per GM/Admin; per i Player non viene mai restituito (null/undefined) */
   sheet_url?: string | null;
   background: string | null;
@@ -60,7 +64,7 @@ export async function getCampaignCharacters(
   if (isGmOrAdmin) {
     const { data: rows, error } = await supabase
       .from("campaign_characters")
-      .select("id, campaign_id, name, image_url, sheet_file_path, background, assigned_to, created_at, updated_at")
+      .select("id, campaign_id, name, image_url, current_xp, level, sheet_file_path, background, assigned_to, created_at, updated_at")
       .eq("campaign_id", campaignId)
       .order("created_at", { ascending: false });
 
@@ -69,7 +73,9 @@ export async function getCampaignCharacters(
       return { success: false, error: error.message ?? "Errore nel caricamento." };
     }
 
-    const list = (rows ?? []) as (Omit<CampaignCharacterRow, "sheet_url"> & { sheet_file_path: string | null })[];
+    const list = (rows ?? []) as (Omit<CampaignCharacterRow, "sheet_url"> & {
+      sheet_file_path: string | null;
+    })[];
     const withUrls: CampaignCharacterRow[] = [];
 
     for (const row of list) {
@@ -94,7 +100,7 @@ export async function getCampaignCharacters(
   // Player: solo il proprio PG, senza sheet_url / sheet_file_path
   const { data: rows, error } = await supabase
     .from("campaign_characters")
-    .select("id, campaign_id, name, image_url, background, assigned_to, created_at, updated_at")
+    .select("id, campaign_id, name, image_url, current_xp, level, background, assigned_to, created_at, updated_at")
     .eq("campaign_id", campaignId)
     .eq("assigned_to", userId)
     .order("created_at", { ascending: false })
@@ -376,6 +382,49 @@ export async function deleteCharacter(characterId: string): Promise<CharResult<{
 }
 
 export type EligiblePlayer = { id: string; label: string };
+
+/** Incrementa di 1 il livello del personaggio (max 20). Consentito a GM/Admin o al proprietario del PG. */
+export async function levelUpCharacter(
+  characterId: string
+): Promise<CharResult<{ campaignId: string; newLevel: number }>> {
+  const ctx = await getCurrentUserAndRole();
+  if (!ctx) return { success: false, error: "Non autenticato." };
+  const { userId, isGmOrAdmin, supabase } = ctx;
+
+  const { data: row, error } = await supabase
+    .from("campaign_characters")
+    .select("campaign_id, assigned_to, level")
+    .eq("id", characterId)
+    .maybeSingle();
+
+  if (error || !row) {
+    return { success: false, error: "Personaggio non trovato." };
+  }
+
+  const canEdit = isGmOrAdmin || row.assigned_to === userId;
+  if (!canEdit) {
+    return { success: false, error: "Non sei autorizzato a far salire di livello questo personaggio." };
+  }
+
+  const currentLevel = typeof row.level === "number" ? row.level : 1;
+  if (currentLevel >= 20) {
+    return { success: false, error: "Il personaggio è già al livello massimo." };
+  }
+
+  const newLevel = currentLevel + 1;
+  const { error: updateError } = await supabase
+    .from("campaign_characters")
+    .update({ level: newLevel })
+    .eq("id", characterId);
+
+  if (updateError) {
+    console.error("[levelUpCharacter]", updateError);
+    return { success: false, error: updateError.message ?? "Errore durante il passaggio di livello." };
+  }
+
+  revalidatePath(`/campaigns/${row.campaign_id}`);
+  return { success: true, data: { campaignId: row.campaign_id, newLevel } };
+}
 
 /**
  * Solo GM/Admin. Restituisce i giocatori iscritti e approvati (o che hanno partecipato)

@@ -298,6 +298,18 @@ export function CreateEntityDialog({
                     disabled={isLoading}
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="monster-xp">Punti Esperienza (PE)</Label>
+                  <Input
+                    id="monster-xp"
+                    name="xp_value"
+                    type="number"
+                    min={0}
+                    placeholder="Es. 200"
+                    className="bg-barber-dark border-barber-gold/30 text-barber-paper"
+                    disabled={isLoading}
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="attr-attacks">Attacchi / Azioni speciali</Label>

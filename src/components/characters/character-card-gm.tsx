@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "nextjs-toploader/app";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Download, Pencil, Trash2, User } from "lucide-react";
 
@@ -16,7 +16,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { EditCharacterDialog } from "./edit-character-dialog";
-import { assignCharacter, deleteCharacter, type CampaignCharacterRow, type EligiblePlayer } from "@/app/campaigns/character-actions";
+import { assignCharacter, deleteCharacter, levelUpCharacter, type CampaignCharacterRow, type EligiblePlayer } from "@/app/campaigns/character-actions";
+import { calculateLevelProgress } from "@/lib/dnd-constants";
+import { Progress } from "@/components/ui/progress";
 
 const PLACEHOLDER_AVATAR = "https://placehold.co/200x280/1c1917/fbbf24/png?text=PG";
 
@@ -30,10 +32,19 @@ export function CharacterCardGm({ character, eligiblePlayers }: CharacterCardGmP
   const [assigning, setAssigning] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [isLeveling, startTransition] = useTransition();
 
   const currentLabel = character.assigned_to
     ? eligiblePlayers.find((p) => p.id === character.assigned_to)?.label ?? "Assegnato"
     : "Non assegnato";
+
+  const xp = character.current_xp ?? 0;
+  const storedLevel = character.level ?? 1;
+  const { level: calculatedLevel, nextLevelXp, progressPercent } = calculateLevelProgress(xp);
+  const hasLevelUp = calculatedLevel > storedLevel;
+
+  const xpLabel =
+    nextLevelXp != null ? `${xp} / ${nextLevelXp} PE` : `${xp} PE (livello massimo)`;
 
   async function onAssign(playerId: string | null) {
     const value = playerId === "__none__" ? null : playerId;
@@ -138,6 +149,47 @@ export function CharacterCardGm({ character, eligiblePlayers }: CharacterCardGmP
               ))}
             </SelectContent>
           </Select>
+        </div>
+        <div className="space-y-2 rounded-lg border border-barber-gold/40 bg-barber-dark/70 p-3">
+          <div className="flex items-center justify-between text-xs font-medium text-barber-paper/80">
+            <span>Esperienza</span>
+            <span>
+              Lv {storedLevel}
+              {hasLevelUp && (
+                <span className="ml-2 rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
+                  🌟 Level Up disponibile!
+                </span>
+              )}
+            </span>
+          </div>
+          <Progress value={progressPercent} />
+          <div className="flex items-center justify-between text-[11px] text-barber-paper/70">
+            <span>{xpLabel}</span>
+            <span>Progresso: {Math.round(progressPercent)}%</span>
+          </div>
+          {hasLevelUp && (
+            <div className="mt-2">
+              <Button
+                type="button"
+                size="sm"
+                className="h-8 bg-emerald-600 text-xs text-barber-dark hover:bg-emerald-500"
+                disabled={isLeveling}
+                onClick={() =>
+                  startTransition(async () => {
+                    const result = await levelUpCharacter(character.id);
+                    if (result.success) {
+                      toast.success("Level up confermato.");
+                      router.refresh();
+                    } else {
+                      toast.error(result.error);
+                    }
+                  })
+                }
+              >
+                {isLeveling ? "Aggiornamento..." : "Conferma passaggio di livello"}
+              </Button>
+            </div>
+          )}
         </div>
       </CardContent>
       <EditCharacterDialog

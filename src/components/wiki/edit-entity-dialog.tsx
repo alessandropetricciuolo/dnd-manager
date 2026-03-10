@@ -390,6 +390,17 @@ export function EditEntityDialog({
                     disabled={isLoading}
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label>Punti Esperienza (PE)</Label>
+                  <Input
+                    name="xp_value"
+                    type="number"
+                    min={0}
+                    defaultValue={entity.xp_value ?? 0}
+                    className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
+                    disabled={isLoading}
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>Attacchi / Azioni speciali</Label>
