@@ -30,7 +30,7 @@ function getDownloadFilename(filePath: string): string {
 }
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   context: { params: Promise<{ file_id: string }> }
 ) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -45,6 +45,11 @@ export async function GET(
   if (!file_id) {
     return NextResponse.json({ error: "file_id mancante" }, { status: 400 });
   }
+
+  const nameParam = request.nextUrl.searchParams.get("name");
+  const downloadFilename = nameParam
+    ? nameParam.replace(/[^\w\s.-]/gi, "_").slice(0, 200) || undefined
+    : undefined;
 
   try {
     const getFileRes = await fetch(
@@ -76,7 +81,7 @@ export async function GET(
 
     const contentType =
       fileRes.headers.get("content-type") ?? getContentType(filePath);
-    const filename = getDownloadFilename(filePath);
+    const filename = downloadFilename ?? getDownloadFilename(filePath);
 
     return new NextResponse(fileRes.body, {
       status: 200,

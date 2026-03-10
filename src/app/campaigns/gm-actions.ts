@@ -1,10 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { randomUUID } from "crypto";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { uploadToTelegram } from "@/lib/telegram-storage";
 
 const GM_FILES_BUCKET = "gm_files";
+const GM_FILES_TELEGRAM_PREFIX = "tg:";
 const SIGNED_URL_EXPIRY_SEC = 3600;
 
 type GmResult<T = void> =
@@ -275,21 +276,24 @@ export async function listGmAttachments(campaignId: string): Promise<GmResult<Gm
   const withUrls: GmAttachmentRow[] = [];
 
   for (const row of list) {
-    const isExternalUrl = row.file_path.startsWith("http");
-    const signed_url = isExternalUrl
-      ? row.file_path
-      : (await supabase.storage.from(GM_FILES_BUCKET).createSignedUrl(row.file_path, SIGNED_URL_EXPIRY_SEC)).data
-          ?.signedUrl ?? undefined;
+    let signed_url: string | undefined;
+    if (row.file_path.startsWith("http")) {
+      signed_url = row.file_path;
+    } else if (row.file_path.startsWith(GM_FILES_TELEGRAM_PREFIX)) {
+      const fileId = encodeURIComponent(row.file_path.slice(GM_FILES_TELEGRAM_PREFIX.length));
+      const name = encodeURIComponent(row.file_name || "file");
+      signed_url = `/api/tg-file/${fileId}?name=${name}`;
+    } else {
+      signed_url = (await supabase.storage.from(GM_FILES_BUCKET).createSignedUrl(row.file_path, SIGNED_URL_EXPIRY_SEC)).data
+        ?.signedUrl ?? undefined;
+    }
     withUrls.push({ ...row, signed_url });
   }
 
   return { success: true, data: withUrls };
 }
 
-const ALLOWED_MIME = new RegExp(
-  "^(image/|application/pdf$|application/msword$|application/vnd\\.openxmlformats-officedocument\\.)"
-);
-
+/** File GM: archivio su Telegram (qualsiasi tipo di file). file_path = "tg:" + telegram file_id. */
 export async function uploadGmFile(campaignId: string, formData: FormData): Promise<GmResult<GmAttachmentRow>> {
   const check = await ensureGmOrAdmin();
   if (!check.success) return check;
@@ -297,49 +301,42 @@ export async function uploadGmFile(campaignId: string, formData: FormData): Prom
 
   const file = formData.get("file") as File | null;
   if (!file || !(file instanceof File) || file.size === 0) {
-    return { success: false, error: "Seleziona un file (PDF, immagine o documento)." };
+    return { success: false, error: "Seleziona un file da caricare." };
   }
-  if (!ALLOWED_MIME.test(file.type)) {
+
+  let telegramFileId: string;
+  try {
+    telegramFileId = await uploadToTelegram(file, undefined, "document");
+  } catch (err) {
+    console.error("[uploadGmFile] Telegram", err);
     return {
       success: false,
-      error: "Tipo file non consentito. Usa PDF, immagini o documenti (DOC/DOCX).",
+      error: err instanceof Error ? err.message : "Errore nel caricamento su Telegram.",
     };
   }
 
-  const ext = file.name.split(".").pop()?.replace(/[^a-z0-9]/gi, "") || "bin";
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80);
-  const path = `${campaignId}/${randomUUID()}-${safeName}`;
-
-  const { error: uploadError } = await supabase.storage.from(GM_FILES_BUCKET).upload(path, file, {
-    contentType: file.type,
-    upsert: false,
-  });
-
-  if (uploadError) {
-    console.error("[uploadGmFile]", uploadError);
-    return { success: false, error: uploadError.message ?? "Errore nel caricamento del file." };
-  }
+  const file_path = GM_FILES_TELEGRAM_PREFIX + telegramFileId;
 
   const { data: row, error: insertError } = await supabase
     .from("gm_attachments")
     .insert({
       campaign_id: campaignId,
-      file_path: path,
+      file_path,
       file_name: file.name,
-      mime_type: file.type,
+      mime_type: file.type || null,
       file_size: file.size,
     })
     .select("id, campaign_id, file_path, file_name, mime_type, file_size, created_at")
     .single();
 
   if (insertError) {
-    await supabase.storage.from(GM_FILES_BUCKET).remove([path]);
     console.error("[uploadGmFile] insert", insertError);
     return { success: false, error: insertError.message ?? "Errore nel salvataggio del file." };
   }
 
+  const signed_url = `/api/tg-file/${encodeURIComponent(telegramFileId)}?name=${encodeURIComponent(file.name)}`;
   revalidatePath(`/campaigns/${campaignId}`);
-  return { success: true, data: row as GmAttachmentRow };
+  return { success: true, data: { ...row, signed_url } as GmAttachmentRow };
 }
 
 export async function deleteGmAttachment(attachmentId: string): Promise<GmResult<{ campaignId: string }>> {
@@ -357,7 +354,7 @@ export async function deleteGmAttachment(attachmentId: string): Promise<GmResult
     return { success: false, error: "Allegato non trovato." };
   }
 
-  if (!att.file_path.startsWith("http")) {
+  if (!att.file_path.startsWith("http") && !att.file_path.startsWith(GM_FILES_TELEGRAM_PREFIX)) {
     await supabase.storage.from(GM_FILES_BUCKET).remove([att.file_path]);
   }
   const { error: deleteError } = await supabase.from("gm_attachments").delete().eq("id", attachmentId);

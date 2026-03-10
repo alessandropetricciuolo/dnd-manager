@@ -45,7 +45,7 @@ export function GmFiles({ campaignId }: GmFilesProps) {
     const fileInput = form.querySelector('input[type="file"]') as HTMLInputElement;
     const file = fileInput?.files?.[0];
     if (!file?.size) {
-      toast.error("Seleziona un file (PDF, immagine o documento).");
+      toast.error("Seleziona un file da caricare.");
       return;
     }
     const formData = new FormData();
@@ -76,14 +76,13 @@ export function GmFiles({ campaignId }: GmFilesProps) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h3 className="text-base font-semibold text-slate-200">File GM</h3>
+        <h3 className="text-base font-semibold text-slate-200">Archivio GM</h3>
         <form onSubmit={handleUpload} className="flex flex-wrap items-center gap-2">
           <input
             ref={fileInputRef}
             type="file"
             name="file"
-            accept=".pdf,image/*,.doc,.docx,.xls,.xlsx"
-            className="max-w-[200px] text-sm text-slate-300 file:mr-2 file:rounded file:border-0 file:bg-violet-600 file:px-3 file:py-1.5 file:text-sm file:text-white file:hover:bg-violet-700"
+            className="max-w-[220px] text-sm text-slate-300 file:mr-2 file:rounded file:border-0 file:bg-violet-600 file:px-3 file:py-1.5 file:text-sm file:text-white file:hover:bg-violet-700"
           />
           <Button
             type="submit"
@@ -104,7 +103,7 @@ export function GmFiles({ campaignId }: GmFilesProps) {
         </div>
       ) : files.length === 0 ? (
         <p className="rounded-lg border border-violet-800/40 bg-slate-900/60 px-4 py-6 text-center text-sm text-slate-400">
-          Nessun file. Carica PDF, immagini o documenti.
+          Nessun file. Carica qualsiasi tipo di file (PDF, immagini, documenti, zip, ecc.) nell&apos;archivio.
         </p>
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2">
