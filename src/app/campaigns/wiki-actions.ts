@@ -566,3 +566,56 @@ export async function getMonstersForInitiative(
     return { success: false, error: "Errore imprevisto." };
   }
 }
+
+/** Restituisce PE (xp_value) per una lista di mostri (wiki_entities) dato l'elenco di id. Solo GM/Admin. */
+export async function getMonstersXpForIds(
+  campaignId: string,
+  entityIds: string[]
+): Promise<
+  | { success: true; data: { id: string; xp_value: number }[] }
+  | { success: false; error: string }
+> {
+  if (!entityIds.length) {
+    return { success: true, data: [] };
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) return { success: false, error: "Non autenticato." };
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
+    if (!isGmOrAdmin) return { success: false, error: "Solo il Master può usare questa funzione." };
+
+    const { data: rows, error } = await supabase
+      .from("wiki_entities")
+      .select("id, xp_value")
+      .eq("campaign_id", campaignId)
+      .eq("type", "monster")
+      .in("id", entityIds);
+
+    if (error) {
+      console.error("[getMonstersXpForIds]", error);
+      return { success: false, error: error.message ?? "Errore nel caricamento." };
+    }
+
+    const list =
+      (rows ?? []).map((r: { id: string; xp_value?: number | null }) => ({
+        id: r.id,
+        xp_value: typeof r.xp_value === "number" && Number.isFinite(r.xp_value) ? Math.max(0, Math.floor(r.xp_value)) : 0,
+      })) ?? [];
+
+    return { success: true, data: list };
+  } catch (err) {
+    console.error("[getMonstersXpForIds]", err);
+    return { success: false, error: "Errore imprevisto." };
+  }
+}

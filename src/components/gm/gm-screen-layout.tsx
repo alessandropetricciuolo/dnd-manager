@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { InitiativeTracker } from "./initiative-tracker";
 import { GmNotesGrid } from "./gm-notes-grid";
+import { PlayerSessionTracker } from "./player-session-tracker";
 import { Button } from "@/components/ui/button";
 import { ListOrdered, Calendar, Flag } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -85,8 +86,11 @@ export function GmScreenLayout({ campaignId, campaignType }: GmScreenLayoutProps
         )}
       >
         {sidebarOpen && (
-          <div className="h-full min-w-0 flex-1">
-            <InitiativeTracker campaignId={campaignId} campaignType={campaignType} />
+          <div className="flex h-full min-w-0 flex-1 flex-col gap-3 p-3">
+            <div className="min-h-[40%] flex-1">
+              <InitiativeTracker campaignId={campaignId} campaignType={campaignType} />
+            </div>
+            <PlayerSessionTracker campaignId={campaignId} />
           </div>
         )}
       </aside>

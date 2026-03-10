@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, type FormEvent } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "nextjs-toploader/app";
 import { toast } from "sonner";
 import { FileIcon, Upload, Trash2, Loader2, Download } from "lucide-react";
@@ -9,10 +9,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   listGmAttachments,
-  uploadGmFile,
+  registerGmFileAfterUpload,
   deleteGmAttachment,
   type GmAttachmentRow,
 } from "@/app/campaigns/gm-actions";
+import { createSupabaseBrowserClient } from "@/utils/supabase/client";
+
+const GM_FILES_BUCKET = "gm_files";
+
+function sanitizeFileName(name: string): string {
+  const base = name.replace(/^.*[/\\]/, "").trim() || "file";
+  return base.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 200);
+}
 
 type GmFilesProps = {
   campaignId: string;
@@ -38,27 +46,51 @@ export function GmFiles({ campaignId }: GmFilesProps) {
     loadFiles();
   }, [loadFiles]);
 
-  async function handleUpload(event: FormEvent<HTMLFormElement>) {
+  async function handleUpload(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (uploading) return;
-    const form = event.currentTarget;
-    const fileInput = form.querySelector('input[type="file"]') as HTMLInputElement;
-    const file = fileInput?.files?.[0];
+    const input = fileInputRef.current;
+    const file = input?.files?.[0];
     if (!file?.size) {
       toast.error("Seleziona un file da caricare.");
       return;
     }
-    const formData = new FormData();
-    formData.set("file", file);
+
     setUploading(true);
-    const result = await uploadGmFile(campaignId, formData);
+    const safeName = sanitizeFileName(file.name);
+    const path = `${campaignId}/${crypto.randomUUID()}-${safeName}`;
+    const supabase = createSupabaseBrowserClient();
+
+    const { error: uploadError } = await supabase.storage
+      .from(GM_FILES_BUCKET)
+      .upload(path, file, {
+        contentType: file.type || "application/octet-stream",
+        upsert: false,
+      });
+
+    if (uploadError) {
+      setUploading(false);
+      toast.error(uploadError.message ?? "Errore nel caricamento su Storage.");
+      return;
+    }
+
+    const result = await registerGmFileAfterUpload(
+      campaignId,
+      path,
+      file.name,
+      file.type || null,
+      file.size
+    );
     setUploading(false);
+
     if (result.success) {
       toast.success("File caricato.");
-      fileInput.value = "";
+      if (input) input.value = "";
       loadFiles();
       router.refresh();
-    } else toast.error(result.error);
+    } else {
+      toast.error(result.error ?? "Errore nel salvataggio.");
+    }
   }
 
   async function handleDelete(att: GmAttachmentRow) {
@@ -91,11 +123,18 @@ export function GmFiles({ campaignId }: GmFilesProps) {
             size="sm"
             className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
           >
-            {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+            {uploading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="mr-2 h-4 w-4" />
+            )}
             Carica
           </Button>
         </form>
       </div>
+      <p className="text-xs text-slate-500">
+        I file vengono caricati direttamente su Supabase Storage (nessun limite da 4 MB).
+      </p>
 
       {loading ? (
         <div className="flex items-center justify-center py-8">

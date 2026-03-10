@@ -339,6 +339,72 @@ export async function uploadGmFile(campaignId: string, formData: FormData): Prom
   return { success: true, data: { ...row, signed_url } as GmAttachmentRow };
 }
 
+/**
+ * Server Action da usare come form action (action={uploadGmFileForm}).
+ * Legge campaignId dal FormData e carica il file su Telegram + gm_attachments.
+ * Così il file arriva correttamente al server (submit nativo multipart).
+ */
+export async function uploadGmFileForm(formData: FormData): Promise<GmResult<GmAttachmentRow>> {
+  const campaignId = (formData.get("campaignId") ?? formData.get("campaign_id")) as string | null;
+  if (!campaignId?.trim()) {
+    return { success: false, error: "Campagna non valida." };
+  }
+  return uploadGmFile(campaignId.trim(), formData);
+}
+
+/** Per useActionState: (prevState, formData) => result. */
+export async function uploadGmFileFormAction(
+  _prev: GmResult<GmAttachmentRow> | null,
+  formData: FormData
+): Promise<GmResult<GmAttachmentRow>> {
+  return uploadGmFileForm(formData);
+}
+
+/**
+ * Registra in gm_attachments un file già caricato su Supabase Storage (bucket gm_files).
+ * Usare dopo upload diretto dal client per supportare file > 4MB.
+ */
+export async function registerGmFileAfterUpload(
+  campaignId: string,
+  filePath: string,
+  fileName: string,
+  mimeType: string | null,
+  fileSize: number | null
+): Promise<GmResult<GmAttachmentRow>> {
+  const check = await ensureGmOrAdmin();
+  if (!check.success) return check;
+  const supabase = check.data!;
+
+  const normalized = filePath.replace(/\\/g, "/").trim();
+  const prefix = `${campaignId}/`;
+  if (!normalized.startsWith(prefix)) {
+    return { success: false, error: "Percorso file non valido per questa campagna." };
+  }
+
+  const { data: row, error: insertError } = await supabase
+    .from("gm_attachments")
+    .insert({
+      campaign_id: campaignId,
+      file_path: normalized,
+      file_name: fileName,
+      mime_type: mimeType || null,
+      file_size: fileSize != null && Number.isFinite(fileSize) ? Math.max(0, Math.floor(fileSize)) : null,
+    })
+    .select("id, campaign_id, file_path, file_name, mime_type, file_size, created_at")
+    .single();
+
+  if (insertError) {
+    console.error("[registerGmFileAfterUpload]", insertError);
+    return { success: false, error: insertError.message ?? "Errore nel salvataggio del file." };
+  }
+
+  const signed_url = (
+    await supabase.storage.from(GM_FILES_BUCKET).createSignedUrl(normalized, SIGNED_URL_EXPIRY_SEC)
+  ).data?.signedUrl ?? undefined;
+  revalidatePath(`/campaigns/${campaignId}`);
+  return { success: true, data: { ...row, signed_url } as GmAttachmentRow };
+}
+
 export async function deleteGmAttachment(attachmentId: string): Promise<GmResult<{ campaignId: string }>> {
   const check = await ensureGmOrAdmin();
   if (!check.success) return check;
