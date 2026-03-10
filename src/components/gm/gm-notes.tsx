@@ -18,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ImageSourceField } from "@/components/ui/image-source-field";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   listGmNotes,
@@ -69,15 +70,18 @@ export function GmNotes({ campaignId }: GmNotesProps) {
     if (formLoading) return;
     const form = event.currentTarget;
     const title = (form.querySelector('[name="title"]') as HTMLInputElement)?.value?.trim() ?? "";
-    const content = (form.querySelector('[name="content"]') as HTMLTextAreaElement)?.value?.trim() ?? "";
     if (!title) {
       toast.error("Il titolo è obbligatorio.");
       return;
     }
+    const formData = new FormData(form);
+    formData.set("title", title);
+    formData.set("content", (form.querySelector('[name="content"]') as HTMLTextAreaElement)?.value?.trim() ?? "");
+    formData.set("session_id", "");
     setFormLoading(true);
     try {
       if (editingNote) {
-        const result = await updateGmNote(editingNote.id, { title, content });
+        const result = await updateGmNote(editingNote.id, formData);
         if (result.success) {
           toast.success("Nota aggiornata.");
           setDialogOpen(false);
@@ -85,7 +89,7 @@ export function GmNotes({ campaignId }: GmNotesProps) {
           router.refresh();
         } else toast.error(result.error);
       } else {
-        const result = await createGmNote(campaignId, { title, content });
+        const result = await createGmNote(campaignId, formData);
         if (result.success) {
           toast.success("Nota creata.");
           setDialogOpen(false);
@@ -160,6 +164,27 @@ export function GmNotes({ campaignId }: GmNotesProps) {
                   className="min-h-[200px] resize-y border-slate-600 bg-slate-800 text-slate-100"
                 />
               </div>
+              <ImageSourceField
+                fileInputName="image"
+                urlFieldName="image_url"
+                label="Immagine (opzionale)"
+                disabled={formLoading}
+                previewUrl={editingNote?.image_url ?? null}
+                hint="Carica o incolla URL; salvata su Telegram."
+              />
+              {editingNote?.image_url && (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="gm-note-remove-image"
+                    name="remove_image"
+                    className="h-4 w-4 rounded border-slate-500 bg-slate-800 text-violet-500"
+                  />
+                  <Label htmlFor="gm-note-remove-image" className="cursor-pointer text-sm text-slate-400">
+                    Rimuovi immagine
+                  </Label>
+                </div>
+              )}
               <DialogFooter>
                 <Button
                   type="button"
@@ -232,6 +257,16 @@ export function GmNotes({ campaignId }: GmNotesProps) {
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
+                {note.image_url && (
+                  <div className="relative mb-2 aspect-video w-full overflow-hidden rounded-md border border-violet-800/40 bg-slate-800">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={note.image_url}
+                      alt=""
+                      className="h-full w-full object-cover object-center"
+                    />
+                  </div>
+                )}
                 <p className="line-clamp-2 text-sm text-slate-400">
                   {note.content
                     ? note.content.length <= PREVIEW_LEN

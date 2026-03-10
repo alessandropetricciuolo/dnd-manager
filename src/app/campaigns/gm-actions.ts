@@ -41,6 +41,7 @@ export type GmNoteRow = {
   session_id: string | null;
   title: string;
   content: string;
+  image_url: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -59,7 +60,7 @@ export async function listGmNotes(
 
   let query = supabase
     .from("gm_notes")
-    .select("id, campaign_id, session_id, title, content, created_at, updated_at")
+    .select("id, campaign_id, session_id, title, content, image_url, created_at, updated_at")
     .eq("campaign_id", campaignId);
 
   if (sessionId != null && sessionId !== "") {
@@ -154,28 +155,54 @@ export async function getCompletedSessionsForCampaign(
   return { success: true, data: rows as CompletedSessionRow[] };
 }
 
+/**
+ * Crea una nota GM. Accetta FormData con: title, content, session_id (opzionale), image (file), image_url (URL).
+ * Se è presente un file in "image", viene caricato su Telegram e image_url viene impostato a /api/tg-image/{fileId}.
+ */
 export async function createGmNote(
   campaignId: string,
-  payload: { title: string; content: string; session_id?: string | null }
+  formData: FormData
 ): Promise<GmResult<GmNoteRow>> {
   const check = await ensureGmOrAdmin();
   if (!check.success) return check;
   const supabase = check.data!;
 
-  const title = payload.title?.trim() ?? "";
+  const title = (formData.get("title") as string | null)?.trim() ?? "";
   if (!title) return { success: false, error: "Il titolo è obbligatorio." };
 
-  const session_id = payload.session_id === undefined || payload.session_id === "" ? null : payload.session_id;
+  const content = (formData.get("content") as string | null)?.trim() ?? "";
+  const sessionIdRaw = formData.get("session_id") as string | null;
+  const session_id = sessionIdRaw === undefined || sessionIdRaw === "" ? null : (sessionIdRaw?.trim() || null);
+
+  let image_url: string | null = (formData.get("image_url") as string | null)?.trim() || null;
+  const imageFile = formData.get("image") as File | null;
+  if (imageFile && imageFile instanceof File && imageFile.size > 0) {
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowed.includes(imageFile.type)) {
+      return { success: false, error: "Formato immagine non supportato. Usa JPG, PNG, WebP o GIF." };
+    }
+    try {
+      const fileId = await uploadToTelegram(imageFile);
+      image_url = `/api/tg-image/${fileId}`;
+    } catch (err) {
+      console.error("[createGmNote] Telegram upload", err);
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : "Errore nel caricamento dell'immagine su Telegram.",
+      };
+    }
+  }
 
   const { data, error } = await supabase
     .from("gm_notes")
     .insert({
       campaign_id: campaignId,
       title,
-      content: payload.content?.trim() ?? "",
+      content,
       session_id,
+      image_url,
     })
-    .select("id, campaign_id, session_id, title, content, created_at, updated_at")
+    .select("id, campaign_id, session_id, title, content, image_url, created_at, updated_at")
     .single();
 
   if (error) {
@@ -186,28 +213,68 @@ export async function createGmNote(
   return { success: true, data: data as GmNoteRow };
 }
 
-export async function updateGmNote(
-  noteId: string,
-  payload: { title: string; content: string; session_id?: string | null }
-): Promise<GmResult<GmNoteRow>> {
+/**
+ * Aggiorna una nota GM. Accetta FormData con: title, content, session_id, image (file), image_url, remove_image (on per rimuovere).
+ */
+export async function updateGmNote(noteId: string, formData: FormData): Promise<GmResult<GmNoteRow>> {
   const check = await ensureGmOrAdmin();
   if (!check.success) return check;
   const supabase = check.data!;
 
-  const title = payload.title?.trim() ?? "";
+  const title = (formData.get("title") as string | null)?.trim() ?? "";
   if (!title) return { success: false, error: "Il titolo è obbligatorio." };
 
-  const updatePayload: { title: string; content: string; session_id: string | null } = {
+  const content = (formData.get("content") as string | null)?.trim() ?? "";
+  const sessionIdRaw = formData.get("session_id") as string | null;
+  const session_id = sessionIdRaw === undefined || sessionIdRaw === "" ? null : (sessionIdRaw?.trim() || null);
+  const removeImage = formData.get("remove_image") === "on" || formData.get("remove_image") === "true";
+
+  const { data: existing } = await supabase
+    .from("gm_notes")
+    .select("campaign_id, image_url")
+    .eq("id", noteId)
+    .single();
+
+  if (!existing) return { success: false, error: "Nota non trovata." };
+
+  let image_url: string | null = (existing as { image_url?: string | null }).image_url ?? null;
+  if (removeImage) {
+    image_url = null;
+  } else {
+    const imageFile = formData.get("image") as File | null;
+    const urlFromForm = (formData.get("image_url") as string | null)?.trim() || null;
+    if (imageFile && imageFile instanceof File && imageFile.size > 0) {
+      const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+      if (!allowed.includes(imageFile.type)) {
+        return { success: false, error: "Formato immagine non supportato. Usa JPG, PNG, WebP o GIF." };
+      }
+      try {
+        const fileId = await uploadToTelegram(imageFile);
+        image_url = `/api/tg-image/${fileId}`;
+      } catch (err) {
+        console.error("[updateGmNote] Telegram upload", err);
+        return {
+          success: false,
+          error: err instanceof Error ? err.message : "Errore nel caricamento dell'immagine su Telegram.",
+        };
+      }
+    } else if (urlFromForm) {
+      image_url = urlFromForm;
+    }
+  }
+
+  const updatePayload: { title: string; content: string; session_id: string | null; image_url: string | null } = {
     title,
-    content: payload.content?.trim() ?? "",
-    session_id: payload.session_id === undefined || payload.session_id === "" ? null : payload.session_id,
+    content,
+    session_id,
+    image_url,
   };
 
   const { data, error } = await supabase
     .from("gm_notes")
     .update(updatePayload)
     .eq("id", noteId)
-    .select("id, campaign_id, session_id, title, content, created_at, updated_at")
+    .select("id, campaign_id, session_id, title, content, image_url, created_at, updated_at")
     .single();
 
   if (error) {

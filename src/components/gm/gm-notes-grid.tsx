@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, type FormEvent } from "react";
+import { useState, useEffect, useCallback, useRef, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Loader2, FileText, Pin, Calendar } from "lucide-react";
 import {
@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ImageSourceField } from "@/components/ui/image-source-field";
 import {
   listGmNotes,
   createGmNote,
@@ -66,10 +67,17 @@ export function GmNotesGrid({ campaignId, sessionId, sessionLabel }: GmNotesGrid
       toast.error("Il titolo è obbligatorio.");
       return;
     }
+    const formData = new FormData();
+    formData.set("title", title);
+    formData.set("content", content);
+    formData.set("session_id", quickAddIsGlobal ? "" : sessionId ?? "");
+    const fileInput = form.querySelector('input[name="image"]') as HTMLInputElement;
+    if (fileInput?.files?.[0]) formData.set("image", fileInput.files[0]);
+    const urlInput = form.querySelector('input[name="image_url"]') as HTMLInputElement;
+    if (urlInput?.value?.trim()) formData.set("image_url", urlInput.value.trim());
     setQuickAddLoading(true);
     try {
-      const session_id = quickAddIsGlobal ? null : sessionId ?? null;
-      const result = await createGmNote(campaignId, { title, content, session_id });
+      const result = await createGmNote(campaignId, formData);
       if (result.success) {
         toast.success("Nota creata.");
         setQuickAddOpen(false);
@@ -82,13 +90,8 @@ export function GmNotesGrid({ campaignId, sessionId, sessionLabel }: GmNotesGrid
     }
   }
 
-  async function handleEditInDialog(
-    noteId: string,
-    title: string,
-    content: string,
-    session_id: string | null
-  ) {
-    const result = await updateGmNote(noteId, { title, content, session_id });
+  async function handleEditInDialog(noteId: string, formData: FormData) {
+    const result = await updateGmNote(noteId, formData);
     if (result.success) {
       toast.success("Nota aggiornata.");
       loadNotes();
@@ -194,6 +197,13 @@ export function GmNotesGrid({ campaignId, sessionId, sessionLabel }: GmNotesGrid
                       className="min-h-[160px] resize-y bg-zinc-800 border-amber-600/30 text-zinc-100"
                     />
                   </div>
+                  <ImageSourceField
+                    fileInputName="image"
+                    urlFieldName="image_url"
+                    label="Immagine (opzionale)"
+                    disabled={quickAddLoading}
+                    hint="Carica o incolla URL; salvata su Telegram."
+                  />
                   <div className="flex items-center gap-2">
                     <input
                       type="checkbox"
@@ -289,6 +299,13 @@ export function GmNotesGrid({ campaignId, sessionId, sessionLabel }: GmNotesGrid
                       className="min-h-[160px] resize-y bg-zinc-800 border-amber-600/30 text-zinc-100"
                     />
                   </div>
+                  <ImageSourceField
+                    fileInputName="image"
+                    urlFieldName="image_url"
+                    label="Immagine (opzionale)"
+                    disabled={quickAddLoading}
+                    hint="Carica o incolla URL; salvata su Telegram."
+                  />
                   <p className="text-xs text-zinc-500">
                     Senza sessione selezionata le nuove note sono sempre globali.
                   </p>
@@ -324,7 +341,7 @@ type NoteCardProps = {
   note: GmNoteRow;
   isGlobal: boolean;
   currentSessionId: string | null;
-  onSaveEdit: (noteId: string, title: string, content: string, session_id: string | null) => Promise<void>;
+  onSaveEdit: (noteId: string, formData: FormData) => Promise<void>;
   onDelete: (note: GmNoteRow) => void;
   deleteLoadingId: string | null;
 };
@@ -343,6 +360,7 @@ function NoteCard({
   const [editContent, setEditContent] = useState(note.content);
   const [editIsGlobal, setEditIsGlobal] = useState(note.session_id == null);
   const [saving, setSaving] = useState(false);
+  const editFormRef = useRef<HTMLFormElement>(null);
 
   function handleOpenChange(o: boolean) {
     if (o) {
@@ -355,9 +373,13 @@ function NoteCard({
   }
 
   async function handleSaveEdit() {
+    if (!editFormRef.current) return;
+    const formData = new FormData(editFormRef.current);
+    formData.set("title", editTitle);
+    formData.set("content", editContent);
+    formData.set("session_id", editIsGlobal ? "" : currentSessionId ?? "");
     setSaving(true);
-    const session_id = editIsGlobal ? null : currentSessionId;
-    await onSaveEdit(note.id, editTitle, editContent, session_id ?? null);
+    await onSaveEdit(note.id, formData);
     setSaving(false);
     setEditMode(false);
   }
@@ -385,6 +407,16 @@ function NoteCard({
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
+            {note.image_url && (
+              <div className="relative mb-2 aspect-video w-full overflow-hidden rounded-md border border-amber-600/20 bg-zinc-800">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={note.image_url}
+                  alt=""
+                  className="h-full w-full object-cover object-center"
+                />
+              </div>
+            )}
             <p className="line-clamp-4 text-sm text-zinc-400 leading-relaxed">
               {note.content || "—"}
             </p>
@@ -410,13 +442,36 @@ function NoteCard({
         </DialogHeader>
         <div className="max-h-[55vh] min-h-0 overflow-y-auto overflow-x-hidden px-1">
           {editMode ? (
-            <div className="space-y-3 py-2">
+            <form ref={editFormRef} id={`edit-note-form-${note.id}`} className="space-y-3 py-2">
+              <input type="hidden" name="session_id" value={editIsGlobal ? "" : currentSessionId ?? ""} />
               <Textarea
+                name="content"
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
                 rows={16}
                 className="min-h-[300px] resize-y bg-zinc-800 border-amber-600/30 text-zinc-100 text-lg leading-relaxed"
               />
+              <ImageSourceField
+                fileInputName="image"
+                urlFieldName="image_url"
+                label="Immagine (opzionale)"
+                disabled={saving}
+                previewUrl={note.image_url}
+                hint="Carica o incolla URL; salvata su Telegram."
+              />
+              {note.image_url && (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id={`edit-remove-image-${note.id}`}
+                    name="remove_image"
+                    className="h-4 w-4 rounded border-amber-600/50 bg-zinc-800 text-amber-500 focus:ring-amber-500"
+                  />
+                  <Label htmlFor={`edit-remove-image-${note.id}`} className="cursor-pointer text-sm text-zinc-300">
+                    Rimuovi immagine
+                  </Label>
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -429,11 +484,23 @@ function NoteCard({
                   Nota Globale (Visibile ovunque)
                 </Label>
               </div>
-            </div>
+            </form>
           ) : (
-            <p className="py-4 text-lg leading-relaxed text-zinc-200 whitespace-pre-wrap">
-              {note.content || "—"}
-            </p>
+            <>
+              {note.image_url && (
+                <div className="relative my-2 aspect-video w-full overflow-hidden rounded-lg border border-amber-600/20 bg-zinc-800">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={note.image_url}
+                    alt=""
+                    className="h-full w-full object-contain object-center"
+                  />
+                </div>
+              )}
+              <p className="py-4 text-lg leading-relaxed text-zinc-200 whitespace-pre-wrap">
+                {note.content || "—"}
+              </p>
+            </>
           )}
         </div>
         <DialogFooter className="shrink-0 border-t border-amber-600/20 pt-4">
