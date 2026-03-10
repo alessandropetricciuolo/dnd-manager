@@ -24,6 +24,13 @@ export interface Database {
           last_name: string | null;
           date_of_birth: string | null;
           phone: string | null;
+          username: string | null;
+          bio: string | null;
+          portrait_url: string | null;
+          is_gm_public: boolean;
+          stat_combat: number;
+          stat_roleplay: number;
+          stat_lethality: string;
           created_at: string;
           updated_at: string;
         };
@@ -36,6 +43,13 @@ export interface Database {
           last_name?: string | null;
           date_of_birth?: string | null;
           phone?: string | null;
+          username?: string | null;
+          bio?: string | null;
+          portrait_url?: string | null;
+          is_gm_public?: boolean;
+          stat_combat?: number;
+          stat_roleplay?: number;
+          stat_lethality?: string;
         };
         Update: Partial<Database["public"]["Tables"]["profiles"]["Insert"]>;
       };

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, LayoutDashboard, User, Shield, LogOut } from "lucide-react";
+import { Menu, LayoutDashboard, User, UserCog, Shield, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { CreateCampaignDialog } from "@/components/create-campaign-dialog";
@@ -40,6 +40,12 @@ function NavLinks({
         <User className="h-5 w-5 shrink-0" />
         Profilo
       </Link>
+      {isGmOrAdmin && (
+        <Link href="/dashboard/settings/profile" onClick={onNavigate} className={linkClass("/dashboard/settings/profile")}>
+          <UserCog className="h-5 w-5 shrink-0" />
+          Profilo pubblico GM
+        </Link>
+      )}
       {isAdmin && (
         <Link href="/admin" onClick={onNavigate} className={linkClass("/admin")}>
           <Shield className="h-5 w-5 shrink-0" />

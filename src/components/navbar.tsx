@@ -32,6 +32,12 @@ export async function Navbar() {
           >
             Home
           </Link>
+          <Link
+            href="/masters"
+            className="text-sm font-medium text-barber-paper/90 transition-colors hover:text-barber-gold"
+          >
+            Albo Master
+          </Link>
           {user ? (
             <NavbarUserMenu user={user} />
           ) : (
