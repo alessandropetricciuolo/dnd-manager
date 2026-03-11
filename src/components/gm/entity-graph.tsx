@@ -35,6 +35,8 @@ import {
   X,
   GripVertical,
   Map,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,6 +51,8 @@ import {
 import {
   getEntityGraphData,
   createWikiRelationship,
+  deleteWikiRelationship,
+  updateWikiRelationship,
   type WikiEntityForGraph,
   type WikiRelationshipRow,
   type MapForGraph,
@@ -113,6 +117,7 @@ function LabeledEdge({
   sourcePosition,
   targetPosition,
   data,
+  selected,
 }: EdgeProps<Edge<{ label?: string }>>) {
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
@@ -125,7 +130,12 @@ function LabeledEdge({
   const label = data?.label ?? "";
   return (
     <>
-      <BaseEdge id={id} path={edgePath} className="stroke-amber-500/80" />
+      <BaseEdge
+        id={id}
+        path={edgePath}
+        className={cn("stroke-amber-500/80 hover:stroke-amber-400", selected && "stroke-amber-400 stroke-[3px]")}
+        style={{ strokeWidth: selected ? 3 : 2 }}
+      />
       <EdgeLabelRenderer>
         <div
           style={{
@@ -133,7 +143,7 @@ function LabeledEdge({
             transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
             pointerEvents: "all",
           }}
-          className="nodrag nopan rounded bg-zinc-800 px-2 py-0.5 text-xs text-amber-200 border border-amber-600/40"
+          className="nodrag nopan rounded bg-zinc-800 px-2 py-0.5 text-xs text-amber-200 border border-amber-600/40 cursor-pointer hover:bg-zinc-700"
         >
           {label}
         </div>
@@ -191,6 +201,15 @@ function EntityGraphInner({ campaignId }: EntityGraphProps) {
   } | null>(null);
   const [relationshipLabel, setRelationshipLabel] = useState("");
   const [savingRelation, setSavingRelation] = useState(false);
+  const [editModal, setEditModal] = useState<{
+    relationshipId: string;
+    label: string;
+    sourceName: string;
+    targetName: string;
+  } | null>(null);
+  const [editLabel, setEditLabel] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const { screenToFlowPosition } = useReactFlow();
 
   const loadData = useCallback(async () => {
@@ -310,6 +329,52 @@ function EntityGraphInner({ campaignId }: EntityGraphProps) {
     }
   }, [campaignId, connectModal, relationshipLabel, loadData]);
 
+  const onEdgeClick = useCallback(
+    (_event: React.MouseEvent, edge: Edge<{ label?: string }>) => {
+      const sourceNode = nodes.find((n) => n.id === edge.source);
+      const targetNode = nodes.find((n) => n.id === edge.target);
+      const sourceName = (sourceNode?.data as EntityNodeData)?.label ?? (sourceNode?.data as MapNodeData)?.label ?? "";
+      const targetName = (targetNode?.data as EntityNodeData)?.label ?? (targetNode?.data as MapNodeData)?.label ?? "";
+      setEditModal({
+        relationshipId: edge.id,
+        label: edge.data?.label ?? "",
+        sourceName,
+        targetName,
+      });
+      setEditLabel(edge.data?.label ?? "");
+    },
+    [nodes]
+  );
+
+  const handleSaveEdit = useCallback(async () => {
+    if (!editModal) return;
+    setSavingEdit(true);
+    const result = await updateWikiRelationship(editModal.relationshipId, campaignId, editLabel);
+    setSavingEdit(false);
+    if (result.success) {
+      setEditModal(null);
+      await loadData();
+      toast.success("Etichetta aggiornata.");
+    } else {
+      toast.error(result.error);
+    }
+  }, [campaignId, editModal, editLabel, loadData]);
+
+  const handleDeleteRelationship = useCallback(async () => {
+    if (!editModal) return;
+    if (!confirm("Eliminare questo collegamento?")) return;
+    setDeleting(true);
+    const result = await deleteWikiRelationship(editModal.relationshipId, campaignId);
+    setDeleting(false);
+    if (result.success) {
+      setEditModal(null);
+      await loadData();
+      toast.success("Collegamento eliminato.");
+    } else {
+      toast.error(result.error);
+    }
+  }, [campaignId, editModal, loadData]);
+
   const linkedWikiIds = new Set<string>();
   relationships.forEach((r) => {
     linkedWikiIds.add(r.source_id);
@@ -425,6 +490,7 @@ function EntityGraphInner({ campaignId }: EntityGraphProps) {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onEdgeClick={onEdgeClick}
           onDrop={onDrop}
           onDragOver={onDragOver}
           nodeTypes={nodeTypes}
@@ -476,6 +542,60 @@ function EntityGraphInner({ campaignId }: EntityGraphProps) {
               Salva
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editModal} onOpenChange={(o) => !o && setEditModal(null)}>
+        <DialogContent className="border-amber-600/30 bg-zinc-900 text-zinc-100">
+          <DialogHeader>
+            <DialogTitle className="text-amber-400 flex items-center gap-2">
+              <Pencil className="h-4 w-4" />
+              Modifica collegamento
+            </DialogTitle>
+          </DialogHeader>
+          {editModal && (
+            <>
+              <p className="text-sm text-zinc-300">
+                <strong>{editModal.sourceName}</strong> → <strong>{editModal.targetName}</strong>
+              </p>
+              <div className="space-y-2">
+                <Label htmlFor="edit-rel-label">Etichetta</Label>
+                <Input
+                  id="edit-rel-label"
+                  value={editLabel}
+                  onChange={(e) => setEditLabel(e.target.value)}
+                  placeholder="Es. Vive qui, Nascondiglio"
+                  className="bg-zinc-800 border-amber-600/30 text-zinc-100"
+                  onKeyDown={(e) => e.key === "Enter" && handleSaveEdit()}
+                />
+              </div>
+              <DialogFooter className="flex flex-col sm:flex-row gap-2">
+                <Button
+                  variant="outline"
+                  className="border-red-500/50 text-red-400 hover:bg-red-500/20 order-2 sm:order-1"
+                  onClick={handleDeleteRelationship}
+                  disabled={deleting || savingEdit}
+                >
+                  {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Elimina
+                </Button>
+                <div className="flex gap-2 order-1 sm:order-2">
+                  <Button variant="outline" onClick={() => setEditModal(null)} className="border-amber-600/40">
+                    Annulla
+                  </Button>
+                  <Button
+                    onClick={handleSaveEdit}
+                    disabled={savingEdit || deleting}
+                    className="bg-amber-600 text-zinc-950 hover:bg-amber-500"
+                  >
+                    {savingEdit && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Salva
+                  </Button>
+                </div>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>

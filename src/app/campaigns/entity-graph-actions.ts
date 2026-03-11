@@ -283,3 +283,42 @@ export async function deleteWikiRelationship(
     return { success: false, error: "Errore imprevisto." };
   }
 }
+
+export type UpdateRelationshipResult = { success: boolean; error?: string };
+
+/** Aggiorna solo l'etichetta di una relazione. */
+export async function updateWikiRelationship(
+  relationshipId: string,
+  campaignId: string,
+  label: string
+): Promise<UpdateRelationshipResult> {
+  if (!relationshipId || !campaignId) return { success: false, error: "Dati mancanti." };
+  const trimmedLabel = (label ?? "").trim();
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) return { success: false, error: "Non autenticato." };
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    if (profile?.role !== "gm" && profile?.role !== "admin") return { success: false, error: "Non autorizzato." };
+
+    const { error } = await supabase
+      .from("wiki_relationships")
+      .update({ label: trimmedLabel || "—" })
+      .eq("id", relationshipId)
+      .eq("campaign_id", campaignId);
+
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (err) {
+    console.error("[updateWikiRelationship]", err);
+    return { success: false, error: "Errore imprevisto." };
+  }
+}
