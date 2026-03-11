@@ -19,6 +19,9 @@ export interface Database {
           id: string;
           display_name: string | null;
           avatar_url: string | null;
+          nickname: string | null;
+          is_player_public: boolean;
+          fame_score: number;
           role: "player" | "gm" | "admin";
           first_name: string | null;
           last_name: string | null;
@@ -39,6 +42,9 @@ export interface Database {
           id: string;
           display_name?: string | null;
           avatar_url?: string | null;
+          nickname?: string | null;
+          is_player_public?: boolean;
+          fame_score?: number;
           role?: "player" | "gm" | "admin";
           first_name?: string | null;
           last_name?: string | null;
@@ -54,6 +60,40 @@ export interface Database {
           notifications_disabled?: boolean;
         };
         Update: Partial<Database["public"]["Tables"]["profiles"]["Insert"]>;
+      };
+      achievements: {
+        Row: {
+          id: string;
+          title: string;
+          description: string;
+          icon_name: string;
+          points: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          description?: string;
+          icon_name?: string;
+          points?: number;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["achievements"]["Insert"]>;
+      };
+      player_achievements: {
+        Row: {
+          id: string;
+          player_id: string;
+          achievement_id: string;
+          unlocked_at: string;
+        };
+        Insert: {
+          id?: string;
+          player_id: string;
+          achievement_id: string;
+          unlocked_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["player_achievements"]["Insert"]>;
       };
       campaigns: {
         Row: {

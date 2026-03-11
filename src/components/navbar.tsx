@@ -38,6 +38,12 @@ export async function Navbar() {
           >
             Albo Master
           </Link>
+          <Link
+            href="/hall-of-fame"
+            className="text-sm font-medium text-barber-paper/90 transition-colors hover:text-barber-gold"
+          >
+            Classifica Eroi
+          </Link>
           {user ? (
             <NavbarUserMenu user={user} />
           ) : (

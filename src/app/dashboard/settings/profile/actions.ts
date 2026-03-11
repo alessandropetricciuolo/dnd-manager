@@ -172,3 +172,132 @@ export async function updateGmPublicProfile(formData: FormData): Promise<UpdateG
     return { success: false, message: "Errore imprevisto. Riprova." };
   }
 }
+
+export type UpdatePlayerProfileResult = { success: boolean; message: string };
+
+export async function updatePlayerProfile(formData: FormData): Promise<UpdatePlayerProfileResult> {
+  const nicknameRaw = (formData.get("nickname") as string | null)?.trim() || null;
+  const nickname = nicknameRaw === "" ? null : nicknameRaw;
+  const isPlayerPublic = formData.get("is_player_public") === "on";
+  const notificationsDisabled = formData.get("notifications_disabled") === "on";
+  const avatarFile = formData.get("avatar") as File | null;
+  const removeAvatar = formData.get("remove_avatar") === "on";
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return { success: false, message: "Non autenticato." };
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (profile?.role !== "player" && profile?.role !== "admin") {
+      return { success: false, message: "Solo i giocatori possono modificare il profilo da questa pagina." };
+    }
+
+    if (nickname) {
+      const trimmed = nickname.trim();
+      if (trimmed.length < 2) {
+        return { success: false, message: "Il nickname deve avere almeno 2 caratteri." };
+      }
+    }
+
+    let avatarUrl: string | null = null;
+    const { data: currentProfile } = await supabase
+      .from("profiles")
+      .select("avatar_url")
+      .eq("id", user.id)
+      .single();
+    const currentAvatarUrl = (currentProfile?.avatar_url as string | null) ?? null;
+
+    if (removeAvatar) {
+      if (currentAvatarUrl) {
+        try {
+          const path = currentAvatarUrl.split("/").slice(-2).join("/");
+          if (path.startsWith(user.id)) {
+            await supabase.storage.from(PORTRAITS_BUCKET).remove([path]);
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+      avatarUrl = null;
+    } else if (avatarFile && avatarFile.size > 0) {
+      const ext = avatarFile.name.split(".").pop()?.toLowerCase() || "jpg";
+      const allowed = ["jpg", "jpeg", "png", "webp"];
+      if (!allowed.includes(ext)) {
+        return { success: false, message: "Formato immagine non supportato. Usa JPG, PNG o WebP." };
+      }
+      const path = `${user.id}/avatar.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from(PORTRAITS_BUCKET)
+        .upload(path, avatarFile, { contentType: avatarFile.type, upsert: true });
+
+      if (uploadError) {
+        console.error("[updatePlayerProfile] upload", uploadError);
+        return {
+          success: false,
+          message: uploadError.message ?? "Errore nel caricamento dell'avatar.",
+        };
+      }
+
+      const { data: urlData } = supabase.storage.from(PORTRAITS_BUCKET).getPublicUrl(path);
+      avatarUrl = urlData.publicUrl;
+
+      if (currentAvatarUrl && currentAvatarUrl !== avatarUrl) {
+        try {
+          const oldPath = currentAvatarUrl.split("/").slice(-2).join("/");
+          if (oldPath.startsWith(user.id)) {
+            await supabase.storage.from(PORTRAITS_BUCKET).remove([oldPath]);
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+    } else if (currentAvatarUrl) {
+      avatarUrl = currentAvatarUrl;
+    }
+
+    const updatePayload: Record<string, unknown> = {
+      nickname: nickname || null,
+      is_player_public: isPlayerPublic,
+      notifications_disabled: notificationsDisabled,
+    };
+    if (avatarUrl !== undefined) {
+      updatePayload.avatar_url = avatarUrl;
+    }
+
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update(updatePayload)
+      .eq("id", user.id);
+
+    if (updateError) {
+      if (updateError.code === "23505") {
+        return { success: false, message: "Questo nickname è già in uso." };
+      }
+      console.error("[updatePlayerProfile]", updateError);
+      return {
+        success: false,
+        message: updateError.message ?? "Errore durante il salvataggio.",
+      };
+    }
+
+    revalidatePath("/dashboard/settings/profile");
+    revalidatePath("/profile");
+    revalidatePath("/hall-of-fame");
+    return { success: true, message: "Profilo aggiornato." };
+  } catch (err) {
+    console.error("[updatePlayerProfile]", err);
+    return { success: false, message: "Errore imprevisto. Riprova." };
+  }
+}
