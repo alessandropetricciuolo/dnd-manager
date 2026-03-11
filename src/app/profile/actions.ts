@@ -55,3 +55,36 @@ export async function updateProfile(formData: FormData): Promise<UpdateProfileRe
     return { success: false, message: "Errore imprevisto. Riprova." };
   }
 }
+
+export type UpdateNotificationsResult = { success: boolean; message: string };
+
+/** Aggiorna la preferenza "blocca avvisi automatici" del profilo (solo utente corrente). */
+export async function updateNotificationsPreference(notificationsDisabled: boolean): Promise<UpdateNotificationsResult> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return { success: false, message: "Non autenticato." };
+    }
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ notifications_disabled: !!notificationsDisabled })
+      .eq("id", user.id);
+
+    if (error) {
+      console.error("[updateNotificationsPreference]", error);
+      return { success: false, message: error.message ?? "Errore durante il salvataggio." };
+    }
+
+    revalidatePath("/profile");
+    return { success: true, message: "Preferenza aggiornata." };
+  } catch (err) {
+    console.error("[updateNotificationsPreference]", err);
+    return { success: false, message: "Errore imprevisto. Riprova." };
+  }
+}

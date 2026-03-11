@@ -90,10 +90,17 @@ export async function createWikiRelationship(
   label: string
 ): Promise<CreateRelationshipResult> {
   if (!campaignId || !sourceId) return { success: false, error: "Dati mancanti." };
-  // Normalizza id: il client può inviare node id con prefisso wiki:/map:
-  const sourceUuid = (sourceId ?? "").replace(/^wiki:/, "").trim();
-  const targetWikiUuid = (targetId ?? "").replace(/^wiki:/, "").trim() || null;
-  const targetMapUuid = (targetMapId ?? "").replace(/^map:/, "").trim() || null;
+  // Estrai sempre UUID puri (il client può inviare node id con prefisso wiki:/map:)
+  const UUID_REGEX = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+  const toUuid = (s: string | null | undefined): string | null => {
+    if (s == null || typeof s !== "string") return null;
+    const m = s.trim().match(UUID_REGEX);
+    return m ? m[0] : null;
+  };
+  const sourceUuid = toUuid(sourceId) ?? "";
+  const targetWikiUuid = toUuid(targetId);
+  const targetMapUuid = toUuid(targetMapId);
+  if (!sourceUuid) return { success: false, error: "Dati mancanti." };
   const hasWiki = targetWikiUuid != null && targetWikiUuid !== "";
   const hasMap = targetMapUuid != null && targetMapUuid !== "";
   if (!hasWiki && !hasMap) return { success: false, error: "Seleziona un bersaglio (voce wiki o mappa)." };

@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { Button } from "@/components/ui/button";
 import { ProfileForm } from "@/components/profile/profile-form";
 import { ChangePasswordForm } from "@/components/profile/change-password-form";
+import { NotificationPreferenceForm } from "@/components/profile/notification-preference-form";
 import { ArrowLeft, User, UserCheck, UserX } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +21,7 @@ export default async function ProfilePage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("first_name, last_name, date_of_birth, phone")
+    .select("first_name, last_name, date_of_birth, phone, notifications_disabled")
     .eq("id", user.id)
     .single();
 
@@ -77,6 +78,13 @@ export default async function ProfilePage() {
               date_of_birth: profile?.date_of_birth ?? "",
               phone: profile?.phone ?? "",
             }}
+          />
+        </div>
+
+        <div className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 p-6">
+          <h2 className="text-sm font-medium text-barber-paper/70 mb-3">Preferenze</h2>
+          <NotificationPreferenceForm
+            notificationsDisabled={profile?.notifications_disabled ?? false}
           />
         </div>
 

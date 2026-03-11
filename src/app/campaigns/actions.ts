@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
-import { getPlayerEmails } from "@/lib/player-emails";
+import { getPlayerEmails, hasNotificationsDisabled } from "@/lib/player-emails";
 import { sendEmail, wrapInTemplate, escapeHtml } from "@/lib/email";
 import { uploadToTelegram } from "@/lib/telegram-storage";
 
@@ -325,28 +325,31 @@ export async function updateSignupStatus(
 
     if (newStatus === "approved") {
       try {
-        const admin = createSupabaseAdminClient();
-        const { data: sessionRow } = await admin
-          .from("sessions")
-          .select("title, scheduled_at")
-          .eq("id", signup.session_id)
-          .single();
-        type SessionRow = { title: string | null; scheduled_at: string };
-        const row = sessionRow as SessionRow | null;
-        const title = row?.title?.trim() || "Sessione";
-        const { data: authUser } = await admin.auth.admin.getUserById(signup.player_id);
-        const toEmail = authUser?.user?.email;
-        if (toEmail) {
-          const dateLabel = row?.scheduled_at
-            ? format(new Date(row.scheduled_at), "EEEE d MMMM yyyy, HH:mm", { locale: it })
-            : "";
-          void sendEmail({
-            to: toEmail,
-            subject: "Prenotazione Confermata!",
-            html: wrapInTemplate(
-              `<p>Il Master ti ha accettato per la sessione <strong>${escapeHtml(title)}</strong>${dateLabel ? ` del ${escapeHtml(dateLabel)}` : ""}.</p><p>Prepara i dadi!</p>`
-            ),
-          });
+        const optedOut = await hasNotificationsDisabled(signup.player_id);
+        if (!optedOut) {
+          const admin = createSupabaseAdminClient();
+          const { data: sessionRow } = await admin
+            .from("sessions")
+            .select("title, scheduled_at")
+            .eq("id", signup.session_id)
+            .single();
+          type SessionRow = { title: string | null; scheduled_at: string };
+          const row = sessionRow as SessionRow | null;
+          const title = row?.title?.trim() || "Sessione";
+          const { data: authUser } = await admin.auth.admin.getUserById(signup.player_id);
+          const toEmail = authUser?.user?.email;
+          if (toEmail) {
+            const dateLabel = row?.scheduled_at
+              ? format(new Date(row.scheduled_at), "EEEE d MMMM yyyy, HH:mm", { locale: it })
+              : "";
+            void sendEmail({
+              to: toEmail,
+              subject: "Prenotazione Confermata!",
+              html: wrapInTemplate(
+                `<p>Il Master ti ha accettato per la sessione <strong>${escapeHtml(title)}</strong>${dateLabel ? ` del ${escapeHtml(dateLabel)}` : ""}.</p><p>Prepara i dadi!</p>`
+              ),
+            });
+          }
         }
       } catch (mailErr) {
         console.error("[updateSignupStatus] invio email:", mailErr);

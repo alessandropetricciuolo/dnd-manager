@@ -5,6 +5,7 @@ import { randomUUID } from "crypto";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { sendEmail, wrapInTemplate, escapeHtml } from "@/lib/email";
+import { hasNotificationsDisabled } from "@/lib/player-emails";
 import { uploadToTelegram } from "@/lib/telegram-storage";
 
 const CHARACTER_SHEETS_BUCKET = "character_sheets";
@@ -330,17 +331,20 @@ export async function assignCharacter(
 
   if (playerId) {
     try {
-      const admin = createSupabaseAdminClient();
-      const { data: authUser } = await admin.auth.admin.getUserById(playerId);
-      const toEmail = authUser?.user?.email;
-      if (toEmail) {
-        void sendEmail({
-          to: toEmail,
-          subject: `Ti è stato assegnato un Personaggio: ${char.name}`,
-          html: wrapInTemplate(
-            `<p>Il Master ti ha assegnato il personaggio <strong>${escapeHtml(char.name)}</strong>.</p><p>Scopri il tuo background e la tua scheda sul sito.</p>`
-          ),
-        });
+      const optedOut = await hasNotificationsDisabled(playerId);
+      if (!optedOut) {
+        const admin = createSupabaseAdminClient();
+        const { data: authUser } = await admin.auth.admin.getUserById(playerId);
+        const toEmail = authUser?.user?.email;
+        if (toEmail) {
+          void sendEmail({
+            to: toEmail,
+            subject: `Ti è stato assegnato un Personaggio: ${char.name}`,
+            html: wrapInTemplate(
+              `<p>Il Master ti ha assegnato il personaggio <strong>${escapeHtml(char.name)}</strong>.</p><p>Scopri il tuo background e la tua scheda sul sito.</p>`
+            ),
+          });
+        }
       }
     } catch (mailErr) {
       console.error("[assignCharacter] invio email:", mailErr);
