@@ -40,17 +40,18 @@ export async function WikiList({ campaignId }: WikiListProps) {
 
   const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
 
-  let entities: { id: string; name: string; type: string; is_secret: boolean; visibility?: string; sort_order?: number | null }[] | null = null;
+  type EntityRow = { id: string; name: string; type: string; is_secret: boolean; visibility?: string; sort_order?: number | null; tags?: string[] | null; content?: { body?: string } | null };
+  let entities: EntityRow[] | null = null;
   let error: { message?: string } | null = null;
   const res = await supabase
     .from("wiki_entities")
-    .select("id, name, type, is_secret, visibility, sort_order")
+    .select("id, name, type, is_secret, visibility, sort_order, tags, content")
     .eq("campaign_id", campaignId)
     .order("name");
   if (res.error?.message?.includes("sort_order")) {
     const fallback = await supabase
       .from("wiki_entities")
-      .select("id, name, type, is_secret, visibility")
+      .select("id, name, type, is_secret, visibility, tags, content")
       .eq("campaign_id", campaignId)
       .order("name");
     entities = (fallback.data ?? []).map((e) => ({ ...e, sort_order: null }));
@@ -58,13 +59,21 @@ export async function WikiList({ campaignId }: WikiListProps) {
   } else if (res.error?.message?.includes("visibility")) {
     const fallback = await supabase
       .from("wiki_entities")
-      .select("id, name, type, is_secret, sort_order")
+      .select("id, name, type, is_secret, sort_order, tags, content")
       .eq("campaign_id", campaignId)
       .order("name");
     entities = (fallback.data ?? []).map((e) => ({ ...e, visibility: (e as { is_secret?: boolean }).is_secret ? "secret" : "public" }));
     error = fallback.error;
+  } else if (res.error?.message?.includes("tags")) {
+    const fallback = await supabase
+      .from("wiki_entities")
+      .select("id, name, type, is_secret, visibility, sort_order, content")
+      .eq("campaign_id", campaignId)
+      .order("name");
+    entities = (fallback.data ?? []).map((e) => ({ ...e, tags: [] }));
+    error = fallback.error;
   } else {
-    entities = res.data;
+    entities = res.data as EntityRow[] | null;
     error = res.error;
   }
 
@@ -111,6 +120,10 @@ export async function WikiList({ campaignId }: WikiListProps) {
     isSecret: !!e.is_secret,
     visibility: e.visibility ?? (e.is_secret ? "secret" : "public"),
     sortOrder: e.sort_order ?? null,
+    tags: e.tags ?? [],
+    description: (e.content && typeof e.content === "object" && "body" in e.content && typeof (e.content as { body?: string }).body === "string")
+      ? (e.content as { body: string }).body
+      : "",
   }));
 
   const emptyMessage = !isGmOrAdmin

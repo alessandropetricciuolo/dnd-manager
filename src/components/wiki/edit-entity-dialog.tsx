@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageSourceField } from "@/components/ui/image-source-field";
+import { TagsInput } from "@/components/wiki/tags-input";
 import { updateEntity, setWikiEntityGlobalStatus } from "@/app/campaigns/wiki-actions";
 import { getEmptyAttributes } from "@/types/wiki";
 import type { WikiEntity } from "@/app/campaigns/wiki-actions";
@@ -102,6 +103,7 @@ export function EditEntityDialog({
   );
   const [statusLoading, setStatusLoading] = useState(false);
   const [monsterXp, setMonsterXp] = useState<number>(entity.xp_value ?? 0);
+  const [tags, setTags] = useState<string[]>(Array.isArray(entity.tags) ? entity.tags : []);
   const isLongCampaign = campaignType === "long";
   const showCoreFields = isLongCampaign && (type === "npc" || type === "monster");
 
@@ -314,6 +316,8 @@ export function EditEntityDialog({
               </div>
             )}
           </div>
+
+          <TagsInput value={tags} onChange={setTags} disabled={isLoading} />
 
           <div className="space-y-2">
             <Label htmlFor="edit-entity-content">

@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useRouter } from "nextjs-toploader/app";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lock, BookOpen, ChevronDown, Pencil, Trash2 } from "lucide-react";
+import { Lock, BookOpen, ChevronDown, Pencil, Trash2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WikiEntityDeleteButton } from "./wiki-entity-delete-button";
 
@@ -20,6 +21,9 @@ export type WikiEntityListItem = {
   /** public | secret | selective - per mostrare il lucchetto (solo GM/Admin) */
   visibility?: string;
   sortOrder: number | null;
+  tags?: string[];
+  /** Breve testo per ricerca (body della voce) */
+  description?: string;
 };
 
 type WikiListClientProps = {
@@ -55,6 +59,7 @@ export function WikiListClient({
   const searchParams = useSearchParams();
 
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const wikiFilterParam = searchParams.get("wiki_filter");
   const typeFilter =
@@ -71,10 +76,21 @@ export function WikiListClient({
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
   }
 
-  const filtered =
+  const byType =
     typeFilter === ALL_TYPES
       ? entities
       : entities.filter((e) => e.type === typeFilter);
+
+  const filtered = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return byType;
+    return byType.filter((e) => {
+      if (e.name.toLowerCase().includes(q)) return true;
+      if (e.description && e.description.toLowerCase().includes(q)) return true;
+      if (e.tags?.some((t) => t.toLowerCase().includes(q))) return true;
+      return false;
+    });
+  }, [byType, searchQuery]);
 
   const sorted =
     typeFilter === "lore"
@@ -112,6 +128,16 @@ export function WikiListClient({
 
   return (
     <div className="min-w-0 max-w-full space-y-4">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-barber-paper/50" />
+        <Input
+          type="search"
+          placeholder="Cerca per nome, descrizione o tag..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-9 bg-barber-dark/80 border-barber-gold/30 text-barber-paper placeholder:text-barber-paper/50"
+        />
+      </div>
       <Tabs value={typeFilter} onValueChange={setWikiFilter}>
         {/* Mobile: menu a tendina per il filtro (evita overflow e voci sotto le altre) */}
         <div className="md:hidden w-full min-w-0">

@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ImageSourceField } from "@/components/ui/image-source-field";
 import { Textarea } from "@/components/ui/textarea";
+import { TagsInput } from "@/components/wiki/tags-input";
 import { createEntity } from "@/app/campaigns/wiki-actions";
 import { getEmptyAttributes } from "@/types/wiki";
 import { CHALLENGE_RATING_OPTIONS } from "@/lib/dnd-constants";
@@ -65,6 +66,7 @@ export function CreateEntityDialog({
   const [isCore, setIsCore] = useState(false);
   const showCoreCheckbox = campaignType === "long" && (type === "npc" || type === "monster");
   const [monsterXp, setMonsterXp] = useState<number>(0);
+  const [tags, setTags] = useState<string[]>([]);
 
   function onTypeChange(newType: string) {
     const t = newType as EntityType;
@@ -122,6 +124,7 @@ export function CreateEntityDialog({
         setType("npc");
         setAttributes(defaultAttributes("npc"));
         setSortOrder("");
+        setTags([]);
         router.refresh();
       } else {
         toast.error(result.message);
@@ -208,6 +211,8 @@ export function CreateEntityDialog({
             label="Immagine (opzionale)"
             disabled={isLoading}
           />
+
+          <TagsInput value={tags} onChange={setTags} disabled={isLoading} />
 
           {/* Contenuto principale (storia/descrizione) */}
           <div className="space-y-2">

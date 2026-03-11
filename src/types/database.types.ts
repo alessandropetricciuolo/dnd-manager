@@ -93,11 +93,24 @@ export interface Database {
           name: string;
           content: Json;
           image_url: string | null;
+          tags: string[];
           created_at: string;
           updated_at: string;
         };
         Insert: Omit<Database["public"]["Tables"]["wiki_entities"]["Row"], "created_at" | "updated_at">;
         Update: Partial<Database["public"]["Tables"]["wiki_entities"]["Insert"]>;
+      };
+      wiki_relationships: {
+        Row: {
+          id: string;
+          campaign_id: string;
+          source_id: string;
+          target_id: string;
+          label: string;
+          created_at: string;
+        };
+        Insert: Omit<Database["public"]["Tables"]["wiki_relationships"]["Row"], "created_at">;
+        Update: Partial<Database["public"]["Tables"]["wiki_relationships"]["Insert"]>;
       };
       maps: {
         Row: {

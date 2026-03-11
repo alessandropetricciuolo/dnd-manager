@@ -27,6 +27,20 @@ function parseAttributes(formData: FormData, type: string): Record<string, unkno
   return {};
 }
 
+function parseTags(formData: FormData): string[] {
+  const raw = formData.get("tags") as string | null;
+  if (!raw || typeof raw !== "string") return [];
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (Array.isArray(parsed)) {
+      return parsed.filter((t): t is string => typeof t === "string").map((t) => t.trim()).filter(Boolean);
+    }
+  } catch {
+    // ignore
+  }
+  return [];
+}
+
 export async function createEntity(
   campaignId: string,
   formData: FormData
@@ -46,6 +60,7 @@ export async function createEntity(
   const isCore = formData.get("is_core") === "on" || formData.get("is_core") === "true";
   const xpRaw = (formData.get("xp_value") as string | null)?.trim() ?? "";
   const xpValue = xpRaw ? Math.max(0, parseInt(xpRaw, 10) || 0) : 0;
+  const tags = parseTags(formData);
 
   if (!title) {
     return { success: false, message: "Il titolo è obbligatorio." };
@@ -106,6 +121,7 @@ export async function createEntity(
       visibility,
       image_url: imageUrl,
       attributes: Object.keys(attributes).length ? attributes : {},
+      tags: tags.length ? tags : [],
     };
     if (sortOrder != null && !Number.isNaN(sortOrder)) {
       insertPayload.sort_order = sortOrder;
@@ -178,6 +194,7 @@ export async function updateEntity(
   const isCore = formData.get("is_core") === "on" || formData.get("is_core") === "true";
   const xpRaw = (formData.get("xp_value") as string | null)?.trim() ?? "";
   const xpValue = xpRaw ? Math.max(0, parseInt(xpRaw, 10) || 0) : 0;
+  const tags = parseTags(formData);
 
   if (!title) {
     return { success: false, message: "Il titolo è obbligatorio." };
@@ -240,6 +257,7 @@ export async function updateEntity(
       content: { body: content },
       is_secret: isSecret,
       attributes: Object.keys(attributes).length ? attributes : {},
+      tags: tags,
     };
     if (visibility !== null) {
       updatePayload.visibility = visibility;
@@ -444,6 +462,7 @@ export type WikiEntity = {
   is_core?: boolean;
   global_status?: "alive" | "dead";
   xp_value?: number | null;
+  tags?: string[] | null;
   created_at: string;
   updated_at: string;
 };
@@ -488,7 +507,7 @@ export async function getEntity(
 
     const { data: entity, error } = await supabase
       .from("wiki_entities")
-    .select("id, campaign_id, name, type, content, image_url, is_secret, visibility, attributes, sort_order, is_core, global_status, xp_value, created_at, updated_at")
+    .select("id, campaign_id, name, type, content, image_url, is_secret, visibility, attributes, sort_order, is_core, global_status, xp_value, tags, created_at, updated_at")
       .eq("id", entityId)
       .eq("campaign_id", campaignId)
       .single();
