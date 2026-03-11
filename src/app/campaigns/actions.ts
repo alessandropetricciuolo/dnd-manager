@@ -1027,7 +1027,7 @@ export async function getUnlockableContent(
         .from("maps")
         .select("id, name")
         .eq("campaign_id", campaignId)
-        .eq("is_secret", true)
+        .eq("visibility", "secret")
         .order("name"),
     ]);
 

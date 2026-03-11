@@ -29,14 +29,14 @@ export async function MapGallery({ campaignId, eligiblePlayers = [] }: MapGaller
   let hasMapType = false;
   const resWithType = await supabase
     .from("maps")
-    .select("id, name, image_url, description, created_at, map_type, visibility, is_secret")
+    .select("id, name, image_url, description, created_at, map_type, visibility")
     .eq("campaign_id", campaignId)
     .order("created_at", { ascending: false });
   if (resWithType.error) {
     if (resWithType.error.message?.includes("map_type")) {
       const resFallback = await supabase
         .from("maps")
-        .select("id, name, image_url, description, created_at, visibility, is_secret")
+        .select("id, name, image_url, description, created_at, visibility")
         .eq("campaign_id", campaignId)
         .order("created_at", { ascending: false });
       if (resFallback.error) {
@@ -78,7 +78,7 @@ export async function MapGallery({ campaignId, eligiblePlayers = [] }: MapGaller
       maps.map((m) => [m.id, (m as { visibility?: string }).visibility ?? "public"])
     );
     const secretMapIds = new Set(
-      maps.filter((m) => (m as { is_secret?: boolean }).is_secret).map((m) => m.id)
+      maps.filter((m) => (m as { visibility?: string }).visibility === "secret").map((m) => m.id)
     );
     let permittedMapIds = new Set<string>();
     const { data: perms } = await supabase

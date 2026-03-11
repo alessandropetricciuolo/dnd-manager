@@ -34,7 +34,7 @@ export default async function MapViewPage({ params }: PageProps) {
 
   const { data: mapMeta } = await supabase
     .from("maps")
-    .select("is_secret, visibility")
+    .select("visibility")
     .eq("id", mapId)
     .single();
   const visibility = (mapMeta as { visibility?: string } | null)?.visibility ?? "public";

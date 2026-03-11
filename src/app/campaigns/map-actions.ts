@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { uploadToTelegram } from "@/lib/telegram-storage";
 import { syncEntityPermissions, parseAllowedUserIds } from "@/lib/entity-permissions";
 
 const VISIBILITY_VALUES = ["public", "secret", "selective"] as const;
@@ -23,7 +24,8 @@ export async function uploadMap(
   const mapType = allowedMapTypes.includes(mapTypeRaw as (typeof allowedMapTypes)[number])
     ? mapTypeRaw
     : "region";
-  const imageUrl = (formData.get("image_url") as string | null)?.trim() || null;
+  const imageFile = formData.get("image") as File | null;
+  let imageUrl = (formData.get("image_url") as string | null)?.trim() || null;
   const imageUrlOverride = (formData.get("image_url_override") as string | null)?.trim() || null;
   const visibilityRaw = (formData.get("visibility") as string | null)?.trim() || "public";
   const visibility: Visibility = VISIBILITY_VALUES.includes(visibilityRaw as Visibility) ? visibilityRaw as Visibility : "public";
@@ -36,9 +38,29 @@ export async function uploadMap(
     return { success: false, message: "Il nome della mappa è obbligatorio." };
   }
 
+  if (imageFile && imageFile instanceof File && imageFile.size > 0) {
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowedTypes.includes(imageFile.type)) {
+      return {
+        success: false,
+        message: "Formato immagine non supportato. Usa JPG, PNG, WebP o GIF.",
+      };
+    }
+    try {
+      const fileId = await uploadToTelegram(imageFile);
+      imageUrl = `/api/tg-image/${fileId}`;
+    } catch (uploadErr) {
+      console.error("[uploadMap] Telegram upload", uploadErr);
+      return {
+        success: false,
+        message: uploadErr instanceof Error ? uploadErr.message : "Errore durante il caricamento dell'immagine.",
+      };
+    }
+  }
+
   const finalImageUrl = imageUrlOverride || imageUrl;
   if (!finalImageUrl) {
-    return { success: false, message: "Carica un'immagine, incolla un File ID Telegram o un link (es. Google Drive)." };
+    return { success: false, message: "Carica un'immagine, incolla un URL o un link (es. Google Drive)." };
   }
 
   try {
@@ -70,7 +92,6 @@ export async function uploadMap(
         map_type: mapType,
         image_url: finalImageUrl,
         visibility,
-        is_secret: visibility === "secret",
       })
       .select("id")
       .single();
@@ -149,14 +170,13 @@ export async function updateMap(
     if (profile?.role !== "gm" && profile?.role !== "admin") {
       return { success: false, message: "Solo GM e Admin possono modificare le mappe." };
     }
-    const updates: { name?: string; map_type?: string; visibility?: Visibility; is_secret?: boolean } = {};
+    const updates: { name?: string; map_type?: string; visibility?: Visibility } = {};
     if (name) updates.name = name;
     if (mapType && MAP_TYPES.includes(mapType as (typeof MAP_TYPES)[number])) {
       updates.map_type = mapType;
     }
     if (visibility !== undefined) {
       updates.visibility = visibility;
-      updates.is_secret = visibility === "secret";
     }
     if (Object.keys(updates).length > 0) {
       const { error } = await supabase

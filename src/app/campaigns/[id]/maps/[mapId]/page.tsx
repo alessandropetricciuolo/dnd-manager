@@ -41,11 +41,11 @@ export default async function CampaignMapPage({ params }: PageProps) {
 
   const { data: mapMeta } = await supabase
     .from("maps")
-    .select("is_secret, visibility")
+    .select("visibility")
     .eq("id", mapId)
     .single();
   const visibility = (mapMeta as { visibility?: string } | null)?.visibility ?? "public";
-  const isSecret = (mapMeta as { is_secret?: boolean } | null)?.is_secret ?? false;
+  const isSecret = visibility === "secret";
   if (!isGmOrAdmin && visibility !== "public") {
     if (visibility === "selective") {
       const { data: perm } = await supabase

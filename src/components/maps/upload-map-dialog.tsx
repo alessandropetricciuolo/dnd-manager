@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { SmartFileUpload } from "@/components/ui/smart-file-upload";
+import { ImageSourceField } from "@/components/ui/image-source-field";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -68,15 +68,16 @@ export function UploadMapDialog({ campaignId, eligiblePlayers = [] }: UploadMapD
     formData.set("allowed_user_ids", JSON.stringify(visibility === "selective" ? selectedPlayerIds : []));
 
     const name = (formData.get("name") as string)?.trim();
+    const imageFile = formData.get("image") as File | null;
     const imageUrl = (formData.get("image_url") as string)?.trim();
     const imageUrlOverride = (formData.get("image_url_override") as string)?.trim();
     if (!name) {
       toast.error("Inserisci un nome per la mappa.");
       return;
     }
-    const hasImage = !!imageUrl || !!imageUrlOverride;
+    const hasImage = !!(imageFile && imageFile.size > 0) || !!imageUrl || !!imageUrlOverride;
     if (!hasImage) {
-      toast.error("Carica un'immagine, incolla un File ID Telegram o un link esterno (es. Google Drive).");
+      toast.error("Carica un'immagine o incolla un URL (salvate su Telegram).");
       return;
     }
 
@@ -234,27 +235,24 @@ export function UploadMapDialog({ campaignId, eligiblePlayers = [] }: UploadMapD
             />
           </div>
 
-          <SmartFileUpload
-            name="image_url"
-            type="photo"
+          <ImageSourceField
+            fileInputName="image"
+            urlFieldName="image_url"
             label="Immagine mappa"
             disabled={isLoading}
-            accept="image/jpeg,image/png,image/webp,image/gif"
+            hint="Carica o incolla URL; salvata su Telegram."
           />
 
           <div className="space-y-2">
-            <Label htmlFor="map-url-override">Oppure incolla link esterno</Label>
+            <Label htmlFor="map-url-override">Oppure link esterno (es. Google Drive)</Label>
             <Input
               id="map-url-override"
               name="image_url_override"
               type="url"
-              placeholder="https://... (es. Google Drive)"
+              placeholder="https://..."
               disabled={isLoading}
               className="bg-barber-dark border-barber-gold/30 text-barber-paper placeholder:text-barber-paper/50"
             />
-            <p className="text-xs text-barber-paper/60">
-              Se usi il caricamento sopra (o il File ID Telegram), questo campo va lasciato vuoto.
-            </p>
           </div>
 
           <DialogFooter>
