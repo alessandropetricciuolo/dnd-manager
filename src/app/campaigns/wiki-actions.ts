@@ -41,6 +41,30 @@ function parseTags(formData: FormData): string[] {
   return [];
 }
 
+export type RelationFormRow = { targetType: "wiki" | "map"; targetId: string; label: string };
+
+function parseRelations(formData: FormData): RelationFormRow[] {
+  const raw = formData.get("relations") as string | null;
+  if (!raw || typeof raw !== "string") return [];
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter(
+        (r): r is RelationFormRow =>
+          r != null &&
+          typeof r === "object" &&
+          (r.targetType === "wiki" || r.targetType === "map") &&
+          typeof r.targetId === "string" &&
+          r.targetId.trim() !== "" &&
+          typeof r.label === "string"
+      )
+      .map((r) => ({ targetType: r.targetType, targetId: r.targetId.trim(), label: (r.label ?? "").trim() }));
+  } catch {
+    return [];
+  }
+}
+
 export async function createEntity(
   campaignId: string,
   formData: FormData
@@ -61,6 +85,7 @@ export async function createEntity(
   const xpRaw = (formData.get("xp_value") as string | null)?.trim() ?? "";
   const xpValue = xpRaw ? Math.max(0, parseInt(xpRaw, 10) || 0) : 0;
   const tags = parseTags(formData);
+  const relations = parseRelations(formData);
 
   if (!title) {
     return { success: false, message: "Il titolo è obbligatorio." };
@@ -160,6 +185,27 @@ export async function createEntity(
       if (permError) console.error("[createEntity] entity_permissions", permError);
     }
 
+    for (const rel of relations) {
+      const payload: Record<string, unknown> = {
+        campaign_id: campaignId,
+        source_id: inserted.id,
+        label: rel.label || "—",
+      };
+      if (rel.targetType === "wiki") {
+        if (rel.targetId !== inserted.id) {
+          payload.target_id = rel.targetId;
+          payload.target_map_id = null;
+          const { error: relErr } = await supabase.from("wiki_relationships").insert(payload);
+          if (relErr) console.error("[createEntity] relation insert", relErr);
+        }
+      } else {
+        payload.target_id = null;
+        payload.target_map_id = rel.targetId;
+        const { error: relErr } = await supabase.from("wiki_relationships").insert(payload);
+        if (relErr) console.error("[createEntity] relation insert", relErr);
+      }
+    }
+
     revalidatePath(`/campaigns/${campaignId}`);
     return { success: true, message: "Entità creata!" };
   } catch (err) {
@@ -195,6 +241,7 @@ export async function updateEntity(
   const xpRaw = (formData.get("xp_value") as string | null)?.trim() ?? "";
   const xpValue = xpRaw ? Math.max(0, parseInt(xpRaw, 10) || 0) : 0;
   const tags = parseTags(formData);
+  const relations = parseRelations(formData);
 
   if (!title) {
     return { success: false, message: "Il titolo è obbligatorio." };
@@ -305,6 +352,31 @@ export async function updateEntity(
         visibility === "selective" ? allowedUserIds : []
       );
       if (permError) console.error("[updateEntity] entity_permissions", permError);
+    }
+
+    await supabase
+      .from("wiki_relationships")
+      .delete()
+      .eq("campaign_id", campaignId)
+      .eq("source_id", entityId);
+
+    for (const rel of relations) {
+      const payload: Record<string, unknown> = {
+        campaign_id: campaignId,
+        source_id: entityId,
+        label: rel.label || "—",
+      };
+      if (rel.targetType === "wiki") {
+        if (rel.targetId !== entityId) {
+          payload.target_id = rel.targetId;
+          payload.target_map_id = null;
+          await supabase.from("wiki_relationships").insert(payload);
+        }
+      } else {
+        payload.target_id = null;
+        payload.target_map_id = rel.targetId;
+        await supabase.from("wiki_relationships").insert(payload);
+      }
     }
 
     revalidatePath(`/campaigns/${campaignId}`);

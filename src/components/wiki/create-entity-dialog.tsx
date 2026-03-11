@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { useRouter } from "nextjs-toploader/app";
 import { toast } from "sonner";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -22,6 +22,7 @@ import { ImageSourceField } from "@/components/ui/image-source-field";
 import { Textarea } from "@/components/ui/textarea";
 import { TagsInput } from "@/components/wiki/tags-input";
 import { createEntity } from "@/app/campaigns/wiki-actions";
+import { getWikiEntitiesForCampaign, getMapsForCampaign } from "@/app/campaigns/entity-graph-actions";
 import { getEmptyAttributes } from "@/types/wiki";
 import { CHALLENGE_RATING_OPTIONS } from "@/lib/dnd-constants";
 
@@ -67,6 +68,10 @@ export function CreateEntityDialog({
   const showCoreCheckbox = campaignType === "long" && (type === "npc" || type === "monster");
   const [monsterXp, setMonsterXp] = useState<number>(0);
   const [tags, setTags] = useState<string[]>([]);
+  type RelationRow = { targetType: "wiki" | "map"; targetId: string; label: string };
+  const [relations, setRelations] = useState<RelationRow[]>([]);
+  const [wikiOptions, setWikiOptions] = useState<{ id: string; name: string }[]>([]);
+  const [mapOptions, setMapOptions] = useState<{ id: string; name: string }[]>([]);
 
   function onTypeChange(newType: string) {
     const t = newType as EntityType;
@@ -112,6 +117,7 @@ export function CreateEntityDialog({
     formData.set("allowed_user_ids", JSON.stringify(visibility === "selective" ? selectedPlayerIds : []));
     if (sortOrder.trim() !== "") formData.set("sort_order", sortOrder.trim());
     if (showCoreCheckbox && isCore) formData.set("is_core", "on");
+    formData.set("relations", JSON.stringify(relations));
 
     setIsLoading(true);
     try {
@@ -125,6 +131,7 @@ export function CreateEntityDialog({
         setAttributes(defaultAttributes("npc"));
         setSortOrder("");
         setTags([]);
+        setRelations([]);
         router.refresh();
       } else {
         toast.error(result.message);
@@ -138,6 +145,10 @@ export function CreateEntityDialog({
 
   function handleOpenChange(next: boolean) {
     setOpen(next);
+    if (next) {
+      getWikiEntitiesForCampaign(campaignId).then((r) => r.success && setWikiOptions(r.data));
+      getMapsForCampaign(campaignId).then((r) => r.success && setMapOptions(r.data));
+    }
   }
 
   return (
@@ -213,6 +224,101 @@ export function CreateEntityDialog({
           />
 
           <TagsInput value={tags} onChange={setTags} disabled={isLoading} />
+
+          {/* Relazioni & Mappe */}
+          <div className="space-y-2">
+            <Label className="text-barber-paper/90">Relazioni &amp; Mappe</Label>
+            <p className="text-xs text-barber-paper/60">
+              Collega questa voce ad altre voci wiki o a mappe. Le relazioni appariranno nella Mappa Concettuale (Solo GM).
+            </p>
+            {relations.map((rel, idx) => (
+              <div key={idx} className="flex flex-wrap items-end gap-2 rounded-md border border-barber-gold/20 bg-barber-dark/80 p-2">
+                <div className="flex-1 min-w-[100px]">
+                  <Label className="text-xs">Tipo bersaglio</Label>
+                  <select
+                    value={rel.targetType}
+                    onChange={(e) =>
+                      setRelations((prev) => {
+                        const next = [...prev];
+                        next[idx] = { ...next[idx], targetType: e.target.value as "wiki" | "map", targetId: "" };
+                        return next;
+                      })
+                    }
+                    className="mt-0.5 flex h-9 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-2 text-sm text-barber-paper"
+                    disabled={isLoading}
+                  >
+                    <option value="wiki">Voce Wiki</option>
+                    <option value="map">Mappa</option>
+                  </select>
+                </div>
+                <div className="flex-1 min-w-[120px]">
+                  <Label className="text-xs">Bersaglio</Label>
+                  <select
+                    value={rel.targetId}
+                    onChange={(e) =>
+                      setRelations((prev) => {
+                        const next = [...prev];
+                        next[idx] = { ...next[idx], targetId: e.target.value };
+                        return next;
+                      })
+                    }
+                    className="mt-0.5 flex h-9 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-2 text-sm text-barber-paper"
+                    disabled={isLoading}
+                  >
+                    <option value="">— Seleziona —</option>
+                    {rel.targetType === "wiki"
+                      ? wikiOptions.map((o) => (
+                          <option key={o.id} value={o.id}>
+                            {o.name}
+                          </option>
+                        ))
+                      : mapOptions.map((o) => (
+                          <option key={o.id} value={o.id}>
+                            {o.name}
+                          </option>
+                        ))}
+                  </select>
+                </div>
+                <div className="flex-1 min-w-[100px]">
+                  <Label className="text-xs">Etichetta legame</Label>
+                  <Input
+                    value={rel.label}
+                    onChange={(e) =>
+                      setRelations((prev) => {
+                        const next = [...prev];
+                        next[idx] = { ...next[idx], label: e.target.value };
+                        return next;
+                      })
+                    }
+                    placeholder="Es. Vive qui, Nascondiglio"
+                    className="mt-0.5 h-9 bg-barber-dark border-barber-gold/30 text-barber-paper text-sm"
+                    disabled={isLoading}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 shrink-0 text-barber-paper/60 hover:text-barber-red"
+                  onClick={() => setRelations((prev) => prev.filter((_, i) => i !== idx))}
+                  disabled={isLoading}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="border-barber-gold/40 text-barber-paper/90"
+              onClick={() => setRelations((prev) => [...prev, { targetType: "wiki", targetId: "", label: "" }])}
+              disabled={isLoading}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Aggiungi relazione
+            </Button>
+          </div>
 
           {/* Contenuto principale (storia/descrizione) */}
           <div className="space-y-2">

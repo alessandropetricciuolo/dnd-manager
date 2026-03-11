@@ -34,6 +34,7 @@ import {
   Loader2,
   X,
   GripVertical,
+  Map,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,6 +51,7 @@ import {
   createWikiRelationship,
   type WikiEntityForGraph,
   type WikiRelationshipRow,
+  type MapForGraph,
 } from "@/app/campaigns/entity-graph-actions";
 import { cn } from "@/lib/utils";
 
@@ -65,9 +67,11 @@ const TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = 
 };
 
 type EntityNodeData = { label: string; type: string; entityId: string };
+type MapNodeData = { label: string; mapId: string };
 
 function EntityNode({ data, selected }: NodeProps<Node<EntityNodeData>>) {
-  const Icon = TYPE_ICONS[data.type] ?? BookOpen;
+  const Icon = TYPE_ICONS[(data as EntityNodeData).type] ?? BookOpen;
+  const d = data as EntityNodeData;
   return (
     <div
       className={cn(
@@ -77,7 +81,24 @@ function EntityNode({ data, selected }: NodeProps<Node<EntityNodeData>>) {
     >
       <Handle type="target" position={Position.Left} className="!w-2 !h-2 !bg-amber-500" />
       <Icon className="h-5 w-5 shrink-0 text-amber-400" />
-      <span className="truncate text-sm font-medium text-zinc-100">{data.label}</span>
+      <span className="truncate text-sm font-medium text-zinc-100">{d.label}</span>
+      <Handle type="source" position={Position.Right} className="!w-2 !h-2 !bg-amber-500" />
+    </div>
+  );
+}
+
+function MapNode({ data, selected }: NodeProps<Node<MapNodeData>>) {
+  const d = data as MapNodeData;
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-2 rounded-none border-4 border-amber-400 bg-zinc-900 px-3 py-2 shadow-lg min-w-[140px]",
+        selected ? "border-amber-300" : "border-amber-400"
+      )}
+    >
+      <Handle type="target" position={Position.Left} className="!w-2 !h-2 !bg-amber-500" />
+      <Map className="h-5 w-5 shrink-0 text-amber-400" />
+      <span className="truncate text-sm font-medium text-zinc-100">{d.label}</span>
       <Handle type="source" position={Position.Right} className="!w-2 !h-2 !bg-amber-500" />
     </div>
   );
@@ -121,14 +142,16 @@ function LabeledEdge({
   );
 }
 
-const nodeTypes = { entity: EntityNode };
+const nodeTypes = { entity: EntityNode, map: MapNode };
 const edgeTypes = { labeled: LabeledEdge };
 
+type GraphNodeData = EntityNodeData | MapNodeData;
+
 function getLayoutedNodesAndEdges(
-  nodes: Node<EntityNodeData>[],
+  nodes: Node<GraphNodeData>[],
   edges: Edge[],
   direction: "LR" | "TB" = "LR"
-): { nodes: Node<EntityNodeData>[]; edges: Edge[] } {
+): { nodes: Node<GraphNodeData>[]; edges: Edge[] } {
   const g = new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
   g.setGraph({ rankdir: direction, nodesep: 40, ranksep: 60 });
   nodes.forEach((n) => g.setNode(n.id, { width: NODE_WIDTH, height: NODE_HEIGHT }));
@@ -154,13 +177,15 @@ type EntityGraphProps = {
 function EntityGraphInner({ campaignId }: EntityGraphProps) {
   const [loading, setLoading] = useState(true);
   const [entities, setEntities] = useState<WikiEntityForGraph[]>([]);
+  const [maps, setMaps] = useState<MapForGraph[]>([]);
   const [relationships, setRelationships] = useState<WikiRelationshipRow[]>([]);
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node<EntityNodeData>>([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node<GraphNodeData>>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [connectModal, setConnectModal] = useState<{
     sourceId: string;
     targetId: string;
+    targetMapId: string | null;
     sourceName: string;
     targetName: string;
   } | null>(null);
@@ -177,29 +202,47 @@ function EntityGraphInner({ campaignId }: EntityGraphProps) {
       return;
     }
     setEntities(result.entities);
+    setMaps(result.maps ?? []);
     setRelationships(result.relationships ?? []);
 
-    const linkedIds = new Set<string>();
+    const linkedWikiIds = new Set<string>();
+    const linkedMapIds = new Set<string>();
     (result.relationships ?? []).forEach((r) => {
-      linkedIds.add(r.source_id);
-      linkedIds.add(r.target_id);
+      linkedWikiIds.add(r.source_id);
+      if (r.target_id) linkedWikiIds.add(r.target_id);
+      if (r.target_map_id) linkedMapIds.add(r.target_map_id);
     });
-    const nodeIds = new Set(linkedIds);
-    const initialNodes: Node<EntityNodeData>[] = result.entities
-      .filter((e) => nodeIds.has(e.id))
-      .map((e, i) => ({
-        id: e.id,
-        type: "entity",
-        position: { x: 0, y: 0 },
-        data: { label: e.name, type: e.type, entityId: e.id },
-      }));
+
+    const initialNodes: Node<GraphNodeData>[] = [];
+    result.entities.forEach((e) => {
+      if (linkedWikiIds.has(e.id)) {
+        initialNodes.push({
+          id: `wiki:${e.id}`,
+          type: "entity",
+          position: { x: 0, y: 0 },
+          data: { label: e.name, type: e.type, entityId: e.id },
+        });
+      }
+    });
+    (result.maps ?? []).forEach((m) => {
+      if (linkedMapIds.has(m.id)) {
+        initialNodes.push({
+          id: `map:${m.id}`,
+          type: "map",
+          position: { x: 0, y: 0 },
+          data: { label: m.name, mapId: m.id },
+        });
+      }
+    });
+
     const initialEdges: Edge<{ label?: string }>[] = (result.relationships ?? []).map((r) => ({
       id: r.id,
-      source: r.source_id,
-      target: r.target_id,
+      source: `wiki:${r.source_id}`,
+      target: r.target_map_id != null ? `map:${r.target_map_id}` : `wiki:${r.target_id}`,
       type: "labeled",
       data: { label: r.label },
     }));
+
     const { nodes: layouted, edges: layoutedEdges } = getLayoutedNodesAndEdges(
       initialNodes,
       initialEdges
@@ -217,15 +260,20 @@ function EntityGraphInner({ campaignId }: EntityGraphProps) {
       if (!connection.source || !connection.target) return;
       const sourceNode = nodes.find((n) => n.id === connection.source);
       const targetNode = nodes.find((n) => n.id === connection.target);
-      if (sourceNode && targetNode) {
-        setConnectModal({
-          sourceId: connection.source,
-          targetId: connection.target,
-          sourceName: sourceNode.data.label,
-          targetName: targetNode.data.label,
-        });
-        setRelationshipLabel("");
-      }
+      if (!sourceNode || !targetNode) return;
+      const sourceName = (sourceNode.data as EntityNodeData).label ?? (sourceNode.data as MapNodeData).label ?? "";
+      const targetName = (targetNode.data as EntityNodeData).label ?? (targetNode.data as MapNodeData).label ?? "";
+      const isTargetMap = String(connection.target).startsWith("map:");
+      const targetId = isTargetMap ? "" : (connection.target as string).replace(/^wiki:/, "");
+      const targetMapId = isTargetMap ? (connection.target as string).replace(/^map:/, "") : null;
+      setConnectModal({
+        sourceId: (connection.source as string).replace(/^wiki:/, ""),
+        targetId,
+        targetMapId,
+        sourceName,
+        targetName,
+      });
+      setRelationshipLabel("");
     },
     [nodes]
   );
@@ -236,7 +284,8 @@ function EntityGraphInner({ campaignId }: EntityGraphProps) {
     const result = await createWikiRelationship(
       campaignId,
       connectModal.sourceId,
-      connectModal.targetId,
+      connectModal.targetId || null,
+      connectModal.targetMapId,
       relationshipLabel.trim() || "—"
     );
     setSavingRelation(false);
@@ -249,11 +298,14 @@ function EntityGraphInner({ campaignId }: EntityGraphProps) {
     }
   }, [campaignId, connectModal, relationshipLabel, loadData]);
 
+  const linkedWikiIds = new Set<string>();
+  relationships.forEach((r) => {
+    linkedWikiIds.add(r.source_id);
+    if (r.target_id) linkedWikiIds.add(r.target_id);
+  });
   const unlinkedEntities = entities.filter((e) => {
-    const hasAsSource = relationships.some((r) => r.source_id === e.id);
-    const hasAsTarget = relationships.some((r) => r.target_id === e.id);
-    const onCanvas = nodes.some((n) => n.id === e.id);
-    return !hasAsSource && !hasAsTarget && !onCanvas;
+    const onCanvas = nodes.some((n) => n.id === `wiki:${e.id}`);
+    return !linkedWikiIds.has(e.id) && !onCanvas;
   });
 
   const onDrop = useCallback(
@@ -267,7 +319,7 @@ function EntityGraphInner({ campaignId }: EntityGraphProps) {
         setNodes((nds) => [
           ...nds,
           {
-            id: entity.id,
+            id: `wiki:${entity.id}`,
             type: "entity",
             position: { x: position.x - NODE_WIDTH / 2, y: position.y - NODE_HEIGHT / 2 },
             data: { label: entity.name, type: entity.type, entityId: entity.id },

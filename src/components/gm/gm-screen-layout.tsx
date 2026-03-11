@@ -3,10 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { InitiativeTracker } from "./initiative-tracker";
 import { GmNotesGrid } from "./gm-notes-grid";
-import { EntityGraph } from "./entity-graph";
 import { PlayerSessionTracker } from "./player-session-tracker";
 import { Button } from "@/components/ui/button";
-import { ListOrdered, Calendar, Flag, Network, FileText } from "lucide-react";
+import { ListOrdered, Calendar, Flag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCampaignSessionsForGm, type CampaignSessionOption } from "@/app/campaigns/gm-actions";
 import { EndSessionWizard } from "@/components/sessions/end-session-wizard";
@@ -33,13 +32,11 @@ function formatSessionLabel(s: CampaignSessionOption): string {
   return s.title?.trim() ? `${s.title} — ${dateStr}` : dateStr;
 }
 
-type GmView = "notes" | "graph";
 export function GmScreenLayout({ campaignId, campaignType }: GmScreenLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sessions, setSessions] = useState<CampaignSessionOption[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [debriefOpen, setDebriefOpen] = useState(false);
-  const [view, setView] = useState<GmView>("notes");
 
   const loadSessions = useCallback(async () => {
     const result = await getCampaignSessionsForGm(campaignId);
@@ -101,35 +98,7 @@ export function GmScreenLayout({ campaignId, campaignType }: GmScreenLayoutProps
       {/* Area principale: Note GM + selettore sessione */}
       <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-amber-600/20 px-4 py-3 md:px-6">
-          <div className="flex rounded-lg border border-amber-600/30 bg-zinc-900/80 p-0.5">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setView("notes")}
-              className={cn(
-                "gap-2 text-zinc-300",
-                view === "notes" && "bg-amber-600/20 text-amber-400"
-              )}
-            >
-              <FileText className="h-4 w-4" />
-              Note
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setView("graph")}
-              className={cn(
-                "gap-2 text-zinc-300",
-                view === "graph" && "bg-amber-600/20 text-amber-400"
-              )}
-            >
-              <Network className="h-4 w-4" />
-              Rete di Fazioni
-            </Button>
-          </div>
-          <Calendar className="h-4 w-4 text-amber-400/80 hidden sm:block" />
+          <Calendar className="h-4 w-4 text-amber-400/80" />
           <Select
             value={selectedSessionId ?? "none"}
             onValueChange={(v) => setSelectedSessionId(v === "none" ? null : v)}
@@ -174,18 +143,12 @@ export function GmScreenLayout({ campaignId, campaignType }: GmScreenLayoutProps
             onSuccess={loadSessions}
           />
         )}
-        <div className="min-h-0 flex-1 overflow-hidden">
-          {view === "notes" ? (
-            <div className="h-full overflow-auto p-4 md:p-6">
-              <GmNotesGrid
-                campaignId={campaignId}
-                sessionId={selectedSessionId}
-                sessionLabel={sessionLabel}
-              />
-            </div>
-          ) : (
-            <EntityGraph campaignId={campaignId} />
-          )}
+        <div className="min-h-0 flex-1 overflow-auto p-4 md:p-6">
+          <GmNotesGrid
+            campaignId={campaignId}
+            sessionId={selectedSessionId}
+            sessionLabel={sessionLabel}
+          />
         </div>
       </main>
     </div>

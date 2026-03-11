@@ -18,9 +18,12 @@ import { CampaignTabsClient } from "@/components/campaigns/campaign-tabs-client"
 import { GmNotes } from "@/components/gm/gm-notes";
 import { GmFiles } from "@/components/gm/gm-files";
 import { GmScreenLauncher } from "@/components/gm/gm-screen-launcher";
+import Link from "next/link";
+import { Map } from "lucide-react";
 import { CharactersSection } from "@/components/characters/characters-section";
 import { getCampaignCharacters, getCampaignEligiblePlayers } from "@/app/campaigns/character-actions";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
 import { CampaignMobileHeader } from "@/components/campaigns/campaign-mobile-header";
 
 const PLACEHOLDER_IMAGE =
@@ -333,6 +336,18 @@ export default async function CampaignPage({ params }: PageProps) {
                   />
                 </div>
                 <div className="space-y-8">
+                  <div className="rounded-lg border border-violet-600/30 bg-violet-950/30 p-4">
+                    <h3 className="mb-2 text-sm font-medium text-violet-200">Mappa Concettuale</h3>
+                    <p className="mb-3 text-xs text-violet-200/70">
+                      Grafo di voci wiki e mappe con relazioni. Crea relazioni dal form di creazione/modifica delle voci wiki.
+                    </p>
+                    <Button asChild variant="outline" size="sm" className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20">
+                      <Link href={`/campaigns/${campaign.id}/gm-only/concept-map`}>
+                        <Map className="mr-2 h-4 w-4" />
+                        Apri Mappa Concettuale
+                      </Link>
+                    </Button>
+                  </div>
                   <GmNotes campaignId={campaign.id} />
                   <GmFiles campaignId={campaign.id} />
                 </div>

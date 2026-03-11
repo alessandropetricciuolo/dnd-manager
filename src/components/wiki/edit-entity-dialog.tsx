@@ -20,9 +20,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { ImageSourceField } from "@/components/ui/image-source-field";
 import { TagsInput } from "@/components/wiki/tags-input";
 import { updateEntity, setWikiEntityGlobalStatus } from "@/app/campaigns/wiki-actions";
+import { getWikiEntitiesForCampaign, getMapsForCampaign, getWikiRelationshipsForEntity } from "@/app/campaigns/entity-graph-actions";
 import { getEmptyAttributes } from "@/types/wiki";
 import type { WikiEntity } from "@/app/campaigns/wiki-actions";
 import { CHALLENGE_RATING_OPTIONS } from "@/lib/dnd-constants";
+import { Plus, Trash2 } from "lucide-react";
 
 const ENTITY_TYPES = [
   { value: "npc", label: "NPC" },
@@ -104,6 +106,10 @@ export function EditEntityDialog({
   const [statusLoading, setStatusLoading] = useState(false);
   const [monsterXp, setMonsterXp] = useState<number>(entity.xp_value ?? 0);
   const [tags, setTags] = useState<string[]>(Array.isArray(entity.tags) ? entity.tags : []);
+  type RelationRow = { targetType: "wiki" | "map"; targetId: string; label: string };
+  const [relations, setRelations] = useState<RelationRow[]>([]);
+  const [wikiOptions, setWikiOptions] = useState<{ id: string; name: string }[]>([]);
+  const [mapOptions, setMapOptions] = useState<{ id: string; name: string }[]>([]);
   const isLongCampaign = campaignType === "long";
   const showCoreFields = isLongCampaign && (type === "npc" || type === "monster");
 
@@ -118,8 +124,11 @@ export function EditEntityDialog({
       setIsCore(entity.is_core ?? false);
       setGlobalStatus(entity.global_status === "dead" ? "dead" : "alive");
       setMonsterXp(entity.xp_value ?? 0);
+      getWikiEntitiesForCampaign(campaignId).then((r) => r.success && setWikiOptions(r.data));
+      getMapsForCampaign(campaignId).then((r) => r.success && setMapOptions(r.data));
+      getWikiRelationshipsForEntity(campaignId, entity.id).then((r) => r.success && setRelations(r.data));
     }
-  }, [open, entity.type, entity.attributes, entity.sort_order, entity.is_core, entity.global_status, entity.xp_value, initialVisibility, initialAllowedUserIds]);
+  }, [open, campaignId, entity.id, entity.type, entity.attributes, entity.sort_order, entity.is_core, entity.global_status, entity.xp_value, initialVisibility, initialAllowedUserIds]);
 
   function onTypeChange(newType: string) {
     const t = newType as EntityType;
@@ -164,6 +173,7 @@ export function EditEntityDialog({
     if (sortOrder.trim() !== "") formData.set("sort_order", sortOrder.trim());
     if (removeImage) formData.set("remove_image", "on");
     if (showCoreFields && isCore) formData.set("is_core", "on");
+    formData.set("relations", JSON.stringify(relations));
 
     setIsLoading(true);
     try {
@@ -318,6 +328,100 @@ export function EditEntityDialog({
           </div>
 
           <TagsInput value={tags} onChange={setTags} disabled={isLoading} />
+
+          <div className="space-y-2">
+            <Label className="text-barber-paper/90">Relazioni &amp; Mappe</Label>
+            <p className="text-xs text-barber-paper/60">
+              Collega questa voce ad altre voci wiki o a mappe. Le relazioni appariranno nella Mappa Concettuale (Solo GM).
+            </p>
+            {relations.map((rel, idx) => (
+              <div key={idx} className="flex flex-wrap items-end gap-2 rounded-md border border-barber-gold/20 bg-barber-dark/80 p-2">
+                <div className="flex-1 min-w-[100px]">
+                  <Label className="text-xs">Tipo bersaglio</Label>
+                  <select
+                    value={rel.targetType}
+                    onChange={(e) =>
+                      setRelations((prev) => {
+                        const next = [...prev];
+                        next[idx] = { ...next[idx], targetType: e.target.value as "wiki" | "map", targetId: "" };
+                        return next;
+                      })
+                    }
+                    className="mt-0.5 flex h-9 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-2 text-sm text-barber-paper"
+                    disabled={isLoading}
+                  >
+                    <option value="wiki">Voce Wiki</option>
+                    <option value="map">Mappa</option>
+                  </select>
+                </div>
+                <div className="flex-1 min-w-[120px]">
+                  <Label className="text-xs">Bersaglio</Label>
+                  <select
+                    value={rel.targetId}
+                    onChange={(e) =>
+                      setRelations((prev) => {
+                        const next = [...prev];
+                        next[idx] = { ...next[idx], targetId: e.target.value };
+                        return next;
+                      })
+                    }
+                    className="mt-0.5 flex h-9 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-2 text-sm text-barber-paper"
+                    disabled={isLoading}
+                  >
+                    <option value="">— Seleziona —</option>
+                    {rel.targetType === "wiki"
+                      ? wikiOptions.filter((o) => o.id !== entity.id).map((o) => (
+                          <option key={o.id} value={o.id}>
+                            {o.name}
+                          </option>
+                        ))
+                      : mapOptions.map((o) => (
+                          <option key={o.id} value={o.id}>
+                            {o.name}
+                          </option>
+                        ))}
+                  </select>
+                </div>
+                <div className="flex-1 min-w-[100px]">
+                  <Label className="text-xs">Etichetta legame</Label>
+                  <Input
+                    value={rel.label}
+                    onChange={(e) =>
+                      setRelations((prev) => {
+                        const next = [...prev];
+                        next[idx] = { ...next[idx], label: e.target.value };
+                        return next;
+                      })
+                    }
+                    placeholder="Es. Vive qui, Nascondiglio"
+                    className="mt-0.5 h-9 bg-barber-dark border-barber-gold/30 text-barber-paper text-sm"
+                    disabled={isLoading}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 shrink-0 text-barber-paper/60 hover:text-barber-red"
+                  onClick={() => setRelations((prev) => prev.filter((_, i) => i !== idx))}
+                  disabled={isLoading}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="border-barber-gold/40 text-barber-paper/90"
+              onClick={() => setRelations((prev) => [...prev, { targetType: "wiki", targetId: "", label: "" }])}
+              disabled={isLoading}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Aggiungi relazione
+            </Button>
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="edit-entity-content">
