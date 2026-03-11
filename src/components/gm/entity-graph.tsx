@@ -263,15 +263,18 @@ function EntityGraphInner({ campaignId }: EntityGraphProps) {
       if (!sourceNode || !targetNode) return;
       const sourceName = (sourceNode.data as EntityNodeData).label ?? (sourceNode.data as MapNodeData).label ?? "";
       const targetName = (targetNode.data as EntityNodeData).label ?? (targetNode.data as MapNodeData).label ?? "";
+      const isSourceMap = String(connection.source).startsWith("map:");
       const isTargetMap = String(connection.target).startsWith("map:");
-      const targetId = isTargetMap ? "" : (connection.target as string).replace(/^wiki:/, "");
-      const targetMapId = isTargetMap ? (connection.target as string).replace(/^map:/, "") : null;
+      // source_id deve essere sempre una voce wiki; se l'utente ha trascinato dalla mappa, invertiamo
+      const wikiId = isSourceMap ? (connection.target as string).replace(/^wiki:/, "") : (connection.source as string).replace(/^wiki:/, "");
+      const mapId = isSourceMap ? (connection.source as string).replace(/^map:/, "") : (isTargetMap ? (connection.target as string).replace(/^map:/, "") : null);
+      const otherWikiId = !isSourceMap && !isTargetMap ? (connection.target as string).replace(/^wiki:/, "") : "";
       setConnectModal({
-        sourceId: (connection.source as string).replace(/^wiki:/, ""),
-        targetId,
-        targetMapId,
-        sourceName,
-        targetName,
+        sourceId: wikiId,
+        targetId: mapId ? "" : otherWikiId,
+        targetMapId: mapId,
+        sourceName: isSourceMap ? targetName : sourceName,
+        targetName: isSourceMap ? sourceName : targetName,
       });
       setRelationshipLabel("");
     },
