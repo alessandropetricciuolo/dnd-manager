@@ -281,11 +281,14 @@ function EntityGraphInner({ campaignId }: EntityGraphProps) {
   const handleSaveRelationship = useCallback(async () => {
     if (!connectModal) return;
     setSavingRelation(true);
+    const sourceUuid = connectModal.sourceId.replace(/^wiki:/, "").trim();
+    const targetWiki = (connectModal.targetId ?? "").replace(/^wiki:/, "").trim() || null;
+    const targetMap = (connectModal.targetMapId ?? "").replace(/^map:/, "").trim() || null;
     const result = await createWikiRelationship(
       campaignId,
-      connectModal.sourceId,
-      connectModal.targetId || null,
-      connectModal.targetMapId,
+      sourceUuid,
+      targetWiki,
+      targetMap,
       relationshipLabel.trim() || "—"
     );
     setSavingRelation(false);

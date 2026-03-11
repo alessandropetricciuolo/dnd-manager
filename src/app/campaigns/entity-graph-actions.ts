@@ -90,11 +90,15 @@ export async function createWikiRelationship(
   label: string
 ): Promise<CreateRelationshipResult> {
   if (!campaignId || !sourceId) return { success: false, error: "Dati mancanti." };
-  const hasWiki = targetId != null && targetId !== "";
-  const hasMap = targetMapId != null && targetMapId !== "";
+  // Normalizza id: il client può inviare node id con prefisso wiki:/map:
+  const sourceUuid = (sourceId ?? "").replace(/^wiki:/, "").trim();
+  const targetWikiUuid = (targetId ?? "").replace(/^wiki:/, "").trim() || null;
+  const targetMapUuid = (targetMapId ?? "").replace(/^map:/, "").trim() || null;
+  const hasWiki = targetWikiUuid != null && targetWikiUuid !== "";
+  const hasMap = targetMapUuid != null && targetMapUuid !== "";
   if (!hasWiki && !hasMap) return { success: false, error: "Seleziona un bersaglio (voce wiki o mappa)." };
   if (hasWiki && hasMap) return { success: false, error: "Solo un tipo di bersaglio alla volta." };
-  if (hasWiki && sourceId === targetId) return { success: false, error: "Source e target devono essere diversi." };
+  if (hasWiki && sourceUuid === targetWikiUuid) return { success: false, error: "Source e target devono essere diversi." };
   const trimmedLabel = (label ?? "").trim();
   try {
     const supabase = await createSupabaseServerClient();
@@ -119,15 +123,15 @@ export async function createWikiRelationship(
       label: string;
     } = {
       campaign_id: campaignId,
-      source_id: sourceId,
+      source_id: sourceUuid,
       label: trimmedLabel || "—",
     };
     if (hasWiki) {
-      insertPayload.target_id = targetId;
+      insertPayload.target_id = targetWikiUuid;
       insertPayload.target_map_id = null;
     } else {
       insertPayload.target_id = null;
-      insertPayload.target_map_id = targetMapId;
+      insertPayload.target_map_id = targetMapUuid;
     }
 
     const { error } = await supabase.from("wiki_relationships").insert(insertPayload);
