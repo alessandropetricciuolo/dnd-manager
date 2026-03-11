@@ -43,9 +43,14 @@ export default async function PlayerProfilePage({ params }: Props) {
     .eq("player_id", profile.id)
     .order("unlocked_at", { ascending: false });
 
+  type UnlockedRow = {
+    unlocked_at: string;
+    achievements: { id: string; title: string; description: string; icon_name: string; points: number } | null;
+  };
   const achievements = (unlocked ?? []).map((u) => {
-    const a = (u as { achievements: { id: string; title: string; description: string; icon_name: string; points: number } | null }).achievements;
-    return a ? { ...a, unlocked_at: (u as { unlocked_at: string }).unlocked_at } : null;
+    const row = u as unknown as UnlockedRow;
+    const a = Array.isArray(row.achievements) ? row.achievements[0] : row.achievements;
+    return a ? { ...a, unlocked_at: row.unlocked_at } : null;
   }).filter(Boolean) as Array<{ id: string; title: string; description: string; icon_name: string; points: number; unlocked_at: string }>;
 
   const displayName = profile.nickname?.trim() || "Eroe";
