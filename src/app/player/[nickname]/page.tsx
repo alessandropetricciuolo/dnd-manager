@@ -3,17 +3,21 @@ import Link from "next/link";
 import Image from "next/image";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { Button } from "@/components/ui/button";
-import { Trophy, Award, ArrowLeft } from "lucide-react";
-import * as LucideIcons from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { Trophy, Award, ArrowLeft, Flame } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 type Props = { params: Promise<{ nickname: string }> };
 
-function getLucideIcon(name: string) {
-  const iconName = name in LucideIcons ? name : "Award";
-  const Icon = (LucideIcons as Record<string, React.ComponentType<{ className?: string }>>)[iconName];
-  return Icon ?? LucideIcons.Award;
+const ACHIEVEMENT_ICONS: Record<string, LucideIcon> = {
+  Award,
+  Flame,
+  Trophy,
+};
+
+function getLucideIcon(name: string): LucideIcon {
+  return ACHIEVEMENT_ICONS[name] ?? Award;
 }
 
 export default async function PlayerProfilePage({ params }: Props) {
