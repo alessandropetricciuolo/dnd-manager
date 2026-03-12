@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { Button } from "@/components/ui/button";
 import { GmProfilePublicForm } from "@/components/dashboard/gm-profile-public-form";
 import { PlayerProfileForm } from "@/components/dashboard/player-profile-form";
+import { getAvatarGalleryData } from "@/lib/avatar-gallery";
 import { ArrowLeft, UserCog, User } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -109,6 +110,7 @@ export default async function DashboardSettingsProfilePage() {
               is_player_public: profile?.is_player_public ?? true,
               notifications_disabled: profile?.notifications_disabled ?? false,
             }}
+            avatarGallery={await getAvatarGalleryData(user.id)}
           />
         </div>
       </div>

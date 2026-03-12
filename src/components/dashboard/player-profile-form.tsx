@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { updatePlayerProfile } from "@/app/dashboard/settings/profile/actions";
+import { AvatarSelector } from "@/components/dashboard/avatar-selector";
+import type { AvatarGalleryData } from "@/lib/avatar-gallery";
 import { Loader2, Trophy, Bell, BellOff, UserCircle, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -17,13 +19,14 @@ type PlayerProfileFormProps = {
     is_player_public: boolean;
     notifications_disabled: boolean;
   };
+  avatarGallery?: AvatarGalleryData | null;
 };
 
 const NICKNAME_UNIQUE_ERROR = "già in uso";
 
-export function PlayerProfileForm({ defaultValues }: PlayerProfileFormProps) {
+export function PlayerProfileForm({ defaultValues, avatarGallery }: PlayerProfileFormProps) {
   const [isPending, startTransition] = useTransition();
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(defaultValues.avatar_url);
+  const [selectedAvatarUrl, setSelectedAvatarUrl] = useState<string | null>(defaultValues.avatar_url);
   const [isPlayerPublic, setIsPlayerPublic] = useState(defaultValues.is_player_public);
   const [notificationsDisabled, setNotificationsDisabled] = useState(
     defaultValues.notifications_disabled
@@ -47,7 +50,6 @@ export function PlayerProfileForm({ defaultValues }: PlayerProfileFormProps) {
       const result = await updatePlayerProfile(formData);
       if (result.success) {
         toast.success(result.message);
-        setAvatarPreview(null);
       } else {
         setLastError(result.message);
         toast.error(result.message);
@@ -55,62 +57,29 @@ export function PlayerProfileForm({ defaultValues }: PlayerProfileFormProps) {
     });
   }
 
-  function onAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) {
-      setAvatarPreview(URL.createObjectURL(file));
-    } else {
-      setAvatarPreview(defaultValues.avatar_url);
-    }
-  }
-
   return (
     <form onSubmit={onSubmit} className="space-y-8">
-      {/* 1. Avatar */}
+      {/* 1. Avatar - Galleria sbloccabili */}
       <section className="space-y-3">
         <Label className="text-barber-paper/90">Avatar</Label>
         <p className="text-xs text-barber-paper/60">
-          Immagine profilo (quadrata o rotonda). Verrà mostrata nella Classifica Eroi.
+          Scegli un avatar dalla galleria. Sblocca nuovi avatar completando achievement.
         </p>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-          <div className="flex shrink-0 items-center justify-center">
-            {(avatarPreview || defaultValues.avatar_url) ? (
-              <div className="relative h-24 w-24 overflow-hidden rounded-full border-2 border-barber-gold/30 bg-barber-dark">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={avatarPreview || defaultValues.avatar_url || ""}
-                  alt="Avatar"
-                  className="h-full w-full object-cover"
-                />
-              </div>
-            ) : (
-              <div className="flex h-24 w-24 items-center justify-center rounded-full border-2 border-dashed border-barber-gold/20 bg-barber-dark/60">
-                <UserCircle className="h-12 w-12 text-barber-paper/40" />
-              </div>
-            )}
+        <input type="hidden" name="avatar_url" value={selectedAvatarUrl ?? ""} />
+        <input type="hidden" name="remove_avatar" value={selectedAvatarUrl === null ? "on" : ""} />
+        {avatarGallery ? (
+          <AvatarSelector
+            avatars={avatarGallery.avatars}
+            unlockedAchievementIds={avatarGallery.unlockedAchievementIds}
+            value={selectedAvatarUrl}
+            onChange={setSelectedAvatarUrl}
+            disabled={isPending}
+          />
+        ) : (
+          <div className="flex h-24 w-24 items-center justify-center rounded-xl border-2 border-dashed border-barber-gold/20 bg-barber-dark/60">
+            <UserCircle className="h-12 w-12 text-barber-paper/40" />
           </div>
-          <div className="flex flex-1 flex-col gap-2">
-            <Input
-              type="file"
-              name="avatar"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={onAvatarChange}
-              disabled={isPending}
-              className="border-barber-gold/30 bg-barber-dark/80 text-barber-paper file:mr-2 file:rounded file:border-0 file:bg-barber-gold/20 file:px-3 file:py-1.5 file:text-barber-gold file:text-sm"
-            />
-            {defaultValues.avatar_url && (
-              <label className="flex cursor-pointer items-center gap-2 text-sm text-barber-paper/80">
-                <input
-                  type="checkbox"
-                  name="remove_avatar"
-                  disabled={isPending}
-                  className="h-4 w-4 rounded border-barber-gold/50 bg-barber-dark text-barber-gold"
-                />
-                Rimuovi avatar
-              </label>
-            )}
-          </div>
-        </div>
+        )}
       </section>
 
       {/* 2. Nickname */}

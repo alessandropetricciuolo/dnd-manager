@@ -181,7 +181,7 @@ export async function updatePlayerProfile(formData: FormData): Promise<UpdatePla
   const nickname = nicknameRaw === "" ? null : nicknameRaw;
   const isPlayerPublic = formData.get("is_player_public") === "on";
   const notificationsDisabled = formData.get("notifications_disabled") === "on";
-  const avatarFile = formData.get("avatar") as File | null;
+  const avatarUrlFromGallery = (formData.get("avatar_url") as string | null)?.trim() || null;
   const removeAvatar = formData.get("remove_avatar") === "on";
 
   try {
@@ -221,51 +221,9 @@ export async function updatePlayerProfile(formData: FormData): Promise<UpdatePla
     const currentAvatarUrl = (currentProfile?.avatar_url as string | null) ?? null;
 
     if (removeAvatar) {
-      if (currentAvatarUrl) {
-        try {
-          const bucket = currentAvatarUrl.includes("/avatars/") ? AVATARS_BUCKET : PORTRAITS_BUCKET;
-          const path = currentAvatarUrl.split("/").slice(-2).join("/");
-          if (path.startsWith(user.id)) {
-            await supabase.storage.from(bucket).remove([path]);
-          }
-        } catch {
-          /* ignore */
-        }
-      }
       avatarUrl = null;
-    } else if (avatarFile && avatarFile.size > 0) {
-      const ext = avatarFile.name.split(".").pop()?.toLowerCase() || "jpg";
-      const allowed = ["jpg", "jpeg", "png", "webp"];
-      if (!allowed.includes(ext)) {
-        return { success: false, message: "Formato immagine non supportato. Usa JPG, PNG o WebP." };
-      }
-      const path = `${user.id}/avatar.${ext}`;
-      const { error: uploadError } = await supabase.storage
-        .from(AVATARS_BUCKET)
-        .upload(path, avatarFile, { contentType: avatarFile.type, upsert: true });
-
-      if (uploadError) {
-        console.error("[updatePlayerProfile] upload", uploadError);
-        return {
-          success: false,
-          message: uploadError.message ?? "Errore nel caricamento dell'avatar.",
-        };
-      }
-
-      const { data: urlData } = supabase.storage.from(AVATARS_BUCKET).getPublicUrl(path);
-      avatarUrl = urlData.publicUrl;
-
-      if (currentAvatarUrl && currentAvatarUrl !== avatarUrl) {
-        try {
-          const bucket = currentAvatarUrl.includes("/avatars/") ? AVATARS_BUCKET : PORTRAITS_BUCKET;
-          const oldPath = currentAvatarUrl.split("/").slice(-2).join("/");
-          if (oldPath.startsWith(user.id)) {
-            await supabase.storage.from(bucket).remove([oldPath]);
-          }
-        } catch {
-          /* ignore */
-        }
-      }
+    } else if (avatarUrlFromGallery) {
+      avatarUrl = avatarUrlFromGallery;
     } else if (currentAvatarUrl) {
       avatarUrl = currentAvatarUrl;
     }

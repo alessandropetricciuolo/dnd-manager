@@ -6,6 +6,7 @@ import { ProfileForm } from "@/components/profile/profile-form";
 import { ProfileUnifiedForm } from "@/components/profile/profile-unified-form";
 import { ChangePasswordForm } from "@/components/profile/change-password-form";
 import { NotificationPreferenceForm } from "@/components/profile/notification-preference-form";
+import { getAvatarGalleryData } from "@/lib/avatar-gallery";
 import { ArrowLeft, User, UserCheck, UserX } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -40,6 +41,7 @@ export default async function ProfilePage() {
     .eq("status", "absent");
 
   const isPlayer = profile?.role === "player";
+  const avatarGalleryData = isPlayer ? await getAvatarGalleryData(user.id) : null;
 
   return (
     <div className="min-h-screen bg-barber-dark p-4 py-10 md:p-8">
@@ -88,6 +90,7 @@ export default async function ProfilePage() {
                 is_player_public: profile?.is_player_public ?? true,
                 notifications_disabled: profile?.notifications_disabled ?? false,
               }}
+              avatarGallery={avatarGalleryData}
             />
           </div>
         ) : (
