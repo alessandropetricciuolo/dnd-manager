@@ -68,6 +68,8 @@ export interface Database {
           description: string;
           icon_name: string;
           points: number;
+          is_incremental: boolean;
+          max_progress: number;
           created_at: string;
         };
         Insert: {
@@ -76,6 +78,8 @@ export interface Database {
           description?: string;
           icon_name?: string;
           points?: number;
+          is_incremental?: boolean;
+          max_progress?: number;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["achievements"]["Insert"]>;
@@ -85,15 +89,38 @@ export interface Database {
           id: string;
           player_id: string;
           achievement_id: string;
-          unlocked_at: string;
+          current_progress: number;
+          is_unlocked: boolean;
+          unlocked_at: string | null;
         };
         Insert: {
           id?: string;
           player_id: string;
           achievement_id: string;
-          unlocked_at?: string;
+          current_progress?: number;
+          is_unlocked?: boolean;
+          unlocked_at?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["player_achievements"]["Insert"]>;
+      };
+      avatars: {
+        Row: {
+          id: string;
+          name: string;
+          image_url: string;
+          is_default: boolean;
+          required_achievement_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          image_url: string;
+          is_default?: boolean;
+          required_achievement_id?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["avatars"]["Insert"]>;
       };
       campaigns: {
         Row: {

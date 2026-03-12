@@ -1,0 +1,334 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { createSupabaseServerClient } from "@/utils/supabase/server";
+import type { Database } from "@/types/database.types";
+
+type AchievementRow = Database["public"]["Tables"]["achievements"]["Row"];
+type AvatarRow = Database["public"]["Tables"]["avatars"]["Row"];
+type PlayerAchievementRow = Database["public"]["Tables"]["player_achievements"]["Row"];
+
+type ActionResult<T = unknown> = {
+  success: boolean;
+  message?: string;
+} & (T extends void ? {} : { data?: T });
+
+async function getAdminSupabase() {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "Non autenticato.", supabase: null as any };
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "admin") {
+    return { error: "Solo admin.", supabase: null as any };
+  }
+
+  return { error: null, supabase };
+}
+
+// ============================================
+// ACHIEVEMENTS
+// ============================================
+
+export async function listAchievements(): Promise<ActionResult<AchievementRow[]>> {
+  const { error, supabase } = await getAdminSupabase();
+  if (error) return { success: false, message: error };
+
+  const { data, error: dbError } = await supabase
+    .from("achievements")
+    .select("*")
+    .order("created_at", { ascending: true });
+
+  if (dbError) {
+    console.error("[listAchievements]", dbError);
+    return { success: false, message: dbError.message ?? "Errore nel caricamento.", data: [] };
+  }
+
+  return { success: true, data: (data ?? []) as AchievementRow[] };
+}
+
+type UpsertAchievementInput = {
+  id?: string;
+  title: string;
+  description?: string;
+  points: number;
+  icon_name?: string;
+  is_incremental?: boolean;
+  max_progress?: number;
+};
+
+export async function upsertAchievement(input: UpsertAchievementInput): Promise<ActionResult<AchievementRow>> {
+  const { error, supabase } = await getAdminSupabase();
+  if (error) return { success: false, message: error };
+
+  const payload: Partial<AchievementRow> = {
+    title: input.title.trim(),
+    description: (input.description ?? "").trim(),
+    points: Math.max(0, Math.floor(input.points)),
+    icon_name: (input.icon_name || "Award").trim() || "Award",
+    is_incremental: !!input.is_incremental,
+    max_progress: input.is_incremental
+      ? Math.max(1, Math.floor(input.max_progress ?? 1))
+      : 1,
+  };
+
+  const query = supabase
+    .from("achievements")
+    .upsert(
+      input.id
+        ? { id: input.id, ...payload }
+        : payload,
+      { onConflict: "id" }
+    )
+    .select("*")
+    .single();
+
+  const { data, error: dbError } = await query;
+  if (dbError) {
+    console.error("[upsertAchievement]", dbError);
+    return { success: false, message: dbError.message ?? "Errore nel salvataggio." };
+  }
+
+  revalidatePath("/admin/gamification");
+  return { success: true, data: data as AchievementRow };
+}
+
+export async function deleteAchievement(id: string): Promise<ActionResult<void>> {
+  const { error, supabase } = await getAdminSupabase();
+  if (error) return { success: false, message: error };
+
+  const { error: dbError } = await supabase.from("achievements").delete().eq("id", id);
+  if (dbError) {
+    console.error("[deleteAchievement]", dbError);
+    return { success: false, message: dbError.message ?? "Errore durante l'eliminazione." };
+  }
+
+  revalidatePath("/admin/gamification");
+  return { success: true };
+}
+
+// ============================================
+// AVATARS
+// ============================================
+
+export async function listAvatars(): Promise<ActionResult<AvatarRow[]>> {
+  const { error, supabase } = await getAdminSupabase();
+  if (error) return { success: false, message: error };
+
+  const { data, error: dbError } = await supabase
+    .from("avatars")
+    .select("*")
+    .order("created_at", { ascending: true });
+
+  if (dbError) {
+    console.error("[listAvatars]", dbError);
+    return { success: false, message: dbError.message ?? "Errore nel caricamento.", data: [] };
+  }
+
+  return { success: true, data: (data ?? []) as AvatarRow[] };
+}
+
+type UpsertAvatarInput = {
+  id?: string;
+  name: string;
+  image_url: string;
+  is_default?: boolean;
+  required_achievement_id?: string | null;
+};
+
+export async function upsertAvatar(input: UpsertAvatarInput): Promise<ActionResult<AvatarRow>> {
+  const { error, supabase } = await getAdminSupabase();
+  if (error) return { success: false, message: error };
+
+  const payload: Partial<AvatarRow> = {
+    name: input.name.trim(),
+    image_url: input.image_url.trim(),
+    is_default: !!input.is_default,
+    required_achievement_id: input.is_default ? null : input.required_achievement_id ?? null,
+  };
+
+  const query = supabase
+    .from("avatars")
+    .upsert(
+      input.id
+        ? { id: input.id, ...payload }
+        : payload,
+      { onConflict: "id" }
+    )
+    .select("*")
+    .single();
+
+  const { data, error: dbError } = await query;
+  if (dbError) {
+    console.error("[upsertAvatar]", dbError);
+    return { success: false, message: dbError.message ?? "Errore nel salvataggio avatar." };
+  }
+
+  revalidatePath("/admin/gamification");
+  return { success: true, data: data as AvatarRow };
+}
+
+export async function deleteAvatar(id: string): Promise<ActionResult<void>> {
+  const { error, supabase } = await getAdminSupabase();
+  if (error) return { success: false, message: error };
+
+  const { error: dbError } = await supabase.from("avatars").delete().eq("id", id);
+  if (dbError) {
+    console.error("[deleteAvatar]", dbError);
+    return { success: false, message: dbError.message ?? "Errore durante l'eliminazione avatar." };
+  }
+
+  revalidatePath("/admin/gamification");
+  return { success: true };
+}
+
+// ============================================
+// PLAYER ACHIEVEMENTS / PROGRESSO
+// ============================================
+
+type PlayerAchievementInput = {
+  player_id: string;
+  achievement_id: string;
+};
+
+type UpdateProgressInput = PlayerAchievementInput & {
+  current_progress: number;
+};
+
+export async function unlockPlayerAchievementFully(
+  input: PlayerAchievementInput
+): Promise<ActionResult<PlayerAchievementRow>> {
+  const { success, message, data } = await updatePlayerAchievementProgress({
+    ...input,
+    current_progress: Number.POSITIVE_INFINITY,
+  });
+  return { success, message, data };
+}
+
+export async function updatePlayerAchievementProgress(
+  input: UpdateProgressInput
+): Promise<ActionResult<PlayerAchievementRow>> {
+  const { error, supabase } = await getAdminSupabase();
+  if (error) return { success: false, message: error };
+
+  const { player_id, achievement_id } = input;
+  if (!player_id || !achievement_id) {
+    return { success: false, message: "Player e achievement sono obbligatori." };
+  }
+
+  const { data: achievement, error: achError } = await supabase
+    .from("achievements")
+    .select("id, points, is_incremental, max_progress")
+    .eq("id", achievement_id)
+    .single();
+
+  if (achError || !achievement) {
+    console.error("[updatePlayerAchievementProgress] achievement", achError);
+    return { success: false, message: "Achievement non trovato." };
+  }
+
+  const maxProgress =
+    achievement.max_progress && achievement.max_progress > 0
+      ? achievement.max_progress
+      : 1;
+
+  const requested = Number.isFinite(input.current_progress)
+    ? input.current_progress
+    : maxProgress;
+
+  const clampedProgress = Math.max(0, Math.floor(Math.min(requested, maxProgress)));
+
+  const { data: existing, error: existingError } = await supabase
+    .from("player_achievements")
+    .select("id, current_progress, is_unlocked")
+    .eq("player_id", player_id)
+    .eq("achievement_id", achievement_id)
+    .maybeSingle();
+
+  if (existingError) {
+    console.error("[updatePlayerAchievementProgress] existing", existingError);
+    return { success: false, message: "Errore nel leggere il progresso." };
+  }
+
+  const wasUnlocked = existing?.is_unlocked === true;
+  const willBeUnlocked = clampedProgress >= maxProgress;
+
+  const payload: Partial<PlayerAchievementRow> = {
+    player_id,
+    achievement_id,
+    current_progress: clampedProgress,
+    is_unlocked: willBeUnlocked,
+    unlocked_at: willBeUnlocked ? new Date().toISOString() : null,
+  };
+
+  let upserted: PlayerAchievementRow | null = null;
+
+  if (existing?.id) {
+    const { data: updated, error: updateError } = await supabase
+      .from("player_achievements")
+      .update(payload)
+      .eq("id", existing.id)
+      .select("*")
+      .single();
+
+    if (updateError) {
+      console.error("[updatePlayerAchievementProgress] update", updateError);
+      return { success: false, message: updateError.message ?? "Errore aggiornando il progresso." };
+    }
+    upserted = updated as PlayerAchievementRow;
+  } else {
+    const { data: inserted, error: insertError } = await supabase
+      .from("player_achievements")
+      .insert(payload)
+      .select("*")
+      .single();
+
+    if (insertError) {
+      console.error("[updatePlayerAchievementProgress] insert", insertError);
+      return { success: false, message: insertError.message ?? "Errore salvando il progresso." };
+    }
+    upserted = inserted as PlayerAchievementRow;
+  }
+
+  if (!wasUnlocked && willBeUnlocked) {
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("fame_score")
+      .eq("id", player_id)
+      .single();
+
+    if (profileError) {
+      console.error("[updatePlayerAchievementProgress] profile", profileError);
+    } else {
+      const currentFame = (profile?.fame_score as number | null) ?? 0;
+      const newFame = currentFame + (achievement.points ?? 0);
+      const { error: fameError } = await supabase
+        .from("profiles")
+        .update({ fame_score: newFame })
+        .eq("id", player_id);
+      if (fameError) {
+        console.error("[updatePlayerAchievementProgress] fame_score", fameError);
+      }
+    }
+  }
+
+  revalidatePath("/admin/gamification");
+  revalidatePath("/hall-of-fame");
+
+  return {
+    success: true,
+    data: upserted ?? undefined,
+  };
+}
+
