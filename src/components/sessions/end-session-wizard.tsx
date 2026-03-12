@@ -201,7 +201,8 @@ export function EndSessionWizard({
 
   const canProceedStep2 = summary.trim().length > 0;
 
-  const canProceedStep3 = isOneshot || isLongCampaign;
+  // Fase 3 (Mondo) opzionale: si può sempre andare avanti anche senza modifiche
+  const canProceedStep3 = true;
 
   const handleNext = () => {
     if (step < 4) setStep((s) => (s + 1) as StepId);
