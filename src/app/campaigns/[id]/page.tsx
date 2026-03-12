@@ -343,6 +343,8 @@ export default async function CampaignPage({ params }: PageProps) {
               characters={characters}
               eligiblePlayers={eligiblePlayers}
               isGm={isGmOrAdmin}
+              currentUserId={user.id}
+              gmId={campaign.gm_id ?? undefined}
             />
           }
           gmAreaContent={

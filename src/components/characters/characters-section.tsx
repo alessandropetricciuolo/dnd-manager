@@ -3,6 +3,7 @@
 import { CreateCharacterDialog } from "./create-character-dialog";
 import { CharacterCardGm } from "./character-card-gm";
 import { CharacterCardPlayer } from "./character-card-player";
+import { PlayerSecretChat } from "@/components/player/player-secret-chat";
 import type { CampaignCharacterRow, EligiblePlayer } from "@/app/campaigns/character-actions";
 
 type CharactersSectionProps = {
@@ -10,6 +11,9 @@ type CharactersSectionProps = {
   characters: CampaignCharacterRow[];
   eligiblePlayers: EligiblePlayer[];
   isGm: boolean;
+  /** Per il giocatore: id utente loggato e id del GM (per Sussurri del Master). */
+  currentUserId?: string;
+  gmId?: string;
 };
 
 export function CharactersSection({
@@ -17,6 +21,8 @@ export function CharactersSection({
   characters,
   eligiblePlayers,
   isGm,
+  currentUserId,
+  gmId,
 }: CharactersSectionProps) {
   if (isGm) {
     return (
@@ -61,6 +67,13 @@ export function CharactersSection({
     <div className="space-y-6">
       <h2 className="text-lg font-semibold text-barber-paper">Il Mio Personaggio</h2>
       <CharacterCardPlayer character={myCharacter} />
+      {currentUserId && gmId && (
+        <PlayerSecretChat
+          campaignId={campaignId}
+          currentUserId={currentUserId}
+          gmId={gmId}
+        />
+      )}
     </div>
   );
 }
