@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback } from "react";
 import { InitiativeTracker } from "./initiative-tracker";
 import { GmNotesGrid } from "./gm-notes-grid";
 import { PlayerSessionTracker } from "./player-session-tracker";
+import { SecretWhispersSheet } from "./secret-whispers-sheet";
 import { Button } from "@/components/ui/button";
-import { ListOrdered, Calendar, Flag } from "lucide-react";
+import { ListOrdered, Calendar, Flag, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCampaignSessionsForGm, type CampaignSessionOption } from "@/app/campaigns/gm-actions";
 import { EndSessionWizard } from "@/components/sessions/end-session-wizard";
@@ -20,6 +21,7 @@ import {
 type GmScreenLayoutProps = {
   campaignId: string;
   campaignType?: "oneshot" | "quest" | "long" | null;
+  currentUserId: string;
 };
 
 function formatSessionLabel(s: CampaignSessionOption): string {
@@ -32,11 +34,12 @@ function formatSessionLabel(s: CampaignSessionOption): string {
   return s.title?.trim() ? `${s.title} — ${dateStr}` : dateStr;
 }
 
-export function GmScreenLayout({ campaignId, campaignType }: GmScreenLayoutProps) {
+export function GmScreenLayout({ campaignId, campaignType, currentUserId }: GmScreenLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sessions, setSessions] = useState<CampaignSessionOption[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [debriefOpen, setDebriefOpen] = useState(false);
+  const [whispersOpen, setWhispersOpen] = useState(false);
 
   const loadSessions = useCallback(async () => {
     const result = await getCampaignSessionsForGm(campaignId);
@@ -96,7 +99,7 @@ export function GmScreenLayout({ campaignId, campaignType }: GmScreenLayoutProps
       </aside>
 
       {/* Area principale: Note GM + selettore sessione */}
-      <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
+      <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
         <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-amber-600/20 px-4 py-3 md:px-6">
           <Calendar className="h-4 w-4 text-amber-400/80" />
           <Select
@@ -150,6 +153,27 @@ export function GmScreenLayout({ campaignId, campaignType }: GmScreenLayoutProps
             sessionLabel={sessionLabel}
           />
         </div>
+
+        {/* FAB Sussurri Segreti */}
+        <div className="absolute bottom-6 right-6 z-10">
+          <Button
+            type="button"
+            size="icon"
+            onClick={() => setWhispersOpen(true)}
+            className="h-12 w-12 rounded-full bg-amber-600 text-zinc-950 shadow-lg shadow-amber-900/30 hover:bg-amber-500"
+            title="Sussurri Segreti"
+            aria-label="Apri Sussurri Segreti"
+          >
+            <MessageCircle className="h-6 w-6" />
+          </Button>
+        </div>
+
+        <SecretWhispersSheet
+          open={whispersOpen}
+          onOpenChange={setWhispersOpen}
+          campaignId={campaignId}
+          currentUserId={currentUserId}
+        />
       </main>
     </div>
   );

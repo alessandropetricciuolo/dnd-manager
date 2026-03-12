@@ -213,6 +213,27 @@ export interface Database {
         Insert: Omit<Database["public"]["Tables"]["campaign_characters"]["Row"], "created_at" | "updated_at">;
         Update: Partial<Database["public"]["Tables"]["campaign_characters"]["Insert"]>;
       };
+      secret_whispers: {
+        Row: {
+          id: string;
+          campaign_id: string;
+          sender_id: string;
+          receiver_id: string;
+          message: string | null;
+          image_url: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          campaign_id: string;
+          sender_id: string;
+          receiver_id: string;
+          message?: string | null;
+          image_url?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["secret_whispers"]["Insert"]>;
+      };
     };
   };
 }

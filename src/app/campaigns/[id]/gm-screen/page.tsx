@@ -39,6 +39,7 @@ export default async function GmScreenPage({ params }: PageProps) {
     <GmScreenLayout
       campaignId={campaignId}
       campaignType={campaignType}
+      currentUserId={user.id}
     />
   );
 }
