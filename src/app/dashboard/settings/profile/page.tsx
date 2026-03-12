@@ -28,6 +28,10 @@ export default async function DashboardSettingsProfilePage() {
 
   const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
 
+  if (!isGmOrAdmin) {
+    redirect("/profile");
+  }
+
   if (isGmOrAdmin) {
     return (
       <div className="min-h-full w-full bg-barber-dark p-4 md:p-8">

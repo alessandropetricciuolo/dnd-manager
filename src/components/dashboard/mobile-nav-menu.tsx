@@ -40,10 +40,12 @@ function NavLinks({
         <User className="h-5 w-5 shrink-0" />
         Profilo
       </Link>
-      <Link href="/dashboard/settings/profile" onClick={onNavigate} className={linkClass("/dashboard/settings/profile")}>
-        <UserCog className="h-5 w-5 shrink-0" />
-        {isGmOrAdmin ? "Profilo pubblico GM" : "Profilo giocatore"}
-      </Link>
+      {isGmOrAdmin && (
+        <Link href="/dashboard/settings/profile" onClick={onNavigate} className={linkClass("/dashboard/settings/profile")}>
+          <UserCog className="h-5 w-5 shrink-0" />
+          Profilo pubblico GM
+        </Link>
+      )}
       {isAdmin && (
         <Link href="/admin" onClick={onNavigate} className={linkClass("/admin")}>
           <Shield className="h-5 w-5 shrink-0" />
