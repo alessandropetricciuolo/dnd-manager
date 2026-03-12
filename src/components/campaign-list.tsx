@@ -155,7 +155,7 @@ export async function CampaignList({ variant = "all" }: CampaignListProps) {
                 {campaign.name}
               </CardTitle>
               {campaign.description && (
-                <CardDescription className="line-clamp-2 text-barber-paper/70">
+                <CardDescription className="line-clamp-4 text-barber-paper/70 md:line-clamp-2">
                   {campaign.description}
                 </CardDescription>
               )}

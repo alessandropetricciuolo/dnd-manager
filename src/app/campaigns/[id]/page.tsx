@@ -243,6 +243,28 @@ export default async function CampaignPage({ params }: PageProps) {
         <main className="min-h-0 min-w-0 flex-1 flex flex-col overflow-hidden">
           <ScrollArea className="min-h-0 flex-1 overflow-x-hidden">
             <div className="min-w-0 w-full max-w-full px-4 pb-8 pt-4 lg:px-6 lg:pt-6">
+              {/* Mobile: sinossi visibile (su desktop è nella sidebar) */}
+              <section className="mb-6 rounded-xl border border-barber-gold/20 bg-barber-dark/60 p-4 lg:hidden">
+                <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-barber-gold/90">
+                  Sinossi
+                </h2>
+                {campaignTypeLabel && (
+                  <span className="mb-3 inline-block rounded-full border border-barber-gold/50 bg-barber-gold/10 px-3 py-1 text-xs font-medium text-barber-gold">
+                    {campaignTypeLabel}
+                  </span>
+                )}
+                {campaign.description ? (
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-barber-paper/90">
+                    {campaign.description}
+                  </p>
+                ) : (
+                  <p className="text-sm text-barber-paper/50">Nessuna descrizione.</p>
+                )}
+                {gmDisplayName && (
+                  <p className="mt-3 text-sm text-barber-gold/90">GM · {gmDisplayName}</p>
+                )}
+              </section>
+
               <CampaignTabsClient
           campaignId={campaign.id}
           campaign={{
