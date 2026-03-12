@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { updateSignupStatus, deleteSignup, joinSession, deleteSession } from "@/app/campaigns/actions";
+import { updateSignupStatus, deleteSignup, joinSession, deleteSession, closeSessionQuestOrOneshot } from "@/app/campaigns/actions";
 import { UnlockContentDialog } from "@/components/sessions/unlock-content-dialog";
 import { EndSessionWizard } from "@/components/sessions/end-session-wizard";
 import type { ApprovedSignupForWizard } from "@/components/sessions/end-session-wizard";
@@ -67,6 +67,7 @@ export function SessionListClient({
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [joinLoadingSessionId, setJoinLoadingSessionId] = useState<string | null>(null);
   const [deleteSessionLoadingId, setDeleteSessionLoadingId] = useState<string | null>(null);
+  const [closeSimpleLoadingId, setCloseSimpleLoadingId] = useState<string | null>(null);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [sessionForClose, setSessionForClose] = useState<{
     sessionId: string;
@@ -103,6 +104,18 @@ export function SessionListClient({
     setDeleteSessionLoadingId(sessionId);
     const res = await deleteSession(sessionId);
     setDeleteSessionLoadingId(null);
+    if (res.success) {
+      toast.success(res.message);
+      router.refresh();
+    } else {
+      toast.error(res.message);
+    }
+  }
+
+  async function handleCloseQuestOrOneshot(sessionId: string) {
+    setCloseSimpleLoadingId(sessionId);
+    const res = await closeSessionQuestOrOneshot(sessionId);
+    setCloseSimpleLoadingId(null);
     if (res.success) {
       toast.success(res.message);
       router.refresh();
@@ -186,26 +199,41 @@ export function SessionListClient({
                     <span>{session.notes}</span>
                   </CardDescription>
                 )}
-                {/* GM/Admin: Chiudi Sessione & Fai Appello (solo se data passata e ancora scheduled) */}
+                {/* GM/Admin: Chiudi Sessione (solo se data passata e ancora scheduled) */}
                 {isGmOrAdmin && isTodayOrPast && session.status === "scheduled" && (
-                  <Button
-                    size="sm"
-                    className="w-full bg-barber-red hover:bg-barber-red/90 text-barber-paper font-medium text-xs"
-                    onClick={() => {
-                      const approved = session.signups
-                        .filter((s) => normalizeStatus(s.status) === "approved")
-                        .map((s) => ({ id: s.id, player_id: s.player_id, player_name: s.player_name }));
-                      setSessionForClose({
-                        sessionId: session.id,
-                        approvedSignups: approved,
-                        campaignType: campaignType ?? undefined,
-                      });
-                      setWizardOpen(true);
-                    }}
-                  >
-                    <ClipboardCheck className="h-3.5 w-3 mr-1.5" />
-                    Chiudi sessione
-                  </Button>
+                  <div className="space-y-1.5">
+                    {(campaignType === "quest" || campaignType === "oneshot") &&
+                      session.signups.length > 0 &&
+                      session.signups.every((s) => normalizeStatus(s.status) === "attended") && (
+                        <Button
+                          size="sm"
+                          className="w-full bg-barber-gold/90 text-barber-dark hover:bg-barber-gold font-medium text-xs"
+                          disabled={!!closeSimpleLoadingId}
+                          onClick={() => handleCloseQuestOrOneshot(session.id)}
+                        >
+                          {closeSimpleLoadingId === session.id ? "Chiusura..." : "Chiudi sessione (tutti presenti)"}
+                        </Button>
+                      )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full border-barber-red/50 text-barber-red hover:bg-barber-red/10 font-medium text-xs"
+                      onClick={() => {
+                        const approved = session.signups
+                          .filter((s) => normalizeStatus(s.status) === "approved")
+                          .map((s) => ({ id: s.id, player_id: s.player_id, player_name: s.player_name }));
+                        setSessionForClose({
+                          sessionId: session.id,
+                          approvedSignups: approved,
+                          campaignType: campaignType ?? undefined,
+                        });
+                        setWizardOpen(true);
+                      }}
+                    >
+                      <ClipboardCheck className="h-3.5 w-3 mr-1.5" />
+                      Chiudi sessione (con riepilogo e XP)
+                    </Button>
+                  </div>
                 )}
                 {/* Player: bottone Iscriviti o stato iscrizione */}
                 {!isGmOrAdmin && (

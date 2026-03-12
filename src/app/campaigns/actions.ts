@@ -8,6 +8,7 @@ import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { getPlayerEmails, getNotificationsPaused, hasNotificationsDisabled } from "@/lib/player-emails";
 import { sendEmail, wrapInTemplate, escapeHtml } from "@/lib/email";
 import { uploadToTelegram } from "@/lib/telegram-storage";
+import { incrementSessionsAttendedWithAdmin } from "@/lib/actions/gamification";
 
 export type CreateSessionResult = {
   success: boolean;
@@ -292,7 +293,7 @@ export async function updateSignupStatus(
 
     const { data: signup, error: signupError } = await supabase
       .from("session_signups")
-      .select("id, session_id, player_id")
+      .select("id, session_id, player_id, status")
       .eq("id", signupId)
       .single();
     if (signupError || !signup) {
@@ -321,6 +322,19 @@ export async function updateSignupStatus(
     if (updateError) {
       console.error("[updateSignupStatus]", updateError);
       return { success: false, message: updateError.message ?? "Errore durante l'aggiornamento." };
+    }
+
+    if (newStatus === "attended") {
+      const prevStatus = (signup as { status?: string }).status ?? "";
+      const wasAlreadyAttended = prevStatus === "attended";
+      if (!wasAlreadyAttended) {
+        try {
+          const admin = createSupabaseAdminClient();
+          await incrementSessionsAttendedWithAdmin(admin, signup.player_id);
+        } catch (gamErr) {
+          console.error("[updateSignupStatus] gamification increment", gamErr);
+        }
+      }
     }
 
     if (newStatus === "approved") {
@@ -762,6 +776,14 @@ export async function closeSessionAction(
       if (signup.status === "approved" || signup.status === "confirmed") {
         await admin.from("session_signups").update({ status: newStatus } as never).eq("id", signup.id);
         if (newStatus === "attended") {
+          const wasAlreadyAttended = signup.status === "attended";
+          if (!wasAlreadyAttended) {
+            try {
+              await incrementSessionsAttendedWithAdmin(admin, signup.player_id);
+            } catch (gamErr) {
+              console.error("[closeSessionAction] gamification increment", gamErr);
+            }
+          }
           const { data: existingRow } = await admin
             .from("campaign_members")
             .select("id, xp_earned")
@@ -860,6 +882,14 @@ export async function closeSession(
           .update({ status: newStatus } as never)
           .eq("id", signup.id);
         if (newStatus === "attended") {
+          const wasAlreadyAttended = signup.status === "attended";
+          if (!wasAlreadyAttended) {
+            try {
+              await incrementSessionsAttendedWithAdmin(admin, signup.player_id);
+            } catch (gamErr) {
+              console.error("[closeSession] gamification increment", gamErr);
+            }
+          }
           const { data: existing } = await admin
             .from("campaign_members")
             .select("id")
@@ -891,6 +921,85 @@ export async function closeSession(
     return { success: true, message: "Sessione chiusa e appello registrato.", campaignId: session.campaign_id };
   } catch (err) {
     console.error("[closeSession]", err);
+    return { success: false, message: "Errore imprevisto. Riprova." };
+  }
+}
+
+/** Chiusura sessione per quest/oneshot: tutti i giocatori già con presenza confermata → sessione completata senza modificare campagna (no wizard, no XP/summary). */
+export async function closeSessionQuestOrOneshot(
+  sessionId: string
+): Promise<CloseSessionResult & { campaignId?: string }> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { success: false, message: "Devi essere autenticato." };
+    }
+
+    const allowed = await isGmOrAdminByRole(supabase);
+    if (!allowed) {
+      return { success: false, message: "Solo GM o Admin possono chiudere sessioni." };
+    }
+
+    const { data: session, error: sessionError } = await supabase
+      .from("sessions")
+      .select("id, campaign_id, status")
+      .eq("id", sessionId)
+      .single();
+    if (sessionError || !session) {
+      return { success: false, message: "Sessione non trovata." };
+    }
+    if (session.status !== "scheduled") {
+      return { success: false, message: "La sessione è già chiusa." };
+    }
+
+    const { data: campaign } = await supabase
+      .from("campaigns")
+      .select("type")
+      .eq("id", session.campaign_id)
+      .single();
+    const campaignType = (campaign as { type?: string } | null)?.type;
+    if (campaignType !== "quest" && campaignType !== "oneshot") {
+      return { success: false, message: "Questa azione è solo per sessioni di tipo Quest o Oneshot." };
+    }
+
+    const { data: signups } = await supabase
+      .from("session_signups")
+      .select("id, status")
+      .eq("session_id", sessionId);
+
+    const list = (signups ?? []) as { id: string; status: string }[];
+    if (list.length === 0) {
+      return { success: false, message: "Nessun iscritto alla sessione." };
+    }
+    const stillNotAttended = list.filter((s) => s.status === "approved" || s.status === "confirmed");
+    if (stillNotAttended.length > 0) {
+      const attendedCount = list.filter((s) => s.status === "attended").length;
+      return {
+        success: false,
+        message: `Conferma la presenza di tutti i giocatori prima di chiudere. (${attendedCount}/${list.length} presenti.)`,
+      };
+    }
+
+    const admin = createSupabaseAdminClient();
+    const { error: updateErr } = await admin
+      .from("sessions")
+      .update({ status: "completed" } as never)
+      .eq("id", sessionId);
+
+    if (updateErr) {
+      console.error("[closeSessionQuestOrOneshot]", updateErr);
+      return { success: false, message: "Errore durante la chiusura." };
+    }
+
+    revalidatePath(`/campaigns/${session.campaign_id}`);
+    revalidatePath("/dashboard");
+    return { success: true, message: "Sessione chiusa (tutti presenti).", campaignId: session.campaign_id };
+  } catch (err) {
+    console.error("[closeSessionQuestOrOneshot]", err);
     return { success: false, message: "Errore imprevisto. Riprova." };
   }
 }

@@ -22,6 +22,7 @@ export interface Database {
           nickname: string | null;
           is_player_public: boolean;
           fame_score: number;
+          sessions_attended_count: number;
           role: "player" | "gm" | "admin";
           first_name: string | null;
           last_name: string | null;
@@ -45,6 +46,7 @@ export interface Database {
           nickname?: string | null;
           is_player_public?: boolean;
           fame_score?: number;
+          sessions_attended_count?: number;
           role?: "player" | "gm" | "admin";
           first_name?: string | null;
           last_name?: string | null;
