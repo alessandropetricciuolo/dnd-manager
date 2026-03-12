@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 
 const PORTRAITS_BUCKET = "portraits";
+const AVATARS_BUCKET = "avatars";
 const LETHALITY_VALUES = ["Bassa", "Media", "Alta", "Implacabile"] as const;
 
 export type UpdateGmProfileResult = { success: boolean; message: string };
@@ -222,9 +223,10 @@ export async function updatePlayerProfile(formData: FormData): Promise<UpdatePla
     if (removeAvatar) {
       if (currentAvatarUrl) {
         try {
+          const bucket = currentAvatarUrl.includes("/avatars/") ? AVATARS_BUCKET : PORTRAITS_BUCKET;
           const path = currentAvatarUrl.split("/").slice(-2).join("/");
           if (path.startsWith(user.id)) {
-            await supabase.storage.from(PORTRAITS_BUCKET).remove([path]);
+            await supabase.storage.from(bucket).remove([path]);
           }
         } catch {
           /* ignore */
@@ -239,7 +241,7 @@ export async function updatePlayerProfile(formData: FormData): Promise<UpdatePla
       }
       const path = `${user.id}/avatar.${ext}`;
       const { error: uploadError } = await supabase.storage
-        .from(PORTRAITS_BUCKET)
+        .from(AVATARS_BUCKET)
         .upload(path, avatarFile, { contentType: avatarFile.type, upsert: true });
 
       if (uploadError) {
@@ -250,14 +252,15 @@ export async function updatePlayerProfile(formData: FormData): Promise<UpdatePla
         };
       }
 
-      const { data: urlData } = supabase.storage.from(PORTRAITS_BUCKET).getPublicUrl(path);
+      const { data: urlData } = supabase.storage.from(AVATARS_BUCKET).getPublicUrl(path);
       avatarUrl = urlData.publicUrl;
 
       if (currentAvatarUrl && currentAvatarUrl !== avatarUrl) {
         try {
+          const bucket = currentAvatarUrl.includes("/avatars/") ? AVATARS_BUCKET : PORTRAITS_BUCKET;
           const oldPath = currentAvatarUrl.split("/").slice(-2).join("/");
           if (oldPath.startsWith(user.id)) {
-            await supabase.storage.from(PORTRAITS_BUCKET).remove([oldPath]);
+            await supabase.storage.from(bucket).remove([oldPath]);
           }
         } catch {
           /* ignore */

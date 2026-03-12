@@ -1,12 +1,14 @@
 "use client";
 
-import { useTransition, useState } from "react";
+import { useTransition, useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { updatePlayerProfile } from "@/app/dashboard/settings/profile/actions";
-import { Loader2, Trophy, Bell, BellOff } from "lucide-react";
+import { Loader2, Trophy, Bell, BellOff, UserCircle, AlertCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type PlayerProfileFormProps = {
   defaultValues: {
@@ -17,19 +19,37 @@ type PlayerProfileFormProps = {
   };
 };
 
+const NICKNAME_UNIQUE_ERROR = "già in uso";
+
 export function PlayerProfileForm({ defaultValues }: PlayerProfileFormProps) {
   const [isPending, startTransition] = useTransition();
   const [avatarPreview, setAvatarPreview] = useState<string | null>(defaultValues.avatar_url);
+  const [isPlayerPublic, setIsPlayerPublic] = useState(defaultValues.is_player_public);
+  const [notificationsDisabled, setNotificationsDisabled] = useState(
+    defaultValues.notifications_disabled
+  );
+  const [lastError, setLastError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isPending) setLastError(null);
+  }, [isPending]);
+
+  const nicknameError = lastError?.toLowerCase().includes(NICKNAME_UNIQUE_ERROR) ?? false;
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const formData = new FormData(event.currentTarget);
+    setLastError(null);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    formData.set("is_player_public", isPlayerPublic ? "on" : "");
+    formData.set("notifications_disabled", notificationsDisabled ? "on" : "");
     startTransition(async () => {
       const result = await updatePlayerProfile(formData);
       if (result.success) {
         toast.success(result.message);
         setAvatarPreview(null);
       } else {
+        setLastError(result.message);
         toast.error(result.message);
       }
     });
@@ -45,31 +65,38 @@ export function PlayerProfileForm({ defaultValues }: PlayerProfileFormProps) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-6">
-      <div className="space-y-2">
+    <form onSubmit={onSubmit} className="space-y-8">
+      {/* 1. Avatar */}
+      <section className="space-y-3">
         <Label className="text-barber-paper/90">Avatar</Label>
         <p className="text-xs text-barber-paper/60">
-          Immagine profilo quadrata o rotonda (usata in Classifica Eroi).
+          Immagine profilo (quadrata o rotonda). Verrà mostrata nella Classifica Eroi.
         </p>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-          {(avatarPreview || defaultValues.avatar_url) && (
-            <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-full border-2 border-barber-gold/30 bg-barber-dark">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={avatarPreview || defaultValues.avatar_url || ""}
-                alt="Avatar"
-                className="h-full w-full object-cover"
-              />
-            </div>
-          )}
-          <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+          <div className="flex shrink-0 items-center justify-center">
+            {(avatarPreview || defaultValues.avatar_url) ? (
+              <div className="relative h-24 w-24 overflow-hidden rounded-full border-2 border-barber-gold/30 bg-barber-dark">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={avatarPreview || defaultValues.avatar_url || ""}
+                  alt="Avatar"
+                  className="h-full w-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="flex h-24 w-24 items-center justify-center rounded-full border-2 border-dashed border-barber-gold/20 bg-barber-dark/60">
+                <UserCircle className="h-12 w-12 text-barber-paper/40" />
+              </div>
+            )}
+          </div>
+          <div className="flex flex-1 flex-col gap-2">
             <Input
               type="file"
               name="avatar"
               accept="image/jpeg,image/png,image/webp"
               onChange={onAvatarChange}
               disabled={isPending}
-              className="border-barber-gold/30 bg-barber-dark/80 text-barber-paper file:mr-2 file:rounded file:border-0 file:bg-barber-gold/20 file:px-3 file:py-1 file:text-barber-gold"
+              className="border-barber-gold/30 bg-barber-dark/80 text-barber-paper file:mr-2 file:rounded file:border-0 file:bg-barber-gold/20 file:px-3 file:py-1.5 file:text-barber-gold file:text-sm"
             />
             {defaultValues.avatar_url && (
               <label className="flex cursor-pointer items-center gap-2 text-sm text-barber-paper/80">
@@ -84,9 +111,10 @@ export function PlayerProfileForm({ defaultValues }: PlayerProfileFormProps) {
             )}
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="space-y-2">
+      {/* 2. Nickname */}
+      <section className="space-y-2">
         <Label htmlFor="nickname" className="text-barber-paper/90">
           Nickname
         </Label>
@@ -96,59 +124,90 @@ export function PlayerProfileForm({ defaultValues }: PlayerProfileFormProps) {
           defaultValue={defaultValues.nickname ?? ""}
           placeholder="es. GuerrieroSolare"
           minLength={2}
-          className="border-barber-gold/30 bg-barber-dark/80 text-barber-paper"
           disabled={isPending}
+          className={cn(
+            "border-barber-gold/30 bg-barber-dark/80 text-barber-paper placeholder:text-barber-paper/40",
+            nicknameError && "border-red-500/60 focus-visible:ring-red-500/50"
+          )}
+          aria-invalid={nicknameError}
+          aria-describedby={nicknameError ? "nickname-error" : "nickname-hint"}
         />
-        <p className="text-xs text-barber-paper/60">
-          Nome pubblico univoco per la Classifica Eroi (almeno 2 caratteri).
+        <p id="nickname-hint" className="text-xs text-barber-paper/60">
+          Questo sarà il tuo nome pubblico nella Hall of Fame. Univoco, almeno 2 caratteri.
         </p>
-      </div>
+        {nicknameError && (
+          <div
+            id="nickname-error"
+            className="flex items-center gap-2 rounded-lg border border-red-500/40 bg-red-950/30 px-3 py-2 text-sm text-red-300"
+            role="alert"
+          >
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            {lastError}
+          </div>
+        )}
+      </section>
 
-      <div className="flex items-center gap-3 rounded-lg border border-barber-gold/20 bg-barber-dark/50 p-4">
-        <input
-          type="checkbox"
-          id="is_player_public"
-          name="is_player_public"
-          defaultChecked={defaultValues.is_player_public}
-          disabled={isPending}
-          className="h-4 w-4 rounded border-barber-gold/50 bg-barber-dark text-barber-gold"
-        />
-        <Label htmlFor="is_player_public" className="cursor-pointer text-barber-paper/90">
-          <span className="flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-barber-gold" />
-            Mostra il mio profilo nella Classifica Eroi
-          </span>
-        </Label>
-      </div>
+      {/* 3. Privacy e Notifiche */}
+      <section className="space-y-4">
+        <h3 className="text-sm font-semibold text-barber-gold">Privacy e Notifiche</h3>
+        <div className="space-y-4 rounded-xl border border-barber-gold/20 bg-barber-dark/50 p-4">
+          <div className="flex items-center justify-between gap-4">
+            <Label
+              htmlFor="wizard-leaderboard"
+              className="cursor-pointer text-barber-paper/90 font-normal"
+            >
+              <span className="flex items-center gap-2">
+                <Trophy className="h-4 w-4 text-barber-gold" />
+                Mostra il mio profilo nella Classifica Eroi (Hall of Fame)
+              </span>
+              <p className="mt-0.5 text-xs text-barber-paper/50">
+                Se disattivato, non apparirai nella leaderboard pubblica.
+              </p>
+            </Label>
+            <Switch
+              id="wizard-leaderboard"
+              checked={isPlayerPublic}
+              onCheckedChange={setIsPlayerPublic}
+              disabled={isPending}
+            />
+          </div>
 
-      <div className="flex items-center gap-3 rounded-lg border border-barber-gold/20 bg-barber-dark/50 p-4">
-        <input
-          type="checkbox"
-          id="notifications_disabled"
-          name="notifications_disabled"
-          defaultChecked={defaultValues.notifications_disabled}
-          disabled={isPending}
-          className="h-4 w-4 rounded border-barber-gold/50 bg-barber-dark text-barber-gold"
-        />
-        <Label htmlFor="notifications_disabled" className="cursor-pointer text-barber-paper/90">
-          <span className="flex items-center gap-2">
-            {defaultValues.notifications_disabled ? (
-              <BellOff className="h-4 w-4 text-amber-400" />
-            ) : (
-              <Bell className="h-4 w-4 text-barber-gold" />
-            )}
-            Blocca avvisi automatici (email sessioni, conferme, assegnazione PG)
-          </span>
-        </Label>
-      </div>
+          <div className="border-t border-barber-gold/10 pt-4">
+            <div className="flex items-center justify-between gap-4">
+              <Label
+                htmlFor="wizard-notifications"
+                className="cursor-pointer text-barber-paper/90 font-normal"
+              >
+                <span className="flex items-center gap-2">
+                  {notificationsDisabled ? (
+                    <BellOff className="h-4 w-4 text-amber-400" />
+                  ) : (
+                    <Bell className="h-4 w-4 text-barber-gold" />
+                  )}
+                  Blocca avvisi automatici
+                </span>
+                <p className="mt-0.5 text-xs text-barber-paper/50">
+                  Email per: nuove sessioni, conferme iscrizioni, assegnazione personaggi.
+                </p>
+              </Label>
+              <Switch
+                id="wizard-notifications"
+                checked={notificationsDisabled}
+                onCheckedChange={setNotificationsDisabled}
+                disabled={isPending}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
 
       <Button
         type="submit"
         disabled={isPending}
-        className="bg-barber-gold text-barber-dark hover:bg-barber-gold/90"
+        className="w-full sm:w-auto bg-barber-gold text-barber-dark hover:bg-barber-gold/90"
       >
         {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        {isPending ? "Salvataggio..." : "Salva profilo"}
+        {isPending ? "Salvataggio..." : "Salva Modifiche"}
       </Button>
     </form>
   );
