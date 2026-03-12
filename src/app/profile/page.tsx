@@ -7,6 +7,8 @@ import { ProfileUnifiedForm } from "@/components/profile/profile-unified-form";
 import { ChangePasswordForm } from "@/components/profile/change-password-form";
 import { NotificationPreferenceForm } from "@/components/profile/notification-preference-form";
 import { getAvatarGalleryData } from "@/lib/avatar-gallery";
+import { getTrophyDataForPlayer } from "@/lib/trophy-data";
+import { PlayerTrophyBoard } from "@/components/profile/player-trophy-board";
 import { ArrowLeft, User, UserCheck, UserX } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -42,6 +44,7 @@ export default async function ProfilePage() {
 
   const isPlayer = profile?.role === "player";
   const avatarGalleryData = isPlayer ? await getAvatarGalleryData(user.id) : null;
+  const trophyData = await getTrophyDataForPlayer(user.id);
 
   return (
     <div className="min-h-screen bg-barber-dark p-4 py-10 md:p-8">
@@ -76,6 +79,15 @@ export default async function ProfilePage() {
             </span>
           </div>
         </div>
+
+        <section className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 p-6">
+          <h2 className="text-sm font-medium text-barber-paper/90 mb-4">Bacheca dei Trofei</h2>
+          <PlayerTrophyBoard
+            unlocked={trophyData.unlocked}
+            inProgress={trophyData.inProgress}
+            locked={trophyData.locked}
+          />
+        </section>
 
         {isPlayer ? (
           <div className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 p-6">
