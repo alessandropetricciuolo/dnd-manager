@@ -14,11 +14,26 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { upsertAchievement, deleteAchievement } from "@/lib/actions/gamification";
 import { Award, Plus, Trash2 } from "lucide-react";
 
 type AchievementRow = Database["public"]["Tables"]["achievements"]["Row"];
+
+const ACHIEVEMENT_CATEGORIES = [
+  "Titoli di Fine Sessione",
+  "Combattimento",
+  "Esplorazione",
+  "Storia",
+  "Generale",
+] as const;
 
 type Props = {
   achievements: AchievementRow[];
@@ -27,6 +42,7 @@ type Props = {
 export function GamificationAchievementsTab({ achievements }: Props) {
   const [open, setOpen] = useState(false);
   const [isIncremental, setIsIncremental] = useState(false);
+  const [category, setCategory] = useState<string>("Generale");
   const [isPending, startTransition] = useTransition();
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -56,13 +72,16 @@ export function GamificationAchievementsTab({ achievements }: Props) {
         icon_name: iconName || "Award",
         is_incremental: incremental,
         max_progress: incremental ? maxProgress : 1,
+        category: ACHIEVEMENT_CATEGORIES.includes(category as (typeof ACHIEVEMENT_CATEGORIES)[number]) ? category : "Generale",
       });
+      setCategory("Generale");
 
       if (res.success) {
         toast.success("Achievement salvato.");
         setOpen(false);
         form.reset();
         setIsIncremental(false);
+        setCategory("Generale");
       } else {
         toast.error(res.message ?? "Errore nel salvataggio.");
       }
@@ -128,6 +147,30 @@ export function GamificationAchievementsTab({ achievements }: Props) {
                   className="border-barber-gold/30 bg-barber-dark/80 text-barber-paper"
                   disabled={isPending}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ach-category" className="text-barber-paper/90">
+                  Categoria
+                </Label>
+                <Select value={category} onValueChange={setCategory} disabled={isPending}>
+                  <SelectTrigger
+                    id="ach-category"
+                    className="border-barber-gold/30 bg-barber-dark/80 text-barber-paper"
+                  >
+                    <SelectValue placeholder="Generale" />
+                  </SelectTrigger>
+                  <SelectContent className="border-barber-gold/20 bg-barber-dark">
+                    {ACHIEVEMENT_CATEGORIES.map((cat) => (
+                      <SelectItem
+                        key={cat}
+                        value={cat}
+                        className="text-barber-paper focus:bg-barber-gold/20"
+                      >
+                        {cat}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-2">
@@ -245,6 +288,11 @@ export function GamificationAchievementsTab({ achievements }: Props) {
                     <p className="truncate text-xs text-barber-paper/70">{a.description}</p>
                   )}
                   <p className="text-[11px] text-barber-paper/50">
+                    {"category" in a && a.category && (
+                      <span className="mr-1.5 rounded bg-barber-gold/10 px-1.5 py-0.5 text-[10px] text-barber-gold">
+                        {a.category}
+                      </span>
+                    )}
                     Icona: {a.icon_name} · Punti Fama: {a.points}
                   </p>
                 </div>

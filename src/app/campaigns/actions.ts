@@ -8,7 +8,7 @@ import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { getPlayerEmails, getNotificationsPaused, hasNotificationsDisabled } from "@/lib/player-emails";
 import { sendEmail, wrapInTemplate, escapeHtml } from "@/lib/email";
 import { uploadToTelegram } from "@/lib/telegram-storage";
-import { incrementSessionsAttendedWithAdmin } from "@/lib/actions/gamification";
+import { incrementSessionsAttendedWithAdmin, applyAwardedAchievementWithAdmin } from "@/lib/actions/gamification";
 
 export type CreateSessionResult = {
   success: boolean;
@@ -688,6 +688,49 @@ export async function getApprovedSignupsForSession(
   }
 }
 
+export type AchievementForWizard = {
+  id: string;
+  title: string;
+  icon_name: string;
+  is_incremental: boolean;
+  max_progress: number;
+  category: string;
+};
+
+/** Lista achievement per lo step Trofei del wizard (GM o Admin). */
+export async function getAchievementsForWizard(): Promise<
+  { success: true; data: AchievementForWizard[] } | { success: false; error: string }
+> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { success: false, error: "Non autenticato." };
+    }
+    const allowed = await isGmOrAdminByRole(supabase);
+    if (!allowed) {
+      return { success: false, error: "Solo GM o Admin possono vedere gli achievement." };
+    }
+    const admin = createSupabaseAdminClient();
+    const { data: rows, error: dbError } = await admin
+      .from("achievements")
+      .select("id, title, icon_name, is_incremental, max_progress, category")
+      .order("created_at", { ascending: true });
+    if (dbError) {
+      console.error("[getAchievementsForWizard]", dbError);
+      return { success: false, error: dbError.message ?? "Errore nel caricamento." };
+    }
+    const data = (rows ?? []) as AchievementForWizard[];
+    return { success: true, data };
+  } catch (err) {
+    console.error("[getAchievementsForWizard]", err);
+    return { success: false, error: "Errore imprevisto." };
+  }
+}
+
 export type CloseSessionResult = { success: boolean; message: string };
 
 /** Payload unificato per chiusura sessione (EndSessionWizard). */
@@ -706,6 +749,8 @@ export type CloseSessionActionPayload = {
   gm_private_notes?: string | null;
   /** entity_id -> alive | dead | missing (solo campagne Long). */
   entityStatusUpdates: Record<string, "alive" | "dead" | "missing">;
+  /** Trofei assegnati ai presenti (opzionale). */
+  awardedAchievements?: { playerId: string; achievementId: string; addedProgress: number }[];
 };
 
 /** Chiusura sessione unificata: sessioni, presenze, XP, summary, note GM, mondo (global_status), sblocco contenuti. */
@@ -821,6 +866,21 @@ export async function closeSessionAction(
       if (!batchRes.success) {
         console.warn("[closeSessionAction] batchUnlockContent", batchRes.message);
       }
+    }
+
+    if (payload.awardedAchievements?.length) {
+      for (const a of payload.awardedAchievements) {
+        try {
+          await applyAwardedAchievementWithAdmin(admin, {
+            player_id: a.playerId,
+            achievement_id: a.achievementId,
+            added_progress: a.addedProgress,
+          });
+        } catch (gamErr) {
+          console.error("[closeSessionAction] awarded achievement", a, gamErr);
+        }
+      }
+      revalidatePath("/hall-of-fame");
     }
 
     revalidatePath(`/campaigns/${session.campaign_id}`);

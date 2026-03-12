@@ -70,6 +70,7 @@ type UpsertAchievementInput = {
   icon_name?: string;
   is_incremental?: boolean;
   max_progress?: number;
+  category?: string;
 };
 
 export async function upsertAchievement(input: UpsertAchievementInput): Promise<ActionResult<AchievementRow>> {
@@ -85,6 +86,7 @@ export async function upsertAchievement(input: UpsertAchievementInput): Promise<
     max_progress: input.is_incremental
       ? Math.max(1, Math.floor(input.max_progress ?? 1))
       : 1,
+    category: (input.category ?? "Generale").trim() || "Generale",
   };
 
   const query = supabase
@@ -492,4 +494,73 @@ export async function incrementSessionsAttendedWithAdmin(
   revalidatePath("/hall-of-fame");
   revalidatePath("/admin/gamification");
   return { success: true };
+}
+
+// ============================================
+// APPLICA TROFEI DA WIZARD CHIUSURA SESSIONE (con client admin da campaign action)
+// ============================================
+
+export type AwardedAchievementInput = {
+  player_id: string;
+  achievement_id: string;
+  added_progress: number;
+};
+
+/**
+ * Applica un achievement assegnato dal wizard: binario → sblocca; incrementale → somma added_progress al current e sblocca se raggiunge max.
+ * Usare con client admin (es. da closeSessionAction).
+ */
+export async function applyAwardedAchievementWithAdmin(
+  admin: AdminClient,
+  input: AwardedAchievementInput
+): Promise<ActionResult<void>> {
+  const { player_id, achievement_id, added_progress } = input;
+  if (!player_id || !achievement_id) {
+    return { success: false, message: "Player e achievement sono obbligatori." };
+  }
+
+  const { data: achievementRaw, error: achError } = await admin
+    .from("achievements")
+    .select("id, is_incremental, max_progress")
+    .eq("id", achievement_id)
+    .single();
+
+  if (achError || !achievementRaw) {
+    console.error("[applyAwardedAchievementWithAdmin] achievement", achError);
+    return { success: false, message: "Achievement non trovato." };
+  }
+
+  const achievement = achievementRaw as { id: string; is_incremental: boolean; max_progress: number };
+  const maxProgress = achievement.max_progress && achievement.max_progress > 0 ? achievement.max_progress : 1;
+
+  if (!achievement.is_incremental) {
+    return updatePlayerAchievementProgressWithClient(admin, {
+      player_id,
+      achievement_id,
+      current_progress: maxProgress,
+    }) as Promise<ActionResult<void>>;
+  }
+
+  const { data: existingRaw, error: existingError } = await admin
+    .from("player_achievements")
+    .select("id, current_progress")
+    .eq("player_id", player_id)
+    .eq("achievement_id", achievement_id)
+    .maybeSingle();
+
+  if (existingError) {
+    console.error("[applyAwardedAchievementWithAdmin] existing", existingError);
+    return { success: false, message: "Errore nel leggere il progresso." };
+  }
+
+  const existing = existingRaw as { id: string; current_progress: number } | null;
+  const current = existing?.current_progress ?? 0;
+  const add = Math.max(0, Math.floor(added_progress));
+  const newProgress = Math.min(current + add, maxProgress);
+
+  return updatePlayerAchievementProgressWithClient(admin, {
+    player_id,
+    achievement_id,
+    current_progress: newProgress,
+  }) as Promise<ActionResult<void>>;
 }

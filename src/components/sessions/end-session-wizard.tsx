@@ -22,19 +22,55 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { User, UserX, Lock, Loader2, BookOpen, Map as MapIcon, Search } from "lucide-react";
+import { User, UserX, Lock, Loader2, BookOpen, Map as MapIcon, Search, Award, Trophy, Medal, Star, Plus, X } from "lucide-react";
 import {
   getApprovedSignupsForSession,
   getUnlockableContent,
+  getAchievementsForWizard,
   closeSessionAction,
   type CloseSessionActionPayload,
   type UnlockableItem,
+  type AchievementForWizard,
 } from "@/app/campaigns/actions";
 import { getCoreEntitiesForDebrief, type CoreEntityForDebrief } from "@/app/campaigns/gm-actions";
 import { cn } from "@/lib/utils";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  Award,
+  Trophy,
+  Medal,
+  Star,
+};
+function AchievementIcon({ iconName }: { iconName: string }) {
+  const Icon = ICON_MAP[iconName] ?? Award;
+  return <Icon className="h-4 w-4 shrink-0 text-barber-gold/90" />;
+}
 
 const STORAGE_KEY_PREFIX = "gm-screen-initiative-";
 const GROUP_ORDER = ["Mappe", "NPC", "Luoghi", "Mostri", "Oggetti", "Lore", "Wiki"];
+
+/** Ordine categorie achievement nello step Trofei: Titoli di Fine Sessione sempre in cima. */
+const ACHIEVEMENT_CATEGORY_ORDER = [
+  "Titoli di Fine Sessione",
+  "Combattimento",
+  "Esplorazione",
+  "Storia",
+  "Generale",
+];
+function orderAchievementCategories(categories: string[]): string[] {
+  const set = new Set(categories);
+  const ordered: string[] = [];
+  for (const c of ACHIEVEMENT_CATEGORY_ORDER) {
+    if (set.has(c)) ordered.push(c);
+  }
+  const rest = categories.filter((c) => !ACHIEVEMENT_CATEGORY_ORDER.includes(c)).sort();
+  return [...ordered, ...rest];
+}
 
 function itemKey(item: UnlockableItem): string {
   return `${item.type}-${item.id}`;
@@ -62,7 +98,8 @@ const STEPS = [
   { id: 1, label: "Logistica" },
   { id: 2, label: "Diario" },
   { id: 3, label: "Mondo" },
-  { id: 4, label: "Conferma" },
+  { id: 4, label: "Trofei (Opzionale)" },
+  { id: 5, label: "Conferma" },
 ] as const;
 
 type StepId = (typeof STEPS)[number]["id"];
@@ -97,6 +134,14 @@ export function EndSessionWizard({
   const [loadingEntities, setLoadingEntities] = useState(false);
   const [statusByEntityId, setStatusByEntityId] = useState<Record<string, "alive" | "dead" | "missing">>({});
 
+  const [achievements, setAchievements] = useState<AchievementForWizard[]>([]);
+  const [loadingAchievements, setLoadingAchievements] = useState(false);
+  const [awardedAchievements, setAwardedAchievements] = useState<
+    { playerId: string; achievementId: string; addedProgress: number }[]
+  >([]);
+
+  const [achievementSearchByPlayer, setAchievementSearchByPlayer] = useState<Record<string, string>>({});
+
   const [submitting, setSubmitting] = useState(false);
 
   const isLongCampaign = campaignType === "long";
@@ -126,6 +171,8 @@ export function EndSessionWizard({
     setSelectedContentKeys(new Set());
     setContentSearch("");
     setStatusByEntityId({});
+    setAwardedAchievements([]);
+    setAchievementSearchByPlayer({});
     if (initialApprovedSignups?.length) {
       setSignups(initialApprovedSignups);
       setAttendance(
@@ -174,6 +221,16 @@ export function EndSessionWizard({
     });
   }, [open, step, campaignId, isLongCampaign, loadTrackerEntityIds]);
 
+  useEffect(() => {
+    if (!open || step !== 4) return;
+    setLoadingAchievements(true);
+    getAchievementsForWizard().then((res) => {
+      setLoadingAchievements(false);
+      if (res.success && res.data) setAchievements(res.data);
+      else setAchievements([]);
+    });
+  }, [open, step]);
+
   const filteredAndGrouped = useMemo(() => {
     const q = contentSearch.trim().toLowerCase();
     const list = q ? secretItems.filter((i) => i.name.toLowerCase().includes(q)) : secretItems;
@@ -204,8 +261,16 @@ export function EndSessionWizard({
   // Fase 3 (Mondo) opzionale: si può sempre andare avanti anche senza modifiche
   const canProceedStep3 = true;
 
+  // Fase 4 (Trofei) opzionale: nessun blocco
+  const canProceedStep4 = true;
+
+  const presentPlayers = useMemo(
+    () => signups.filter((s) => attendance[s.player_id] === "attended"),
+    [signups, attendance]
+  );
+
   const handleNext = () => {
-    if (step < 4) setStep((s) => (s + 1) as StepId);
+    if (step < 5) setStep((s) => (s + 1) as StepId);
   };
 
   const handleBack = () => {
@@ -214,7 +279,6 @@ export function EndSessionWizard({
 
   const handleSubmit = async () => {
     setSubmitting(true);
-    const presentUserIds = signups.filter((s) => attendance[s.player_id] === "attended").map((s) => s.player_id);
     const payload: CloseSessionActionPayload = {
       attendance,
       xpGained: Math.max(0, Math.floor(xpGained)),
@@ -228,6 +292,7 @@ export function EndSessionWizard({
       summary: summary.trim(),
       gm_private_notes: gmPrivateNotes.trim() || null,
       entityStatusUpdates: isLongCampaign ? statusByEntityId : {},
+      awardedAchievements: awardedAchievements.length > 0 ? awardedAchievements : undefined,
     };
     const res = await closeSessionAction(sessionId, payload);
     setSubmitting(false);
@@ -254,6 +319,31 @@ export function EndSessionWizard({
     setAttendance((prev) => ({ ...prev, [playerId]: value }));
   };
 
+  const addAward = (playerId: string, achievementId: string, addedProgress: number) => {
+    setAwardedAchievements((prev) => {
+      const exists = prev.some((a) => a.playerId === playerId && a.achievementId === achievementId);
+      if (exists) return prev;
+      return [...prev, { playerId, achievementId, addedProgress }];
+    });
+  };
+
+  const removeAward = (playerId: string, achievementId: string) => {
+    setAwardedAchievements((prev) =>
+      prev.filter((a) => !(a.playerId === playerId && a.achievementId === achievementId))
+    );
+  };
+
+  const updateAwardProgress = (playerId: string, achievementId: string, addedProgress: number) => {
+    setAwardedAchievements((prev) =>
+      prev.map((a) =>
+        a.playerId === playerId && a.achievementId === achievementId ? { ...a, addedProgress } : a
+      )
+    );
+  };
+
+  const getAwardsForPlayer = (playerId: string) =>
+    awardedAchievements.filter((a) => a.playerId === playerId);
+
   const presentCount = signups.filter((s) => attendance[s.player_id] === "attended").length;
 
   return (
@@ -265,7 +355,7 @@ export function EndSessionWizard({
             {sessionLabel && <span className="text-sm font-normal text-barber-paper/70">— {sessionLabel}</span>}
           </DialogTitle>
           <DialogDescription className="text-barber-paper/70">
-            Step {step} di 4: {STEPS.find((s) => s.id === step)?.label}
+            Step {step} di 5: {STEPS.find((s) => s.id === step)?.label}
           </DialogDescription>
         </DialogHeader>
 
@@ -507,8 +597,154 @@ export function EndSessionWizard({
             </>
           )}
 
-          {/* Step 4: Conferma */}
+          {/* Step 4: Trofei (Opzionale) */}
           {step === 4 && (
+            <div className="space-y-4">
+              <p className="rounded-lg border border-barber-gold/20 bg-barber-dark/60 px-3 py-3 text-sm text-barber-paper/90">
+                Vuoi premiare i giocatori per una giocata epica? Assegna medaglie o titoli. Questo passaggio è opzionale, puoi concludere la sessione direttamente.
+              </p>
+              {loadingAchievements ? (
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 className="h-6 w-6 animate-spin text-barber-gold" />
+                </div>
+              ) : presentPlayers.length === 0 ? (
+                <p className="text-sm text-barber-paper/60">Nessun giocatore presente in questa sessione. Assegna le presenze nello step Logistica.</p>
+              ) : (
+                <div className="space-y-4">
+                  {presentPlayers.map((s) => {
+                    const playerAwards = getAwardsForPlayer(s.player_id);
+                    const achMap = new Map(achievements.map((a) => [a.id, a]));
+                    return (
+                      <div
+                        key={s.player_id}
+                        className="rounded-lg border border-barber-gold/20 bg-barber-dark/80 p-3"
+                      >
+                        <div className="mb-2 flex items-center justify-between">
+                          <span className="font-medium text-barber-paper">{s.player_name}</span>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                className="border-barber-gold/40 text-barber-gold hover:bg-barber-gold/10"
+                              >
+                                <Plus className="mr-1 h-3.5 w-3.5" />
+                                Aggiungi trofeo
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              className="w-[280px] border-barber-gold/20 bg-barber-dark p-0"
+                              align="end"
+                            >
+                              <div className="border-b border-barber-gold/20 p-2">
+                                <Input
+                                  placeholder="Cerca achievement..."
+                                  className="border-barber-gold/20 bg-barber-dark text-barber-paper text-sm"
+                                  onChange={(e) => {
+                                    const q = e.target.value.trim().toLowerCase();
+                                    setAchievementSearchByPlayer((prev) => ({ ...prev, [s.player_id]: q }));
+                                  }}
+                                />
+                              </div>
+                              <div className="max-h-48 overflow-y-auto p-1">
+                                {(() => {
+                                  const q = achievementSearchByPlayer[s.player_id]?.toLowerCase() ?? "";
+                                  const available = achievements.filter(
+                                    (a) => (!q || a.title.toLowerCase().includes(q)) && !playerAwards.some((w) => w.achievementId === a.id)
+                                  );
+                                  const byCategory = new Map<string, typeof available>();
+                                  for (const a of available) {
+                                    const cat = a.category?.trim() || "Generale";
+                                    if (!byCategory.has(cat)) byCategory.set(cat, []);
+                                    byCategory.get(cat)!.push(a);
+                                  }
+                                  const categoryOrder = orderAchievementCategories([...byCategory.keys()]);
+                                  return (
+                                    <>
+                                      {categoryOrder.map((cat) => (
+                                        <div key={cat} className="mb-2">
+                                          <p className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-wide text-barber-gold/80">
+                                            {cat}
+                                          </p>
+                                          {byCategory.get(cat)!.map((a) => (
+                                            <button
+                                              key={a.id}
+                                              type="button"
+                                              className="flex w-full items-center gap-2 rounded px-2 py-2 text-left text-sm text-barber-paper hover:bg-barber-gold/15"
+                                              onClick={() => {
+                                                addAward(s.player_id, a.id, a.is_incremental ? 1 : 1);
+                                              }}
+                                            >
+                                              <AchievementIcon iconName={a.icon_name} />
+                                              {a.title}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      ))}
+                                      {available.length === 0 && (
+                                        <p className="px-2 py-3 text-xs text-barber-paper/50">Nessun altro achievement da aggiungere.</p>
+                                      )}
+                                    </>
+                                  );
+                                })()}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                        {playerAwards.length > 0 && (
+                          <ul className="space-y-2">
+                            {playerAwards.map((a) => {
+                              const ach = achMap.get(a.achievementId);
+                              return (
+                                <li
+                                  key={`${a.playerId}-${a.achievementId}`}
+                                  className="flex flex-wrap items-center gap-2 rounded border border-barber-gold/15 bg-barber-dark/60 px-2 py-1.5"
+                                >
+                                  {ach && <AchievementIcon iconName={ach.icon_name} />}
+                                  <span className="text-sm text-barber-paper">{ach?.title ?? a.achievementId}</span>
+                                  {ach?.is_incremental && (
+                                    <>
+                                      <span className="text-xs text-barber-paper/50">Quantità:</span>
+                                      <Input
+                                        type="number"
+                                        min={1}
+                                        max={ach?.max_progress ?? 999}
+                                        value={a.addedProgress}
+                                        onChange={(e) =>
+                                          updateAwardProgress(
+                                            s.player_id,
+                                            a.achievementId,
+                                            Math.max(1, parseInt(e.target.value, 10) || 1)
+                                          )
+                                        }
+                                        className="h-7 w-14 border-barber-gold/30 bg-barber-dark text-barber-paper text-xs"
+                                      />
+                                    </>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => removeAward(s.player_id, a.achievementId)}
+                                    className="ml-auto rounded p-0.5 text-barber-paper/50 hover:bg-barber-red/20 hover:text-barber-red"
+                                    aria-label="Rimuovi"
+                                  >
+                                    <X className="h-3.5 w-3.5" />
+                                  </button>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step 5: Conferma */}
+          {step === 5 && (
             <div className="space-y-3 text-sm">
               <p className="text-barber-paper/80">
                 <strong>Presenze:</strong> {presentCount} presenti su {signups.length} iscritti.
@@ -528,7 +764,12 @@ export function EndSessionWizard({
                   <strong>Stato mondo:</strong> {coreEntities.length} elementi core aggiornati.
                 </p>
               )}
-              <p className="pt-2 text-barber-paper/60">Clicca &quot;Concludi Sessione&quot; per salvare tutto.</p>
+              {awardedAchievements.length > 0 && (
+                <p className="text-barber-paper/80">
+                  <strong>Trofei assegnati:</strong> {awardedAchievements.length} premiazioni.
+                </p>
+              )}
+              <p className="pt-2 text-barber-paper/60">Clicca &quot;Concludi Sessione Definitivamente&quot; per salvare tutto.</p>
             </div>
           )}
         </div>
@@ -543,7 +784,7 @@ export function EndSessionWizard({
           >
             {step === 1 ? "Annulla" : "Indietro"}
           </Button>
-          {step < 4 ? (
+          {step < 5 ? (
             <Button
               type="button"
               onClick={handleNext}
@@ -564,7 +805,7 @@ export function EndSessionWizard({
               className="bg-barber-red text-barber-paper hover:bg-barber-red/90"
             >
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Concludi Sessione
+              Concludi Sessione Definitivamente
             </Button>
           )}
         </DialogFooter>

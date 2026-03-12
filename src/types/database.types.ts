@@ -72,6 +72,7 @@ export interface Database {
           points: number;
           is_incremental: boolean;
           max_progress: number;
+          category: string;
           created_at: string;
         };
         Insert: {
@@ -82,6 +83,7 @@ export interface Database {
           points?: number;
           is_incremental?: boolean;
           max_progress?: number;
+          category?: string;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["achievements"]["Insert"]>;

@@ -15,6 +15,7 @@ import {
   Shield,
   Swords,
   Star,
+  Medal,
 } from "lucide-react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
@@ -27,6 +28,8 @@ const ACHIEVEMENT_ICONS: Record<string, LucideIcon> = {
   Award,
   Flame,
   Trophy,
+  Medal,
+  Star,
   Users,
   Target,
   Zap,
@@ -46,13 +49,6 @@ type AchievementRow = {
   points: number;
   is_incremental: boolean;
   max_progress: number;
-};
-
-type PlayerAchievementRow = {
-  achievement_id: string;
-  current_progress: number;
-  is_unlocked: boolean;
-  unlocked_at: string | null;
 };
 
 type UnlockedItem = AchievementRow & { unlocked_at: string };
@@ -75,42 +71,74 @@ export default async function PlayerProfilePage({ params }: Props) {
 
   if (profileError || !profile) notFound();
 
-  const [achievementsRes, playerAchievementsRes] = await Promise.all([
-    supabase
-      .from("achievements")
-      .select("id, title, description, icon_name, points, is_incremental, max_progress")
-      .order("created_at", { ascending: true }),
-    supabase
-      .from("player_achievements")
-      .select("achievement_id, current_progress, is_unlocked, unlocked_at")
-      .eq("player_id", profile.id),
-  ]);
+  // JOIN: player_achievements con achievements per questo giocatore
+  const { data: joinedRows } = await supabase
+    .from("player_achievements")
+    .select(
+      `
+      achievement_id,
+      current_progress,
+      is_unlocked,
+      unlocked_at,
+      achievements (
+        id,
+        title,
+        description,
+        icon_name,
+        points,
+        is_incremental,
+        max_progress
+      )
+    `
+    )
+    .eq("player_id", profile.id);
 
-  const allAchievements = (achievementsRes.data ?? []) as AchievementRow[];
-  const playerAchievements = (playerAchievementsRes.data ?? []) as PlayerAchievementRow[];
-  const paByAchId = new Map(playerAchievements.map((pa) => [pa.achievement_id, pa]));
+  const { data: allAchievementsRows } = await supabase
+    .from("achievements")
+    .select("id, title, description, icon_name, points, is_incremental, max_progress")
+    .order("created_at", { ascending: true });
 
-  const unlocked: UnlockedItem[] = [];
-  const inProgress: InProgressItem[] = [];
-  const locked: LockedItem[] = [];
+  const allAchievements = (allAchievementsRows ?? []) as AchievementRow[];
+  type JoinedRaw = {
+    achievement_id: string;
+    current_progress: number;
+    is_unlocked: boolean;
+    unlocked_at: string | null;
+    achievements: AchievementRow | AchievementRow[] | null;
+  };
+  const joinedRaw = (joinedRows ?? []) as JoinedRaw[];
 
-  for (const ach of allAchievements) {
-    const pa = paByAchId.get(ach.id);
-    if (pa?.is_unlocked && pa.unlocked_at) {
-      unlocked.push({ ...ach, unlocked_at: pa.unlocked_at });
+  const unlockedAchievements: UnlockedItem[] = [];
+  const inProgressAchievements: InProgressItem[] = [];
+  const lockedAchievements: LockedItem[] = [];
+
+  const seenAchIds = new Set<string>();
+
+  for (const row of joinedRaw) {
+    const ach = Array.isArray(row.achievements) ? row.achievements[0] ?? null : row.achievements;
+    if (!ach) continue;
+    seenAchIds.add(ach.id);
+    if (row.is_unlocked && row.unlocked_at) {
+      unlockedAchievements.push({ ...ach, unlocked_at: row.unlocked_at });
     } else if (
       ach.is_incremental &&
-      (pa?.current_progress ?? 0) > 0 &&
-      !pa?.is_unlocked
+      row.current_progress > 0 &&
+      !row.is_unlocked
     ) {
       const maxP = ach.max_progress > 0 ? ach.max_progress : 1;
-      inProgress.push({ ...ach, current_progress: pa?.current_progress ?? 0, max_progress: maxP });
-    } else {
-      locked.push(ach);
+      inProgressAchievements.push({ ...ach, current_progress: row.current_progress, max_progress: maxP });
+    } else if (!row.is_unlocked && row.current_progress === 0) {
+      lockedAchievements.push(ach);
     }
   }
 
-  unlocked.sort((a, b) => new Date(b.unlocked_at).getTime() - new Date(a.unlocked_at).getTime());
+  for (const ach of allAchievements) {
+    if (!seenAchIds.has(ach.id)) lockedAchievements.push(ach);
+  }
+
+  unlockedAchievements.sort(
+    (a, b) => new Date(b.unlocked_at).getTime() - new Date(a.unlocked_at).getTime()
+  );
 
   const displayName = profile.nickname?.trim() || "Eroe";
   const fameScore = profile.fame_score ?? 0;
@@ -160,29 +188,29 @@ export default async function PlayerProfilePage({ params }: Props) {
           </div>
         </header>
 
-        {/* Sezione 1: Trofei Sbloccati */}
+        {/* Sezione 1: Trofei Conquistati 🏆 */}
         <section className="mt-10">
-          <h2 className="mb-4 text-lg font-semibold uppercase tracking-wider text-barber-gold">
-            Trofei Sbloccati
+          <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold uppercase tracking-wider text-barber-gold">
+            <span aria-hidden>🏆</span> Trofei Conquistati
           </h2>
-          {unlocked.length === 0 ? (
+          {unlockedAchievements.length === 0 ? (
             <div className="rounded-xl border border-barber-gold/20 bg-barber-dark/60 px-4 py-8 text-center text-barber-paper/60">
               Nessun trofeo ancora. Partecipa alle sessioni e conquista i primi achievement!
             </div>
           ) : (
             <ul className="grid grid-cols-2 gap-4 md:grid-cols-4">
-              {unlocked.map((a) => {
+              {unlockedAchievements.map((a) => {
                 const Icon = getLucideIcon(a.icon_name);
                 return (
                   <li
                     key={a.id}
-                    className="group flex flex-col rounded-xl border border-barber-gold/30 bg-barber-dark/80 p-4 shadow-lg shadow-yellow-500/10 transition-all hover:scale-105 hover:shadow-yellow-500/20"
+                    className="group flex flex-col rounded-xl border border-barber-gold/40 bg-barber-dark/80 p-4 shadow-lg shadow-yellow-500/15 transition-all duration-200 hover:scale-105 hover:shadow-yellow-500/25 hover:shadow-xl"
                   >
                     <div className="flex flex-1 flex-col items-center text-center">
-                      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-barber-gold/20">
-                        <Icon className="h-7 w-7 text-barber-gold" />
+                      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-barber-gold/20 ring-2 ring-barber-gold/30 shadow-inner">
+                        <Icon className="h-7 w-7 text-barber-gold" aria-hidden />
                       </div>
-                      <h3 className="mt-3 font-semibold text-barber-paper">{a.title}</h3>
+                      <h3 className="mt-3 font-bold text-barber-gold">{a.title}</h3>
                       {a.description && (
                         <p className="mt-1 line-clamp-2 text-xs text-barber-paper/70">
                           {a.description}
@@ -199,23 +227,23 @@ export default async function PlayerProfilePage({ params }: Props) {
           )}
         </section>
 
-        {/* Sezione 2: Imprese in Corso */}
-        {inProgress.length > 0 && (
+        {/* Sezione 2: Imprese in Corso ⏳ */}
+        {inProgressAchievements.length > 0 && (
           <section className="mt-10">
-            <h2 className="mb-4 text-lg font-semibold uppercase tracking-wider text-barber-gold/90">
-              Imprese in Corso
+            <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold uppercase tracking-wider text-barber-gold/90">
+              <span aria-hidden>⏳</span> Imprese in Corso
             </h2>
-            <ul className="grid gap-4 sm:grid-cols-2">
-              {inProgress.map((a) => {
+            <ul className="grid gap-4 sm:grid-cols-2 md:grid-cols-2">
+              {inProgressAchievements.map((a) => {
                 const Icon = getLucideIcon(a.icon_name);
                 const pct = Math.min(100, (a.current_progress / a.max_progress) * 100);
                 return (
                   <li
                     key={a.id}
-                    className="flex gap-4 rounded-xl border border-barber-gold/20 bg-barber-dark/60 p-4"
+                    className="flex gap-4 rounded-xl border border-barber-gold/20 bg-barber-dark/60 p-4 opacity-90"
                   >
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-barber-gold/10 opacity-90">
-                      <Icon className="h-6 w-6 text-barber-gold/80" />
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-barber-gold/10">
+                      <Icon className="h-6 w-6 text-barber-gold/80" aria-hidden />
                     </div>
                     <div className="min-w-0 flex-1">
                       <h3 className="font-semibold text-barber-paper">{a.title}</h3>
@@ -223,10 +251,10 @@ export default async function PlayerProfilePage({ params }: Props) {
                         <p className="mt-0.5 text-sm text-barber-paper/70">{a.description}</p>
                       )}
                       <div className="mt-3">
-                        <Progress value={pct} className="h-2.5" />
-                        <p className="mt-1.5 text-xs text-barber-paper/60">
+                        <p className="mb-1 text-xs text-barber-paper/60">
                           {a.current_progress} su {a.max_progress} completati
                         </p>
+                        <Progress value={pct} className="h-2.5" />
                       </div>
                     </div>
                   </li>
@@ -236,14 +264,14 @@ export default async function PlayerProfilePage({ params }: Props) {
           </section>
         )}
 
-        {/* Sezione 3: Ancora da Scoprire */}
-        {locked.length > 0 && (
+        {/* Sezione 3: Misteri da Svelare 🔒 */}
+        {lockedAchievements.length > 0 && (
           <section className="mt-10">
-            <h2 className="mb-4 text-lg font-semibold uppercase tracking-wider text-barber-paper/70">
-              Ancora da Scoprire
+            <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold uppercase tracking-wider text-barber-paper/70">
+              <span aria-hidden>🔒</span> Misteri da Svelare
             </h2>
             <ul className="grid grid-cols-2 gap-4 md:grid-cols-4">
-              {locked.map((a) => {
+              {lockedAchievements.map((a) => {
                 const Icon = getLucideIcon(a.icon_name);
                 return (
                   <li
@@ -252,11 +280,11 @@ export default async function PlayerProfilePage({ params }: Props) {
                   >
                     <div className="flex flex-1 flex-col items-center text-center">
                       <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-barber-paper/10">
-                        <Icon className="h-7 w-7 text-barber-paper/50" />
+                        <Icon className="h-7 w-7 text-barber-paper/50" aria-hidden />
                       </div>
                       <h3 className="mt-3 font-medium text-barber-paper/90">{a.title}</h3>
                       <p className="mt-1 text-xs text-barber-paper/50">
-                        Continua a giocare per svelare questo trofeo
+                        Continua a giocare per svelare i requisiti
                       </p>
                     </div>
                   </li>
