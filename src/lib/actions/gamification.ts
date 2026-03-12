@@ -6,7 +6,7 @@ import type { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import type { Database } from "@/types/database.types";
 
 /** ID achievement incrementale "Veterano del Tavolo" (N sessioni con presenza confermata). */
-export const SESSIONS_ATTENDED_ACHIEVEMENT_ID = "b0000002-0002-4000-8000-000000000002";
+const SESSIONS_ATTENDED_ACHIEVEMENT_ID = "b0000002-0002-4000-8000-000000000002";
 
 type AchievementRow = Database["public"]["Tables"]["achievements"]["Row"];
 type AvatarRow = Database["public"]["Tables"]["avatars"]["Row"];
@@ -355,7 +355,7 @@ type BulkProgressInput = {
   current_progress: number;
 };
 
-type BulkResult = { success: boolean; message?: string; ok: number; fail: number };
+type BulkResult = { ok: number; fail: number };
 
 export async function updatePlayerAchievementProgressBulk(
   input: BulkProgressInput
@@ -471,7 +471,7 @@ export async function incrementSessionsAttendedWithAdmin(
 
   const { error: updateErr } = await admin
     .from("profiles")
-    .update({ sessions_attended_count: newCount })
+    .update({ sessions_attended_count: newCount } as never)
     .eq("id", playerId);
 
   if (updateErr) {

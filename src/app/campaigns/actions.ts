@@ -776,13 +776,10 @@ export async function closeSessionAction(
       if (signup.status === "approved" || signup.status === "confirmed") {
         await admin.from("session_signups").update({ status: newStatus } as never).eq("id", signup.id);
         if (newStatus === "attended") {
-          const wasAlreadyAttended = signup.status === "attended";
-          if (!wasAlreadyAttended) {
-            try {
-              await incrementSessionsAttendedWithAdmin(admin, signup.player_id);
-            } catch (gamErr) {
-              console.error("[closeSessionAction] gamification increment", gamErr);
-            }
+          try {
+            await incrementSessionsAttendedWithAdmin(admin, signup.player_id);
+          } catch (gamErr) {
+            console.error("[closeSessionAction] gamification increment", gamErr);
           }
           const { data: existingRow } = await admin
             .from("campaign_members")
@@ -882,13 +879,10 @@ export async function closeSession(
           .update({ status: newStatus } as never)
           .eq("id", signup.id);
         if (newStatus === "attended") {
-          const wasAlreadyAttended = signup.status === "attended";
-          if (!wasAlreadyAttended) {
-            try {
-              await incrementSessionsAttendedWithAdmin(admin, signup.player_id);
-            } catch (gamErr) {
-              console.error("[closeSession] gamification increment", gamErr);
-            }
+          try {
+            await incrementSessionsAttendedWithAdmin(admin, signup.player_id);
+          } catch (gamErr) {
+            console.error("[closeSession] gamification increment", gamErr);
           }
           const { data: existing } = await admin
             .from("campaign_members")
