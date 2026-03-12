@@ -200,18 +200,34 @@ export function SessionCalendar({ sessions }: SessionCalendarProps) {
             const daySessions = getSessionsForDay(day);
             const isCurrentMonth = isSameMonth(day, currentDate);
             const isDayToday = isToday(day);
+            const firstSession = daySessions[0];
+            const hasSessions = daySessions.length > 0;
+            const typeColor =
+              firstSession && (CAMPAIGN_TYPE_COLORS[firstSession.campaign_type ?? ""] ?? "bg-slate-500");
 
             return (
               <div
                 key={day.toISOString()}
                 className={cn(
-                  "min-h-[72px] sm:min-h-[80px] rounded border border-barber-gold/20 bg-barber-dark/80 p-1",
-                  !isCurrentMonth && "opacity-50"
+                  "relative min-h-[72px] sm:min-h-[80px] rounded border border-barber-gold/20 bg-barber-dark/80 p-1",
+                  !isCurrentMonth && "opacity-50",
+                  hasSessions && "bg-barber-gold/20 sm:bg-transparent",
+                  hasSessions && typeColor === "bg-blue-500" && "!bg-blue-500/30 sm:!bg-transparent",
+                  hasSessions && typeColor === "bg-purple-500" && "!bg-purple-500/30 sm:!bg-transparent",
+                  hasSessions && typeColor === "bg-orange-500" && "!bg-orange-500/30 sm:!bg-transparent",
+                  hasSessions && typeColor === "bg-slate-500" && "!bg-slate-500/30 sm:!bg-transparent"
                 )}
               >
+                {hasSessions && firstSession && (
+                  <Link
+                    href={`/campaigns/${firstSession.campaign_id}`}
+                    className="absolute inset-0 z-0 rounded border-0"
+                    aria-label={`${daySessions.length} sessione/i il ${format(day, "d MMMM", { locale: it })}: ${firstSession.campaign_name}`}
+                  />
+                )}
                 <span
                   className={cn(
-                    "inline-flex h-6 w-6 items-center justify-center rounded text-xs",
+                    "relative z-10 inline-flex h-6 w-6 items-center justify-center rounded text-xs",
                     isDayToday && "bg-barber-gold/30 font-semibold text-barber-gold",
                     isCurrentMonth && !isDayToday && "text-slate-300",
                     !isCurrentMonth && "text-slate-500"
@@ -219,16 +235,17 @@ export function SessionCalendar({ sessions }: SessionCalendarProps) {
                 >
                   {format(day, "d")}
                 </span>
-                <div className="mt-0.5 flex flex-col gap-0.5">
+                <div className="relative z-10 mt-0.5 flex flex-col gap-0.5">
                   {daySessions.slice(0, 3).map((session) => {
-                    const typeColor =
+                    const sessionTypeColor =
                       CAMPAIGN_TYPE_COLORS[session.campaign_type ?? ""] ?? "bg-slate-500";
                     return (
                       <SessionHoverCard key={session.id} session={session}>
                         <span
                           className={cn(
                             "block h-2 w-2 shrink-0 rounded-full sm:h-auto sm:w-full sm:truncate sm:rounded sm:px-1.5 sm:py-1 sm:text-[10px] sm:font-medium sm:text-white md:text-xs",
-                            typeColor
+                            "max-sm:pointer-events-none",
+                            sessionTypeColor
                           )}
                           title={`${session.campaign_name} – ${session.title || "Sessione"}`}
                         >
@@ -240,7 +257,7 @@ export function SessionCalendar({ sessions }: SessionCalendarProps) {
                     );
                   })}
                   {daySessions.length > 3 && (
-                    <span className="text-[10px] text-slate-500">
+                    <span className="relative z-10 text-[10px] text-slate-500">
                       +{daySessions.length - 3}
                     </span>
                   )}
