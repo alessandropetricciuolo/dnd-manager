@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/table";
 import { CreateUserDialog } from "@/components/admin/create-user-dialog";
 import { AdminUserRow } from "@/components/admin/admin-user-row";
+import { NotificationsPausedToggle } from "@/components/admin/notifications-paused-toggle";
 import { Shield } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -74,6 +75,8 @@ export default async function AdminPage() {
           </h1>
           <CreateUserDialog />
         </header>
+
+        <NotificationsPausedToggle />
 
         <div className="min-w-0 overflow-x-auto rounded-xl border border-barber-gold/40 bg-barber-dark/90">
           <Table className="min-w-[600px]">

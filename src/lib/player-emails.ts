@@ -1,11 +1,34 @@
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 
+const NOTIFICATIONS_PAUSED_KEY = "notifications_paused";
+
+/**
+ * Restituisce true se gli avvisi automatici sono sospesi globalmente (es. inserimento massivo).
+ * Usa Service Role; chiamare solo da Server Actions.
+ */
+export async function getNotificationsPaused(): Promise<boolean> {
+  try {
+    const admin = createSupabaseAdminClient();
+    const { data } = await admin
+      .from("app_settings")
+      .select("value")
+      .eq("key", NOTIFICATIONS_PAUSED_KEY)
+      .single();
+    const value = (data as { value?: unknown } | null)?.value;
+    return value === true || value === "true";
+  } catch (err) {
+    console.error("[getNotificationsPaused]", err);
+    return false;
+  }
+}
+
 /**
  * Restituisce le email di tutti gli utenti con ruolo 'player' che NON hanno bloccato gli avvisi (notifications_disabled = false).
- * Usa Service Role; chiamare solo da Server Actions.
+ * Restituisce [] se gli avvisi sono sospesi globalmente. Usa Service Role; chiamare solo da Server Actions.
  */
 export async function getPlayerEmails(): Promise<string[]> {
   try {
+    if (await getNotificationsPaused()) return [];
     const admin = createSupabaseAdminClient();
     const { data: profiles } = await admin
       .from("profiles")

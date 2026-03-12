@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
-import { getPlayerEmails, hasNotificationsDisabled } from "@/lib/player-emails";
+import { getPlayerEmails, getNotificationsPaused, hasNotificationsDisabled } from "@/lib/player-emails";
 import { sendEmail, wrapInTemplate, escapeHtml } from "@/lib/email";
 import { uploadToTelegram } from "@/lib/telegram-storage";
 
@@ -325,8 +325,9 @@ export async function updateSignupStatus(
 
     if (newStatus === "approved") {
       try {
+        const paused = await getNotificationsPaused();
         const optedOut = await hasNotificationsDisabled(signup.player_id);
-        if (!optedOut) {
+        if (!paused && !optedOut) {
           const admin = createSupabaseAdminClient();
           const { data: sessionRow } = await admin
             .from("sessions")

@@ -5,7 +5,7 @@ import { randomUUID } from "crypto";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { sendEmail, wrapInTemplate, escapeHtml } from "@/lib/email";
-import { hasNotificationsDisabled } from "@/lib/player-emails";
+import { getNotificationsPaused, hasNotificationsDisabled } from "@/lib/player-emails";
 import { uploadToTelegram } from "@/lib/telegram-storage";
 
 const CHARACTER_SHEETS_BUCKET = "character_sheets";
@@ -331,8 +331,9 @@ export async function assignCharacter(
 
   if (playerId) {
     try {
+      const paused = await getNotificationsPaused();
       const optedOut = await hasNotificationsDisabled(playerId);
-      if (!optedOut) {
+      if (!paused && !optedOut) {
         const admin = createSupabaseAdminClient();
         const { data: authUser } = await admin.auth.admin.getUserById(playerId);
         const toEmail = authUser?.user?.email;
