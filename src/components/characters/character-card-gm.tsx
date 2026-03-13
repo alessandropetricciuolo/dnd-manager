@@ -19,6 +19,7 @@ import { EditCharacterDialog } from "./edit-character-dialog";
 import { assignCharacter, deleteCharacter, levelUpCharacter, type CampaignCharacterRow, type EligiblePlayer } from "@/app/campaigns/character-actions";
 import { calculateLevelProgress } from "@/lib/dnd-constants";
 import { Progress } from "@/components/ui/progress";
+import { MapPopoutButton } from "@/components/maps/map-popout-button";
 
 const PLACEHOLDER_AVATAR = "https://placehold.co/200x280/1c1917/fbbf24/png?text=PG";
 
@@ -82,16 +83,26 @@ export function CharacterCardGm({ character, eligiblePlayers }: CharacterCardGmP
 
   return (
     <Card className="overflow-hidden border-barber-gold/40 bg-barber-dark/80">
-      <div className="relative aspect-[3/4] w-full overflow-hidden bg-barber-dark">
-        <Image
-          src={imageSrc}
-          alt={character.name}
-          fill
-          className="object-cover"
-          sizes="(max-width: 400px) 100vw, 280px"
-          unoptimized={!!character.image_url}
-          onError={() => setImgError(true)}
-        />
+      <div className="space-y-2">
+        <div className="relative aspect-[3/4] w-full overflow-hidden bg-barber-dark">
+          <Image
+            src={imageSrc}
+            alt={character.name}
+            fill
+            className="object-cover"
+            sizes="(max-width: 400px) 100vw, 280px"
+            unoptimized={!!character.image_url}
+            onError={() => setImgError(true)}
+          />
+        </div>
+        {character.image_url && (
+          <div className="flex justify-end px-4">
+            <MapPopoutButton
+              imageUrl={character.image_url}
+              title={character.name}
+            />
+          </div>
+        )}
       </div>
       <CardHeader className="pb-2">
         <CardTitle className="text-lg font-semibold text-barber-paper">{character.name}</CardTitle>

@@ -9,6 +9,7 @@ import type { CampaignCharacterRow } from "@/app/campaigns/character-actions";
 import { levelUpCharacter } from "@/app/campaigns/character-actions";
 import { calculateLevelProgress } from "@/lib/dnd-constants";
 import { Button } from "@/components/ui/button";
+import { MapPopoutButton } from "@/components/maps/map-popout-button";
 
 const PLACEHOLDER_AVATAR = "https://placehold.co/400x560/1c1917/fbbf24/png?text=PG";
 
@@ -44,21 +45,33 @@ export function CharacterCardPlayer({ character }: CharacterCardPlayerProps) {
 
   return (
     <Card className="overflow-hidden border-barber-gold/40 bg-barber-dark/90">
-      <div className="relative aspect-[4/5] w-full max-w-md mx-auto overflow-hidden bg-barber-dark">
-        <Image
-          src={imageSrc}
-          alt={character.name}
-          fill
-          className="object-cover"
-          sizes="(max-width: 500px) 100vw, 400px"
-          priority
-          unoptimized={!!character.image_url}
-          onError={() => setImgError(true)}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-barber-dark via-barber-dark/40 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-6">
-          <h2 className="text-2xl font-semibold text-barber-paper md:text-3xl">{character.name}</h2>
+      <div className="space-y-2">
+        <div className="relative aspect-[4/5] w-full max-w-md mx-auto overflow-hidden bg-barber-dark">
+          <Image
+            src={imageSrc}
+            alt={character.name}
+            fill
+            className="object-cover"
+            sizes="(max-width: 500px) 100vw, 400px"
+            priority
+            unoptimized={!!character.image_url}
+            onError={() => setImgError(true)}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-barber-dark via-barber-dark/40 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 p-6">
+            <h2 className="text-2xl font-semibold text-barber-paper md:text-3xl">
+              {character.name}
+            </h2>
+          </div>
         </div>
+        {character.image_url && (
+          <div className="flex justify-end px-4">
+            <MapPopoutButton
+              imageUrl={character.image_url}
+              title={character.name}
+            />
+          </div>
+        )}
       </div>
       <CardHeader className="pb-2">
         <CardTitle className="text-barber-gold">Background</CardTitle>
