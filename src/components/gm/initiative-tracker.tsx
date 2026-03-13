@@ -17,11 +17,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { getCampaignCharacters } from "@/app/campaigns/character-actions";
-import { getMonstersForInitiative, setWikiEntityGlobalStatus } from "@/app/campaigns/wiki-actions";
+import { getMonstersForInitiative, getMonstersXpForIds, setWikiEntityGlobalStatus } from "@/app/campaigns/wiki-actions";
 import { UserPlus, Swords, Edit3, Trash2, ArrowDownUp, SkipForward, Copy, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { CHALLENGE_RATING_OPTIONS } from "@/lib/dnd-constants";
 
 export type InitiativeEntry = {
   id: string;
@@ -34,6 +42,10 @@ export type InitiativeEntry = {
   /** Wiki entity id quando aggiunto da lista mostri (campagne Long: per aggiornare global_status). */
   entityId?: string;
   isCore?: boolean;
+  /** Grado di Sfida (es. "2", "1/2") se presente. */
+  gs?: string;
+  /** Punti esperienza singoli per la creatura (se valorizzati). */
+  exp?: number;
 };
 
 const STORAGE_KEY_PREFIX = "gm-screen-initiative-";
@@ -48,6 +60,7 @@ type MonsterForInitiative = {
   hp: number;
   is_core?: boolean;
   global_status?: "alive" | "dead";
+  xp_value?: number;
 };
 
 type InitiativeTrackerProps = {
@@ -67,6 +80,12 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
   const [pcList, setPcList] = useState<{ id: string; name: string }[]>([]);
   const [monsterList, setMonsterList] = useState<MonsterForInitiative[]>([]);
   const [monsterQuantity, setMonsterQuantity] = useState(1);
+  const [addCustomOpen, setAddCustomOpen] = useState(false);
+  const [customName, setCustomName] = useState("");
+  const [customHp, setCustomHp] = useState<string>("");
+  const [customInit, setCustomInit] = useState<string>("");
+  const [customGs, setCustomGs] = useState<string>("");
+  const [customExp, setCustomExp] = useState<number>(0);
 
   // Restore from localStorage on mount
   useEffect(() => {
@@ -195,7 +214,21 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
     setMonsterQuantity(1);
     const res = await getMonstersForInitiative(campaignId);
     if (res.success && res.data) {
-      setMonsterList(res.data);
+      const baseList = res.data;
+      // Arricchisci con XP dalla Wiki se disponibili
+      const ids = baseList.map((m) => m.id);
+      const xpRes = await getMonstersXpForIds(campaignId, ids);
+      if (xpRes.success && xpRes.data) {
+        const xpMap = new Map(xpRes.data.map((r) => [r.id, r.xp_value]));
+        setMonsterList(
+          baseList.map((m) => ({
+            ...m,
+            xp_value: xpMap.get(m.id) ?? 0,
+          }))
+        );
+      } else {
+        setMonsterList(baseList);
+      }
     } else {
       setMonsterList([]);
     }
@@ -212,6 +245,9 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
           hp: monster.hp,
           maxHp: monster.hp,
           initiative: 0,
+          ...(typeof monster.xp_value === "number" && monster.xp_value > 0
+            ? { exp: monster.xp_value }
+            : {}),
           ...(isLongCampaign && monster.is_core && { entityId: monster.id, isCore: true }),
         });
       }
@@ -221,19 +257,36 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
     [isLongCampaign]
   );
 
-  const addManualEntry = useCallback(() => {
+  const openAddCustom = useCallback(() => {
+    setCustomName("");
+    setCustomHp("");
+    setCustomInit("");
+    setCustomGs("");
+    setCustomExp(0);
+    setAddCustomOpen(true);
+  }, []);
+
+  const handleCreateCustom = useCallback(() => {
+    const name = customName.trim() || "Nemico Sconosciuto";
+    const hpNum = parseInt(customHp, 10);
+    const initNum = parseInt(customInit, 10);
+    const hp = Number.isNaN(hpNum) ? 0 : hpNum;
+    const initiative = Number.isNaN(initNum) ? 0 : initNum;
     setEntries((prev) => [
       ...prev,
       {
         id: generateId(),
-        name: "Nemico Sconosciuto",
+        name,
         type: "custom",
-        hp: 0,
-        maxHp: 0,
-        initiative: 0,
+        hp,
+        maxHp: hp,
+        initiative,
+        ...(customGs && { gs: customGs }),
+        ...(customExp > 0 && { exp: customExp }),
       },
     ]);
-  }, []);
+    setAddCustomOpen(false);
+  }, [customName, customHp, customInit, customGs, customExp]);
 
   const handleCellSave = useCallback(
     async (id: string, field: "name" | "hp" | "initiative", value: string) => {
@@ -341,7 +394,7 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
           variant="outline"
           size="sm"
           className="h-7 border-amber-600/40 px-2 text-xs text-amber-200 hover:bg-amber-600/20"
-          onClick={addManualEntry}
+          onClick={openAddCustom}
         >
           <Edit3 className="mr-1 h-3 w-3" />
           Manuale
@@ -442,18 +495,25 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
                         }}
                       />
                     ) : (
-                      <button
-                        type="button"
-                        className={cn(
-                          "min-w-[3rem] rounded px-1.5 py-0.5 text-left text-xs font-medium transition-colors hover:bg-zinc-700/80",
-                          hpColor(entry)
+                      <div className="flex flex-col">
+                        <button
+                          type="button"
+                          className={cn(
+                            "min-w-[3rem] rounded px-1.5 py-0.5 text-left text-xs font-medium transition-colors hover:bg-zinc-700/80",
+                            hpColor(entry)
+                          )}
+                          onClick={() =>
+                            setEditingCell({ id: entry.id, field: "hp" })
+                          }
+                        >
+                          {entry.maxHp > 0 ? `${entry.hp}/${entry.maxHp}` : entry.hp}
+                        </button>
+                        {typeof entry.exp === "number" && entry.exp > 0 && (
+                          <span className="mt-0.5 text-[10px] font-medium text-amber-300/90">
+                            EXP: {entry.exp}
+                          </span>
                         )}
-                        onClick={() =>
-                          setEditingCell({ id: entry.id, field: "hp" })
-                        }
-                      >
-                        {entry.maxHp > 0 ? `${entry.hp}/${entry.maxHp}` : entry.hp}
-                      </button>
+                      </div>
                     )}
                   </TableCell>
                   <TableCell className="px-2 py-1.5">
@@ -620,6 +680,106 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
                   })}
                 </ul>
               )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Aggiungi Mostro Manuale */}
+      <Dialog open={addCustomOpen} onOpenChange={setAddCustomOpen}>
+        <DialogContent className="border-amber-600/30 bg-zinc-900 text-zinc-100">
+          <DialogHeader>
+            <DialogTitle className="text-amber-400">
+              Aggiungi mostro manuale
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <label className="block text-sm text-zinc-300">Nome</label>
+              <Input
+                value={customName}
+                onChange={(e) => setCustomName(e.target.value)}
+                placeholder="Es. Goblin"
+                className="bg-zinc-800 text-zinc-100"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="block text-sm text-zinc-300">HP</label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={customHp}
+                  onChange={(e) => setCustomHp(e.target.value)}
+                  className="bg-zinc-800 text-zinc-100"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-sm text-zinc-300">
+                  Iniziativa
+                </label>
+                <Input
+                  type="number"
+                  value={customInit}
+                  onChange={(e) => setCustomInit(e.target.value)}
+                  className="bg-zinc-800 text-zinc-100"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="block text-sm text-zinc-300">
+                  Grado di Sfida (GS)
+                </label>
+                <Select
+                  value={customGs}
+                  onValueChange={(val) => {
+                    setCustomGs(val);
+                    const opt = CHALLENGE_RATING_OPTIONS.find(
+                      (o) => o.value === val
+                    );
+                    setCustomExp(opt?.xp ?? 0);
+                  }}
+                >
+                  <SelectTrigger className="h-9 w-full border-amber-600/40 bg-zinc-800 text-xs text-zinc-100">
+                    <SelectValue placeholder="Scegli GS" />
+                  </SelectTrigger>
+                  <SelectContent className="border-amber-600/40 bg-zinc-900 text-xs text-zinc-100">
+                    {CHALLENGE_RATING_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <label className="block text-sm text-zinc-300">
+                  Punti Esperienza
+                </label>
+                <div className="rounded border border-amber-600/40 bg-zinc-800 px-3 py-2 text-xs text-amber-200">
+                  {customExp > 0 ? `${customExp} EXP` : "Nessun GS selezionato"}
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="border-amber-600/40 text-amber-100"
+                onClick={() => setAddCustomOpen(false)}
+              >
+                Annulla
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                className="bg-amber-600 text-zinc-950 hover:bg-amber-500"
+                onClick={handleCreateCustom}
+              >
+                Aggiungi alla iniziativa
+              </Button>
             </div>
           </div>
         </DialogContent>
