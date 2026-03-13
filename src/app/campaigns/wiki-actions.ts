@@ -527,6 +527,8 @@ export type WikiEntity = {
   type: string;
   content: { body?: string } | null;
   image_url: string | null;
+  /** file_id Telegram usato come fallback se image_url (Drive) fallisce. */
+  telegram_fallback_id?: string | null;
   is_secret: boolean;
   visibility?: string;
   attributes: Record<string, unknown> | null;
@@ -579,7 +581,7 @@ export async function getEntity(
 
     const { data: entity, error } = await supabase
       .from("wiki_entities")
-    .select("id, campaign_id, name, type, content, image_url, is_secret, visibility, attributes, sort_order, is_core, global_status, xp_value, tags, created_at, updated_at")
+      .select("id, campaign_id, name, type, content, image_url, telegram_fallback_id, is_secret, visibility, attributes, sort_order, is_core, global_status, xp_value, tags, created_at, updated_at")
       .eq("id", entityId)
       .eq("campaign_id", campaignId)
       .single();

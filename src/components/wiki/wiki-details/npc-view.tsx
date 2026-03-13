@@ -1,9 +1,9 @@
-import Image from "next/image";
 import { EntityContent } from "../entity-content";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPopoutButton } from "@/components/maps/map-popout-button";
 import { Users, Coins } from "lucide-react";
 import { GmOnlySection } from "./gm-only-section";
+import { DualSourceImage } from "@/components/dual-source-image";
 
 const PLACEHOLDER = "https://placehold.co/400x500/1e293b/10b981/png?text=NPC";
 
@@ -11,11 +11,19 @@ type NpcViewProps = {
   name: string;
   body: string;
   imageUrl: string | null;
+  telegramFallbackId?: string | null;
   attributes: { relationships?: string; loot?: string } | null;
   isGmOrAdmin?: boolean;
 };
 
-export function NpcView({ name, body, imageUrl, attributes, isGmOrAdmin = false }: NpcViewProps) {
+export function NpcView({
+  name,
+  body,
+  imageUrl,
+  telegramFallbackId,
+  attributes,
+  isGmOrAdmin = false,
+}: NpcViewProps) {
   const attrs = attributes ?? {};
   const relationships = attrs.relationships?.trim();
   const loot = attrs.loot?.trim();
@@ -25,13 +33,11 @@ export function NpcView({ name, body, imageUrl, attributes, isGmOrAdmin = false 
       <div className="grid gap-8 md:grid-cols-[280px_1fr]">
         <div className="space-y-4">
           <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl border border-barber-gold/30 bg-barber-dark">
-            <Image
-              src={imageUrl ?? PLACEHOLDER}
+            <DualSourceImage
+              driveUrl={imageUrl ?? PLACEHOLDER}
+              telegramFallbackId={telegramFallbackId ?? null}
               alt={name}
-              fill
-              className="object-cover"
-              sizes="280px"
-              unoptimized={!!imageUrl}
+              className="h-full w-full object-cover"
             />
           </div>
           <MapPopoutButton

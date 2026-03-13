@@ -1,9 +1,9 @@
-import Image from "next/image";
 import { EntityContent } from "../entity-content";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPopoutButton } from "@/components/maps/map-popout-button";
 import { MapPin } from "lucide-react";
 import { GmOnlySection } from "./gm-only-section";
+import { DualSourceImage } from "@/components/dual-source-image";
 
 const PLACEHOLDER = "https://placehold.co/800x400/1e293b/10b981/png?text=Luogo";
 
@@ -13,25 +13,30 @@ type LocationViewProps = {
   name: string;
   body: string;
   imageUrl: string | null;
+  telegramFallbackId?: string | null;
   attributes: LocationAttributes | null;
   isGmOrAdmin?: boolean;
 };
 
-export function LocationView({ name, body, imageUrl, attributes, isGmOrAdmin = false }: LocationViewProps) {
+export function LocationView({
+  name,
+  body,
+  imageUrl,
+  telegramFallbackId,
+  attributes,
+  isGmOrAdmin = false,
+}: LocationViewProps) {
   const loot = attributes?.loot?.trim();
 
   return (
     <div className="space-y-8">
       <div className="space-y-2">
         <div className="relative aspect-[2/1] w-full overflow-hidden rounded-xl border border-barber-gold/30 bg-barber-dark">
-          <Image
-            src={imageUrl ?? PLACEHOLDER}
+          <DualSourceImage
+            driveUrl={imageUrl ?? PLACEHOLDER}
+            telegramFallbackId={telegramFallbackId ?? null}
             alt={name}
-            fill
-            className="object-cover"
-            sizes="(max-width: 1024px) 100vw, 800px"
-            unoptimized={!!imageUrl}
-            priority
+            className="h-full w-full object-cover"
           />
         </div>
         <MapPopoutButton

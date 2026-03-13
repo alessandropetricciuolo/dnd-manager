@@ -17,6 +17,7 @@ type WikiDetailsProps = {
 export function WikiDetails({ entity, contentBody, isGmOrAdmin = false }: WikiDetailsProps) {
   const attrs = entity.attributes ?? {};
   const imageUrl = entity.image_url ?? null;
+  const telegramFallbackId = entity.telegram_fallback_id ?? null;
   const gmNotes = typeof attrs.gm_notes === "string" ? attrs.gm_notes.trim() : "";
 
   const typeView =
@@ -25,6 +26,7 @@ export function WikiDetails({ entity, contentBody, isGmOrAdmin = false }: WikiDe
         name={entity.name}
         body={contentBody}
         imageUrl={imageUrl}
+        telegramFallbackId={telegramFallbackId}
         attributes={attrs as { relationships?: string; loot?: string }}
         isGmOrAdmin={isGmOrAdmin}
       />
@@ -33,6 +35,7 @@ export function WikiDetails({ entity, contentBody, isGmOrAdmin = false }: WikiDe
         name={entity.name}
         body={contentBody}
         imageUrl={imageUrl}
+        telegramFallbackId={telegramFallbackId}
         attributes={attrs as { combat_stats?: { hp?: string; ac?: string; cr?: string; attacks?: string }; loot?: string }}
         isGmOrAdmin={isGmOrAdmin}
       />
@@ -41,6 +44,7 @@ export function WikiDetails({ entity, contentBody, isGmOrAdmin = false }: WikiDe
         name={entity.name}
         body={contentBody}
         imageUrl={imageUrl}
+        telegramFallbackId={telegramFallbackId}
         attributes={attrs as { loot?: string }}
         isGmOrAdmin={isGmOrAdmin}
       />
@@ -56,6 +60,7 @@ export function WikiDetails({ entity, contentBody, isGmOrAdmin = false }: WikiDe
         name={entity.name}
         body={contentBody}
         imageUrl={imageUrl}
+        telegramFallbackId={telegramFallbackId}
       />
     );
 

@@ -1,9 +1,9 @@
-import Image from "next/image";
 import ReactMarkdown from "react-markdown";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPopoutButton } from "@/components/maps/map-popout-button";
 import { Coins } from "lucide-react";
 import { GmOnlySection } from "./gm-only-section";
+import { DualSourceImage } from "@/components/dual-source-image";
 
 const PLACEHOLDER = "https://placehold.co/400x500/1e293b/8b5a2b/png?text=Mostro";
 
@@ -14,11 +14,19 @@ type MonsterViewProps = {
   name: string;
   body: string;
   imageUrl: string | null;
+  telegramFallbackId?: string | null;
   attributes: MonsterAttributes | null;
   isGmOrAdmin?: boolean;
 };
 
-export function MonsterView({ name, body, imageUrl, attributes, isGmOrAdmin = false }: MonsterViewProps) {
+export function MonsterView({
+  name,
+  body,
+  imageUrl,
+  telegramFallbackId,
+  attributes,
+  isGmOrAdmin = false,
+}: MonsterViewProps) {
   const attrs = attributes ?? {};
   const stats = attrs.combat_stats ?? {};
   const hasStats = !!(stats.hp?.trim() || stats.ac?.trim() || stats.cr?.trim());
@@ -30,13 +38,11 @@ export function MonsterView({ name, body, imageUrl, attributes, isGmOrAdmin = fa
       <div className="grid gap-8 md:grid-cols-[280px_1fr]">
         <div className="space-y-4">
           <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl border border-barber-gold/30 bg-barber-dark">
-            <Image
-              src={imageUrl ?? PLACEHOLDER}
+            <DualSourceImage
+              driveUrl={imageUrl ?? PLACEHOLDER}
+              telegramFallbackId={telegramFallbackId ?? null}
               alt={name}
-              fill
-              className="object-cover"
-              sizes="280px"
-              unoptimized={!!imageUrl}
+              className="h-full w-full object-cover"
             />
           </div>
           <MapPopoutButton
