@@ -1,8 +1,14 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-/** Rotte di autenticazione: se l'utente è loggato, va reindirizzato a /dashboard */
-const AUTH_ROUTES = ["/login", "/signup", "/forgot-password", "/update-password"];
+/**
+ * Rotte di autenticazione: se l'utente è loggato, va reindirizzato a /dashboard.
+ *
+ * NOTA: /update-password è ESCLUSO di proposito.
+ * Dopo il click sul link di recupero password vogliamo che l'utente,
+ * anche se già autenticato, possa sempre vedere la pagina per cambiare password.
+ */
+const AUTH_ROUTES = ["/login", "/signup", "/forgot-password"];
 
 /** Prefissi delle rotte protette: se l'utente non è loggato, va reindirizzato a /login */
 const PROTECTED_PREFIXES = ["/dashboard", "/campaigns", "/profile", "/admin"];
