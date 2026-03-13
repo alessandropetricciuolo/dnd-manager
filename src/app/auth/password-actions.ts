@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { createSupabaseAdminClient } from "@/utils/supabase/admin";
+import { sendEmail, passwordResetEmailContent } from "@/lib/email";
 
 export type PasswordResult = { error?: string };
 
@@ -16,7 +18,11 @@ function getAppBaseUrl(): string {
   return "http://localhost:3000";
 }
 
-/** Invia email di recupero password. redirectTo porta l'utente su /auth/callback?next=/update-password */
+/**
+ * Invia email di recupero password.
+ * Se Gmail e SUPABASE_SERVICE_ROLE_KEY sono configurati: genera il link con Admin API e invia l'email tramite Gmail (più affidabile).
+ * Altrimenti usa resetPasswordForEmail di Supabase (richiede SMTP o email Supabase configurati in Dashboard).
+ */
 export async function requestPasswordReset(email: string): Promise<PasswordResult> {
   const trimmed = email?.trim();
   if (!trimmed) {
@@ -27,9 +33,55 @@ export async function requestPasswordReset(email: string): Promise<PasswordResul
     return { error: ENV_ERROR };
   }
 
+  const redirectTo = `${getAppBaseUrl()}/auth/callback?next=/update-password`;
+
   try {
+    const hasServiceRole = !!(
+      process.env.NEXT_PUBLIC_SUPABASE_URL &&
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+    const hasGmail = !!(process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD);
+
+    if (hasServiceRole && hasGmail) {
+      try {
+        const admin = createSupabaseAdminClient();
+        const {
+          data,
+          error: genError,
+        } = await admin.auth.admin.generateLink({
+          type: "recovery",
+          email: trimmed,
+          options: { redirectTo },
+        });
+
+        if (genError) {
+          if (genError.message.toLowerCase().includes("user not found") || genError.message.toLowerCase().includes("not found")) {
+            return {};
+          }
+          return { error: genError.message };
+        }
+
+        const actionLink =
+          (data as { properties?: { action_link?: string }; action_link?: string })?.properties?.action_link ??
+          (data as { action_link?: string })?.action_link;
+
+        if (!actionLink || typeof actionLink !== "string") {
+          console.error("[requestPasswordReset] generateLink senza action_link", data);
+        } else {
+          const sent = await sendEmail({
+            to: trimmed,
+            subject: "Recupero password - Barber & Dragons",
+            html: passwordResetEmailContent(actionLink),
+          });
+          if (sent) return {};
+          console.warn("[requestPasswordReset] invio Gmail fallito, fallback a Supabase");
+        }
+      } catch (adminErr) {
+        console.warn("[requestPasswordReset] admin/generateLink fallback a resetPasswordForEmail", adminErr);
+      }
+    }
+
     const supabase = await createSupabaseServerClient();
-    const redirectTo = `${getAppBaseUrl()}/auth/callback?next=/update-password`;
     const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
       redirectTo,
     });

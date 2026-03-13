@@ -78,6 +78,17 @@ export type SendEmailOptions = {
   bcc?: string | string[];
 };
 
+/** Contenuto HTML per email di recupero password (link generato da Supabase Admin generateLink). */
+export function passwordResetEmailContent(resetLink: string): string {
+  const safeLink = escapeHtml(resetLink);
+  return wrapInTemplate(
+    `<p>Ciao,</p><p>È stata richiesta una reimpostazione della password per il tuo account Barber &amp; Dragons.</p>` +
+      `<p><a href="${safeLink}" style="color:#fbbf24;text-decoration:underline;">Clicca qui per reimpostare la password</a></p>` +
+      `<p>Se il link non funziona, copia e incolla questo indirizzo nel browser:</p><p style="word-break:break-all;font-size:0.85rem;color:#fafaf9;">${safeLink}</p>` +
+      `<p>Il link scade dopo un'ora. Se non hai richiesto tu il reset, ignora questa email.</p>`
+  );
+}
+
 /**
  * Invia una mail. Restituisce true se inviata, false se transporter non configurato o errore.
  * Non lancia: gli errori vengono solo loggati.
