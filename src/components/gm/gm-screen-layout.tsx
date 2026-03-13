@@ -22,6 +22,8 @@ type GmScreenLayoutProps = {
   campaignId: string;
   campaignType?: "oneshot" | "quest" | "long" | null;
   currentUserId: string;
+  initialSessionId?: string | null;
+  autoOpenDebrief?: boolean;
 };
 
 function formatSessionLabel(s: CampaignSessionOption): string {
@@ -34,11 +36,17 @@ function formatSessionLabel(s: CampaignSessionOption): string {
   return s.title?.trim() ? `${s.title} — ${dateStr}` : dateStr;
 }
 
-export function GmScreenLayout({ campaignId, campaignType, currentUserId }: GmScreenLayoutProps) {
+export function GmScreenLayout({
+  campaignId,
+  campaignType,
+  currentUserId,
+  initialSessionId,
+  autoOpenDebrief,
+}: GmScreenLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sessions, setSessions] = useState<CampaignSessionOption[]>([]);
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
-  const [debriefOpen, setDebriefOpen] = useState(false);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(initialSessionId ?? null);
+  const [debriefOpen, setDebriefOpen] = useState(Boolean(initialSessionId && autoOpenDebrief));
   const [whispersOpen, setWhispersOpen] = useState(false);
 
   const loadSessions = useCallback(async () => {

@@ -28,6 +28,8 @@ import {
   getUnlockableContent,
   getAchievementsForWizard,
   closeSessionAction,
+  preCloseSessionAction,
+  getSessionWizardMeta,
   type CloseSessionActionPayload,
   type UnlockableItem,
   type AchievementForWizard,
@@ -80,6 +82,7 @@ export type ApprovedSignupForWizard = {
   id: string;
   player_id: string;
   player_name: string;
+  status?: string;
 };
 
 type EndSessionWizardProps = {
@@ -143,6 +146,8 @@ export function EndSessionWizard({
   const [achievementSearchByPlayer, setAchievementSearchByPlayer] = useState<Record<string, string>>({});
 
   const [submitting, setSubmitting] = useState(false);
+  const [preClosing, setPreClosing] = useState(false);
+  const [isPreClosed, setIsPreClosed] = useState(false);
 
   const isLongCampaign = campaignType === "long";
   const isOneshot = campaignType === "oneshot";
@@ -166,6 +171,7 @@ export function EndSessionWizard({
   useEffect(() => {
     if (!open) return;
     setStep(1);
+    setIsPreClosed(false);
     setSummary("");
     setGmPrivateNotes("");
     setSelectedContentKeys(new Set());
@@ -173,23 +179,42 @@ export function EndSessionWizard({
     setStatusByEntityId({});
     setAwardedAchievements([]);
     setAchievementSearchByPlayer({});
-    if (initialApprovedSignups?.length) {
-      setSignups(initialApprovedSignups);
-      setAttendance(
-        initialApprovedSignups.reduce((acc, s) => ({ ...acc, [s.player_id]: "attended" as const }), {})
-      );
-    } else {
-      setLoadingSignups(true);
-      getApprovedSignupsForSession(sessionId).then((res) => {
+    (async () => {
+      // Metadati sessione: se è in pre-chiusura, salta direttamente allo step 2
+      const meta = await getSessionWizardMeta(sessionId);
+      if (meta.success && meta.data?.is_pre_closed) {
+        setIsPreClosed(true);
+        setStep(2 as StepId);
+      }
+
+      if (initialApprovedSignups?.length) {
+        setSignups(initialApprovedSignups);
+        // Se abbiamo status, usiamolo per precompilare le presenze; altrimenti tutti presenti.
+        setAttendance(
+          initialApprovedSignups.reduce((acc, s) => {
+            const st = (s.status ?? "").toLowerCase();
+            const value: "attended" | "absent" = st === "absent" ? "absent" : "attended";
+            return { ...acc, [s.player_id]: value };
+          }, {} as Record<string, "attended" | "absent">)
+        );
+      } else {
+        setLoadingSignups(true);
+        const res = await getApprovedSignupsForSession(sessionId);
         setLoadingSignups(false);
         if (res.success && res.data) {
           setSignups(res.data);
-          setAttendance(res.data.reduce((acc, s) => ({ ...acc, [s.player_id]: "attended" as const }), {}));
+          setAttendance(
+            res.data.reduce((acc, s) => {
+              const st = (s.status ?? "").toLowerCase();
+              const value: "attended" | "absent" = st === "absent" ? "absent" : "attended";
+              return { ...acc, [s.player_id]: value };
+            }, {} as Record<string, "attended" | "absent">)
+          );
         } else {
           setSignups([]);
         }
-      });
-    }
+      }
+    })();
   }, [open, sessionId, initialApprovedSignups]);
 
   useEffect(() => {
@@ -306,6 +331,30 @@ export function EndSessionWizard({
     }
   };
 
+  const handlePreClose = async () => {
+    if (!canProceedStep1 || signups.length === 0) {
+      toast.error("Compila le presenze prima di salvare in bozza.");
+      return;
+    }
+    setPreClosing(true);
+    const payload: Pick<CloseSessionActionPayload, "attendance" | "xpGained"> = {
+      attendance,
+      xpGained: Math.max(0, Math.floor(xpGained)),
+    };
+    const res = await preCloseSessionAction(sessionId, payload);
+    setPreClosing(false);
+    if (res.success) {
+      toast.success("Sessione salvata in bozza. Puoi completare il debrief più tardi.");
+      onOpenChange(false);
+      onSuccess?.();
+      // Esci dal GM Screen verso la dashboard campagna
+      router.push(`/campaigns/${campaignId}`);
+      router.refresh();
+    } else {
+      toast.error(res.message);
+    }
+  };
+
   const toggleContent = (key: string) => {
     setSelectedContentKeys((prev) => {
       const next = new Set(prev);
@@ -375,8 +424,8 @@ export function EndSessionWizard({
         </div>
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto py-2">
-          {/* Step 1: Logistica & Presenze */}
-          {step === 1 && (
+          {/* Step 1: Logistica & Presenze (saltato se la sessione è già in pre-chiusura) */}
+          {step === 1 && !isPreClosed && (
             <>
               {loadingSignups ? (
                 <div className="flex items-center justify-center py-8">
@@ -785,18 +834,32 @@ export function EndSessionWizard({
             {step === 1 ? "Annulla" : "Indietro"}
           </Button>
           {step < 5 ? (
-            <Button
-              type="button"
-              onClick={handleNext}
-              disabled={
-                (step === 1 && !canProceedStep1) ||
-                (step === 2 && !canProceedStep2) ||
-                (step === 3 && !canProceedStep3)
-              }
-              className="bg-barber-gold text-barber-dark hover:bg-barber-gold/90"
-            >
-              Avanti
-            </Button>
+            <>
+              {step === 1 && !isPreClosed && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handlePreClose}
+                  disabled={preClosing || !canProceedStep1 || loadingSignups}
+                  className="border-barber-gold/40 text-barber-gold hover:bg-barber-gold/10"
+                >
+                  {preClosing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Pre-chiudi e vai a dormire 🌙
+                </Button>
+              )}
+              <Button
+                type="button"
+                onClick={handleNext}
+                disabled={
+                  (step === 1 && !canProceedStep1) ||
+                  (step === 2 && !canProceedStep2) ||
+                  (step === 3 && !canProceedStep3)
+                }
+                className="bg-barber-gold text-barber-dark hover:bg-barber-gold/90"
+              >
+                Avanti
+              </Button>
+            </>
           ) : (
             <Button
               type="button"

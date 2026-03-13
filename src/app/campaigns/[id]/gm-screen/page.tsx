@@ -4,10 +4,12 @@ import { GmScreenLayout } from "@/components/gm/gm-screen-layout";
 
 type PageProps = {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ sessionId?: string; resume?: string }>;
 };
 
-export default async function GmScreenPage({ params }: PageProps) {
+export default async function GmScreenPage({ params, searchParams }: PageProps) {
   const { id: campaignId } = await params;
+  const { sessionId, resume } = await searchParams;
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -40,6 +42,8 @@ export default async function GmScreenPage({ params }: PageProps) {
       campaignId={campaignId}
       campaignType={campaignType}
       currentUserId={user.id}
+      initialSessionId={sessionId ?? null}
+      autoOpenDebrief={Boolean(resume && sessionId)}
     />
   );
 }

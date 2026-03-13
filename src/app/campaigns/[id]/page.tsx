@@ -22,6 +22,7 @@ import Link from "next/link";
 import { Map } from "lucide-react";
 import { CharactersSection } from "@/components/characters/characters-section";
 import { getCampaignCharacters, getCampaignEligiblePlayers } from "@/app/campaigns/character-actions";
+import { getPreClosedSessionForCampaign } from "@/app/campaigns/gm-actions";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { CampaignMobileHeader } from "@/components/campaigns/campaign-mobile-header";
@@ -137,6 +138,19 @@ export default async function CampaignPage({ params }: PageProps) {
     long: "Campagna lunga",
   };
   const campaignTypeLabel = campaign.type ? campaignTypeLabels[campaign.type] ?? campaign.type : null;
+
+  /** Sessione eventualmente salvata in bozza (pre-chiusura) da un qualsiasi GM. */
+  let preClosedSession: Awaited<ReturnType<typeof getPreClosedSessionForCampaign>>["data"] | null = null;
+  if (isGmOrAdmin) {
+    try {
+      const res = await getPreClosedSessionForCampaign(campaign.id);
+      if (res.success) {
+        preClosedSession = res.data ?? null;
+      }
+    } catch (e) {
+      console.error("[campaigns/[id]] getPreClosedSessionForCampaign", e);
+    }
+  }
 
   /** Tab iniziale: player con PG assegnato → PG, player senza PG o GM → Sessioni */
   const defaultTab =
@@ -279,6 +293,31 @@ export default async function CampaignPage({ params }: PageProps) {
           defaultTab={defaultTab}
           sessioniContent={
             <>
+              {isGmOrAdmin && preClosedSession && (
+                <div className="mb-4 rounded-lg border border-amber-500/70 bg-amber-950/40 px-4 py-3 text-sm text-amber-50">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="font-semibold">
+                        C&apos;è una sessione in sospeso da chiudere.
+                      </p>
+                      <p className="text-xs text-amber-200/80">
+                        {preClosedSession.title ?? "Sessione senza titolo"}
+                      </p>
+                    </div>
+                    <Button
+                      asChild
+                      size="sm"
+                      className="bg-amber-500 text-slate-900 hover:bg-amber-400"
+                    >
+                      <Link
+                        href={`/campaigns/${campaign.id}/gm-screen?sessionId=${preClosedSession.id}&resume=1`}
+                      >
+                        Riprendi chiusura
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              )}
               {isGmOrAdmin && !(campaign.is_public ?? false) && (
                 <div className="mb-4 rounded-lg border border-amber-500/50 bg-amber-950/30 px-4 py-3 text-sm text-amber-200">
                   <strong>Campagna privata.</strong> I player non vedono le sessioni in calendario e non possono prenotarsi. Usa il pulsante &quot;Privata&quot; in alto per renderla pubblica e permettere le prenotazioni.

@@ -648,7 +648,11 @@ export async function getCompletedSessionsForCurrentUser(
 /** Iscritti approvati per una sessione (per wizard chiusura). Usato da EndSessionWizard quando aperto da GM Screen. */
 export async function getApprovedSignupsForSession(
   sessionId: string
-): Promise<{ success: boolean; error?: string; data?: { id: string; player_id: string; player_name: string }[] }> {
+): Promise<{
+  success: boolean;
+  error?: string;
+  data?: { id: string; player_id: string; player_name: string; status: string }[];
+}> {
   try {
     const supabase = await createSupabaseServerClient();
     const allowed = await isGmOrAdminByRole(supabase);
@@ -658,10 +662,10 @@ export async function getApprovedSignupsForSession(
     const admin = createSupabaseAdminClient();
     const { data: signupsRaw, error: signupsErr } = await admin
       .from("session_signups")
-      .select("id, player_id")
+      .select("id, player_id, status")
       .eq("session_id", sessionId)
-      .in("status", ["approved", "confirmed"]);
-    const signups = (signupsRaw ?? []) as { id: string; player_id: string }[];
+      .in("status", ["approved", "confirmed", "attended", "absent"]);
+    const signups = (signupsRaw ?? []) as { id: string; player_id: string; status: string }[];
     if (signupsErr || !signups.length) {
       return { success: true, data: [] };
     }
@@ -680,6 +684,7 @@ export async function getApprovedSignupsForSession(
       id: s.id,
       player_id: s.player_id,
       player_name: nameMap.get(s.player_id) ?? "Giocatore",
+      status: s.status,
     }));
     return { success: true, data };
   } catch (err) {
@@ -774,7 +779,7 @@ export async function closeSessionAction(
 
     const { data: session, error: sessionError } = await supabase
       .from("sessions")
-      .select("id, campaign_id, status")
+      .select("id, campaign_id, status, is_pre_closed")
       .eq("id", sessionId)
       .single();
     if (sessionError || !session) {
@@ -783,6 +788,8 @@ export async function closeSessionAction(
     if (session.status !== "scheduled") {
       return { success: false, message: "La sessione è già chiusa." };
     }
+    const isPreClosed =
+      (session as { is_pre_closed?: boolean | null }).is_pre_closed === true;
 
     const { data: campaign } = await supabase
       .from("campaigns")
@@ -793,9 +800,15 @@ export async function closeSessionAction(
 
     const admin = createSupabaseAdminClient();
 
-    const sessionUpdate: { status: string; session_summary: string | null; gm_private_notes?: string | null } = {
+    const sessionUpdate: {
+      status: string;
+      session_summary: string | null;
+      gm_private_notes?: string | null;
+      is_pre_closed?: boolean;
+    } = {
       status: "completed",
       session_summary: payload.summary?.trim() || null,
+      is_pre_closed: false,
     };
     if (payload.gm_private_notes !== undefined) {
       sessionUpdate.gm_private_notes = payload.gm_private_notes?.trim() || null;
@@ -813,35 +826,48 @@ export async function closeSessionAction(
       .from("session_signups")
       .select("id, player_id, status")
       .eq("session_id", sessionId);
-    const signupsList = (signupsData ?? []) as { id: string; player_id: string; status: string }[];
-    const xpToAdd = Math.max(0, Math.floor(payload.xpGained));
+    const signupsList = (signupsData ?? []) as {
+      id: string;
+      player_id: string;
+      status: string;
+    }[];
 
-    for (const signup of signupsList) {
-      const newStatus = payload.attendance[signup.player_id] ?? "attended";
-      if (signup.status === "approved" || signup.status === "confirmed") {
-        await admin.from("session_signups").update({ status: newStatus } as never).eq("id", signup.id);
-        if (newStatus === "attended") {
-          try {
-            await incrementSessionsAttendedWithAdmin(admin, signup.player_id);
-          } catch (gamErr) {
-            console.error("[closeSessionAction] gamification increment", gamErr);
-          }
-          const { data: existingRow } = await admin
-            .from("campaign_members")
-            .select("id, xp_earned")
-            .eq("campaign_id", session.campaign_id)
-            .eq("player_id", signup.player_id)
-            .maybeSingle();
-          const existing = existingRow as { id: string; xp_earned?: number } | null;
-          const currentXp = existing?.xp_earned ?? 0;
-          if (!existing) {
-            await admin.from("campaign_members").insert({
-              campaign_id: session.campaign_id,
-              player_id: signup.player_id,
-              xp_earned: currentXp + xpToAdd,
-            } as never);
-          } else {
-            await admin.from("campaign_members").update({ xp_earned: currentXp + xpToAdd } as never).eq("id", existing.id);
+    if (!isPreClosed) {
+      const xpToAdd = Math.max(0, Math.floor(payload.xpGained));
+
+      for (const signup of signupsList) {
+        const newStatus = payload.attendance[signup.player_id] ?? "attended";
+        if (signup.status === "approved" || signup.status === "confirmed") {
+          await admin
+            .from("session_signups")
+            .update({ status: newStatus } as never)
+            .eq("id", signup.id);
+          if (newStatus === "attended") {
+            try {
+              await incrementSessionsAttendedWithAdmin(admin, signup.player_id);
+            } catch (gamErr) {
+              console.error("[closeSessionAction] gamification increment", gamErr);
+            }
+            const { data: existingRow } = await admin
+              .from("campaign_members")
+              .select("id, xp_earned")
+              .eq("campaign_id", session.campaign_id)
+              .eq("player_id", signup.player_id)
+              .maybeSingle();
+            const existing = existingRow as { id: string; xp_earned?: number } | null;
+            const currentXp = existing?.xp_earned ?? 0;
+            if (!existing) {
+              await admin.from("campaign_members").insert({
+                campaign_id: session.campaign_id,
+                player_id: signup.player_id,
+                xp_earned: currentXp + xpToAdd,
+              } as never);
+            } else {
+              await admin
+                .from("campaign_members")
+                .update({ xp_earned: currentXp + xpToAdd } as never)
+                .eq("id", existing.id);
+            }
           }
         }
       }
@@ -889,6 +915,155 @@ export async function closeSessionAction(
   } catch (err) {
     console.error("[closeSessionAction]", err);
     return { success: false, message: "Errore imprevisto. Riprova." };
+  }
+}
+
+type PreCloseSessionPayload = Pick<CloseSessionActionPayload, "attendance" | "xpGained">;
+
+/** Pre-chiusura sessione: registra presenze e XP, marca la sessione come salvata in bozza (is_pre_closed = true). */
+export async function preCloseSessionAction(
+  sessionId: string,
+  payload: PreCloseSessionPayload
+): Promise<CloseSessionResult & { campaignId?: string }> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { success: false, message: "Devi essere autenticato." };
+    }
+    const allowed = await isGmOrAdminByRole(supabase);
+    if (!allowed) {
+      return { success: false, message: "Solo GM o Admin possono chiudere sessioni." };
+    }
+
+    const { data: session, error: sessionError } = await supabase
+      .from("sessions")
+      .select("id, campaign_id, status, is_pre_closed")
+      .eq("id", sessionId)
+      .single();
+    if (sessionError || !session) {
+      return { success: false, message: "Sessione non trovata." };
+    }
+    if (session.status !== "scheduled") {
+      return { success: false, message: "La sessione è già chiusa." };
+    }
+
+    const admin = createSupabaseAdminClient();
+
+    const { error: updateSessionErr } = await admin
+      .from("sessions")
+      .update({ is_pre_closed: true } as never)
+      .eq("id", sessionId);
+    if (updateSessionErr) {
+      console.error("[preCloseSessionAction] session", updateSessionErr);
+      return {
+        success: false,
+        message: updateSessionErr.message ?? "Errore durante il salvataggio in bozza.",
+      };
+    }
+
+    const { data: signupsData } = await admin
+      .from("session_signups")
+      .select("id, player_id, status")
+      .eq("session_id", sessionId);
+    const signupsList = (signupsData ?? []) as {
+      id: string;
+      player_id: string;
+      status: string;
+    }[];
+
+    const xpToAdd = Math.max(0, Math.floor(payload.xpGained));
+
+    for (const signup of signupsList) {
+      const newStatus = payload.attendance[signup.player_id] ?? "attended";
+      if (signup.status === "approved" || signup.status === "confirmed") {
+        await admin
+          .from("session_signups")
+          .update({ status: newStatus } as never)
+          .eq("id", signup.id);
+        if (newStatus === "attended" && xpToAdd > 0) {
+          try {
+            await incrementSessionsAttendedWithAdmin(admin, signup.player_id);
+          } catch (gamErr) {
+            console.error("[preCloseSessionAction] gamification increment", gamErr);
+          }
+          const { data: existingRow } = await admin
+            .from("campaign_members")
+            .select("id, xp_earned")
+            .eq("campaign_id", session.campaign_id)
+            .eq("player_id", signup.player_id)
+            .maybeSingle();
+          const existing = existingRow as { id: string; xp_earned?: number } | null;
+          const currentXp = existing?.xp_earned ?? 0;
+          if (!existing) {
+            await admin.from("campaign_members").insert({
+              campaign_id: session.campaign_id,
+              player_id: signup.player_id,
+              xp_earned: currentXp + xpToAdd,
+            } as never);
+          } else {
+            await admin
+              .from("campaign_members")
+              .update({ xp_earned: currentXp + xpToAdd } as never)
+              .eq("id", existing.id);
+          }
+        }
+      }
+    }
+
+    revalidatePath(`/campaigns/${session.campaign_id}`);
+    revalidatePath("/dashboard");
+    return {
+      success: true,
+      message: "Sessione salvata in bozza. Presenze e XP registrati.",
+      campaignId: session.campaign_id,
+    };
+  } catch (err) {
+    console.error("[preCloseSessionAction]", err);
+    return { success: false, message: "Errore imprevisto. Riprova." };
+  }
+}
+
+/** Metadati per EndSessionWizard: usato per capire se la sessione è in pre-chiusura. */
+export async function getSessionWizardMeta(
+  sessionId: string
+): Promise<{ success: boolean; error?: string; data?: { id: string; campaign_id: string; is_pre_closed: boolean } }> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const allowed = await isGmOrAdminByRole(supabase);
+    if (!allowed) {
+      return { success: false, error: "Solo GM o Admin possono vedere le sessioni." };
+    }
+    const { data, error } = await supabase
+      .from("sessions")
+      .select("id, campaign_id, is_pre_closed, status")
+      .eq("id", sessionId)
+      .maybeSingle();
+    if (error) {
+      console.error("[getSessionWizardMeta]", error);
+      return { success: false, error: error.message ?? "Errore nel caricamento." };
+    }
+    if (!data) {
+      return { success: false, error: "Sessione non trovata." };
+    }
+    const row = data as { id: string; campaign_id: string; is_pre_closed?: boolean | null; status: string };
+    if (row.status !== "scheduled" && row.status !== "completed") {
+      // Per sicurezza, ma il wizard è usato solo su sessioni schedulate o appena chiuse.
+    }
+    return {
+      success: true,
+      data: {
+        id: row.id,
+        campaign_id: row.campaign_id,
+        is_pre_closed: row.is_pre_closed === true,
+      },
+    };
+  } catch (err) {
+    console.error("[getSessionWizardMeta]", err);
+    return { success: false, error: "Errore nel caricamento." };
   }
 }
 

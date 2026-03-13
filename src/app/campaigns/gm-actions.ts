@@ -82,6 +82,7 @@ export type CampaignSessionOption = {
   id: string;
   title: string | null;
   scheduled_at: string;
+  is_pre_closed?: boolean | null;
 };
 
 /** Sessioni della campagna (scheduled) per il selettore GM Screen. */
@@ -94,7 +95,7 @@ export async function getCampaignSessionsForGm(
 
   const { data, error } = await supabase
     .from("sessions")
-    .select("id, title, scheduled_at")
+    .select("id, title, scheduled_at, is_pre_closed")
     .eq("campaign_id", campaignId)
     .eq("status", "scheduled")
     .order("scheduled_at", { ascending: true });
@@ -104,6 +105,48 @@ export async function getCampaignSessionsForGm(
     return { success: false, error: error.message ?? "Errore nel caricamento delle sessioni." };
   }
   return { success: true, data: (data ?? []) as CampaignSessionOption[] };
+}
+
+export type PreClosedSessionRow = {
+  id: string;
+  title: string | null;
+  scheduled_at: string;
+};
+
+/** Sessione salvata in bozza (pre-chiusura) per una campagna, se esiste. Visibile a tutti i GM/Admin. */
+export async function getPreClosedSessionForCampaign(
+  campaignId: string
+): Promise<GmResult<PreClosedSessionRow | null>> {
+  const check = await ensureGmOrAdmin();
+  if (!check.success) return check;
+  const supabase = check.data!;
+
+  const { data, error } = await supabase
+    .from("sessions")
+    .select("id, title, scheduled_at, is_pre_closed, status")
+    .eq("campaign_id", campaignId)
+    .eq("is_pre_closed", true)
+    .eq("status", "scheduled")
+    .order("scheduled_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[getPreClosedSessionForCampaign]", error);
+    return { success: false, error: error.message ?? "Errore nel caricamento." };
+  }
+  if (!data) {
+    return { success: true, data: null };
+  }
+  const row = data as { id: string; title: string | null; scheduled_at: string };
+  return {
+    success: true,
+    data: {
+      id: row.id,
+      title: row.title,
+      scheduled_at: row.scheduled_at,
+    },
+  };
 }
 
 export type CompletedSessionRow = {
