@@ -22,7 +22,7 @@ import Link from "next/link";
 import { Map } from "lucide-react";
 import { CharactersSection } from "@/components/characters/characters-section";
 import { getCampaignCharacters, getCampaignEligiblePlayers } from "@/app/campaigns/character-actions";
-import { getPreClosedSessionForCampaign } from "@/app/campaigns/gm-actions";
+import { getPreClosedSessionForCampaign, type PreClosedSessionRow } from "@/app/campaigns/gm-actions";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { CampaignMobileHeader } from "@/components/campaigns/campaign-mobile-header";
@@ -140,7 +140,7 @@ export default async function CampaignPage({ params }: PageProps) {
   const campaignTypeLabel = campaign.type ? campaignTypeLabels[campaign.type] ?? campaign.type : null;
 
   /** Sessione eventualmente salvata in bozza (pre-chiusura) da un qualsiasi GM. */
-  let preClosedSession: Awaited<ReturnType<typeof getPreClosedSessionForCampaign>>["data"] | null = null;
+  let preClosedSession: PreClosedSessionRow | null = null;
   if (isGmOrAdmin) {
     try {
       const res = await getPreClosedSessionForCampaign(campaign.id);
