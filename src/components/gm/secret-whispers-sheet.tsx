@@ -160,7 +160,8 @@ export function SecretWhispersSheet({
       setMessageText("");
       setImageToSend(null);
       if (res.data) {
-        setMessages((prev) => [...prev, res.data]);
+        const row = res.data;
+        setMessages((prev) => [...prev, row]);
       }
     } else {
       toast.error(res.error ?? "Errore invio");
