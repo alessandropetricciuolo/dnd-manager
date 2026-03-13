@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import Link from "next/link";
-import { useRouter } from "nextjs-toploader/app";
+import { useSearchParams } from "next/navigation";
+import { useRouter as useTopLoaderRouter } from "nextjs-toploader/app";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -24,9 +25,18 @@ import { createSupabaseBrowserClient } from "@/utils/supabase/client";
 type Mode = "login" | "signup";
 
 export default function LoginPage() {
-  const router = useRouter();
+  const router = useTopLoaderRouter();
+  const searchParams = useSearchParams();
   const [mode, setMode] = useState<Mode>("login");
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("error") === "link_expired") {
+      toast.error(
+        "Il link di recupero è scaduto o non valido. Richiedi un nuovo link da «Password dimenticata»."
+      );
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

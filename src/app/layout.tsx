@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { Navbar } from "@/components/navbar";
 import { CookieBanner } from "@/components/ui/cookie-banner";
 import { LayoutConditionalNavbar } from "@/components/layout-conditional-navbar";
+import { AuthHashErrorRedirect } from "@/components/auth/auth-hash-error-redirect";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -32,6 +33,7 @@ export default function RootLayout({
       <body className={`${inter.variable} ${playfair.variable} font-sans antialiased`}>
         <NextTopLoader color="#D4AF37" showSpinner={false} />
         <LayoutConditionalNavbar navbar={<Navbar />}>
+          <AuthHashErrorRedirect />
           {children}
         </LayoutConditionalNavbar>
         <Toaster richColors closeButton />

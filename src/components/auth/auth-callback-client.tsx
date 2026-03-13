@@ -34,6 +34,14 @@ export function AuthCallbackClient() {
       const hashParams = hash ? new URLSearchParams(hash.slice(1)) : null;
       const accessToken = hashParams?.get("access_token");
       const refreshToken = hashParams?.get("refresh_token");
+      const hashError = hashParams?.get("error");
+      const hashErrorCode = hashParams?.get("error_code");
+
+      if (hashError === "access_denied" || hashErrorCode === "otp_expired") {
+        setStatus("error");
+        router.replace("/login?error=link_expired");
+        return;
+      }
 
       if (accessToken && refreshToken) {
         const { error } = await supabase.auth.setSession({
