@@ -5,8 +5,12 @@ export const dynamic = "force-dynamic";
 
 /**
  * Callback dopo magic link / recovery password / OAuth.
- * I token possono arrivare in hash (#access_token=...) o in query (?code=).
- * Solo il client può leggere l'hash, quindi la logica è in AuthCallbackClient.
+ *
+ * Usiamo una PAGE (non route.ts) perché Supabase può inviare i token in due modi:
+ * - Hash (#access_token=...&refresh_token=...): il server non riceve l'hash, solo il client può leggerlo.
+ * - Query (?code=...): flusso PKCE; exchangeCodeForSession(code) viene eseguito nel client e poi redirect a `next`.
+ *
+ * In entrambi i casi la sessione viene impostata nel browser e l'utente viene reindirizzato a /update-password.
  */
 export default function AuthCallbackPage() {
   return (

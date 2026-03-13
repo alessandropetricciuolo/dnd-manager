@@ -12,10 +12,10 @@ function isAllowedNext(next: string): boolean {
 }
 
 /**
- * Gestisce il callback dopo recovery/OAuth.
- * - Se c'è l'hash (#access_token=...): Supabase ha usato implicit flow (es. recovery da email). Leggiamo i token e setSession.
- * - Se c'è ?code=: exchangeCodeForSession (OAuth/PKCE).
- * Poi redirect a next (default /update-password).
+ * Gestisce il callback dopo recovery password / magic link / OAuth.
+ * - Hash (#access_token=...&refresh_token=...): setSession e redirect a `next`.
+ * - Query ?code=... (PKCE): exchangeCodeForSession(code) e redirect a `next` (es. /update-password).
+ * - Hash con error (link scaduto): redirect a /login?error=link_expired.
  */
 export function AuthCallbackClient() {
   const router = useRouter();

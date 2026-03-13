@@ -26,7 +26,9 @@ export default function ForgotPasswordPage() {
     }
     setIsLoading(true);
     try {
-      const result = await requestPasswordReset(email);
+      const result = await requestPasswordReset(email, {
+        redirectOrigin: typeof window !== "undefined" ? window.location.origin : undefined,
+      });
       if (result?.error) {
         toast.error(result.error);
         return;

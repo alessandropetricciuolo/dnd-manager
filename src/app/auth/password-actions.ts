@@ -22,8 +22,12 @@ function getAppBaseUrl(): string {
  * Invia email di recupero password.
  * Se Gmail e SUPABASE_SERVICE_ROLE_KEY sono configurati: genera il link con Admin API e invia l'email tramite Gmail (più affidabile).
  * Altrimenti usa resetPasswordForEmail di Supabase (richiede SMTP o email Supabase configurati in Dashboard).
+ * redirectOrigin: opzionale, origin dal client (window.location.origin) così il link in mail punta allo stesso dominio.
  */
-export async function requestPasswordReset(email: string): Promise<PasswordResult> {
+export async function requestPasswordReset(
+  email: string,
+  options?: { redirectOrigin?: string }
+): Promise<PasswordResult> {
   const trimmed = email?.trim();
   if (!trimmed) {
     return { error: "Inserisci l'email." };
@@ -33,7 +37,8 @@ export async function requestPasswordReset(email: string): Promise<PasswordResul
     return { error: ENV_ERROR };
   }
 
-  const redirectTo = `${getAppBaseUrl()}/auth/callback?next=/update-password`;
+  const baseUrl = options?.redirectOrigin?.replace(/\/$/, "") || getAppBaseUrl();
+  const redirectTo = `${baseUrl}/auth/callback?next=/update-password`;
 
   try {
     const hasServiceRole = !!(

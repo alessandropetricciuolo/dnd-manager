@@ -4,7 +4,11 @@ import { UpdatePasswordForm } from "@/components/auth/update-password-form";
 
 export const dynamic = "force-dynamic";
 
-/** Pagina protetta: l'utente ci arriva dal link nella mail (auth/callback lo logga). Se non c'è sessione → login. */
+/**
+ * Pagina protetta per completare il reset password.
+ * L'utente arriva qui dopo il click sul link nella mail: auth/callback imposta la sessione e reindirizza qui.
+ * Se non c'è sessione (es. link scaduto) → redirect a /login?next=/update-password.
+ */
 export default async function UpdatePasswordPage() {
   const supabase = await createSupabaseServerClient();
   const {
