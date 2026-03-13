@@ -5,8 +5,9 @@ import { InitiativeTracker } from "./initiative-tracker";
 import { GmNotesGrid } from "./gm-notes-grid";
 import { PlayerSessionTracker } from "./player-session-tracker";
 import { SecretWhispersSheet } from "./secret-whispers-sheet";
+import { GmGallerySheet } from "./gm-gallery-sheet";
 import { Button } from "@/components/ui/button";
-import { ListOrdered, Calendar, Flag, MessageCircle } from "lucide-react";
+import { ListOrdered, Calendar, Flag, MessageCircle, Images } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCampaignSessionsForGm, type CampaignSessionOption } from "@/app/campaigns/gm-actions";
 import { EndSessionWizard } from "@/components/sessions/end-session-wizard";
@@ -48,6 +49,7 @@ export function GmScreenLayout({
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(initialSessionId ?? null);
   const [debriefOpen, setDebriefOpen] = useState(Boolean(initialSessionId && autoOpenDebrief));
   const [whispersOpen, setWhispersOpen] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
 
   const loadSessions = useCallback(async () => {
     const result = await getCampaignSessionsForGm(campaignId);
@@ -162,18 +164,30 @@ export function GmScreenLayout({
           />
         </div>
 
-        {/* FAB Sussurri Segreti */}
-        <div className="absolute bottom-6 right-6 z-10">
-          <Button
-            type="button"
-            size="icon"
-            onClick={() => setWhispersOpen(true)}
-            className="h-12 w-12 rounded-full bg-amber-600 text-zinc-950 shadow-lg shadow-amber-900/30 hover:bg-amber-500"
-            title="Sussurri Segreti"
-            aria-label="Apri Sussurri Segreti"
-          >
-            <MessageCircle className="h-6 w-6" />
-          </Button>
+        {/* FAB strumenti GM: chat segreta + galleria immagini */}
+        <div className="absolute bottom-6 right-6 z-10 flex flex-col items-end gap-3">
+          <div className="flex gap-3">
+            <Button
+              type="button"
+              size="icon"
+              onClick={() => setGalleryOpen(true)}
+              className="h-11 w-11 rounded-full bg-amber-700 text-zinc-950 shadow-lg shadow-amber-900/40 hover:bg-amber-500"
+              title="Regia Immagini"
+              aria-label="Apri galleria immagini"
+            >
+              <Images className="h-5 w-5" />
+            </Button>
+            <Button
+              type="button"
+              size="icon"
+              onClick={() => setWhispersOpen(true)}
+              className="h-11 w-11 rounded-full bg-amber-600 text-zinc-950 shadow-lg shadow-amber-900/30 hover:bg-amber-500"
+              title="Sussurri Segreti"
+              aria-label="Apri Sussurri Segreti"
+            >
+              <MessageCircle className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
 
         <SecretWhispersSheet
@@ -181,6 +195,11 @@ export function GmScreenLayout({
           onOpenChange={setWhispersOpen}
           campaignId={campaignId}
           currentUserId={currentUserId}
+        />
+        <GmGallerySheet
+          open={galleryOpen}
+          onOpenChange={setGalleryOpen}
+          campaignId={campaignId}
         />
       </main>
     </div>

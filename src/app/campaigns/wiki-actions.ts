@@ -712,3 +712,118 @@ export async function getMonstersXpForIds(
     return { success: false, error: "Errore imprevisto." };
   }
 }
+
+export type GmGalleryItem = {
+  id: string;
+  title: string;
+  category: "pg" | "npc" | "monster" | "location" | "item" | "lore";
+  image_url: string | null;
+  telegram_fallback_id?: string | null;
+};
+
+/** Galleria multimediale GM Screen: immagini da Wiki (tutte le categorie) + personaggi della campagna. Solo GM/Admin. */
+export async function getGmGalleryItems(
+  campaignId: string
+): Promise<
+  | { success: true; data: GmGalleryItem[] }
+  | { success: false; error: string }
+> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { success: false, error: "Non autenticato." };
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
+    if (!isGmOrAdmin) {
+      return { success: false, error: "Solo il Master può usare la galleria." };
+    }
+
+    // Wiki entities con immagine
+    const { data: wikiRows, error: wikiErr } = await supabase
+      .from("wiki_entities")
+      .select("id, name, type, image_url, telegram_fallback_id")
+      .eq("campaign_id", campaignId)
+      .not("image_url", "is", null);
+
+    if (wikiErr) {
+      console.error("[getGmGalleryItems] wiki", wikiErr);
+      return {
+        success: false,
+        error: wikiErr.message ?? "Errore nel caricamento dal wiki.",
+      };
+    }
+
+    const wikiItems: GmGalleryItem[] = (wikiRows ?? []).map(
+      (r: {
+        id: string;
+        name: string;
+        type: string;
+        image_url: string | null;
+        telegram_fallback_id?: string | null;
+      }) => {
+        const t = r.type as
+          | "npc"
+          | "monster"
+          | "location"
+          | "item"
+          | "lore";
+        const safeType: GmGalleryItem["category"] =
+          t === "npc" ||
+          t === "monster" ||
+          t === "location" ||
+          t === "item" ||
+          t === "lore"
+            ? t
+            : "lore";
+        return {
+          id: r.id,
+          title: r.name,
+          category: safeType,
+          image_url: r.image_url ?? null,
+          telegram_fallback_id: r.telegram_fallback_id ?? null,
+        };
+      }
+    );
+
+    // Personaggi della campagna con immagine
+    const { data: charRows, error: charErr } = await supabase
+      .from("campaign_characters")
+      .select("id, name, image_url")
+      .eq("campaign_id", campaignId)
+      .not("image_url", "is", null);
+
+    if (charErr) {
+      console.error("[getGmGalleryItems] characters", charErr);
+      return {
+        success: false,
+        error: charErr.message ?? "Errore nel caricamento dei personaggi.",
+      };
+    }
+
+    const charItems: GmGalleryItem[] = (charRows ?? []).map(
+      (r: { id: string; name: string; image_url: string | null }) => ({
+        id: `pg-${r.id}`,
+        title: r.name,
+        category: "pg",
+        image_url: r.image_url ?? null,
+        telegram_fallback_id: null,
+      })
+    );
+
+    const items = [...wikiItems, ...charItems];
+    return { success: true, data: items };
+  } catch (err) {
+    console.error("[getGmGalleryItems]", err);
+    return { success: false, error: "Errore imprevisto." };
+  }
+}
