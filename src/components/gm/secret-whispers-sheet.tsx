@@ -107,7 +107,7 @@ export function SecretWhispersSheet({
             (row.sender_id === currentUserId && row.receiver_id === selectedPlayer.id) ||
             (row.sender_id === selectedPlayer.id && row.receiver_id === currentUserId);
           if (isForThisConversation) {
-            setMessages((prev) => [...prev, row]);
+            setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, row]));
           }
         }
       )
@@ -159,6 +159,9 @@ export function SecretWhispersSheet({
     if (res.success) {
       setMessageText("");
       setImageToSend(null);
+      if (res.data) {
+        setMessages((prev) => [...prev, res.data]);
+      }
     } else {
       toast.error(res.error ?? "Errore invio");
     }

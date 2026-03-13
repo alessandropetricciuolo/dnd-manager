@@ -143,7 +143,7 @@ export async function createCharacter(
     }
     try {
       const fileId = await uploadToTelegram(imageFile);
-      image_url = `/api/tg-image/${fileId}`;
+      image_url = `/api/tg-image/${encodeURIComponent(fileId)}`;
     } catch (uploadErr) {
       console.error("[createCharacter] Telegram upload", uploadErr);
       return { success: false, error: uploadErr instanceof Error ? uploadErr.message : "Errore caricamento immagine." };
@@ -237,7 +237,7 @@ export async function updateCharacter(
     }
     try {
       const fileId = await uploadToTelegram(imageFile);
-      image_url = `/api/tg-image/${fileId}`;
+      image_url = `/api/tg-image/${encodeURIComponent(fileId)}`;
     } catch (uploadErr) {
       console.error("[updateCharacter] Telegram upload", uploadErr);
       return { success: false, error: uploadErr instanceof Error ? uploadErr.message : "Errore caricamento immagine." };

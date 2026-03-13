@@ -27,9 +27,14 @@ export async function GET(
     );
   }
 
-  const { file_id } = await context.params;
+  let { file_id } = await context.params;
   if (!file_id) {
     return NextResponse.json({ error: "file_id mancante" }, { status: 400 });
+  }
+  try {
+    file_id = decodeURIComponent(file_id);
+  } catch {
+    // mantieni file_id invariato se decode fallisce (es. caratteri malformati)
   }
 
   try {
@@ -67,6 +72,7 @@ export async function GET(
       status: 200,
       headers: {
         "Content-Type": contentType,
+        "Content-Disposition": "inline",
         "Cache-Control":
           "public, max-age=31536000, s-maxage=31536000, immutable",
       },

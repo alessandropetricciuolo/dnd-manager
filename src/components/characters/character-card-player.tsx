@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -19,7 +19,9 @@ type CharacterCardPlayerProps = {
 /** Versione immersiva per il giocatore: immagine grande, nome, background. Nessun link al PDF. */
 export function CharacterCardPlayer({ character }: CharacterCardPlayerProps) {
   const [isPending, startTransition] = useTransition();
+  const [imgError, setImgError] = useState(false);
   const xp = character.current_xp ?? 0;
+  const imageSrc = imgError ? PLACEHOLDER_AVATAR : (character.image_url ?? PLACEHOLDER_AVATAR);
   const storedLevel = character.level ?? 1;
   const { level: calculatedLevel, nextLevelXp, progressPercent } = calculateLevelProgress(xp);
   const hasLevelUp = calculatedLevel > storedLevel;
@@ -44,13 +46,14 @@ export function CharacterCardPlayer({ character }: CharacterCardPlayerProps) {
     <Card className="overflow-hidden border-barber-gold/40 bg-barber-dark/90">
       <div className="relative aspect-[4/5] w-full max-w-md mx-auto overflow-hidden bg-barber-dark">
         <Image
-          src={character.image_url ?? PLACEHOLDER_AVATAR}
+          src={imageSrc}
           alt={character.name}
           fill
           className="object-cover"
           sizes="(max-width: 500px) 100vw, 400px"
           priority
           unoptimized={!!character.image_url}
+          onError={() => setImgError(true)}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-barber-dark via-barber-dark/40 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-6">

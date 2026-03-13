@@ -32,7 +32,9 @@ export function CharacterCardGm({ character, eligiblePlayers }: CharacterCardGmP
   const [assigning, setAssigning] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const [isLeveling, startTransition] = useTransition();
+  const imageSrc = imgError ? PLACEHOLDER_AVATAR : (character.image_url ?? PLACEHOLDER_AVATAR);
 
   const currentLabel = character.assigned_to
     ? eligiblePlayers.find((p) => p.id === character.assigned_to)?.label ?? "Assegnato"
@@ -82,12 +84,13 @@ export function CharacterCardGm({ character, eligiblePlayers }: CharacterCardGmP
     <Card className="overflow-hidden border-barber-gold/40 bg-barber-dark/80">
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-barber-dark">
         <Image
-          src={character.image_url ?? PLACEHOLDER_AVATAR}
+          src={imageSrc}
           alt={character.name}
           fill
           className="object-cover"
           sizes="(max-width: 400px) 100vw, 280px"
           unoptimized={!!character.image_url}
+          onError={() => setImgError(true)}
         />
       </div>
       <CardHeader className="pb-2">

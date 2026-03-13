@@ -83,7 +83,7 @@ export function PlayerSecretChat({ campaignId, currentUserId, gmId }: PlayerSecr
             (row.sender_id === currentUserId && row.receiver_id === gmId) ||
             (row.sender_id === gmId && row.receiver_id === currentUserId);
           if (!isBetweenMeAndGm) return;
-          setMessages((prev) => [...prev, row]);
+          setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, row]));
           if (!open && row.sender_id === gmId && row.receiver_id === currentUserId) {
             setHasUnread(true);
           }
@@ -128,6 +128,9 @@ export function PlayerSecretChat({ campaignId, currentUserId, gmId }: PlayerSecr
     if (res.success) {
       setMessageText("");
       setImageToSend(null);
+      if (res.data) {
+        setMessages((prev) => [...prev, res.data!]);
+      }
     } else {
       toast.error(res.error ?? "Errore invio");
     }
