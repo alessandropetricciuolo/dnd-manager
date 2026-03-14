@@ -60,7 +60,7 @@ export function MonsterView({
             <h2 className="border-b-2 border-barber-gold/50 pb-2 text-xl font-bold tracking-wide text-barber-paper">
               {name}
             </h2>
-            <div className="mt-4 grid gap-4 sm:grid-cols-3">
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3 min-w-0">
               {stats.hp && (
                 <div>
                   <span className="text-xs font-semibold uppercase tracking-wider text-barber-paper/70">

@@ -44,9 +44,9 @@ export function CharacterCardPlayer({ character }: CharacterCardPlayerProps) {
   }
 
   return (
-    <Card className="overflow-hidden border-barber-gold/40 bg-barber-dark/90">
-      <div className="space-y-2">
-        <div className="relative aspect-[4/5] w-full max-w-md mx-auto overflow-hidden bg-barber-dark">
+    <Card className="overflow-hidden border-barber-gold/40 bg-barber-dark/90 min-w-0">
+      <div className="space-y-2 min-w-0">
+        <div className="relative aspect-[4/5] w-full max-w-md mx-auto overflow-hidden bg-barber-dark min-w-0">
           <Image
             src={imageSrc}
             alt={character.name}
@@ -58,8 +58,8 @@ export function CharacterCardPlayer({ character }: CharacterCardPlayerProps) {
             onError={() => setImgError(true)}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-barber-dark via-barber-dark/40 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-6">
-            <h2 className="text-2xl font-semibold text-barber-paper md:text-3xl">
+          <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 min-w-0">
+            <h2 className="text-xl font-semibold text-barber-paper break-words md:text-2xl lg:text-3xl">
               {character.name}
             </h2>
           </div>
@@ -76,15 +76,15 @@ export function CharacterCardPlayer({ character }: CharacterCardPlayerProps) {
       <CardHeader className="pb-2">
         <CardTitle className="text-barber-gold">Background</CardTitle>
       </CardHeader>
-      <CardContent className="pt-0">
+      <CardContent className="pt-0 min-w-0">
         {character.background ? (
-          <div className="whitespace-pre-wrap text-barber-paper/90 leading-relaxed">
+          <div className="whitespace-pre-wrap break-words text-barber-paper/90 leading-relaxed overflow-hidden">
             {character.background}
           </div>
         ) : (
           <p className="text-barber-paper/50 italic">Nessun background inserito dal Master.</p>
         )}
-        <div className="mt-6 space-y-2 rounded-lg border border-barber-gold/40 bg-barber-dark/70 p-3">
+        <div className="mt-6 space-y-2 rounded-lg border border-barber-gold/40 bg-barber-dark/70 p-3 min-w-0 overflow-hidden">
           <div className="flex items-center justify-between text-xs font-medium text-barber-paper/80">
             <span>Esperienza</span>
             <span>

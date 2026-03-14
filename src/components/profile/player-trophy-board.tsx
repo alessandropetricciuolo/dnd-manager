@@ -83,19 +83,19 @@ export function PlayerTrophyBoard({ unlocked, inProgress, locked }: Props) {
             Nessun trofeo ancora. Partecipa alle sessioni e conquista i primi achievement!
           </div>
         ) : (
-          <ul className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4 min-w-0">
             {unlocked.map((a) => {
               const Icon = getLucideIcon(a.icon_name);
               return (
                 <li
                   key={a.id}
-                  className="group flex flex-col rounded-xl border border-barber-gold/40 bg-barber-dark/80 p-4 shadow-lg shadow-yellow-500/15 transition-all duration-200 hover:scale-105 hover:shadow-yellow-500/25 hover:shadow-xl"
+                  className="group flex min-w-0 flex-col rounded-xl border border-barber-gold/40 bg-barber-dark/80 p-4 shadow-lg shadow-yellow-500/15 transition-all duration-200 hover:scale-105 hover:shadow-yellow-500/25 hover:shadow-xl"
                 >
-                  <div className="flex flex-1 flex-col items-center text-center">
+                  <div className="flex min-w-0 flex-1 flex-col items-center text-center">
                     <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-barber-gold/20 ring-2 ring-barber-gold/30 shadow-inner">
                       <Icon className="h-7 w-7 text-barber-gold" aria-hidden />
                     </div>
-                    <h3 className="mt-3 font-bold text-barber-gold">{a.title}</h3>
+                    <h3 className="mt-3 font-bold text-barber-gold line-clamp-2 break-words">{a.title}</h3>
                     {a.description && (
                       <p className="mt-1 line-clamp-2 text-xs text-barber-paper/70">
                         {a.description}
@@ -155,19 +155,19 @@ export function PlayerTrophyBoard({ unlocked, inProgress, locked }: Props) {
           <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold uppercase tracking-wider text-barber-paper/70">
             <span aria-hidden>🔒</span> Misteri da Svelare
           </h2>
-          <ul className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4 min-w-0">
             {locked.map((a) => {
               const Icon = getLucideIcon(a.icon_name);
               return (
                 <li
                   key={a.id}
-                  className="flex cursor-default flex-col rounded-xl border border-barber-paper/10 bg-barber-dark/40 p-4 opacity-50 grayscale"
+                  className="flex min-w-0 cursor-default flex-col rounded-xl border border-barber-paper/10 bg-barber-dark/40 p-4 opacity-50 grayscale"
                 >
-                  <div className="flex flex-1 flex-col items-center text-center">
+                  <div className="flex min-w-0 flex-1 flex-col items-center text-center">
                     <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-barber-paper/10">
                       <Icon className="h-7 w-7 text-barber-paper/50" aria-hidden />
                     </div>
-                    <h3 className="mt-3 font-medium text-barber-paper/90">{a.title}</h3>
+                    <h3 className="mt-3 font-medium text-barber-paper/90 line-clamp-2 break-words">{a.title}</h3>
                     <p className="mt-1 text-xs text-barber-paper/50">
                       Continua a giocare per svelare i requisiti
                     </p>

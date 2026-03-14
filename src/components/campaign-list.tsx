@@ -133,11 +133,11 @@ export async function CampaignList({ variant = "all" }: CampaignListProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 min-w-0">
       {campaigns.map((campaign, index) => (
-        <Link key={campaign.id} href={`/campaigns/${campaign.id}`}>
-          <Card className="overflow-hidden border-barber-gold/40 bg-barber-dark/90 transition-colors hover:border-barber-gold/50 hover:bg-barber-dark">
-            <div className="relative aspect-[3/2] w-full bg-barber-dark">
+        <Link key={campaign.id} href={`/campaigns/${campaign.id}`} className="min-w-0">
+          <Card className="overflow-hidden border-barber-gold/40 bg-barber-dark/90 transition-colors hover:border-barber-gold/50 hover:bg-barber-dark min-w-0">
+            <div className="relative aspect-[3/2] w-full min-w-0 bg-barber-dark">
               <Image
                 src={campaign.image_url ?? PLACEHOLDER_IMAGE}
                 alt={campaign.name}
@@ -150,12 +150,12 @@ export async function CampaignList({ variant = "all" }: CampaignListProps) {
                 unoptimized={!!campaign.image_url}
               />
             </div>
-            <CardHeader className="pb-2">
-              <CardTitle className="line-clamp-1 break-words text-lg text-barber-paper">
+            <CardHeader className="pb-2 min-w-0">
+              <CardTitle className="line-clamp-1 break-words text-base text-barber-paper sm:text-lg">
                 {campaign.name}
               </CardTitle>
               {campaign.description && (
-                <CardDescription className="line-clamp-4 text-barber-paper/70 md:line-clamp-2">
+                <CardDescription className="line-clamp-3 break-words text-barber-paper/70 sm:line-clamp-4 md:line-clamp-2">
                   {campaign.description}
                 </CardDescription>
               )}

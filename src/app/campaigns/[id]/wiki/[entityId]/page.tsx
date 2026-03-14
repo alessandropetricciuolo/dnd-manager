@@ -74,9 +74,9 @@ export default async function WikiEntityPage({ params }: PageProps) {
   const maxWidth = isLore ? "max-w-4xl" : "max-w-5xl";
 
   return (
-    <div className="min-h-screen bg-barber-dark px-4 py-8">
-      <div className={`mx-auto ${maxWidth}`}>
-        <div className="mb-6 flex flex-wrap items-center gap-2">
+    <div className="min-h-screen bg-barber-dark px-4 py-6 md:py-8 min-w-0 overflow-x-hidden">
+      <div className={`mx-auto min-w-0 ${maxWidth}`}>
+        <div className="mb-4 md:mb-6 flex flex-wrap items-center gap-2 min-w-0">
           <Link
             href={`/campaigns/${campaignId}?tab=wiki&wiki_filter=${encodeURIComponent(entity.type)}`}
           >
@@ -108,9 +108,9 @@ export default async function WikiEntityPage({ params }: PageProps) {
             </>
           )}
         </div>
-        <article className="rounded-xl border border-barber-gold/40 bg-barber-dark/90 p-6 shadow-[0_0_40px_rgba(251,191,36,0.1)]">
+        <article className="rounded-xl border border-barber-gold/40 bg-barber-dark/90 p-4 shadow-[0_0_40px_rgba(251,191,36,0.1)] md:p-6 min-w-0 overflow-hidden">
           {entity.type !== "lore" && (
-            <h1 className="mb-6 text-3xl font-bold tracking-tight text-barber-paper md:text-4xl">
+            <h1 className="mb-4 md:mb-6 text-2xl font-bold tracking-tight text-barber-paper break-words md:text-3xl lg:text-4xl">
               {entity.name}
             </h1>
           )}

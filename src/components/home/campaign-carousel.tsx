@@ -32,15 +32,15 @@ export async function CampaignCarousel() {
   if (list.length === 0) return null;
 
   return (
-    <section className="border-t border-barber-gold/20 bg-barber-dark/98 py-12 sm:py-16">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <h2 className="font-serif text-2xl font-semibold text-barber-gold sm:text-3xl">
+    <section className="border-t border-barber-gold/20 bg-barber-dark/98 py-8 sm:py-12 md:py-16">
+      <div className="mx-auto max-w-6xl p-4 sm:px-6 md:p-8">
+        <h2 className="font-serif text-xl font-semibold text-barber-gold sm:text-2xl md:text-3xl">
           Campagne in evidenza
         </h2>
-        <p className="mt-2 text-sm text-barber-paper/70">
+        <p className="mt-2 text-sm text-barber-paper/70 break-words">
           Le ultime campagne pubbliche. Entra e scopri le avventure in programma.
         </p>
-        <div className="mt-8 lg:px-12">
+        <div className="mt-6 md:mt-8 lg:px-12">
           <CampaignCarouselClient campaigns={list} />
         </div>
       </div>

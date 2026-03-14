@@ -1591,3 +1591,51 @@ export async function updateCampaign(formData: FormData): Promise<UpdateCampaign
     return { success: false, message: "Si è verificato un errore imprevisto. Riprova." };
   }
 }
+
+export type UpdateCampaignPrimerResult = { success: boolean; message: string };
+
+/** Aggiorna solo la Guida del Giocatore (player_primer). Solo GM/Admin. */
+export async function updateCampaignPrimer(
+  campaignId: string,
+  playerPrimer: string | null
+): Promise<UpdateCampaignPrimerResult> {
+  if (!campaignId?.trim()) {
+    return { success: false, message: "Campagna non valida." };
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return { success: false, message: "Devi essere autenticato." };
+    }
+
+    const allowed = await isGmOrAdminByRole(supabase);
+    if (!allowed) {
+      return { success: false, message: "Solo GM e Admin possono modificare la Guida del Giocatore." };
+    }
+
+    const value = typeof playerPrimer === "string" ? playerPrimer.trim() || null : null;
+
+    const { error } = await supabase
+      .from("campaigns")
+      .update({
+        player_primer: value,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", campaignId);
+
+    if (error) {
+      console.error("[updateCampaignPrimer]", error);
+      return { success: false, message: error.message ?? "Errore durante il salvataggio." };
+    }
+
+    revalidatePath(`/campaigns/${campaignId}`);
+    revalidatePath(`/campaigns/${campaignId}/primer`);
+    return { success: true, message: "Guida del Giocatore salvata!" };
+  } catch (err) {
+    console.error("[updateCampaignPrimer]", err);
+    return { success: false, message: "Si è verificato un errore imprevisto. Riprova." };
+  }
+}

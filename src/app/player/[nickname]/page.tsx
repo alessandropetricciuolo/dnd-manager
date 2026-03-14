@@ -32,9 +32,9 @@ export default async function PlayerProfilePage({ params }: Props) {
   const fameScore = profile.fame_score ?? 0;
 
   return (
-    <div className="min-h-screen bg-barber-dark text-barber-paper">
-      <div className="mx-auto max-w-4xl px-4 py-8 md:px-6 md:py-12">
-        <div className="mb-6">
+    <div className="min-h-screen bg-barber-dark text-barber-paper min-w-0 overflow-x-hidden">
+      <div className="mx-auto max-w-4xl min-w-0 px-4 py-6 md:px-6 md:py-12">
+        <div className="mb-4 md:mb-6">
           <Link href="/hall-of-fame">
             <Button
               variant="ghost"
@@ -48,9 +48,9 @@ export default async function PlayerProfilePage({ params }: Props) {
         </div>
 
         {/* Hero */}
-        <header className="rounded-2xl border border-barber-gold/30 bg-gradient-to-b from-barber-dark/90 to-barber-dark/70 px-6 py-8 shadow-xl shadow-black/20 md:px-8 md:py-10">
-          <div className="flex flex-col items-center text-center">
-            <div className="relative h-28 w-28 overflow-hidden rounded-full border-4 border-barber-gold/60 shadow-lg shadow-yellow-500/20 md:h-32 md:w-32">
+        <header className="rounded-2xl border border-barber-gold/30 bg-gradient-to-b from-barber-dark/90 to-barber-dark/70 px-4 py-6 shadow-xl shadow-black/20 md:px-8 md:py-10 min-w-0">
+          <div className="flex flex-col items-center text-center min-w-0">
+            <div className="relative h-24 w-24 overflow-hidden rounded-full border-4 border-barber-gold/60 shadow-lg shadow-yellow-500/20 md:h-32 md:w-32 shrink-0">
               {profile.avatar_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -64,19 +64,19 @@ export default async function PlayerProfilePage({ params }: Props) {
                 </div>
               )}
             </div>
-            <h1 className="mt-5 text-4xl font-bold tracking-tight text-barber-paper md:text-5xl">
+            <h1 className="mt-4 md:mt-5 text-2xl font-bold tracking-tight text-barber-paper break-words sm:text-3xl md:text-4xl lg:text-5xl">
               {displayName}
             </h1>
-            <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-barber-gold/40 bg-barber-gold/10 px-4 py-2">
-              <Star className="h-5 w-5 text-yellow-400" aria-hidden />
-              <span className="text-lg font-semibold text-barber-gold">
+            <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-barber-gold/40 bg-barber-gold/10 px-3 py-2 md:px-4">
+              <Star className="h-4 w-4 md:h-5 md:w-5 text-yellow-400 shrink-0" aria-hidden />
+              <span className="text-sm font-semibold text-barber-gold break-words md:text-lg">
                 Punti Fama: {fameScore} 🌟
               </span>
             </div>
           </div>
         </header>
 
-        <div className="mt-10">
+        <div className="mt-8 md:mt-10 min-w-0">
           <PlayerTrophyBoard
             unlocked={trophyData.unlocked}
             inProgress={trophyData.inProgress}

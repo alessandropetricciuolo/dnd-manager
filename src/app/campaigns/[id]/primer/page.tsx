@@ -12,7 +12,7 @@ export default async function CampaignPrimerPage({ params }: Props) {
 
   const { data: campaign, error } = await supabase
     .from("campaigns")
-    .select("id, name, is_long_campaign, player_primer")
+    .select("id, name, gm_id, is_public, player_primer")
     .eq("id", id)
     .single();
 
@@ -20,8 +20,21 @@ export default async function CampaignPrimerPage({ params }: Props) {
     notFound();
   }
 
-  if (!campaign.is_long_campaign || !campaign.player_primer?.trim()) {
+  if (!campaign.player_primer?.trim()) {
     notFound();
+  }
+
+  /** Accesso: come per la campagna (GM, pubblico, o membro / ha giocato). */
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) notFound();
+
+  const isGm = campaign.gm_id === user.id;
+  if (!isGm && !campaign.is_public) {
+    const [memberRes, playedRes] = await Promise.all([
+      supabase.from("campaign_members").select("id").eq("campaign_id", id).eq("player_id", user.id).limit(1).maybeSingle(),
+      supabase.rpc("has_played_campaign", { p_user_id: user.id, p_campaign_id: id }).then((r) => r.data === true),
+    ]);
+    if (!memberRes.data && !playedRes) notFound();
   }
 
   return (

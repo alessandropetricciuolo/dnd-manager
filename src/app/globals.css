@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Utility per scroll orizzontale senza scrollbar visibile (es. tab navigazione giocatore) */
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @layer base {
   :root {
     /* Barber & Dragons: barber-dark #1c1917, barber-gold #fbbf24, barber-red #991b1b, barber-paper #f5f5f4 */

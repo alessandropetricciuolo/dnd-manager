@@ -127,9 +127,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-barber-dark flex items-center justify-center px-4">
-      <Card className="w-full max-w-md border-barber-gold/40 bg-barber-dark/95 shadow-[0_0_40px_rgba(251,191,36,0.15)] backdrop-blur">
-        <CardHeader className="space-y-2">
+    <div className="min-h-screen bg-barber-dark flex items-center justify-center p-4 md:px-6">
+      <Card className="w-full max-w-md border-barber-gold/40 bg-barber-dark/95 shadow-[0_0_40px_rgba(251,191,36,0.15)] backdrop-blur p-4 md:p-6">
+        <CardHeader className="space-y-2 px-0 pt-0">
           <p className="text-xs font-medium uppercase tracking-[0.3em] text-barber-gold/70">
             Barber & Dragons
           </p>
@@ -143,12 +143,12 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
 
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 px-0 pb-0">
           <div className="inline-flex w-full rounded-full border border-barber-gold/50 bg-barber-dark p-1 text-sm">
             <button
               type="button"
               onClick={() => setMode("login")}
-              className={`flex-1 rounded-full px-3 py-1.5 transition ${
+              className={`flex-1 min-h-[44px] rounded-full px-3 py-2 transition ${
                 mode === "login"
                   ? "bg-barber-red text-barber-paper shadow"
                   : "text-barber-paper/80 hover:text-barber-gold"
@@ -159,7 +159,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => setMode("signup")}
-              className={`flex-1 rounded-full px-3 py-1.5 transition ${
+              className={`flex-1 min-h-[44px] rounded-full px-3 py-2 transition ${
                 mode === "signup"
                   ? "bg-barber-red text-barber-paper shadow"
                   : "text-barber-paper/80 hover:text-barber-gold"
@@ -267,14 +267,14 @@ export default function LoginPage() {
             <SubmitButton
               pending={isLoading}
               loadingText="Elaborazione..."
-              className="w-full bg-barber-red hover:bg-barber-red/90 text-barber-paper font-semibold"
+              className="w-full min-h-[44px] bg-barber-red hover:bg-barber-red/90 text-barber-paper font-semibold"
             >
               {mode === "login" ? "Entra nella Taverna" : "Crea il tuo eroe"}
             </SubmitButton>
           </form>
         </CardContent>
 
-        <CardFooter className="flex flex-col items-start gap-1 text-xs text-barber-paper/60">
+        <CardFooter className="flex flex-col items-start gap-1 text-xs text-barber-paper/60 px-0 pb-0">
           <p>
             Con l&apos;accesso creiamo automaticamente un profilo{" "}
             <span className="font-semibold text-barber-gold">player</span> per

@@ -17,6 +17,7 @@ import { EditCampaignDialog } from "@/components/campaigns/edit-campaign-dialog"
 import { CampaignTabsClient } from "@/components/campaigns/campaign-tabs-client";
 import { GmNotes } from "@/components/gm/gm-notes";
 import { GmFiles } from "@/components/gm/gm-files";
+import { CampaignPrimerEditor } from "@/components/gm/campaign-primer-editor";
 import { GmScreenLauncher } from "@/components/gm/gm-screen-launcher";
 import Link from "next/link";
 import { Map } from "lucide-react";
@@ -191,7 +192,7 @@ export default async function CampaignPage({ params }: PageProps) {
             GM · {gmDisplayName}
           </p>
         )}
-        {campaign.is_long_campaign && campaign.player_primer?.trim() && (
+        {campaign.player_primer?.trim() && (
           <Link
             href={`/campaigns/${campaign.id}/primer`}
             className="inline-flex items-center gap-2 rounded-lg border border-barber-gold/50 bg-barber-gold/10 px-4 py-2 text-sm font-medium text-barber-gold hover:bg-barber-gold/20 transition-colors"
@@ -287,7 +288,7 @@ export default async function CampaignPage({ params }: PageProps) {
                 {gmDisplayName && (
                   <p className="mt-3 text-sm text-barber-gold/90">GM · {gmDisplayName}</p>
                 )}
-                {campaign.is_long_campaign && campaign.player_primer?.trim() && (
+                {campaign.player_primer?.trim() && (
                   <Link
                     href={`/campaigns/${campaign.id}/primer`}
                     className="mt-3 inline-flex items-center gap-2 rounded-lg border border-barber-gold/50 bg-barber-gold/10 px-4 py-2 text-sm font-medium text-barber-gold hover:bg-barber-gold/20 transition-colors"
@@ -417,6 +418,10 @@ export default async function CampaignPage({ params }: PageProps) {
                   />
                 </div>
                 <div className="space-y-8">
+                  <CampaignPrimerEditor
+                    campaignId={campaign.id}
+                    initialPlayerPrimer={campaign.player_primer ?? null}
+                  />
                   <div className="rounded-lg border border-violet-600/30 bg-violet-950/30 p-4">
                     <h3 className="mb-2 text-sm font-medium text-violet-200">Mappa Concettuale</h3>
                     <p className="mb-3 text-xs text-violet-200/70">

@@ -36,7 +36,7 @@ export function CharactersSection({
             Nessun personaggio creato. Clicca &quot;Nuovo personaggio&quot; per aggiungerne uno.
           </p>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 min-w-0">
             {characters.map((char) => (
               <CharacterCardGm
                 key={char.id}
