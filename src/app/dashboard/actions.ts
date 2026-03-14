@@ -21,6 +21,8 @@ export async function createCampaign(
   const type = typeRaw && ["oneshot", "quest", "long"].includes(typeRaw)
     ? (typeRaw as "oneshot" | "quest" | "long")
     : null;
+  const isLongCampaign = formData.get("is_long_campaign") === "on" || formData.get("is_long_campaign") === "true";
+  const playerPrimer = (formData.get("player_primer") as string | null)?.trim() || null;
   const imageFile = formData.get("image") as File | null;
   const imageUrlFromForm = (formData.get("image_url") as string | null)?.trim() || null;
 
@@ -65,6 +67,8 @@ export async function createCampaign(
       description: description || null,
       is_public: isPublic,
       ...(type && { type }),
+      is_long_campaign: isLongCampaign,
+      player_primer: isLongCampaign ? playerPrimer : null,
       image_url: hasImageFile ? null : (imageUrlFromForm || null),
     };
 

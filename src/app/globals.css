@@ -45,3 +45,46 @@
     min-height: 100vh;
   }
 }
+
+/* Stampa Guida del Giocatore: solo contenuto, tema chiaro (ink-saver) */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  /* Solo sulla pagina Primer: nascondi nav, sidebar, tutto tranne l'area stampabile */
+  body.primer-print-page * {
+    visibility: hidden;
+  }
+
+  body.primer-print-page #primer-print-area,
+  body.primer-print-page #primer-print-area * {
+    visibility: visible;
+  }
+
+  body.primer-print-page #primer-print-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    padding: 1rem 2rem !important;
+    background: #fff !important;
+    color: #111 !important;
+  }
+
+  /* Evita tagli brutti su titoli e paragrafi */
+  body.primer-print-page #primer-print-area h1,
+  body.primer-print-page #primer-print-area h2,
+  body.primer-print-page #primer-print-area h3,
+  body.primer-print-page #primer-print-area h4 {
+    page-break-after: avoid;
+  }
+
+  body.primer-print-page #primer-print-area p,
+  body.primer-print-page #primer-print-area ul,
+  body.primer-print-page #primer-print-area ol,
+  body.primer-print-page #primer-print-area li {
+    page-break-inside: avoid;
+  }
+}

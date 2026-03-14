@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { createCampaign } from "@/app/dashboard/actions";
 import { Plus } from "lucide-react";
 
@@ -38,6 +39,7 @@ export function CreateCampaignDialog() {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [campaignType, setCampaignType] = useState<string>("quest");
+  const [isLongCampaign, setIsLongCampaign] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -46,6 +48,7 @@ export function CreateCampaignDialog() {
     const form = event.currentTarget;
     const formData = new FormData(form);
     formData.set("type", campaignType);
+    formData.set("is_long_campaign", isLongCampaign ? "on" : "");
 
     setIsLoading(true);
     try {
@@ -129,6 +132,30 @@ export function CreateCampaignDialog() {
               disabled={isLoading}
             />
           </div>
+          <div className="flex items-center justify-between rounded-lg border border-barber-gold/30 bg-barber-dark/80 p-4">
+            <div className="space-y-0.5">
+              <Label htmlFor="campaign-long" className="text-barber-paper">Campagna lunga (Abilita Guida del Giocatore)</Label>
+              <p className="text-xs text-slate-400">Se attivo, potrai compilare la Bibbia di Campagna visibile ai giocatori.</p>
+            </div>
+            <Switch
+              id="campaign-long"
+              checked={isLongCampaign}
+              onCheckedChange={setIsLongCampaign}
+              disabled={isLoading}
+            />
+          </div>
+          {isLongCampaign && (
+            <div className="space-y-2">
+              <Label htmlFor="campaign-primer">Bibbia di Campagna / Guida del Giocatore</Label>
+              <Textarea
+                id="campaign-primer"
+                name="player_primer"
+                placeholder="Scrivi qui la guida per i giocatori (Markdown supportato)..."
+                className="min-h-[180px] bg-barber-dark border-barber-gold/30 text-barber-paper resize-y"
+                disabled={isLoading}
+              />
+            </div>
+          )}
           <ImageSourceField
             fileInputName="image"
             urlFieldName="image_url"

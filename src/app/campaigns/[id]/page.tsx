@@ -55,7 +55,7 @@ export default async function CampaignPage({ params }: PageProps) {
 
   const { data: campaign, error } = await supabase
     .from("campaigns")
-    .select("id, name, description, gm_id, is_public, type, image_url")
+    .select("id, name, description, gm_id, is_public, type, image_url, is_long_campaign, player_primer")
     .eq("id", id)
     .single();
 
@@ -191,6 +191,14 @@ export default async function CampaignPage({ params }: PageProps) {
             GM · {gmDisplayName}
           </p>
         )}
+        {campaign.is_long_campaign && campaign.player_primer?.trim() && (
+          <Link
+            href={`/campaigns/${campaign.id}/primer`}
+            className="inline-flex items-center gap-2 rounded-lg border border-barber-gold/50 bg-barber-gold/10 px-4 py-2 text-sm font-medium text-barber-gold hover:bg-barber-gold/20 transition-colors"
+          >
+            📖 Leggi la Guida del Giocatore
+          </Link>
+        )}
         {!hasPlayedCampaign && (
           <p className="rounded-lg border border-barber-gold/40 bg-barber-gold/10 px-3 py-2 text-xs text-barber-gold">
             Partecipa a una sessione per sbloccare Wiki e Mappe.
@@ -205,6 +213,8 @@ export default async function CampaignPage({ params }: PageProps) {
                 description: campaign.description ?? null,
                 type: campaign.type ?? null,
                 image_url: campaign.image_url ?? null,
+                is_long_campaign: campaign.is_long_campaign ?? false,
+                player_primer: campaign.player_primer ?? null,
               }}
             />
             <CampaignVisibilityToggle
@@ -276,6 +286,14 @@ export default async function CampaignPage({ params }: PageProps) {
                 )}
                 {gmDisplayName && (
                   <p className="mt-3 text-sm text-barber-gold/90">GM · {gmDisplayName}</p>
+                )}
+                {campaign.is_long_campaign && campaign.player_primer?.trim() && (
+                  <Link
+                    href={`/campaigns/${campaign.id}/primer`}
+                    className="mt-3 inline-flex items-center gap-2 rounded-lg border border-barber-gold/50 bg-barber-gold/10 px-4 py-2 text-sm font-medium text-barber-gold hover:bg-barber-gold/20 transition-colors"
+                  >
+                    📖 Leggi la Guida del Giocatore
+                  </Link>
                 )}
               </section>
 

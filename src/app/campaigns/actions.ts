@@ -1498,6 +1498,8 @@ export async function updateCampaign(formData: FormData): Promise<UpdateCampaign
   const type = typeRaw && ["oneshot", "quest", "long"].includes(typeRaw)
     ? (typeRaw as "oneshot" | "quest" | "long")
     : null;
+  const isLongCampaign = formData.get("is_long_campaign") === "on" || formData.get("is_long_campaign") === "true";
+  const playerPrimer = (formData.get("player_primer") as string | null)?.trim() || null;
   const imageFile = formData.get("image") as File | null;
   const imageUrlFromForm = (formData.get("image_url") as string | null)?.trim() || null;
 
@@ -1551,10 +1553,19 @@ export async function updateCampaign(formData: FormData): Promise<UpdateCampaign
       .eq("id", campaignId)
       .single();
 
-    const payload: { name: string; description: string | null; type?: "oneshot" | "quest" | "long"; image_url?: string | null } = {
+    const payload: {
+      name: string;
+      description: string | null;
+      type?: "oneshot" | "quest" | "long";
+      is_long_campaign?: boolean;
+      player_primer?: string | null;
+      image_url?: string | null;
+    } = {
       name: title,
       description: description || null,
       ...(type && { type }),
+      is_long_campaign: isLongCampaign,
+      player_primer: isLongCampaign ? playerPrimer : null,
     };
     if (imageUrl !== null) {
       payload.image_url = imageUrl;

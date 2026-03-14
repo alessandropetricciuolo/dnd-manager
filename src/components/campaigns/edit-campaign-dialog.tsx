@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { updateCampaign } from "@/app/campaigns/actions";
 
 const CAMPAIGN_TYPES = [
@@ -39,6 +40,8 @@ export type CampaignForEdit = {
   description: string | null;
   type: "oneshot" | "quest" | "long" | null;
   image_url: string | null;
+  is_long_campaign?: boolean;
+  player_primer?: string | null;
 };
 
 type EditCampaignDialogProps = {
@@ -49,6 +52,7 @@ export function EditCampaignDialog({ campaign }: EditCampaignDialogProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [campaignType, setCampaignType] = useState<string>(campaign.type ?? "quest");
+  const [isLongCampaign, setIsLongCampaign] = useState<boolean>(campaign.is_long_campaign ?? false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -58,6 +62,7 @@ export function EditCampaignDialog({ campaign }: EditCampaignDialogProps) {
     const formData = new FormData(form);
     formData.set("campaign_id", campaign.id);
     formData.set("type", campaignType);
+    formData.set("is_long_campaign", isLongCampaign ? "on" : "");
 
     setIsLoading(true);
     try {
@@ -68,6 +73,7 @@ export function EditCampaignDialog({ campaign }: EditCampaignDialogProps) {
         setOpen(false);
         form.reset();
         setCampaignType(campaign.type ?? "quest");
+        setIsLongCampaign(campaign.is_long_campaign ?? false);
       } else {
         toast.error(result.message);
       }
@@ -80,6 +86,10 @@ export function EditCampaignDialog({ campaign }: EditCampaignDialogProps) {
 
   function handleOpenChange(next: boolean) {
     setOpen(next);
+    if (!next) {
+      setCampaignType(campaign.type ?? "quest");
+      setIsLongCampaign(campaign.is_long_campaign ?? false);
+    }
   }
 
   return (
@@ -148,6 +158,31 @@ export function EditCampaignDialog({ campaign }: EditCampaignDialogProps) {
               disabled={isLoading}
             />
           </div>
+          <div className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-900/50 p-4">
+            <div className="space-y-0.5">
+              <Label htmlFor="edit-campaign-long" className="text-slate-50">Campagna lunga (Abilita Guida del Giocatore)</Label>
+              <p className="text-xs text-slate-400">Se attivo, potrai compilare la Bibbia di Campagna visibile ai giocatori.</p>
+            </div>
+            <Switch
+              id="edit-campaign-long"
+              checked={isLongCampaign}
+              onCheckedChange={setIsLongCampaign}
+              disabled={isLoading}
+            />
+          </div>
+          {isLongCampaign && (
+            <div className="space-y-2">
+              <Label htmlFor="edit-campaign-primer">Bibbia di Campagna / Guida del Giocatore</Label>
+              <Textarea
+                id="edit-campaign-primer"
+                name="player_primer"
+                defaultValue={campaign.player_primer ?? ""}
+                placeholder="Scrivi qui la guida per i giocatori (Markdown supportato)..."
+                className="min-h-[180px] bg-slate-900/70 border-slate-700 text-slate-50 resize-y"
+                disabled={isLoading}
+              />
+            </div>
+          )}
           <ImageSourceField
             fileInputName="image"
             urlFieldName="image_url"
