@@ -11,6 +11,7 @@ import { MapGallery } from "@/components/maps/map-gallery";
 import { UploadMapDialog } from "@/components/maps/upload-map-dialog";
 import { WikiList } from "@/components/wiki/wiki-list";
 import { CreateEntityDialog } from "@/components/wiki/create-entity-dialog";
+import { BulkImportWikiDialog } from "@/components/wiki/bulk-import-wiki-dialog";
 import { DeleteCampaignButton } from "@/components/delete-campaign-button";
 import { CampaignVisibilityToggle } from "@/components/campaign-visibility-toggle";
 import { EditCampaignDialog } from "@/components/campaigns/edit-campaign-dialog";
@@ -373,7 +374,10 @@ export default async function CampaignPage({ params }: PageProps) {
                     Wiki
                   </h2>
                   {isGmOrAdmin && (
-                    <CreateEntityDialog campaignId={campaign.id} campaignType={campaign.type ?? null} eligiblePlayers={eligiblePlayers} />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <CreateEntityDialog campaignId={campaign.id} campaignType={campaign.type ?? null} eligiblePlayers={eligiblePlayers} />
+                      <BulkImportWikiDialog campaignId={campaign.id} />
+                    </div>
                   )}
                 </div>
                 <WikiList campaignId={campaign.id} />

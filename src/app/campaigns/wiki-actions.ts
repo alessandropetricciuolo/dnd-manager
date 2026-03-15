@@ -827,3 +827,159 @@ export async function getGmGalleryItems(
     return { success: false, error: "Errore imprevisto." };
   }
 }
+
+// --- Bulk Import Wiki ---
+
+/** Campi opzionali per mostri/NPC: hp (Punti vita), ac (Classe Armatura), gs (Grado di Sfida), exp (Punti Esperienza). */
+export type BulkImportWikiItem = {
+  title: string;
+  category: (typeof ENTITY_TYPES)[number];
+  content: string;
+  is_secret?: boolean;
+  /** Punti vita (mostro/NPC) */
+  hp?: number | string;
+  /** Classe Armatura (mostro/NPC) */
+  ac?: number | string;
+  /** Grado di Sfida (mostro/NPC) */
+  gs?: number | string;
+  /** Punti Esperienza (solo mostro, colonna xp_value) */
+  exp?: number | string;
+};
+
+export type BulkImportWikiResult = {
+  success: boolean;
+  message: string;
+  imported?: number;
+  failed?: number;
+};
+
+/**
+ * Importazione massiva di voci wiki. Solo GM/Admin.
+ * Inserisce in batch; in caso di errore (es. vincoli) restituisce messaggio e conteggi.
+ */
+export async function bulkImportWiki(
+  campaignId: string,
+  items: BulkImportWikiItem[]
+): Promise<BulkImportWikiResult> {
+  if (!campaignId?.trim()) {
+    return { success: false, message: "Campagna non valida." };
+  }
+  if (!Array.isArray(items) || items.length === 0) {
+    return { success: false, message: "Nessuna voce da importare." };
+  }
+
+  const validTypes = new Set(ENTITY_TYPES);
+  const rows: Record<string, unknown>[] = [];
+
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    const title = typeof it?.title === "string" ? it.title.trim() : "";
+    const category = typeof it?.category === "string" ? it.category.trim().toLowerCase() : "";
+    const content = typeof it?.content === "string" ? it.content : String(it?.content ?? "");
+    const isSecret = Boolean(it?.is_secret);
+
+    if (!title) {
+      return { success: false, message: `Voce ${i + 1}: il titolo è obbligatorio.` };
+    }
+    if (!validTypes.has(category as (typeof ENTITY_TYPES)[number])) {
+      return {
+        success: false,
+        message: `Voce "${title}": categoria non valida. Usa: npc, monster, location, item, lore.`,
+      };
+    }
+
+    const toStr = (v: number | string | undefined): string =>
+      v === undefined || v === null ? "" : String(v).trim();
+    const toNum = (v: number | string | undefined): number | null => {
+      if (v === undefined || v === null) return null;
+      const n = typeof v === "number" ? v : parseInt(String(v).trim(), 10);
+      return Number.isFinite(n) ? Math.max(0, n) : null;
+    };
+
+    const attributes: Record<string, unknown> = {};
+    const isMonsterOrNpc = category === "monster" || category === "npc";
+    if (isMonsterOrNpc) {
+      const hp = toStr(it?.hp);
+      const ac = toStr(it?.ac);
+      const gs = toStr(it?.gs);
+      if (hp !== "" || ac !== "" || gs !== "") {
+        attributes.combat_stats = {
+          hp: hp || undefined,
+          ac: ac || undefined,
+          cr: gs || undefined,
+        };
+      }
+    }
+
+    const row: Record<string, unknown> = {
+      campaign_id: campaignId,
+      name: title,
+      type: category,
+      content: { body: content },
+      is_secret: isSecret,
+      visibility: isSecret ? "secret" : "public",
+      image_url: null,
+      attributes: Object.keys(attributes).length > 0 ? attributes : {},
+      tags: [],
+    };
+
+    if (category === "monster") {
+      const exp = toNum(it?.exp);
+      if (exp !== null) row.xp_value = exp;
+    }
+
+    rows.push(row);
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return { success: false, message: "Devi essere autenticato." };
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    if (profile?.role !== "gm" && profile?.role !== "admin") {
+      return { success: false, message: "Solo GM e Admin possono importare voci wiki." };
+    }
+
+    const { data, error } = await supabase
+      .from("wiki_entities")
+      .insert(rows)
+      .select("id");
+
+    if (error) {
+      console.error("[bulkImportWiki]", error);
+      const msg = error.message ?? "Errore durante l'importazione.";
+      const isUnique = msg.toLowerCase().includes("unique") || msg.toLowerCase().includes("duplicate");
+      return {
+        success: false,
+        message: isUnique
+          ? "Uno o più titoli sono già presenti nella campagna. Verifica che non ci siano duplicati."
+          : msg,
+      };
+    }
+
+    const imported = Array.isArray(data) ? data.length : 0;
+    revalidatePath(`/campaigns/${campaignId}`);
+    return {
+      success: true,
+      message: imported === 1 ? "1 voce importata." : `${imported} voci importate.`,
+      imported,
+    };
+  } catch (err) {
+    console.error("[bulkImportWiki]", err);
+    return {
+      success: false,
+      message: "Si è verificato un errore imprevisto. Riprova.",
+    };
+  }
+}
