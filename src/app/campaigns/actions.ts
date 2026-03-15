@@ -1592,12 +1592,18 @@ export async function updateCampaign(formData: FormData): Promise<UpdateCampaign
   }
 }
 
+export type PrimerTypography = {
+  fontSize?: "small" | "medium" | "large";
+  fontFamily?: "serif" | "sans";
+};
+
 export type UpdateCampaignPrimerResult = { success: boolean; message: string };
 
-/** Aggiorna solo la Guida del Giocatore (player_primer). Solo GM/Admin. */
+/** Aggiorna la Guida del Giocatore (player_primer) e opzionalmente la tipografia. Solo GM/Admin. */
 export async function updateCampaignPrimer(
   campaignId: string,
-  playerPrimer: string | null
+  playerPrimer: string | null,
+  primerTypography?: PrimerTypography | null
 ): Promise<UpdateCampaignPrimerResult> {
   if (!campaignId?.trim()) {
     return { success: false, message: "Campagna non valida." };
@@ -1618,12 +1624,23 @@ export async function updateCampaignPrimer(
 
     const value = typeof playerPrimer === "string" ? playerPrimer.trim() || null : null;
 
+    const payload: { player_primer: string | null; updated_at: string; primer_typography?: PrimerTypography } = {
+      player_primer: value,
+      updated_at: new Date().toISOString(),
+    };
+    if (primerTypography != null && typeof primerTypography === "object") {
+      const fontSize = ["small", "medium", "large"].includes(primerTypography.fontSize ?? "")
+        ? primerTypography.fontSize
+        : "medium";
+      const fontFamily = ["serif", "sans"].includes(primerTypography.fontFamily ?? "")
+        ? primerTypography.fontFamily
+        : "serif";
+      payload.primer_typography = { fontSize, fontFamily };
+    }
+
     const { error } = await supabase
       .from("campaigns")
-      .update({
-        player_primer: value,
-        updated_at: new Date().toISOString(),
-      })
+      .update(payload)
       .eq("id", campaignId);
 
     if (error) {

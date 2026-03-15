@@ -12,7 +12,7 @@ export default async function CampaignPrimerPage({ params }: Props) {
 
   const { data: campaign, error } = await supabase
     .from("campaigns")
-    .select("id, name, gm_id, is_public, player_primer")
+    .select("id, name, gm_id, is_public, player_primer, primer_typography")
     .eq("id", id)
     .single();
 
@@ -37,11 +37,14 @@ export default async function CampaignPrimerPage({ params }: Props) {
     if (!memberRes.data && !playedRes) notFound();
   }
 
+  const typography = campaign.primer_typography as { fontSize?: string; fontFamily?: string } | null;
+
   return (
     <PrimerView
       campaignId={campaign.id}
       campaignName={campaign.name}
       markdown={campaign.player_primer}
+      typography={typography ?? undefined}
     />
   );
 }

@@ -57,7 +57,7 @@ export default async function CampaignPage({ params }: PageProps) {
 
   const { data: campaign, error } = await supabase
     .from("campaigns")
-    .select("id, name, description, gm_id, is_public, type, image_url, is_long_campaign, player_primer")
+    .select("id, name, description, gm_id, is_public, type, image_url, is_long_campaign, player_primer, primer_typography")
     .eq("id", id)
     .single();
 
@@ -425,6 +425,7 @@ export default async function CampaignPage({ params }: PageProps) {
                   <CampaignPrimerEditor
                     campaignId={campaign.id}
                     initialPlayerPrimer={campaign.player_primer ?? null}
+                    initialTypography={campaign.primer_typography ?? undefined}
                   />
                   <div className="rounded-lg border border-violet-600/30 bg-violet-950/30 p-4">
                     <h3 className="mb-2 text-sm font-medium text-violet-200">Mappa Concettuale</h3>

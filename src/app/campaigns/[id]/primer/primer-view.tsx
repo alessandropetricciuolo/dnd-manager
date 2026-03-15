@@ -13,10 +13,16 @@ import { cn } from "@/lib/utils";
 
 const BODY_CLASS = "primer-print-page";
 
+export type PrimerTypographyProp = {
+  fontSize?: "small" | "medium" | "large";
+  fontFamily?: "serif" | "sans";
+};
+
 type PrimerViewProps = {
   campaignId: string;
   campaignName: string;
   markdown: string;
+  typography?: PrimerTypographyProp | null;
 };
 
 function TocList({ entries, onNavigate }: { entries: TocEntry[]; onNavigate?: () => void }) {
@@ -44,9 +50,18 @@ function TocList({ entries, onNavigate }: { entries: TocEntry[]; onNavigate?: ()
   );
 }
 
-export function PrimerView({ campaignId, campaignName, markdown }: PrimerViewProps) {
+export function PrimerView({ campaignId, campaignName, markdown, typography }: PrimerViewProps) {
   const tocEntries = useMemo(() => getHeadingsFromMarkdown(markdown), [markdown]);
   const [tocSheetOpen, setTocSheetOpen] = useState(false);
+
+  const fontSizeClass =
+    typography?.fontSize === "small"
+      ? "prose-sm"
+      : typography?.fontSize === "large"
+        ? "prose-lg"
+        : "";
+  const fontFamilyClass =
+    typography?.fontFamily === "sans" ? "font-sans" : "font-serif";
 
   useEffect(() => {
     document.body.classList.add(BODY_CLASS);
@@ -135,7 +150,12 @@ export function PrimerView({ campaignId, campaignName, markdown }: PrimerViewPro
             <div
               className={cn(
                 "prose prose-invert max-w-none",
-                "prose-headings:font-serif prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-barber-gold prose-headings:break-words",
+                fontSizeClass,
+                fontFamilyClass,
+                typography?.fontFamily === "sans"
+                  ? "prose-headings:font-sans"
+                  : "prose-headings:font-serif",
+                "prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-barber-gold prose-headings:break-words",
                 "prose-h2:mt-12 prose-h2:mb-4 prose-h2:text-2xl prose-h2:border-b prose-h2:border-barber-gold/30 prose-h2:pb-2",
                 "prose-h3:mt-8 prose-h3:mb-3 prose-h3:text-xl",
                 "prose-h4:mt-6 prose-h4:mb-2 prose-h4:text-lg",
