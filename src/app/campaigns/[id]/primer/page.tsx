@@ -37,14 +37,29 @@ export default async function CampaignPrimerPage({ params }: Props) {
     if (!memberRes.data && !playedRes) notFound();
   }
 
-  const typography = campaign.primer_typography as { fontSize?: string; fontFamily?: string } | null;
+  const rawTypography = campaign.primer_typography as { fontSize?: string; fontFamily?: string } | null;
+  const typography =
+    rawTypography && typeof rawTypography === "object"
+      ? {
+          fontSize:
+            rawTypography.fontSize === "small" ||
+            rawTypography.fontSize === "medium" ||
+            rawTypography.fontSize === "large"
+              ? rawTypography.fontSize
+              : undefined,
+          fontFamily:
+            rawTypography.fontFamily === "serif" || rawTypography.fontFamily === "sans"
+              ? rawTypography.fontFamily
+              : undefined,
+        }
+      : undefined;
 
   return (
     <PrimerView
       campaignId={campaign.id}
       campaignName={campaign.name}
       markdown={campaign.player_primer}
-      typography={typography ?? undefined}
+      typography={typography}
     />
   );
 }
