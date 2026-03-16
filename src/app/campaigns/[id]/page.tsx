@@ -52,6 +52,10 @@ export default async function CampaignPage({ params }: PageProps) {
   } = await supabase.auth.getUser();
 
   if (!user) {
+    console.log("[campaigns/[id]] debug (no user)", {
+      requestedId: id,
+      user,
+    });
     notFound();
   }
 
@@ -60,6 +64,16 @@ export default async function CampaignPage({ params }: PageProps) {
     .select("id, name, description, gm_id, is_public, type, image_url, is_long_campaign, player_primer, primer_typography")
     .eq("id", id)
     .single();
+
+  console.log(
+    "[campaigns/[id]] debug",
+    "ID richiesto:",
+    id,
+    "Risultato DB:",
+    campaign,
+    "Errore DB:",
+    error
+  );
 
   if (error || !campaign) {
     notFound();
