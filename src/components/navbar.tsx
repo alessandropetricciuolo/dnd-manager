@@ -44,6 +44,12 @@ export async function Navbar() {
           >
             Classifica Eroi
           </Link>
+          <Link
+            href="/contatti"
+            className="text-sm font-medium text-barber-paper/90 transition-colors hover:text-barber-gold"
+          >
+            Contatti
+          </Link>
           {user ? (
             <NavbarUserMenu user={user} />
           ) : (

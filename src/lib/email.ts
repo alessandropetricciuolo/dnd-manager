@@ -76,6 +76,7 @@ export type SendEmailOptions = {
   subject: string;
   html: string;
   bcc?: string | string[];
+  replyTo?: string | string[];
 };
 
 /** Contenuto HTML per email di recupero password (link generato da Supabase Admin generateLink). */
@@ -93,7 +94,7 @@ export function passwordResetEmailContent(resetLink: string): string {
  * Invia una mail. Restituisce true se inviata, false se transporter non configurato o errore.
  * Non lancia: gli errori vengono solo loggati.
  */
-export async function sendEmail({ to, subject, html, bcc }: SendEmailOptions): Promise<boolean> {
+export async function sendEmail({ to, subject, html, bcc, replyTo }: SendEmailOptions): Promise<boolean> {
   const transporter = getTransporter();
   if (!transporter) {
     console.warn("[email] GMAIL_USER o GMAIL_APP_PASSWORD non configurati; skip invio.");
@@ -102,6 +103,7 @@ export async function sendEmail({ to, subject, html, bcc }: SendEmailOptions): P
   try {
     const toList = Array.isArray(to) ? to : [to];
     const bccList = bcc ? (Array.isArray(bcc) ? bcc : [bcc]) : undefined;
+    const replyToList = replyTo ? (Array.isArray(replyTo) ? replyTo : [replyTo]) : undefined;
     if (toList.length === 0 && (!bccList || bccList.length === 0)) {
       return true;
     }
@@ -109,6 +111,7 @@ export async function sendEmail({ to, subject, html, bcc }: SendEmailOptions): P
       from: GMAIL_USER!,
       to: toList.length ? toList : undefined,
       bcc: bccList,
+      replyTo: replyToList,
       subject,
       html,
     });
