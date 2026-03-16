@@ -40,7 +40,7 @@ export default async function CampaignPrimerPage({ params }: Props) {
   const rawTypography = campaign.primer_typography as { fontSize?: string; fontFamily?: string } | null;
   const typography =
     rawTypography && typeof rawTypography === "object"
-      ? {
+      ? ({
           fontSize:
             rawTypography.fontSize === "small" ||
             rawTypography.fontSize === "medium" ||
@@ -51,7 +51,7 @@ export default async function CampaignPrimerPage({ params }: Props) {
             rawTypography.fontFamily === "serif" || rawTypography.fontFamily === "sans"
               ? rawTypography.fontFamily
               : undefined,
-        }
+        } as import("./primer-view").PrimerTypographyProp)
       : undefined;
 
   return (
