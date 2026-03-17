@@ -20,13 +20,21 @@ export default function HomePage() {
               <p className="mt-4 max-w-xl text-center text-base text-barber-paper/80 sm:text-lg lg:text-left">
                 La community di D&D di cui c&apos;era bisogno.
               </p>
-              <div className="mt-8 w-full lg:w-auto">
+              <div className="mt-8 flex w-full flex-col gap-3 sm:flex-row lg:w-auto">
                 <Button
                   asChild
                   size="lg"
-                  className="w-full min-h-[44px] bg-barber-red px-6 py-5 text-base font-semibold text-barber-paper hover:bg-barber-red/90 md:w-auto md:px-8 md:py-6 md:text-lg"
+                  className="min-h-[44px] bg-barber-red px-6 py-5 text-base font-semibold text-barber-paper hover:bg-barber-red/90 md:px-8 md:py-6 md:text-lg"
                 >
                   <Link href="/login">Unisciti all&apos;Avventura</Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="lg"
+                  className="min-h-[44px] border-barber-gold/40 text-barber-gold hover:bg-barber-gold/10 md:px-8 md:py-6 md:text-lg"
+                >
+                  <Link href="/scopri">Scopri la Gilda</Link>
                 </Button>
               </div>
             </div>
