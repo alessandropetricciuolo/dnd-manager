@@ -234,6 +234,29 @@ export interface Database {
         };
         Update: Partial<Database["public"]["Tables"]["secret_whispers"]["Insert"]>;
       };
+      leads: {
+        Row: {
+          id: string;
+          name: string;
+          email: string;
+          experience_level: string | null;
+          source: string | null;
+          marketing_opt_in: boolean;
+          status: "new" | "contacted" | "converted" | "archived";
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          email: string;
+          experience_level?: string | null;
+          source?: string | null;
+          marketing_opt_in?: boolean;
+          status?: "new" | "contacted" | "converted" | "archived";
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["leads"]["Insert"]>;
+      };
     };
   };
 }
