@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
+import type { Database } from "@/types/database.types";
 
 export type SubmitLeadResult = { success: boolean; message?: string };
 export type UpdateLeadStatusResult = { success: boolean; message?: string };
@@ -10,6 +11,7 @@ export type UpdateLeadStatusResult = { success: boolean; message?: string };
 const SOURCE_NFC_LANDING = "NFC_Landing_Page";
 
 const VALID_STATUSES = ["new", "contacted", "converted", "archived"] as const;
+type LeadStatus = (typeof VALID_STATUSES)[number];
 
 /**
  * Inserisce un lead dal form landing /scopri.
@@ -83,16 +85,16 @@ export async function updateLeadStatusAction(
   if (!leadId || !newStatus) {
     return { success: false, message: "ID lead e stato richiesti." };
   }
-  if (!VALID_STATUSES.includes(newStatus as (typeof VALID_STATUSES)[number])) {
+  if (!VALID_STATUSES.includes(newStatus as LeadStatus)) {
     return { success: false, message: "Stato non valido." };
   }
 
+  const status = newStatus as LeadStatus;
+  const payload: Database["public"]["Tables"]["leads"]["Update"] = { status };
   try {
     const admin = createSupabaseAdminClient();
-    const { error } = await admin
-      .from("leads")
-      .update({ status: newStatus })
-      .eq("id", leadId);
+    // Cast to never: Supabase client infers update() param as never for this table
+    const { error } = await admin.from("leads").update(payload as never).eq("id", leadId);
 
     if (error) {
       console.error("[updateLeadStatusAction]", error);
