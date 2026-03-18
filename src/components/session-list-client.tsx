@@ -336,7 +336,18 @@ export function SessionListClient({
                                   </Badge>
                                 )}
                                 {status === "rejected" && (
-                                  <span className="text-xs text-slate-500">Rifiutato</span>
+                                  <>
+                                    <span className="text-xs text-slate-500 mr-1.5">Rifiutato</span>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-7 border-amber-500/60 text-amber-300 hover:bg-amber-500/10 text-[11px]"
+                                      disabled={busy}
+                                      onClick={() => handleStatus(signup.id, "approved", signup)}
+                                    >
+                                      Ripristina
+                                    </Button>
+                                  </>
                                 )}
                                 <Button
                                   size="sm"
