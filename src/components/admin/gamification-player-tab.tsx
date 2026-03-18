@@ -17,7 +17,8 @@ type AchievementRow = Database["public"]["Tables"]["achievements"]["Row"];
 
 type PlayerOption = {
   id: string;
-  label: string;
+  nickname: string;
+  fullName: string;
 };
 
 type Props = {
@@ -167,7 +168,7 @@ export function GamificationPlayerTab({ players, achievements }: Props) {
                       checked={selectedPlayerIds.has(p.id)}
                       onChange={() => togglePlayer(p.id)}
                       className="sr-only"
-                      aria-label={`Seleziona ${p.label}`}
+                      aria-label={`Seleziona ${p.nickname}${p.fullName ? ` (${p.fullName})` : ""}`}
                     />
                     <span className="flex shrink-0">
                       {selectedPlayerIds.has(p.id) ? (
@@ -176,7 +177,16 @@ export function GamificationPlayerTab({ players, achievements }: Props) {
                         <Square className="h-5 w-5 text-barber-paper/50" aria-hidden />
                       )}
                     </span>
-                    <span className="truncate">{p.label}</span>
+                    <span className="min-w-0 truncate">
+                      <span className="block truncate font-medium text-barber-paper">
+                        {p.nickname}
+                      </span>
+                      {p.fullName && (
+                        <span className="block truncate text-xs text-barber-paper/60">
+                          {p.fullName}
+                        </span>
+                      )}
+                    </span>
                   </label>
                 </li>
               ))

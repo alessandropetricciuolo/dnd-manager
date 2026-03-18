@@ -86,7 +86,7 @@ export function GmGallerySheet({ open, onOpenChange, campaignId }: Props) {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="flex w-full max-w-md flex-col border-amber-600/30 bg-zinc-950 text-zinc-100"
+        className="flex h-dvh w-full max-w-md flex-col border-amber-600/30 bg-zinc-950 text-zinc-100"
       >
         <SheetHeader className="shrink-0 border-b border-amber-600/20 px-4 py-3">
           <SheetTitle className="flex items-center gap-2 text-left text-amber-200">
@@ -94,7 +94,7 @@ export function GmGallerySheet({ open, onOpenChange, campaignId }: Props) {
             Regia Immagini
           </SheetTitle>
         </SheetHeader>
-        <div className="flex flex-1 flex-col gap-3 px-4 py-3">
+        <div className="flex min-h-0 flex-1 flex-col gap-3 px-4 py-3">
           <div className="space-y-2">
             <Input
               placeholder="Cerca per titolo..."

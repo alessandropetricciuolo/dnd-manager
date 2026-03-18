@@ -39,12 +39,14 @@ export default async function GamificationAdminPage() {
 
   const playerOptions = players.map((p) => {
     const nameParts = [p.first_name, p.last_name].filter(Boolean).join(" ").trim();
-    const label =
+    const nickname =
       p.nickname?.trim() ||
-      nameParts ||
       p.display_name?.trim() ||
+      nameParts ||
       `Giocatore ${p.id.slice(0, 8)}`;
-    return { id: p.id, label };
+    const fullName =
+      nameParts && nickname !== nameParts ? nameParts : "";
+    return { id: p.id, nickname, fullName };
   });
 
   return (
