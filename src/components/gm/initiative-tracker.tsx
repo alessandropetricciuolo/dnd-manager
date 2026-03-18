@@ -78,7 +78,9 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
   const [addPcOpen, setAddPcOpen] = useState(false);
   const [addMonsterOpen, setAddMonsterOpen] = useState(false);
   const [pcList, setPcList] = useState<{ id: string; name: string }[]>([]);
+  const [selectedPcIds, setSelectedPcIds] = useState<Set<string>>(new Set());
   const [monsterList, setMonsterList] = useState<MonsterForInitiative[]>([]);
+  const [selectedMonsterIds, setSelectedMonsterIds] = useState<Set<string>>(new Set());
   const [monsterQuantity, setMonsterQuantity] = useState(1);
   const [addCustomOpen, setAddCustomOpen] = useState(false);
   const [customName, setCustomName] = useState("");
@@ -86,6 +88,11 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
   const [customInit, setCustomInit] = useState<string>("");
   const [customGs, setCustomGs] = useState<string>("");
   const [customExp, setCustomExp] = useState<number>(0);
+  const [lastResetState, setLastResetState] = useState<{
+    entries: InitiativeEntry[];
+    currentTurnIndex: number;
+    at: number;
+  } | null>(null);
 
   // Restore from localStorage on mount
   useEffect(() => {
@@ -171,6 +178,9 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
   }, [entries.length]);
 
   const resetTracker = useCallback(() => {
+    if (entries.length > 0) {
+      setLastResetState({ entries, currentTurnIndex, at: Date.now() });
+    }
     setEntries([]);
     setCurrentTurnIndex(0);
     try {
@@ -178,10 +188,38 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
     } catch {
       // ignore
     }
-  }, [storageKey]);
+  }, [storageKey, entries, currentTurnIndex]);
+
+  const undoReset = useCallback(() => {
+    if (!lastResetState) return;
+    setEntries(lastResetState.entries);
+    setCurrentTurnIndex(
+      Math.min(
+        Math.max(0, lastResetState.currentTurnIndex),
+        Math.max(0, lastResetState.entries.length - 1)
+      )
+    );
+    setLastResetState(null);
+    try {
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify({
+          entries: lastResetState.entries,
+          currentTurnIndex: Math.min(
+            Math.max(0, lastResetState.currentTurnIndex),
+            Math.max(0, lastResetState.entries.length - 1)
+          ),
+        })
+      );
+    } catch {
+      // ignore
+    }
+    toast.success("Reset annullato.");
+  }, [lastResetState, storageKey]);
 
   const openAddPc = useCallback(async () => {
     setAddPcOpen(true);
+    setSelectedPcIds(new Set());
     const res = await getCampaignCharacters(campaignId);
     if (res.success && res.data) {
       setPcList(res.data.map((c) => ({ id: c.id, name: c.name })));
@@ -204,14 +242,28 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
           playerId: characterId,
         },
       ]);
-      setAddPcOpen(false);
     },
     []
   );
 
+  const addSelectedPcs = useCallback(() => {
+    const ids = Array.from(selectedPcIds);
+    if (ids.length === 0) {
+      toast.error("Seleziona almeno un personaggio.");
+      return;
+    }
+    const map = new Map(pcList.map((p) => [p.id, p.name]));
+    for (const id of ids) {
+      const name = map.get(id);
+      if (name) addPcEntry(id, name);
+    }
+    setAddPcOpen(false);
+  }, [selectedPcIds, pcList, addPcEntry]);
+
   const openAddMonster = useCallback(async () => {
     setAddMonsterOpen(true);
     setMonsterQuantity(1);
+    setSelectedMonsterIds(new Set());
     const res = await getMonstersForInitiative(campaignId);
     if (res.success && res.data) {
       const baseList = res.data;
@@ -252,9 +304,54 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
         });
       }
       setEntries((prev) => [...prev, ...newEntries]);
-      setAddMonsterOpen(false);
     },
     [isLongCampaign]
+  );
+
+  const addSelectedMonsters = useCallback(() => {
+    const ids = Array.from(selectedMonsterIds);
+    if (ids.length === 0) {
+      toast.error("Seleziona almeno un mostro.");
+      return;
+    }
+    const list = monsterList.filter((m) => ids.includes(m.id));
+    for (const m of list) {
+      const isDead = isLongCampaign && m.global_status === "dead";
+      if (isDead && m.is_core) {
+        toast.warning(`"${m.name}" è già segnato come morto nella campagna (Core).`);
+      }
+      addMonsterEntry(m, monsterQuantity);
+    }
+    setAddMonsterOpen(false);
+  }, [selectedMonsterIds, monsterList, addMonsterEntry, monsterQuantity, isLongCampaign]);
+
+  const applyHpChange = useCallback(
+    async (entryId: string, nextHp: number) => {
+      const entry = entries.find((e) => e.id === entryId);
+      if (!entry) return;
+      const clamped = Math.max(0, Math.min(nextHp, entry.maxHp > 0 ? entry.maxHp : nextHp));
+      setEntries((prev) =>
+        prev.map((e) => {
+          if (e.id !== entryId) return e;
+          const maxHp = e.maxHp > 0 ? e.maxHp : Math.max(e.maxHp, clamped);
+          return { ...e, hp: clamped, maxHp };
+        })
+      );
+      if (isLongCampaign && entry.entityId && entry.isCore && clamped === 0) {
+        const res = await setWikiEntityGlobalStatus(entry.entityId, campaignId, "dead");
+        if (res.success) toast.success(res.message);
+      }
+    },
+    [entries, isLongCampaign, campaignId]
+  );
+
+  const adjustHp = useCallback(
+    async (entryId: string, delta: number) => {
+      const entry = entries.find((e) => e.id === entryId);
+      if (!entry) return;
+      await applyHpChange(entryId, entry.hp + delta);
+    },
+    [entries, applyHpChange]
   );
 
   const openAddCustom = useCallback(() => {
@@ -296,31 +393,14 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
         const num = parseInt(value, 10);
         const v = Number.isNaN(num) ? 0 : num;
         if (field === "hp") {
-          const entry = entries.find((e) => e.id === id);
-          setEntries((prev) =>
-            prev.map((e) => {
-              if (e.id !== id) return e;
-              const hp = v;
-              const maxHp = e.maxHp > 0 ? e.maxHp : Math.max(e.maxHp, hp);
-              return { ...e, hp, maxHp };
-            })
-          );
-          if (
-            isLongCampaign &&
-            entry?.entityId &&
-            entry.isCore &&
-            v === 0
-          ) {
-            const res = await setWikiEntityGlobalStatus(entry.entityId, campaignId, "dead");
-            if (res.success) toast.success(res.message);
-          }
+          await applyHpChange(id, v);
         } else {
           updateEntry(id, { initiative: v });
         }
       }
       setEditingCell(null);
     },
-    [updateEntry, entries, isLongCampaign, campaignId]
+    [updateEntry, applyHpChange]
   );
 
   const hpColor = (entry: InitiativeEntry) => {
@@ -369,6 +449,17 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
                 Reset
               </Button>
             </>
+          )}
+          {entries.length === 0 && lastResetState && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 border-amber-500/40 px-2 text-xs text-amber-200 hover:bg-amber-600/20"
+              onClick={undoReset}
+              title="Ripristina l'ultimo stato prima del reset"
+            >
+              Annulla Reset
+            </Button>
           )}
         </div>
       </header>
@@ -444,7 +535,7 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
                     editingCell?.field === "name" ? (
                       <Input
                         type="text"
-                        className="h-7 min-w-[80px] bg-zinc-800 text-xs text-zinc-100"
+                        className="h-10 min-w-[120px] bg-zinc-800 text-sm text-zinc-100"
                         defaultValue={entry.name}
                         autoFocus
                         onBlur={(e) =>
@@ -478,7 +569,7 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
                     editingCell?.field === "hp" ? (
                       <Input
                         type="number"
-                        className="h-7 w-16 bg-zinc-800 text-xs text-zinc-100"
+                        className="h-10 w-28 bg-zinc-800 text-sm text-zinc-100"
                         defaultValue={entry.hp}
                         autoFocus
                         onBlur={(e) =>
@@ -495,19 +586,42 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
                         }}
                       />
                     ) : (
-                      <div className="flex flex-col">
-                        <button
-                          type="button"
-                          className={cn(
-                            "min-w-[3rem] rounded px-1.5 py-0.5 text-left text-xs font-medium transition-colors hover:bg-zinc-700/80",
-                            hpColor(entry)
-                          )}
-                          onClick={() =>
-                            setEditingCell({ id: entry.id, field: "hp" })
-                          }
-                        >
-                          {entry.maxHp > 0 ? `${entry.hp}/${entry.maxHp}` : entry.hp}
-                        </button>
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-1">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-8 w-8 border-amber-600/30 bg-zinc-900/60 px-0 text-zinc-200 hover:bg-amber-600/20"
+                            onClick={() => void adjustHp(entry.id, -1)}
+                            title="-1 HP"
+                          >
+                            -
+                          </Button>
+                          <button
+                            type="button"
+                            className={cn(
+                              "min-w-[5.5rem] rounded px-2 py-1 text-left text-sm font-semibold transition-colors hover:bg-zinc-700/80",
+                              hpColor(entry)
+                            )}
+                            onClick={() =>
+                              setEditingCell({ id: entry.id, field: "hp" })
+                            }
+                            title="Clicca per inserire un valore preciso"
+                          >
+                            {entry.maxHp > 0 ? `${entry.hp}/${entry.maxHp}` : entry.hp}
+                          </button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-8 w-8 border-amber-600/30 bg-zinc-900/60 px-0 text-zinc-200 hover:bg-amber-600/20"
+                            onClick={() => void adjustHp(entry.id, +1)}
+                            title="+1 HP"
+                          >
+                            +
+                          </Button>
+                        </div>
                         {typeof entry.exp === "number" && entry.exp > 0 && (
                           <span className="mt-0.5 text-[10px] font-medium text-amber-300/90">
                             EXP: {entry.exp}
@@ -521,7 +635,7 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
                     editingCell?.field === "initiative" ? (
                       <Input
                         type="number"
-                        className="h-7 w-12 bg-zinc-800 text-xs text-zinc-100"
+                        className="h-10 w-20 bg-zinc-800 text-sm text-zinc-100"
                         defaultValue={entry.initiative}
                         autoFocus
                         onBlur={(e) =>
@@ -594,7 +708,35 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
               Aggiungi personaggio
             </DialogTitle>
           </DialogHeader>
-          <div className="max-h-64 overflow-y-auto">
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs text-zinc-400">
+                Seleziona più PG e aggiungili in un colpo solo.
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 border-amber-600/40 text-amber-100"
+                  onClick={() => setSelectedPcIds(new Set(pcList.map((p) => p.id)))}
+                  disabled={pcList.length === 0}
+                >
+                  Tutti
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 border-amber-600/40 text-amber-100"
+                  onClick={() => setSelectedPcIds(new Set())}
+                  disabled={selectedPcIds.size === 0}
+                >
+                  Nessuno
+                </Button>
+              </div>
+            </div>
+            <div className="max-h-64 overflow-y-auto rounded-lg border border-amber-600/20 bg-zinc-950/30 p-2">
             {pcList.length === 0 ? (
               <p className="py-4 text-zinc-500">
                 Nessun PG in questa campagna.
@@ -603,17 +745,52 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
               <ul className="space-y-1">
                 {pcList.map((c) => (
                   <li key={c.id}>
-                    <button
-                      type="button"
-                      className="w-full rounded-lg px-3 py-2 text-left text-base hover:bg-amber-600/20 hover:text-amber-200"
-                      onClick={() => addPcEntry(c.id, c.name)}
-                    >
-                      {c.name}
-                    </button>
+                    <label className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 hover:bg-amber-600/20 hover:text-amber-200">
+                      <input
+                        type="checkbox"
+                        checked={selectedPcIds.has(c.id)}
+                        onChange={() =>
+                          setSelectedPcIds((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(c.id)) next.delete(c.id);
+                            else next.add(c.id);
+                            return next;
+                          })
+                        }
+                        className="h-4 w-4 accent-amber-500"
+                      />
+                      <span className="text-base">{c.name}</span>
+                    </label>
                   </li>
                 ))}
               </ul>
             )}
+          </div>
+            <div className="flex items-center justify-between gap-2 pt-1">
+              <p className="text-xs text-zinc-500">
+                {selectedPcIds.size} selezionati
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 border-amber-600/40 text-amber-100"
+                  onClick={() => setAddPcOpen(false)}
+                >
+                  Chiudi
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-8 bg-amber-600 text-zinc-950 hover:bg-amber-500"
+                  onClick={addSelectedPcs}
+                  disabled={selectedPcIds.size === 0}
+                >
+                  Aggiungi selezionati
+                </Button>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -629,7 +806,7 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
           <div className="space-y-4">
             <div>
               <label className="mb-1 block text-sm text-zinc-400">
-                Quantità (stesso mostro più volte)
+                Quantità (per ogni mostro selezionato)
               </label>
               <Input
                 type="number"
@@ -644,7 +821,34 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
                 className="w-24 bg-zinc-800 text-zinc-100"
               />
             </div>
-            <div className="max-h-64 overflow-y-auto">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs text-zinc-400">
+                Seleziona più mostri e aggiungili in batch.
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 border-amber-600/40 text-amber-100"
+                  onClick={() => setSelectedMonsterIds(new Set(monsterList.map((m) => m.id)))}
+                  disabled={monsterList.length === 0}
+                >
+                  Tutti
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 border-amber-600/40 text-amber-100"
+                  onClick={() => setSelectedMonsterIds(new Set())}
+                  disabled={selectedMonsterIds.size === 0}
+                >
+                  Nessuno
+                </Button>
+              </div>
+            </div>
+            <div className="max-h-64 overflow-y-auto rounded-lg border border-amber-600/20 bg-zinc-950/30 p-2">
               {monsterList.length === 0 ? (
                 <p className="py-4 text-zinc-500">
                   Nessun mostro nel wiki. Crea voci tipo &quot;Mostro&quot; nella Wiki.
@@ -655,31 +859,62 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
                     const isDead = isLongCampaign && m.global_status === "dead";
                     return (
                       <li key={m.id}>
-                        <button
-                          type="button"
-                          className="w-full rounded-lg px-3 py-2 text-left text-base hover:bg-amber-600/20 hover:text-amber-200"
-                          onClick={() => {
-                            if (isDead && m.is_core) {
-                              toast.warning("Questo mostro è già segnato come morto nella campagna (Core).");
+                        <label className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 hover:bg-amber-600/20 hover:text-amber-200">
+                          <input
+                            type="checkbox"
+                            checked={selectedMonsterIds.has(m.id)}
+                            onChange={() =>
+                              setSelectedMonsterIds((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(m.id)) next.delete(m.id);
+                                else next.add(m.id);
+                                return next;
+                              })
                             }
-                            addMonsterEntry(m, monsterQuantity);
-                          }}
-                        >
-                          <span className="font-medium">{m.name}</span>
-                          <span className="ml-2 text-sm text-zinc-500">
-                            HP {m.hp}
-                          </span>
-                          {isDead && (
-                            <span className="ml-2 rounded bg-red-500/30 px-1.5 py-0.5 text-xs text-red-300">
-                              Morto
-                            </span>
-                          )}
-                        </button>
+                            className="h-4 w-4 accent-amber-500"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="truncate font-medium">{m.name}</span>
+                              <span className="text-sm text-zinc-500">HP {m.hp}</span>
+                              {isDead && (
+                                <span className="rounded bg-red-500/30 px-1.5 py-0.5 text-xs text-red-300">
+                                  Morto
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </label>
                       </li>
                     );
                   })}
                 </ul>
               )}
+            </div>
+            <div className="flex items-center justify-between gap-2 pt-1">
+              <p className="text-xs text-zinc-500">
+                {selectedMonsterIds.size} selezionati
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 border-amber-600/40 text-amber-100"
+                  onClick={() => setAddMonsterOpen(false)}
+                >
+                  Chiudi
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-8 bg-amber-600 text-zinc-950 hover:bg-amber-500"
+                  onClick={addSelectedMonsters}
+                  disabled={selectedMonsterIds.size === 0}
+                >
+                  Aggiungi selezionati
+                </Button>
+              </div>
             </div>
           </div>
         </DialogContent>
