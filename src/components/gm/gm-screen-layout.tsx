@@ -99,11 +99,10 @@ export function GmScreenLayout({
         )}
       >
         {sidebarOpen && (
-          <div className="flex h-full min-w-0 flex-1 flex-col gap-3 p-3">
-            <div className="min-h-[40%] flex-1">
+          <div className="flex h-full min-w-0 flex-1 flex-col p-3">
+            <div className="min-h-0 flex-1 overflow-hidden">
               <InitiativeTracker campaignId={campaignId} campaignType={campaignType} />
             </div>
-            <PlayerSessionTracker campaignId={campaignId} />
           </div>
         )}
       </aside>
@@ -156,12 +155,21 @@ export function GmScreenLayout({
             onSuccess={loadSessions}
           />
         )}
-        <div className="min-h-0 flex-1 overflow-auto p-4 md:p-6">
-          <GmNotesGrid
-            campaignId={campaignId}
-            sessionId={selectedSessionId}
-            sessionLabel={sessionLabel}
-          />
+        <div className="min-h-0 flex-1 overflow-hidden p-4 md:p-6">
+          <div className="flex h-full min-h-0 flex-col gap-4 lg:flex-row">
+            <div className="min-h-0 flex-1 overflow-auto">
+              <GmNotesGrid
+                campaignId={campaignId}
+                sessionId={selectedSessionId}
+                sessionLabel={sessionLabel}
+              />
+            </div>
+            <div className="w-full shrink-0 lg:w-[420px] lg:max-w-[40%]">
+              <div className="h-full overflow-auto rounded-xl border border-amber-600/20 bg-zinc-900/40 p-3">
+                <PlayerSessionTracker campaignId={campaignId} />
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* FAB strumenti GM: chat segreta + galleria immagini */}
