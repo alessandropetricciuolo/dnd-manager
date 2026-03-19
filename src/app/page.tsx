@@ -107,8 +107,25 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="border-t border-barber-gold/20 py-6 md:py-8">
-        <div className="mx-auto max-w-6xl p-4 text-center text-sm text-barber-paper/60 sm:px-6">
-          © {new Date().getFullYear()} Barber & Dragons. Tutti i diritti riservati.
+        <div className="mx-auto flex max-w-6xl flex-col items-center gap-2 p-4 text-center text-sm text-barber-paper/60 sm:px-6">
+          <p>© {new Date().getFullYear()} Barber & Dragons. Tutti i diritti riservati.</p>
+          <div className="flex items-center gap-2">
+            <a
+              href="https://www.iubenda.com/privacy-policy/43878034"
+              className="iubenda-white iubenda-noiframe iubenda-embed hover:text-accent transition-colors"
+              title="Privacy Policy"
+            >
+              Privacy Policy
+            </a>
+            <span aria-hidden>|</span>
+            <a
+              href="https://www.iubenda.com/privacy-policy/43878034/cookie-policy"
+              className="iubenda-white iubenda-noiframe iubenda-embed hover:text-accent transition-colors"
+              title="Cookie Policy"
+            >
+              Cookie Policy
+            </a>
+          </div>
         </div>
       </footer>
     </main>

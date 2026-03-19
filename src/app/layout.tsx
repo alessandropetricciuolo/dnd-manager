@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import NextTopLoader from "nextjs-toploader";
+import Script from "next/script";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { Navbar } from "@/components/navbar";
@@ -38,6 +39,7 @@ export default function RootLayout({
         </LayoutConditionalNavbar>
         <Toaster richColors closeButton />
         <CookieBanner />
+        <Script src="https://cdn.iubenda.com/iubenda.js" strategy="lazyOnload" />
       </body>
     </html>
   );

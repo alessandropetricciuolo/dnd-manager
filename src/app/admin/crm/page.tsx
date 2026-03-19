@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { BookOpen } from "lucide-react";
 import { LeadsCrmTable } from "@/components/admin/leads-crm-table";
+import { ExportCsvButton } from "@/components/admin/export-csv-button";
 
 export const dynamic = "force-dynamic";
 
@@ -64,9 +65,12 @@ export default async function AdminCrmPage() {
             <BookOpen className="h-6 w-6 text-barber-gold" />
             Libro Mastro delle Reclute
           </h1>
-          <p className="text-sm text-barber-paper/70">
-            {leads.length} {leads.length === 1 ? "contatto" : "contatti"}
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="text-sm text-barber-paper/70">
+              {leads.length} {leads.length === 1 ? "contatto" : "contatti"}
+            </p>
+            <ExportCsvButton data={leads} />
+          </div>
         </header>
 
         <LeadsCrmTable leads={leads} />
