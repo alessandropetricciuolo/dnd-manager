@@ -5,7 +5,6 @@ import Script from "next/script";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { Navbar } from "@/components/navbar";
-import { CookieBanner } from "@/components/ui/cookie-banner";
 import { LayoutConditionalNavbar } from "@/components/layout-conditional-navbar";
 import { AuthHashErrorRedirect } from "@/components/auth/auth-hash-error-redirect";
 
@@ -32,13 +31,16 @@ export default function RootLayout({
   return (
     <html lang="it" className="dark">
       <body className={`${inter.variable} ${playfair.variable} font-sans antialiased`}>
+        <Script
+          src="https://embeds.iubenda.com/widgets/e7d80735-aa56-4d5b-b82d-fe7ee6ce61d6.js"
+          strategy="beforeInteractive"
+        />
         <NextTopLoader color="#D4AF37" showSpinner={false} />
         <LayoutConditionalNavbar navbar={<Navbar />}>
           <AuthHashErrorRedirect />
           {children}
         </LayoutConditionalNavbar>
         <Toaster richColors closeButton />
-        <CookieBanner />
         <Script src="https://cdn.iubenda.com/iubenda.js" strategy="lazyOnload" />
       </body>
     </html>

@@ -120,7 +120,7 @@ export default function HomePage() {
             <span aria-hidden>|</span>
             <a
               href="https://www.iubenda.com/privacy-policy/43878034/cookie-policy"
-              className="iubenda-white iubenda-noiframe iubenda-embed hover:text-accent transition-colors"
+              className="iubenda-black iubenda-noiframe iubenda-embed hover:text-accent transition-colors"
               title="Cookie Policy"
             >
               Cookie Policy
