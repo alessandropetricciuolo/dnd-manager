@@ -13,13 +13,13 @@
  *
  * Endpoint testo: `POST https://router.huggingface.co/v1/chat/completions` (OpenAI-compatible).
  *
- * Immagini (text-to-image): `POST https://api-inference.huggingface.co/models/{modelId}` con body
- * `{ inputs }` (risposta binaria). Per Flux conviene un unico prompt descrittivo; eventuali divieti
- * si integrano nel testo passato a `inputs`.
+ * Immagini (text-to-image): `POST https://router.huggingface.co/hf-inference/models/{modelId}` con body
+ * JSON `{ inputs: string }` (risposta binaria). Per Flux conviene un unico prompt descrittivo; eventuali
+ * divieti si integrano nel testo passato a `inputs`.
  */
 
 const HF_CHAT_COMPLETIONS_URL = "https://router.huggingface.co/v1/chat/completions";
-const HF_IMAGE_INFERENCE_BASE = "https://api-inference.huggingface.co/models";
+const HF_IMAGE_INFERENCE_BASE = "https://router.huggingface.co/hf-inference/models";
 
 /** Modelli di default (testo / immagine). Sostituibili passando un `modelId` esplicito. */
 export const MODELS = {
@@ -172,7 +172,7 @@ export async function generateAiText(
 }
 
 /**
- * Genera un'immagine (Inference API classica, risposta binaria).
+ * Genera un'immagine (router hf-inference, risposta binaria).
  * `negativePrompt` viene fuso nel prompt descrittivo per modelli tipo Flux (un solo campo `inputs`).
  */
 export async function generateAiImage(
