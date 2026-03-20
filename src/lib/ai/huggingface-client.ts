@@ -26,6 +26,24 @@ function getHuggingFaceApiKeyFromEnv(): string | undefined {
   return undefined;
 }
 
+/** Solo in caso di chiave mancante: log in runtime server (mai eseguito dal bundle client se import corretto). */
+function logMissingHuggingFaceKeyDebug(): void {
+  const h = process.env.HUGGINGFACE_API_KEY;
+  const hf = process.env.HF_TOKEN;
+  const ht = process.env.HUGGINGFACE_TOKEN;
+  console.log("--- DEBUG API KEY (Hugging Face) ---");
+  console.log("HUGGINGFACE_API_KEY esiste?", !!h);
+  console.log("HUGGINGFACE_API_KEY lunghezza:", h?.length ?? 0);
+  console.log("HF_TOKEN esiste?", !!hf);
+  console.log("HF_TOKEN lunghezza:", hf?.length ?? 0);
+  console.log("HUGGINGFACE_TOKEN esiste?", !!ht);
+  console.log("HUGGINGFACE_TOKEN lunghezza:", ht?.length ?? 0);
+  console.log("NODE_ENV:", process.env.NODE_ENV);
+  console.log("VERCEL:", process.env.VERCEL);
+  console.log("VERCEL_ENV:", process.env.VERCEL_ENV);
+  console.log("---------------------");
+}
+
 /** Modelli di default (testo / immagine). Sostituibili passando un `modelId` esplicito. */
 export const MODELS = {
   text: "mistralai/Mistral-7B-Instruct-v0.2",
@@ -48,23 +66,6 @@ export class HuggingFaceInferenceError extends Error {
     this.estimatedTime = options?.estimatedTime;
     Object.setPrototypeOf(this, new.target.prototype);
   }
-}
-
-function requireApiKey(): string {
-  const key = getHuggingFaceApiKeyFromEnv();
-  if (!key) {
-    throw new HuggingFaceInferenceError(
-      [
-        "Nessun token Hugging Face trovato.",
-        "Locale: aggiungi HUGGINGFACE_API_KEY (o HF_TOKEN) in .env.local.",
-        "Vercel: Project Settings → Environment Variables → chiave HUGGINGFACE_API_KEY o HF_TOKEN,",
-        "seleziona Production (e Preview se serve), salva e fai Redeploy.",
-        "Crea il token su huggingface.co/settings/tokens (permessi sufficienti per Inference API).",
-      ].join(" "),
-      { status: 401 }
-    );
-  }
-  return key;
 }
 
 function normalizeModelId(modelId: string): string {
@@ -163,7 +164,23 @@ export async function generateAiText(
   prompt: string,
   modelId: string = MODELS.text
 ): Promise<string> {
-  const apiKey = requireApiKey();
+  // Risoluzione chiave solo qui (runtime server quando la Server Action invoca questa funzione).
+  // Non leggere process.env a livello di modulo: evita valutazione a build time / contesto errato.
+  const apiKey = getHuggingFaceApiKeyFromEnv();
+  if (!apiKey) {
+    logMissingHuggingFaceKeyDebug();
+    throw new HuggingFaceInferenceError(
+      [
+        "Nessun token Hugging Face trovato.",
+        "Locale: aggiungi HUGGINGFACE_API_KEY (o HF_TOKEN) in .env.local.",
+        "Vercel: Project Settings → Environment Variables → chiave HUGGINGFACE_API_KEY o HF_TOKEN,",
+        "seleziona Production (e Preview se serve), salva e fai Redeploy.",
+        "Crea il token su huggingface.co/settings/tokens (permessi sufficienti per Inference API).",
+      ].join(" "),
+      { status: 401 }
+    );
+  }
+
   const model = normalizeModelId(modelId);
   const trimmedPrompt = prompt.trim();
 
