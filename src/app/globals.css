@@ -57,6 +57,22 @@
   }
 }
 
+/* Iubenda Cookie Solution: pulsante preferenze (widget compatto) in basso a sinistra.
+   La config remota può forzare bottom-right con !important: qui si ribalta esplicitamente. */
+#iubenda-cs-floating-button {
+  left: 1rem !important;
+  right: auto !important;
+  bottom: 1rem !important;
+  top: auto !important;
+}
+
+#iub-cs-floating-button {
+  left: 1rem !important;
+  right: auto !important;
+  bottom: 1rem !important;
+  top: auto !important;
+}
+
 /* Stampa Guida del Giocatore: solo contenuto, tema chiaro (ink-saver) */
 @media print {
   .no-print {

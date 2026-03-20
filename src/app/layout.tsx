@@ -35,6 +35,23 @@ export default function RootLayout({
           src="https://embeds.iubenda.com/widgets/e7d80735-aa56-4d5b-b82d-fe7ee6ce61d6.js"
           strategy="beforeInteractive"
         />
+        <Script id="iubenda-floating-preferences-left" strategy="afterInteractive">
+          {`(function () {
+  function patch() {
+    try {
+      if (window._iub && window._iub.csSiteConf) {
+        window._iub.csSiteConf.floatingPreferencesButtonDisplay = "bottom-left";
+      }
+    } catch (_) {}
+  }
+  patch();
+  var n = 0;
+  var t = setInterval(function () {
+    patch();
+    if (++n > 60) clearInterval(t);
+  }, 200);
+})();`}
+        </Script>
         <NextTopLoader color="#D4AF37" showSpinner={false} />
         <LayoutConditionalNavbar navbar={<Navbar />}>
           <AuthHashErrorRedirect />
