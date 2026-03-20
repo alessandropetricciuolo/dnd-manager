@@ -11,17 +11,21 @@
  * Su Vercel: Settings → Environment Variables → nome esatto, ambienti (Production/Preview)
  * selezionati, poi **Redeploy** del progetto.
  *
- * Endpoint: `POST https://router.huggingface.co/v1/chat/completions` con body tipo OpenAI
- * (`model`, `messages`, `max_tokens`, `temperature`).
+ * Endpoint testo: `POST https://router.huggingface.co/v1/chat/completions` (OpenAI-compatible).
+ *
+ * Immagini (text-to-image): `POST https://api-inference.huggingface.co/models/{modelId}` con body
+ * `{ inputs }` (risposta binaria). Per Flux conviene un unico prompt descrittivo; eventuali divieti
+ * si integrano nel testo passato a `inputs`.
  */
 
 const HF_CHAT_COMPLETIONS_URL = "https://router.huggingface.co/v1/chat/completions";
+const HF_IMAGE_INFERENCE_BASE = "https://api-inference.huggingface.co/models";
 
 /** Modelli di default (testo / immagine). Sostituibili passando un `modelId` esplicito. */
 export const MODELS = {
   // fallback: 'mistralai/Mistral-Nemo-Instruct-2407'
   text: "Qwen/Qwen2.5-72B-Instruct",
-  image: "stabilityai/stable-diffusion-xl-base-1.0",
+  image: "black-forest-labs/FLUX.1-schnell",
 } as const;
 
 export type HuggingFaceModelKey = keyof typeof MODELS;
@@ -165,4 +169,94 @@ export async function generateAiText(
   }
 
   return generatedText;
+}
+
+/**
+ * Genera un'immagine (Inference API classica, risposta binaria).
+ * `negativePrompt` viene fuso nel prompt descrittivo per modelli tipo Flux (un solo campo `inputs`).
+ */
+export async function generateAiImage(
+  positivePrompt: string,
+  negativePrompt: string,
+  modelId: string = MODELS.image
+): Promise<Buffer> {
+  const rawKey = process.env.HUGGINGFACE_API_KEY || process.env.HF_TOKEN;
+  const apiKey = typeof rawKey === "string" ? rawKey.trim() : "";
+
+  if (!apiKey) {
+    throw new Error("Errore Critico Server: HUGGINGFACE_API_KEY non trovata a runtime.");
+  }
+
+  const model = normalizeModelId(modelId);
+  const pos = positivePrompt.trim();
+  if (!pos) {
+    throw new HuggingFaceInferenceError("Il prompt positivo non può essere vuoto.", { status: 400 });
+  }
+
+  const neg = negativePrompt.trim();
+  const inputs = neg ? `${pos}. Do not show or include: ${neg}` : pos;
+
+  const url = `${HF_IMAGE_INFERENCE_BASE}/${encodeURIComponent(model)}`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 180_000);
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        Accept: "image/*",
+      },
+      body: JSON.stringify({ inputs }),
+      signal: controller.signal,
+    });
+  } catch (e) {
+    clearTimeout(timeoutId);
+    if (e instanceof Error && e.name === "AbortError") {
+      throw new HuggingFaceInferenceError(
+        "Timeout della richiesta di generazione immagine (oltre 180s).",
+        { status: 504, cause: e }
+      );
+    }
+    throw new HuggingFaceInferenceError("Errore di rete durante la generazione immagine.", {
+      cause: e,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("[generateAiImage] API Error:", errorText);
+    throw new Error(`Errore API Hugging Face (immagine): ${response.status} - ${errorText}`);
+  }
+
+  const buf = Buffer.from(await response.arrayBuffer());
+  if (buf.length < 16) {
+    throw new HuggingFaceInferenceError("Risposta immagine vuota o troppo piccola.", { status: 502 });
+  }
+  if (buf[0] === 0x7b) {
+    throw new HuggingFaceInferenceError(
+      `Errore API (JSON al posto dell'immagine): ${buf.toString("utf8").slice(0, 600)}`,
+      { status: 502 }
+    );
+  }
+
+  const contentType = response.headers.get("content-type") || "";
+  const magicPng = buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47;
+  const magicJpeg = buf[0] === 0xff && buf[1] === 0xd8;
+  const magicGif = buf.toString("ascii", 0, 4) === "GIF8";
+  const looksLikeImage =
+    contentType.startsWith("image/") || magicPng || magicJpeg || magicGif;
+
+  if (!looksLikeImage) {
+    throw new HuggingFaceInferenceError(
+      `Formato risposta non riconosciuto (${contentType || "unknown"}).`,
+      { status: 502 }
+    );
+  }
+
+  return buf;
 }

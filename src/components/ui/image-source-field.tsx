@@ -23,6 +23,11 @@ export type ImageSourceFieldProps = {
   hint?: string;
   /** Anteprima iniziale (modifica). */
   previewUrl?: string | null;
+  /**
+   * Imposta dall’esterno (es. ritratto AI): passa alla tab URL e compila il campo.
+   * Aggiorna quando cambia il valore (nuova stringa).
+   */
+  presetUrl?: string | null;
   className?: string;
   /** Per PG avatar: aspect ratio diverso. */
   previewClassName?: string;
@@ -36,6 +41,7 @@ export function ImageSourceField({
   disabled = false,
   hint,
   previewUrl: initialPreviewUrl,
+  presetUrl,
   className,
   previewClassName,
 }: ImageSourceFieldProps) {
@@ -44,6 +50,7 @@ export function ImageSourceField({
   const [resolvedUrl, setResolvedUrl] = useState<string | null>(null);
   const [urlError, setUrlError] = useState<string | null>(null);
   const urlInputRef = useRef<HTMLInputElement>(null);
+  const lastPresetRef = useRef<string | null>(null);
 
   const displayPreview = resolvedUrl ?? initialPreviewUrl ?? null;
 
@@ -62,6 +69,21 @@ export function ImageSourceField({
       setUrlError(null);
     }
   }, [mode, urlValue]);
+
+  useEffect(() => {
+    if (!presetUrl?.trim()) {
+      lastPresetRef.current = null;
+      return;
+    }
+    if (lastPresetRef.current === presetUrl) return;
+    lastPresetRef.current = presetUrl;
+    const normalized = normalizeImageUrl(presetUrl.trim());
+    if (!isValidImageUrl(normalized)) return;
+    setMode("url");
+    setUrlValue(normalized);
+    setResolvedUrl(normalized);
+    setUrlError(null);
+  }, [presetUrl]);
 
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUrlValue(e.target.value);

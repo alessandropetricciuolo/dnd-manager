@@ -3,7 +3,8 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { useRouter } from "nextjs-toploader/app";
 import { toast } from "sonner";
-import { BookOpen, Plus, Trash2, Sparkles, Loader2 } from "lucide-react";
+import { BookOpen, Plus, Trash2, Sparkles, Loader2, ImageIcon } from "lucide-react";
+import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -26,6 +27,7 @@ import {
   generateWikiQuickAiAction,
   type WikiGeneratorEntityType,
 } from "@/app/campaigns/wiki-actions";
+import { generateContextualPortraitAction } from "@/lib/actions/ai-generator";
 import { getWikiEntitiesForCampaign, getMapsForCampaign } from "@/app/campaigns/entity-graph-actions";
 import { getEmptyAttributes } from "@/types/wiki";
 import { CHALLENGE_RATING_OPTIONS } from "@/lib/dnd-constants";
@@ -96,6 +98,9 @@ export function CreateEntityDialog({
   const [magicPrompt, setMagicPrompt] = useState("");
   const [magicEntityType, setMagicEntityType] = useState<WikiGeneratorEntityType>("npc");
   const [magicLoading, setMagicLoading] = useState(false);
+  const [wikiImageUrlPreset, setWikiImageUrlPreset] = useState<string | null>(null);
+  const [portraitLoading, setPortraitLoading] = useState(false);
+  const [magicPortraitPreview, setMagicPortraitPreview] = useState<string | null>(null);
   type RelationRow = { targetType: "wiki" | "map"; targetId: string; label: string };
   const [relations, setRelations] = useState<RelationRow[]>([]);
   const [wikiOptions, setWikiOptions] = useState<{ id: string; name: string }[]>([]);
@@ -186,6 +191,38 @@ export function CreateEntityDialog({
       setMagicOpen(false);
       setMagicPrompt("");
       setMagicEntityType("npc");
+      setWikiImageUrlPreset(null);
+      setMagicPortraitPreview(null);
+    }
+  }
+
+  function handleMagicDialogOpenChange(next: boolean) {
+    setMagicOpen(next);
+    if (!next) setMagicPortraitPreview(null);
+  }
+
+  async function handlePortraitGenerate() {
+    if (portraitLoading) return;
+    if (magicEntityType !== "npc" && magicEntityType !== "location") return;
+    const desc = magicPrompt.trim();
+    if (!desc) {
+      toast.error("Inserisci una descrizione nel campo sopra (stesso testo usato per la generazione testo).");
+      return;
+    }
+    setPortraitLoading(true);
+    try {
+      const res = await generateContextualPortraitAction(campaignId, desc, magicEntityType);
+      if (!res.success) {
+        toast.error(res.message);
+        return;
+      }
+      setMagicPortraitPreview(res.publicUrl);
+      setWikiImageUrlPreset(res.publicUrl);
+      toast.success("Immagine generata. Controlla l’anteprima e il campo Immagine del form (tab URL).");
+    } catch {
+      toast.error("Errore durante la generazione del ritratto.");
+    } finally {
+      setPortraitLoading(false);
     }
   }
 
@@ -305,6 +342,7 @@ export function CreateEntityDialog({
             urlFieldName="image_url"
             label="Immagine (opzionale)"
             disabled={isLoading}
+            presetUrl={wikiImageUrlPreset}
           />
 
           <TagsInput value={tags} onChange={setTags} disabled={isLoading} />
@@ -662,7 +700,7 @@ export function CreateEntityDialog({
       </DialogContent>
     </Dialog>
 
-    <Dialog open={magicOpen} onOpenChange={setMagicOpen}>
+    <Dialog open={magicOpen} onOpenChange={handleMagicDialogOpenChange}>
       <DialogContent className="border-violet-500/40 bg-barber-dark text-barber-paper sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-violet-100">
@@ -700,6 +738,55 @@ export function CreateEntityDialog({
                 </option>
               ))}
             </select>
+          </div>
+
+          <div className="space-y-3 rounded-lg border border-barber-gold/25 bg-barber-dark/60 p-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-barber-paper">
+              <ImageIcon className="h-4 w-4 text-violet-300" />
+              Immagine
+            </div>
+            <p className="text-xs text-barber-paper/60">
+              Ritratto o scena coerente con i paletti visivi della campagna (L&apos;Anima della Campagna).
+              Disponibile per NPC e Luoghi; usa la descrizione nel campo sopra.
+            </p>
+            {magicEntityType === "npc" || magicEntityType === "location" ? (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full border-violet-500/50 text-violet-100 hover:bg-violet-500/15"
+                  onClick={() => void handlePortraitGenerate()}
+                  disabled={magicLoading || portraitLoading}
+                >
+                  {portraitLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generazione immagine…
+                    </>
+                  ) : (
+                    <>
+                      <ImageIcon className="mr-2 h-4 w-4" />
+                      Genera ritratto AI coerente
+                    </>
+                  )}
+                </Button>
+                {magicPortraitPreview && (
+                  <div className="relative aspect-video w-full overflow-hidden rounded-md border border-barber-gold/30 bg-black/40">
+                    <Image
+                      src={magicPortraitPreview}
+                      alt="Anteprima ritratto AI"
+                      fill
+                      className="object-contain"
+                      unoptimized
+                    />
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="text-xs text-barber-paper/50">
+                Per Oggetti e Lore usa il campo immagine del form principale (carica file o URL).
+              </p>
+            )}
           </div>
         </div>
         <DialogFooter className="gap-2 sm:gap-0">
