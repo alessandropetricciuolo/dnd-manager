@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { format } from "date-fns";
 import { it } from "date-fns/locale";
+import { formatSessionInRome } from "@/lib/session-datetime";
 import { Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -65,7 +65,7 @@ export function CompletedSessionsListForPlayer({ campaignId }: CompletedSessions
 
 function CompletedSessionCardForPlayer({ session }: { session: CompletedSessionForUser }) {
   const [expanded, setExpanded] = useState(false);
-  const dateLabel = format(new Date(session.scheduled_at), "EEEE d MMMM yyyy", { locale: it });
+  const dateLabel = formatSessionInRome(session.scheduled_at, "EEEE d MMMM yyyy", { locale: it });
   const party = session.campaign_parties;
   const summary = session.session_summary?.trim() ?? "";
   const hasLongSummary = summary.split("\n").length > SUMMARY_CLAMP_LINES || summary.length > 280;

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
+import { formatSessionInRome } from "@/lib/session-datetime";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { Button } from "@/components/ui/button";
@@ -34,8 +35,9 @@ function formatDate(iso: string) {
   return format(new Date(iso), "dd MMMM yyyy", { locale: it });
 }
 
+/** Data/ora sessione sempre in Europe/Rome. */
 function formatDateTime(iso: string) {
-  return format(new Date(iso), "dd MMM yyyy, HH:mm", { locale: it });
+  return formatSessionInRome(iso, "dd MMM yyyy, HH:mm", { locale: it });
 }
 
 type CampaignType = "oneshot" | "quest" | "long" | null;

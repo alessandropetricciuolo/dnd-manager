@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
+import { formatSessionInRome, sessionFormLocalToUtcIso } from "@/lib/session-datetime";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { getPlayerEmails, getNotificationsPaused, hasNotificationsDisabled } from "@/lib/player-emails";
@@ -51,8 +52,10 @@ export async function createSession(
       return { success: false, message: "Solo GM e Admin possono creare sessioni." };
     }
 
-    const scheduledAt = new Date(`${date}T${time}:00`).toISOString();
-    if (Number.isNaN(Date.parse(scheduledAt))) {
+    let scheduledAt: string;
+    try {
+      scheduledAt = sessionFormLocalToUtcIso(date, time.includes(":") ? time : `${time}:00`);
+    } catch {
       return { success: false, message: "Data o orario non validi." };
     }
 
@@ -89,7 +92,7 @@ export async function createSession(
     try {
       const playerEmails = await getPlayerEmails();
       if (playerEmails.length > 0) {
-        const dateLabel = format(new Date(scheduledAt), "EEEE d MMMM yyyy, HH:mm", { locale: it });
+        const dateLabel = formatSessionInRome(scheduledAt, "EEEE d MMMM yyyy, HH:mm", { locale: it });
         void sendEmail({
           to: process.env.GMAIL_USER ?? "",
           bcc: playerEmails,
@@ -355,7 +358,7 @@ export async function updateSignupStatus(
           const toEmail = authUser?.user?.email;
           if (toEmail) {
             const dateLabel = row?.scheduled_at
-              ? format(new Date(row.scheduled_at), "EEEE d MMMM yyyy, HH:mm", { locale: it })
+              ? formatSessionInRome(row.scheduled_at, "EEEE d MMMM yyyy, HH:mm", { locale: it })
               : "";
             void sendEmail({
               to: toEmail,

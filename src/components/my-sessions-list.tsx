@@ -1,6 +1,10 @@
 import { createSupabaseServerClient } from "@/utils/supabase/server";
-import { format, startOfDay, isBefore } from "date-fns";
+import { isBefore } from "date-fns";
 import { it } from "date-fns/locale";
+import {
+  formatSessionInRome,
+  startOfRomeDayFromInstant,
+} from "@/lib/session-datetime";
 import { MySessionsListClient } from "@/components/my-sessions-list-client";
 
 type SessionRow = {
@@ -44,7 +48,7 @@ export async function MySessionsList() {
     .eq("player_id", user.id)
     .in("status", ["pending", "approved", "attended"]);
 
-  const today = startOfDay(new Date());
+  const todayRomeStart = startOfRomeDayFromInstant(new Date());
 
   const rows: SessionRow[] = (signups ?? [])
     .map((s) => {
@@ -69,13 +73,13 @@ export async function MySessionsList() {
     .filter((r): r is SessionRow => r != null);
 
   const isUpcoming = (r: SessionRow) => {
-    const sessionDate = startOfDay(new Date(r.scheduled_at));
-    const notPast = !isBefore(sessionDate, today);
+    const sessionDayStart = startOfRomeDayFromInstant(r.scheduled_at);
+    const notPast = !isBefore(sessionDayStart, todayRomeStart);
     return notPast && r.session_status === "scheduled";
   };
   const isHistory = (r: SessionRow) => {
     if (r.session_status === "completed" || r.session_status === "cancelled") return true;
-    return isBefore(new Date(r.scheduled_at), today);
+    return isBefore(new Date(r.scheduled_at), todayRomeStart);
   };
 
   const inProgramma = rows
@@ -85,7 +89,8 @@ export async function MySessionsList() {
     .filter(isHistory)
     .sort((a, b) => new Date(b.scheduled_at).getTime() - new Date(a.scheduled_at).getTime());
 
-  const formatDate = (iso: string) => format(new Date(iso), "dd MMMM yyyy", { locale: it });
+  const formatDate = (iso: string) =>
+    formatSessionInRome(iso, "dd MMMM yyyy", { locale: it });
 
   const inProgrammaWithDate = inProgramma.map((r) => ({ ...r, formatted_date: formatDate(r.scheduled_at) }));
   const storicoWithDate = storico.map((r) => ({ ...r, formatted_date: formatDate(r.scheduled_at) }));

@@ -3,7 +3,7 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { useRouter } from "nextjs-toploader/app";
 import { toast } from "sonner";
-import { BookOpen, Plus, Trash2 } from "lucide-react";
+import { BookOpen, Plus, Trash2, Sparkles, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -21,7 +21,11 @@ import { Label } from "@/components/ui/label";
 import { ImageSourceField } from "@/components/ui/image-source-field";
 import { Textarea } from "@/components/ui/textarea";
 import { TagsInput } from "@/components/wiki/tags-input";
-import { createEntity } from "@/app/campaigns/wiki-actions";
+import {
+  createEntity,
+  generateWikiQuickAiAction,
+  type WikiGeneratorEntityType,
+} from "@/app/campaigns/wiki-actions";
 import { getWikiEntitiesForCampaign, getMapsForCampaign } from "@/app/campaigns/entity-graph-actions";
 import { getEmptyAttributes } from "@/types/wiki";
 import { CHALLENGE_RATING_OPTIONS } from "@/lib/dnd-constants";
@@ -33,6 +37,24 @@ const ENTITY_TYPES = [
   { value: "item", label: "Oggetto" },
   { value: "lore", label: "Lore" },
 ] as const;
+
+/** Tipi supportati dal generatore rapido AI (Fase 2). */
+const MAGIC_ENTITY_TYPES: { value: WikiGeneratorEntityType; label: string }[] = [
+  { value: "npc", label: "NPC" },
+  { value: "location", label: "Luogo" },
+  { value: "item", label: "Oggetto" },
+  { value: "lore", label: "Lore" },
+];
+
+function appendCombatStatsToMarkdown(
+  content: string,
+  hp: string | null,
+  ac: string | null
+): string {
+  const parts = [hp ? `**PF:** ${hp}` : "", ac ? `**CA:** ${ac}` : ""].filter(Boolean);
+  if (!parts.length) return content;
+  return `${content}\n\n---\n${parts.join(" · ")}`;
+}
 
 type EntityType = (typeof ENTITY_TYPES)[number]["value"];
 
@@ -68,6 +90,12 @@ export function CreateEntityDialog({
   const showCoreCheckbox = campaignType === "long" && (type === "npc" || type === "monster");
   const [monsterXp, setMonsterXp] = useState<number>(0);
   const [tags, setTags] = useState<string[]>([]);
+  const [titleValue, setTitleValue] = useState("");
+  const [contentValue, setContentValue] = useState("");
+  const [magicOpen, setMagicOpen] = useState(false);
+  const [magicPrompt, setMagicPrompt] = useState("");
+  const [magicEntityType, setMagicEntityType] = useState<WikiGeneratorEntityType>("npc");
+  const [magicLoading, setMagicLoading] = useState(false);
   type RelationRow = { targetType: "wiki" | "map"; targetId: string; label: string };
   const [relations, setRelations] = useState<RelationRow[]>([]);
   const [wikiOptions, setWikiOptions] = useState<{ id: string; name: string }[]>([]);
@@ -112,6 +140,8 @@ export function CreateEntityDialog({
     const form = event.currentTarget;
     const formData = new FormData(form);
     formData.set("campaign_id", campaignId);
+    formData.set("title", titleValue.trim());
+    formData.set("content", contentValue);
     formData.set("attributes", JSON.stringify(attributes));
     formData.set("visibility", visibility);
     formData.set("allowed_user_ids", JSON.stringify(visibility === "selective" ? selectedPlayerIds : []));
@@ -127,6 +157,8 @@ export function CreateEntityDialog({
         toast.success(result.message);
         setOpen(false);
         form.reset();
+        setTitleValue("");
+        setContentValue("");
         setType("npc");
         setAttributes(defaultAttributes("npc"));
         setSortOrder("");
@@ -148,10 +180,46 @@ export function CreateEntityDialog({
     if (next) {
       getWikiEntitiesForCampaign(campaignId).then((r) => r.success && setWikiOptions(r.data));
       getMapsForCampaign(campaignId).then((r) => r.success && setMapOptions(r.data));
+    } else {
+      setTitleValue("");
+      setContentValue("");
+      setMagicOpen(false);
+      setMagicPrompt("");
+      setMagicEntityType("npc");
+    }
+  }
+
+  async function handleMagicGenerate() {
+    if (magicLoading) return;
+    const p = magicPrompt.trim();
+    if (!p) {
+      toast.error("Descrivi cosa vuoi creare.");
+      return;
+    }
+    setMagicLoading(true);
+    try {
+      const res = await generateWikiQuickAiAction(campaignId, p, magicEntityType);
+      if (!res.success) {
+        toast.error(res.message);
+        return;
+      }
+      const { title, content, hp, ac } = res.data;
+      onTypeChange(magicEntityType);
+      const body = appendCombatStatsToMarkdown(content, hp, ac);
+      setTitleValue(title);
+      setContentValue(body);
+      setMagicOpen(false);
+      setMagicPrompt("");
+      toast.success("Campi compilati dall’AI. Controlla e modifica prima di creare la voce.");
+    } catch {
+      toast.error("Errore durante la generazione.");
+    } finally {
+      setMagicLoading(false);
     }
   }
 
   return (
+    <>
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button
@@ -164,9 +232,23 @@ export function CreateEntityDialog({
       </DialogTrigger>
       <DialogContent className="flex max-h-[90vh] flex-col gap-2 border-barber-gold/40 bg-barber-dark text-barber-paper">
         <DialogHeader className="shrink-0">
-          <DialogTitle>Nuova voce wiki</DialogTitle>
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <DialogTitle className="text-left">Nuova voce wiki</DialogTitle>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="shrink-0 border-violet-500/50 text-violet-200 hover:bg-violet-500/15 hover:text-violet-100"
+              onClick={() => setMagicOpen(true)}
+              disabled={isLoading}
+            >
+              <Sparkles className="mr-1.5 h-4 w-4" />
+              🪄 Generazione Magica AI
+            </Button>
+          </div>
           <DialogDescription className="text-barber-paper/70">
-            Aggiungi un NPC, un luogo, un mostro, un oggetto o una voce di lore.
+            Aggiungi un NPC, un luogo, un mostro, un oggetto o una voce di lore. Usa la bacchetta per
+            una bozza guidata dall&apos;AI (consigliato configurare prima &quot;L&apos;Anima della Campagna&quot; nel tab Solo GM).
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col gap-0">
@@ -176,6 +258,8 @@ export function CreateEntityDialog({
             <Input
               id="entity-title"
               name="title"
+              value={titleValue}
+              onChange={(e) => setTitleValue(e.target.value)}
               placeholder="Es. Taverna del Drago"
               className="bg-barber-dark border-barber-gold/30 text-barber-paper"
               required
@@ -328,6 +412,8 @@ export function CreateEntityDialog({
             <Textarea
               id="entity-content"
               name="content"
+              value={contentValue}
+              onChange={(e) => setContentValue(e.target.value)}
               placeholder="Descrizione in Markdown..."
               className="min-h-[120px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
               disabled={isLoading}
@@ -575,5 +661,78 @@ export function CreateEntityDialog({
         </form>
       </DialogContent>
     </Dialog>
+
+    <Dialog open={magicOpen} onOpenChange={setMagicOpen}>
+      <DialogContent className="border-violet-500/40 bg-barber-dark text-barber-paper sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-violet-100">
+            <Sparkles className="h-5 w-5 text-violet-300" />
+            Generazione Magica AI
+          </DialogTitle>
+          <DialogDescription className="text-barber-paper/65">
+            Descrivi in poche parole cosa ti serve: l&apos;AI userà i paletti della campagna e le regole D&amp;D 5e.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-2">
+            <Label htmlFor="magic-prompt">Cosa vuoi creare?</Label>
+            <Textarea
+              id="magic-prompt"
+              value={magicPrompt}
+              onChange={(e) => setMagicPrompt(e.target.value)}
+              placeholder="Es: Un oste burbero"
+              className="min-h-[80px] resize-y border-barber-gold/30 bg-barber-dark text-barber-paper"
+              disabled={magicLoading}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="magic-entity-type">Tipo di entità</Label>
+            <select
+              id="magic-entity-type"
+              value={magicEntityType}
+              onChange={(e) => setMagicEntityType(e.target.value as WikiGeneratorEntityType)}
+              disabled={magicLoading}
+              className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
+            >
+              {MAGIC_ENTITY_TYPES.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button
+            type="button"
+            variant="outline"
+            className="border-barber-gold/40 text-barber-paper"
+            onClick={() => setMagicOpen(false)}
+            disabled={magicLoading}
+          >
+            Annulla
+          </Button>
+          <Button
+            type="button"
+            className="bg-violet-600 text-white hover:bg-violet-500"
+            onClick={() => void handleMagicGenerate()}
+            disabled={magicLoading}
+          >
+            {magicLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generazione…
+              </>
+            ) : (
+              <>
+                <Sparkles className="mr-2 h-4 w-4" />
+                Genera
+              </>
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

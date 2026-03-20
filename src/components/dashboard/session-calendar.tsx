@@ -11,13 +11,14 @@ import {
   endOfWeek,
   eachDayOfInterval,
   isSameMonth,
-  isSameDay,
   addMonths,
   subMonths,
   isToday,
   parseISO,
 } from "date-fns";
 import { it } from "date-fns/locale";
+import { formatSessionInRome, SESSION_DISPLAY_TIMEZONE } from "@/lib/session-datetime";
+import { formatInTimeZone } from "date-fns-tz";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -80,6 +81,7 @@ function SessionHoverCard({
 
   const start = parseISO(session.scheduled_at);
   const endTime = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+  const timeFmt = "HH:mm";
 
   return (
     <div
@@ -117,7 +119,8 @@ function SessionHoverCard({
             </div>
           </div>
           <p className="mt-2 text-xs text-slate-400">
-            {format(start, "HH:mm", { locale: it })} – {format(endTime, "HH:mm", { locale: it })}
+            {formatSessionInRome(session.scheduled_at, timeFmt, { locale: it })} –{" "}
+            {formatInTimeZone(endTime, SESSION_DISPLAY_TIMEZONE, timeFmt, { locale: it })}
           </p>
           {session.dm_name && (
             <p className="text-xs text-slate-400">DM: {session.dm_name}</p>
@@ -149,7 +152,9 @@ export function SessionCalendar({ sessions }: SessionCalendarProps) {
   const getSessionsForDay = (day: Date) =>
     sessions.filter((s) => {
       try {
-        return isSameDay(parseISO(s.scheduled_at), day);
+        const sessionYmd = formatInTimeZone(s.scheduled_at, SESSION_DISPLAY_TIMEZONE, "yyyy-MM-dd");
+        const cellYmd = formatInTimeZone(day, SESSION_DISPLAY_TIMEZONE, "yyyy-MM-dd");
+        return sessionYmd === cellYmd;
       } catch {
         return false;
       }

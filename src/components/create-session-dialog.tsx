@@ -263,7 +263,10 @@ export function CreateSessionDialog({
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="session-time">Orario</Label>
+            <Label htmlFor="session-time">Orario (Italia / Europe/Rome)</Label>
+            <p className="text-xs text-barber-paper/55">
+              Data e ora sono salvate come orario italiano (Roma), incluso cambio ora legale.
+            </p>
             <Input
               id="session-time"
               name="time"

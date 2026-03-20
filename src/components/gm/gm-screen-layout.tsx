@@ -18,6 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { formatSessionInRome } from "@/lib/session-datetime";
+import { it } from "date-fns/locale";
 
 type GmScreenLayoutProps = {
   campaignId: string;
@@ -28,12 +30,7 @@ type GmScreenLayoutProps = {
 };
 
 function formatSessionLabel(s: CampaignSessionOption): string {
-  const date = new Date(s.scheduled_at);
-  const dateStr = date.toLocaleDateString("it-IT", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  const dateStr = formatSessionInRome(s.scheduled_at, "d MMM yyyy", { locale: it });
   return s.title?.trim() ? `${s.title} — ${dateStr}` : dateStr;
 }
 

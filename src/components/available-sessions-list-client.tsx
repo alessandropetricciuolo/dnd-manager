@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "nextjs-toploader/app";
-import { format } from "date-fns";
 import { it } from "date-fns/locale";
+import { formatSessionInRome } from "@/lib/session-datetime";
 import { toast } from "sonner";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -54,7 +54,7 @@ export function AvailableSessionsListClient({
               <div className="flex items-center gap-2 text-slate-400 text-sm">
                 <CalendarIcon className="h-4 w-4 shrink-0" />
                 <time dateTime={row.scheduledAt}>
-                  {format(date, "EEEE d MMMM yyyy, HH:mm", { locale: it })}
+                  {formatSessionInRome(row.scheduledAt, "EEEE d MMMM yyyy, HH:mm", { locale: it })}
                 </time>
               </div>
             </CardHeader>

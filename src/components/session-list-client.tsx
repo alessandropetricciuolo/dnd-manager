@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "nextjs-toploader/app";
-import { format } from "date-fns";
 import { it } from "date-fns/locale";
+import { formatSessionInRome } from "@/lib/session-datetime";
 import { toast } from "sonner";
 import { CalendarIcon, MapPinIcon, Check, X, UserCheck, User, UserPlus, Trash2, UserX, ClipboardCheck } from "lucide-react";
 import {
@@ -146,8 +146,8 @@ export function SessionListClient({
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {sessions.map((session) => {
           const isOpen = session.status === "scheduled";
-          const date = new Date(session.scheduled_at);
-          const isTodayOrPast = date <= new Date();
+          const sessionInstant = new Date(session.scheduled_at);
+          const isTodayOrPast = sessionInstant <= new Date();
 
           return (
             <Card
@@ -159,7 +159,9 @@ export function SessionListClient({
                   <div className="flex items-center gap-2 text-slate-400 min-w-0">
                     <CalendarIcon className="h-4 w-4 shrink-0" />
                     <time dateTime={session.scheduled_at}>
-                      {format(date, "EEEE d MMMM yyyy, HH:mm", { locale: it })}
+                      {formatSessionInRome(session.scheduled_at, "EEEE d MMMM yyyy, HH:mm", {
+                        locale: it,
+                      })}
                     </time>
                   </div>
                   {isGmOrAdmin && (
@@ -392,7 +394,15 @@ export function SessionListClient({
           sessionId={sessionForClose.sessionId}
           campaignId={campaignId}
           campaignType={sessionForClose.campaignType}
-          sessionLabel={sessions.find((s) => s.id === sessionForClose.sessionId)?.scheduled_at ? format(new Date(sessions.find((s) => s.id === sessionForClose.sessionId)!.scheduled_at), "d MMM yyyy", { locale: it }) : undefined}
+          sessionLabel={
+            sessions.find((s) => s.id === sessionForClose.sessionId)?.scheduled_at
+              ? formatSessionInRome(
+                  sessions.find((s) => s.id === sessionForClose.sessionId)!.scheduled_at,
+                  "d MMM yyyy",
+                  { locale: it }
+                )
+              : undefined
+          }
           initialApprovedSignups={sessionForClose.approvedSignups}
           onSuccess={() => setSessionForClose(null)}
         />

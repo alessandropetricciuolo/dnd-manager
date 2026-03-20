@@ -4,6 +4,13 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { uploadToTelegram } from "@/lib/telegram-storage";
 import { syncEntityPermissions, parseAllowedUserIds } from "@/lib/entity-permissions";
+import {
+  generateContextualText,
+  type WikiGeneratorEntityType,
+  type WikiAiTextGeneration,
+} from "@/lib/ai/generator";
+
+export type { WikiGeneratorEntityType, WikiAiTextGeneration } from "@/lib/ai/generator";
 
 const ENTITY_TYPES = ["npc", "location", "monster", "item", "lore"] as const;
 const VISIBILITY_VALUES = ["public", "secret", "selective"] as const;
@@ -981,5 +988,45 @@ export async function bulkImportWiki(
       success: false,
       message: "Si è verificato un errore imprevisto. Riprova.",
     };
+  }
+}
+
+/** Generazione rapida wiki con iniezione ai_context (Agente Generatore). */
+export async function generateWikiQuickAiAction(
+  campaignId: string,
+  userPrompt: string,
+  entityType: WikiGeneratorEntityType
+): Promise<
+  { success: true; data: WikiAiTextGeneration } | { success: false; message: string }
+> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return { success: false, message: "Devi essere autenticato." };
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    if (profile?.role !== "gm" && profile?.role !== "admin") {
+      return { success: false, message: "Solo GM e Admin possono usare la generazione AI." };
+    }
+
+    const result = await generateContextualText(campaignId, userPrompt, entityType);
+    if (!result.ok) {
+      return { success: false, message: result.error };
+    }
+
+    return { success: true, data: result.data };
+  } catch (err) {
+    console.error("[generateWikiQuickAiAction]", err);
+    return { success: false, message: "Si è verificato un errore imprevisto. Riprova." };
   }
 }

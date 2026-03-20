@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { format } from "date-fns";
 import { it } from "date-fns/locale";
+import { formatSessionInRome } from "@/lib/session-datetime";
 import { Pencil, Loader2, Wrench, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -97,7 +97,7 @@ function SessionHistoryCard({ session, campaignId, onSaved }: SessionHistoryCard
   const [gmPrivateNotes, setGmPrivateNotes] = useState(session.gm_private_notes ?? "");
   const [saving, setSaving] = useState(false);
 
-  const dateLabel = format(new Date(session.scheduled_at), "EEEE d MMMM yyyy", { locale: it });
+  const dateLabel = formatSessionInRome(session.scheduled_at, "EEEE d MMMM yyyy", { locale: it });
   const party = session.campaign_parties;
   const hasLongSummary = (session.session_summary ?? "").split("\n").length > SUMMARY_CLAMP_LINES ||
     (session.session_summary ?? "").length > 280;

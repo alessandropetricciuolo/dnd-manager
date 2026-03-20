@@ -28,6 +28,12 @@ import { getPreClosedSessionForCampaign, type PreClosedSessionRow } from "@/app/
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { CampaignMobileHeader } from "@/components/campaigns/campaign-mobile-header";
+import { CampaignAiArchitectPanel } from "@/components/campaigns/campaign-ai-architect-panel";
+import {
+  parseCampaignAiContextFromDb,
+  type CampaignAiContext,
+} from "@/lib/campaign-ai-context";
+import type { Json } from "@/types/database.types";
 
 const PLACEHOLDER_IMAGE =
   "https://placehold.co/1200x400/1e293b/10b981/png?text=Campagna";
@@ -102,6 +108,19 @@ export default async function CampaignPage({ params }: PageProps) {
   /** Solo GM e Admin possono creare sessioni, wiki, mappe. I player solo visualizzano. */
   const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
   const isAdmin = profile?.role === "admin";
+
+  /** Contesto AI: solo GM/Admin (non esposto ai player nel payload). */
+  let aiContextParsed: CampaignAiContext | null = null;
+  if (isGmOrAdmin) {
+    const { data: aiRow } = await supabase
+      .from("campaigns")
+      .select("ai_context")
+      .eq("id", id)
+      .single();
+    aiContextParsed = parseCampaignAiContextFromDb(
+      (aiRow as { ai_context: Json | null } | null)?.ai_context ?? null
+    );
+  }
 
   /** Lista GM/Admin per la select DM nel form Nuova Sessione (solo se isGmOrAdmin). */
   let gmAdminUsers: { id: string; label: string }[] = [];
@@ -436,6 +455,10 @@ export default async function CampaignPage({ params }: PageProps) {
                   />
                 </div>
                 <div className="space-y-8">
+                  <CampaignAiArchitectPanel
+                    campaignId={campaign.id}
+                    initialContext={aiContextParsed}
+                  />
                   <CampaignPrimerEditor
                     campaignId={campaign.id}
                     initialPlayerPrimer={campaign.player_primer ?? null}
