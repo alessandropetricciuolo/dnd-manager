@@ -19,7 +19,8 @@ const HF_CHAT_COMPLETIONS_URL = "https://router.huggingface.co/v1/chat/completio
 
 /** Modelli di default (testo / immagine). Sostituibili passando un `modelId` esplicito. */
 export const MODELS = {
-  text: "HuggingFaceH4/zephyr-7b-beta",
+  // fallback: 'mistralai/Mistral-Nemo-Instruct-2407'
+  text: "Qwen/Qwen2.5-72B-Instruct",
   image: "stabilityai/stable-diffusion-xl-base-1.0",
 } as const;
 
