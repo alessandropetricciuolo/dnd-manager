@@ -1,5 +1,5 @@
 /**
- * Client centralizzato per Hugging Face Inference API.
+ * Client Hugging Face via **router OpenAI-compatible** (Inference Providers).
  * Usare da Server Actions / Route Handlers (mai esporre la API key al client).
  *
  * Variabili (in `generateAiText` si usano **solo** queste due):
@@ -11,11 +11,11 @@
  * Su Vercel: Settings → Environment Variables → nome esatto, ambienti (Production/Preview)
  * selezionati, poi **Redeploy** del progetto.
  *
- * Endpoint: `api-inference.huggingface.co` è deprecato; si usa il router Inference Providers:
- * `https://router.huggingface.co/hf-inference/models/...` (stesso body `inputs`, stessi header Bearer).
+ * Endpoint: `POST https://router.huggingface.co/v1/chat/completions` con body tipo OpenAI
+ * (`model`, `messages`, `max_tokens`, `temperature`).
  */
 
-const HF_INFERENCE_BASE = "https://router.huggingface.co/hf-inference/models";
+const HF_CHAT_COMPLETIONS_URL = "https://router.huggingface.co/v1/chat/completions";
 
 /** Modelli di default (testo / immagine). Sostituibili passando un `modelId` esplicito. */
 export const MODELS = {
@@ -49,96 +49,51 @@ function normalizeModelId(modelId: string): string {
   return trimmed;
 }
 
-type HfErrorPayload = {
-  error?: string;
-  estimated_time?: number;
-  message?: string;
-};
-
-function parseErrorPayload(json: unknown): HfErrorPayload | null {
-  if (!json || typeof json !== "object") return null;
-  const o = json as Record<string, unknown>;
-  const error =
-    typeof o.error === "string"
-      ? o.error
-      : typeof o.message === "string"
-        ? o.message
-        : undefined;
-  const estimated_time =
-    typeof o.estimated_time === "number" ? o.estimated_time : undefined;
-  if (error === undefined && estimated_time === undefined) return null;
-  return { error, estimated_time, message: typeof o.message === "string" ? o.message : undefined };
+function extractChatCompletionContent(data: unknown): string {
+  if (!data || typeof data !== "object") {
+    throw new HuggingFaceInferenceError(
+      "Risposta del modello in formato non riconosciuto (chat completions).",
+      { status: 502 }
+    );
+  }
+  const o = data as Record<string, unknown>;
+  const choices = o.choices;
+  if (!Array.isArray(choices) || choices.length === 0) {
+    throw new HuggingFaceInferenceError(
+      "Risposta senza choices dal router Hugging Face.",
+      { status: 502 }
+    );
+  }
+  const first = choices[0];
+  if (!first || typeof first !== "object") {
+    throw new HuggingFaceInferenceError("choices[0] non valido.", { status: 502 });
+  }
+  const message = (first as { message?: unknown }).message;
+  if (!message || typeof message !== "object") {
+    throw new HuggingFaceInferenceError("Risposta senza message.", { status: 502 });
+  }
+  const content = (message as { content?: unknown }).content;
+  /** Formato OpenAI-compatible: `choices[0].message.content` */
+  if (typeof content !== "string") {
+    throw new HuggingFaceInferenceError("message.content non è una stringa.", { status: 502 });
+  }
+  return content.trim();
 }
 
 /**
- * Estrae il testo dalla risposta dell'Inference API (varie forme a seconda del task/modello).
- */
-function extractGeneratedText(raw: unknown, originalPrompt: string): string {
-  if (raw == null) return "";
-
-  if (typeof raw === "string") {
-    return raw.trim();
-  }
-
-  if (Array.isArray(raw)) {
-    const first = raw[0];
-    if (first && typeof first === "object" && "generated_text" in first) {
-      const t = (first as { generated_text?: unknown }).generated_text;
-      if (typeof t === "string") return stripPromptPrefix(t, originalPrompt);
-    }
-    if (typeof first === "string") return first.trim();
-    if (first && typeof first === "object" && "summary_text" in first) {
-      const t = (first as { summary_text?: unknown }).summary_text;
-      if (typeof t === "string") return t.trim();
-    }
-  }
-
-  if (typeof raw === "object") {
-    const o = raw as Record<string, unknown>;
-    if (typeof o.generated_text === "string") return stripPromptPrefix(o.generated_text, originalPrompt);
-    if (typeof o.summary_text === "string") return o.summary_text.trim();
-    if (Array.isArray(o.choices) && o.choices[0] && typeof o.choices[0] === "object") {
-      const c = o.choices[0] as { text?: unknown };
-      if (typeof c.text === "string") return stripPromptPrefix(c.text, originalPrompt);
-    }
-  }
-
-  throw new HuggingFaceInferenceError(
-    "Risposta del modello in formato non riconosciuto. Controlla che il modelId sia adatto al task testuale.",
-    { status: 502 }
-  );
-}
-
-function stripPromptPrefix(text: string, prompt: string): string {
-  let out = text.trim();
-  const p = prompt.trim();
-  if (p && out.startsWith(p)) {
-    out = out.slice(p.length).trim();
-  }
-  return out;
-}
-
-function buildLoadingMessage(estimated?: number): string {
-  if (estimated != null && estimated > 0) {
-    return `Il modello Hugging Face è in avvio a freddo (cold start). Riprova tra circa ${Math.ceil(estimated)} secondi.`;
-  }
-  return "Il modello Hugging Face non è ancora pronto (cold start). Attendi qualche secondo e riprova.";
-}
-
-/**
- * Genera testo con un modello Hugging Face (Inference API).
+ * Genera testo con un modello Hugging Face (router `/v1/chat/completions`).
  *
- * @param prompt Testo in ingresso (campo `inputs` dell'API).
- * @param modelId ID del modello (default: {@link MODELS.text}).
- * @returns Testo generato normalizzato (trim; prefisso uguale al prompt rimosso se presente).
+ * @param prompt Testo utente (messaggio `role: user`).
+ * @param modelId ID modello nel body (default: {@link MODELS.text}).
+ * @returns Testo generato (assistant `content`), trim.
  * @throws Error se manca la chiave API a runtime.
- * @throws HuggingFaceInferenceError in caso di errori HTTP, modello in caricamento, rate limit, ecc.
+ * @throws Error se la risposta HTTP non è OK (corpo in chiaro in messaggio, log in console).
+ * @throws HuggingFaceInferenceError per errori di rete, JSON non valido o formato risposta inatteso.
  */
 export async function generateAiText(
   prompt: string,
   modelId: string = MODELS.text
 ): Promise<string> {
-  // Leggiamo la chiave SOLO a runtime dentro la funzione
   const rawKey = process.env.HUGGINGFACE_API_KEY || process.env.HF_TOKEN;
   const apiKey = typeof rawKey === "string" ? rawKey.trim() : "";
 
@@ -153,20 +108,24 @@ export async function generateAiText(
     throw new HuggingFaceInferenceError("Il prompt non può essere vuoto.", { status: 400 });
   }
 
-  const url = `${HF_INFERENCE_BASE}/${encodeURIComponent(model)}`;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 120_000);
 
   let response: Response;
   try {
-    response = await fetch(url, {
+    response = await fetch(HF_CHAT_COMPLETIONS_URL, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: JSON.stringify({ inputs: trimmedPrompt }),
+      body: JSON.stringify({
+        model,
+        messages: [{ role: "user", content: trimmedPrompt }],
+        max_tokens: 1500,
+        temperature: 0.7,
+      }),
       signal: controller.signal,
     });
   } catch (e) {
@@ -184,61 +143,25 @@ export async function generateAiText(
     clearTimeout(timeoutId);
   }
 
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("API Error:", errorText);
+    throw new Error(`Errore API Hugging Face: ${response.status} - ${errorText}`);
+  }
+
   let data: unknown;
   try {
     data = await response.json();
   } catch {
-    throw new HuggingFaceInferenceError(
-      response.ok
-        ? "Risposta non JSON da Hugging Face."
-        : `Errore Hugging Face (HTTP ${response.status}).`,
-      { status: response.status || 502 }
-    );
+    throw new HuggingFaceInferenceError("Risposta non JSON da Hugging Face.", { status: 502 });
   }
 
-  const errPayload = parseErrorPayload(data);
-
-  if (response.status === 503 || errPayload?.error?.toLowerCase().includes("loading")) {
-    throw new HuggingFaceInferenceError(buildLoadingMessage(errPayload?.estimated_time), {
-      status: 503,
-      estimatedTime: errPayload?.estimated_time,
-    });
-  }
-
-  if (!response.ok) {
-    const detail =
-      errPayload?.error ||
-      errPayload?.message ||
-      (typeof data === "object" && data !== null && "detail" in data
-        ? String((data as { detail?: unknown }).detail)
-        : null);
-    const msg =
-      response.status === 429
-        ? "Rate limit Hugging Face superato. Riprova tra poco."
-        : response.status === 401 || response.status === 403
-          ? "Token Hugging Face non valido o permessi insufficienti (verifica HUGGINGFACE_API_KEY)."
-          : detail
-            ? `Hugging Face: ${detail}`
-            : `Richiesta fallita (HTTP ${response.status}).`;
-    throw new HuggingFaceInferenceError(msg, {
-      status: response.status,
-      estimatedTime: errPayload?.estimated_time,
-    });
-  }
-
-  if (errPayload?.error) {
-    throw new HuggingFaceInferenceError(`Hugging Face: ${errPayload.error}`, {
-      status: response.status || 502,
-      estimatedTime: errPayload?.estimated_time,
-    });
-  }
-
-  const text = extractGeneratedText(data, trimmedPrompt);
-  if (!text) {
+  const generatedText = extractChatCompletionContent(data);
+  if (!generatedText) {
     throw new HuggingFaceInferenceError("Il modello ha restituito un output vuoto.", {
       status: 502,
     });
   }
 
-  return text;
+  return generatedText;
 }
