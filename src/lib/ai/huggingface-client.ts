@@ -13,14 +13,24 @@
 
 const HF_INFERENCE_BASE = "https://api-inference.huggingface.co/models";
 
-function getHuggingFaceApiKeyFromEnv(): string | undefined {
-  const candidates = [
-    process.env.HUGGINGFACE_API_KEY,
-    process.env.HF_TOKEN,
-    process.env.HUGGINGFACE_TOKEN,
+/**
+ * Nomi env costruiti a runtime (no stringa letterale `process.env.HUGGINGFACE_*`).
+ * Il bundler di Next può sostituire in fase di build `process.env.NOME` con il valore
+ * disponibile in quel momento: se la var è assente al build, resta `undefined` in
+ * produzione. Chiavi costruite dinamicamente vengono lette sul worker Vercel a runtime.
+ */
+function hfEnvKeyNames(): string[] {
+  return [
+    ["HUGGINGFACE", "_API_KEY"].join(""),
+    ["HF", "_TOKEN"].join(""),
+    ["HUGGINGFACE", "_TOKEN"].join(""),
   ];
-  for (const raw of candidates) {
-    const t = raw?.trim();
+}
+
+function getHuggingFaceApiKeyFromEnv(): string | undefined {
+  const env = process.env as Record<string, string | undefined>;
+  for (const name of hfEnvKeyNames()) {
+    const t = env[name]?.trim();
     if (t) return t;
   }
   return undefined;
@@ -28,16 +38,13 @@ function getHuggingFaceApiKeyFromEnv(): string | undefined {
 
 /** Solo in caso di chiave mancante: log in runtime server (mai eseguito dal bundle client se import corretto). */
 function logMissingHuggingFaceKeyDebug(): void {
-  const h = process.env.HUGGINGFACE_API_KEY;
-  const hf = process.env.HF_TOKEN;
-  const ht = process.env.HUGGINGFACE_TOKEN;
+  const env = process.env as Record<string, string | undefined>;
   console.log("--- DEBUG API KEY (Hugging Face) ---");
-  console.log("HUGGINGFACE_API_KEY esiste?", !!h);
-  console.log("HUGGINGFACE_API_KEY lunghezza:", h?.length ?? 0);
-  console.log("HF_TOKEN esiste?", !!hf);
-  console.log("HF_TOKEN lunghezza:", hf?.length ?? 0);
-  console.log("HUGGINGFACE_TOKEN esiste?", !!ht);
-  console.log("HUGGINGFACE_TOKEN lunghezza:", ht?.length ?? 0);
+  for (const name of hfEnvKeyNames()) {
+    const v = env[name];
+    console.log(`${name} esiste?`, !!v);
+    console.log(`${name} lunghezza:`, v?.length ?? 0);
+  }
   console.log("NODE_ENV:", process.env.NODE_ENV);
   console.log("VERCEL:", process.env.VERCEL);
   console.log("VERCEL_ENV:", process.env.VERCEL_ENV);
