@@ -10,9 +10,12 @@
  *
  * Su Vercel: Settings → Environment Variables → nome esatto, ambienti (Production/Preview)
  * selezionati, poi **Redeploy** del progetto.
+ *
+ * Endpoint: `api-inference.huggingface.co` è deprecato; si usa il router Inference Providers:
+ * `https://router.huggingface.co/hf-inference/models/...` (stesso body `inputs`, stessi header Bearer).
  */
 
-const HF_INFERENCE_BASE = "https://api-inference.huggingface.co/models";
+const HF_INFERENCE_BASE = "https://router.huggingface.co/hf-inference/models";
 
 /** Modelli di default (testo / immagine). Sostituibili passando un `modelId` esplicito. */
 export const MODELS = {
