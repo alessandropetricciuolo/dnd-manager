@@ -2,10 +2,29 @@
  * Client centralizzato per Hugging Face Inference API.
  * Usare da Server Actions / Route Handlers (mai esporre la API key al client).
  *
- * Variabile richiesta: `process.env.HUGGINGFACE_API_KEY`
+ * Variabile (una sola basta, in ordine di priorità):
+ * - HUGGINGFACE_API_KEY (consigliata in questo progetto)
+ * - HF_TOKEN (come nella CLI Hugging Face)
+ * - HUGGINGFACE_TOKEN
+ *
+ * Su Vercel: Settings → Environment Variables → nome esatto, ambienti (Production/Preview)
+ * selezionati, poi **Redeploy** del progetto.
  */
 
 const HF_INFERENCE_BASE = "https://api-inference.huggingface.co/models";
+
+function getHuggingFaceApiKeyFromEnv(): string | undefined {
+  const candidates = [
+    process.env.HUGGINGFACE_API_KEY,
+    process.env.HF_TOKEN,
+    process.env.HUGGINGFACE_TOKEN,
+  ];
+  for (const raw of candidates) {
+    const t = raw?.trim();
+    if (t) return t;
+  }
+  return undefined;
+}
 
 /** Modelli di default (testo / immagine). Sostituibili passando un `modelId` esplicito. */
 export const MODELS = {
@@ -32,10 +51,16 @@ export class HuggingFaceInferenceError extends Error {
 }
 
 function requireApiKey(): string {
-  const key = process.env.HUGGINGFACE_API_KEY?.trim();
+  const key = getHuggingFaceApiKeyFromEnv();
   if (!key) {
     throw new HuggingFaceInferenceError(
-      "Configurazione mancante: imposta HUGGINGFACE_API_KEY in .env.local (token Hugging Face con scope inference).",
+      [
+        "Nessun token Hugging Face trovato.",
+        "Locale: aggiungi HUGGINGFACE_API_KEY (o HF_TOKEN) in .env.local.",
+        "Vercel: Project Settings → Environment Variables → chiave HUGGINGFACE_API_KEY o HF_TOKEN,",
+        "seleziona Production (e Preview se serve), salva e fai Redeploy.",
+        "Crea il token su huggingface.co/settings/tokens (permessi sufficienti per Inference API).",
+      ].join(" "),
       { status: 401 }
     );
   }

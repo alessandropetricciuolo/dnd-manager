@@ -21,7 +21,7 @@ npm install
 1. Crea un progetto su [Supabase](https://supabase.com)
 2. Copia `.env.example` in `.env.local` (se presente) oppure crea `.env.local`
 3. Inserisci `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-4. **AI (opzionale):** per le Server Action che usano Hugging Face Inference, imposta `HUGGINGFACE_API_KEY` (token con permesso di **Inference** da [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)). Per l’Agente Architetto applica anche la migrazione `supabase/migrations/20260301130000_campaigns_ai_context.sql` (colonna `campaigns.ai_context`).
+4. **AI (opzionale):** per le Server Action che usano Hugging Face Inference usa **`HUGGINGFACE_API_KEY`** oppure **`HF_TOKEN`** (stesso token; vedi [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)). **Su Vercel:** stesso nome in *Settings → Environment Variables*, spunta *Production* (e *Preview* se ti serve), poi **Redeploy** — senza redeploy le variabili nuove non arrivano al runtime. Applica anche la migrazione `supabase/migrations/20260301130000_campaigns_ai_context.sql` (colonna `campaigns.ai_context`).
 4. Esegui le migrazioni in **SQL Editor** di Supabase:
    - Copia il contenuto di `supabase/migrations/20250301000000_initial_schema.sql`
    - Incolla ed esegui
