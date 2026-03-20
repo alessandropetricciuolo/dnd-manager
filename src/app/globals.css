@@ -57,20 +57,19 @@
   }
 }
 
-/* Iubenda Cookie Solution: pulsante preferenze (widget compatto) in basso a sinistra.
-   La config remota può forzare bottom-right con !important: qui si ribalta esplicitamente. */
-#iubenda-cs-floating-button {
+/* Iubenda Cookie Solution: pulsante preferenze floating in basso a sinistra.
+   La dashboard remota può forzare bottom-right: override con !important.
+   Evitiamo selettori troppo larghi per non spostare il banner principale. */
+#iubenda-cs-floating-button,
+#iub-cs-floating-button,
+#iubenda-cs-preference-button,
+button#iubenda-cs-preference-button,
+button[class*="iubenda-cs-preference-button"] {
   left: 1rem !important;
   right: auto !important;
   bottom: 1rem !important;
   top: auto !important;
-}
-
-#iub-cs-floating-button {
-  left: 1rem !important;
-  right: auto !important;
-  bottom: 1rem !important;
-  top: auto !important;
+  transform: none !important;
 }
 
 /* Stampa Guida del Giocatore: solo contenuto, tema chiaro (ink-saver) */

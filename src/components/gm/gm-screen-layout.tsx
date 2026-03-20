@@ -172,8 +172,9 @@ export function GmScreenLayout({
           </div>
         </div>
 
-        {/* FAB strumenti GM: chat segreta + galleria immagini */}
-        <div className="absolute bottom-6 right-6 z-10 flex flex-col items-end gap-3">
+        {/* FAB strumenti GM: chat segreta + galleria — in basso a sinistra su main per evitare
+            sovrapposizione con il widget cookie Iubenda (tipicamente in basso a destra sul viewport). */}
+        <div className="pointer-events-auto absolute bottom-6 left-6 z-20 flex flex-col items-start gap-3 max-md:bottom-[max(1.5rem,env(safe-area-inset-bottom))] max-md:left-[max(1.5rem,env(safe-area-inset-left))]">
           <div className="flex gap-3">
             <Button
               type="button"
