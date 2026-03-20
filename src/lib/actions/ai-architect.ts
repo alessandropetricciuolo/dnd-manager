@@ -1,4 +1,4 @@
-"use server";
+'use server';
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
@@ -99,7 +99,9 @@ export async function generateCampaignContextAction(
       const msg =
         e instanceof HuggingFaceInferenceError
           ? e.message
-          : "Errore durante la chiamata al modello AI.";
+          : e instanceof Error
+            ? e.message
+            : "Errore durante la chiamata al modello AI.";
       return { success: false, message: msg };
     }
 

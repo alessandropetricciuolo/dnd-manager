@@ -2,54 +2,17 @@
  * Client centralizzato per Hugging Face Inference API.
  * Usare da Server Actions / Route Handlers (mai esporre la API key al client).
  *
- * Variabile (una sola basta, in ordine di priorità):
- * - HUGGINGFACE_API_KEY (consigliata in questo progetto)
+ * Variabili (in `generateAiText` si usano **solo** queste due):
+ * - HUGGINGFACE_API_KEY (consigliata)
  * - HF_TOKEN (come nella CLI Hugging Face)
- * - HUGGINGFACE_TOKEN
+ *
+ * La chiave va letta **solo** dentro `generateAiText` (runtime server), mai a top-level del modulo.
  *
  * Su Vercel: Settings → Environment Variables → nome esatto, ambienti (Production/Preview)
  * selezionati, poi **Redeploy** del progetto.
  */
 
 const HF_INFERENCE_BASE = "https://api-inference.huggingface.co/models";
-
-/**
- * Nomi env costruiti a runtime (no stringa letterale `process.env.HUGGINGFACE_*`).
- * Il bundler di Next può sostituire in fase di build `process.env.NOME` con il valore
- * disponibile in quel momento: se la var è assente al build, resta `undefined` in
- * produzione. Chiavi costruite dinamicamente vengono lette sul worker Vercel a runtime.
- */
-function hfEnvKeyNames(): string[] {
-  return [
-    ["HUGGINGFACE", "_API_KEY"].join(""),
-    ["HF", "_TOKEN"].join(""),
-    ["HUGGINGFACE", "_TOKEN"].join(""),
-  ];
-}
-
-function getHuggingFaceApiKeyFromEnv(): string | undefined {
-  const env = process.env as Record<string, string | undefined>;
-  for (const name of hfEnvKeyNames()) {
-    const t = env[name]?.trim();
-    if (t) return t;
-  }
-  return undefined;
-}
-
-/** Solo in caso di chiave mancante: log in runtime server (mai eseguito dal bundle client se import corretto). */
-function logMissingHuggingFaceKeyDebug(): void {
-  const env = process.env as Record<string, string | undefined>;
-  console.log("--- DEBUG API KEY (Hugging Face) ---");
-  for (const name of hfEnvKeyNames()) {
-    const v = env[name];
-    console.log(`${name} esiste?`, !!v);
-    console.log(`${name} lunghezza:`, v?.length ?? 0);
-  }
-  console.log("NODE_ENV:", process.env.NODE_ENV);
-  console.log("VERCEL:", process.env.VERCEL);
-  console.log("VERCEL_ENV:", process.env.VERCEL_ENV);
-  console.log("---------------------");
-}
 
 /** Modelli di default (testo / immagine). Sostituibili passando un `modelId` esplicito. */
 export const MODELS = {
@@ -165,27 +128,19 @@ function buildLoadingMessage(estimated?: number): string {
  * @param prompt Testo in ingresso (campo `inputs` dell'API).
  * @param modelId ID del modello (default: {@link MODELS.text}).
  * @returns Testo generato normalizzato (trim; prefisso uguale al prompt rimosso se presente).
+ * @throws Error se manca la chiave API a runtime.
  * @throws HuggingFaceInferenceError in caso di errori HTTP, modello in caricamento, rate limit, ecc.
  */
 export async function generateAiText(
   prompt: string,
   modelId: string = MODELS.text
 ): Promise<string> {
-  // Risoluzione chiave solo qui (runtime server quando la Server Action invoca questa funzione).
-  // Non leggere process.env a livello di modulo: evita valutazione a build time / contesto errato.
-  const apiKey = getHuggingFaceApiKeyFromEnv();
+  // Leggiamo la chiave SOLO a runtime dentro la funzione
+  const rawKey = process.env.HUGGINGFACE_API_KEY || process.env.HF_TOKEN;
+  const apiKey = typeof rawKey === "string" ? rawKey.trim() : "";
+
   if (!apiKey) {
-    logMissingHuggingFaceKeyDebug();
-    throw new HuggingFaceInferenceError(
-      [
-        "Nessun token Hugging Face trovato.",
-        "Locale: aggiungi HUGGINGFACE_API_KEY (o HF_TOKEN) in .env.local.",
-        "Vercel: Project Settings → Environment Variables → chiave HUGGINGFACE_API_KEY o HF_TOKEN,",
-        "seleziona Production (e Preview se serve), salva e fai Redeploy.",
-        "Crea il token su huggingface.co/settings/tokens (permessi sufficienti per Inference API).",
-      ].join(" "),
-      { status: 401 }
-    );
+    throw new Error("Errore Critico Server: HUGGINGFACE_API_KEY non trovata a runtime.");
   }
 
   const model = normalizeModelId(modelId);

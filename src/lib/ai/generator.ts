@@ -117,7 +117,9 @@ export async function generateContextualText(
       const msg =
         e instanceof HuggingFaceInferenceError
           ? e.message
-          : "Errore durante la chiamata al modello AI.";
+          : e instanceof Error
+            ? e.message
+            : "Errore durante la chiamata al modello AI.";
       return { ok: false, error: msg };
     }
 
