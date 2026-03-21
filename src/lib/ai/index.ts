@@ -4,6 +4,7 @@ export {
   HuggingFaceInferenceError,
   generateAiText,
   generateAiImage,
+  generateEmbedding,
 } from "./huggingface-client";
 
 export { ARCHITECT_SYSTEM_PROMPT } from "./prompts";
