@@ -60,22 +60,40 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function resolveManualAbsolutePath(fileName: string): string | null {
+  const cwd = process.cwd();
+  const candidates = [
+    path.join(cwd, "public", "manuals", fileName),
+    path.join(cwd, "dnd-manager", "public", "manuals", fileName),
+  ];
+  for (const p of candidates) {
+    if (fs.existsSync(p)) return p;
+  }
+  return null;
+}
+
 export async function ingestTxtManualAction(
   fileName: string,
   metadata: any
 ): Promise<IngestResult> {
+  console.log("Inizio elaborazione file:", fileName);
   const normalized = fileName.trim();
   if (!normalized.toLowerCase().endsWith(".txt")) {
     return { success: false, message: "Solo file .txt supportati." };
   }
 
   try {
-    const absPath = path.join(process.cwd(), "public", "manuals", normalized);
-    if (!fs.existsSync(absPath)) {
-      return { success: false, message: `File non trovato: public/manuals/${normalized}` };
+    const filePath = resolveManualAbsolutePath(normalized);
+    console.log("Cerco il file al percorso assoluto:", filePath ?? "non trovato");
+    if (!filePath) {
+      return {
+        success: false,
+        message: `File non trovato: public/manuals/${normalized} (né in ./dnd-manager/public/manuals/${normalized})`,
+      };
     }
-    const raw = fs.readFileSync(absPath, "utf8");
+    const raw = fs.readFileSync(filePath, "utf-8");
     const chunks = chunkTextByParagraphs(raw);
+    console.log("Chunk creati:", chunks.length);
     if (!chunks.length) {
       return { success: false, message: "Il file è vuoto o non contiene chunk validi." };
     }
@@ -108,11 +126,11 @@ export async function ingestTxtManualAction(
     }
 
     return { success: true, inserted, chunks: chunks.length };
-  } catch (err) {
-    console.error("[ingestTxtManualAction]", err);
+  } catch (error) {
+    console.error("Errore ingestion:", error);
     return {
       success: false,
-      message: err instanceof Error ? err.message : "Errore imprevisto durante ingestion.",
+      message: error instanceof Error ? error.message : "Errore imprevisto durante ingestion.",
     };
   }
 }
