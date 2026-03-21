@@ -19,6 +19,7 @@
  */
 
 const HF_CHAT_COMPLETIONS_URL = "https://router.huggingface.co/v1/chat/completions";
+const HF_OPENAI_EMBEDDINGS_URL = "https://router.huggingface.co/v1/embeddings";
 const HF_IMAGE_INFERENCE_BASE = "https://router.huggingface.co/hf-inference/models";
 const HF_FEATURE_EXTRACTION_BASE = "https://router.huggingface.co/hf-inference/pipeline/feature-extraction";
 const HF_EMBEDDING_MODEL_BASE = "https://router.huggingface.co/hf-inference/models";
@@ -284,16 +285,39 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     "Content-Type": "application/json",
     Accept: "application/json",
   };
-  const body = JSON.stringify({ inputs: input });
+  const openAiBody = JSON.stringify({
+    model: MODELS.embedding,
+    input,
+  });
 
+  // 1) Endpoint consigliato sul router: OpenAI-compatible embeddings
+  let response = await fetch(HF_OPENAI_EMBEDDINGS_URL, {
+    method: "POST",
+    headers,
+    body: openAiBody,
+  });
+
+  if (response.ok) {
+    const data = (await response.json()) as {
+      data?: Array<{ embedding?: unknown }>;
+    };
+    const vec = data?.data?.[0]?.embedding;
+    if (Array.isArray(vec) && vec.every((n) => typeof n === "number" && Number.isFinite(n))) {
+      return vec as number[];
+    }
+    throw new HuggingFaceInferenceError("Embedding OpenAI-compatible non valido.", { status: 502 });
+  }
+
+  // 2) Fallback: hf-inference pipeline/feature-extraction
+  const body = JSON.stringify({ inputs: input });
   const primaryUrl = `${HF_FEATURE_EXTRACTION_BASE}/${encodeURIComponent(MODELS.embedding)}`;
-  let response = await fetch(primaryUrl, {
+  response = await fetch(primaryUrl, {
     method: "POST",
     headers,
     body,
   });
 
-  // Fallback: alcuni modelli/tenant possono rispondere solo via /models/{id} sul router.
+  // 3) Fallback secondario: hf-inference models/{id}
   if (response.status === 404 || response.status === 405) {
     const fallbackUrl = `${HF_EMBEDDING_MODEL_BASE}/${encodeURIComponent(MODELS.embedding)}`;
     response = await fetch(fallbackUrl, {
