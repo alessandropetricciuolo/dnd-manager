@@ -20,7 +20,8 @@
 
 const HF_CHAT_COMPLETIONS_URL = "https://router.huggingface.co/v1/chat/completions";
 const HF_IMAGE_INFERENCE_BASE = "https://router.huggingface.co/hf-inference/models";
-const HF_FEATURE_EXTRACTION_BASE = "https://api-inference.huggingface.co/pipeline/feature-extraction";
+const HF_FEATURE_EXTRACTION_BASE = "https://router.huggingface.co/hf-inference/pipeline/feature-extraction";
+const HF_EMBEDDING_MODEL_BASE = "https://router.huggingface.co/hf-inference/models";
 
 /** Modelli di default (testo / immagine). Sostituibili passando un `modelId` esplicito. */
 export const MODELS = {
@@ -278,16 +279,29 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     throw new HuggingFaceInferenceError("Il testo per embedding non può essere vuoto.", { status: 400 });
   }
 
-  const url = `${HF_FEATURE_EXTRACTION_BASE}/${encodeURIComponent(MODELS.embedding)}`;
-  const response = await fetch(url, {
+  const headers = {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+  const body = JSON.stringify({ inputs: input });
+
+  const primaryUrl = `${HF_FEATURE_EXTRACTION_BASE}/${encodeURIComponent(MODELS.embedding)}`;
+  let response = await fetch(primaryUrl, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify({ inputs: input }),
+    headers,
+    body,
   });
+
+  // Fallback: alcuni modelli/tenant possono rispondere solo via /models/{id} sul router.
+  if (response.status === 404 || response.status === 405) {
+    const fallbackUrl = `${HF_EMBEDDING_MODEL_BASE}/${encodeURIComponent(MODELS.embedding)}`;
+    response = await fetch(fallbackUrl, {
+      method: "POST",
+      headers,
+      body,
+    });
+  }
 
   if (!response.ok) {
     const errorText = await response.text();
