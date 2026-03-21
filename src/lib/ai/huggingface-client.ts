@@ -19,16 +19,15 @@
  */
 
 const HF_CHAT_COMPLETIONS_URL = "https://router.huggingface.co/v1/chat/completions";
-const HF_OPENAI_EMBEDDINGS_URL = "https://router.huggingface.co/v1/embeddings";
 const HF_IMAGE_INFERENCE_BASE = "https://router.huggingface.co/hf-inference/models";
+const HF_FEATURE_EXTRACTION_BASE = "https://api-inference.huggingface.co/pipeline/feature-extraction";
 
 /** Modelli di default (testo / immagine). Sostituibili passando un `modelId` esplicito. */
 export const MODELS = {
   // fallback: 'mistralai/Mistral-Nemo-Instruct-2407'
   text: "Qwen/Qwen2.5-72B-Instruct",
   image: "black-forest-labs/FLUX.1-schnell",
-  // 384d embedding model (pgvector-friendly) su endpoint /v1/embeddings.
-  embedding: "BAAI/bge-small-en-v1.5",
+  embedding: "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
 } as const;
 
 export type HuggingFaceModelKey = keyof typeof MODELS;
@@ -264,9 +263,7 @@ export async function generateAiImage(
   return buf;
 }
 
-/**
- * Genera embedding vettoriale via router OpenAI-compatible /v1/embeddings.
- */
+/** Genera embedding vettoriale da feature-extraction HF. */
 export async function generateEmbedding(text: string): Promise<number[]> {
   const rawKey = process.env.HUGGINGFACE_API_KEY || process.env.HF_TOKEN;
   const apiKey = typeof rawKey === "string" ? rawKey.trim() : "";
@@ -284,36 +281,43 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     "Content-Type": "application/json",
     Accept: "application/json",
   };
-  const payloads = [
-    { model: MODELS.embedding, input },
-    { model: MODELS.embedding, input: [input] },
-  ];
+  const url = `${HF_FEATURE_EXTRACTION_BASE}/${encodeURIComponent(MODELS.embedding)}`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ inputs: input }),
+  });
 
-  let lastError = "";
-  for (const payload of payloads) {
-    const response = await fetch(HF_OPENAI_EMBEDDINGS_URL, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      lastError = await response.text();
-      continue;
-    }
-
-    const data = (await response.json()) as {
-      data?: Array<{ embedding?: unknown }>;
-    };
-    const vec = data?.data?.[0]?.embedding;
-    if (Array.isArray(vec) && vec.every((n) => typeof n === "number" && Number.isFinite(n))) {
-      return vec as number[];
-    }
-
-    throw new HuggingFaceInferenceError("Embedding OpenAI-compatible non valido.", { status: 502 });
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Errore API Hugging Face (embedding): ${response.status} - ${errorText}`);
   }
 
-  throw new Error(
-    `Errore API Hugging Face (embedding): modello=${MODELS.embedding} - ${lastError || "richiesta fallita"}`
-  );
+  const data = (await response.json()) as unknown;
+  if (!Array.isArray(data) || data.length === 0) {
+    throw new HuggingFaceInferenceError("Embedding non valido (array vuoto o formato inatteso).", {
+      status: 502,
+    });
+  }
+
+  if (!Array.isArray(data[0])) {
+    const vec = data as number[];
+    if (!vec.every((n) => typeof n === "number" && Number.isFinite(n))) {
+      throw new HuggingFaceInferenceError("Embedding contiene valori non numerici.", { status: 502 });
+    }
+    return vec;
+  }
+
+  // Se il provider risponde token-level [[...],[...]], media per ottenere un vettore unico.
+  const rows = data as number[][];
+  const dims = rows[0]?.length ?? 0;
+  if (!dims || !rows.every((r) => Array.isArray(r) && r.length === dims)) {
+    throw new HuggingFaceInferenceError("Embedding token-level con dimensioni incoerenti.", { status: 502 });
+  }
+  const out = new Array<number>(dims).fill(0);
+  for (const row of rows) {
+    for (let i = 0; i < dims; i++) out[i] += row[i] ?? 0;
+  }
+  for (let i = 0; i < dims; i++) out[i] /= rows.length;
+  return out;
 }
