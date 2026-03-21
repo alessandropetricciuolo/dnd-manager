@@ -21,7 +21,7 @@
 const HF_CHAT_COMPLETIONS_URL = "https://router.huggingface.co/v1/chat/completions";
 const HF_IMAGE_INFERENCE_BASE = "https://router.huggingface.co/hf-inference/models";
 const HF_OPENAI_EMBEDDINGS_URL = "https://router.huggingface.co/v1/embeddings";
-const HF_CHARACTER_JSON_URL = "https://router.huggingface.co/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.3";
+const HF_CHARACTER_JSON_BASE = "https://router.huggingface.co/hf-inference/models";
 
 /** Modelli di default (testo / immagine). Sostituibili passando un `modelId` esplicito. */
 export const MODELS = {
@@ -358,40 +358,87 @@ ${contextText}
 RICHIESTA: ${promptText}
 [/INST]`;
 
-  const response = await fetch(HF_CHARACTER_JSON_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify({
-      inputs: prompt,
-      parameters: {
-        max_new_tokens: 2000,
-        return_full_text: false,
-      },
-    }),
-  });
+  const headers = {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Errore API Hugging Face (character-json): ${response.status} - ${errorText}`);
+  const candidateModels = [
+    "mistralai/Mistral-7B-Instruct-v0.3:hf-inference",
+    "mistralai/Mistral-7B-Instruct-v0.3",
+    "mistralai/Mixtral-8x7B-Instruct-v0.1:hf-inference",
+    "mistralai/Mixtral-8x7B-Instruct-v0.1",
+  ];
+
+  let generatedText = "";
+  let lastErr = "";
+
+  for (const model of candidateModels) {
+    const url = `${HF_CHARACTER_JSON_BASE}/${encodeURIComponent(model)}`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        inputs: prompt,
+        parameters: {
+          max_new_tokens: 2000,
+          return_full_text: false,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      lastErr = `model=${model} status=${response.status} body=${errorText}`;
+      continue;
+    }
+
+    const payload = (await response.json()) as unknown;
+    generatedText =
+      Array.isArray(payload) &&
+      payload[0] &&
+      typeof payload[0] === "object" &&
+      typeof (payload[0] as { generated_text?: unknown }).generated_text === "string"
+        ? ((payload[0] as { generated_text: string }).generated_text ?? "")
+        : typeof payload === "string"
+          ? payload
+          : "";
+
+    if (generatedText.trim()) break;
   }
 
-  const payload = (await response.json()) as unknown;
-  const generatedText =
-    Array.isArray(payload) &&
-    payload[0] &&
-    typeof payload[0] === "object" &&
-    typeof (payload[0] as { generated_text?: unknown }).generated_text === "string"
-      ? ((payload[0] as { generated_text: string }).generated_text ?? "")
-      : typeof payload === "string"
-        ? payload
-        : "";
+  // Fallback finale: chat-completions router (gia' stabile nel progetto).
+  if (!generatedText.trim()) {
+    const response = await fetch(HF_CHAT_COMPLETIONS_URL, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        model: MODELS.text,
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 2000,
+        temperature: 0.2,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Errore API Hugging Face (character-json): ${errorText || lastErr || `${response.status} Not Found`}`
+      );
+    }
+
+    const chat = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+    };
+    generatedText = chat.choices?.[0]?.message?.content ?? "";
+  }
 
   if (!generatedText.trim()) {
-    throw new HuggingFaceInferenceError("Risposta vuota durante generazione JSON scheda.", { status: 502 });
+    throw new HuggingFaceInferenceError(
+      `Risposta vuota durante generazione JSON scheda. Ultimo errore: ${lastErr || "n/a"}`,
+      { status: 502 }
+    );
   }
 
   const noFences = generatedText.replace(/```json|```/gi, "").trim();
