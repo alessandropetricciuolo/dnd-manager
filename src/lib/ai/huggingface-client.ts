@@ -207,7 +207,7 @@ export async function generateAiImage(
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
-        Accept: "image/*",
+        Accept: "image/png",
       },
       body: JSON.stringify({ inputs }),
       signal: controller.signal,
