@@ -19,9 +19,8 @@
  */
 
 const HF_CHAT_COMPLETIONS_URL = "https://router.huggingface.co/v1/chat/completions";
-const HF_OPENAI_EMBEDDINGS_URL = "https://router.huggingface.co/v1/embeddings";
 const HF_IMAGE_INFERENCE_BASE = "https://router.huggingface.co/hf-inference/models";
-const HF_FEATURE_EXTRACTION_BASE = "https://router.huggingface.co/hf-inference/pipeline/feature-extraction";
+const HF_FEATURE_EXTRACTION_BASE = "https://api-inference.huggingface.co/pipeline/feature-extraction";
 
 /** Modelli di default (testo / immagine). Sostituibili passando un `modelId` esplicito. */
 export const MODELS = {
@@ -282,76 +281,53 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     "Content-Type": "application/json",
     Accept: "application/json",
   };
-  const embeddingModels = [
-    MODELS.embedding,
-    "intfloat/multilingual-e5-small", // fallback multilingua 384d
-  ];
+  const url = `${HF_FEATURE_EXTRACTION_BASE}/${encodeURIComponent(MODELS.embedding)}`;
+  const body = JSON.stringify({ inputs: input });
 
-  let lastErr = "";
-
-  // 1) Endpoint OpenAI-compatible embeddings (router principale)
-  for (const model of embeddingModels) {
-    const res = await fetch(HF_OPENAI_EMBEDDINGS_URL, {
+  async function fetchEmbeddingOnce(): Promise<Response> {
+    return fetch(url, {
       method: "POST",
       headers,
-      body: JSON.stringify({ model, input }),
+      body,
     });
-    if (!res.ok) {
-      lastErr = await res.text();
-      continue;
-    }
-    const json = (await res.json()) as {
-      data?: Array<{ embedding?: unknown }>;
-    };
-    const vec = json?.data?.[0]?.embedding;
-    if (Array.isArray(vec) && vec.every((n) => typeof n === "number" && Number.isFinite(n))) {
-      return vec as number[];
-    }
-    lastErr = "Risposta /v1/embeddings senza data[0].embedding valida.";
   }
 
-  // 2) Fallback feature-extraction su router hf-inference (stesso host router.huggingface.co)
-  for (const model of embeddingModels) {
-    const url = `${HF_FEATURE_EXTRACTION_BASE}/${encodeURIComponent(model)}`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ inputs: input }),
-    });
-    if (!res.ok) {
-      lastErr = await res.text();
-      continue;
-    }
-
-    const data = (await res.json()) as unknown;
-    if (!Array.isArray(data) || data.length === 0) {
-      lastErr = "Embedding non valido (array vuoto o formato inatteso).";
-      continue;
-    }
-
-    if (!Array.isArray(data[0])) {
-      const vec = data as number[];
-      if (!vec.every((n) => typeof n === "number" && Number.isFinite(n))) {
-        lastErr = "Embedding contiene valori non numerici.";
-        continue;
-      }
-      return vec;
-    }
-
-    // Se il provider risponde token-level [[...],[...]], media per ottenere un vettore unico.
-    const rows = data as number[][];
-    const dims = rows[0]?.length ?? 0;
-    if (!dims || !rows.every((r) => Array.isArray(r) && r.length === dims)) {
-      lastErr = "Embedding token-level con dimensioni incoerenti.";
-      continue;
-    }
-    const out = new Array<number>(dims).fill(0);
-    for (const row of rows) {
-      for (let i = 0; i < dims; i++) out[i] += row[i] ?? 0;
-    }
-    for (let i = 0; i < dims; i++) out[i] /= rows.length;
-    return out;
+  let response = await fetchEmbeddingOnce();
+  if (response.status === 503) {
+    await new Promise((r) => setTimeout(r, 20_000));
+    response = await fetchEmbeddingOnce();
   }
 
-  throw new Error(`Errore API Hugging Face (embedding): 404 - ${lastErr || "Not Found"}`);
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Errore API Hugging Face (embedding): ${response.status} - ${errorText}`);
+  }
+
+  const data = (await response.json()) as unknown;
+  if (!Array.isArray(data) || data.length === 0) {
+    throw new HuggingFaceInferenceError("Embedding non valido (array vuoto o formato inatteso).", {
+      status: 502,
+    });
+  }
+
+  if (!Array.isArray(data[0])) {
+    const vec = data as number[];
+    if (!vec.every((n) => typeof n === "number" && Number.isFinite(n))) {
+      throw new HuggingFaceInferenceError("Embedding contiene valori non numerici.", { status: 502 });
+    }
+    return vec;
+  }
+
+  // Se il provider risponde token-level [[...],[...]], media per ottenere un vettore unico.
+  const rows = data as number[][];
+  const dims = rows[0]?.length ?? 0;
+  if (!dims || !rows.every((r) => Array.isArray(r) && r.length === dims)) {
+    throw new HuggingFaceInferenceError("Embedding token-level con dimensioni incoerenti.", { status: 502 });
+  }
+  const out = new Array<number>(dims).fill(0);
+  for (const row of rows) {
+    for (let i = 0; i < dims; i++) out[i] += row[i] ?? 0;
+  }
+  for (let i = 0; i < dims; i++) out[i] /= rows.length;
+  return out;
 }
