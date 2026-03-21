@@ -282,8 +282,10 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     Accept: "application/json",
   };
   const candidateModels = [
+    `${MODELS.embedding}:hf-inference`,
     MODELS.embedding,
-    "intfloat/multilingual-e5-small", // fallback multilingua 384d
+    "intfloat/multilingual-e5-small:hf-inference", // fallback multilingua 384d
+    "intfloat/multilingual-e5-small",
   ];
 
   let lastErrorText = "";
@@ -304,7 +306,8 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     }
 
     if (!response.ok) {
-      lastErrorText = await response.text();
+      const body = await response.text();
+      lastErrorText = `model=${model} status=${response.status} body=${body}`;
       continue;
     }
 
