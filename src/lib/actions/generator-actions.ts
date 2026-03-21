@@ -1,11 +1,12 @@
 'use server';
 
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
-import { generateEmbedding } from "@/lib/ai/huggingface-client";
+import { generateCharacterSheetJSON, generateEmbedding } from "@/lib/ai/huggingface-client";
 
 export type GenerateSheetResult = {
   success: boolean;
   message: string;
+  sheetData?: Record<string, unknown>;
 };
 
 export async function generateSheetAction(
@@ -87,9 +88,31 @@ export async function generateSheetAction(
       : "Nessun chunk rilevante trovato.";
     const ellipsis = retrievedContext.length > 500 ? "…" : "";
 
+    const rawJsonString = await generateCharacterSheetJSON(
+      `Genera la scheda per ${characterName}, un ${race} ${dndClass} di livello ${level}.`,
+      retrievedContext
+    );
+
+    let sheetData: Record<string, unknown>;
+    try {
+      const parsed = JSON.parse(rawJsonString) as unknown;
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        throw new Error("Il modello non ha restituito un oggetto JSON valido.");
+      }
+      sheetData = parsed as Record<string, unknown>;
+    } catch (parseError) {
+      console.error("[generateSheetAction] parse JSON failed", parseError);
+      console.error("[generateSheetAction] raw JSON string", rawJsonString);
+      return {
+        success: false,
+        message: "JSON non valido restituito dal modello. Controlla i log server.",
+      };
+    }
+
     return {
       success: true,
       message: `Ricerca dati per ${race} ${dndClass} di livello ${level} avviata... (PG: ${characterName || "senza nome"}) [mode: ${retrievalMode}]\n\nContesto recuperato:\n${preview}${ellipsis}`,
+      sheetData,
     };
   } catch (error) {
     return {

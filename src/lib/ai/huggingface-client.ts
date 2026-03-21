@@ -21,6 +21,7 @@
 const HF_CHAT_COMPLETIONS_URL = "https://router.huggingface.co/v1/chat/completions";
 const HF_IMAGE_INFERENCE_BASE = "https://router.huggingface.co/hf-inference/models";
 const HF_OPENAI_EMBEDDINGS_URL = "https://router.huggingface.co/v1/embeddings";
+const HF_CHARACTER_JSON_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3";
 
 /** Modelli di default (testo / immagine). Sostituibili passando un `modelId` esplicito. */
 export const MODELS = {
@@ -334,4 +335,71 @@ export async function generateEmbedding(text: string): Promise<number[]> {
       lastErrorText || "nessun modello embeddings disponibile su router"
     }`
   );
+}
+
+/**
+ * Genera una scheda personaggio in formato JSON puro (nessun testo extra).
+ * Usa modello Instruct con prompt [INST] e pulizia output.
+ */
+export async function generateCharacterSheetJSON(
+  promptText: string,
+  contextText: string
+): Promise<string> {
+  const rawKey = process.env.HUGGINGFACE_API_KEY || process.env.HF_TOKEN;
+  const apiKey = typeof rawKey === "string" ? rawKey.trim() : "";
+  if (!apiKey) {
+    throw new Error("Errore Critico Server: HUGGINGFACE_API_KEY non trovata a runtime.");
+  }
+
+  const prompt = `[INST] Sei un parser dati. Genera SOLO un oggetto JSON valido. NESSUNA PAROLA PRIMA O DOPO IL JSON.
+CONTESTO DAI MANUALI:
+${contextText}
+
+RICHIESTA: ${promptText}
+[/INST]`;
+
+  const response = await fetch(HF_CHARACTER_JSON_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      inputs: prompt,
+      parameters: {
+        max_new_tokens: 2000,
+        return_full_text: false,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Errore API Hugging Face (character-json): ${response.status} - ${errorText}`);
+  }
+
+  const payload = (await response.json()) as unknown;
+  const generatedText =
+    Array.isArray(payload) &&
+    payload[0] &&
+    typeof payload[0] === "object" &&
+    typeof (payload[0] as { generated_text?: unknown }).generated_text === "string"
+      ? ((payload[0] as { generated_text: string }).generated_text ?? "")
+      : typeof payload === "string"
+        ? payload
+        : "";
+
+  if (!generatedText.trim()) {
+    throw new HuggingFaceInferenceError("Risposta vuota durante generazione JSON scheda.", { status: 502 });
+  }
+
+  const noFences = generatedText.replace(/```json|```/gi, "").trim();
+  const start = noFences.indexOf("{");
+  const end = noFences.lastIndexOf("}");
+  if (start === -1 || end <= start) {
+    throw new HuggingFaceInferenceError("Output LLM senza oggetto JSON riconoscibile.", { status: 502 });
+  }
+
+  return noFences.slice(start, end + 1).trim();
 }
