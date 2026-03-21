@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
-import { uploadToTelegram } from "@/lib/telegram-storage";
+import { uploadToTelegram as uploadFileToTelegram } from "@/lib/telegram-storage";
+import { uploadToTelegram as uploadUrlToTelegramCdn } from "@/lib/telegram-cdn";
 import { syncEntityPermissions, parseAllowedUserIds } from "@/lib/entity-permissions";
 import {
   generateContextualText,
@@ -15,11 +16,27 @@ export type { WikiGeneratorEntityType, WikiAiTextGeneration } from "@/lib/ai/gen
 const ENTITY_TYPES = ["npc", "location", "monster", "item", "lore"] as const;
 const VISIBILITY_VALUES = ["public", "secret", "selective"] as const;
 type Visibility = (typeof VISIBILITY_VALUES)[number];
+const CAMPAIGNS_BUCKET = "campaigns";
+const CAMPAIGNS_PUBLIC_SEGMENT = "/storage/v1/object/public/campaigns/";
 
 export type CreateEntityResult = {
   success: boolean;
   message: string;
 };
+
+function extractCampaignsPathFromPublicUrl(imageUrl: string): string | null {
+  const raw = imageUrl.trim();
+  if (!raw) return null;
+  try {
+    const url = new URL(raw);
+    const idx = url.pathname.indexOf(CAMPAIGNS_PUBLIC_SEGMENT);
+    if (idx < 0) return null;
+    const path = decodeURIComponent(url.pathname.slice(idx + CAMPAIGNS_PUBLIC_SEGMENT.length)).replace(/^\/+/, "");
+    return path || null;
+  } catch {
+    return null;
+  }
+}
 
 function parseAttributes(formData: FormData, type: string): Record<string, unknown> {
   const raw = formData.get("attributes") as string | null;
@@ -133,7 +150,7 @@ export async function createEntity(
         };
       }
       try {
-        const fileId = await uploadToTelegram(imageFile);
+        const fileId = await uploadFileToTelegram(imageFile);
         imageUrl = `/api/tg-image/${fileId}`;
       } catch (uploadErr) {
         console.error("[createEntity] Telegram upload", uploadErr);
@@ -141,6 +158,32 @@ export async function createEntity(
           success: false,
           message: uploadErr instanceof Error ? uploadErr.message : "Errore durante il caricamento dell'immagine.",
         };
+      }
+    }
+
+    // Se arriva un URL temporaneo dal bucket pubblico `campaigns`,
+    // trasferiscilo su Telegram (CDN definitivo) e poi elimina il file da Supabase.
+    if (!imageFile?.size && imageUrl) {
+      const campaignsPath = extractCampaignsPathFromPublicUrl(imageUrl);
+      if (campaignsPath) {
+        try {
+          const telegramFileId = await uploadUrlToTelegramCdn(imageUrl, title);
+          imageUrl = `/api/tg-image/${telegramFileId}`;
+
+          const { error: removeErr } = await supabase.storage.from(CAMPAIGNS_BUCKET).remove([campaignsPath]);
+          if (removeErr) {
+            console.error("[createEntity] campaigns temp cleanup", removeErr);
+          }
+        } catch (transferErr) {
+          console.error("[createEntity] transfer temp image -> Telegram", transferErr);
+          return {
+            success: false,
+            message:
+              transferErr instanceof Error
+                ? transferErr.message
+                : "Errore nel trasferimento immagine temporanea verso Telegram.",
+          };
+        }
       }
     }
 
@@ -292,7 +335,7 @@ export async function updateEntity(
         };
       }
       try {
-        const fileId = await uploadToTelegram(imageFile);
+        const fileId = await uploadFileToTelegram(imageFile);
         imageUrl = `/api/tg-image/${fileId}`;
       } catch (uploadErr) {
         console.error("[updateEntity] Telegram upload", uploadErr);
@@ -302,7 +345,28 @@ export async function updateEntity(
         };
       }
     } else if (imageUrlFromForm) {
-      imageUrl = imageUrlFromForm;
+      const campaignsPath = extractCampaignsPathFromPublicUrl(imageUrlFromForm);
+      if (campaignsPath) {
+        try {
+          const telegramFileId = await uploadUrlToTelegramCdn(imageUrlFromForm, title);
+          imageUrl = `/api/tg-image/${telegramFileId}`;
+          const { error: removeErr } = await supabase.storage.from(CAMPAIGNS_BUCKET).remove([campaignsPath]);
+          if (removeErr) {
+            console.error("[updateEntity] campaigns temp cleanup", removeErr);
+          }
+        } catch (transferErr) {
+          console.error("[updateEntity] transfer temp image -> Telegram", transferErr);
+          return {
+            success: false,
+            message:
+              transferErr instanceof Error
+                ? transferErr.message
+                : "Errore nel trasferimento immagine temporanea verso Telegram.",
+          };
+        }
+      } else {
+        imageUrl = imageUrlFromForm;
+      }
     }
 
     const updatePayload: Record<string, unknown> = {

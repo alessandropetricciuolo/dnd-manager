@@ -1,13 +1,12 @@
 "use server";
 
-import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import type { Json } from "@/types/database.types";
 import { parseCampaignAiContextFromDb } from "@/lib/campaign-ai-context";
 import { generateAiImage, HuggingFaceInferenceError } from "@/lib/ai/huggingface-client";
 
-const CAMPAIGN_ASSETS_BUCKET = "campaign-assets";
+const CAMPAIGNS_BUCKET = "campaigns";
 
 const STANDARD_VISUAL_NEGATIVES =
   "NO modern clothing, NO jeans, NO wristwatches, NO cars, NO text, NO watermarks, NO bad anatomy, NO deformed hands, NO cartoon style";
@@ -16,25 +15,9 @@ export type GenerateContextualPortraitResult =
   | { success: true; publicUrl: string }
   | { success: false; message: string };
 
-function bufferImageKind(buf: Buffer): { ext: string; contentType: string } {
-  if (buf.length >= 4 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) {
-    return { ext: "png", contentType: "image/png" };
-  }
-  if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) {
-    return { ext: "jpg", contentType: "image/jpeg" };
-  }
-  if (buf.length >= 6 && buf.toString("ascii", 0, 6) === "GIF87a") {
-    return { ext: "gif", contentType: "image/gif" };
-  }
-  if (buf.length >= 6 && buf.toString("ascii", 0, 6) === "GIF89a") {
-    return { ext: "gif", contentType: "image/gif" };
-  }
-  return { ext: "png", contentType: "image/png" };
-}
-
 /**
  * Ritratto / illustrazione coerente con i paletti visivi della campagna (Fase 3).
- * Carica su Storage pubblico `campaign-assets/campaigns/{id}/portraits/`.
+ * Carica su Storage pubblico `campaigns/{campaignId}/portraits/`.
  */
 export async function generateContextualPortraitAction(
   campaignId: string,
@@ -110,27 +93,21 @@ export async function generateContextualPortraitAction(
       return { success: false, message: msg };
     }
 
-    const { ext, contentType } = bufferImageKind(buffer);
-    const fileName = `${randomUUID()}.${ext}`;
-    const storagePath = `campaigns/${campaignId}/portraits/${fileName}`;
-
+    const fileName = `${campaignId}/portraits/${Date.now()}-${entityType}.png`;
     const { error: uploadError } = await supabase.storage
-      .from(CAMPAIGN_ASSETS_BUCKET)
-      .upload(storagePath, buffer, {
-        contentType,
-        upsert: false,
+      .from(CAMPAIGNS_BUCKET)
+      .upload(fileName, buffer, {
+        contentType: "image/png",
+        upsert: true,
       });
 
     if (uploadError) {
-      console.error("[generateContextualPortraitAction] upload", uploadError);
-      return {
-        success: false,
-        message: uploadError.message ?? "Errore nel caricamento su Storage. Verifica il bucket campaign-assets.",
-      };
+      throw new Error(`Errore Supabase Upload: ${uploadError.message}`);
     }
 
-    const { data: pub } = supabase.storage.from(CAMPAIGN_ASSETS_BUCKET).getPublicUrl(storagePath);
-    const publicUrl = pub?.publicUrl;
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from(CAMPAIGNS_BUCKET).getPublicUrl(fileName);
     if (!publicUrl) {
       return { success: false, message: "Impossibile ottenere l’URL pubblico dell’immagine." };
     }
@@ -139,6 +116,9 @@ export async function generateContextualPortraitAction(
     return { success: true, publicUrl };
   } catch (err) {
     console.error("[generateContextualPortraitAction]", err);
-    return { success: false, message: "Si è verificato un errore imprevisto. Riprova." };
+    return {
+      success: false,
+      message: err instanceof Error ? err.message : "Si è verificato un errore imprevisto. Riprova.",
+    };
   }
 }
