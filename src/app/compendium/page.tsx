@@ -13,11 +13,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  ALL_CAMPAIGNS_KEY,
   getCompendiumDataAction,
   type CompendiumCampaign,
   type CompendiumElement,
 } from "@/lib/actions/compendium-actions";
+import { ALL_CAMPAIGNS_KEY } from "@/lib/compendium/constants";
 
 type CompendiumType = CompendiumElement["type"];
 

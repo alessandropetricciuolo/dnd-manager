@@ -1,8 +1,7 @@
 'use server';
 
 import { createSupabaseServerClient } from "@/utils/supabase/server";
-
-export const ALL_CAMPAIGNS_KEY = "__all__";
+import { ALL_CAMPAIGNS_KEY } from "@/lib/compendium/constants";
 
 export type CompendiumCampaign = {
   id: string;
