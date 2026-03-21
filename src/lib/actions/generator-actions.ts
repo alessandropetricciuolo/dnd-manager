@@ -31,22 +31,52 @@ export async function generateSheetAction(
       args: Record<string, unknown>
     ) => Promise<{ data: unknown; error: { message: string } | null }>;
     const searchQuery = `Manuale D&D: Regole, privilegi e capacità della classe ${dndClass} fino al livello ${level}. Tratti razziali della razza ${race}.`;
-    const embedding = await generateEmbedding(searchQuery);
+    let list: Array<{ content?: string | null }> = [];
+    let retrievalMode = "semantic";
 
-    const { data: chunks, error } = await runRpc("match_manuals_knowledge", {
-      query_embedding: embedding,
-      match_threshold: 0.3,
-      match_count: 10,
-    });
+    try {
+      const embedding = await generateEmbedding(searchQuery);
+      const { data: chunks, error } = await runRpc("match_manuals_knowledge", {
+        query_embedding: embedding,
+        match_threshold: 0.3,
+        match_count: 10,
+      });
 
-    if (error) {
-      return {
-        success: false,
-        message: `Errore RPC match_manuals_knowledge: ${error.message}`,
-      };
+      if (error) {
+        return {
+          success: false,
+          message: `Errore RPC match_manuals_knowledge: ${error.message}`,
+        };
+      }
+      list = (chunks ?? []) as Array<{ content?: string | null }>;
+    } catch (embeddingErr) {
+      // Fallback runtime: se gli embeddings non sono disponibili sul provider,
+      // manteniamo operativo il generatore con retrieval testuale best-effort.
+      retrievalMode = "text-fallback";
+      console.error("[generateSheetAction] embedding retrieval failed, fallback text search", embeddingErr);
+
+      const keywords = [dndClass, race]
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .slice(0, 2);
+
+      const primary = keywords[0] ?? "";
+      const secondary = keywords[1] ?? "";
+
+      let query = supabase.from("manuals_knowledge").select("content").limit(10);
+      if (primary) query = query.ilike("content", `%${primary}%`);
+      if (secondary) query = query.ilike("content", `%${secondary}%`);
+      const { data: rows, error: textErr } = await query;
+
+      if (textErr) {
+        return {
+          success: false,
+          message: `Errore fallback testuale manuals_knowledge: ${textErr.message}`,
+        };
+      }
+      list = (rows ?? []) as Array<{ content?: string | null }>;
     }
 
-    const list = (chunks ?? []) as Array<{ content?: string | null }>;
     const retrievedContext = list
       .map((c) => (typeof c.content === "string" ? c.content.trim() : ""))
       .filter(Boolean)
@@ -59,7 +89,7 @@ export async function generateSheetAction(
 
     return {
       success: true,
-      message: `Ricerca dati per ${race} ${dndClass} di livello ${level} avviata... (PG: ${characterName || "senza nome"})\n\nContesto recuperato:\n${preview}${ellipsis}`,
+      message: `Ricerca dati per ${race} ${dndClass} di livello ${level} avviata... (PG: ${characterName || "senza nome"}) [mode: ${retrievalMode}]\n\nContesto recuperato:\n${preview}${ellipsis}`,
     };
   } catch (error) {
     return {
