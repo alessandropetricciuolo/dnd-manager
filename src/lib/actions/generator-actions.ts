@@ -25,10 +25,15 @@ export async function generateSheetAction(
 
   try {
     const supabase = createSupabaseAdminClient();
+    // La signature RPC non e' ancora tipizzata nel Database generated type.
+    const runRpc = supabase.rpc as unknown as (
+      fn: string,
+      args: Record<string, unknown>
+    ) => Promise<{ data: unknown; error: { message: string } | null }>;
     const searchQuery = `Manuale D&D: Regole, privilegi e capacità della classe ${dndClass} fino al livello ${level}. Tratti razziali della razza ${race}.`;
     const embedding = await generateEmbedding(searchQuery);
 
-    const { data: chunks, error } = await supabase.rpc("match_manuals_knowledge", {
+    const { data: chunks, error } = await runRpc("match_manuals_knowledge", {
       query_embedding: embedding,
       match_threshold: 0.3,
       match_count: 10,
