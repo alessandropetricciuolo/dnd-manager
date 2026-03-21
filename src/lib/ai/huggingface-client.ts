@@ -441,12 +441,66 @@ RICHIESTA: ${promptText}
     );
   }
 
-  const noFences = generatedText.replace(/```json|```/gi, "").trim();
-  const start = noFences.indexOf("{");
-  const end = noFences.lastIndexOf("}");
-  if (start === -1 || end <= start) {
+  const noFences = generatedText
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
+    .trim();
+
+  function extractFirstJsonObject(source: string): string | null {
+    const start = source.indexOf("{");
+    if (start < 0) return null;
+
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+    for (let i = start; i < source.length; i++) {
+      const ch = source[i];
+      if (inString) {
+        if (escaped) {
+          escaped = false;
+        } else if (ch === "\\") {
+          escaped = true;
+        } else if (ch === "\"") {
+          inString = false;
+        }
+        continue;
+      }
+
+      if (ch === "\"") {
+        inString = true;
+        continue;
+      }
+      if (ch === "{") depth++;
+      if (ch === "}") {
+        depth--;
+        if (depth === 0) {
+          return source.slice(start, i + 1).trim();
+        }
+      }
+    }
+    return null;
+  }
+
+  let jsonCandidate =
+    extractFirstJsonObject(noFences) ||
+    extractFirstJsonObject(noFences.replace(/\\"/g, "\"").replace(/\\n/g, "\n"));
+
+  // Ultimo fallback: se e' una stringa JSON pura, prova a decodificarla.
+  if (!jsonCandidate) {
+    try {
+      const unwrapped = JSON.parse(noFences) as unknown;
+      if (unwrapped && typeof unwrapped === "object" && !Array.isArray(unwrapped)) {
+        jsonCandidate = JSON.stringify(unwrapped);
+      }
+    } catch {
+      // no-op
+    }
+  }
+
+  if (!jsonCandidate) {
+    console.error("[generateCharacterSheetJSON] raw output", generatedText);
     throw new HuggingFaceInferenceError("Output LLM senza oggetto JSON riconoscibile.", { status: 502 });
   }
 
-  return noFences.slice(start, end + 1).trim();
+  return jsonCandidate;
 }
