@@ -27,7 +27,7 @@ import {
   generateWikiQuickAiAction,
   type WikiGeneratorEntityType,
 } from "@/app/campaigns/wiki-actions";
-import { generateContextualPortraitAction } from "@/lib/actions/ai-generator";
+import { generateFullAiWikiEntity } from "@/lib/actions/ai-wiki-chain";
 import { getWikiEntitiesForCampaign, getMapsForCampaign } from "@/app/campaigns/entity-graph-actions";
 import { getEmptyAttributes } from "@/types/wiki";
 import { CHALLENGE_RATING_OPTIONS } from "@/lib/dnd-constants";
@@ -99,8 +99,9 @@ export function CreateEntityDialog({
   const [magicEntityType, setMagicEntityType] = useState<WikiGeneratorEntityType>("npc");
   const [magicLoading, setMagicLoading] = useState(false);
   const [wikiImageUrlPreset, setWikiImageUrlPreset] = useState<string | null>(null);
-  const [portraitLoading, setPortraitLoading] = useState(false);
   const [magicPortraitPreview, setMagicPortraitPreview] = useState<string | null>(null);
+  /** Fasi UX durante la catena server (testo → immagine) per NPC/Luogo. */
+  const [magicChainPhase, setMagicChainPhase] = useState<"text" | "image">("text");
   type RelationRow = { targetType: "wiki" | "map"; targetId: string; label: string };
   const [relations, setRelations] = useState<RelationRow[]>([]);
   const [wikiOptions, setWikiOptions] = useState<{ id: string; name: string }[]>([]);
@@ -198,33 +199,23 @@ export function CreateEntityDialog({
 
   function handleMagicDialogOpenChange(next: boolean) {
     setMagicOpen(next);
-    if (!next) setMagicPortraitPreview(null);
+    if (!next) {
+      setMagicPortraitPreview(null);
+      setMagicChainPhase("text");
+    }
   }
 
-  async function handlePortraitGenerate() {
-    if (portraitLoading) return;
-    if (magicEntityType !== "npc" && magicEntityType !== "location") return;
-    const desc = magicPrompt.trim();
-    if (!desc) {
-      toast.error("Inserisci una descrizione nel campo sopra (stesso testo usato per la generazione testo).");
+  useEffect(() => {
+    if (!magicLoading) return;
+    const fullChain = magicEntityType === "npc" || magicEntityType === "location";
+    if (!fullChain) {
+      setMagicChainPhase("text");
       return;
     }
-    setPortraitLoading(true);
-    try {
-      const res = await generateContextualPortraitAction(campaignId, desc, magicEntityType);
-      if (!res.success) {
-        toast.error(res.message);
-        return;
-      }
-      setMagicPortraitPreview(res.publicUrl);
-      setWikiImageUrlPreset(res.publicUrl);
-      toast.success("Immagine generata. Controlla l’anteprima e il campo Immagine del form (tab URL).");
-    } catch {
-      toast.error("Errore durante la generazione del ritratto.");
-    } finally {
-      setPortraitLoading(false);
-    }
-  }
+    setMagicChainPhase("text");
+    const id = window.setTimeout(() => setMagicChainPhase("image"), 4500);
+    return () => window.clearTimeout(id);
+  }, [magicLoading, magicEntityType]);
 
   async function handleMagicGenerate() {
     if (magicLoading) return;
@@ -234,7 +225,37 @@ export function CreateEntityDialog({
       return;
     }
     setMagicLoading(true);
+    setMagicChainPhase("text");
     try {
+      const fullChain = magicEntityType === "npc" || magicEntityType === "location";
+
+      if (fullChain) {
+        const res = await generateFullAiWikiEntity(campaignId, p, magicEntityType);
+        if (!res.success) {
+          toast.error(res.message);
+          return;
+        }
+        const { title, content, hp, ac, imageUrl, imageWarning } = res.data;
+        onTypeChange(magicEntityType);
+        const body = appendCombatStatsToMarkdown(content, hp, ac);
+        setTitleValue(title);
+        setContentValue(body);
+        if (imageUrl) {
+          setWikiImageUrlPreset(imageUrl);
+          setMagicPortraitPreview(imageUrl);
+        } else {
+          setWikiImageUrlPreset(null);
+          setMagicPortraitPreview(null);
+        }
+        if (imageWarning) {
+          toast.warning(`Immagine non generata: ${imageWarning}`, { duration: 8000 });
+        }
+        toast.success(
+          "Bozza completa pronta. Controlla titolo, testo e immagine nel form sottostante, poi premi Crea."
+        );
+        return;
+      }
+
       const res = await generateWikiQuickAiAction(campaignId, p, magicEntityType);
       if (!res.success) {
         toast.error(res.message);
@@ -245,13 +266,14 @@ export function CreateEntityDialog({
       const body = appendCombatStatsToMarkdown(content, hp, ac);
       setTitleValue(title);
       setContentValue(body);
-      setMagicOpen(false);
-      setMagicPrompt("");
-      toast.success("Campi compilati dall’AI. Controlla e modifica prima di creare la voce.");
+      setWikiImageUrlPreset(null);
+      setMagicPortraitPreview(null);
+      toast.success("Bozza testo pronta. Controlla il form sottostante e premi Crea.");
     } catch {
       toast.error("Errore durante la generazione.");
     } finally {
       setMagicLoading(false);
+      setMagicChainPhase("text");
     }
   }
 
@@ -708,7 +730,9 @@ export function CreateEntityDialog({
             Generazione Magica AI
           </DialogTitle>
           <DialogDescription className="text-barber-paper/65">
-            Descrivi in poche parole cosa ti serve: l&apos;AI userà i paletti della campagna e le regole D&amp;D 5e.
+            Un solo passaggio: per NPC e Luoghi generiamo testo dettagliato e immagine coerente con quel testo
+            (non con la tua frase iniziale). Oggetto e Lore: solo testo. Poi controlli tutto nel form e premi
+            Crea.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
@@ -740,54 +764,45 @@ export function CreateEntityDialog({
             </select>
           </div>
 
-          <div className="space-y-3 rounded-lg border border-barber-gold/25 bg-barber-dark/60 p-3">
-            <div className="flex items-center gap-2 text-sm font-medium text-barber-paper">
-              <ImageIcon className="h-4 w-4 text-violet-300" />
-              Immagine
+          {magicLoading && (
+            <div
+              className="flex items-start gap-3 rounded-lg border border-violet-500/35 bg-violet-950/30 p-3 text-sm text-violet-100"
+              role="status"
+              aria-live="polite"
+            >
+              <Loader2 className="mt-0.5 h-5 w-5 shrink-0 animate-spin text-violet-300" />
+              <div>
+                <p className="font-medium">
+                  {magicEntityType === "npc" || magicEntityType === "location"
+                    ? magicChainPhase === "text"
+                      ? "Tessendo la trama (generazione testo)…"
+                      : "Dipingendo il volto (generazione immagine coerente col testo)…"
+                    : "Tessendo la trama (generazione testo)…"}
+                </p>
+                <p className="mt-1 text-xs text-barber-paper/70">
+                  Non chiudere questa finestra: al termine i campi del form si compileranno da soli.
+                </p>
+              </div>
             </div>
-            <p className="text-xs text-barber-paper/60">
-              Ritratto o scena coerente con i paletti visivi della campagna (L&apos;Anima della Campagna).
-              Disponibile per NPC e Luoghi; usa la descrizione nel campo sopra.
-            </p>
-            {magicEntityType === "npc" || magicEntityType === "location" ? (
-              <>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full border-violet-500/50 text-violet-100 hover:bg-violet-500/15"
-                  onClick={() => void handlePortraitGenerate()}
-                  disabled={magicLoading || portraitLoading}
-                >
-                  {portraitLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Generazione immagine…
-                    </>
-                  ) : (
-                    <>
-                      <ImageIcon className="mr-2 h-4 w-4" />
-                      Genera ritratto AI coerente
-                    </>
-                  )}
-                </Button>
-                {magicPortraitPreview && (
-                  <div className="relative aspect-video w-full overflow-hidden rounded-md border border-barber-gold/30 bg-black/40">
-                    <Image
-                      src={magicPortraitPreview}
-                      alt="Anteprima ritratto AI"
-                      fill
-                      className="object-contain"
-                      unoptimized
-                    />
-                  </div>
-                )}
-              </>
-            ) : (
-              <p className="text-xs text-barber-paper/50">
-                Per Oggetti e Lore usa il campo immagine del form principale (carica file o URL).
-              </p>
-            )}
-          </div>
+          )}
+
+          {!magicLoading && magicPortraitPreview && (magicEntityType === "npc" || magicEntityType === "location") && (
+            <div className="space-y-2 rounded-lg border border-barber-gold/25 bg-barber-dark/60 p-3">
+              <div className="flex items-center gap-2 text-sm font-medium text-barber-paper">
+                <ImageIcon className="h-4 w-4 text-violet-300" />
+                Anteprima immagine (già nel form)
+              </div>
+              <div className="relative aspect-video w-full overflow-hidden rounded-md border border-barber-gold/30 bg-black/40">
+                <Image
+                  src={magicPortraitPreview}
+                  alt="Anteprima generazione AI"
+                  fill
+                  className="object-contain"
+                  unoptimized
+                />
+              </div>
+            </div>
+          )}
         </div>
         <DialogFooter className="gap-2 sm:gap-0">
           <Button
@@ -797,7 +812,7 @@ export function CreateEntityDialog({
             onClick={() => setMagicOpen(false)}
             disabled={magicLoading}
           >
-            Annulla
+            Chiudi
           </Button>
           <Button
             type="button"
@@ -808,13 +823,12 @@ export function CreateEntityDialog({
             {magicLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generazione…
+                Attendere…
               </>
+            ) : magicEntityType === "npc" || magicEntityType === "location" ? (
+              <>✨ GENERA ENTITÀ COMPLETA (TESTO + IMMAGINE)</>
             ) : (
-              <>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Genera
-              </>
+              <>✨ GENERA BOZZA AI (SOLO TESTO)</>
             )}
           </Button>
         </DialogFooter>
