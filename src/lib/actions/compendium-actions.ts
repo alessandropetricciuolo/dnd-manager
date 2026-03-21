@@ -61,6 +61,38 @@ function firstSentence(text: string): string {
   return cleaned.slice(0, Math.min(idx + 1, 180)).trim();
 }
 
+function flattenAttributes(
+  value: unknown,
+  out: Record<string, string>,
+  parentKey?: string
+): void {
+  if (value == null) return;
+
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    const key = parentKey?.trim();
+    if (key) out[key] = String(value);
+    return;
+  }
+
+  if (Array.isArray(value)) {
+    const key = parentKey?.trim();
+    if (key) out[key] = value.map((v) => (typeof v === "string" ? v : JSON.stringify(v))).join(", ");
+    return;
+  }
+
+  if (typeof value === "object") {
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      const normalized = k.replace(/_/g, " ").trim();
+      // For known nested buckets like "combat stats", prefer child keys as standalone fields.
+      const nextKey =
+        !parentKey || parentKey.toLowerCase() === "combat stats" || parentKey.toLowerCase() === "combat_stats"
+          ? normalized
+          : `${parentKey} · ${normalized}`;
+      flattenAttributes(v, out, nextKey);
+    }
+  }
+}
+
 export async function getCompendiumDataAction(
   selectedCampaignId?: string | null
 ): Promise<CompendiumResult> {
@@ -128,12 +160,10 @@ export async function getCompendiumDataAction(
     const elements: CompendiumElement[] = (wikiRows ?? []).map((row: Record<string, unknown>) => {
       const rawContent = extractBody(row.content);
       const campaignName = campaignById[String(row.campaign_id ?? "")] ?? "Campagna";
-      const details = row.attributes && typeof row.attributes === "object" && !Array.isArray(row.attributes)
-        ? Object.entries(row.attributes as Record<string, unknown>).reduce<Record<string, string>>((acc, [k, v]) => {
-            acc[k] = typeof v === "string" ? v : JSON.stringify(v);
-            return acc;
-          }, {})
-        : {};
+      const details: Record<string, string> = {};
+      if (row.attributes && typeof row.attributes === "object" && !Array.isArray(row.attributes)) {
+        flattenAttributes(row.attributes, details);
+      }
       if (!details.Campagna) details.Campagna = campaignName;
 
       const tags = Array.isArray(row.tags)

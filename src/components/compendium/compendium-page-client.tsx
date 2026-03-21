@@ -8,7 +8,6 @@ import { useSearchParams } from "next/navigation";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -325,7 +324,7 @@ export function CompendiumPageClient() {
           }
         }}
       >
-        <DialogContent className="max-h-[88vh] max-w-5xl overflow-y-auto border-barber-gold/40 bg-barber-dark pr-14 text-barber-paper sm:pr-16">
+        <DialogContent className="flex h-[92vh] max-h-[92vh] max-w-6xl flex-col overflow-hidden border-barber-gold/40 bg-barber-dark pr-14 text-barber-paper sm:pr-16">
           {selected && (
             <>
               <DialogHeader className="pr-2">
@@ -355,24 +354,11 @@ export function CompendiumPageClient() {
                 <div className="mb-2 text-xs text-barber-paper/60">
                   {selectedIndex + 1} / {filtered.length}
                 </div>
-                <div className="mb-2 flex items-center gap-2">
-                  <div className="flex flex-wrap gap-1.5">
-                    {selected.tags.map((tag) => (
-                      <span
-                        key={`modal-${selected.id}-${tag}`}
-                        className="rounded border border-barber-gold/25 bg-barber-dark/70 px-2 py-0.5 text-[11px] text-barber-paper/80"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
                 <DialogTitle className="text-barber-gold">{selected.name}</DialogTitle>
-                <DialogDescription className="text-barber-paper/75">{selected.shortDesc}</DialogDescription>
               </DialogHeader>
 
               <div
-                className="mt-3 space-y-3"
+                className="mt-3 min-h-0 flex-1"
                 onTouchStart={(e) => setTouchStartX(e.changedTouches[0]?.clientX ?? null)}
                 onTouchEnd={(e) => {
                   if (touchStartX == null) return;
@@ -383,8 +369,8 @@ export function CompendiumPageClient() {
                   setTouchStartX(null);
                 }}
               >
-                <div className="grid grid-cols-[170px_minmax(0,1fr)] gap-3 md:grid-cols-[240px_minmax(0,1fr)]">
-                  <div className="relative h-[240px] w-full overflow-hidden rounded-lg border border-barber-gold/30 bg-black/20 md:h-[320px]">
+                <div className="grid h-full grid-cols-[minmax(190px,38%)_minmax(0,1fr)] gap-4">
+                  <div className="relative h-full min-h-[420px] w-full overflow-hidden rounded-lg border border-barber-gold/30 bg-black/20">
                     <Image
                       src={selected.imageUrl}
                       alt={selected.name}
@@ -394,7 +380,7 @@ export function CompendiumPageClient() {
                     />
                   </div>
 
-                  <div className="space-y-3">
+                  <div className="min-h-0 space-y-3 overflow-y-auto pr-1">
                     <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
@@ -436,6 +422,7 @@ export function CompendiumPageClient() {
 
                     {activeTab === "description" && (
                       <div className="rounded-lg border border-barber-gold/25 bg-barber-dark/70 p-4">
+                        <p className="mb-3 text-sm text-barber-paper/75">{selected.shortDesc}</p>
                         <p className="whitespace-pre-wrap text-sm leading-relaxed text-barber-paper/90">
                           {selected.content}
                         </p>
@@ -447,14 +434,16 @@ export function CompendiumPageClient() {
                         {Object.keys(selected.details).length === 0 ? (
                           <p className="text-sm text-barber-paper/70">Nessuna info extra disponibile.</p>
                         ) : (
-                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                          <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
                             {Object.entries(selected.details).map(([k, v]) => (
                               <div
                                 key={`${selected.id}-${k}`}
-                                className="rounded-md border border-barber-gold/20 px-3 py-2"
+                                className="min-h-16 rounded-md border border-barber-gold/20 px-3 py-2"
                               >
                                 <p className="text-[11px] uppercase tracking-wide text-barber-gold/80">{k}</p>
-                                <p className="text-sm text-barber-paper/90">{v}</p>
+                                <p className="whitespace-pre-wrap break-words text-sm leading-snug text-barber-paper/90">
+                                  {v}
+                                </p>
                               </div>
                             ))}
                           </div>
