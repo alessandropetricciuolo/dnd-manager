@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, RefreshCcw } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  ALL_CAMPAIGNS_KEY,
   getCompendiumDataAction,
   type CompendiumCampaign,
   type CompendiumElement,
@@ -46,6 +48,8 @@ function badgeClass(type: CompendiumType): string {
 }
 
 export default function CompendiumPage() {
+  const searchParams = useSearchParams();
+  const campaignIdFromUrl = searchParams.get("campaignId");
   const [search, setSearch] = useState("");
   const [activeType, setActiveType] = useState<"Tutti" | CompendiumType>("Tutti");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -85,8 +89,8 @@ export default function CompendiumPage() {
   }, []);
 
   useEffect(() => {
-    void loadCompendium(null, false);
-  }, [loadCompendium]);
+    void loadCompendium(campaignIdFromUrl, false);
+  }, [campaignIdFromUrl, loadCompendium]);
 
   useEffect(() => {
     if (!selectedCampaignId) return;
@@ -179,6 +183,11 @@ export default function CompendiumPage() {
               className="h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark/90 px-3 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
             >
               {campaigns.length === 0 && <option value="">Nessuna campagna disponibile</option>}
+              {campaigns.length > 0 && (
+                <option value={ALL_CAMPAIGNS_KEY}>
+                  Tutte le campagne
+                </option>
+              )}
               {campaigns.map((campaign) => (
                 <option key={campaign.id} value={campaign.id}>
                   {campaign.name}
@@ -186,7 +195,7 @@ export default function CompendiumPage() {
               ))}
             </select>
 
-            {selectedCampaignId && (
+            {selectedCampaignId && selectedCampaignId !== ALL_CAMPAIGNS_KEY && (
               <Link
                 href={`/campaigns/${selectedCampaignId}?tab=gm`}
                 className="inline-flex h-9 w-full items-center justify-center rounded-md border border-violet-500/35 bg-violet-500/15 px-3 text-xs font-medium text-violet-200 transition hover:bg-violet-500/25"

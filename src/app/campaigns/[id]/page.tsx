@@ -21,7 +21,7 @@ import { GmFiles } from "@/components/gm/gm-files";
 import { CampaignPrimerEditor } from "@/components/gm/campaign-primer-editor";
 import { GmScreenLauncher } from "@/components/gm/gm-screen-launcher";
 import Link from "next/link";
-import { Map } from "lucide-react";
+import { BookOpen, Map } from "lucide-react";
 import { CharactersSection } from "@/components/characters/characters-section";
 import { getCampaignCharacters, getCampaignEligiblePlayers } from "@/app/campaigns/character-actions";
 import { getPreClosedSessionForCampaign, type PreClosedSessionRow } from "@/app/campaigns/gm-actions";
@@ -469,12 +469,20 @@ export default async function CampaignPage({ params }: PageProps) {
                     <p className="mb-3 text-xs text-violet-200/70">
                       Grafo di voci wiki e mappe con relazioni. Crea relazioni dal form di creazione/modifica delle voci wiki.
                     </p>
-                    <Button asChild variant="outline" size="sm" className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20">
-                      <Link href={`/campaigns/${campaign.id}/gm-only/concept-map`}>
-                        <Map className="mr-2 h-4 w-4" />
-                        Apri Mappa Concettuale
-                      </Link>
-                    </Button>
+                    <div className="flex flex-wrap gap-2">
+                      <Button asChild variant="outline" size="sm" className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20">
+                        <Link href={`/campaigns/${campaign.id}/gm-only/concept-map`}>
+                          <Map className="mr-2 h-4 w-4" />
+                          Apri Mappa Concettuale
+                        </Link>
+                      </Button>
+                      <Button asChild variant="outline" size="sm" className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20">
+                        <Link href={`/compendium?campaignId=${campaign.id}`}>
+                          <BookOpen className="mr-2 h-4 w-4" />
+                          Apri Compendio
+                        </Link>
+                      </Button>
+                    </div>
                   </div>
                   <GmNotes campaignId={campaign.id} />
                   <GmFiles campaignId={campaign.id} />

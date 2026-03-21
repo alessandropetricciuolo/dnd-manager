@@ -2,6 +2,8 @@
 
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 
+export const ALL_CAMPAIGNS_KEY = "__all__";
+
 export type CompendiumCampaign = {
   id: string;
   name: string;
@@ -93,10 +95,12 @@ export async function getCompendiumDataAction(
     if (campaignsError) return { success: false, error: campaignsError.message };
 
     const campaigns = (campaignsRows ?? []) as CompendiumCampaign[];
-    const fallbackCampaignId = campaigns[0]?.id ?? null;
-    const campaignId = selectedCampaignId && campaigns.some((c) => c.id === selectedCampaignId)
-      ? selectedCampaignId
-      : fallbackCampaignId;
+    const fallbackCampaignId = campaigns.length > 0 ? ALL_CAMPAIGNS_KEY : null;
+    const campaignId = selectedCampaignId === ALL_CAMPAIGNS_KEY
+      ? ALL_CAMPAIGNS_KEY
+      : selectedCampaignId && campaigns.some((c) => c.id === selectedCampaignId)
+        ? selectedCampaignId
+        : fallbackCampaignId;
 
     if (!campaignId) {
       return {
@@ -105,26 +109,38 @@ export async function getCompendiumDataAction(
       };
     }
 
-    const { data: wikiRows, error: wikiError } = await supabase
+    const campaignById = campaigns.reduce<Record<string, string>>((acc, c) => {
+      acc[c.id] = c.name;
+      return acc;
+    }, {});
+    const campaignIds = campaignId === ALL_CAMPAIGNS_KEY ? campaigns.map((c) => c.id) : [campaignId];
+
+    const baseQuery = supabase
       .from("wiki_entities")
-      .select("id, name, type, tags, content, image_url, attributes")
-      .eq("campaign_id", campaignId)
+      .select("id, campaign_id, name, type, tags, content, image_url, attributes")
       .order("name", { ascending: true });
+
+    const { data: wikiRows, error: wikiError } = campaignId === ALL_CAMPAIGNS_KEY
+      ? await baseQuery.in("campaign_id", campaignIds)
+      : await baseQuery.eq("campaign_id", campaignId);
 
     if (wikiError) return { success: false, error: wikiError.message };
 
     const elements: CompendiumElement[] = (wikiRows ?? []).map((row: Record<string, unknown>) => {
       const rawContent = extractBody(row.content);
+      const campaignName = campaignById[String(row.campaign_id ?? "")] ?? "Campagna";
       const details = row.attributes && typeof row.attributes === "object" && !Array.isArray(row.attributes)
         ? Object.entries(row.attributes as Record<string, unknown>).reduce<Record<string, string>>((acc, [k, v]) => {
             acc[k] = typeof v === "string" ? v : JSON.stringify(v);
             return acc;
           }, {})
         : {};
+      if (!details.Campagna) details.Campagna = campaignName;
 
       const tags = Array.isArray(row.tags)
         ? row.tags.filter((t): t is string => typeof t === "string")
         : [];
+      if (!tags.includes(campaignName)) tags.push(campaignName);
 
       return {
         id: String(row.id ?? ""),
