@@ -1,0 +1,156 @@
+'use server';
+
+import { createSupabaseServerClient } from "@/utils/supabase/server";
+
+export type CompendiumCampaign = {
+  id: string;
+  name: string;
+};
+
+export type CompendiumElement = {
+  id: string;
+  name: string;
+  type: "Mostro" | "Incantesimo" | "PNG" | "Oggetto Magico" | "Luogo";
+  tags: string[];
+  shortDesc: string;
+  content: string;
+  imageUrl: string;
+  details: Record<string, string>;
+};
+
+export type CompendiumPayload = {
+  campaigns: CompendiumCampaign[];
+  selectedCampaignId: string | null;
+  elements: CompendiumElement[];
+};
+
+export type CompendiumResult =
+  | { success: true; data: CompendiumPayload }
+  | { success: false; error: string };
+
+function mapType(raw: string): CompendiumElement["type"] {
+  switch (raw) {
+    case "monster":
+      return "Mostro";
+    case "npc":
+      return "PNG";
+    case "item":
+      return "Oggetto Magico";
+    case "location":
+      return "Luogo";
+    default:
+      return "Incantesimo";
+  }
+}
+
+function extractBody(content: unknown): string {
+  if (typeof content === "string") return content.trim();
+  if (content && typeof content === "object" && !Array.isArray(content)) {
+    const body = (content as Record<string, unknown>).body;
+    if (typeof body === "string") return body.trim();
+  }
+  return "";
+}
+
+function firstSentence(text: string): string {
+  const cleaned = text.replace(/\s+/g, " ").trim();
+  if (!cleaned) return "";
+  const idx = cleaned.search(/[.!?]\s/);
+  if (idx < 0) return cleaned.slice(0, 180);
+  return cleaned.slice(0, Math.min(idx + 1, 180)).trim();
+}
+
+export async function getCompendiumDataAction(
+  selectedCampaignId?: string | null
+): Promise<CompendiumResult> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) return { success: false, error: "Non autenticato." };
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    const role = profile?.role ?? "";
+    const isAdmin = role === "admin";
+    const isGm = role === "gm";
+    if (!isAdmin && !isGm) {
+      return { success: false, error: "Solo GM e Admin possono usare il Compendio." };
+    }
+
+    let campaignsQuery = supabase.from("campaigns").select("id, name").order("name", { ascending: true });
+    if (!isAdmin) {
+      campaignsQuery = campaignsQuery.eq("gm_id", user.id);
+    }
+
+    const { data: campaignsRows, error: campaignsError } = await campaignsQuery;
+    if (campaignsError) return { success: false, error: campaignsError.message };
+
+    const campaigns = (campaignsRows ?? []) as CompendiumCampaign[];
+    const fallbackCampaignId = campaigns[0]?.id ?? null;
+    const campaignId = selectedCampaignId && campaigns.some((c) => c.id === selectedCampaignId)
+      ? selectedCampaignId
+      : fallbackCampaignId;
+
+    if (!campaignId) {
+      return {
+        success: true,
+        data: { campaigns, selectedCampaignId: null, elements: [] },
+      };
+    }
+
+    const { data: wikiRows, error: wikiError } = await supabase
+      .from("wiki_entities")
+      .select("id, name, type, tags, content, image_url, attributes")
+      .eq("campaign_id", campaignId)
+      .order("name", { ascending: true });
+
+    if (wikiError) return { success: false, error: wikiError.message };
+
+    const elements: CompendiumElement[] = (wikiRows ?? []).map((row: Record<string, unknown>) => {
+      const rawContent = extractBody(row.content);
+      const details = row.attributes && typeof row.attributes === "object" && !Array.isArray(row.attributes)
+        ? Object.entries(row.attributes as Record<string, unknown>).reduce<Record<string, string>>((acc, [k, v]) => {
+            acc[k] = typeof v === "string" ? v : JSON.stringify(v);
+            return acc;
+          }, {})
+        : {};
+
+      const tags = Array.isArray(row.tags)
+        ? row.tags.filter((t): t is string => typeof t === "string")
+        : [];
+
+      return {
+        id: String(row.id ?? ""),
+        name: String(row.name ?? "Elemento senza nome"),
+        type: mapType(String(row.type ?? "")),
+        tags,
+        shortDesc: firstSentence(rawContent) || "Nessuna descrizione breve disponibile.",
+        content: rawContent || "Nessun contenuto disponibile.",
+        imageUrl:
+          typeof row.image_url === "string" && row.image_url.trim()
+            ? row.image_url
+            : "https://placehold.co/900x580/2a1f1d/e8dccb?text=Wiki",
+        details,
+      };
+    });
+
+    return {
+      success: true,
+      data: {
+        campaigns,
+        selectedCampaignId: campaignId,
+        elements,
+      },
+    };
+  } catch (err) {
+    console.error("[getCompendiumDataAction]", err);
+    return { success: false, error: "Errore nel caricamento del Compendio." };
+  }
+}

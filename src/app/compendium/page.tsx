@@ -1,8 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight, RefreshCcw } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -10,104 +11,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  getCompendiumDataAction,
+  type CompendiumCampaign,
+  type CompendiumElement,
+} from "@/lib/actions/compendium-actions";
 
-type CompendiumType = "Mostro" | "Incantesimo" | "PNG" | "Oggetto Magico" | "Luogo";
-
-type WikiElement = {
-  id: string;
-  name: string;
-  type: CompendiumType;
-  tags: string[];
-  imageUrl: string;
-  shortDesc: string;
-  content: string;
-  details: Record<string, string>;
-};
-
-const mockWikiElements: WikiElement[] = [
-  {
-    id: "m1",
-    name: "Drake di Cenere",
-    type: "Mostro",
-    tags: ["Fuoco", "Volante", "GS 5"],
-    imageUrl: "https://placehold.co/900x580/2a1f1d/e8dccb?text=Drake+di+Cenere",
-    shortDesc: "Predatore alato che domina gole vulcaniche e campi di lava.",
-    content:
-      "Il Drake di Cenere e' un predatore territoriale. Soffio infuocato (cono 4,5 m, TS Des CD 14), artigli e morso. Resistente al fuoco, vulnerabile al freddo intenso. Tattica: attacco in picchiata seguito da riposizionamento in quota.",
-    details: {
-      GS: "5",
-      AC: "16",
-      HP: "95 (10d10+40)",
-      Habitat: "Gole vulcaniche",
-      Sensi: "Scurovisione 18 m",
-    },
-  },
-  {
-    id: "s1",
-    name: "Catena di Fulmini Minore",
-    type: "Incantesimo",
-    tags: ["Livello 3", "Fulmine", "Azione"],
-    imageUrl: "https://placehold.co/900x580/1c2236/dbe4ff?text=Catena+di+Fulmini+Minore",
-    shortDesc: "Scarica elettrica che salta tra piu bersagli ravvicinati.",
-    content:
-      "Tempo di lancio 1 azione, gittata 18 m, componenti V/S. Un bersaglio principale subisce 4d8 danni da fulmine (TS Des dimezza). La scarica salta fino a 2 bersagli entro 3 m dal primo, 2d8 danni ciascuno.",
-    details: {
-      Livello: "3",
-      Scuola: "Invocazione",
-      Tempo: "1 azione",
-      Durata: "Istantanea",
-      Componenti: "V, S",
-    },
-  },
-  {
-    id: "n1",
-    name: "Iria 'la Nota d'Argento'",
-    type: "PNG",
-    tags: ["Bardo", "Informatori", "Citta"],
-    imageUrl: "https://placehold.co/900x580/2f2534/f2d8ff?text=Iria+la+Nota+d%27Argento",
-    shortDesc: "Cantastorie e mediatrice, custodisce segreti delle gilde.",
-    content:
-      "Iria gestisce un salotto musicale dietro il mercato vecchio. Offre voci e contatti in cambio di favori sociali. Tratto: memoria perfetta per i nomi. Difetto: non sopporta menzogne grossolane.",
-    details: {
-      Ruolo: "Contatto sociale",
-      Affiliazione: "Gilda mercantile",
-      Motivazione: "Proteggere i propri informatori",
-      Legame: "Debito con i PG",
-    },
-  },
-  {
-    id: "i1",
-    name: "Lama del Tramonto",
-    type: "Oggetto Magico",
-    tags: ["Raro", "Spada Lunga", "Radiante"],
-    imageUrl: "https://placehold.co/900x580/332816/f7e4b8?text=Lama+del+Tramonto",
-    shortDesc: "Spada antica che accumula luce durante il giorno.",
-    content:
-      "Arma +1. Una volta per riposo lungo, puoi spendere un'azione bonus per infondere la lama: per 1 minuto infligge +1d6 radiante. In aree di oscurita magica, il bonus radiante e' sospeso.",
-    details: {
-      Rarita: "Raro",
-      Tipo: "Spada lunga +1",
-      Attunement: "No",
-      Effetto: "+1d6 radiante (1/min per riposo lungo)",
-    },
-  },
-  {
-    id: "l1",
-    name: "Rovine di Vhal-Tor",
-    type: "Luogo",
-    tags: ["Dungeon", "Antico Impero", "Non Morti"],
-    imageUrl: "https://placehold.co/900x580/1c2720/d9f2e3?text=Rovine+di+Vhal-Tor",
-    shortDesc: "Complesso sotterraneo crollato con altari e archivi perduti.",
-    content:
-      "Le rovine si sviluppano su tre livelli. Trappole a pressione, corridoi allagati e un santuario centrale protetto da custodi scheletrici. Ricompense: pergamene incompiute e frammenti di mappa astrale.",
-    details: {
-      Zona: "Nord del regno",
-      Minaccia: "Media-Alta",
-      Tema: "Rovine imperiali",
-      Ricompense: "Pergamene, mappe astrali",
-    },
-  },
-];
+type CompendiumType = CompendiumElement["type"];
 
 const TYPE_FILTERS: Array<{ key: "Tutti" | CompendiumType; label: string }> = [
   { key: "Tutti", label: "Tutti" },
@@ -141,10 +51,78 @@ export default function CompendiumPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"description" | "details" | "tags">("description");
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [campaigns, setCampaigns] = useState<CompendiumCampaign[]>([]);
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
+  const [elements, setElements] = useState<CompendiumElement[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const loadCompendium = useCallback(async (campaignId?: string | null, silent?: boolean) => {
+    if (silent) {
+      setIsSyncing(true);
+    } else {
+      setIsLoading(true);
+    }
+    const result = await getCompendiumDataAction(campaignId);
+    if (!result.success) {
+      setLoadError(result.error);
+      setElements([]);
+      if (silent) setIsSyncing(false);
+      if (!silent) setIsLoading(false);
+      return;
+    }
+
+    setCampaigns(result.data.campaigns);
+    setSelectedCampaignId(result.data.selectedCampaignId);
+    setElements(result.data.elements);
+    setLoadError(null);
+    setSelectedId((current) =>
+      current && result.data.elements.some((item) => item.id === current) ? current : null
+    );
+    if (silent) setIsSyncing(false);
+    if (!silent) setIsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    void loadCompendium(null, false);
+  }, [loadCompendium]);
+
+  useEffect(() => {
+    if (!selectedCampaignId) return;
+    const timer = setInterval(() => {
+      void loadCompendium(selectedCampaignId, true);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [selectedCampaignId, loadCompendium]);
+
+  useEffect(() => {
+    if (!selectedCampaignId) return;
+
+    const handleFocusRefresh = () => {
+      void loadCompendium(selectedCampaignId, true);
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void loadCompendium(selectedCampaignId, true);
+      }
+    };
+
+    window.addEventListener("focus", handleFocusRefresh);
+    window.addEventListener("online", handleFocusRefresh);
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      window.removeEventListener("focus", handleFocusRefresh);
+      window.removeEventListener("online", handleFocusRefresh);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [selectedCampaignId, loadCompendium]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return mockWikiElements.filter((el) => {
+    return elements.filter((el) => {
       const typeMatch = activeType === "Tutti" || el.type === activeType;
       if (!typeMatch) return false;
       if (!q) return true;
@@ -154,7 +132,7 @@ export default function CompendiumPage() {
         .toLowerCase();
       return haystack.includes(q);
     });
-  }, [search, activeType]);
+  }, [search, activeType, elements]);
 
   const selectedIndex = useMemo(
     () => (selectedId ? filtered.findIndex((el) => el.id === selectedId) : -1),
@@ -187,8 +165,45 @@ export default function CompendiumPage() {
         <aside className="rounded-xl border border-barber-gold/25 bg-barber-dark/75 p-4 md:sticky md:top-20 md:h-fit">
           <h1 className="text-lg font-semibold text-barber-gold">Compendio</h1>
           <p className="mt-1 text-xs text-barber-paper/65">
-            Wiki homebrew ricercabile per campagna: filtra e apri i dettagli in modal.
+            Dati live dalle wiki delle tue campagne. Le card si aggiornano automaticamente.
           </p>
+
+          <div className="mt-4 space-y-2">
+            <label htmlFor="campaign-select" className="text-xs font-medium text-barber-paper/85">
+              Campagna
+            </label>
+            <select
+              id="campaign-select"
+              value={selectedCampaignId ?? ""}
+              onChange={(e) => void loadCompendium(e.target.value, false)}
+              className="h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark/90 px-3 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
+            >
+              {campaigns.length === 0 && <option value="">Nessuna campagna disponibile</option>}
+              {campaigns.map((campaign) => (
+                <option key={campaign.id} value={campaign.id}>
+                  {campaign.name}
+                </option>
+              ))}
+            </select>
+
+            {selectedCampaignId && (
+              <Link
+                href={`/campaigns/${selectedCampaignId}?tab=gm`}
+                className="inline-flex h-9 w-full items-center justify-center rounded-md border border-violet-500/35 bg-violet-500/15 px-3 text-xs font-medium text-violet-200 transition hover:bg-violet-500/25"
+              >
+                Apri sezione Solo GM campagna
+              </Link>
+            )}
+
+            <button
+              type="button"
+              onClick={() => void loadCompendium(selectedCampaignId, false)}
+              className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-xs text-barber-paper/90 transition hover:bg-barber-gold/10"
+            >
+              <RefreshCcw className="h-3.5 w-3.5" />
+              Aggiorna ora
+            </button>
+          </div>
 
           <div className="mt-4 space-y-2">
             <label htmlFor="compendium-search" className="text-xs font-medium text-barber-paper/85">
@@ -233,40 +248,58 @@ export default function CompendiumPage() {
             <p className="text-sm text-barber-paper/70">
               {filtered.length} risultati{activeType !== "Tutti" ? ` • filtro: ${activeType}` : ""}
             </p>
+            {isSyncing && (
+              <p className="text-xs text-barber-paper/50">Sincronizzazione...</p>
+            )}
           </div>
 
-          {filtered.length === 0 ? (
+          {isLoading ? (
+            <div className="rounded-xl border border-barber-gold/20 bg-barber-dark/60 p-8 text-center text-sm text-barber-paper/70">
+              Caricamento compendio...
+            </div>
+          ) : loadError ? (
+            <div className="rounded-xl border border-red-500/25 bg-red-950/20 p-8 text-center text-sm text-red-200">
+              {loadError}
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="rounded-xl border border-barber-gold/20 bg-barber-dark/60 p-8 text-center text-sm text-barber-paper/70">
               Nessun elemento trovato con i filtri correnti.
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="space-y-3">
               {filtered.map((el) => (
                 <button
                   key={el.id}
                   type="button"
                   onClick={() => openCard(el.id)}
-                  className="group rounded-xl border border-barber-gold/20 bg-barber-dark/65 p-4 text-left transition hover:border-barber-gold/45 hover:bg-barber-dark/85"
+                  className="group w-full rounded-xl border border-barber-gold/20 bg-barber-dark/65 p-3 text-left transition hover:border-barber-gold/45 hover:bg-barber-dark/85"
                 >
-                  <div className="mb-2 flex items-start justify-between gap-2">
-                    <h2 className="line-clamp-2 text-base font-semibold text-barber-paper group-hover:text-barber-gold">
-                      {el.name}
-                    </h2>
-                    <span className={`shrink-0 rounded-md border px-2 py-0.5 text-[11px] ${badgeClass(el.type)}`}>
-                      {el.type}
-                    </span>
+                  <div className="flex items-start gap-3">
+                    <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-md border border-barber-gold/20 bg-black/30">
+                      <Image src={el.imageUrl} alt={el.name} fill className="object-cover" unoptimized />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-1 flex items-start justify-between gap-2">
+                        <h2 className="line-clamp-1 text-base font-semibold text-barber-paper group-hover:text-barber-gold">
+                          {el.name}
+                        </h2>
+                        <span className={`shrink-0 rounded-md border px-2 py-0.5 text-[11px] ${badgeClass(el.type)}`}>
+                          {el.type}
+                        </span>
+                      </div>
+                      <p className="line-clamp-2 text-sm text-barber-paper/80">{el.shortDesc}</p>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {el.tags.slice(0, 4).map((tag) => (
+                          <span
+                            key={`${el.id}-${tag}`}
+                            className="rounded border border-barber-gold/20 bg-barber-dark/80 px-2 py-0.5 text-[11px] text-barber-paper/75"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                  <div className="mb-3 flex flex-wrap gap-1.5">
-                    {el.tags.map((tag) => (
-                      <span
-                        key={`${el.id}-${tag}`}
-                        className="rounded border border-barber-gold/20 bg-barber-dark/80 px-2 py-0.5 text-[11px] text-barber-paper/75"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                  <p className="line-clamp-3 text-sm text-barber-paper/80">{el.shortDesc}</p>
                 </button>
               ))}
             </div>
@@ -341,93 +374,108 @@ export default function CompendiumPage() {
                   setTouchStartX(null);
                 }}
               >
-                <div className="relative aspect-[16/8] w-full overflow-hidden rounded-lg border border-barber-gold/30 bg-black/20">
-                  <Image
-                    src={selected.imageUrl}
-                    alt={selected.name}
-                    fill
-                    className="object-cover"
-                    unoptimized
-                  />
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("description")}
-                    className={[
-                      "rounded-md border px-4 py-2 text-sm font-medium transition",
-                      activeTab === "description"
-                        ? "border-barber-gold bg-barber-gold/20 text-barber-gold"
-                        : "border-barber-gold/25 text-barber-paper/85 hover:bg-barber-gold/10",
-                    ].join(" ")}
-                  >
-                    Descrizione
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("details")}
-                    className={[
-                      "rounded-md border px-3 py-1.5 text-xs transition",
-                      activeTab === "details"
-                        ? "border-barber-gold bg-barber-gold/20 text-barber-gold"
-                        : "border-barber-gold/25 text-barber-paper/85 hover:bg-barber-gold/10",
-                    ].join(" ")}
-                  >
-                    Altre info
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("tags")}
-                    className={[
-                      "rounded-md border px-3 py-1.5 text-xs transition",
-                      activeTab === "tags"
-                        ? "border-barber-gold bg-barber-gold/20 text-barber-gold"
-                        : "border-barber-gold/25 text-barber-paper/85 hover:bg-barber-gold/10",
-                    ].join(" ")}
-                  >
-                    Tag
-                  </button>
-                </div>
-
-                {activeTab === "description" && (
-                  <div className="rounded-lg border border-barber-gold/25 bg-barber-dark/70 p-4">
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-barber-paper/90">
-                      {selected.content}
-                    </p>
+                <div className="grid gap-3 lg:grid-cols-[300px_minmax(0,1fr)]">
+                  <div className="relative aspect-[4/5] w-full overflow-hidden rounded-lg border border-barber-gold/30 bg-black/20">
+                    <Image
+                      src={selected.imageUrl}
+                      alt={selected.name}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
                   </div>
-                )}
 
-                {activeTab === "details" && (
-                  <div className="rounded-lg border border-barber-gold/25 bg-barber-dark/70 p-4">
-                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                      {Object.entries(selected.details).map(([k, v]) => (
-                        <div key={`${selected.id}-${k}`} className="rounded-md border border-barber-gold/20 px-3 py-2">
-                          <p className="text-[11px] uppercase tracking-wide text-barber-gold/80">{k}</p>
-                          <p className="text-sm text-barber-paper/90">{v}</p>
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab("description")}
+                        className={[
+                          "rounded-md border px-4 py-2 text-sm font-medium transition",
+                          activeTab === "description"
+                            ? "border-barber-gold bg-barber-gold/20 text-barber-gold"
+                            : "border-barber-gold/25 text-barber-paper/85 hover:bg-barber-gold/10",
+                        ].join(" ")}
+                      >
+                        Descrizione
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab("details")}
+                        className={[
+                          "rounded-md border px-3 py-1.5 text-xs transition",
+                          activeTab === "details"
+                            ? "border-barber-gold bg-barber-gold/20 text-barber-gold"
+                            : "border-barber-gold/25 text-barber-paper/85 hover:bg-barber-gold/10",
+                        ].join(" ")}
+                      >
+                        Altre info
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab("tags")}
+                        className={[
+                          "rounded-md border px-3 py-1.5 text-xs transition",
+                          activeTab === "tags"
+                            ? "border-barber-gold bg-barber-gold/20 text-barber-gold"
+                            : "border-barber-gold/25 text-barber-paper/85 hover:bg-barber-gold/10",
+                        ].join(" ")}
+                      >
+                        Tag
+                      </button>
+                    </div>
+
+                    {activeTab === "description" && (
+                      <div className="rounded-lg border border-barber-gold/25 bg-barber-dark/70 p-4">
+                        <p className="whitespace-pre-wrap text-sm leading-relaxed text-barber-paper/90">
+                          {selected.content}
+                        </p>
+                      </div>
+                    )}
+
+                    {activeTab === "details" && (
+                      <div className="rounded-lg border border-barber-gold/25 bg-barber-dark/70 p-4">
+                        {Object.keys(selected.details).length === 0 ? (
+                          <p className="text-sm text-barber-paper/70">Nessuna info extra disponibile.</p>
+                        ) : (
+                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            {Object.entries(selected.details).map(([k, v]) => (
+                              <div
+                                key={`${selected.id}-${k}`}
+                                className="rounded-md border border-barber-gold/20 px-3 py-2"
+                              >
+                                <p className="text-[11px] uppercase tracking-wide text-barber-gold/80">{k}</p>
+                                <p className="text-sm text-barber-paper/90">{v}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {activeTab === "tags" && (
+                      <div className="rounded-lg border border-barber-gold/25 bg-barber-dark/70 p-4">
+                        <div className="mb-3 flex flex-wrap gap-2">
+                          {selected.tags.length > 0 ? (
+                            selected.tags.map((tag) => (
+                              <span
+                                key={`tag-tab-${selected.id}-${tag}`}
+                                className="rounded border border-barber-gold/25 bg-barber-dark/80 px-2 py-1 text-xs text-barber-paper/85"
+                              >
+                                {tag}
+                              </span>
+                            ))
+                          ) : (
+                            <p className="text-sm text-barber-paper/70">Nessun tag disponibile.</p>
+                          )}
                         </div>
-                      ))}
-                    </div>
+                        <p className="text-sm text-barber-paper/75">
+                          Usa i tag per cercare rapidamente altri elementi simili nel compendio.
+                        </p>
+                      </div>
+                    )}
                   </div>
-                )}
-
-                {activeTab === "tags" && (
-                  <div className="rounded-lg border border-barber-gold/25 bg-barber-dark/70 p-4">
-                    <div className="mb-3 flex flex-wrap gap-2">
-                      {selected.tags.map((tag) => (
-                        <span
-                          key={`tag-tab-${selected.id}-${tag}`}
-                          className="rounded border border-barber-gold/25 bg-barber-dark/80 px-2 py-1 text-xs text-barber-paper/85"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                    <p className="text-sm text-barber-paper/75">
-                      Usa i tag per cercare rapidamente altri elementi simili nel compendio.
-                    </p>
-                  </div>
-                )}
+                </div>
               </div>
             </>
           )}
