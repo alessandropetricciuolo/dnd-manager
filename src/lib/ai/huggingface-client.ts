@@ -20,7 +20,7 @@
 
 const HF_CHAT_COMPLETIONS_URL = "https://router.huggingface.co/v1/chat/completions";
 const HF_IMAGE_INFERENCE_BASE = "https://router.huggingface.co/hf-inference/models";
-const HF_FEATURE_EXTRACTION_BASE = "https://api-inference.huggingface.co/pipeline/feature-extraction";
+const HF_FEATURE_EXTRACTION_BASE = "https://router.huggingface.co/hf-inference/pipeline/feature-extraction";
 
 /** Modelli di default (testo / immagine). Sostituibili passando un `modelId` esplicito. */
 export const MODELS = {
