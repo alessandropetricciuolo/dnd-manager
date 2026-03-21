@@ -499,7 +499,8 @@ RICHIESTA: ${promptText}
 
   if (!jsonCandidate) {
     console.error("[generateCharacterSheetJSON] raw output", generatedText);
-    throw new HuggingFaceInferenceError("Output LLM senza oggetto JSON riconoscibile.", { status: 502 });
+    // Fallback resiliente: lasciamo che la Server Action faccia merge col template completo.
+    return "{}";
   }
 
   return jsonCandidate;
