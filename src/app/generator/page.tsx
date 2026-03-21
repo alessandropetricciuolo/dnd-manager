@@ -33,6 +33,7 @@ const CLASSES = [
 export default function GeneratorPage() {
   const [isPending, startTransition] = useTransition();
   const [resultMessage, setResultMessage] = useState<string | null>(null);
+  const [resultJson, setResultJson] = useState<string | null>(null);
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -42,9 +43,13 @@ export default function GeneratorPage() {
     const formData = new FormData(form);
 
     setResultMessage(null);
+    setResultJson(null);
     startTransition(async () => {
       const result = await generateSheetAction(formData);
       setResultMessage(result.message);
+      if (result.success && result.sheetData) {
+        setResultJson(JSON.stringify(result.sheetData, null, 2));
+      }
     });
   }
 
@@ -156,6 +161,16 @@ export default function GeneratorPage() {
           <p className="mt-5 rounded-md border border-barber-gold/25 bg-barber-dark/70 px-4 py-3 text-sm text-barber-paper/90">
             {resultMessage}
           </p>
+        )}
+        {resultJson && (
+          <div className="mt-5 rounded-md border border-barber-gold/25 bg-black/30 p-4">
+            <p className="mb-2 text-xs uppercase tracking-wide text-barber-gold/80">
+              JSON Scheda Generata
+            </p>
+            <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap text-xs text-barber-paper/90">
+              {resultJson}
+            </pre>
+          </div>
         )}
       </section>
     </main>
