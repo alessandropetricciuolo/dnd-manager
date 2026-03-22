@@ -52,9 +52,21 @@ export async function generateContextualPortraitAction(
       return { success: false, message: "Solo GM e Admin possono generare immagini AI." };
     }
 
-    const { data: campaign, error: campError } = await supabase
-      .from("campaigns")
-      .select("ai_context")
+    type CampaignVisualRow = {
+      ai_context: Json | null;
+      image_style_prompt?: string | null;
+    };
+    const campaignsQuery = supabase.from("campaigns") as unknown as {
+      select: (columns: string) => {
+        eq: (
+          column: string,
+          value: string
+        ) => { single: () => Promise<{ data: CampaignVisualRow | null; error: { message: string } | null }> };
+      };
+    };
+
+    const { data: campaign, error: campError } = await campaignsQuery
+      .select("ai_context, image_style_prompt")
       .eq("id", campaignId)
       .single();
 
@@ -63,6 +75,8 @@ export async function generateContextualPortraitAction(
     }
 
     const ctx = parseCampaignAiContextFromDb((campaign.ai_context as Json | null) ?? null);
+    const styleTemplate =
+      typeof campaign.image_style_prompt === "string" ? campaign.image_style_prompt.trim() : "";
     const visualPositive = ctx?.visual_positive?.trim() || "cinematic fantasy, cohesive party tone";
     const visualNegative = ctx?.visual_negative?.trim() || "";
 
@@ -71,10 +85,9 @@ export async function generateContextualPortraitAction(
         ? "portrait, close-up, high detail, photorealistic, cinematic lighting, 8k, masterpiece, professional fantasy art style"
         : "environmental wide shot, high detail, photorealistic, cinematic lighting, 8k, masterpiece, professional fantasy location art, architectural and atmosphere focus";
 
-    const subjectLine = `Subject: ${trimmed}`;
-    const styleLine = `Campaign visual style: ${visualPositive}`;
-
-    const positivePrompt = [subjectLine, technicalForced, styleLine].join(". ");
+    const positivePrompt = styleTemplate
+      ? `${trimmed}. ${styleTemplate}`
+      : [`Subject: ${trimmed}`, technicalForced, `Campaign visual style: ${visualPositive}`].join(". ");
 
     const negativeCombined = [visualNegative, STANDARD_VISUAL_NEGATIVES]
       .filter(Boolean)

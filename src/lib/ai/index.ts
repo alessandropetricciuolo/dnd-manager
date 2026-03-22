@@ -16,3 +16,10 @@ export {
   type WikiAiTextGeneration,
   type ContextualImagePrompts,
 } from "./generator";
+
+export {
+  generateWikiMarkdownAction,
+  type WikiMarkdownEntityType,
+  type WikiMarkdownExtraParams,
+  type GenerateWikiMarkdownResult,
+} from "./wiki-text-generator";

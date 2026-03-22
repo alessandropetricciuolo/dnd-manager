@@ -21,7 +21,7 @@ import { GmFiles } from "@/components/gm/gm-files";
 import { CampaignPrimerEditor } from "@/components/gm/campaign-primer-editor";
 import { GmScreenLauncher } from "@/components/gm/gm-screen-launcher";
 import Link from "next/link";
-import { BookOpen, Map } from "lucide-react";
+import { BookOpen, Map, Palette } from "lucide-react";
 import { CharactersSection } from "@/components/characters/characters-section";
 import { getCampaignCharacters, getCampaignEligiblePlayers } from "@/app/campaigns/character-actions";
 import { getPreClosedSessionForCampaign, type PreClosedSessionRow } from "@/app/campaigns/gm-actions";
@@ -459,6 +459,19 @@ export default async function CampaignPage({ params }: PageProps) {
                     campaignId={campaign.id}
                     initialContext={aiContextParsed}
                   />
+                  <div className="rounded-lg border border-violet-600/30 bg-violet-950/30 p-4">
+                    <h3 className="mb-2 text-sm font-medium text-violet-200">Template Stile Immagini AI</h3>
+                    <p className="mb-3 text-xs text-violet-200/70">
+                      Configura il prompt visivo globale della campagna: verra&apos; usato come stile base per le
+                      immagini generate dall&apos;assistente AI.
+                    </p>
+                    <Button asChild variant="outline" size="sm" className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20">
+                      <Link href={`/campaigns/${campaign.id}/settings/ai-style`}>
+                        <Palette className="mr-2 h-4 w-4" />
+                        Apri Impostazioni Stile
+                      </Link>
+                    </Button>
+                  </div>
                   <CampaignPrimerEditor
                     campaignId={campaign.id}
                     initialPlayerPrimer={campaign.player_primer ?? null}

@@ -135,6 +135,7 @@ export interface Database {
           is_public: boolean;
           type: "oneshot" | "quest" | "long" | null;
           image_url: string | null;
+          image_style_prompt: string | null;
           /** Contesto strutturato dall'Agente Architetto (AI): tono, magia, meccaniche, paletti visivi. */
           ai_context: Json | null;
           created_at: string;
@@ -142,8 +143,8 @@ export interface Database {
         };
         Insert: Omit<
           Database["public"]["Tables"]["campaigns"]["Row"],
-          "created_at" | "updated_at" | "ai_context"
-        > & { ai_context?: Json | null };
+          "created_at" | "updated_at" | "ai_context" | "image_style_prompt"
+        > & { ai_context?: Json | null; image_style_prompt?: string | null };
         Update: Partial<Database["public"]["Tables"]["campaigns"]["Insert"]>;
       };
       sessions: {

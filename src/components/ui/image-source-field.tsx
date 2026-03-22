@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 import Image from "next/image";
 import { Upload, Link2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
@@ -31,6 +31,8 @@ export type ImageSourceFieldProps = {
   className?: string;
   /** Per PG avatar: aspect ratio diverso. */
   previewClassName?: string;
+  /** Bottone/azione opzionale accanto al caricamento file. */
+  fileExtraAction?: ReactNode;
 };
 
 export function ImageSourceField({
@@ -44,6 +46,7 @@ export function ImageSourceField({
   presetUrl,
   className,
   previewClassName,
+  fileExtraAction,
 }: ImageSourceFieldProps) {
   const [mode, setMode] = useState<ImageSourceMode>("file");
   const [urlValue, setUrlValue] = useState("");
@@ -141,6 +144,7 @@ export function ImageSourceField({
               hint={hint}
               previewUrl={initialPreviewUrl}
               className="[&_label]:sr-only [&_label]:mb-0"
+              extraAction={fileExtraAction}
             />
           )}
         </TabsContent>

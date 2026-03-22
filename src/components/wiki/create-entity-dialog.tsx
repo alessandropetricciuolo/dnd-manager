@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect, useRef, type FormEvent } from "react";
 import { useRouter } from "nextjs-toploader/app";
 import { toast } from "sonner";
 import { BookOpen, Plus, Trash2, Sparkles, Loader2, ImageIcon } from "lucide-react";
@@ -28,6 +28,8 @@ import {
   type WikiGeneratorEntityType,
 } from "@/app/campaigns/wiki-actions";
 import { generateFullAiWikiEntity } from "@/lib/actions/ai-wiki-chain";
+import { generateContextualPortraitAction } from "@/lib/actions/ai-generator";
+import { generateWikiMarkdownAction } from "@/lib/ai/wiki-text-generator";
 import { getWikiEntitiesForCampaign, getMapsForCampaign } from "@/app/campaigns/entity-graph-actions";
 import { getEmptyAttributes } from "@/types/wiki";
 import { CHALLENGE_RATING_OPTIONS } from "@/lib/dnd-constants";
@@ -75,12 +77,22 @@ type CreateEntityDialogProps = {
 const defaultAttributes = (type: EntityType) =>
   getEmptyAttributes(type) as Record<string, unknown>;
 
+const ITEM_RARITY_OPTIONS = [
+  "Comune",
+  "Non Comune",
+  "Raro",
+  "Molto Raro",
+  "Leggendario",
+  "Artefatto",
+] as const;
+
 export function CreateEntityDialog({
   campaignId,
   campaignType,
   eligiblePlayers = [],
 }: CreateEntityDialogProps) {
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [type, setType] = useState<EntityType>("npc");
@@ -98,6 +110,11 @@ export function CreateEntityDialog({
   const [magicPrompt, setMagicPrompt] = useState("");
   const [magicEntityType, setMagicEntityType] = useState<WikiGeneratorEntityType>("npc");
   const [magicLoading, setMagicLoading] = useState(false);
+  const [aiTextLoading, setAiTextLoading] = useState(false);
+  const [aiImageLoading, setAiImageLoading] = useState(false);
+  const [aiCr, setAiCr] = useState("");
+  const [aiRarity, setAiRarity] = useState("");
+  const [aiImagePreview, setAiImagePreview] = useState<string | null>(null);
   const [wikiImageUrlPreset, setWikiImageUrlPreset] = useState<string | null>(null);
   const [magicPortraitPreview, setMagicPortraitPreview] = useState<string | null>(null);
   /** Fasi UX durante la catena server (testo → immagine) per NPC/Luogo. */
@@ -181,6 +198,85 @@ export function CreateEntityDialog({
     }
   }
 
+  async function injectGeneratedImageAsFile(imageUrl: string) {
+    const formEl = formRef.current;
+    if (!formEl) throw new Error("Form non disponibile.");
+
+    const targetInput = formEl.querySelector<HTMLInputElement>('input[type="file"][name="image"]');
+    if (!targetInput) throw new Error("Input file originale non trovato.");
+
+    const response = await fetch(imageUrl);
+    if (!response.ok) throw new Error("Immagine AI non scaricabile.");
+    const blob = await response.blob();
+    const file = new File([blob], `ai-generated-${Date.now()}.png`, {
+      type: blob.type || "image/png",
+    });
+
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    targetInput.files = dataTransfer.files;
+    targetInput.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  async function handleAssistGenerateText() {
+    if (aiTextLoading || isLoading) return;
+    const safeName = titleValue.trim();
+    if (!safeName) {
+      toast.error("Inserisci prima il Titolo dell'elemento.");
+      return;
+    }
+    if (type !== "monster" && type !== "item") {
+      toast.error("Assistente testo disponibile per Mostri e Oggetti.");
+      return;
+    }
+    setAiTextLoading(true);
+    try {
+      const result = await generateWikiMarkdownAction(
+        campaignId,
+        type === "monster" ? "monster" : "magic_item",
+        safeName,
+        type === "monster" ? { cr: aiCr.trim() } : { rarity: aiRarity.trim() }
+      );
+      if (!result.success) {
+        toast.error(result.message);
+        return;
+      }
+      setContentValue(result.markdown);
+      toast.success("Markdown IA generato e inserito nel contenuto.");
+    } catch {
+      toast.error("Errore durante la generazione del testo AI.");
+    } finally {
+      setAiTextLoading(false);
+    }
+  }
+
+  async function handleAssistGenerateImage() {
+    if (aiImageLoading || isLoading) return;
+    const description = contentValue.trim() || titleValue.trim();
+    if (!description) {
+      toast.error("Compila almeno titolo o descrizione prima di generare l'immagine.");
+      return;
+    }
+    setAiImageLoading(true);
+    try {
+      const imageEntityType: "npc" | "location" = type === "location" ? "location" : "npc";
+      const result = await generateContextualPortraitAction(campaignId, description, imageEntityType);
+      if (!result.success) {
+        toast.error(result.message);
+        return;
+      }
+      await injectGeneratedImageAsFile(result.publicUrl);
+      setAiImagePreview(result.publicUrl);
+      setWikiImageUrlPreset(null);
+      setMagicPortraitPreview(null);
+      toast.success("Immagine AI generata e caricata nel file input originale.");
+    } catch {
+      toast.error("Errore durante la generazione/iniezione immagine AI.");
+    } finally {
+      setAiImageLoading(false);
+    }
+  }
+
   function handleOpenChange(next: boolean) {
     setOpen(next);
     if (next) {
@@ -194,6 +290,9 @@ export function CreateEntityDialog({
       setMagicEntityType("npc");
       setWikiImageUrlPreset(null);
       setMagicPortraitPreview(null);
+      setAiImagePreview(null);
+      setAiCr("");
+      setAiRarity("");
     }
   }
 
@@ -310,7 +409,7 @@ export function CreateEntityDialog({
             una bozza guidata dall&apos;AI (consigliato configurare prima &quot;L&apos;Anima della Campagna&quot; nel tab Solo GM).
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col gap-0">
+        <form ref={formRef} onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col gap-0">
           <div className="min-h-0 flex-1 space-y-4 overflow-y-scroll overflow-x-hidden py-1 pr-1">
           <div className="space-y-2">
             <Label htmlFor="entity-title">Titolo</Label>
@@ -365,7 +464,30 @@ export function CreateEntityDialog({
             label="Immagine (opzionale)"
             disabled={isLoading}
             presetUrl={wikiImageUrlPreset}
+            fileExtraAction={
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void handleAssistGenerateImage()}
+                disabled={isLoading || aiImageLoading}
+                className="border-violet-500/50 text-violet-200 hover:bg-violet-500/15 hover:text-violet-100"
+              >
+                {aiImageLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generazione...
+                  </>
+                ) : (
+                  <>✨ Genera Immagine con IA (Opzionale)</>
+                )}
+              </Button>
+            }
           />
+          {aiImagePreview && (
+            <p className="text-xs text-violet-200/85">
+              Immagine IA pronta: è stata iniettata nel file input originale.
+            </p>
+          )}
 
           <TagsInput value={tags} onChange={setTags} disabled={isLoading} />
 
@@ -469,6 +591,65 @@ export function CreateEntityDialog({
             <Label htmlFor="entity-content">
               {type === "lore" ? "Testo" : "Storia / Descrizione"}
             </Label>
+            {(type === "monster" || type === "item") && (
+              <div className="rounded-md border border-violet-500/30 bg-violet-950/20 p-3">
+                <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                  <div className="space-y-2">
+                    {type === "monster" ? (
+                      <>
+                        <Label htmlFor="assist-cr" className="text-xs text-violet-100">
+                          Grado di Sfida (CR) opzionale
+                        </Label>
+                        <Input
+                          id="assist-cr"
+                          value={aiCr}
+                          onChange={(e) => setAiCr(e.target.value)}
+                          placeholder="Es. 5"
+                          disabled={isLoading || aiTextLoading}
+                          className="bg-barber-dark border-violet-500/35 text-barber-paper"
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <Label htmlFor="assist-rarity" className="text-xs text-violet-100">
+                          Rarità oggetto opzionale
+                        </Label>
+                        <select
+                          id="assist-rarity"
+                          value={aiRarity}
+                          onChange={(e) => setAiRarity(e.target.value)}
+                          disabled={isLoading || aiTextLoading}
+                          className="flex h-10 w-full rounded-md border border-violet-500/35 bg-barber-dark px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-violet-400"
+                        >
+                          <option value="">— Scegli rarità —</option>
+                          {ITEM_RARITY_OPTIONS.map((rarity) => (
+                            <option key={rarity} value={rarity}>
+                              {rarity}
+                            </option>
+                          ))}
+                        </select>
+                      </>
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => void handleAssistGenerateText()}
+                    disabled={isLoading || aiTextLoading}
+                    className="border-violet-500/50 text-violet-200 hover:bg-violet-500/15 hover:text-violet-100"
+                  >
+                    {aiTextLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Generazione...
+                      </>
+                    ) : (
+                      <>✨ Genera Testo con IA (Opzionale)</>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
             <Textarea
               id="entity-content"
               name="content"

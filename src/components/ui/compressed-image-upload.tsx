@@ -2,6 +2,7 @@
 
 import { useRef, useState, useCallback } from "react";
 import Image from "next/image";
+import type { ReactNode } from "react";
 import imageCompression from "browser-image-compression";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
@@ -30,6 +31,8 @@ export type CompressedImageUploadProps = {
   accept?: string;
   /** Testo sotto l'input. */
   hint?: string;
+  /** Azione opzionale affiancata al bottone principale. */
+  extraAction?: ReactNode;
 };
 
 export function CompressedImageUpload({
@@ -41,6 +44,7 @@ export function CompressedImageUpload({
   disabled = false,
   accept = "image/jpeg,image/png,image/webp,image/gif",
   hint,
+  extraAction,
 }: CompressedImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   /** Anteprima locale dopo compressione (blob URL). */
@@ -120,16 +124,19 @@ export function CompressedImageUpload({
         aria-hidden
         onChange={handleImageChange}
       />
-      <Button
-        type="button"
-        variant="outline"
-        onClick={triggerInput}
-        disabled={disabled || isCompressing}
-        className="w-full justify-center gap-2 border-barber-gold/40 text-barber-paper hover:bg-barber-gold/10 hover:text-barber-gold"
-      >
-        <Upload className="h-4 w-4" />
-        {isCompressing ? "Compressione in corso..." : "Scegli immagine (verrà compressa)"}
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={triggerInput}
+          disabled={disabled || isCompressing}
+          className="flex-1 justify-center gap-2 border-barber-gold/40 text-barber-paper hover:bg-barber-gold/10 hover:text-barber-gold"
+        >
+          <Upload className="h-4 w-4" />
+          {isCompressing ? "Compressione in corso..." : "Scegli immagine (verrà compressa)"}
+        </Button>
+        {extraAction}
+      </div>
       {displayPreview && (
         <div className="relative mt-2 aspect-video w-full overflow-hidden rounded-lg border border-barber-gold/30 bg-barber-dark">
           <Image
