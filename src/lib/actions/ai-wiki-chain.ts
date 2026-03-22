@@ -30,22 +30,11 @@ function stripMarkdownForImagePrompt(markdown: string): string {
     .trim();
 }
 
-/**
- * Costruisce la descrizione per il modello immagine usando **solo** il testo generato in Fase 1,
- * così cicatrici, abiti e dettagli narrativi restano allineati all'output dell'AI.
- */
-function buildImageDescriptionFromGeneratedWiki(
-  data: WikiAiTextGeneration,
-  entityType: "npc" | "location"
-): string {
-  const plainBody = stripMarkdownForImagePrompt(data.content);
-  const header =
-    entityType === "npc"
-      ? `Portrait and appearance of this NPC named "${data.title}".`
-      : `Environment and atmosphere of this place named "${data.title}".`;
-  const combined = `${header}\n\n${plainBody}`;
+/** Prompt immagine basato esclusivamente sulla descrizione narrativa (niente statistiche). */
+function buildImageDescriptionFromNarrative(narrativeDescription: string): string {
+  const plainBody = stripMarkdownForImagePrompt(narrativeDescription);
   const max = 3500;
-  return combined.length <= max ? combined : `${combined.slice(0, max)}…`;
+  return plainBody.length <= max ? plainBody : `${plainBody.slice(0, max)}…`;
 }
 
 /**
@@ -91,7 +80,7 @@ export async function generateFullAiWikiEntity(
     }
 
     const { title, content, hp, ac } = textResult.data;
-    const imageDescription = buildImageDescriptionFromGeneratedWiki(textResult.data, entityType);
+    const imageDescription = buildImageDescriptionFromNarrative(content);
 
     const portraitResult = await generateContextualPortraitAction(
       campaignId,

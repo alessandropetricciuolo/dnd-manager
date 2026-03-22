@@ -19,7 +19,7 @@ export type ExtractedWikiStats = {
 };
 
 export type GenerateWikiMarkdownResult =
-  | { success: true; markdown: string; stats?: ExtractedWikiStats }
+  | { success: true; description: string; statblock: string; stats?: ExtractedWikiStats }
   | { success: false; message: string };
 
 function cleanSingleLine(value: string): string {
@@ -48,13 +48,25 @@ function extractStatsFromMarkdown(markdown: string): ExtractedWikiStats {
   };
 }
 
+function splitNarrativeAndMechanics(raw: string): { description: string; statblock: string } {
+  const source = raw.replace(/\r/g, "").trim();
+  const narrativeMatch = source.match(/\[NARRATIVA\]([\s\S]*?)\[MECCANICA\]/i);
+  const mechanicMatch = source.match(/\[MECCANICA\]([\s\S]*)/i);
+
+  const description = narrativeMatch ? narrativeMatch[1].trim() : source;
+  const statblock = mechanicMatch ? mechanicMatch[1].trim() : "";
+  return { description, statblock };
+}
+
 export async function generateWikiMarkdownAction(
   campaignId: string,
   entityType: WikiMarkdownEntityType,
   name: string,
+  userPrompt: string,
   extraParams: WikiMarkdownExtraParams = {}
 ): Promise<GenerateWikiMarkdownResult> {
   const safeName = cleanSingleLine(name ?? "");
+  const safeUserPrompt = cleanSingleLine(userPrompt ?? "");
   if (!campaignId) return { success: false, message: "Campagna non valida." };
   if (!safeName) return { success: false, message: "Inserisci un nome valido." };
 
@@ -161,14 +173,16 @@ export async function generateWikiMarkdownAction(
       `Livello magia: ${magicLevel}`,
       `Focus meccanico: ${mechanics}`,
       `Tipo elemento: ${normalizedType}`,
+      `RICHIESTA SPECIFICA DELL'UTENTE: Il nome dell'entità è "${safeName}". Segui queste istruzioni per i dettagli: "${safeUserPrompt || "Nessuna istruzione aggiuntiva."}".`,
       `Nome elemento: ${safeName}`,
       paramLine,
       templateInstructionMap[normalizedType],
+      "Devi dividere la tua risposta esattamente in due parti usando questi delimitatori esatti: inizia la descrizione narrativa con il tag [NARRATIVA] e inizia lo statblock con il tag [MECCANICA]. Non inserire testo prima di [NARRATIVA].",
       "Rispondi SOLO con Markdown valido, senza JSON e senza testo extra prima/dopo.",
     ].join("\n\n");
 
     if (normalizedType === "monster") {
-      const searchQuery = `Regole, privilegi e statblock completo del mostro: ${safeName}.`;
+      const searchQuery = `Regole, privilegi e statblock completo del mostro: ${safeName}. Dettagli: ${safeUserPrompt || "nessuno"}.`;
       let technicalContext = "";
 
       try {
@@ -209,6 +223,7 @@ export async function generateWikiMarkdownAction(
       prompt = [
         "Sei un motore di formattazione.",
         `[CONTESTO TECNICO]:\n${technicalContext}`,
+        `RICHIESTA SPECIFICA DELL'UTENTE: Il nome dell'entità è "${safeName}". Segui queste istruzioni per i dettagli: "${safeUserPrompt || "Nessuna istruzione aggiuntiva."}".`,
         `Nome mostro richiesto: ${safeName}`,
         `Grado di Sfida target: ${cr || "1"}`,
         "Usa ESCLUSIVAMENTE il [CONTESTO TECNICO] fornito.",
@@ -216,6 +231,7 @@ export async function generateWikiMarkdownAction(
         "Se non contiene nulla, restituisci solo il messaggio di errore: NO_TECHNICAL_DATA.",
         `Se contiene i dati, compila il template Markdown seguente bilanciando matematica (PF, CA, Danni) e attacchi per GS ${cr || "1"}:`,
         templateInstructionMap.monster,
+        "Devi dividere la tua risposta esattamente in due parti usando questi delimitatori esatti: inizia la descrizione narrativa con il tag [NARRATIVA] e inizia lo statblock con il tag [MECCANICA]. Non inserire testo prima di [NARRATIVA].",
         "NO parole extra prima o dopo.",
       ].join("\n\n");
     }
@@ -250,9 +266,15 @@ export async function generateWikiMarkdownAction(
       return { success: false, message: "Il modello non ha restituito contenuto markdown." };
     }
 
-    const extractedStats = extractStatsFromMarkdown(normalized);
+    const { description, statblock } = splitNarrativeAndMechanics(normalized);
+    const extractedStats = normalizedType === "monster" ? extractStatsFromMarkdown(statblock) : undefined;
 
-    return { success: true, markdown: normalized, stats: extractedStats };
+    return {
+      success: true,
+      description,
+      statblock,
+      stats: extractedStats,
+    };
   } catch (err) {
     console.error("[generateWikiMarkdownAction]", err);
     return { success: false, message: "Errore imprevisto durante la generazione." };

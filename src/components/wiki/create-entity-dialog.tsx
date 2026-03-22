@@ -114,6 +114,7 @@ export function CreateEntityDialog({
   const [aiImageLoading, setAiImageLoading] = useState(false);
   const [aiCr, setAiCr] = useState("");
   const [aiRarity, setAiRarity] = useState("");
+  const [aiPrompt, setAiPrompt] = useState("");
   const [aiImagePreview, setAiImagePreview] = useState<string | null>(null);
   const [wikiImageUrlPreset, setWikiImageUrlPreset] = useState<string | null>(null);
   const [magicPortraitPreview, setMagicPortraitPreview] = useState<string | null>(null);
@@ -241,29 +242,34 @@ export function CreateEntityDialog({
         campaignId,
         aiEntityType,
         safeName,
+        aiPrompt,
         type === "monster" ? { cr: aiCr.trim() } : type === "item" ? { rarity: aiRarity.trim() } : {}
       );
       if (!result.success) {
         toast.error(result.message);
         return;
       }
-      setContentValue(result.markdown);
-      if (type === "monster" && result.stats) {
-        if (result.stats.hp) {
-          setAttr("combat_stats.hp", result.stats.hp);
+      const { description, statblock, stats } = result;
+      setContentValue(description);
+      if (type === "npc" || type === "monster") {
+        setAttr("statblock", statblock);
+      }
+      if (type === "monster" && stats) {
+        if (stats.hp) {
+          setAttr("combat_stats.hp", stats.hp);
         }
-        if (result.stats.ac) {
-          setAttr("combat_stats.ac", result.stats.ac);
+        if (stats.ac) {
+          setAttr("combat_stats.ac", stats.ac);
         }
-        if (result.stats.cr) {
-          setAttr("combat_stats.cr", result.stats.cr);
-          const xp = CHALLENGE_RATING_OPTIONS.find((o) => o.value === result.stats?.cr)?.xp;
+        if (stats.cr) {
+          setAttr("combat_stats.cr", stats.cr);
+          const xp = CHALLENGE_RATING_OPTIONS.find((o) => o.value === stats.cr)?.xp;
           if (xp != null) {
             setMonsterXp(xp);
           }
         }
       }
-      toast.success("Markdown IA generato e inserito nel contenuto.");
+      toast.success("Contenuto AI generato: narrativa e statblock separati.");
     } catch {
       toast.error("Errore durante la generazione del testo AI.");
     } finally {
@@ -273,15 +279,15 @@ export function CreateEntityDialog({
 
   async function handleAssistGenerateImage() {
     if (aiImageLoading || isLoading) return;
-    const description = contentValue.trim() || titleValue.trim();
-    if (!description) {
-      toast.error("Compila almeno titolo o descrizione prima di generare l'immagine.");
+    const narrativeDescription = contentValue.trim();
+    if (!narrativeDescription) {
+      toast.error("Compila la descrizione narrativa nel campo contenuto prima di generare l'immagine.");
       return;
     }
     setAiImageLoading(true);
     try {
       const imageEntityType: "npc" | "location" = type === "location" ? "location" : "npc";
-      const result = await generateContextualPortraitAction(campaignId, description, imageEntityType);
+      const result = await generateContextualPortraitAction(campaignId, narrativeDescription, imageEntityType);
       if (!result.success) {
         toast.error(result.message);
         return;
@@ -314,6 +320,7 @@ export function CreateEntityDialog({
       setAiImagePreview(null);
       setAiCr("");
       setAiRarity("");
+      setAiPrompt("");
     }
   }
 
@@ -411,20 +418,7 @@ export function CreateEntityDialog({
       </DialogTrigger>
       <DialogContent className="flex max-h-[90vh] flex-col gap-2 border-barber-gold/40 bg-barber-dark text-barber-paper">
         <DialogHeader className="shrink-0">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <DialogTitle className="text-left">Nuova voce wiki</DialogTitle>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="shrink-0 border-violet-500/50 text-violet-200 hover:bg-violet-500/15 hover:text-violet-100"
-              onClick={() => setMagicOpen(true)}
-              disabled={isLoading}
-            >
-              <Sparkles className="mr-1.5 h-4 w-4" />
-              🪄 Generazione Magica AI
-            </Button>
-          </div>
+          <DialogTitle className="text-left">Nuova voce wiki</DialogTitle>
           <DialogDescription className="text-barber-paper/70">
             Aggiungi un NPC, un luogo, un mostro, un oggetto o una voce di lore. Usa la bacchetta per
             una bozza guidata dall&apos;AI (consigliato configurare prima &quot;L&apos;Anima della Campagna&quot; nel tab Solo GM).
@@ -499,7 +493,7 @@ export function CreateEntityDialog({
                     Generazione...
                   </>
                 ) : (
-                  <>✨ Genera Immagine con IA (Opzionale)</>
+                  <>✨ Genera Immagine Coerente (Opzionale)</>
                 )}
               </Button>
             }
@@ -613,7 +607,22 @@ export function CreateEntityDialog({
               {type === "lore" ? "Testo" : "Storia / Descrizione"}
             </Label>
             <div className="rounded-md border border-violet-500/30 bg-violet-950/20 p-3">
-              <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+              <div className="grid gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="assist-prompt" className="text-xs text-violet-100">
+                    Istruzioni per l&apos;IA (Opzionale)
+                  </Label>
+                  <Textarea
+                    id="assist-prompt"
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    placeholder="Es. Un oste nano burbero legato alla gilda dei ladri..."
+                    disabled={isLoading || aiTextLoading}
+                    className="min-h-[72px] resize-y bg-barber-dark border-violet-500/35 text-barber-paper"
+                  />
+                </div>
+
+                <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
                 <div className="space-y-2">
                   {type === "monster" ? (
                     <>
@@ -668,9 +677,10 @@ export function CreateEntityDialog({
                       Generazione...
                     </>
                   ) : (
-                    <>✨ Genera Testo con IA (Opzionale)</>
+                    <>✨ Genera Scheda Testo (Opzionale)</>
                   )}
                 </Button>
+              </div>
               </div>
             </div>
             <Textarea
@@ -687,6 +697,17 @@ export function CreateEntityDialog({
           {/* Campi dinamici per tipo */}
           {type === "npc" && (
             <>
+              <div className="space-y-2">
+                <Label htmlFor="attr-statblock-npc">Statblock</Label>
+                <Textarea
+                  id="attr-statblock-npc"
+                  value={getAttr("statblock")}
+                  onChange={(e) => setAttr("statblock", e.target.value)}
+                  placeholder="Statblock NPC (abilità, tiri salvezza, attacchi, capacità speciali)..."
+                  className="min-h-[120px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
+                  disabled={isLoading}
+                />
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="attr-relationships">Rapporti interpersonali</Label>
                 <Textarea
@@ -728,6 +749,17 @@ export function CreateEntityDialog({
 
           {type === "monster" && (
             <>
+              <div className="space-y-2">
+                <Label htmlFor="attr-statblock-monster">Statblock</Label>
+                <Textarea
+                  id="attr-statblock-monster"
+                  value={getAttr("statblock")}
+                  onChange={(e) => setAttr("statblock", e.target.value)}
+                  placeholder="Statblock completo del mostro (azioni, reazioni, tratti, capacità leggendarie)..."
+                  className="min-h-[140px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
+                  disabled={isLoading}
+                />
+              </div>
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-2">
                   <Label htmlFor="attr-hp">HP</Label>
