@@ -86,15 +86,18 @@ function extractStatsFromMarkdown(markdown: string): ExtractedWikiStats {
 
   const acMatch =
     source.match(/(?:Classe\s+Armatura|Armor\s+Class|CA)\*{0,2}\s*[:\-]\s*(\d{1,3})/i) ??
-    source.match(/\bAC\*{0,2}\s*[:\-]\s*(\d{1,3})/i);
+    source.match(/\bAC\*{0,2}\s*[:\-]\s*(\d{1,3})/i) ??
+    source.match(/\|\s*(?:Classe\s+Armatura|Armor\s+Class|CA)\s*\|\s*(\d{1,3})\s*\|/i);
 
   const hpMatch =
     source.match(/(?:Punti\s+Vita|Hit\s+Points|HP|PF)\*{0,2}\s*[:\-]\s*(\d{1,4})/i) ??
-    source.match(/\bHP\*{0,2}\s*[:\-]\s*(\d{1,4})/i);
+    source.match(/\bHP\*{0,2}\s*[:\-]\s*(\d{1,4})/i) ??
+    source.match(/\|\s*(?:Punti\s+Vita|Hit\s+Points|HP|PF)\s*\|\s*(\d{1,4})\s*\|/i);
 
   const crMatch =
     source.match(/(?:Grado\s+di\s+Sfida|Challenge\s+Rating|CR|GS)\*{0,2}\s*[:\-]\s*([0-9]+(?:\/[0-9]+)?(?:\.[0-9]+)?)/i) ??
-    source.match(/\bCR\*{0,2}\s*[:\-]\s*([0-9]+(?:\/[0-9]+)?(?:\.[0-9]+)?)/i);
+    source.match(/\bCR\*{0,2}\s*[:\-]\s*([0-9]+(?:\/[0-9]+)?(?:\.[0-9]+)?)/i) ??
+    source.match(/\|\s*(?:Grado\s+di\s+Sfida|Challenge\s+Rating|CR|GS)\s*\|\s*([0-9]+(?:\/[0-9]+)?(?:\.[0-9]+)?)\s*\|/i);
 
   return {
     ac: acMatch?.[1] ?? null,
@@ -108,8 +111,35 @@ function splitNarrativeAndMechanics(raw: string): { description: string; statblo
   const narrativeMatch = source.match(/\[NARRATIVA\]([\s\S]*?)\[MECCANICA\]/i);
   const mechanicMatch = source.match(/\[MECCANICA\]([\s\S]*)/i);
 
-  const description = narrativeMatch ? narrativeMatch[1].trim() : source;
-  const statblock = mechanicMatch ? mechanicMatch[1].trim() : "";
+  if (narrativeMatch || mechanicMatch) {
+    const description = narrativeMatch ? narrativeMatch[1].trim() : source;
+    const statblock = mechanicMatch ? mechanicMatch[1].trim() : "";
+    return { description, statblock };
+  }
+
+  // Fallback euristico se il modello non rispetta i tag.
+  const mechanicHeading =
+    source.match(/\n#{1,6}\s*(stat\s*block|meccanica|scheda\s*tecnica|dati\s*meccanici)\b/i) ??
+    source.match(/\n\*\*(stat\s*block|meccanica|scheda\s*tecnica|dati\s*meccanici)\*\*/i);
+
+  if (mechanicHeading && typeof mechanicHeading.index === "number") {
+    const splitAt = mechanicHeading.index;
+    const description = source.slice(0, splitAt).trim();
+    const statblock = source.slice(splitAt).trim();
+    return { description: description || source, statblock };
+  }
+
+  // Ultimo fallback: se sembra uno statblock tabellare, consideralo meccanica.
+  const looksMechanical =
+    /\b(?:CA|AC|HP|PF|GS|CR|Classe Armatura|Punti Vita|Challenge Rating)\b/i.test(source) &&
+    /\|/.test(source);
+
+  if (looksMechanical) {
+    return { description: "", statblock: source };
+  }
+
+  const description = source;
+  const statblock = "";
   return { description, statblock };
 }
 
@@ -361,7 +391,13 @@ export async function generateWikiMarkdownAction(
     }
 
     const { description, statblock } = splitNarrativeAndMechanics(normalized);
-    const extractedStats = normalizedType === "monster" ? extractStatsFromMarkdown(statblock) : undefined;
+    const extractedStats = normalizedType === "monster"
+      ? (() => {
+          const fromStatblock = extractStatsFromMarkdown(statblock || "");
+          if (fromStatblock.ac || fromStatblock.hp || fromStatblock.cr) return fromStatblock;
+          return extractStatsFromMarkdown(normalized);
+        })()
+      : undefined;
 
     return {
       success: true,

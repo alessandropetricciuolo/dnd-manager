@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { ImageSourceField } from "@/components/ui/image-source-field";
 import { Textarea } from "@/components/ui/textarea";
 import { TagsInput } from "@/components/wiki/tags-input";
@@ -115,6 +116,8 @@ export function CreateEntityDialog({
   const [aiCr, setAiCr] = useState("");
   const [aiRarity, setAiRarity] = useState("");
   const [aiPrompt, setAiPrompt] = useState("");
+  const [aiProgress, setAiProgress] = useState(0);
+  const [aiProgressLabel, setAiProgressLabel] = useState<string | null>(null);
   const [aiImagePreview, setAiImagePreview] = useState<string | null>(null);
   const [wikiImageUrlPreset, setWikiImageUrlPreset] = useState<string | null>(null);
   const [magicPortraitPreview, setMagicPortraitPreview] = useState<string | null>(null);
@@ -124,6 +127,37 @@ export function CreateEntityDialog({
   const [relations, setRelations] = useState<RelationRow[]>([]);
   const [wikiOptions, setWikiOptions] = useState<{ id: string; name: string }[]>([]);
   const [mapOptions, setMapOptions] = useState<{ id: string; name: string }[]>([]);
+  const aiProgressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  function clearAiProgressTimer() {
+    if (aiProgressTimerRef.current) {
+      clearInterval(aiProgressTimerRef.current);
+      aiProgressTimerRef.current = null;
+    }
+  }
+
+  function startAiProgress(label: string) {
+    clearAiProgressTimer();
+    setAiProgressLabel(label);
+    setAiProgress(8);
+    aiProgressTimerRef.current = setInterval(() => {
+      setAiProgress((prev) => (prev >= 92 ? prev : prev + 6));
+    }, 650);
+  }
+
+  function endAiProgress(success: boolean) {
+    clearAiProgressTimer();
+    if (success) {
+      setAiProgress(100);
+      setTimeout(() => {
+        setAiProgress(0);
+        setAiProgressLabel(null);
+      }, 500);
+      return;
+    }
+    setAiProgress(0);
+    setAiProgressLabel(null);
+  }
 
   function onTypeChange(newType: string) {
     const t = newType as EntityType;
@@ -227,6 +261,8 @@ export function CreateEntityDialog({
       return;
     }
     setAiTextLoading(true);
+    startAiProgress("Generazione scheda testo IA in corso...");
+    let success = false;
     try {
       const aiEntityType =
         type === "monster"
@@ -269,10 +305,12 @@ export function CreateEntityDialog({
           }
         }
       }
+      success = true;
       toast.success("Contenuto AI generato: narrativa e statblock separati.");
     } catch {
       toast.error("Errore durante la generazione del testo AI.");
     } finally {
+      endAiProgress(success);
       setAiTextLoading(false);
     }
   }
@@ -285,6 +323,8 @@ export function CreateEntityDialog({
       return;
     }
     setAiImageLoading(true);
+    startAiProgress("Generazione immagine IA coerente in corso...");
+    let success = false;
     try {
       const imageEntityType: "npc" | "location" = type === "location" ? "location" : "npc";
       const result = await generateContextualPortraitAction(campaignId, narrativeDescription, imageEntityType);
@@ -296,10 +336,12 @@ export function CreateEntityDialog({
       setAiImagePreview(result.publicUrl);
       setWikiImageUrlPreset(null);
       setMagicPortraitPreview(null);
+      success = true;
       toast.success("Immagine AI generata e caricata nel file input originale.");
     } catch {
       toast.error("Errore durante la generazione/iniezione immagine AI.");
     } finally {
+      endAiProgress(success);
       setAiImageLoading(false);
     }
   }
@@ -321,8 +363,15 @@ export function CreateEntityDialog({
       setAiCr("");
       setAiRarity("");
       setAiPrompt("");
+      clearAiProgressTimer();
+      setAiProgress(0);
+      setAiProgressLabel(null);
     }
   }
+
+  useEffect(() => {
+    return () => clearAiProgressTimer();
+  }, []);
 
   function handleMagicDialogOpenChange(next: boolean) {
     setMagicOpen(next);
@@ -681,6 +730,12 @@ export function CreateEntityDialog({
                   )}
                 </Button>
               </div>
+                {aiProgressLabel && (
+                  <div className="rounded-md border border-violet-500/30 bg-barber-dark/60 p-3">
+                    <p className="mb-2 text-xs text-violet-100">{aiProgressLabel}</p>
+                    <Progress value={aiProgress} className="h-2" />
+                  </div>
+                )}
               </div>
             </div>
             <Textarea
