@@ -27,6 +27,60 @@ function cleanSingleLine(value: string): string {
   return value.replace(/\s+/g, " ").trim();
 }
 
+function buildKeywordCandidates(name: string, userPrompt: string): string[] {
+  const base = `${name} ${userPrompt}`.toLowerCase();
+  const cleaned = base.replace(/[^a-z0-9àèéìòóù/\s-]/gi, " ");
+  const stopwords = new Set([
+    "un",
+    "una",
+    "uno",
+    "il",
+    "lo",
+    "la",
+    "i",
+    "gli",
+    "le",
+    "di",
+    "del",
+    "della",
+    "dei",
+    "degli",
+    "delle",
+    "che",
+    "con",
+    "per",
+    "nel",
+    "nella",
+    "nello",
+    "vuole",
+    "sempre",
+    "mondo",
+  ]);
+
+  const words = cleaned
+    .split(/\s+/)
+    .map((w) => w.trim())
+    .filter((w) => w.length >= 4 && !stopwords.has(w));
+
+  const unique = Array.from(new Set([name.toLowerCase().trim(), ...words]));
+  return unique.slice(0, 8);
+}
+
+function splitPromptByDash(userPrompt: string): { retrievalPrompt: string; narrativePrompt: string } {
+  const raw = userPrompt.trim();
+  if (!raw) return { retrievalPrompt: "", narrativePrompt: "" };
+  const dashIdx = raw.indexOf("-");
+  if (dashIdx < 0) {
+    return { retrievalPrompt: raw, narrativePrompt: raw };
+  }
+  const left = raw.slice(0, dashIdx).trim();
+  const right = raw.slice(dashIdx + 1).trim();
+  return {
+    retrievalPrompt: left || raw,
+    narrativePrompt: right || left || raw,
+  };
+}
+
 function extractStatsFromMarkdown(markdown: string): ExtractedWikiStats {
   const source = markdown.replace(/\r/g, "");
 
@@ -68,6 +122,9 @@ export async function generateWikiMarkdownAction(
 ): Promise<GenerateWikiMarkdownResult> {
   const safeName = cleanSingleLine(name ?? "");
   const safeUserPrompt = cleanSingleLine(userPrompt ?? "");
+  const { retrievalPrompt, narrativePrompt } = splitPromptByDash(safeUserPrompt);
+  const safeRetrievalPrompt = cleanSingleLine(retrievalPrompt);
+  const safeNarrativePrompt = cleanSingleLine(narrativePrompt);
   if (!campaignId) return { success: false, message: "Campagna non valida." };
   if (!safeName) return { success: false, message: "Inserisci un nome valido." };
 
@@ -174,7 +231,7 @@ export async function generateWikiMarkdownAction(
       `Livello magia: ${magicLevel}`,
       `Focus meccanico: ${mechanics}`,
       `Tipo elemento: ${normalizedType}`,
-      `RICHIESTA SPECIFICA DELL'UTENTE: Il nome dell'entità è "${safeName}". Segui queste istruzioni per i dettagli: "${safeUserPrompt || "Nessuna istruzione aggiuntiva."}".`,
+      `RICHIESTA SPECIFICA DELL'UTENTE: Il nome dell'entità è "${safeName}". Segui queste istruzioni per i dettagli: "${safeNarrativePrompt || "Nessuna istruzione aggiuntiva."}".`,
       `Nome elemento: ${safeName}`,
       paramLine,
       templateInstructionMap[normalizedType],
@@ -183,7 +240,7 @@ export async function generateWikiMarkdownAction(
     ].join("\n\n");
 
     if (normalizedType === "monster") {
-      const searchQuery = `Regole, privilegi e statblock completo del mostro: ${safeName}. Dettagli: ${safeUserPrompt || "nessuno"}.`;
+      const searchQuery = `Regole, privilegi e statblock completo del mostro: ${safeName}. Dettagli tecnici: ${safeRetrievalPrompt || "nessuno"}.`;
       let technicalContext = "";
       const admin = createSupabaseAdminClient();
 
@@ -195,11 +252,22 @@ export async function generateWikiMarkdownAction(
           args: Record<string, unknown>
         ) => Promise<{ data: unknown; error: { message: string } | null }>;
 
-        const { data: chunks, error: rpcError } = await runRpc("match_manuals_knowledge", {
-          query_embedding: embedding,
-          match_threshold: 0.35,
-          match_count: 5,
-        });
+        let chunks: unknown = null;
+        let rpcError: { message: string } | null = null;
+        // Tentativi progressivi: conserviamo rigore ma riduciamo falsi negativi.
+        for (const threshold of [0.35, 0.28, 0.2]) {
+          const res = await runRpc("match_manuals_knowledge", {
+            query_embedding: embedding,
+            match_threshold: threshold,
+            match_count: 6,
+          });
+          chunks = res.data;
+          rpcError = res.error;
+          const list = (res.data ?? []) as Array<{ content?: string | null }>;
+          if (list.some((c) => typeof c.content === "string" && c.content.trim().length > 0)) {
+            break;
+          }
+        }
 
         if (rpcError) {
           return { success: false, message: `Errore RPC match_manuals_knowledge: ${rpcError.message}` };
@@ -214,16 +282,15 @@ export async function generateWikiMarkdownAction(
         // Fallback robusto: se embeddings o RPC non sono disponibili runtime,
         // proviamo retrieval testuale best-effort sui chunk manuali.
         console.error("[generateWikiMarkdownAction] semantic RAG failed, fallback text", ragError);
-        const keywords = [
-          safeName,
-          ...safeUserPrompt.split(/\s+/).filter((w) => w.length >= 4).slice(0, 4),
-        ].filter(Boolean);
+        const keywords = buildKeywordCandidates(safeName, safeRetrievalPrompt || safeUserPrompt);
 
         try {
-          let query = admin.from("manuals_knowledge").select("content").limit(8);
-          if (keywords[0]) query = query.ilike("content", `%${keywords[0]}%`);
-          if (keywords[1]) query = query.ilike("content", `%${keywords[1]}%`);
-          const { data: rows, error: textErr } = await query;
+          const orExpr = keywords.map((kw) => `content.ilike.%${kw}%`).join(",");
+          const { data: rows, error: textErr } = await admin
+            .from("manuals_knowledge")
+            .select("content")
+            .or(orExpr)
+            .limit(12);
           if (textErr) {
             return {
               success: false,
@@ -250,7 +317,7 @@ export async function generateWikiMarkdownAction(
       prompt = [
         "Sei un motore di formattazione.",
         `[CONTESTO TECNICO]:\n${technicalContext}`,
-        `RICHIESTA SPECIFICA DELL'UTENTE: Il nome dell'entità è "${safeName}". Segui queste istruzioni per i dettagli: "${safeUserPrompt || "Nessuna istruzione aggiuntiva."}".`,
+        `RICHIESTA SPECIFICA DELL'UTENTE: Il nome dell'entità è "${safeName}". Segui queste istruzioni per i dettagli: "${safeNarrativePrompt || "Nessuna istruzione aggiuntiva."}".`,
         `Nome mostro richiesto: ${safeName}`,
         `Grado di Sfida target: ${cr || "1"}`,
         "Usa ESCLUSIVAMENTE il [CONTESTO TECNICO] fornito.",
