@@ -45,10 +45,26 @@ export async function saveImageStylePromptAction(
 
   try {
     const supabase = await createSupabaseServerClient();
-    const { error } = await supabase
+    let { error } = await supabase
       .from("campaigns")
       .update({ image_style_prompt: value, updated_at: new Date().toISOString() })
       .eq("id", campaignId);
+
+    // Compatibilità: se la colonna non è ancora migrata, non bloccare la pagina.
+    if (error?.message?.toLowerCase().includes("image_style_prompt")) {
+      const fallback = await supabase
+        .from("campaigns")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", campaignId);
+      error = fallback.error;
+      if (!error) {
+        return {
+          success: false,
+          message:
+            "La colonna image_style_prompt non è ancora disponibile su questo database. Esegui la migration SQL e riprova.",
+        };
+      }
+    }
 
     if (error) {
       return { success: false, message: error.message || "Errore salvataggio." };

@@ -225,23 +225,44 @@ export function CreateEntityDialog({
       toast.error("Inserisci prima il Titolo dell'elemento.");
       return;
     }
-    if (type !== "monster" && type !== "item") {
-      toast.error("Assistente testo disponibile per Mostri e Oggetti.");
-      return;
-    }
     setAiTextLoading(true);
     try {
+      const aiEntityType =
+        type === "monster"
+          ? "monster"
+          : type === "item"
+            ? "item"
+            : type === "location"
+              ? "location"
+              : type === "lore"
+                ? "lore"
+                : "npc";
       const result = await generateWikiMarkdownAction(
         campaignId,
-        type === "monster" ? "monster" : "magic_item",
+        aiEntityType,
         safeName,
-        type === "monster" ? { cr: aiCr.trim() } : { rarity: aiRarity.trim() }
+        type === "monster" ? { cr: aiCr.trim() } : type === "item" ? { rarity: aiRarity.trim() } : {}
       );
       if (!result.success) {
         toast.error(result.message);
         return;
       }
       setContentValue(result.markdown);
+      if (type === "monster" && result.stats) {
+        if (result.stats.hp) {
+          setAttr("combat_stats.hp", result.stats.hp);
+        }
+        if (result.stats.ac) {
+          setAttr("combat_stats.ac", result.stats.ac);
+        }
+        if (result.stats.cr) {
+          setAttr("combat_stats.cr", result.stats.cr);
+          const xp = CHALLENGE_RATING_OPTIONS.find((o) => o.value === result.stats?.cr)?.xp;
+          if (xp != null) {
+            setMonsterXp(xp);
+          }
+        }
+      }
       toast.success("Markdown IA generato e inserito nel contenuto.");
     } catch {
       toast.error("Errore durante la generazione del testo AI.");
@@ -591,65 +612,67 @@ export function CreateEntityDialog({
             <Label htmlFor="entity-content">
               {type === "lore" ? "Testo" : "Storia / Descrizione"}
             </Label>
-            {(type === "monster" || type === "item") && (
-              <div className="rounded-md border border-violet-500/30 bg-violet-950/20 p-3">
-                <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-                  <div className="space-y-2">
-                    {type === "monster" ? (
-                      <>
-                        <Label htmlFor="assist-cr" className="text-xs text-violet-100">
-                          Grado di Sfida (CR) opzionale
-                        </Label>
-                        <Input
-                          id="assist-cr"
-                          value={aiCr}
-                          onChange={(e) => setAiCr(e.target.value)}
-                          placeholder="Es. 5"
-                          disabled={isLoading || aiTextLoading}
-                          className="bg-barber-dark border-violet-500/35 text-barber-paper"
-                        />
-                      </>
-                    ) : (
-                      <>
-                        <Label htmlFor="assist-rarity" className="text-xs text-violet-100">
-                          Rarità oggetto opzionale
-                        </Label>
-                        <select
-                          id="assist-rarity"
-                          value={aiRarity}
-                          onChange={(e) => setAiRarity(e.target.value)}
-                          disabled={isLoading || aiTextLoading}
-                          className="flex h-10 w-full rounded-md border border-violet-500/35 bg-barber-dark px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-violet-400"
-                        >
-                          <option value="">— Scegli rarità —</option>
-                          {ITEM_RARITY_OPTIONS.map((rarity) => (
-                            <option key={rarity} value={rarity}>
-                              {rarity}
-                            </option>
-                          ))}
-                        </select>
-                      </>
-                    )}
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => void handleAssistGenerateText()}
-                    disabled={isLoading || aiTextLoading}
-                    className="border-violet-500/50 text-violet-200 hover:bg-violet-500/15 hover:text-violet-100"
-                  >
-                    {aiTextLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Generazione...
-                      </>
-                    ) : (
-                      <>✨ Genera Testo con IA (Opzionale)</>
-                    )}
-                  </Button>
+            <div className="rounded-md border border-violet-500/30 bg-violet-950/20 p-3">
+              <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                <div className="space-y-2">
+                  {type === "monster" ? (
+                    <>
+                      <Label htmlFor="assist-cr" className="text-xs text-violet-100">
+                        Grado di Sfida (CR) opzionale
+                      </Label>
+                      <Input
+                        id="assist-cr"
+                        value={aiCr}
+                        onChange={(e) => setAiCr(e.target.value)}
+                        placeholder="Es. 5"
+                        disabled={isLoading || aiTextLoading}
+                        className="bg-barber-dark border-violet-500/35 text-barber-paper"
+                      />
+                    </>
+                  ) : type === "item" ? (
+                    <>
+                      <Label htmlFor="assist-rarity" className="text-xs text-violet-100">
+                        Rarità oggetto opzionale
+                      </Label>
+                      <select
+                        id="assist-rarity"
+                        value={aiRarity}
+                        onChange={(e) => setAiRarity(e.target.value)}
+                        disabled={isLoading || aiTextLoading}
+                        className="flex h-10 w-full rounded-md border border-violet-500/35 bg-barber-dark px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-violet-400"
+                      >
+                        <option value="">— Scegli rarità —</option>
+                        {ITEM_RARITY_OPTIONS.map((rarity) => (
+                          <option key={rarity} value={rarity}>
+                            {rarity}
+                          </option>
+                        ))}
+                      </select>
+                    </>
+                  ) : (
+                    <p className="text-xs text-violet-100/80">
+                      Template contestuale automatico per {type === "npc" ? "NPC" : type === "location" ? "Luogo" : "Lore"}.
+                    </p>
+                  )}
                 </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => void handleAssistGenerateText()}
+                  disabled={isLoading || aiTextLoading}
+                  className="border-violet-500/50 text-violet-200 hover:bg-violet-500/15 hover:text-violet-100"
+                >
+                  {aiTextLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generazione...
+                    </>
+                  ) : (
+                    <>✨ Genera Testo con IA (Opzionale)</>
+                  )}
+                </Button>
               </div>
-            )}
+            </div>
             <Textarea
               id="entity-content"
               name="content"

@@ -65,12 +65,25 @@ export async function generateContextualPortraitAction(
       };
     };
 
-    const { data: campaign, error: campError } = await campaignsQuery
+    let { data: campaign, error: campError } = await campaignsQuery
       .select("ai_context, image_style_prompt")
       .eq("id", campaignId)
       .single();
 
+    // Compatibilità retroattiva: se la colonna nuova non è ancora stata migrata,
+    // continuiamo usando solo ai_context.
+    if (campError?.message?.toLowerCase().includes("image_style_prompt")) {
+      const fallback = await supabase
+        .from("campaigns")
+        .select("ai_context")
+        .eq("id", campaignId)
+        .single();
+      campaign = fallback.data as CampaignVisualRow | null;
+      campError = fallback.error as { message: string } | null;
+    }
+
     if (campError || !campaign) {
+      console.error("[generateContextualPortraitAction] campaign fetch", campError);
       return { success: false, message: "Campagna non trovata o accesso negato." };
     }
 

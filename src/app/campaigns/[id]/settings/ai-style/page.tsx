@@ -28,13 +28,36 @@ export default async function CampaignAiStylePage({ params }: PageProps) {
     .single();
   const role = (profileRaw as { role?: string } | null)?.role ?? "";
 
-  const { data: campaign } = await supabase
+  type CampaignStyleRow = {
+    id: string;
+    name: string;
+    gm_id: string | null;
+    image_style_prompt?: string | null;
+  };
+
+  let campaign: CampaignStyleRow | null = null;
+  let campaignError: { message?: string } | null = null;
+
+  const primaryQuery = await supabase
     .from("campaigns")
     .select("id, name, gm_id, image_style_prompt")
     .eq("id", campaignId)
     .single();
+  campaign = primaryQuery.data as CampaignStyleRow | null;
+  campaignError = primaryQuery.error as { message?: string } | null;
 
-  if (!campaign) redirect("/dashboard");
+  // Compatibilità: se la colonna nuova non è presente in DB, fallback a query base.
+  if (campaignError?.message?.toLowerCase().includes("image_style_prompt")) {
+    const fallbackQuery = await supabase
+      .from("campaigns")
+      .select("id, name, gm_id")
+      .eq("id", campaignId)
+      .single();
+    campaign = fallbackQuery.data as CampaignStyleRow | null;
+    campaignError = fallbackQuery.error as { message?: string } | null;
+  }
+
+  if (campaignError || !campaign) redirect("/dashboard");
 
   const isAllowed = role === "admin" || (role === "gm" && campaign.gm_id === user.id);
   if (!isAllowed) redirect(`/campaigns/${campaignId}`);
