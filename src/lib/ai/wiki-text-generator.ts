@@ -2,6 +2,7 @@
 
 import type { Json } from "@/types/database.types";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { generateAiText, generateEmbedding, HuggingFaceInferenceError } from "@/lib/ai/huggingface-client";
 import { parseCampaignAiContextFromDb } from "@/lib/campaign-ai-context";
 
@@ -184,11 +185,12 @@ export async function generateWikiMarkdownAction(
     if (normalizedType === "monster") {
       const searchQuery = `Regole, privilegi e statblock completo del mostro: ${safeName}. Dettagli: ${safeUserPrompt || "nessuno"}.`;
       let technicalContext = "";
+      const admin = createSupabaseAdminClient();
 
       try {
         const embedding = await generateEmbedding(searchQuery);
         // Tipizzazione RPC best-effort: la firma generated potrebbe non includere ancora la funzione.
-        const runRpc = supabase.rpc as unknown as (
+        const runRpc = admin.rpc as unknown as (
           fn: string,
           args: Record<string, unknown>
         ) => Promise<{ data: unknown; error: { message: string } | null }>;
@@ -209,8 +211,33 @@ export async function generateWikiMarkdownAction(
           .filter(Boolean)
           .join("\n\n");
       } catch (ragError) {
-        console.error("[generateWikiMarkdownAction] RAG retrieval failed", ragError);
-        return { success: false, message: "Errore durante il retrieval tecnico dai manuali." };
+        // Fallback robusto: se embeddings o RPC non sono disponibili runtime,
+        // proviamo retrieval testuale best-effort sui chunk manuali.
+        console.error("[generateWikiMarkdownAction] semantic RAG failed, fallback text", ragError);
+        const keywords = [
+          safeName,
+          ...safeUserPrompt.split(/\s+/).filter((w) => w.length >= 4).slice(0, 4),
+        ].filter(Boolean);
+
+        try {
+          let query = admin.from("manuals_knowledge").select("content").limit(8);
+          if (keywords[0]) query = query.ilike("content", `%${keywords[0]}%`);
+          if (keywords[1]) query = query.ilike("content", `%${keywords[1]}%`);
+          const { data: rows, error: textErr } = await query;
+          if (textErr) {
+            return {
+              success: false,
+              message: `Errore fallback retrieval testuale manuals_knowledge: ${textErr.message}`,
+            };
+          }
+          technicalContext = ((rows ?? []) as Array<{ content?: string | null }>)
+            .map((r) => (typeof r.content === "string" ? r.content.trim() : ""))
+            .filter(Boolean)
+            .join("\n\n");
+        } catch (fallbackErr) {
+          console.error("[generateWikiMarkdownAction] text fallback failed", fallbackErr);
+          return { success: false, message: "Errore durante il retrieval tecnico dei manuali." };
+        }
       }
 
       if (!technicalContext.trim()) {
