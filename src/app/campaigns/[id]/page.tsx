@@ -19,9 +19,9 @@ import { CampaignTabsClient } from "@/components/campaigns/campaign-tabs-client"
 import { GmNotes } from "@/components/gm/gm-notes";
 import { GmFiles } from "@/components/gm/gm-files";
 import { CampaignPrimerEditor } from "@/components/gm/campaign-primer-editor";
-import { GmScreenLauncher } from "@/components/gm/gm-screen-launcher";
+import { GmQuickActions } from "@/components/gm/gm-quick-actions";
 import Link from "next/link";
-import { BookOpen, Map, Palette } from "lucide-react";
+import { Palette } from "lucide-react";
 import { CharactersSection } from "@/components/characters/characters-section";
 import { getCampaignCharacters, getCampaignEligiblePlayers } from "@/app/campaigns/character-actions";
 import { getPreClosedSessionForCampaign, type PreClosedSessionRow } from "@/app/campaigns/gm-actions";
@@ -445,15 +445,7 @@ export default async function CampaignPage({ params }: PageProps) {
           gmAreaContent={
             isGmOrAdmin ? (
               <div className="rounded-xl border-2 border-violet-800/60 bg-slate-950/80 p-6 shadow-inner">
-                <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-                  <p className="text-sm text-violet-200/80">
-                    Note e file privati, visibili solo a te.
-                  </p>
-                  <GmScreenLauncher
-                    campaignId={campaign.id}
-                    className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
-                  />
-                </div>
+                <GmQuickActions campaignId={campaign.id} />
                 <div className="space-y-8">
                   <CampaignAiArchitectPanel
                     campaignId={campaign.id}
@@ -482,20 +474,9 @@ export default async function CampaignPage({ params }: PageProps) {
                     <p className="mb-3 text-xs text-violet-200/70">
                       Grafo di voci wiki e mappe con relazioni. Crea relazioni dal form di creazione/modifica delle voci wiki.
                     </p>
-                    <div className="flex flex-wrap gap-2">
-                      <Button asChild variant="outline" size="sm" className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20">
-                        <Link href={`/campaigns/${campaign.id}/gm-only/concept-map`}>
-                          <Map className="mr-2 h-4 w-4" />
-                          Apri Mappa Concettuale
-                        </Link>
-                      </Button>
-                      <Button asChild variant="outline" size="sm" className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20">
-                        <Link href={`/compendium?campaignId=${campaign.id}`}>
-                          <BookOpen className="mr-2 h-4 w-4" />
-                          Apri Compendio
-                        </Link>
-                      </Button>
-                    </div>
+                    <p className="text-xs text-violet-200/60">
+                      Usa i pulsanti rapidi in alto per aprire mappa, compendio e strumenti operativi.
+                    </p>
                   </div>
                   <GmNotes campaignId={campaign.id} />
                   <GmFiles campaignId={campaign.id} />

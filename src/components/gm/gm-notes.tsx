@@ -55,6 +55,12 @@ export function GmNotes({ campaignId }: GmNotesProps) {
     loadNotes();
   }, [loadNotes]);
 
+  useEffect(() => {
+    const handler = () => openCreate();
+    window.addEventListener("gm-notes:create", handler);
+    return () => window.removeEventListener("gm-notes:create", handler);
+  }, []);
+
   function openCreate() {
     setEditingNote(null);
     setDialogOpen(true);

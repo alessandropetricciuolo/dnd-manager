@@ -46,6 +46,12 @@ export function GmFiles({ campaignId }: GmFilesProps) {
     loadFiles();
   }, [loadFiles]);
 
+  useEffect(() => {
+    const handler = () => fileInputRef.current?.click();
+    window.addEventListener("gm-files:upload", handler);
+    return () => window.removeEventListener("gm-files:upload", handler);
+  }, []);
+
   async function handleUpload(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (uploading) return;
