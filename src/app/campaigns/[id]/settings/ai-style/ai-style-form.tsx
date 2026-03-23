@@ -4,16 +4,16 @@ import { useState, useTransition, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { saveImageStylePromptAction } from "./actions";
+import { saveCampaignImageStyleAction } from "./actions";
 
 type AiStyleFormProps = {
   campaignId: string;
-  initialValue: string;
+  initialValue: string | null;
+  styles: Array<{ key: string; name: string; description: string | null; is_active: boolean }>;
 };
 
-export function AiStyleForm({ campaignId, initialValue }: AiStyleFormProps) {
-  const [value, setValue] = useState(initialValue);
+export function AiStyleForm({ campaignId, initialValue, styles }: AiStyleFormProps) {
+  const [value, setValue] = useState(initialValue ?? "");
   const [isPending, startTransition] = useTransition();
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -23,7 +23,7 @@ export function AiStyleForm({ campaignId, initialValue }: AiStyleFormProps) {
     const form = event.currentTarget;
     const formData = new FormData(form);
     startTransition(async () => {
-      const result = await saveImageStylePromptAction(campaignId, null, formData);
+      const result = await saveCampaignImageStyleAction(campaignId, null, formData);
       if (result.success) {
         toast.success(result.message);
       } else {
@@ -35,22 +35,36 @@ export function AiStyleForm({ campaignId, initialValue }: AiStyleFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="image_style_prompt" className="text-barber-paper">
-          Template Stile Visivo Immagini
+        <Label htmlFor="ai_image_style_key" className="text-barber-paper">
+          Stile Immagini Globale
         </Label>
-        <Textarea
-          id="image_style_prompt"
-          name="image_style_prompt"
+        <select
+          id="ai_image_style_key"
+          name="ai_image_style_key"
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          placeholder="Esempio: Dark fantasy grimdark sketch, desaturated palette, ink wash textures, dramatic chiaroscuro lighting, medieval worn materials, cinematic composition..."
-          className="min-h-[180px] resize-y border-barber-gold/30 bg-barber-dark text-barber-paper"
+          className="h-11 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-3 text-barber-paper"
           disabled={isPending}
-        />
+        >
+          <option value="">Nessuno (fallback ai paletti campagna)</option>
+          {styles
+            .filter((s) => s.is_active || s.key === value)
+            .map((style) => (
+              <option key={style.key} value={style.key}>
+                {style.name}
+              </option>
+            ))}
+        </select>
         <p className="text-sm text-barber-paper/70">
-          Incolla qui il prompt strutturato (risultato del reverse engineering) che definisce lo stile unico di
-          questa campagna (es. Dark Fantasy Grimdark Sketch). L&apos;IA lo userà per tutte le immagini generated.
+          Lo stile e definito globalmente nel pannello Admin. Qui agganci la campagna a uno stile.
+          I paletti della campagna (es. dark fantasy) restano comunque applicati in generazione.
         </p>
+        {value && (
+          <p className="text-xs text-barber-paper/60">
+            Stile selezionato:{" "}
+            {styles.find((s) => s.key === value)?.description || styles.find((s) => s.key === value)?.name || value}
+          </p>
+        )}
       </div>
 
       <Button
@@ -58,7 +72,7 @@ export function AiStyleForm({ campaignId, initialValue }: AiStyleFormProps) {
         disabled={isPending}
         className="bg-violet-600 text-white hover:bg-violet-500"
       >
-        {isPending ? "Salvataggio..." : "Salva Template Stile"}
+        {isPending ? "Salvataggio..." : "Salva Stile Campagna"}
       </Button>
     </form>
   );

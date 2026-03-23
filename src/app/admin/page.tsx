@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import {
@@ -12,7 +13,8 @@ import { CreateUserDialog } from "@/components/admin/create-user-dialog";
 import { AdminUserRow } from "@/components/admin/admin-user-row";
 import { NotificationsPausedToggle } from "@/components/admin/notifications-paused-toggle";
 import { BackupDriveImagesButton } from "@/components/admin/backup-drive-images-button";
-import { Shield } from "lucide-react";
+import { Palette, Shield } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
 
@@ -79,6 +81,18 @@ export default async function AdminPage() {
 
         <NotificationsPausedToggle />
         <BackupDriveImagesButton />
+        <div className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 p-4">
+          <h2 className="mb-2 text-base font-semibold text-barber-gold">Stili Immagini AI Globali</h2>
+          <p className="mb-3 text-sm text-barber-paper/70">
+            Gestisci i 5/6 stili globali da riutilizzare in tutte le campagne.
+          </p>
+          <Button asChild variant="outline" className="border-barber-gold/40 text-barber-paper/90">
+            <Link href="/admin/ai-image-styles">
+              <Palette className="mr-2 h-4 w-4" />
+              Apri Stili AI
+            </Link>
+          </Button>
+        </div>
 
         <div className="min-w-0 overflow-x-auto rounded-xl border border-barber-gold/40 bg-barber-dark/90">
           <Table className="min-w-[600px]">

@@ -32,7 +32,7 @@ export default async function CampaignAiStylePage({ params }: PageProps) {
     id: string;
     name: string;
     gm_id: string | null;
-    image_style_prompt?: string | null;
+    ai_image_style_key?: string | null;
   };
 
   let campaign: CampaignStyleRow | null = null;
@@ -40,14 +40,14 @@ export default async function CampaignAiStylePage({ params }: PageProps) {
 
   const primaryQuery = await supabase
     .from("campaigns")
-    .select("id, name, gm_id, image_style_prompt")
+    .select("id, name, gm_id, ai_image_style_key")
     .eq("id", campaignId)
     .single();
   campaign = primaryQuery.data as CampaignStyleRow | null;
   campaignError = primaryQuery.error as { message?: string } | null;
 
   // Compatibilità: se la colonna nuova non è presente in DB, fallback a query base.
-  if (campaignError?.message?.toLowerCase().includes("image_style_prompt")) {
+  if (campaignError?.message?.toLowerCase().includes("ai_image_style_key")) {
     const fallbackQuery = await supabase
       .from("campaigns")
       .select("id, name, gm_id")
@@ -61,6 +61,17 @@ export default async function CampaignAiStylePage({ params }: PageProps) {
 
   const isAllowed = role === "admin" || (role === "gm" && campaign.gm_id === user.id);
   if (!isAllowed) redirect(`/campaigns/${campaignId}`);
+
+  type StyleRow = { key: string; name: string; description: string | null; is_active: boolean };
+  let styles: StyleRow[] = [];
+  const stylesQuery = await supabase
+    .from("ai_image_styles")
+    .select("key, name, description, is_active")
+    .order("sort_order", { ascending: true })
+    .order("name", { ascending: true });
+  if (!stylesQuery.error) {
+    styles = (stylesQuery.data ?? []) as StyleRow[];
+  }
 
   return (
     <main className="min-h-[calc(100vh-64px)] bg-barber-dark px-4 py-8 text-barber-paper md:px-8">
@@ -76,7 +87,8 @@ export default async function CampaignAiStylePage({ params }: PageProps) {
 
         <AiStyleForm
           campaignId={campaignId}
-          initialValue={typeof campaign.image_style_prompt === "string" ? campaign.image_style_prompt : ""}
+          initialValue={typeof campaign.ai_image_style_key === "string" ? campaign.ai_image_style_key : null}
+          styles={styles}
         />
       </div>
     </main>

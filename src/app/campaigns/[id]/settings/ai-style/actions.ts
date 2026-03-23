@@ -32,12 +32,12 @@ async function canManageCampaign(campaignId: string): Promise<boolean> {
   return profile?.role === "gm" && campaign?.gm_id === user.id;
 }
 
-export async function saveImageStylePromptAction(
+export async function saveCampaignImageStyleAction(
   campaignId: string,
   _prevState: SaveImageStylePromptResult | null,
   formData: FormData
 ): Promise<SaveImageStylePromptResult> {
-  const value = (formData.get("image_style_prompt") as string | null)?.trim() || null;
+  const value = (formData.get("ai_image_style_key") as string | null)?.trim() || null;
   if (!campaignId) return { success: false, message: "Campagna non valida." };
 
   const allowed = await canManageCampaign(campaignId);
@@ -47,23 +47,15 @@ export async function saveImageStylePromptAction(
     const supabase = await createSupabaseServerClient();
     let { error } = await supabase
       .from("campaigns")
-      .update({ image_style_prompt: value, updated_at: new Date().toISOString() })
+      .update({ ai_image_style_key: value, updated_at: new Date().toISOString() })
       .eq("id", campaignId);
 
-    // Compatibilità: se la colonna non è ancora migrata, non bloccare la pagina.
-    if (error?.message?.toLowerCase().includes("image_style_prompt")) {
-      const fallback = await supabase
-        .from("campaigns")
-        .update({ updated_at: new Date().toISOString() })
-        .eq("id", campaignId);
-      error = fallback.error;
-      if (!error) {
-        return {
-          success: false,
-          message:
-            "La colonna image_style_prompt non è ancora disponibile su questo database. Esegui la migration SQL e riprova.",
-        };
-      }
+    if (error?.message?.toLowerCase().includes("ai_image_style_key")) {
+      return {
+        success: false,
+        message:
+          "La colonna ai_image_style_key non è ancora disponibile su questo database. Esegui la nuova migration SQL e riprova.",
+      };
     }
 
     if (error) {
@@ -72,9 +64,9 @@ export async function saveImageStylePromptAction(
 
     revalidatePath(`/campaigns/${campaignId}`);
     revalidatePath(`/campaigns/${campaignId}/settings/ai-style`);
-    return { success: true, message: "Template stile visivo salvato." };
+    return { success: true, message: "Stile immagini globale associato alla campagna." };
   } catch (err) {
-    console.error("[saveImageStylePromptAction]", err);
+    console.error("[saveCampaignImageStyleAction]", err);
     return { success: false, message: "Errore imprevisto." };
   }
 }

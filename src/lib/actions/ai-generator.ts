@@ -55,6 +55,7 @@ export async function generateContextualPortraitAction(
     type CampaignVisualRow = {
       ai_context: Json | null;
       image_style_prompt?: string | null;
+      ai_image_style_key?: string | null;
     };
     const campaignsQuery = supabase.from("campaigns") as unknown as {
       select: (columns: string) => {
@@ -66,16 +67,19 @@ export async function generateContextualPortraitAction(
     };
 
     let { data: campaign, error: campError } = await campaignsQuery
-      .select("ai_context, image_style_prompt")
+      .select("ai_context, image_style_prompt, ai_image_style_key")
       .eq("id", campaignId)
       .single();
 
     // Compatibilità retroattiva: se la colonna nuova non è ancora stata migrata,
     // continuiamo usando solo ai_context.
-    if (campError?.message?.toLowerCase().includes("image_style_prompt")) {
+    if (
+      campError?.message?.toLowerCase().includes("image_style_prompt") ||
+      campError?.message?.toLowerCase().includes("ai_image_style_key")
+    ) {
       const fallback = await supabase
         .from("campaigns")
-        .select("ai_context")
+        .select("ai_context, image_style_prompt")
         .eq("id", campaignId)
         .single();
       campaign = fallback.data as CampaignVisualRow | null;
@@ -88,8 +92,30 @@ export async function generateContextualPortraitAction(
     }
 
     const ctx = parseCampaignAiContextFromDb((campaign.ai_context as Json | null) ?? null);
-    const styleTemplate =
+    const legacyStyleTemplate =
       typeof campaign.image_style_prompt === "string" ? campaign.image_style_prompt.trim() : "";
+    const styleKey =
+      typeof campaign.ai_image_style_key === "string" ? campaign.ai_image_style_key.trim() : "";
+
+    let styleTemplate = "";
+    let styleNegativeTemplate = "";
+
+    if (styleKey) {
+      const { data: styleRow } = await supabase
+        .from("ai_image_styles")
+        .select("positive_prompt, negative_prompt, is_active")
+        .eq("key", styleKey)
+        .single();
+      if (styleRow?.is_active) {
+        styleTemplate = styleRow.positive_prompt?.trim() ?? "";
+        styleNegativeTemplate = styleRow.negative_prompt?.trim() ?? "";
+      }
+    }
+
+    if (!styleTemplate && legacyStyleTemplate) {
+      styleTemplate = legacyStyleTemplate;
+    }
+
     const visualPositive = ctx?.visual_positive?.trim() || "cinematic fantasy, cohesive party tone";
     const visualNegative = ctx?.visual_negative?.trim() || "";
 
@@ -99,10 +125,10 @@ export async function generateContextualPortraitAction(
         : "environmental wide shot, high detail, photorealistic, cinematic lighting, 8k, masterpiece, professional fantasy location art, architectural and atmosphere focus";
 
     const positivePrompt = styleTemplate
-      ? `${trimmed}. ${styleTemplate}`
+      ? `${trimmed}. ${styleTemplate}. Campaign constraints: ${visualPositive}`
       : [`Subject: ${trimmed}`, technicalForced, `Campaign visual style: ${visualPositive}`].join(". ");
 
-    const negativeCombined = [visualNegative, STANDARD_VISUAL_NEGATIVES]
+    const negativeCombined = [styleNegativeTemplate, visualNegative, STANDARD_VISUAL_NEGATIVES]
       .filter(Boolean)
       .join(", ");
 

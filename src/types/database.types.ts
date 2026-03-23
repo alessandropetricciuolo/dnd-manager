@@ -126,6 +126,33 @@ export interface Database {
         };
         Update: Partial<Database["public"]["Tables"]["avatars"]["Insert"]>;
       };
+      ai_image_styles: {
+        Row: {
+          id: string;
+          key: string;
+          name: string;
+          description: string | null;
+          positive_prompt: string;
+          negative_prompt: string | null;
+          is_active: boolean;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          key: string;
+          name: string;
+          description?: string | null;
+          positive_prompt: string;
+          negative_prompt?: string | null;
+          is_active?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["ai_image_styles"]["Insert"]>;
+      };
       campaigns: {
         Row: {
           id: string;
@@ -136,6 +163,7 @@ export interface Database {
           type: "oneshot" | "quest" | "long" | null;
           image_url: string | null;
           image_style_prompt: string | null;
+          ai_image_style_key: string | null;
           /** Contesto strutturato dall'Agente Architetto (AI): tono, magia, meccaniche, paletti visivi. */
           ai_context: Json | null;
           created_at: string;
@@ -143,8 +171,8 @@ export interface Database {
         };
         Insert: Omit<
           Database["public"]["Tables"]["campaigns"]["Row"],
-          "created_at" | "updated_at" | "ai_context" | "image_style_prompt"
-        > & { ai_context?: Json | null; image_style_prompt?: string | null };
+          "created_at" | "updated_at" | "ai_context" | "image_style_prompt" | "ai_image_style_key"
+        > & { ai_context?: Json | null; image_style_prompt?: string | null; ai_image_style_key?: string | null };
         Update: Partial<Database["public"]["Tables"]["campaigns"]["Insert"]>;
       };
       sessions: {
