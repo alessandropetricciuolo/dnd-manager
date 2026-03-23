@@ -34,21 +34,14 @@ import { generateWikiMarkdownAction } from "@/lib/ai/wiki-text-generator";
 import { getWikiEntitiesForCampaign, getMapsForCampaign } from "@/app/campaigns/entity-graph-actions";
 import { getEmptyAttributes } from "@/types/wiki";
 import { CHALLENGE_RATING_OPTIONS } from "@/lib/dnd-constants";
-
-const ENTITY_TYPES = [
-  { value: "npc", label: "NPC" },
-  { value: "location", label: "Luogo" },
-  { value: "monster", label: "Mostro" },
-  { value: "item", label: "Oggetto" },
-  { value: "lore", label: "Lore" },
-] as const;
+import { type WikiEntityType, WIKI_ENTITY_LABELS_IT, WIKI_ENTITY_OPTIONS } from "@/lib/wiki/entity-types";
 
 /** Tipi supportati dal generatore rapido AI (Fase 2). */
 const MAGIC_ENTITY_TYPES: { value: WikiGeneratorEntityType; label: string }[] = [
-  { value: "npc", label: "NPC" },
-  { value: "location", label: "Luogo" },
-  { value: "item", label: "Oggetto" },
-  { value: "lore", label: "Lore" },
+  { value: "npc", label: WIKI_ENTITY_LABELS_IT.npc },
+  { value: "location", label: WIKI_ENTITY_LABELS_IT.location },
+  { value: "item", label: WIKI_ENTITY_LABELS_IT.item },
+  { value: "lore", label: WIKI_ENTITY_LABELS_IT.lore },
 ];
 
 function appendCombatStatsToMarkdown(
@@ -61,7 +54,7 @@ function appendCombatStatsToMarkdown(
   return `${content}\n\n---\n${parts.join(" · ")}`;
 }
 
-type EntityType = (typeof ENTITY_TYPES)[number]["value"];
+type EntityType = WikiEntityType;
 
 const VISIBILITY_OPTIONS = [
   { label: "Pubblico (tutti)", value: "public" },
@@ -499,7 +492,7 @@ export function CreateEntityDialog({
               className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
               disabled={isLoading}
             >
-              {ENTITY_TYPES.map(({ value, label }) => (
+              {WIKI_ENTITY_OPTIONS.map(({ value, label }) => (
                 <option key={value} value={value}>
                   {label}
                 </option>

@@ -20,11 +20,6 @@ export type WikiAiTextGeneration = {
   ac: string | null;
 };
 
-export type ContextualImagePrompts = {
-  positivePrompt: string;
-  negativePrompt: string;
-};
-
 type TextResult = { ok: true; data: WikiAiTextGeneration } | { ok: false; error: string };
 
 const ENTITY_LABEL_IT: Record<WikiGeneratorEntityType, string> = {
@@ -156,56 +151,3 @@ export async function generateContextualText(
   }
 }
 
-/**
- * Prepara prompt positivo/negativo per future API immagini (guardrail da ai_context).
- */
-export async function generateContextualImagePrompt(
-  campaignId: string,
-  userPrompt: string
-): Promise<
-  | { ok: true; data: ContextualImagePrompts }
-  | { ok: false; error: string }
-> {
-  const prompt = userPrompt.trim();
-  if (!prompt) {
-    return { ok: false, error: "Inserisci una descrizione per l’immagine." };
-  }
-  if (!campaignId) {
-    return { ok: false, error: "Campagna non valida." };
-  }
-
-  try {
-    const supabase = await createSupabaseServerClient();
-    const { data: row, error } = await supabase
-      .from("campaigns")
-      .select("ai_context")
-      .eq("id", campaignId)
-      .single();
-
-    if (error) {
-      console.error("[generateContextualImagePrompt] fetch ai_context", error);
-      return { ok: false, error: error.message ?? "Impossibile caricare il contesto campagna." };
-    }
-
-    const ctx = parseCampaignAiContextFromDb(
-      (row as { ai_context: Json | null } | null)?.ai_context ?? null
-    );
-
-    const visualPositive = ctx?.visual_positive?.trim() ?? "";
-    const visualNegative = ctx?.visual_negative?.trim() ?? "";
-
-    const positiveParts = [prompt, visualPositive].filter(Boolean);
-    const negativeParts = [visualNegative, "text", "watermark", "bad anatomy"].filter(Boolean);
-
-    return {
-      ok: true,
-      data: {
-        positivePrompt: positiveParts.join(", "),
-        negativePrompt: negativeParts.join(", "),
-      },
-    };
-  } catch (err) {
-    console.error("[generateContextualImagePrompt]", err);
-    return { ok: false, error: "Errore imprevisto." };
-  }
-}

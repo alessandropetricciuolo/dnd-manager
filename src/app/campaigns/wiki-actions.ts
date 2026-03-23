@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { uploadToTelegram as uploadFileToTelegram } from "@/lib/telegram-storage";
 import { uploadToTelegram as uploadUrlToTelegramCdn } from "@/lib/telegram-cdn";
 import { syncEntityPermissions, parseAllowedUserIds } from "@/lib/entity-permissions";
+import { type WikiEntityType, WIKI_ENTITY_TYPES } from "@/lib/wiki/entity-types";
 import {
   generateContextualText,
   type WikiGeneratorEntityType,
@@ -13,7 +14,6 @@ import {
 
 export type { WikiGeneratorEntityType, WikiAiTextGeneration } from "@/lib/ai/generator";
 
-const ENTITY_TYPES = ["npc", "location", "monster", "item", "lore"] as const;
 const VISIBILITY_VALUES = ["public", "secret", "selective"] as const;
 type Visibility = (typeof VISIBILITY_VALUES)[number];
 const CAMPAIGNS_BUCKET = "campaigns";
@@ -38,7 +38,7 @@ function extractCampaignsPathFromPublicUrl(imageUrl: string): string | null {
   }
 }
 
-function parseAttributes(formData: FormData, type: string): Record<string, unknown> {
+function parseAttributes(formData: FormData): Record<string, unknown> {
   const raw = formData.get("attributes") as string | null;
   if (raw) {
     try {
@@ -102,7 +102,7 @@ export async function createEntity(
   const allowedUserIds = parseAllowedUserIds(formData, "allowed_user_ids");
   const imageFile = formData.get("image") as File | null;
   let imageUrl = (formData.get("image_url") as string | null)?.trim() || null;
-  const attributes = parseAttributes(formData, type ?? "");
+  const attributes = parseAttributes(formData);
   const sortOrderRaw = formData.get("sort_order") as string | null;
   const sortOrder = sortOrderRaw != null && sortOrderRaw !== "" ? parseInt(sortOrderRaw, 10) : null;
   const isCore = formData.get("is_core") === "on" || formData.get("is_core") === "true";
@@ -114,7 +114,7 @@ export async function createEntity(
   if (!title) {
     return { success: false, message: "Il titolo è obbligatorio." };
   }
-  if (!type || !ENTITY_TYPES.includes(type as (typeof ENTITY_TYPES)[number])) {
+  if (!type || !WIKI_ENTITY_TYPES.includes(type as WikiEntityType)) {
     return { success: false, message: "Seleziona un tipo valido." };
   }
   if (!campaignId) {
@@ -190,7 +190,7 @@ export async function createEntity(
     const insertPayload: Record<string, unknown> = {
       campaign_id: campaignId,
       name: title,
-      type: type as (typeof ENTITY_TYPES)[number],
+      type: type as WikiEntityType,
       content: { body: content },
       is_secret: isSecret,
       visibility,
@@ -284,7 +284,7 @@ export async function updateEntity(
   const imageFile = formData.get("image") as File | null;
   const imageUrlFromForm = (formData.get("image_url") as string | null)?.trim() || null;
   const removeImage = formData.get("remove_image") === "on" || formData.get("remove_image") === "true";
-  const attributes = parseAttributes(formData, type ?? "");
+  const attributes = parseAttributes(formData);
   const sortOrderRaw = formData.get("sort_order") as string | null;
   const sortOrder = sortOrderRaw != null && sortOrderRaw !== "" ? parseInt(sortOrderRaw, 10) : null;
   const isCore = formData.get("is_core") === "on" || formData.get("is_core") === "true";
@@ -296,7 +296,7 @@ export async function updateEntity(
   if (!title) {
     return { success: false, message: "Il titolo è obbligatorio." };
   }
-  if (!type || !ENTITY_TYPES.includes(type as (typeof ENTITY_TYPES)[number])) {
+  if (!type || !WIKI_ENTITY_TYPES.includes(type as WikiEntityType)) {
     return { success: false, message: "Seleziona un tipo valido." };
   }
   if (!entityId || !campaignId) {
@@ -371,7 +371,7 @@ export async function updateEntity(
 
     const updatePayload: Record<string, unknown> = {
       name: title,
-      type: type as (typeof ENTITY_TYPES)[number],
+      type: type as WikiEntityType,
       content: { body: content },
       is_secret: isSecret,
       attributes: Object.keys(attributes).length ? attributes : {},
@@ -904,7 +904,7 @@ export async function getGmGalleryItems(
 /** Campi opzionali per mostri/NPC: hp (Punti vita), ac (Classe Armatura), gs (Grado di Sfida), exp (Punti Esperienza). */
 export type BulkImportWikiItem = {
   title: string;
-  category: (typeof ENTITY_TYPES)[number];
+  category: WikiEntityType;
   content: string;
   is_secret?: boolean;
   /** Punti vita (mostro/NPC) */
@@ -939,7 +939,7 @@ export async function bulkImportWiki(
     return { success: false, message: "Nessuna voce da importare." };
   }
 
-  const validTypes = new Set(ENTITY_TYPES);
+  const validTypes = new Set(WIKI_ENTITY_TYPES);
   const rows: Record<string, unknown>[] = [];
 
   for (let i = 0; i < items.length; i++) {
@@ -952,7 +952,7 @@ export async function bulkImportWiki(
     if (!title) {
       return { success: false, message: `Voce ${i + 1}: il titolo è obbligatorio.` };
     }
-    if (!validTypes.has(category as (typeof ENTITY_TYPES)[number])) {
+    if (!validTypes.has(category as WikiEntityType)) {
       return {
         success: false,
         message: `Voce "${title}": categoria non valida. Usa: npc, monster, location, item, lore.`,

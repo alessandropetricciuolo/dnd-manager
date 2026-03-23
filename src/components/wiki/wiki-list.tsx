@@ -8,16 +8,10 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { WikiListClient } from "./wiki-list-client";
+import { getWikiContentBody } from "@/lib/wiki/content";
+import { WIKI_ENTITY_LABELS_IT } from "@/lib/wiki/entity-types";
 type WikiListProps = {
   campaignId: string;
-};
-
-const TYPE_LABELS: Record<string, string> = {
-  npc: "NPC",
-  location: "Luogo",
-  monster: "Mostro",
-  item: "Oggetto",
-  lore: "Lore",
 };
 
 export async function WikiList({ campaignId }: WikiListProps) {
@@ -121,9 +115,7 @@ export async function WikiList({ campaignId }: WikiListProps) {
     visibility: e.visibility ?? (e.is_secret ? "secret" : "public"),
     sortOrder: e.sort_order ?? null,
     tags: e.tags ?? [],
-    description: (e.content && typeof e.content === "object" && "body" in e.content && typeof (e.content as { body?: string }).body === "string")
-      ? (e.content as { body: string }).body
-      : "",
+    description: getWikiContentBody(e.content),
   }));
 
   const emptyMessage = !isGmOrAdmin
@@ -135,7 +127,7 @@ export async function WikiList({ campaignId }: WikiListProps) {
       campaignId={campaignId}
       entities={list}
       isGmOrAdmin={isGmOrAdmin ?? false}
-      typeLabels={TYPE_LABELS}
+      typeLabels={WIKI_ENTITY_LABELS_IT}
       emptyMessage={emptyMessage}
     />
   );

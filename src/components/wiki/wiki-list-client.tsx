@@ -12,6 +12,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Lock, BookOpen, ChevronDown, Pencil, Trash2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WikiEntityDeleteButton } from "./wiki-entity-delete-button";
+import { WIKI_ENTITY_TYPES, WIKI_FILTER_LABELS_IT } from "@/lib/wiki/entity-types";
 
 export type WikiEntityListItem = {
   id: string;
@@ -36,16 +37,7 @@ type WikiListClientProps = {
 };
 
 const ALL_TYPES = "all";
-const WIKI_FILTER_VALUES = ["all", "npc", "location", "monster", "item", "lore"] as const;
-
-const FILTER_LABELS: Record<string, string> = {
-  all: "Tutti",
-  npc: "NPC",
-  location: "Luogo",
-  monster: "Mostro",
-  item: "Oggetto",
-  lore: "Lore",
-};
+const WIKI_FILTER_VALUES = [ALL_TYPES, ...WIKI_ENTITY_TYPES] as const;
 
 export function WikiListClient({
   campaignId,
@@ -67,7 +59,7 @@ export function WikiListClient({
       ? wikiFilterParam
       : ALL_TYPES;
 
-  const currentFilterLabel = FILTER_LABELS[typeFilter] ?? typeFilter;
+  const currentFilterLabel = WIKI_FILTER_LABELS_IT[typeFilter] ?? typeFilter;
 
   function setWikiFilter(value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -122,7 +114,7 @@ export function WikiListClient({
   }
 
   const filterOptions = [
-    { value: ALL_TYPES, label: FILTER_LABELS[ALL_TYPES] },
+    { value: ALL_TYPES, label: WIKI_FILTER_LABELS_IT[ALL_TYPES] },
     ...Object.entries(typeLabels).map(([value, label]) => ({ value, label })),
   ];
 

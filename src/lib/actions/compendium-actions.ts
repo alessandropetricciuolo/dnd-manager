@@ -2,6 +2,8 @@
 
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { ALL_CAMPAIGNS_KEY } from "@/lib/compendium/constants";
+import { getWikiContentBody } from "@/lib/wiki/content";
+import { type WikiEntityType, WIKI_ENTITY_LABELS_IT } from "@/lib/wiki/entity-types";
 
 export type CompendiumCampaign = {
   id: string;
@@ -11,7 +13,7 @@ export type CompendiumCampaign = {
 export type CompendiumElement = {
   id: string;
   name: string;
-  type: "Mostro" | "Incantesimo" | "PNG" | "Oggetto Magico" | "Luogo";
+  type: (typeof WIKI_ENTITY_LABELS_IT)[WikiEntityType];
   tags: string[];
   shortDesc: string;
   content: string;
@@ -30,27 +32,11 @@ export type CompendiumResult =
   | { success: false; error: string };
 
 function mapType(raw: string): CompendiumElement["type"] {
-  switch (raw) {
-    case "monster":
-      return "Mostro";
-    case "npc":
-      return "PNG";
-    case "item":
-      return "Oggetto Magico";
-    case "location":
-      return "Luogo";
-    default:
-      return "Incantesimo";
+  if (raw in WIKI_ENTITY_LABELS_IT) {
+    const key = raw as WikiEntityType;
+    return WIKI_ENTITY_LABELS_IT[key];
   }
-}
-
-function extractBody(content: unknown): string {
-  if (typeof content === "string") return content.trim();
-  if (content && typeof content === "object" && !Array.isArray(content)) {
-    const body = (content as Record<string, unknown>).body;
-    if (typeof body === "string") return body.trim();
-  }
-  return "";
+  return "Lore";
 }
 
 function firstSentence(text: string): string {
@@ -158,7 +144,7 @@ export async function getCompendiumDataAction(
     if (wikiError) return { success: false, error: wikiError.message };
 
     const elements: CompendiumElement[] = (wikiRows ?? []).map((row: Record<string, unknown>) => {
-      const rawContent = extractBody(row.content);
+      const rawContent = getWikiContentBody(row.content);
       const campaignName = campaignById[String(row.campaign_id ?? "")] ?? "Campagna";
       const details: Record<string, string> = {};
       if (row.attributes && typeof row.attributes === "object" && !Array.isArray(row.attributes)) {

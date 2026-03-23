@@ -23,24 +23,24 @@ type CompendiumType = CompendiumElement["type"];
 const TYPE_FILTERS: Array<{ key: "Tutti" | CompendiumType; label: string }> = [
   { key: "Tutti", label: "Tutti" },
   { key: "Mostro", label: "Mostri" },
-  { key: "Incantesimo", label: "Incantesimi" },
-  { key: "PNG", label: "PNG" },
-  { key: "Oggetto Magico", label: "Oggetti Magici" },
+  { key: "NPC", label: "NPC" },
+  { key: "Oggetto", label: "Oggetti" },
   { key: "Luogo", label: "Luoghi" },
+  { key: "Lore", label: "Lore" },
 ];
 
 function badgeClass(type: CompendiumType): string {
   switch (type) {
     case "Mostro":
       return "bg-red-900/40 text-red-200 border-red-500/40";
-    case "Incantesimo":
-      return "bg-violet-900/40 text-violet-200 border-violet-500/40";
-    case "PNG":
+    case "NPC":
       return "bg-sky-900/40 text-sky-200 border-sky-500/40";
-    case "Oggetto Magico":
+    case "Oggetto":
       return "bg-amber-900/40 text-amber-200 border-amber-500/40";
     case "Luogo":
       return "bg-emerald-900/40 text-emerald-200 border-emerald-500/40";
+    case "Lore":
+      return "bg-violet-900/40 text-violet-200 border-violet-500/40";
     default:
       return "bg-zinc-800 text-zinc-200 border-zinc-600";
   }

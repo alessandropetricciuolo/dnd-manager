@@ -7,6 +7,7 @@ import { getCampaignEligiblePlayers } from "@/app/campaigns/character-actions";
 import { WikiDetails } from "@/components/wiki/wiki-details";
 import { WikiEntityEditButton } from "@/components/wiki/wiki-entity-edit-button";
 import { WikiEntityDeleteButton } from "@/components/wiki/wiki-entity-delete-button";
+import { getWikiContentBody } from "@/lib/wiki/content";
 import { ArrowLeft } from "lucide-react";
 
 type PageProps = {
@@ -59,10 +60,7 @@ export default async function WikiEntityPage({ params }: PageProps) {
     }
   }
 
-  const contentBody =
-    entity.content && typeof entity.content === "object" && "body" in entity.content
-      ? String((entity.content as { body?: string }).body ?? "")
-      : "";
+  const contentBody = getWikiContentBody(entity.content);
 
   const entityWithDefaults = {
     ...entity,

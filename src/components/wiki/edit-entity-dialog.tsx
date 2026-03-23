@@ -25,16 +25,9 @@ import { getEmptyAttributes } from "@/types/wiki";
 import type { WikiEntity } from "@/app/campaigns/wiki-actions";
 import { CHALLENGE_RATING_OPTIONS } from "@/lib/dnd-constants";
 import { Plus, Trash2 } from "lucide-react";
+import { type WikiEntityType, WIKI_ENTITY_OPTIONS } from "@/lib/wiki/entity-types";
 
-const ENTITY_TYPES = [
-  { value: "npc", label: "NPC" },
-  { value: "location", label: "Luogo" },
-  { value: "monster", label: "Mostro" },
-  { value: "item", label: "Oggetto" },
-  { value: "lore", label: "Lore" },
-] as const;
-
-type EntityType = (typeof ENTITY_TYPES)[number]["value"];
+type EntityType = WikiEntityType;
 
 const VISIBILITY_OPTIONS = [
   { label: "Pubblico (tutti)", value: "public" },
@@ -293,7 +286,7 @@ export function EditEntityDialog({
               className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
               disabled={isLoading}
             >
-              {ENTITY_TYPES.map(({ value, label }) => (
+              {WIKI_ENTITY_OPTIONS.map(({ value, label }) => (
                 <option key={value} value={value}>
                   {label}
                 </option>
