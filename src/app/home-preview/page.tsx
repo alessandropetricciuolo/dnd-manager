@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Dices, MapPinned, Shield, Sparkles, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { CampaignCarousel } from "@/components/home/campaign-carousel";
+import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { CampaignMiniCarousel } from "@/components/home/campaign-mini-carousel";
 
 export const metadata = {
   title: "Home Preview | Barber & Dragons",
@@ -14,7 +15,14 @@ export const metadata = {
 const HERO_BG =
   "https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=2000&q=80";
 
-export default function HomePreviewPage() {
+export default async function HomePreviewPage() {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isAuthenticated = !!user;
+  const ctaHref = isAuthenticated ? "/dashboard" : "/login";
+
   return (
     <main className="min-h-screen bg-[#0b0a10] text-barber-paper">
       <section className="relative overflow-hidden border-b border-barber-gold/20">
@@ -43,11 +51,14 @@ export default function HomePreviewPage() {
               size="lg"
               className="bg-barber-red px-7 text-base font-semibold text-barber-paper hover:bg-barber-red/90"
             >
-              <Link href="/login">Unisciti alla Gilda</Link>
+              <Link href={ctaHref}>Unisciti alla Gilda</Link>
             </Button>
             <Button asChild variant="outline" size="lg" className="border-barber-gold/40 text-barber-gold hover:bg-barber-gold/10">
-              <Link href="/scopri">Scopri le Avventure</Link>
+              <Link href={ctaHref}>Scopri le Avventure</Link>
             </Button>
+          </div>
+          <div className="pt-1">
+            <CampaignMiniCarousel isAuthenticated={isAuthenticated} />
           </div>
         </div>
       </section>
@@ -146,8 +157,6 @@ export default function HomePreviewPage() {
         </div>
       </section>
 
-      <CampaignCarousel />
-
       <section className="py-14 sm:py-16">
         <div className="mx-auto max-w-6xl px-4 text-center sm:px-6">
           <h2 className="font-serif text-2xl font-semibold text-barber-gold sm:text-3xl">Pronto a vivere D&D come non l&apos;hai mai giocato?</h2>
@@ -156,7 +165,7 @@ export default function HomePreviewPage() {
           </p>
           <div className="mt-6">
             <Button asChild size="lg" className="bg-barber-red px-8 text-barber-paper hover:bg-barber-red/90">
-              <Link href="/login">Unisciti alla Gilda</Link>
+              <Link href={ctaHref}>Unisciti alla Gilda</Link>
             </Button>
           </div>
         </div>
@@ -168,7 +177,7 @@ export default function HomePreviewPage() {
             Pronto a entrare nella tua prossima avventura?
           </p>
           <Button asChild className="bg-barber-red text-barber-paper hover:bg-barber-red/90">
-            <Link href="/login">Unisciti alla Gilda</Link>
+            <Link href={ctaHref}>Unisciti alla Gilda</Link>
           </Button>
         </div>
       </div>
