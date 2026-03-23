@@ -38,6 +38,11 @@ type WikiListClientProps = {
 
 const ALL_TYPES = "all";
 const WIKI_FILTER_VALUES = [ALL_TYPES, ...WIKI_ENTITY_TYPES] as const;
+type WikiFilterValue = (typeof WIKI_FILTER_VALUES)[number];
+
+function isWikiFilterValue(value: string): value is WikiFilterValue {
+  return WIKI_FILTER_VALUES.includes(value as WikiFilterValue);
+}
 
 export function WikiListClient({
   campaignId,
@@ -54,8 +59,8 @@ export function WikiListClient({
   const [searchQuery, setSearchQuery] = useState("");
 
   const wikiFilterParam = searchParams.get("wiki_filter");
-  const typeFilter =
-    wikiFilterParam && WIKI_FILTER_VALUES.includes(wikiFilterParam as (typeof WIKI_FILTER_VALUES)[number])
+  const typeFilter: WikiFilterValue =
+    wikiFilterParam && isWikiFilterValue(wikiFilterParam)
       ? wikiFilterParam
       : ALL_TYPES;
 
