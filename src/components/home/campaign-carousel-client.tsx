@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
+  type CarouselApi,
   Carousel,
   CarouselContent,
   CarouselItem,
@@ -28,10 +30,21 @@ type CampaignCarouselClientProps = {
 };
 
 export function CampaignCarouselClient({ campaigns }: CampaignCarouselClientProps) {
+  const [api, setApi] = useState<CarouselApi | null>(null);
+
+  useEffect(() => {
+    if (!api) return;
+    const timer = setInterval(() => {
+      api.scrollNext();
+    }, 4500);
+    return () => clearInterval(timer);
+  }, [api]);
+
   if (!campaigns.length) return null;
 
   return (
     <Carousel
+      setApi={setApi}
       opts={{ align: "start", loop: true }}
       className="w-full"
     >

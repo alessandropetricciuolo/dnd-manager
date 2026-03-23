@@ -1,11 +1,9 @@
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { CampaignCarouselClient } from "./campaign-carousel-client";
 
-const LIMIT = 10;
-
 /**
  * Carosello campagne in evidenza (Server Component).
- * Recupera le ultime campagne pubbliche ordinate per data di creazione.
+ * Recupera le campagne pubbliche ordinate per data di creazione.
  */
 export async function CampaignCarousel() {
   const supabase = await createSupabaseServerClient();
@@ -14,8 +12,7 @@ export async function CampaignCarousel() {
     .from("campaigns")
     .select("id, name, description, image_url")
     .eq("is_public", true)
-    .order("created_at", { ascending: false })
-    .limit(LIMIT);
+    .order("created_at", { ascending: false });
 
   if (error) {
     console.error("[CampaignCarousel]", error);

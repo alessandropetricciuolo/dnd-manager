@@ -54,6 +54,40 @@ export default function HomePreviewPage() {
 
       <section className="border-b border-barber-gold/20 py-14 sm:py-16">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <h2 className="text-center font-serif text-2xl font-semibold text-barber-gold sm:text-3xl">
+            Scegli il tuo tipo di avventura
+          </h2>
+          <p className="mx-auto mt-3 max-w-3xl text-center text-sm text-barber-paper/75 sm:text-base">
+            Offriamo tre modalita di gioco, dalla prima esperienza fino al percorso completo in un mondo condiviso.
+          </p>
+          <div className="mt-8 grid gap-5 md:grid-cols-3">
+            <article className="rounded-xl border border-barber-gold/25 bg-[#12101a] p-5">
+              <h3 className="text-lg font-semibold text-barber-gold">Oneshot</h3>
+              <p className="mt-2 text-sm leading-relaxed text-barber-paper/75">
+                Giocata autoconclusiva, perfetta per chi ha poco tempo e vuole venire a giocare senza impegni lunghi.
+                Consigliata per tutti i giocatori novizi.
+              </p>
+            </article>
+            <article className="rounded-xl border border-barber-gold/25 bg-[#12101a] p-5">
+              <h3 className="text-lg font-semibold text-barber-gold">Quest (3-5 sessioni)</h3>
+              <p className="mt-2 text-sm leading-relaxed text-barber-paper/75">
+                Campagne brevi per andare oltre la oneshot: approfondisci la storia, conosci meglio i compagni
+                di avventura e affini le tue abilita di gioco.
+              </p>
+            </article>
+            <article className="rounded-xl border border-barber-gold/25 bg-[#12101a] p-5">
+              <h3 className="text-lg font-semibold text-barber-gold">Campagne Lunghe con Lore Condivisa</h3>
+              <p className="mt-2 text-sm leading-relaxed text-barber-paper/75">
+                Il top di gamma: vivi l&apos;esperienza completa di D&D, crei il tuo eroe e lo vedi crescere in un
+                mondo vivo influenzato dalle tue scelte.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-barber-gold/20 py-14 sm:py-16">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <h2 className="text-center font-serif text-2xl font-semibold text-barber-gold sm:text-3xl">Perche l&apos;esperienza e diversa</h2>
           <div className="mt-8 grid gap-5 md:grid-cols-3">
             <article className="rounded-xl border border-barber-gold/25 bg-[#12101a] p-5">
@@ -129,7 +163,7 @@ export default function HomePreviewPage() {
       </section>
 
       <div className="fixed inset-x-0 bottom-0 z-50 border-t border-barber-gold/30 bg-[#0d0b12]/95 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur-sm">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 rounded-lg border border-barber-gold/25 bg-[#171322] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-3 rounded-lg border border-barber-gold/25 bg-[#171322] px-4 py-3 text-center">
           <p className="text-sm text-barber-paper/90">
             Pronto a entrare nella tua prossima avventura?
           </p>
