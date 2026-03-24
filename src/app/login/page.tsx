@@ -24,6 +24,13 @@ import { createSupabaseBrowserClient } from "@/utils/supabase/client";
 
 type Mode = "login" | "signup";
 
+const WHATSAPP_CONFIRM_MESSAGE =
+  "Stai davvero rinunciando alla community WhatsApp?\n\n" +
+  "Li organizziamo tavoli, avvisi rapidi e informazioni utili per giocare senza perderti nulla.\n\n" +
+  "Promesso: zero spam, solo info di gioco e divertimento.\n\n" +
+  "Se continui senza cellulare o senza consenso, rischi di restare fuori dal cuore della Gilda.\n\n" +
+  "Confermi di voler procedere comunque?";
+
 export default function LoginPage() {
   const router = useTopLoaderRouter();
   const searchParams = useSearchParams();
@@ -55,9 +62,20 @@ export default function LoginPage() {
       const firstName = (formData.get("first_name") as string | null)?.trim() ?? "";
       const lastName = (formData.get("last_name") as string | null)?.trim() ?? "";
       const phone = (formData.get("phone") as string | null)?.trim() ?? "";
+      const whatsappOptIn = formData.get("whatsapp_opt_in") === "on";
       if (!firstName || !lastName || !phone) {
-        toast.error("Inserisci Nome, Cognome e Cellulare.");
-        return;
+        const confirmed = window.confirm(WHATSAPP_CONFIRM_MESSAGE);
+        if (!confirmed) {
+          toast.error("Inserisci almeno Nome, Cognome e Cellulare per entrare davvero nella community.");
+          return;
+        }
+      }
+      if (!whatsappOptIn) {
+        const confirmed = window.confirm(WHATSAPP_CONFIRM_MESSAGE);
+        if (!confirmed) {
+          toast.error("Ti consigliamo di attivare il consenso WhatsApp: e il canale principale per organizzare le giocate.");
+          return;
+        }
       }
     }
 
@@ -77,6 +95,7 @@ export default function LoginPage() {
       const firstName = (formData.get("first_name") as string | null)?.trim() ?? "";
       const lastName = (formData.get("last_name") as string | null)?.trim() ?? "";
       const phone = (formData.get("phone") as string | null)?.trim() ?? "";
+      const whatsappOptIn = formData.get("whatsapp_opt_in") === "on";
       // Registrazione lato client: browser → Supabase (evita 504 del serverless Vercel)
       const supabase = createSupabaseBrowserClient();
       const { data, error: signUpError } = await supabase.auth.signUp({
@@ -87,6 +106,7 @@ export default function LoginPage() {
             first_name: firstName,
             last_name: lastName,
             phone,
+            whatsapp_opt_in: whatsappOptIn,
             role: "player",
           },
         },
@@ -105,7 +125,7 @@ export default function LoginPage() {
       }
       // Se c'è sessione (email non richiede conferma), aggiorna il profilo dal server
       if (data.session) {
-        const profileResult = await updateProfileAfterSignup(firstName, lastName, phone);
+        const profileResult = await updateProfileAfterSignup(firstName, lastName, phone, whatsappOptIn);
         if (profileResult?.error) {
           toast.warning("Account creato, ma profilo non aggiornato. Puoi completarlo dal profilo.");
         }
@@ -217,8 +237,24 @@ export default function LoginPage() {
                   placeholder="+39 333 1234567"
                   className="bg-slate-900/70 border-slate-700/70 text-slate-50 placeholder:text-slate-500"
                   disabled={isLoading}
-                  required
                 />
+              </div>
+            )}
+            {mode === "signup" && (
+              <div className="rounded-md border border-barber-gold/20 bg-barber-dark/60 p-3">
+                <label htmlFor="whatsapp_opt_in" className="flex items-start gap-3 text-sm text-barber-paper/85">
+                  <input
+                    id="whatsapp_opt_in"
+                    name="whatsapp_opt_in"
+                    type="checkbox"
+                    className="mt-0.5 h-4 w-4 rounded border-barber-gold/40 bg-barber-dark"
+                    disabled={isLoading}
+                  />
+                  <span>
+                    Acconsento a essere aggiunto alla community WhatsApp di Barber & Dragons, dove organizziamo le
+                    giocate e condividiamo tutte le info utili.
+                  </span>
+                </label>
               </div>
             )}
             <div className="space-y-2">

@@ -35,6 +35,7 @@ export interface Database {
           stat_combat: number;
           stat_roleplay: number;
           stat_lethality: string;
+          whatsapp_opt_in: boolean;
           notifications_disabled: boolean;
           created_at: string;
           updated_at: string;
@@ -59,6 +60,7 @@ export interface Database {
           stat_combat?: number;
           stat_roleplay?: number;
           stat_lethality?: string;
+          whatsapp_opt_in?: boolean;
           notifications_disabled?: boolean;
         };
         Update: Partial<Database["public"]["Tables"]["profiles"]["Insert"]>;

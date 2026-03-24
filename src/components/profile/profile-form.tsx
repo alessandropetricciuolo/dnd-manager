@@ -13,6 +13,7 @@ type ProfileFormProps = {
     last_name: string;
     date_of_birth: string;
     phone: string;
+    whatsapp_opt_in: boolean;
   };
 };
 
@@ -89,6 +90,22 @@ export function ProfileForm({ defaultValues }: ProfileFormProps) {
           className="border-slate-600 bg-slate-900/70 text-slate-50"
           disabled={isPending}
         />
+      </div>
+      <div className="rounded-md border border-emerald-500/30 bg-emerald-950/20 p-3">
+        <label htmlFor="whatsapp_opt_in" className="flex items-start gap-3 text-sm text-slate-100/90">
+          <input
+            id="whatsapp_opt_in"
+            name="whatsapp_opt_in"
+            type="checkbox"
+            defaultChecked={defaultValues.whatsapp_opt_in}
+            className="mt-0.5 h-4 w-4 rounded border-slate-600 bg-slate-900"
+            disabled={isPending}
+          />
+          <span>
+            Acconsento a restare nella community WhatsApp di Barber & Dragons per organizzazione sessioni, aggiornamenti
+            utili e comunicazioni di gioco (zero spam).
+          </span>
+        </label>
       </div>
       <Button
         type="submit"

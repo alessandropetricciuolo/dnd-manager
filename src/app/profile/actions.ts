@@ -13,6 +13,7 @@ export async function updateProfile(formData: FormData): Promise<UpdateProfileRe
   const lastName = (formData.get("last_name") as string | null)?.trim() || null;
   const dateOfBirthRaw = (formData.get("date_of_birth") as string | null)?.trim() || null;
   const phone = (formData.get("phone") as string | null)?.trim() || null;
+  const whatsappOptIn = formData.get("whatsapp_opt_in") === "on";
 
   const dateOfBirth = dateOfBirthRaw && !isNaN(Date.parse(dateOfBirthRaw))
     ? dateOfBirthRaw
@@ -36,6 +37,7 @@ export async function updateProfile(formData: FormData): Promise<UpdateProfileRe
         last_name: lastName,
         date_of_birth: dateOfBirth,
         phone,
+        whatsapp_opt_in: whatsappOptIn,
       })
       .eq("id", user.id);
 

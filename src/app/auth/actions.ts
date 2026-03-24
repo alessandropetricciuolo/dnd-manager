@@ -71,7 +71,8 @@ export async function signup(
   password: string,
   firstName: string,
   lastName: string,
-  phone: string
+  phone: string,
+  whatsappOptIn: boolean
 ): Promise<AuthResult> {
   if (!email || !password) {
     return { error: "Email e password sono obbligatorie." };
@@ -94,6 +95,7 @@ export async function signup(
           first_name: firstName.trim(),
           last_name: lastName.trim(),
           phone: phone.trim(),
+          whatsapp_opt_in: whatsappOptIn,
           role: "player",
         },
       },
@@ -118,6 +120,7 @@ export async function signup(
           first_name: firstName.trim(),
           last_name: lastName.trim(),
           phone: phone.trim(),
+          whatsapp_opt_in: whatsappOptIn,
         })
         .eq("id", data.user.id);
     }
@@ -145,7 +148,8 @@ export async function signup(
 export async function updateProfileAfterSignup(
   firstName: string,
   lastName: string,
-  phone: string
+  phone: string,
+  whatsappOptIn: boolean
 ): Promise<AuthResult> {
   try {
     const supabase = await createSupabaseServerClient();
@@ -162,6 +166,7 @@ export async function updateProfileAfterSignup(
         first_name: firstName.trim(),
         last_name: lastName.trim(),
         phone: phone.trim(),
+        whatsapp_opt_in: whatsappOptIn,
       })
       .eq("id", user.id);
     if (error) {

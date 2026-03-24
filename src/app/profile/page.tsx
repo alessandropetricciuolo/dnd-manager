@@ -26,7 +26,7 @@ export default async function ProfilePage() {
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "role, first_name, last_name, date_of_birth, phone, notifications_disabled, nickname, avatar_url, is_player_public"
+      "role, first_name, last_name, date_of_birth, phone, whatsapp_opt_in, notifications_disabled, nickname, avatar_url, is_player_public"
     )
     .eq("id", user.id)
     .single();
@@ -133,6 +133,7 @@ export default async function ProfilePage() {
                 last_name: profile?.last_name ?? "",
                 date_of_birth: profile?.date_of_birth ?? "",
                 phone: profile?.phone ?? "",
+                whatsapp_opt_in: profile?.whatsapp_opt_in ?? false,
                 nickname: profile?.nickname ?? null,
                 avatar_url: profile?.avatar_url ?? null,
                 is_player_public: profile?.is_player_public ?? true,
@@ -150,6 +151,7 @@ export default async function ProfilePage() {
                   last_name: profile?.last_name ?? "",
                   date_of_birth: profile?.date_of_birth ?? "",
                   phone: profile?.phone ?? "",
+                  whatsapp_opt_in: profile?.whatsapp_opt_in ?? false,
                 }}
               />
             </div>

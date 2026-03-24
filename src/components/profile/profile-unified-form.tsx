@@ -19,6 +19,7 @@ type ProfileUnifiedFormProps = {
     last_name: string;
     date_of_birth: string;
     phone: string;
+    whatsapp_opt_in: boolean;
     nickname: string | null;
     avatar_url: string | null;
     is_player_public: boolean;
@@ -36,6 +37,7 @@ export function ProfileUnifiedForm({ defaultValues, avatarGallery }: ProfileUnif
   const [notificationsDisabled, setNotificationsDisabled] = useState(
     defaultValues.notifications_disabled
   );
+  const [whatsappOptIn, setWhatsappOptIn] = useState(defaultValues.whatsapp_opt_in);
   const [lastError, setLastError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -51,6 +53,7 @@ export function ProfileUnifiedForm({ defaultValues, avatarGallery }: ProfileUnif
     const formData = new FormData(form);
     formData.set("is_player_public", isPlayerPublic ? "on" : "");
     formData.set("notifications_disabled", notificationsDisabled ? "on" : "");
+    formData.set("whatsapp_opt_in", whatsappOptIn ? "on" : "");
     startTransition(async () => {
       const [resProfile, resPlayer] = await Promise.all([
         updateProfile(formData),
@@ -231,6 +234,27 @@ export function ProfileUnifiedForm({ defaultValues, avatarGallery }: ProfileUnif
                 id="unified-notifications"
                 checked={notificationsDisabled}
                 onCheckedChange={setNotificationsDisabled}
+                disabled={isPending}
+              />
+            </div>
+          </div>
+          <div className="border-t border-barber-gold/10 pt-4">
+            <div className="flex items-center justify-between gap-4">
+              <Label
+                htmlFor="unified-whatsapp"
+                className="cursor-pointer text-barber-paper/90 font-normal"
+              >
+                <span className="flex items-center gap-2">
+                  Community WhatsApp Barber & Dragons
+                </span>
+                <p className="mt-0.5 text-xs text-barber-paper/50">
+                  Organizzazione giocate e aggiornamenti utili. Nessuno spam, solo info di gioco.
+                </p>
+              </Label>
+              <Switch
+                id="unified-whatsapp"
+                checked={whatsappOptIn}
+                onCheckedChange={setWhatsappOptIn}
                 disabled={isPending}
               />
             </div>
