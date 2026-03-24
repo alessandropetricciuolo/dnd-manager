@@ -10,6 +10,7 @@ import { getPlayerEmails, getNotificationsPaused, hasNotificationsDisabled } fro
 import { sendEmail, wrapInTemplate, escapeHtml } from "@/lib/email";
 import { uploadToTelegram } from "@/lib/telegram-storage";
 import { incrementSessionsAttendedWithAdmin, applyAwardedAchievementWithAdmin } from "@/lib/actions/gamification";
+import { sendAdminNotification } from "@/lib/telegram-notifier";
 
 export type CreateSessionResult = {
   success: boolean;
@@ -268,6 +269,28 @@ export async function joinSession(sessionId: string): Promise<JoinSessionResult>
       console.error("[joinSession]", insertError);
       return { success: false, message: insertError.message ?? "Errore durante l'iscrizione." };
     }
+
+    void (async () => {
+      const [{ data: playerProfile }, { data: sessionInfo }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("first_name, last_name, display_name")
+          .eq("id", user.id)
+          .maybeSingle(),
+        supabase.from("sessions").select("title").eq("id", sessionId).maybeSingle(),
+      ]);
+
+      const player = (playerProfile ?? null) as
+        | { first_name?: string | null; last_name?: string | null; display_name?: string | null }
+        | null;
+      const fullName = [player?.first_name, player?.last_name].filter(Boolean).join(" ").trim();
+      const playerName = fullName || player?.display_name?.trim() || "Giocatore";
+      const sessionTitle = ((sessionInfo as { title?: string | null } | null)?.title ?? "").trim() || "Sessione";
+
+      sendAdminNotification(
+        `🎲 Nuova Iscrizione!\nIl giocatore ${playerName} si è unito alla sessione: ${sessionTitle}`
+      ).catch(console.error);
+    })().catch(console.error);
 
     revalidatePath(`/campaigns/${session.campaign_id}`);
     revalidatePath("/dashboard");

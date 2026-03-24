@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { sendAdminNotification } from "@/lib/telegram-notifier";
 
 type AuthResult = {
   error?: string;
@@ -125,6 +126,17 @@ export async function signup(
         .eq("id", data.user.id);
     }
 
+    {
+      const nome = firstName.trim();
+      const cognome = lastName.trim();
+      const cellulare = phone?.trim() || "";
+      const autorizzazione_whatsapp = !!whatsappOptIn;
+      const waText = autorizzazione_whatsapp ? "✅ Sì" : "❌ No";
+      const phoneText = cellulare ? `\n📱 Cellulare: ${cellulare}` : "";
+      const msg = `🆕 Nuovo Utente Registrato!\n\n👤 Nome: ${nome} ${cognome}\n📧 Email: ${email}${phoneText}\n💬 WhatsApp: ${waText}`;
+      sendAdminNotification(msg).catch(console.error);
+    }
+
     revalidatePath("/login");
     return {};
   } catch (e) {
@@ -172,6 +184,17 @@ export async function updateProfileAfterSignup(
     if (error) {
       console.error("[updateProfileAfterSignup]", error);
       return { error: "Impossibile aggiornare il profilo. Riprova più tardi." };
+    }
+    {
+      const nome = firstName.trim();
+      const cognome = lastName.trim();
+      const cellulare = phone?.trim() || "";
+      const autorizzazione_whatsapp = !!whatsappOptIn;
+      const waText = autorizzazione_whatsapp ? "✅ Sì" : "❌ No";
+      const phoneText = cellulare ? `\n📱 Cellulare: ${cellulare}` : "";
+      const email = user.email?.trim() || "Email non disponibile";
+      const msg = `🆕 Nuovo Utente Registrato!\n\n👤 Nome: ${nome} ${cognome}\n📧 Email: ${email}${phoneText}\n💬 WhatsApp: ${waText}`;
+      sendAdminNotification(msg).catch(console.error);
     }
     revalidatePath("/login");
     return {};
