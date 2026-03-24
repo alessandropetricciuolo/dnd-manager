@@ -3,7 +3,7 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Shield, FileJson, Trophy, BookOpen, Palette } from "lucide-react";
+import { ArrowLeft, Shield, FileJson, Trophy, BookOpen, Palette, Swords } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -65,6 +65,16 @@ export default async function AdminLayout({
             >
               <BookOpen className="mr-2 h-4 w-4" />
               Reclute
+            </Button>
+          </Link>
+          <Link href="/admin/player-campaigns">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-barber-paper/80 hover:text-barber-paper"
+            >
+              <Swords className="mr-2 h-4 w-4" />
+              Campagne Giocate
             </Button>
           </Link>
           <Link href="/admin/gamification">

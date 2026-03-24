@@ -42,6 +42,22 @@ export default async function ProfilePage() {
     .eq("player_id", user.id)
     .eq("status", "absent");
 
+  const { data: memberRows } = await supabase
+    .from("campaign_members")
+    .select("campaign_id, joined_at")
+    .eq("player_id", user.id)
+    .order("joined_at", { ascending: false });
+  const membershipRows = (memberRows ?? []) as { campaign_id: string; joined_at: string }[];
+  const playedCampaignIds = [...new Set(membershipRows.map((r) => r.campaign_id))];
+  let playedCampaigns: Array<{ id: string; name: string; type: "oneshot" | "quest" | "long" | null }> = [];
+  if (playedCampaignIds.length > 0) {
+    const { data: campaignsData } = await supabase
+      .from("campaigns")
+      .select("id, name, type")
+      .in("id", playedCampaignIds);
+    playedCampaigns = (campaignsData ?? []) as Array<{ id: string; name: string; type: "oneshot" | "quest" | "long" | null }>;
+  }
+
   const isPlayer = profile?.role === "player";
   const avatarGalleryData = isPlayer ? await getAvatarGalleryData(user.id) : null;
   const trophyData = await getTrophyDataForPlayer(user.id);
@@ -78,6 +94,26 @@ export default async function ProfilePage() {
               Assente: {absentCount ?? 0} sessioni
             </span>
           </div>
+        </div>
+
+        <div className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 p-4 mb-6">
+          <h2 className="text-sm font-medium text-barber-paper/70 mb-2">Campagne giocate</h2>
+          {playedCampaigns.length === 0 ? (
+            <p className="text-sm text-barber-paper/60">Nessuna campagna registrata al momento.</p>
+          ) : (
+            <ul className="space-y-2">
+              {playedCampaigns.map((c) => (
+                <li key={c.id} className="flex flex-wrap items-center gap-2">
+                  <Link href={`/campaigns/${c.id}`} className="text-barber-gold hover:underline">
+                    {c.name}
+                  </Link>
+                  <span className="rounded-full border border-barber-gold/30 px-2 py-0.5 text-xs text-barber-paper/70">
+                    {c.type === "oneshot" ? "Oneshot" : c.type === "quest" ? "Quest" : c.type === "long" ? "Campagna Lunga" : "Campagna"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         <section className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 p-6">
