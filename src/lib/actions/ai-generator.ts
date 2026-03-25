@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import type { Json } from "@/types/database.types";
 import { parseCampaignAiContextFromDb } from "@/lib/campaign-ai-context";
 import { generateAiImage, HuggingFaceInferenceError } from "@/lib/ai/huggingface-client";
@@ -51,13 +52,14 @@ export async function generateContextualPortraitAction(
     if (profile?.role !== "gm" && profile?.role !== "admin") {
       return { success: false, message: "Solo GM e Admin possono generare immagini AI." };
     }
+    const admin = createSupabaseAdminClient();
 
     type CampaignVisualRow = {
       ai_context: Json | null;
       image_style_prompt?: string | null;
       ai_image_style_key?: string | null;
     };
-    const campaignsQuery = supabase.from("campaigns") as unknown as {
+    const campaignsQuery = admin.from("campaigns") as unknown as {
       select: (columns: string) => {
         eq: (
           column: string,
@@ -77,7 +79,7 @@ export async function generateContextualPortraitAction(
       campError?.message?.toLowerCase().includes("image_style_prompt") ||
       campError?.message?.toLowerCase().includes("ai_image_style_key")
     ) {
-      const fallback = await supabase
+      const fallback = await admin
         .from("campaigns")
         .select("ai_context, image_style_prompt")
         .eq("id", campaignId)
@@ -101,11 +103,14 @@ export async function generateContextualPortraitAction(
     let styleNegativeTemplate = "";
 
     if (styleKey) {
-      const { data: styleRow } = await supabase
+      const { data: styleRowRaw } = await admin
         .from("ai_image_styles")
         .select("positive_prompt, negative_prompt, is_active")
         .eq("key", styleKey)
         .single();
+      const styleRow = styleRowRaw as
+        | { positive_prompt: string | null; negative_prompt: string | null; is_active: boolean }
+        | null;
       if (styleRow?.is_active) {
         styleTemplate = styleRow.positive_prompt?.trim() ?? "";
         styleNegativeTemplate = styleRow.negative_prompt?.trim() ?? "";

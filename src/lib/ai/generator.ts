@@ -4,6 +4,7 @@
  */
 
 import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import type { Json } from "@/types/database.types";
 import { generateAiText, HuggingFaceInferenceError } from "@/lib/ai/huggingface-client";
 import {
@@ -79,7 +80,8 @@ export async function generateContextualText(
 
   try {
     const supabase = await createSupabaseServerClient();
-    const { data: row, error } = await supabase
+    const admin = createSupabaseAdminClient();
+    const { data: row, error } = await admin
       .from("campaigns")
       .select("ai_context")
       .eq("id", campaignId)

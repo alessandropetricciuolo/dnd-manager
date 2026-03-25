@@ -171,7 +171,8 @@ export async function generateWikiMarkdownAction(
       return { success: false, message: "Solo GM e Admin possono generare contenuti AI." };
     }
 
-    const { data: campaign, error: campaignError } = await supabase
+    const admin = createSupabaseAdminClient();
+    const { data: campaign, error: campaignError } = await admin
       .from("campaigns")
       .select("ai_context")
       .eq("id", campaignId)
@@ -272,8 +273,6 @@ export async function generateWikiMarkdownAction(
     if (normalizedType === "monster") {
       const searchQuery = `Regole, privilegi e statblock completo del mostro: ${safeName}. Dettagli tecnici: ${safeRetrievalPrompt || "nessuno"}.`;
       let technicalContext = "";
-      const admin = createSupabaseAdminClient();
-
       try {
         const embedding = await generateEmbedding(searchQuery);
         // Tipizzazione RPC best-effort: la firma generated potrebbe non includere ancora la funzione.
