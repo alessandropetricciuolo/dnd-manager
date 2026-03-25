@@ -1354,7 +1354,7 @@ export async function setCampaignPublic(
 
     const { data: campaign } = await supabase
       .from("campaigns")
-      .select("id")
+      .select("id, name, is_public")
       .eq("id", campaignId)
       .single();
     if (!campaign) {
@@ -1370,6 +1370,25 @@ export async function setCampaignPublic(
     if (error) {
       console.error("[setCampaignPublic]", error);
       return { success: false, message: error.message ?? "Errore durante l'aggiornamento." };
+    }
+
+    if (isPublic && campaign?.is_public !== true) {
+      try {
+        const campaignName = (campaign.name ?? "").trim() || "Nuova campagna";
+        const playerEmails = await getPlayerEmails();
+        if (playerEmails.length > 0) {
+          void sendEmail({
+            to: process.env.GMAIL_USER ?? "",
+            bcc: playerEmails,
+            subject: `Nuova Campagna Disponibile: ${campaignName}`,
+            html: wrapInTemplate(
+              `<p>La campagna <strong>${escapeHtml(campaignName)}</strong> è ora pubblica.</p><p>Accedi al sito per scoprirla e iscriverti alle sessioni.</p>`
+            ),
+          });
+        }
+      } catch (mailErr) {
+        console.error("[setCampaignPublic] invio email:", mailErr);
+      }
     }
 
     revalidatePath(`/campaigns/${campaignId}`);
