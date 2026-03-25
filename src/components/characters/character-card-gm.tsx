@@ -37,9 +37,6 @@ import { MapPopoutButton } from "@/components/maps/map-popout-button";
 
 const PLACEHOLDER_AVATAR = "https://placehold.co/200x280/1c1917/fbbf24/png?text=PG";
 
-/** PF/CA/Classe non sono ancora nel DB: placeholder per layout VTT. */
-const STAT_PLACEHOLDER = "—";
-
 type CharacterCardGmProps = {
   character: CampaignCharacterRow;
   eligiblePlayers: EligiblePlayer[];
@@ -70,6 +67,9 @@ export function CharacterCardGm({ character, eligiblePlayers }: CharacterCardGmP
 
   const xpLabel =
     nextLevelXp != null ? `${xp} / ${nextLevelXp} PE` : `${xp} PE (livello massimo)`;
+  const classLabel = character.character_class?.trim() || "—";
+  const hpLabel = character.hit_points != null ? String(character.hit_points) : "—";
+  const acLabel = character.armor_class != null ? String(character.armor_class) : "—";
 
   const backgroundPreview = character.background?.trim() ?? "";
   const backgroundForSheet = character.background?.trim()
@@ -176,15 +176,15 @@ export function CharacterCardGm({ character, eligiblePlayers }: CharacterCardGmP
               <dl className="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px] text-barber-paper/75 sm:text-xs">
                 <div className="flex justify-between gap-1">
                   <dt className="text-muted-foreground">Classe</dt>
-                  <dd className="truncate font-medium tabular-nums text-barber-paper">{STAT_PLACEHOLDER}</dd>
+                  <dd className="truncate font-medium tabular-nums text-barber-paper">{classLabel}</dd>
                 </div>
                 <div className="flex justify-between gap-1">
                   <dt className="text-muted-foreground">PF</dt>
-                  <dd className="font-medium tabular-nums text-barber-paper">{STAT_PLACEHOLDER}</dd>
+                  <dd className="font-medium tabular-nums text-barber-paper">{hpLabel}</dd>
                 </div>
                 <div className="flex justify-between gap-1">
                   <dt className="text-muted-foreground">CA</dt>
-                  <dd className="font-medium tabular-nums text-barber-paper">{STAT_PLACEHOLDER}</dd>
+                  <dd className="font-medium tabular-nums text-barber-paper">{acLabel}</dd>
                 </div>
                 <div className="flex justify-between gap-1">
                   <dt className="text-muted-foreground">Lv</dt>
@@ -315,15 +315,15 @@ export function CharacterCardGm({ character, eligiblePlayers }: CharacterCardGmP
             <dl className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
               <div className="rounded-md border border-barber-gold/25 bg-barber-dark/80 px-2 py-1.5">
                 <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">Classe</dt>
-                <dd className="font-medium tabular-nums text-barber-paper">{STAT_PLACEHOLDER}</dd>
+                <dd className="font-medium tabular-nums text-barber-paper">{classLabel}</dd>
               </div>
               <div className="rounded-md border border-barber-gold/25 bg-barber-dark/80 px-2 py-1.5">
                 <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">PF</dt>
-                <dd className="font-medium tabular-nums text-barber-paper">{STAT_PLACEHOLDER}</dd>
+                <dd className="font-medium tabular-nums text-barber-paper">{hpLabel}</dd>
               </div>
               <div className="rounded-md border border-barber-gold/25 bg-barber-dark/80 px-2 py-1.5">
                 <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">CA</dt>
-                <dd className="font-medium tabular-nums text-barber-paper">{STAT_PLACEHOLDER}</dd>
+                <dd className="font-medium tabular-nums text-barber-paper">{acLabel}</dd>
               </div>
               <div className="rounded-md border border-barber-gold/25 bg-barber-dark/80 px-2 py-1.5">
                 <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">Livello</dt>

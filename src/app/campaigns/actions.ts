@@ -223,6 +223,50 @@ async function isGmOrAdmin(
   return campaign?.gm_id === user?.id;
 }
 
+async function sendFeedbackRequestEmailsForSession(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  campaignId: string,
+  sessionId: string
+): Promise<void> {
+  try {
+    const [{ data: campaignRow }, { data: sessionRow }, { data: signupsRows }] = await Promise.all([
+      admin.from("campaigns").select("name").eq("id", campaignId).maybeSingle(),
+      admin.from("sessions").select("title, scheduled_at").eq("id", sessionId).maybeSingle(),
+      admin.from("session_signups").select("player_id").eq("session_id", sessionId).eq("status", "attended"),
+    ]);
+
+    const campaignName = ((campaignRow as { name?: string | null } | null)?.name ?? "").trim() || "Campagna";
+    const sessionTitle = ((sessionRow as { title?: string | null } | null)?.title ?? "").trim() || "Sessione";
+    const sessionDateRaw = (sessionRow as { scheduled_at?: string | null } | null)?.scheduled_at ?? null;
+    const sessionDate = sessionDateRaw
+      ? formatSessionInRome(sessionDateRaw, "EEEE d MMMM yyyy, HH:mm", { locale: it })
+      : "data non disponibile";
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://barberanddragons.com").replace(/\/$/, "");
+    const feedbackUrl = `${appUrl}/campaigns/${campaignId}?tab=sessioni`;
+
+    const signups = (signupsRows ?? []) as { player_id: string }[];
+    const playerIds = [...new Set(signups.map((s) => s.player_id))];
+    if (playerIds.length === 0) return;
+
+    for (const playerId of playerIds) {
+      const { data: authUser } = await admin.auth.admin.getUserById(playerId);
+      const toEmail = authUser?.user?.email;
+      if (!toEmail) continue;
+      void sendEmail({
+        to: toEmail,
+        subject: `Lascia il tuo feedback: ${campaignName}`,
+        html: wrapInTemplate(
+          `<p>La sessione <strong>${escapeHtml(sessionTitle)}</strong> (${escapeHtml(sessionDate)}) è stata chiusa.</p>` +
+            `<p>Il tuo feedback è prezioso: valuta l'esperienza della sessione e della campagna.</p>` +
+            `<p><a href="${escapeHtml(feedbackUrl)}" style="color:#fbbf24;text-decoration:underline;">Apri la pagina campagna e lascia il feedback</a></p>`
+        ),
+      });
+    }
+  } catch (err) {
+    console.error("[sendFeedbackRequestEmailsForSession]", err);
+  }
+}
+
 export type JoinSessionResult = { success: boolean; message: string };
 
 /** Iscrizione a una sessione. Inserisce session_signups senza status (default DB = pending). Errore se già iscritto. */
@@ -271,13 +315,14 @@ export async function joinSession(sessionId: string): Promise<JoinSessionResult>
     }
 
     void (async () => {
-      const [{ data: playerProfile }, { data: sessionInfo }] = await Promise.all([
+      const [{ data: playerProfile }, { data: sessionInfo }, { data: campaignInfo }] = await Promise.all([
         supabase
           .from("profiles")
           .select("first_name, last_name, display_name")
           .eq("id", user.id)
           .maybeSingle(),
-        supabase.from("sessions").select("title").eq("id", sessionId).maybeSingle(),
+        supabase.from("sessions").select("title, scheduled_at").eq("id", sessionId).maybeSingle(),
+        supabase.from("campaigns").select("name").eq("id", session.campaign_id).maybeSingle(),
       ]);
 
       const player = (playerProfile ?? null) as
@@ -285,10 +330,15 @@ export async function joinSession(sessionId: string): Promise<JoinSessionResult>
         | null;
       const fullName = [player?.first_name, player?.last_name].filter(Boolean).join(" ").trim();
       const playerName = fullName || player?.display_name?.trim() || "Giocatore";
-      const sessionTitle = ((sessionInfo as { title?: string | null } | null)?.title ?? "").trim() || "Sessione";
+      const sessionRow = (sessionInfo as { title?: string | null; scheduled_at?: string | null } | null) ?? null;
+      const sessionTitle = (sessionRow?.title ?? "").trim() || "Sessione";
+      const campaignName = ((campaignInfo as { name?: string | null } | null)?.name ?? "").trim() || "Campagna";
+      const sessionDate = sessionRow?.scheduled_at
+        ? formatSessionInRome(sessionRow.scheduled_at, "dd/MM/yyyy HH:mm")
+        : "Data non disponibile";
 
       sendAdminNotification(
-        `🎲 Nuova Iscrizione!\nIl giocatore ${playerName} si è unito alla sessione: ${sessionTitle}`
+        `🎲 Nuova Iscrizione!\n\n👤 Giocatore: ${playerName}\n📚 Campagna: ${campaignName}\n🗓️ Sessione: ${sessionTitle}\n🕒 Data: ${sessionDate}`
       ).catch(console.error);
     })().catch(console.error);
 
@@ -962,6 +1012,8 @@ export async function closeSessionAction(
       revalidatePath("/hall-of-fame");
     }
 
+    void sendFeedbackRequestEmailsForSession(admin, session.campaign_id, sessionId);
+
     revalidatePath(`/campaigns/${session.campaign_id}`);
     revalidatePath("/dashboard");
     return { success: true, message: "Sessione chiusa. Appello, XP, diario e mondo aggiornati.", campaignId: session.campaign_id };
@@ -1179,6 +1231,8 @@ export async function closeSession(
       return { success: false, message: updateSessionError.message ?? "Errore durante la chiusura." };
     }
 
+    void sendFeedbackRequestEmailsForSession(admin, session.campaign_id, sessionId);
+
     revalidatePath(`/campaigns/${session.campaign_id}`);
     revalidatePath("/dashboard");
     return { success: true, message: "Sessione chiusa e appello registrato.", campaignId: session.campaign_id };
@@ -1264,6 +1318,8 @@ export async function closeSessionQuestOrOneshot(
       console.error("[closeSessionQuestOrOneshot]", updateErr);
       return { success: false, message: "Errore durante la chiusura." };
     }
+
+    void sendFeedbackRequestEmailsForSession(admin, session.campaign_id, sessionId);
 
     revalidatePath(`/campaigns/${session.campaign_id}`);
     revalidatePath("/dashboard");

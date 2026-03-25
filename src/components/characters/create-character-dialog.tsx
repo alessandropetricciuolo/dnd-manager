@@ -93,7 +93,7 @@ export function CreateCharacterDialog({ campaignId }: CreateCharacterDialogProps
         <DialogHeader>
           <DialogTitle>Nuovo personaggio</DialogTitle>
           <DialogDescription className="text-barber-paper/70">
-            Inserisci nome, avatar, scheda tecnica (PDF) e background. L&apos;assegnazione al giocatore potrai farla dalla griglia.
+            Inserisci nome, classe, statistiche di combattimento, avatar, scheda tecnica (PDF) e background. L&apos;assegnazione al giocatore potrai farla dalla griglia.
           </DialogDescription>
         </DialogHeader>
         <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
@@ -110,6 +110,44 @@ export function CreateCharacterDialog({ campaignId }: CreateCharacterDialogProps
               className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
               disabled={isLoading}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="char-class">Classe</Label>
+            <Input
+              id="char-class"
+              name="character_class"
+              placeholder="Es. Mago, Guerriero, Chierico"
+              className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="char-ac">CA</Label>
+              <Input
+                id="char-ac"
+                name="armor_class"
+                type="number"
+                min={0}
+                placeholder="Es. 15"
+                className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
+                disabled={isLoading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="char-hp">PF</Label>
+              <Input
+                id="char-hp"
+                name="hit_points"
+                type="number"
+                min={0}
+                placeholder="Es. 24"
+                className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
+                disabled={isLoading}
+              />
+            </div>
           </div>
 
           <ImageSourceField

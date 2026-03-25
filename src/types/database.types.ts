@@ -241,6 +241,11 @@ export interface Database {
           name: string;
           image_url: string | null;
           sheet_file_path: string | null;
+          current_xp: number;
+          level: number;
+          character_class: string | null;
+          armor_class: number | null;
+          hit_points: number | null;
           background: string | null;
           assigned_to: string | null;
           created_at: string;
@@ -292,6 +297,25 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["leads"]["Insert"]>;
+      };
+      session_feedback: {
+        Row: {
+          id: string;
+          session_id: string;
+          campaign_id: string;
+          player_id: string;
+          session_rating: number;
+          campaign_rating: number;
+          comment: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database["public"]["Tables"]["session_feedback"]["Row"], "id" | "created_at" | "updated_at"> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["session_feedback"]["Insert"]>;
       };
     };
   };

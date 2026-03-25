@@ -105,7 +105,7 @@ export function EditCharacterDialog({
         <DialogHeader>
           <DialogTitle>Modifica personaggio</DialogTitle>
           <DialogDescription className="text-barber-paper/70">
-            Modifica nome, avatar, scheda PDF e background. L&apos;assegnazione al giocatore si gestisce dalla card.
+            Modifica nome, classe, statistiche di combattimento, avatar, scheda PDF e background. L&apos;assegnazione al giocatore si gestisce dalla card.
           </DialogDescription>
         </DialogHeader>
         <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
@@ -123,6 +123,47 @@ export function EditCharacterDialog({
               className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
               disabled={isLoading}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-char-class">Classe</Label>
+            <Input
+              id="edit-char-class"
+              name="character_class"
+              defaultValue={character.character_class ?? ""}
+              placeholder="Es. Mago, Guerriero, Chierico"
+              className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-char-ac">CA</Label>
+              <Input
+                id="edit-char-ac"
+                name="armor_class"
+                type="number"
+                min={0}
+                defaultValue={character.armor_class ?? ""}
+                placeholder="Es. 15"
+                className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
+                disabled={isLoading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-char-hp">PF</Label>
+              <Input
+                id="edit-char-hp"
+                name="hit_points"
+                type="number"
+                min={0}
+                defaultValue={character.hit_points ?? ""}
+                placeholder="Es. 24"
+                className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
+                disabled={isLoading}
+              />
+            </div>
           </div>
 
           <ImageSourceField

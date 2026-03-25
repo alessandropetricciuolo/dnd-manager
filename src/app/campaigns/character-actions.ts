@@ -20,6 +20,9 @@ export type CampaignCharacterRow = {
   campaign_id: string;
   name: string;
   image_url: string | null;
+  character_class: string | null;
+  armor_class?: number | null;
+  hit_points?: number | null;
   /** XP correnti del personaggio. */
   current_xp: number;
   /** Livello attuale (1-20). */
@@ -65,7 +68,7 @@ export async function getCampaignCharacters(
   if (isGmOrAdmin) {
     const { data: rows, error } = await supabase
       .from("campaign_characters")
-      .select("id, campaign_id, name, image_url, current_xp, level, sheet_file_path, background, assigned_to, created_at, updated_at")
+      .select("id, campaign_id, name, image_url, character_class, armor_class, hit_points, current_xp, level, sheet_file_path, background, assigned_to, created_at, updated_at")
       .eq("campaign_id", campaignId)
       .order("created_at", { ascending: false });
 
@@ -101,7 +104,7 @@ export async function getCampaignCharacters(
   // Player: solo il proprio PG, senza sheet_url / sheet_file_path
   const { data: rows, error } = await supabase
     .from("campaign_characters")
-    .select("id, campaign_id, name, image_url, current_xp, level, background, assigned_to, created_at, updated_at")
+    .select("id, campaign_id, name, image_url, character_class, current_xp, level, background, assigned_to, created_at, updated_at")
     .eq("campaign_id", campaignId)
     .eq("assigned_to", userId)
     .order("created_at", { ascending: false })
@@ -112,7 +115,12 @@ export async function getCampaignCharacters(
     return { success: false, error: error.message ?? "Errore nel caricamento." };
   }
 
-  const list: CampaignCharacterRow[] = (rows ?? []).map((r) => ({ ...r, sheet_url: null }));
+  const list: CampaignCharacterRow[] = (rows ?? []).map((r) => ({
+    ...r,
+    armor_class: null,
+    hit_points: null,
+    sheet_url: null,
+  }));
   return { success: true, data: list };
 }
 
@@ -127,6 +135,9 @@ export async function createCharacter(
 
   const supabase = ctx.supabase;
   const name = (formData.get("name") as string | null)?.trim();
+  const characterClass = (formData.get("character_class") as string | null)?.trim() || null;
+  const armorClassRaw = (formData.get("armor_class") as string | null)?.trim() || "";
+  const hitPointsRaw = (formData.get("hit_points") as string | null)?.trim() || "";
   const background = (formData.get("background") as string | null)?.trim() ?? null;
   const imageFile = formData.get("image") as File | null;
   const imageUrlFromForm = (formData.get("image_url") as string | null)?.trim() || null;
@@ -134,6 +145,14 @@ export async function createCharacter(
   const sheetUrlFromForm = (formData.get("sheet_url") as string | null)?.trim() || null;
 
   if (!name) return { success: false, error: "Il nome del personaggio è obbligatorio." };
+  const armorClass = armorClassRaw !== "" ? Number.parseInt(armorClassRaw, 10) : null;
+  const hitPoints = hitPointsRaw !== "" ? Number.parseInt(hitPointsRaw, 10) : null;
+  if (armorClassRaw !== "" && (Number.isNaN(armorClass as number) || (armorClass as number) < 0)) {
+    return { success: false, error: "CA non valida." };
+  }
+  if (hitPointsRaw !== "" && (Number.isNaN(hitPoints as number) || (hitPoints as number) < 0)) {
+    return { success: false, error: "PF non validi." };
+  }
 
   let image_url: string | null = null;
   if (imageFile && imageFile instanceof File && imageFile.size > 0) {
@@ -180,11 +199,14 @@ export async function createCharacter(
       campaign_id: campaignId,
       name,
       image_url,
+      character_class: characterClass,
+      armor_class: armorClass,
+      hit_points: hitPoints,
       sheet_file_path,
       background,
       assigned_to: null,
     })
-    .select("id, campaign_id, name, image_url, background, assigned_to, created_at, updated_at")
+    .select("id, campaign_id, name, image_url, character_class, armor_class, hit_points, current_xp, level, background, assigned_to, created_at, updated_at")
     .single();
 
   if (error) {
@@ -210,6 +232,18 @@ export async function updateCharacter(
   const supabase = ctx.supabase;
   const name = (formData.get("name") as string | null)?.trim();
   if (!name) return { success: false, error: "Il nome del personaggio è obbligatorio." };
+
+  const characterClass = (formData.get("character_class") as string | null)?.trim() || null;
+  const armorClassRaw = (formData.get("armor_class") as string | null)?.trim() || "";
+  const hitPointsRaw = (formData.get("hit_points") as string | null)?.trim() || "";
+  const armorClass = armorClassRaw !== "" ? Number.parseInt(armorClassRaw, 10) : null;
+  const hitPoints = hitPointsRaw !== "" ? Number.parseInt(hitPointsRaw, 10) : null;
+  if (armorClassRaw !== "" && (Number.isNaN(armorClass as number) || (armorClass as number) < 0)) {
+    return { success: false, error: "CA non valida." };
+  }
+  if (hitPointsRaw !== "" && (Number.isNaN(hitPoints as number) || (hitPoints as number) < 0)) {
+    return { success: false, error: "PF non validi." };
+  }
 
   const background = (formData.get("background") as string | null)?.trim() ?? null;
   const removeImage = formData.get("remove_image") === "on";
@@ -284,11 +318,14 @@ export async function updateCharacter(
     .update({
       name,
       image_url,
+      character_class: characterClass,
+      armor_class: armorClass,
+      hit_points: hitPoints,
       sheet_file_path,
       background,
     })
     .eq("id", characterId)
-    .select("id, campaign_id, name, image_url, background, assigned_to, created_at, updated_at")
+    .select("id, campaign_id, name, image_url, character_class, armor_class, hit_points, current_xp, level, background, assigned_to, created_at, updated_at")
     .single();
 
   if (error) {

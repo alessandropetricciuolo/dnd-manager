@@ -36,6 +36,10 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const [mode, setMode] = useState<Mode>("login");
   const [isLoading, setIsLoading] = useState(false);
+  const [signupCompleted, setSignupCompleted] = useState(false);
+  const [signupWhatsappOptIn, setSignupWhatsappOptIn] = useState(false);
+  const [signupRequiresEmailConfirm, setSignupRequiresEmailConfirm] = useState(false);
+  const whatsappCommunityLink = process.env.NEXT_PUBLIC_WHATSAPP_COMMUNITY_LINK?.trim() ?? "";
 
   useEffect(() => {
     if (searchParams.get("error") === "link_expired") {
@@ -133,12 +137,9 @@ export default function LoginPage() {
       toast.success(
         "Registrazione completata. Il tuo profilo 'player' è stato creato."
       );
-      if (data.session) {
-        router.push("/dashboard");
-        router.refresh();
-      } else {
-        setMode("login");
-      }
+      setSignupWhatsappOptIn(whatsappOptIn);
+      setSignupRequiresEmailConfirm(!data.session);
+      setSignupCompleted(true);
     } catch {
       toast.error("Qualcosa è andato storto. Riprova più tardi.");
     } finally {
@@ -167,7 +168,10 @@ export default function LoginPage() {
           <div className="inline-flex w-full rounded-full border border-barber-gold/50 bg-barber-dark p-1 text-sm">
             <button
               type="button"
-              onClick={() => setMode("login")}
+              onClick={() => {
+                setMode("login");
+                setSignupCompleted(false);
+              }}
               className={`flex-1 min-h-[44px] rounded-full px-3 py-2 transition ${
                 mode === "login"
                   ? "bg-barber-red text-barber-paper shadow"
@@ -189,7 +193,39 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          {mode === "signup" && signupCompleted ? (
+            <div className="space-y-4 rounded-xl border border-barber-gold/30 bg-barber-dark/70 p-4">
+              <h3 className="text-lg font-semibold text-barber-gold">Registrazione Completata</h3>
+              <p className="text-sm text-barber-paper/85">
+                Il tuo account e pronto. Se vuoi, entra subito nella community per restare aggiornato sulle prossime
+                giocate.
+              </p>
+              {signupRequiresEmailConfirm && (
+                <p className="text-xs text-barber-paper/70">
+                  Potrebbe essere richiesta la conferma email prima del primo accesso in dashboard.
+                </p>
+              )}
+              {signupWhatsappOptIn && whatsappCommunityLink ? (
+                <a
+                  href={whatsappCommunityLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-h-[44px] w-full items-center justify-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500"
+                >
+                  Unisciti alla Community WhatsApp
+                </a>
+              ) : null}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full border-barber-gold/40 text-barber-paper hover:bg-barber-gold/10"
+                onClick={() => router.push("/dashboard")}
+              >
+                Vai alla Dashboard
+              </Button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
             {mode === "signup" && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -307,7 +343,8 @@ export default function LoginPage() {
             >
               {mode === "login" ? "Entra nella Taverna" : "Crea il tuo eroe"}
             </SubmitButton>
-          </form>
+            </form>
+          )}
         </CardContent>
 
         <CardFooter className="flex flex-col items-start gap-1 text-xs text-barber-paper/60 px-0 pb-0">

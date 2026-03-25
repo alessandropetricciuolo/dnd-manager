@@ -6,6 +6,7 @@ import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { SessionList } from "@/components/session-list";
 import { SessionHistoryManager } from "@/components/sessions/session-history-manager";
 import { CompletedSessionsListForPlayer } from "@/components/sessions/completed-sessions-list-for-player";
+import { PlayerFeedbackSection } from "@/components/feedback/player-feedback-section";
 import { CreateSessionDialog } from "@/components/create-session-dialog";
 import { MapGallery } from "@/components/maps/map-gallery";
 import { UploadMapDialog } from "@/components/maps/upload-map-dialog";
@@ -395,7 +396,10 @@ export default async function CampaignPage({ params }: PageProps) {
                   <SessionHistoryManager campaignId={campaign.id} />
                 </div>
               ) : (
-                <CompletedSessionsListForPlayer campaignId={campaign.id} />
+                <>
+                  <CompletedSessionsListForPlayer campaignId={campaign.id} />
+                  <PlayerFeedbackSection campaignId={campaign.id} />
+                </>
               )}
             </>
           }

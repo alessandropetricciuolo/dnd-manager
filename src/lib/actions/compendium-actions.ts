@@ -103,12 +103,10 @@ export async function getCompendiumDataAction(
       return { success: false, error: "Solo GM e Admin possono usare il Compendio." };
     }
 
-    let campaignsQuery = supabase.from("campaigns").select("id, name").order("name", { ascending: true });
-    if (!isAdmin) {
-      campaignsQuery = campaignsQuery.eq("gm_id", user.id);
-    }
-
-    const { data: campaignsRows, error: campaignsError } = await campaignsQuery;
+    const { data: campaignsRows, error: campaignsError } = await supabase
+      .from("campaigns")
+      .select("id, name")
+      .order("name", { ascending: true });
     if (campaignsError) return { success: false, error: campaignsError.message };
 
     const campaigns = (campaignsRows ?? []) as CompendiumCampaign[];

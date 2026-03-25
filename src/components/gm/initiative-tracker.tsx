@@ -35,6 +35,8 @@ export type InitiativeEntry = {
   id: string;
   name: string;
   type: "pc" | "monster" | "custom";
+  characterClass?: string | null;
+  armorClass: number;
   hp: number;
   maxHp: number;
   initiative: number;
@@ -74,10 +76,10 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
 
   const [entries, setEntries] = useState<InitiativeEntry[]>([]);
   const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
-  const [editingCell, setEditingCell] = useState<{ id: string; field: "name" | "hp" | "initiative" } | null>(null);
+  const [editingCell, setEditingCell] = useState<{ id: string; field: "name" | "hp" | "initiative" | "armorClass" } | null>(null);
   const [addPcOpen, setAddPcOpen] = useState(false);
   const [addMonsterOpen, setAddMonsterOpen] = useState(false);
-  const [pcList, setPcList] = useState<{ id: string; name: string }[]>([]);
+  const [pcList, setPcList] = useState<Array<{ id: string; name: string; characterClass: string | null; armorClass: number | null; hitPoints: number | null }>>([]);
   const [selectedPcIds, setSelectedPcIds] = useState<Set<string>>(new Set());
   const [monsterList, setMonsterList] = useState<MonsterForInitiative[]>([]);
   const [selectedMonsterIds, setSelectedMonsterIds] = useState<Set<string>>(new Set());
@@ -85,6 +87,7 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
   const [addCustomOpen, setAddCustomOpen] = useState(false);
   const [customName, setCustomName] = useState("");
   const [customHp, setCustomHp] = useState<string>("");
+  const [customAc, setCustomAc] = useState<string>("");
   const [customInit, setCustomInit] = useState<string>("");
   const [customGs, setCustomGs] = useState<string>("");
   const [customExp, setCustomExp] = useState<number>(0);
@@ -222,22 +225,33 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
     setSelectedPcIds(new Set());
     const res = await getCampaignCharacters(campaignId);
     if (res.success && res.data) {
-      setPcList(res.data.map((c) => ({ id: c.id, name: c.name })));
+      setPcList(
+        res.data.map((c) => ({
+          id: c.id,
+          name: c.name,
+          characterClass: c.character_class ?? null,
+          armorClass: c.armor_class ?? null,
+          hitPoints: c.hit_points ?? null,
+        }))
+      );
     } else {
       setPcList([]);
     }
   }, [campaignId]);
 
   const addPcEntry = useCallback(
-    (characterId: string, name: string) => {
+    (characterId: string, name: string, characterClass: string | null, armorClass: number | null, hitPoints: number | null) => {
+      const hp = Math.max(0, hitPoints ?? 0);
       setEntries((prev) => [
         ...prev,
         {
           id: generateId(),
           name,
           type: "pc",
-          hp: 0,
-          maxHp: 0,
+          characterClass: characterClass ?? null,
+          armorClass: Math.max(0, armorClass ?? 0),
+          hp,
+          maxHp: hp,
           initiative: 0,
           playerId: characterId,
         },
@@ -252,10 +266,12 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
       toast.error("Seleziona almeno un personaggio.");
       return;
     }
-    const map = new Map(pcList.map((p) => [p.id, p.name]));
+    const map = new Map(pcList.map((p) => [p.id, p]));
     for (const id of ids) {
-      const name = map.get(id);
-      if (name) addPcEntry(id, name);
+      const player = map.get(id);
+      if (player) {
+        addPcEntry(id, player.name, player.characterClass, player.armorClass, player.hitPoints);
+      }
     }
     setAddPcOpen(false);
   }, [selectedPcIds, pcList, addPcEntry]);
@@ -294,6 +310,7 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
           id: generateId(),
           name: count > 1 ? `${monster.name} ${i + 1}` : monster.name,
           type: "monster",
+          armorClass: 0,
           hp: monster.hp,
           maxHp: monster.hp,
           initiative: 0,
@@ -357,6 +374,7 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
   const openAddCustom = useCallback(() => {
     setCustomName("");
     setCustomHp("");
+    setCustomAc("");
     setCustomInit("");
     setCustomGs("");
     setCustomExp(0);
@@ -366,8 +384,10 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
   const handleCreateCustom = useCallback(() => {
     const name = customName.trim() || "Nemico Sconosciuto";
     const hpNum = parseInt(customHp, 10);
+    const acNum = parseInt(customAc, 10);
     const initNum = parseInt(customInit, 10);
     const hp = Number.isNaN(hpNum) ? 0 : hpNum;
+    const armorClass = Number.isNaN(acNum) ? 0 : acNum;
     const initiative = Number.isNaN(initNum) ? 0 : initNum;
     setEntries((prev) => [
       ...prev,
@@ -375,6 +395,7 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
         id: generateId(),
         name,
         type: "custom",
+        armorClass,
         hp,
         maxHp: hp,
         initiative,
@@ -383,10 +404,10 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
       },
     ]);
     setAddCustomOpen(false);
-  }, [customName, customHp, customInit, customGs, customExp]);
+  }, [customName, customHp, customAc, customInit, customGs, customExp]);
 
   const handleCellSave = useCallback(
-    async (id: string, field: "name" | "hp" | "initiative", value: string) => {
+    async (id: string, field: "name" | "hp" | "initiative" | "armorClass", value: string) => {
       if (field === "name") {
         updateEntry(id, { name: value.trim() || "Senza nome" });
       } else {
@@ -394,6 +415,8 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
         const v = Number.isNaN(num) ? 0 : num;
         if (field === "hp") {
           await applyHpChange(id, v);
+        } else if (field === "armorClass") {
+          updateEntry(id, { armorClass: Math.max(0, v) });
         } else {
           updateEntry(id, { initiative: v });
         }
@@ -500,7 +523,13 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
                 Nome
               </TableHead>
               <TableHead className="h-8 px-2 text-xs font-semibold text-amber-400">
+                Classe
+              </TableHead>
+              <TableHead className="h-8 px-2 text-xs font-semibold text-amber-400">
                 HP
+              </TableHead>
+              <TableHead className="h-8 px-2 text-xs font-semibold text-amber-400">
+                CA
               </TableHead>
               <TableHead className="h-8 px-2 text-xs font-semibold text-amber-400">
                 Init
@@ -514,7 +543,7 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
             {entries.length === 0 ? (
               <TableRow className="border-amber-600/20">
                 <TableCell
-                  colSpan={4}
+                  colSpan={6}
                   className="py-6 text-center text-xs text-zinc-500"
                 >
                   Nessun partecipante.
@@ -563,6 +592,11 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
                         {entry.name}
                       </button>
                     )}
+                  </TableCell>
+                  <TableCell className="px-2 py-1.5">
+                    <span className="inline-block max-w-[120px] truncate text-xs text-zinc-300" title={entry.characterClass ?? "—"}>
+                      {entry.characterClass?.trim() || "—"}
+                    </span>
                   </TableCell>
                   <TableCell className="px-2 py-1.5">
                     {editingCell?.id === entry.id &&
@@ -628,6 +662,30 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
                           </span>
                         )}
                       </div>
+                    )}
+                  </TableCell>
+                  <TableCell className="px-2 py-1.5">
+                    {editingCell?.id === entry.id && editingCell?.field === "armorClass" ? (
+                      <Input
+                        type="number"
+                        className="h-10 w-20 bg-zinc-800 text-sm text-zinc-100"
+                        defaultValue={entry.armorClass}
+                        autoFocus
+                        onBlur={(e) => handleCellSave(entry.id, "armorClass", e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handleCellSave(entry.id, "armorClass", (e.target as HTMLInputElement).value);
+                          }
+                        }}
+                      />
+                    ) : (
+                      <button
+                        type="button"
+                        className="min-w-[2rem] rounded px-1.5 py-0.5 text-left text-xs font-medium text-zinc-200 transition-colors hover:bg-zinc-700/80"
+                        onClick={() => setEditingCell({ id: entry.id, field: "armorClass" })}
+                      >
+                        {entry.armorClass}
+                      </button>
                     )}
                   </TableCell>
                   <TableCell className="px-2 py-1.5">
@@ -938,7 +996,7 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
                 className="bg-zinc-800 text-zinc-100"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1">
                 <label className="block text-sm text-zinc-300">HP</label>
                 <Input
@@ -946,6 +1004,16 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
                   min={0}
                   value={customHp}
                   onChange={(e) => setCustomHp(e.target.value)}
+                  className="bg-zinc-800 text-zinc-100"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-sm text-zinc-300">CA</label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={customAc}
+                  onChange={(e) => setCustomAc(e.target.value)}
                   className="bg-zinc-800 text-zinc-100"
                 />
               </div>
