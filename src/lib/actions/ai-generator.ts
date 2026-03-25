@@ -25,15 +25,25 @@ export async function generateContextualPortraitAction(
   charDescription: string,
   entityType: "npc" | "location"
 ): Promise<GenerateContextualPortraitResult> {
+  let step = "input-validation";
+  const fail = (message: string, details?: unknown): GenerateContextualPortraitResult => {
+    const code = `AI-IMG:${step}`;
+    if (details) {
+      console.error(`[generateContextualPortraitAction][${code}]`, details);
+    }
+    return { success: false, message: `${message} (${code})` };
+  };
+
   const trimmed = charDescription.trim();
   if (!trimmed) {
-    return { success: false, message: "Inserisci una descrizione per generare l’immagine." };
+    return fail("Inserisci una descrizione per generare l’immagine.");
   }
   if (!campaignId) {
-    return { success: false, message: "Campagna non valida." };
+    return fail("Campagna non valida.");
   }
 
   try {
+    step = "auth";
     const supabase = await createSupabaseServerClient();
     const {
       data: { user },
@@ -41,17 +51,20 @@ export async function generateContextualPortraitAction(
     } = await supabase.auth.getUser();
 
     if (userError || !user) {
-      return { success: false, message: "Devi essere autenticato." };
+      return fail("Devi essere autenticato.", userError);
     }
 
+    step = "role-check";
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
       .eq("id", user.id)
       .single();
     if (profile?.role !== "gm" && profile?.role !== "admin") {
-      return { success: false, message: "Solo GM e Admin possono generare immagini AI." };
+      return fail("Solo GM e Admin possono generare immagini AI.");
     }
+
+    step = "admin-client";
     const admin = createSupabaseAdminClient();
 
     type CampaignVisualRow = {
@@ -68,6 +81,7 @@ export async function generateContextualPortraitAction(
       };
     };
 
+    step = "campaign-fetch";
     let { data: campaign, error: campError } = await campaignsQuery
       .select("ai_context, image_style_prompt, ai_image_style_key")
       .eq("id", campaignId)
@@ -79,6 +93,7 @@ export async function generateContextualPortraitAction(
       campError?.message?.toLowerCase().includes("image_style_prompt") ||
       campError?.message?.toLowerCase().includes("ai_image_style_key")
     ) {
+      step = "campaign-fetch-fallback-style";
       const fallback = await admin
         .from("campaigns")
         .select("ai_context, image_style_prompt")
@@ -87,10 +102,21 @@ export async function generateContextualPortraitAction(
       campaign = fallback.data as CampaignVisualRow | null;
       campError = fallback.error as { message: string } | null;
     }
+    if (campError?.message?.toLowerCase().includes("image_style_prompt")) {
+      step = "campaign-fetch-fallback-ai-context";
+      const fallback = await admin.from("campaigns").select("ai_context").eq("id", campaignId).single();
+      campaign = (fallback.data as CampaignVisualRow | null) ?? null;
+      campError = fallback.error as { message: string } | null;
+    }
+    if (campError?.message?.toLowerCase().includes("ai_image_style_key")) {
+      step = "campaign-fetch-fallback-ai-context";
+      const fallback = await admin.from("campaigns").select("ai_context").eq("id", campaignId).single();
+      campaign = (fallback.data as CampaignVisualRow | null) ?? null;
+      campError = fallback.error as { message: string } | null;
+    }
 
     if (campError || !campaign) {
-      console.error("[generateContextualPortraitAction] campaign fetch", campError);
-      return { success: false, message: "Campagna non trovata o accesso negato." };
+      return fail("Campagna non trovata o non leggibile.", campError);
     }
 
     const ctx = parseCampaignAiContextFromDb((campaign.ai_context as Json | null) ?? null);
@@ -103,6 +129,7 @@ export async function generateContextualPortraitAction(
     let styleNegativeTemplate = "";
 
     if (styleKey) {
+      step = "style-fetch";
       const { data: styleRowRaw } = await admin
         .from("ai_image_styles")
         .select("positive_prompt, negative_prompt, is_active")
@@ -138,6 +165,7 @@ export async function generateContextualPortraitAction(
       .join(", ");
 
     let buffer: Buffer;
+    step = "hf-image-generation";
     try {
       buffer = await generateAiImage(positivePrompt, negativeCombined);
     } catch (e) {
@@ -147,9 +175,10 @@ export async function generateContextualPortraitAction(
           : e instanceof Error
             ? e.message
             : "Errore durante la generazione dell’immagine.";
-      return { success: false, message: msg };
+      return fail(msg, e);
     }
 
+    step = "storage-upload";
     const fileName = `${campaignId}/portraits/${Date.now()}-${entityType}.png`;
     const { error: uploadError } = await supabase.storage
       .from(CAMPAIGNS_BUCKET)
@@ -162,20 +191,18 @@ export async function generateContextualPortraitAction(
       throw new Error(`Errore Supabase Upload: ${uploadError.message}`);
     }
 
+    step = "public-url";
     const {
       data: { publicUrl },
     } = supabase.storage.from(CAMPAIGNS_BUCKET).getPublicUrl(fileName);
     if (!publicUrl) {
-      return { success: false, message: "Impossibile ottenere l’URL pubblico dell’immagine." };
+      return fail("Impossibile ottenere l’URL pubblico dell’immagine.");
     }
 
+    step = "revalidate";
     revalidatePath(`/campaigns/${campaignId}`);
     return { success: true, publicUrl };
   } catch (err) {
-    console.error("[generateContextualPortraitAction]", err);
-    return {
-      success: false,
-      message: err instanceof Error ? err.message : "Si è verificato un errore imprevisto. Riprova.",
-    };
+    return fail(err instanceof Error ? err.message : "Si è verificato un errore imprevisto. Riprova.", err);
   }
 }
