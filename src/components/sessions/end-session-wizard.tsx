@@ -488,63 +488,65 @@ export function EndSessionWizard({
                       placeholder="0"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <label className="flex cursor-pointer items-center gap-2 text-sm text-barber-paper/90">
-                      <input
-                        type="checkbox"
-                        checked={unlockContent}
-                        onChange={(e) => setUnlockContent(e.target.checked)}
-                        className="h-4 w-4 rounded border-barber-gold/40 text-barber-gold focus:ring-barber-gold"
-                      />
-                      Sblocca contenuti associati
-                    </label>
-                    {unlockContent && (
-                      <div className="space-y-2 rounded-lg border border-barber-gold/20 bg-barber-dark/60 p-2">
-                        <div className="relative">
-                          <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-barber-paper/50" />
-                          <Input
-                            placeholder="Cerca contenuti..."
-                            value={contentSearch}
-                            onChange={(e) => setContentSearch(e.target.value)}
-                            className="border-barber-gold/20 bg-barber-dark pl-8 text-barber-paper text-sm"
-                          />
+                  {isLongCampaign && (
+                    <div className="space-y-2">
+                      <label className="flex cursor-pointer items-center gap-2 text-sm text-barber-paper/90">
+                        <input
+                          type="checkbox"
+                          checked={unlockContent}
+                          onChange={(e) => setUnlockContent(e.target.checked)}
+                          className="h-4 w-4 rounded border-barber-gold/40 text-barber-gold focus:ring-barber-gold"
+                        />
+                        Sblocca contenuti associati
+                      </label>
+                      {unlockContent && (
+                        <div className="space-y-2 rounded-lg border border-barber-gold/20 bg-barber-dark/60 p-2">
+                          <div className="relative">
+                            <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-barber-paper/50" />
+                            <Input
+                              placeholder="Cerca contenuti..."
+                              value={contentSearch}
+                              onChange={(e) => setContentSearch(e.target.value)}
+                              className="border-barber-gold/20 bg-barber-dark pl-8 text-barber-paper text-sm"
+                            />
+                          </div>
+                          <div className="max-h-40 space-y-1 overflow-y-auto">
+                            {itemsLoading ? (
+                              <p className="text-xs text-barber-paper/60">Caricamento…</p>
+                            ) : (
+                              filteredAndGrouped.map(({ groupLabel, items }) => (
+                                <div key={groupLabel} className="space-y-1">
+                                  <p className="text-xs font-semibold text-barber-paper/60">{groupLabel}</p>
+                                  {items.map((item) => {
+                                    const key = itemKey(item);
+                                    return (
+                                      <label
+                                        key={key}
+                                        className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm hover:bg-barber-gold/10"
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={selectedContentKeys.has(key)}
+                                          onChange={() => toggleContent(key)}
+                                          className="rounded border-barber-gold/40 text-barber-gold"
+                                        />
+                                        {groupLabel === "Mappe" ? (
+                                          <MapIcon className="h-3.5 w-3.5 text-barber-paper/60" />
+                                        ) : (
+                                          <BookOpen className="h-3.5 w-3.5 text-barber-paper/60" />
+                                        )}
+                                        {item.name}
+                                      </label>
+                                    );
+                                  })}
+                                </div>
+                              ))
+                            )}
+                          </div>
                         </div>
-                        <div className="max-h-40 space-y-1 overflow-y-auto">
-                          {itemsLoading ? (
-                            <p className="text-xs text-barber-paper/60">Caricamento…</p>
-                          ) : (
-                            filteredAndGrouped.map(({ groupLabel, items }) => (
-                              <div key={groupLabel} className="space-y-1">
-                                <p className="text-xs font-semibold text-barber-paper/60">{groupLabel}</p>
-                                {items.map((item) => {
-                                  const key = itemKey(item);
-                                  return (
-                                    <label
-                                      key={key}
-                                      className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm hover:bg-barber-gold/10"
-                                    >
-                                      <input
-                                        type="checkbox"
-                                        checked={selectedContentKeys.has(key)}
-                                        onChange={() => toggleContent(key)}
-                                        className="rounded border-barber-gold/40 text-barber-gold"
-                                      />
-                                      {groupLabel === "Mappe" ? (
-                                        <MapIcon className="h-3.5 w-3.5 text-barber-paper/60" />
-                                      ) : (
-                                        <BookOpen className="h-3.5 w-3.5 text-barber-paper/60" />
-                                      )}
-                                      {item.name}
-                                    </label>
-                                  );
-                                })}
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                      )}
+                    </div>
+                  )}
                 </>
               )}
             </>

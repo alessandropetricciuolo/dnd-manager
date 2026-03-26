@@ -189,6 +189,112 @@ export async function createCampaignParty(
   }
 }
 
+export type CampaignMemberForGmRow = {
+  player_id: string;
+  player_name: string;
+  party_id: string | null;
+  party_name: string | null;
+};
+
+export async function listCampaignMembersForGm(
+  campaignId: string
+): Promise<{ success: boolean; data?: CampaignMemberForGmRow[]; message?: string }> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const can = await isGmOrAdmin(supabase, campaignId);
+    if (!can) return { success: false, message: "Non autorizzato." };
+
+    const admin = createSupabaseAdminClient();
+    const [{ data: membersRaw, error: membersError }, { data: partiesRaw }] = await Promise.all([
+      admin
+        .from("campaign_members")
+        .select("player_id, party_id")
+        .eq("campaign_id", campaignId),
+      admin
+        .from("campaign_parties")
+        .select("id, name")
+        .eq("campaign_id", campaignId),
+    ]);
+
+    if (membersError) {
+      console.error("[listCampaignMembersForGm]", membersError);
+      return { success: false, message: membersError.message ?? "Errore nel caricamento membri." };
+    }
+
+    const members = (membersRaw ?? []) as { player_id: string; party_id: string | null }[];
+    if (members.length === 0) return { success: true, data: [] };
+
+    const playerIds = [...new Set(members.map((m) => m.player_id))];
+    const { data: profilesRaw } = await admin
+      .from("profiles")
+      .select("id, first_name, last_name, display_name")
+      .in("id", playerIds);
+
+    const partyNameById = new Map(
+      ((partiesRaw ?? []) as { id: string; name: string }[]).map((p) => [p.id, p.name])
+    );
+    const profileNameById = new Map(
+      ((profilesRaw ?? []) as Array<{ id: string; first_name: string | null; last_name: string | null; display_name: string | null }>)
+        .map((p) => {
+          const full = [p.first_name, p.last_name].filter(Boolean).join(" ").trim();
+          return [p.id, full || p.display_name?.trim() || `Utente ${p.id.slice(0, 8)}`] as const;
+        })
+    );
+
+    const data: CampaignMemberForGmRow[] = members
+      .map((m) => ({
+        player_id: m.player_id,
+        player_name: profileNameById.get(m.player_id) ?? `Utente ${m.player_id.slice(0, 8)}`,
+        party_id: m.party_id,
+        party_name: m.party_id ? partyNameById.get(m.party_id) ?? null : null,
+      }))
+      .sort((a, b) => a.player_name.localeCompare(b.player_name));
+
+    return { success: true, data };
+  } catch (err) {
+    console.error("[listCampaignMembersForGm]", err);
+    return { success: false, message: "Errore imprevisto." };
+  }
+}
+
+export async function assignCampaignMemberParty(
+  campaignId: string,
+  playerId: string,
+  partyId: string | null
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const can = await isGmOrAdmin(supabase, campaignId);
+    if (!can) return { success: false, message: "Non autorizzato." };
+
+    if (partyId) {
+      const { data: party } = await supabase
+        .from("campaign_parties")
+        .select("id")
+        .eq("id", partyId)
+        .eq("campaign_id", campaignId)
+        .maybeSingle();
+      if (!party) return { success: false, message: "Gruppo non valido per questa campagna." };
+    }
+
+    const { error } = await supabase
+      .from("campaign_members")
+      .update({ party_id: partyId })
+      .eq("campaign_id", campaignId)
+      .eq("player_id", playerId);
+    if (error) {
+      console.error("[assignCampaignMemberParty]", error);
+      return { success: false, message: error.message ?? "Errore nell'assegnazione gruppo." };
+    }
+
+    revalidatePath(`/campaigns/${campaignId}`);
+    return { success: true, message: "Gruppo aggiornato." };
+  } catch (err) {
+    console.error("[assignCampaignMemberParty]", err);
+    return { success: false, message: "Errore imprevisto." };
+  }
+}
+
 /** Modello Guild: chi ha ruolo gm o admin può gestire approvazioni/sessioni ovunque. */
 async function isGmOrAdminByRole(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>
@@ -269,6 +375,75 @@ async function sendFeedbackRequestEmailsForSession(
 
 export type JoinSessionResult = { success: boolean; message: string };
 
+export type JoinLongCampaignResult = { success: boolean; message: string };
+
+/** Iscrizione diretta a una campagna Long. Necessaria prima della prenotazione sessioni. */
+export async function joinLongCampaign(campaignId: string): Promise<JoinLongCampaignResult> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { success: false, message: "Devi essere autenticato." };
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    if (profile?.role === "gm" || profile?.role === "admin") {
+      return { success: false, message: "I GM/Admin non devono iscriversi alla campagna come giocatori." };
+    }
+
+    const { data: campaign, error: campaignError } = await supabase
+      .from("campaigns")
+      .select("id, type, is_public")
+      .eq("id", campaignId)
+      .single();
+    if (campaignError || !campaign) {
+      return { success: false, message: "Campagna non trovata." };
+    }
+    if (campaign.type !== "long") {
+      return { success: false, message: "L'iscrizione alla campagna è richiesta solo per campagne Long." };
+    }
+    if (!campaign.is_public) {
+      return { success: false, message: "Campagna privata: chiedi al GM di aggiungerti manualmente." };
+    }
+
+    const { data: existing } = await supabase
+      .from("campaign_members")
+      .select("id")
+      .eq("campaign_id", campaignId)
+      .eq("player_id", user.id)
+      .maybeSingle();
+    if (existing) {
+      return { success: true, message: "Sei già iscritto a questa campagna." };
+    }
+
+    const { error: insertError } = await supabase.from("campaign_members").insert({
+      campaign_id: campaignId,
+      player_id: user.id,
+    } as never);
+    if (insertError) {
+      if (insertError.code === "23505") {
+        return { success: true, message: "Sei già iscritto a questa campagna." };
+      }
+      console.error("[joinLongCampaign]", insertError);
+      return { success: false, message: insertError.message ?? "Errore durante l'iscrizione alla campagna." };
+    }
+
+    revalidatePath(`/campaigns/${campaignId}`);
+    revalidatePath("/dashboard");
+    return { success: true, message: "Iscrizione alla campagna completata." };
+  } catch (err) {
+    console.error("[joinLongCampaign]", err);
+    return { success: false, message: "Errore imprevisto. Riprova." };
+  }
+}
+
 /** Iscrizione a una sessione. Inserisce session_signups senza status (default DB = pending). Errore se già iscritto. */
 export async function joinSession(sessionId: string): Promise<JoinSessionResult> {
   try {
@@ -288,6 +463,29 @@ export async function joinSession(sessionId: string): Promise<JoinSessionResult>
       .single();
     if (sessionError || !session) {
       return { success: false, message: "Sessione non trovata." };
+    }
+    const { data: campaign } = await supabase
+      .from("campaigns")
+      .select("id, type")
+      .eq("id", session.campaign_id)
+      .single();
+    if (!campaign) {
+      return { success: false, message: "Campagna non trovata." };
+    }
+    if (campaign.type === "long") {
+      const { data: member } = await supabase
+        .from("campaign_members")
+        .select("id")
+        .eq("campaign_id", session.campaign_id)
+        .eq("player_id", user.id)
+        .maybeSingle();
+      if (!member) {
+        return {
+          success: false,
+          message:
+            "Per prenotare sessioni di campagne Long devi prima iscriverti alla campagna.",
+        };
+      }
     }
 
     const { data: existing } = await supabase
@@ -1473,13 +1671,20 @@ export async function getUnlockableContent(
     if (!allowed) {
       return { success: false, items: [], message: "Solo il GM o un Admin possono vedere i contenuti sbloccabili." };
     }
+    const { data: campaign } = await supabase
+      .from("campaigns")
+      .select("type")
+      .eq("id", campaignId)
+      .maybeSingle();
+    if ((campaign as { type?: string } | null)?.type !== "long") {
+      return { success: true, items: [], message: "Lo sblocco contenuti è disponibile solo per campagne Long." };
+    }
 
     const [wikiRes, mapsRes] = await Promise.all([
       supabase
         .from("wiki_entities")
-        .select("id, name, type")
+        .select("id, name, type, visibility, is_secret")
         .eq("campaign_id", campaignId)
-        .eq("is_secret", true)
         .order("name"),
       supabase
         .from("maps")
@@ -1489,12 +1694,31 @@ export async function getUnlockableContent(
         .order("name"),
     ]);
 
-    const wikiItems: UnlockableItem[] = (wikiRes.data ?? []).map((e) => ({
-      id: e.id,
-      type: "wiki" as const,
-      name: e.name,
-      groupLabel: WIKI_GROUP_LABELS[String(e.type)] ?? "Wiki",
-    }));
+    let wikiRows = (wikiRes.data ??
+      []) as Array<{ id: string; name: string; type: string; visibility?: string | null; is_secret?: boolean | null }>;
+    if (wikiRes.error?.message?.toLowerCase().includes("visibility")) {
+      const fallback = await supabase
+        .from("wiki_entities")
+        .select("id, name, type, is_secret")
+        .eq("campaign_id", campaignId)
+        .order("name");
+      wikiRows = ((fallback.data ?? []) as Array<{ id: string; name: string; type: string; is_secret?: boolean | null }>)
+        .map((row) => ({
+          ...row,
+          visibility: row.is_secret ? "secret" : "public",
+        }));
+    }
+    const wikiItems: UnlockableItem[] = wikiRows
+      .filter((e) => {
+        const visibility = e.visibility ?? (e.is_secret ? "secret" : "public");
+        return visibility === "secret";
+      })
+      .map((e) => ({
+        id: e.id,
+        type: "wiki" as const,
+        name: e.name,
+        groupLabel: WIKI_GROUP_LABELS[String(e.type)] ?? "Wiki",
+      }));
     const mapItems: UnlockableItem[] = (mapsRes.data ?? []).map((m) => ({
       id: m.id,
       type: "map" as const,
@@ -1526,6 +1750,14 @@ export async function batchUnlockContent(
     const allowed = await isGmOrAdmin(supabase, campaignId);
     if (!allowed) {
       return { success: false, message: "Solo il GM o un Admin possono sbloccare contenuti." };
+    }
+    const { data: campaign } = await supabase
+      .from("campaigns")
+      .select("type")
+      .eq("id", campaignId)
+      .maybeSingle();
+    if ((campaign as { type?: string } | null)?.type !== "long") {
+      return { success: false, message: "Lo sblocco contenuti è consentito solo nelle campagne Long." };
     }
 
     for (const userId of userIds) {
@@ -1572,6 +1804,14 @@ export async function unlockContent(
     const allowed = await isGmOrAdminByRole(supabase);
     if (!allowed) {
       return { success: false, message: "Solo il GM o un Admin possono sbloccare contenuti." };
+    }
+    const { data: campaign } = await supabase
+      .from("campaigns")
+      .select("type")
+      .eq("id", campaignId)
+      .maybeSingle();
+    if ((campaign as { type?: string } | null)?.type !== "long") {
+      return { success: false, message: "Lo sblocco contenuti è consentito solo nelle campagne Long." };
     }
 
     for (const { id, type } of contentIds) {

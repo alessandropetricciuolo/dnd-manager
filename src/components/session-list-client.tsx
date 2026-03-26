@@ -131,7 +131,7 @@ export function SessionListClient({
     if (res.success) {
       toast.success(res.message);
       router.refresh();
-      if (newStatus === "attended") {
+      if (newStatus === "attended" && campaignType === "long") {
         setUnlockPlayerId(signup.player_id);
         setUnlockPlayerName(signup.player_name);
         setUnlockOpen(true);
@@ -374,7 +374,7 @@ export function SessionListClient({
           );
         })}
       </div>
-      {unlockPlayerId && (
+      {campaignType === "long" && unlockPlayerId && (
         <UnlockContentDialog
           open={unlockOpen}
           onOpenChange={setUnlockOpen}

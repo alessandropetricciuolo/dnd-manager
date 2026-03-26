@@ -17,6 +17,8 @@ import { DeleteCampaignButton } from "@/components/delete-campaign-button";
 import { CampaignVisibilityToggle } from "@/components/campaign-visibility-toggle";
 import { EditCampaignDialog } from "@/components/campaigns/edit-campaign-dialog";
 import { CampaignTabsClient } from "@/components/campaigns/campaign-tabs-client";
+import { JoinLongCampaignButton } from "@/components/campaigns/join-long-campaign-button";
+import { CampaignPartyMembersPanel } from "@/components/campaigns/campaign-party-members-panel";
 import { GmNotes } from "@/components/gm/gm-notes";
 import { GmFiles } from "@/components/gm/gm-files";
 import { CampaignPrimerEditor } from "@/components/gm/campaign-primer-editor";
@@ -145,15 +147,27 @@ export default async function CampaignPage({ params }: PageProps) {
     }
   }
 
-  /** Accesso ai contenuti (Wiki/Mappe): GM/Admin sempre; Player solo se ha giocato (RPC). */
+  /** Accesso ai contenuti (Wiki/Mappe): GM/Admin sempre; Long = anche membri campagna; altri = ha giocato. */
   let hasPlayedCampaign = isGmOrAdmin;
+  let isCampaignMember = false;
   if (!hasPlayedCampaign) {
     try {
+      const { data: member } = await supabase
+        .from("campaign_members")
+        .select("id")
+        .eq("campaign_id", id)
+        .eq("player_id", user.id)
+        .limit(1)
+        .maybeSingle();
+      isCampaignMember = !!member;
+      if (campaign.type === "long" && isCampaignMember) {
+        hasPlayedCampaign = true;
+      }
       const { data: played } = await supabase.rpc("has_played_campaign", {
         p_user_id: user.id,
         p_campaign_id: id,
       });
-      hasPlayedCampaign = played === true;
+      hasPlayedCampaign = hasPlayedCampaign || played === true;
     } catch (e) {
       console.error("[campaigns/[id]] has_played_campaign RPC", e);
     }
@@ -235,9 +249,25 @@ export default async function CampaignPage({ params }: PageProps) {
             📖 Leggi la Guida del Giocatore
           </Link>
         )}
-        {!hasPlayedCampaign && (
+        {!hasPlayedCampaign && campaign.type !== "long" && (
           <p className="rounded-lg border border-barber-gold/40 bg-barber-gold/10 px-3 py-2 text-xs text-barber-gold">
             Partecipa a una sessione per sbloccare Wiki e Mappe.
+          </p>
+        )}
+        {!isGmOrAdmin && campaign.type === "long" && !isCampaignMember && (
+          <div className="space-y-2 rounded-lg border border-barber-gold/40 bg-barber-gold/10 px-3 py-3">
+            <p className="text-xs text-barber-gold">
+              Per campagne Long devi prima iscriverti alla campagna, poi potrai prenotare le sessioni.
+            </p>
+            <JoinLongCampaignButton
+              campaignId={campaign.id}
+              className="h-8 bg-barber-red text-xs text-barber-paper hover:bg-barber-red/90"
+            />
+          </div>
+        )}
+        {!isGmOrAdmin && campaign.type === "long" && isCampaignMember && (
+          <p className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300">
+            Iscritto alla campagna Long.
           </p>
         )}
         {isGmOrAdmin && (
@@ -375,6 +405,22 @@ export default async function CampaignPage({ params }: PageProps) {
               {isGmOrAdmin && !(campaign.is_public ?? false) && (
                 <div className="mb-4 rounded-lg border border-amber-500/50 bg-amber-950/30 px-4 py-3 text-sm text-amber-200">
                   <strong>Campagna privata.</strong> I player non vedono le sessioni in calendario e non possono prenotarsi. Usa il pulsante &quot;Privata&quot; in alto per renderla pubblica e permettere le prenotazioni.
+                </div>
+              )}
+              {!isGmOrAdmin && campaign.type === "long" && !isCampaignMember && (
+                <div className="mb-4 rounded-lg border border-barber-gold/40 bg-barber-gold/10 px-4 py-3">
+                  <p className="mb-2 text-sm text-barber-gold">
+                    Iscriviti prima alla campagna Long per poter prenotare le sessioni.
+                  </p>
+                  <JoinLongCampaignButton
+                    campaignId={campaign.id}
+                    className="h-8 bg-barber-red text-xs text-barber-paper hover:bg-barber-red/90"
+                  />
+                </div>
+              )}
+              {isGmOrAdmin && campaign.type === "long" && (
+                <div className="mb-4">
+                  <CampaignPartyMembersPanel campaignId={campaign.id} />
                 </div>
               )}
               <div className="mb-6 flex flex-wrap items-center justify-between gap-4">

@@ -628,7 +628,7 @@ function sanitizeEntityForPlayer(entity: WikiEntity): WikiEntity {
   };
 }
 
-/** Recupera un'entità. Player: visibile se is_secret = false oppure sbloccata in explorations; i dati sensibili (loot, stats, relazioni, gm_notes) vengono rimossi. GM/Admin vedono tutto. */
+/** Recupera un'entità. Player: visibile in base a visibility (public/selective/secret); i dati sensibili vengono rimossi. GM/Admin vedono tutto. */
 export async function getEntity(
   entityId: string,
   campaignId: string
@@ -662,7 +662,21 @@ export async function getEntity(
     const wikiEntity = entity as WikiEntity;
 
     if (isGmOrAdmin) return wikiEntity;
-    if (!wikiEntity.is_secret) return sanitizeEntityForPlayer(wikiEntity);
+
+    const visibility = wikiEntity.visibility ?? (wikiEntity.is_secret ? "secret" : "public");
+    if (visibility === "public") return sanitizeEntityForPlayer(wikiEntity);
+    if (visibility === "selective") {
+      const { data: perm } = await supabase
+        .from("entity_permissions")
+        .select("id")
+        .eq("campaign_id", campaignId)
+        .eq("entity_type", "wiki")
+        .eq("entity_id", entityId)
+        .eq("user_id", user.id)
+        .limit(1)
+        .maybeSingle();
+      return perm ? sanitizeEntityForPlayer(wikiEntity) : null;
+    }
 
     const { data: exploration } = await supabase
       .from("explorations")
@@ -671,7 +685,6 @@ export async function getEntity(
       .eq("entity_id", entityId)
       .limit(1)
       .maybeSingle();
-
     return exploration ? sanitizeEntityForPlayer(wikiEntity) : null;
   } catch {
     return null;
