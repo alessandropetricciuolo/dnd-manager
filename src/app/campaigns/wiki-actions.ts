@@ -4,7 +4,12 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { uploadToTelegram as uploadFileToTelegram } from "@/lib/telegram-storage";
 import { uploadToTelegram as uploadUrlToTelegramCdn } from "@/lib/telegram-cdn";
-import { syncEntityPermissions, parseAllowedUserIds } from "@/lib/entity-permissions";
+import {
+  syncEntityPermissions,
+  parseAllowedUserIds,
+  parseAllowedPartyIds,
+  resolveAllowedUserIdsFromParties,
+} from "@/lib/entity-permissions";
 import { type WikiEntityType, WIKI_ENTITY_TYPES } from "@/lib/wiki/entity-types";
 import {
   generateContextualText,
@@ -100,6 +105,7 @@ export async function createEntity(
   const visibility: Visibility = VISIBILITY_VALUES.includes(visibilityRaw as Visibility) ? visibilityRaw as Visibility : "public";
   const isSecret = visibility === "secret";
   const allowedUserIds = parseAllowedUserIds(formData, "allowed_user_ids");
+  const allowedPartyIds = parseAllowedPartyIds(formData, "allowed_party_ids");
   const imageFile = formData.get("image") as File | null;
   let imageUrl = (formData.get("image_url") as string | null)?.trim() || null;
   const attributes = parseAttributes(formData);
@@ -224,13 +230,15 @@ export async function createEntity(
       };
     }
 
-    if (visibility === "selective" && allowedUserIds.length > 0) {
+    if (visibility === "selective") {
+      const partyUserIds = await resolveAllowedUserIdsFromParties(supabase, campaignId, allowedPartyIds);
+      const mergedUserIds = [...new Set([...allowedUserIds, ...partyUserIds])];
       const { error: permError } = await syncEntityPermissions(
         supabase,
         campaignId,
         "wiki",
         inserted.id,
-        allowedUserIds
+        mergedUserIds
       );
       if (permError) console.error("[createEntity] entity_permissions", permError);
     }
@@ -281,6 +289,7 @@ export async function updateEntity(
   const visibility: Visibility | null = visibilityRaw && VISIBILITY_VALUES.includes(visibilityRaw as Visibility) ? visibilityRaw as Visibility : null;
   const isSecret = visibility === "secret" || (visibility === null && formData.get("is_secret") === "on");
   const allowedUserIds = parseAllowedUserIds(formData, "allowed_user_ids");
+  const allowedPartyIds = parseAllowedPartyIds(formData, "allowed_party_ids");
   const imageFile = formData.get("image") as File | null;
   const imageUrlFromForm = (formData.get("image_url") as string | null)?.trim() || null;
   const removeImage = formData.get("remove_image") === "on" || formData.get("remove_image") === "true";
@@ -415,12 +424,17 @@ export async function updateEntity(
     }
 
     if (visibility !== null) {
+      const partyUserIds =
+        visibility === "selective"
+          ? await resolveAllowedUserIdsFromParties(supabase, campaignId, allowedPartyIds)
+          : [];
+      const mergedUserIds = [...new Set([...allowedUserIds, ...partyUserIds])];
       const { error: permError } = await syncEntityPermissions(
         supabase,
         campaignId,
         "wiki",
         entityId,
-        visibility === "selective" ? allowedUserIds : []
+        visibility === "selective" ? mergedUserIds : []
       );
       if (permError) console.error("[updateEntity] entity_permissions", permError);
     }

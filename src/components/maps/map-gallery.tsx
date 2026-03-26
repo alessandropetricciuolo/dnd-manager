@@ -6,6 +6,7 @@ type MapGalleryProps = {
   campaignId: string;
   /** Per modale modifica mappa (visibilità selettiva). */
   eligiblePlayers?: { id: string; label: string }[];
+  eligibleParties?: { id: string; label: string; memberIds: string[] }[];
 };
 
 const CATEGORY_ORDER: { type: string; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
@@ -18,7 +19,11 @@ const CATEGORY_ORDER: { type: string; label: string; icon: React.ComponentType<{
   { type: "building", label: "Edifici", icon: Building2 },
 ];
 
-export async function MapGallery({ campaignId, eligiblePlayers = [] }: MapGalleryProps) {
+export async function MapGallery({
+  campaignId,
+  eligiblePlayers = [],
+  eligibleParties = [],
+}: MapGalleryProps) {
   const supabase = await createSupabaseServerClient();
 
   const {
@@ -120,6 +125,7 @@ export async function MapGallery({ campaignId, eligiblePlayers = [] }: MapGaller
   }
 
   let permittedUserIdsByMapId: Record<string, string[]> = {};
+  let selectiveAudienceLabelByMapId: Record<string, string> = {};
   if (isGmOrAdmin && visibleMaps.length > 0) {
     const selectiveIds = visibleMaps
       .filter((m) => ((m as { visibility?: string }).visibility ?? "public") === "selective")
@@ -137,6 +143,31 @@ export async function MapGallery({ campaignId, eligiblePlayers = [] }: MapGaller
           if (!permittedUserIdsByMapId[eid]) permittedUserIdsByMapId[eid] = [];
           permittedUserIdsByMapId[eid].push(row.user_id as string);
         }
+      }
+    }
+    if (selectiveIds.length > 0) {
+      const playerLabelById = new Map(eligiblePlayers.map((p) => [p.id, p.label]));
+      for (const mapId of selectiveIds) {
+        const allowedUserIds = [...new Set(permittedUserIdsByMapId[mapId] ?? [])];
+        if (allowedUserIds.length === 0) continue;
+        const fullParties = eligibleParties.filter(
+          (party) => party.memberIds.length > 0 && party.memberIds.every((id) => allowedUserIds.includes(id))
+        );
+        const coveredByParties = new Set(fullParties.flatMap((party) => party.memberIds));
+        const directUsers = allowedUserIds.filter((id) => !coveredByParties.has(id));
+        const parts: string[] = [];
+        if (fullParties.length > 0) {
+          parts.push(fullParties.map((party) => party.label).join(", "));
+        }
+        if (directUsers.length > 0) {
+          const labels = directUsers
+            .map((id) => playerLabelById.get(id))
+            .filter((x): x is string => typeof x === "string" && x.length > 0);
+          if (labels.length > 0) {
+            parts.push(labels.slice(0, 2).join(", ") + (labels.length > 2 ? ` +${labels.length - 2}` : ""));
+          }
+        }
+        selectiveAudienceLabelByMapId[mapId] = parts.join(" · ");
       }
     }
   }
@@ -180,7 +211,9 @@ export async function MapGallery({ campaignId, eligiblePlayers = [] }: MapGaller
                   }}
                   isGmOrAdmin={isGmOrAdmin}
                   eligiblePlayers={eligiblePlayers}
+                  eligibleParties={eligibleParties}
                   permittedUserIds={permittedUserIdsByMapId[map.id] ?? []}
+                  selectiveAudienceLabel={selectiveAudienceLabelByMapId[map.id] ?? null}
                 />
               ))}
             </div>

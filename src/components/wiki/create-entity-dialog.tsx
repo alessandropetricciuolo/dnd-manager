@@ -66,6 +66,7 @@ type CreateEntityDialogProps = {
   campaignId: string;
   campaignType?: "oneshot" | "quest" | "long" | null;
   eligiblePlayers?: { id: string; label: string }[];
+  eligibleParties?: { id: string; label: string; memberIds: string[] }[];
 };
 
 const defaultAttributes = (type: EntityType) =>
@@ -84,6 +85,7 @@ export function CreateEntityDialog({
   campaignId,
   campaignType,
   eligiblePlayers = [],
+  eligibleParties = [],
 }: CreateEntityDialogProps) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -94,6 +96,7 @@ export function CreateEntityDialog({
   const [sortOrder, setSortOrder] = useState<string>("");
   const [visibility, setVisibility] = useState<string>("public");
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
+  const [selectedPartyIds, setSelectedPartyIds] = useState<string[]>([]);
   const [isCore, setIsCore] = useState(false);
   const showCoreCheckbox = campaignType === "long" && (type === "npc" || type === "monster");
   const [monsterXp, setMonsterXp] = useState<number>(0);
@@ -196,6 +199,7 @@ export function CreateEntityDialog({
     formData.set("attributes", JSON.stringify(attributes));
     formData.set("visibility", visibility);
     formData.set("allowed_user_ids", JSON.stringify(visibility === "selective" ? selectedPlayerIds : []));
+    formData.set("allowed_party_ids", JSON.stringify(visibility === "selective" ? selectedPartyIds : []));
     if (sortOrder.trim() !== "") formData.set("sort_order", sortOrder.trim());
     if (showCoreCheckbox && isCore) formData.set("is_core", "on");
     formData.set("relations", JSON.stringify(relations));
@@ -215,6 +219,8 @@ export function CreateEntityDialog({
         setSortOrder("");
         setTags([]);
         setRelations([]);
+        setSelectedPlayerIds([]);
+        setSelectedPartyIds([]);
         router.refresh();
       } else {
         toast.error(result.message);
@@ -359,6 +365,9 @@ export function CreateEntityDialog({
       clearAiProgressTimer();
       setAiProgress(0);
       setAiProgressLabel(null);
+      setSelectedPlayerIds([]);
+      setSelectedPartyIds([]);
+      setVisibility("public");
     }
   }
 
@@ -943,6 +952,28 @@ export function CreateEntityDialog({
             </select>
             {visibility === "selective" && (
               <div className="mt-2 max-h-40 overflow-y-auto rounded-md border border-barber-gold/30 bg-barber-dark/60 p-2">
+                {eligibleParties.length > 0 && (
+                  <>
+                    <p className="mb-2 text-xs font-medium text-barber-paper/80">Gruppi che possono vedere questa voce</p>
+                    <div className="mb-3 flex flex-col gap-1">
+                      {eligibleParties.map((party) => (
+                        <label key={party.id} className="flex cursor-pointer items-center gap-2 text-sm text-barber-paper">
+                          <input
+                            type="checkbox"
+                            checked={selectedPartyIds.includes(party.id)}
+                            onChange={() =>
+                              setSelectedPartyIds((prev) =>
+                                prev.includes(party.id) ? prev.filter((x) => x !== party.id) : [...prev, party.id]
+                              )
+                            }
+                            className="h-4 w-4 rounded border-barber-gold/40 bg-barber-dark text-barber-gold"
+                          />
+                          {party.label}
+                        </label>
+                      ))}
+                    </div>
+                  </>
+                )}
                 <p className="mb-2 text-xs font-medium text-barber-paper/80">Giocatori che possono vedere questa voce</p>
                 {eligiblePlayers.length === 0 ? (
                   <p className="text-xs text-barber-paper/50">Nessun giocatore iscritto alla campagna.</p>

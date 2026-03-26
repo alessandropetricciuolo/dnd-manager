@@ -44,10 +44,28 @@ export default async function WikiEntityPage({ params }: PageProps) {
   const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
 
   let eligiblePlayers: { id: string; label: string }[] = [];
+  let eligibleParties: { id: string; label: string; memberIds: string[] }[] = [];
   let permittedUserIds: string[] = [];
+  let permittedPartyIds: string[] = [];
   if (isGmOrAdmin) {
     const playersResult = await getCampaignEligiblePlayers(campaignId);
     if (playersResult.success && playersResult.data) eligiblePlayers = playersResult.data;
+    const [{ data: partiesRaw }, { data: membersRaw }] = await Promise.all([
+      supabase.from("campaign_parties").select("id, name").eq("campaign_id", campaignId).order("name"),
+      supabase.from("campaign_members").select("player_id, party_id").eq("campaign_id", campaignId),
+    ]);
+    const memberIdsByPartyId = new Map<string, string[]>();
+    for (const row of (membersRaw ?? []) as Array<{ player_id: string; party_id: string | null }>) {
+      if (!row.party_id) continue;
+      const list = memberIdsByPartyId.get(row.party_id) ?? [];
+      list.push(row.player_id);
+      memberIdsByPartyId.set(row.party_id, list);
+    }
+    eligibleParties = ((partiesRaw ?? []) as Array<{ id: string; name: string }>).map((party) => ({
+      id: party.id,
+      label: party.name,
+      memberIds: memberIdsByPartyId.get(party.id) ?? [],
+    }));
     const vis = (entity as { visibility?: string }).visibility;
     if (vis === "selective") {
       const { data: perms } = await supabase
@@ -57,6 +75,9 @@ export default async function WikiEntityPage({ params }: PageProps) {
         .eq("entity_type", "wiki")
         .eq("entity_id", entityId);
       if (perms?.length) permittedUserIds = perms.map((p) => p.user_id as string);
+      permittedPartyIds = eligibleParties
+        .filter((party) => party.memberIds.length > 0 && party.memberIds.every((id) => permittedUserIds.includes(id)))
+        .map((party) => party.id);
     }
   }
 
@@ -95,8 +116,10 @@ export default async function WikiEntityPage({ params }: PageProps) {
                 entity={entityWithDefaults}
                 contentBody={contentBody}
                 eligiblePlayers={eligiblePlayers}
+                eligibleParties={eligibleParties}
                 initialVisibility={(entity as { visibility?: string }).visibility ?? (entity.is_secret ? "secret" : "public")}
                 initialAllowedUserIds={permittedUserIds}
+                initialAllowedPartyIds={permittedPartyIds}
               />
               <WikiEntityDeleteButton
                 campaignId={campaignId}

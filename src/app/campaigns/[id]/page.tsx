@@ -177,10 +177,28 @@ export default async function CampaignPage({ params }: PageProps) {
   const characters = charsResult.success ? charsResult.data ?? [] : [];
 
   let eligiblePlayers: { id: string; label: string }[] = [];
+  let eligibleParties: { id: string; label: string; memberIds: string[] }[] = [];
   if (isGmOrAdmin) {
     const playersResult = await getCampaignEligiblePlayers(id);
     if (playersResult.success && playersResult.data) eligiblePlayers = playersResult.data;
+    const [{ data: partiesRaw }, { data: membersRaw }] = await Promise.all([
+      supabase.from("campaign_parties").select("id, name").eq("campaign_id", id).order("name"),
+      supabase.from("campaign_members").select("player_id, party_id").eq("campaign_id", id),
+    ]);
+    const memberIdsByPartyId = new Map<string, string[]>();
+    for (const row of (membersRaw ?? []) as Array<{ player_id: string; party_id: string | null }>) {
+      if (!row.party_id) continue;
+      const list = memberIdsByPartyId.get(row.party_id) ?? [];
+      list.push(row.player_id);
+      memberIdsByPartyId.set(row.party_id, list);
+    }
+    eligibleParties = ((partiesRaw ?? []) as Array<{ id: string; name: string }>).map((party) => ({
+      id: party.id,
+      label: party.name,
+      memberIds: memberIdsByPartyId.get(party.id) ?? [],
+    }));
   }
+  const isViewerLockedOut = !isGmOrAdmin && campaign.type === "long" && !isCampaignMember;
 
   const campaignTypeLabels: Record<string, string> = {
     oneshot: "Oneshot",
@@ -363,6 +381,17 @@ export default async function CampaignPage({ params }: PageProps) {
                 )}
               </section>
 
+              {isViewerLockedOut ? (
+                <section className="rounded-lg border border-barber-gold/40 bg-barber-gold/10 p-4">
+                  <p className="mb-2 text-sm text-barber-gold">
+                    Per questa campagna devi prima iscriverti. Finche non sei iscritto puoi vedere solo la sinossi.
+                  </p>
+                  <JoinLongCampaignButton
+                    campaignId={campaign.id}
+                    className="h-8 bg-barber-red text-xs text-barber-paper hover:bg-barber-red/90"
+                  />
+                </section>
+              ) : (
               <CampaignTabsClient
           campaignId={campaign.id}
           campaign={{
@@ -458,12 +487,21 @@ export default async function CampaignPage({ params }: PageProps) {
                   </h2>
                   {isGmOrAdmin && (
                     <div className="flex flex-wrap items-center gap-2">
-                      <CreateEntityDialog campaignId={campaign.id} campaignType={campaign.type ?? null} eligiblePlayers={eligiblePlayers} />
+                      <CreateEntityDialog
+                        campaignId={campaign.id}
+                        campaignType={campaign.type ?? null}
+                        eligiblePlayers={eligiblePlayers}
+                        eligibleParties={eligibleParties}
+                      />
                       <BulkImportWikiDialog campaignId={campaign.id} />
                     </div>
                   )}
                 </div>
-                <WikiList campaignId={campaign.id} />
+                <WikiList
+                  campaignId={campaign.id}
+                  eligiblePlayers={eligiblePlayers}
+                  eligibleParties={eligibleParties}
+                />
               </>
             ) : null
           }
@@ -475,10 +513,18 @@ export default async function CampaignPage({ params }: PageProps) {
                     Mappe
                   </h2>
                   {isGmOrAdmin && (
-                    <UploadMapDialog campaignId={campaign.id} eligiblePlayers={eligiblePlayers} />
+                    <UploadMapDialog
+                      campaignId={campaign.id}
+                      eligiblePlayers={eligiblePlayers}
+                      eligibleParties={eligibleParties}
+                    />
                   )}
                 </div>
-                <MapGallery campaignId={campaign.id} eligiblePlayers={eligiblePlayers} />
+                <MapGallery
+                  campaignId={campaign.id}
+                  eligiblePlayers={eligiblePlayers}
+                  eligibleParties={eligibleParties}
+                />
               </>
             ) : null
           }
@@ -535,6 +581,7 @@ export default async function CampaignPage({ params }: PageProps) {
             ) : undefined
           }
         />
+              )}
             </div>
           </ScrollArea>
         </main>

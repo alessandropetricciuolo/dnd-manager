@@ -12,8 +12,10 @@ type WikiEntityEditButtonProps = {
   entity: WikiEntity;
   contentBody: string;
   eligiblePlayers?: { id: string; label: string }[];
+  eligibleParties?: { id: string; label: string; memberIds: string[] }[];
   initialVisibility?: string;
   initialAllowedUserIds?: string[];
+  initialAllowedPartyIds?: string[];
 };
 
 export function WikiEntityEditButton({
@@ -22,8 +24,10 @@ export function WikiEntityEditButton({
   entity,
   contentBody,
   eligiblePlayers = [],
+  eligibleParties = [],
   initialVisibility = "public",
   initialAllowedUserIds = [],
+  initialAllowedPartyIds = [],
 }: WikiEntityEditButtonProps) {
   const [open, setOpen] = useState(false);
 
@@ -47,8 +51,10 @@ export function WikiEntityEditButton({
         open={open}
         onOpenChange={setOpen}
         eligiblePlayers={eligiblePlayers}
+        eligibleParties={eligibleParties}
         initialVisibility={initialVisibility}
         initialAllowedUserIds={initialAllowedUserIds}
+        initialAllowedPartyIds={initialAllowedPartyIds}
       />
     </>
   );

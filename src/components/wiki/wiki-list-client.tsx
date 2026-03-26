@@ -21,6 +21,8 @@ export type WikiEntityListItem = {
   isSecret: boolean;
   /** public | secret | selective - per mostrare il lucchetto (solo GM/Admin) */
   visibility?: string;
+  /** Etichetta target visibilità selettiva (solo GM/Admin). */
+  selectiveAudienceLabel?: string | null;
   sortOrder: number | null;
   tags?: string[];
   /** Breve testo per ricerca (body della voce) */
@@ -223,6 +225,11 @@ export function WikiListClient({
                   className="h-4 w-4 shrink-0 text-barber-gold/90"
                   aria-label="Solo GM / visibilità limitata"
                 />
+              )}
+              {isGmOrAdmin && entity.visibility === "selective" && entity.selectiveAudienceLabel && (
+                <span className="shrink-0 rounded-md border border-barber-gold/30 bg-barber-gold/10 px-2 py-0.5 text-[11px] text-barber-gold/90">
+                  {entity.selectiveAudienceLabel}
+                </span>
               )}
               {isGmOrAdmin && (
                 <span className="flex items-center gap-1 shrink-0">

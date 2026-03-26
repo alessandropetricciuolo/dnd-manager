@@ -196,6 +196,11 @@ export type CampaignMemberForGmRow = {
   party_name: string | null;
 };
 
+export type AssignablePlayerForCampaignRow = {
+  id: string;
+  label: string;
+};
+
 export async function listCampaignMembersForGm(
   campaignId: string
 ): Promise<{ success: boolean; data?: CampaignMemberForGmRow[]; message?: string }> {
@@ -291,6 +296,138 @@ export async function assignCampaignMemberParty(
     return { success: true, message: "Gruppo aggiornato." };
   } catch (err) {
     console.error("[assignCampaignMemberParty]", err);
+    return { success: false, message: "Errore imprevisto." };
+  }
+}
+
+export async function addCampaignMemberForGm(
+  campaignId: string,
+  playerId: string,
+  partyId: string | null
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const can = await isGmOrAdmin(supabase, campaignId);
+    if (!can) return { success: false, message: "Non autorizzato." };
+
+    if (partyId) {
+      const { data: party } = await supabase
+        .from("campaign_parties")
+        .select("id")
+        .eq("id", partyId)
+        .eq("campaign_id", campaignId)
+        .maybeSingle();
+      if (!party) return { success: false, message: "Gruppo non valido per questa campagna." };
+    }
+
+    const admin = createSupabaseAdminClient();
+    const { data: alreadyMember } = await admin
+      .from("campaign_members")
+      .select("id")
+      .eq("campaign_id", campaignId)
+      .eq("player_id", playerId)
+      .maybeSingle();
+    if (alreadyMember) {
+      return { success: false, message: "Giocatore gia iscritto alla campagna." };
+    }
+
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("id, role")
+      .eq("id", playerId)
+      .maybeSingle();
+    if (!profile) {
+      return { success: false, message: "Giocatore non trovato." };
+    }
+    if ((profile as { role?: string | null }).role === "gm" || (profile as { role?: string | null }).role === "admin") {
+      return { success: false, message: "Non puoi iscrivere un GM/Admin come giocatore." };
+    }
+
+    const { error } = await admin.from("campaign_members").insert({
+      campaign_id: campaignId,
+      player_id: playerId,
+      party_id: partyId,
+    } as never);
+    if (error) {
+      if (error.code === "23505") {
+        return { success: false, message: "Giocatore gia iscritto alla campagna." };
+      }
+      console.error("[addCampaignMemberForGm]", error);
+      return { success: false, message: error.message ?? "Errore nell'iscrizione del giocatore." };
+    }
+
+    revalidatePath(`/campaigns/${campaignId}`);
+    return { success: true, message: "Giocatore aggiunto alla campagna." };
+  } catch (err) {
+    console.error("[addCampaignMemberForGm]", err);
+    return { success: false, message: "Errore imprevisto." };
+  }
+}
+
+export async function removeCampaignMemberForGm(
+  campaignId: string,
+  playerId: string
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const can = await isGmOrAdmin(supabase, campaignId);
+    if (!can) return { success: false, message: "Non autorizzato." };
+
+    const { error } = await supabase
+      .from("campaign_members")
+      .delete()
+      .eq("campaign_id", campaignId)
+      .eq("player_id", playerId);
+    if (error) {
+      console.error("[removeCampaignMemberForGm]", error);
+      return { success: false, message: error.message ?? "Errore nella rimozione del membro." };
+    }
+
+    revalidatePath(`/campaigns/${campaignId}`);
+    return { success: true, message: "Membro rimosso dalla campagna." };
+  } catch (err) {
+    console.error("[removeCampaignMemberForGm]", err);
+    return { success: false, message: "Errore imprevisto." };
+  }
+}
+
+export async function listAssignablePlayersForCampaign(
+  campaignId: string
+): Promise<{ success: boolean; data?: AssignablePlayerForCampaignRow[]; message?: string }> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const can = await isGmOrAdmin(supabase, campaignId);
+    if (!can) return { success: false, message: "Non autorizzato." };
+
+    const admin = createSupabaseAdminClient();
+    const [{ data: membersRaw }, { data: profilesRaw, error: profilesError }] = await Promise.all([
+      admin.from("campaign_members").select("player_id").eq("campaign_id", campaignId),
+      admin.from("profiles").select("id, first_name, last_name, display_name, role"),
+    ]);
+    if (profilesError) {
+      console.error("[listAssignablePlayersForCampaign]", profilesError);
+      return { success: false, message: profilesError.message ?? "Errore nel caricamento giocatori." };
+    }
+
+    const memberIds = new Set(((membersRaw ?? []) as Array<{ player_id: string }>).map((m) => m.player_id));
+    const data: AssignablePlayerForCampaignRow[] = ((profilesRaw ?? []) as Array<{
+      id: string;
+      first_name: string | null;
+      last_name: string | null;
+      display_name: string | null;
+      role: string | null;
+    }>)
+      .filter((p) => p.role !== "gm" && p.role !== "admin" && !memberIds.has(p.id))
+      .map((p) => {
+        const full = [p.first_name, p.last_name].filter(Boolean).join(" ").trim();
+        const label = full || p.display_name?.trim() || `Utente ${p.id.slice(0, 8)}`;
+        return { id: p.id, label };
+      })
+      .sort((a, b) => a.label.localeCompare(b.label));
+
+    return { success: true, data };
+  } catch (err) {
+    console.error("[listAssignablePlayersForCampaign]", err);
     return { success: false, message: "Errore imprevisto." };
   }
 }
@@ -1486,9 +1623,22 @@ export async function closeSessionQuestOrOneshot(
       .select("id, player_id, status")
       .eq("session_id", sessionId);
 
+    const admin = createSupabaseAdminClient();
     const list = (signups ?? []) as { id: string; player_id: string; status: string }[];
     if (list.length === 0) {
-      return { success: false, message: "Nessun iscritto alla sessione." };
+      // Permettiamo la chiusura anche senza iscritti:
+      // serve comunque per statistiche e storico campagna.
+      const { error: updateErr } = await admin
+        .from("sessions")
+        .update({ status: "completed" } as never)
+        .eq("id", sessionId);
+      if (updateErr) {
+        console.error("[closeSessionQuestOrOneshot]", updateErr);
+        return { success: false, message: "Errore durante la chiusura." };
+      }
+      revalidatePath(`/campaigns/${session.campaign_id}`);
+      revalidatePath("/dashboard");
+      return { success: true, message: "Sessione chiusa (nessun iscritto registrato).", campaignId: session.campaign_id };
     }
     const stillNotAttended = list.filter((s) => s.status === "approved" || s.status === "confirmed");
     if (stillNotAttended.length > 0) {
@@ -1498,8 +1648,6 @@ export async function closeSessionQuestOrOneshot(
         message: `Conferma la presenza di tutti i giocatori prima di chiudere. (${attendedCount}/${list.length} presenti.)`,
       };
     }
-
-    const admin = createSupabaseAdminClient();
 
     for (const signup of list) {
       if (signup.status === "attended") {

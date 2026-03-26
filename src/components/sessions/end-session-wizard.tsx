@@ -277,7 +277,9 @@ export function EndSessionWizard({
   }, [secretItems, contentSearch]);
 
   const canProceedStep1 = useMemo(() => {
-    if (signups.length === 0) return false;
+    // Consentiamo la chiusura anche senza iscritti:
+    // in quel caso non ci sono presenze da validare nello step logistica.
+    if (signups.length === 0) return true;
     return signups.every((s) => attendance[s.player_id] === "attended" || attendance[s.player_id] === "absent");
   }, [signups, attendance]);
 
@@ -842,7 +844,7 @@ export function EndSessionWizard({
                   type="button"
                   variant="outline"
                   onClick={handlePreClose}
-                  disabled={preClosing || !canProceedStep1 || loadingSignups}
+                  disabled={preClosing || !canProceedStep1 || loadingSignups || signups.length === 0}
                   className="border-barber-gold/40 text-barber-gold hover:bg-barber-gold/10"
                 >
                   {preClosing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

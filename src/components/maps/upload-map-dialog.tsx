@@ -47,14 +47,21 @@ type UploadMapDialogProps = {
   campaignId: string;
   /** Giocatori iscritti alla campagna per la visibilità selettiva. */
   eligiblePlayers?: { id: string; label: string }[];
+  /** Gruppi campagna disponibili per visibilità selettiva. */
+  eligibleParties?: { id: string; label: string; memberIds: string[] }[];
 };
 
-export function UploadMapDialog({ campaignId, eligiblePlayers = [] }: UploadMapDialogProps) {
+export function UploadMapDialog({
+  campaignId,
+  eligiblePlayers = [],
+  eligibleParties = [],
+}: UploadMapDialogProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [mapType, setMapType] = useState<string>("region");
   const [visibility, setVisibility] = useState<string>("public");
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
+  const [selectedPartyIds, setSelectedPartyIds] = useState<string[]>([]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -66,6 +73,7 @@ export function UploadMapDialog({ campaignId, eligiblePlayers = [] }: UploadMapD
     formData.set("map_type", mapType);
     formData.set("visibility", visibility);
     formData.set("allowed_user_ids", JSON.stringify(visibility === "selective" ? selectedPlayerIds : []));
+    formData.set("allowed_party_ids", JSON.stringify(visibility === "selective" ? selectedPartyIds : []));
 
     const name = (formData.get("name") as string)?.trim();
     const imageFile = formData.get("image") as File | null;
@@ -91,6 +99,7 @@ export function UploadMapDialog({ campaignId, eligiblePlayers = [] }: UploadMapD
         setMapType("region");
         setVisibility("public");
         setSelectedPlayerIds([]);
+        setSelectedPartyIds([]);
         form.reset();
       } else {
         toast.error(result.message);
@@ -106,12 +115,19 @@ export function UploadMapDialog({ campaignId, eligiblePlayers = [] }: UploadMapD
     if (!next) {
       setVisibility("public");
       setSelectedPlayerIds([]);
+      setSelectedPartyIds([]);
     }
     setOpen(next);
   }
 
   function togglePlayer(id: string) {
     setSelectedPlayerIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  }
+
+  function toggleParty(id: string) {
+    setSelectedPartyIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   }
@@ -198,6 +214,27 @@ export function UploadMapDialog({ campaignId, eligiblePlayers = [] }: UploadMapD
                 <p className="mb-2 text-xs font-medium text-barber-paper/80">
                   Scegli i giocatori che possono vedere questa mappa
                 </p>
+                {eligibleParties.length > 0 && (
+                  <div className="mb-3">
+                    <p className="mb-1 text-xs text-barber-paper/70">Oppure seleziona uno o piu gruppi</p>
+                    <div className="flex max-h-24 flex-col gap-1 overflow-y-auto">
+                      {eligibleParties.map((party) => (
+                        <label
+                          key={party.id}
+                          className="flex cursor-pointer items-center gap-2 text-sm text-barber-paper"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedPartyIds.includes(party.id)}
+                            onChange={() => toggleParty(party.id)}
+                            className="h-4 w-4 rounded border-barber-gold/40 bg-barber-dark text-barber-gold"
+                          />
+                          {party.label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {eligiblePlayers.length === 0 ? (
                   <p className="text-xs text-barber-paper/50">
                     Nessun giocatore iscritto alla campagna. Iscriviti a una sessione per comparire qui.

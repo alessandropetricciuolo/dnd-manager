@@ -60,3 +60,36 @@ export function parseAllowedUserIds(formData: FormData, key: string): string[] {
   }
   return trimmed.split(",").map((s) => s.trim()).filter(Boolean);
 }
+
+/** Parse allowed_party_ids da form (JSON array o comma-separated). */
+export function parseAllowedPartyIds(formData: FormData, key: string): string[] {
+  const raw = formData.get(key);
+  if (!raw || typeof raw !== "string") return [];
+  const trimmed = raw.trim();
+  if (!trimmed) return [];
+  if (trimmed.startsWith("[")) {
+    try {
+      const arr = JSON.parse(trimmed) as unknown[];
+      return Array.isArray(arr) ? arr.filter((x): x is string => typeof x === "string") : [];
+    } catch {
+      return [];
+    }
+  }
+  return trimmed.split(",").map((s) => s.trim()).filter(Boolean);
+}
+
+/** Espande gli ID gruppo in ID giocatore (campaign_members.player_id). */
+export async function resolveAllowedUserIdsFromParties(
+  supabase: SupabaseClient,
+  campaignId: string,
+  partyIds: string[]
+): Promise<string[]> {
+  if (partyIds.length === 0) return [];
+  const { data, error } = await supabase
+    .from("campaign_members")
+    .select("player_id")
+    .eq("campaign_id", campaignId)
+    .in("party_id", partyIds);
+  if (error || !data?.length) return [];
+  return [...new Set(data.map((row) => row.player_id as string).filter(Boolean))];
+}

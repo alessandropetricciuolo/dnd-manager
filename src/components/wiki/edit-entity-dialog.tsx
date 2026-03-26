@@ -43,8 +43,10 @@ type EditEntityDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   eligiblePlayers?: { id: string; label: string }[];
+  eligibleParties?: { id: string; label: string; memberIds: string[] }[];
   initialVisibility?: string;
   initialAllowedUserIds?: string[];
+  initialAllowedPartyIds?: string[];
 };
 
 const defaultAttributes = (type: EntityType) =>
@@ -77,8 +79,10 @@ export function EditEntityDialog({
   open,
   onOpenChange,
   eligiblePlayers = [],
+  eligibleParties = [],
   initialVisibility = "public",
   initialAllowedUserIds = [],
+  initialAllowedPartyIds = [],
 }: EditEntityDialogProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -92,6 +96,7 @@ export function EditEntityDialog({
   const [removeImage, setRemoveImage] = useState(false);
   const [visibility, setVisibility] = useState<string>(initialVisibility);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>(initialAllowedUserIds);
+  const [selectedPartyIds, setSelectedPartyIds] = useState<string[]>(initialAllowedPartyIds);
   const [isCore, setIsCore] = useState<boolean>(entity.is_core ?? false);
   const [globalStatus, setGlobalStatus] = useState<"alive" | "dead">(
     entity.global_status === "dead" ? "dead" : "alive"
@@ -114,6 +119,7 @@ export function EditEntityDialog({
       setRemoveImage(false);
       setVisibility(initialVisibility);
       setSelectedPlayerIds(initialAllowedUserIds);
+      setSelectedPartyIds(initialAllowedPartyIds);
       setIsCore(entity.is_core ?? false);
       setGlobalStatus(entity.global_status === "dead" ? "dead" : "alive");
       setMonsterXp(entity.xp_value ?? 0);
@@ -121,7 +127,7 @@ export function EditEntityDialog({
       getMapsForCampaign(campaignId).then((r) => r.success && setMapOptions(r.data));
       getWikiRelationshipsForEntity(campaignId, entity.id).then((r) => r.success && setRelations(r.data));
     }
-  }, [open, campaignId, entity.id, entity.type, entity.attributes, entity.sort_order, entity.is_core, entity.global_status, entity.xp_value, initialVisibility, initialAllowedUserIds]);
+  }, [open, campaignId, entity.id, entity.type, entity.attributes, entity.sort_order, entity.is_core, entity.global_status, entity.xp_value, initialVisibility, initialAllowedUserIds, initialAllowedPartyIds]);
 
   function onTypeChange(newType: string) {
     const t = newType as EntityType;
@@ -163,6 +169,7 @@ export function EditEntityDialog({
     formData.set("attributes", JSON.stringify(attributes));
     formData.set("visibility", visibility);
     formData.set("allowed_user_ids", JSON.stringify(visibility === "selective" ? selectedPlayerIds : []));
+    formData.set("allowed_party_ids", JSON.stringify(visibility === "selective" ? selectedPartyIds : []));
     if (sortOrder.trim() !== "") formData.set("sort_order", sortOrder.trim());
     if (removeImage) formData.set("remove_image", "on");
     if (showCoreFields && isCore) formData.set("is_core", "on");
@@ -581,29 +588,58 @@ export function EditEntityDialog({
                 </option>
               ))}
             </select>
-            {visibility === "selective" && eligiblePlayers.length > 0 && (
+            {visibility === "selective" && (
               <div className="mt-2 rounded-md border border-barber-gold/30 bg-barber-dark/60 p-3">
+                {eligibleParties.length > 0 && (
+                  <>
+                    <Label className="text-barber-paper/80">Gruppi che possono vedere questa voce</Label>
+                    <ul className="mb-3 mt-2 space-y-2">
+                      {eligibleParties.map((party) => (
+                        <li key={party.id} className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id={`edit-entity-party-${party.id}`}
+                            checked={selectedPartyIds.includes(party.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) setSelectedPartyIds((prev) => [...prev, party.id]);
+                              else setSelectedPartyIds((prev) => prev.filter((id) => id !== party.id));
+                            }}
+                            className="h-4 w-4 rounded border-barber-gold/40 bg-barber-dark text-barber-gold"
+                            disabled={isLoading}
+                          />
+                          <Label htmlFor={`edit-entity-party-${party.id}`} className="cursor-pointer text-barber-paper/90">
+                            {party.label}
+                          </Label>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
                 <Label className="text-barber-paper/80">Giocatori che possono vedere questa voce</Label>
-                <ul className="mt-2 space-y-2">
-                  {eligiblePlayers.map((player) => (
-                    <li key={player.id} className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id={`edit-entity-player-${player.id}`}
-                        checked={selectedPlayerIds.includes(player.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) setSelectedPlayerIds((prev) => [...prev, player.id]);
-                          else setSelectedPlayerIds((prev) => prev.filter((id) => id !== player.id));
-                        }}
-                        className="h-4 w-4 rounded border-barber-gold/40 bg-barber-dark text-barber-gold"
-                        disabled={isLoading}
-                      />
-                      <Label htmlFor={`edit-entity-player-${player.id}`} className="cursor-pointer text-barber-paper/90">
-                        {player.label}
-                      </Label>
-                    </li>
-                  ))}
-                </ul>
+                {eligiblePlayers.length === 0 ? (
+                  <p className="mt-2 text-xs text-barber-paper/50">Nessun giocatore iscritto alla campagna.</p>
+                ) : (
+                  <ul className="mt-2 space-y-2">
+                    {eligiblePlayers.map((player) => (
+                      <li key={player.id} className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id={`edit-entity-player-${player.id}`}
+                          checked={selectedPlayerIds.includes(player.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) setSelectedPlayerIds((prev) => [...prev, player.id]);
+                            else setSelectedPlayerIds((prev) => prev.filter((id) => id !== player.id));
+                          }}
+                          className="h-4 w-4 rounded border-barber-gold/40 bg-barber-dark text-barber-gold"
+                          disabled={isLoading}
+                        />
+                        <Label htmlFor={`edit-entity-player-${player.id}`} className="cursor-pointer text-barber-paper/90">
+                          {player.label}
+                        </Label>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             )}
           </div>

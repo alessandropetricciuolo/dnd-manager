@@ -47,7 +47,9 @@ type EditMapDialogProps = {
   initialMapType: string;
   initialVisibility?: string;
   initialAllowedUserIds?: string[];
+  initialAllowedPartyIds?: string[];
   eligiblePlayers?: { id: string; label: string }[];
+  eligibleParties?: { id: string; label: string; memberIds: string[] }[];
   onSuccess?: () => void;
 };
 
@@ -58,7 +60,9 @@ export function EditMapDialog({
   initialMapType,
   initialVisibility = "public",
   initialAllowedUserIds = [],
+  initialAllowedPartyIds = [],
   eligiblePlayers = [],
+  eligibleParties = [],
   onSuccess,
 }: EditMapDialogProps) {
   const [open, setOpen] = useState(false);
@@ -71,6 +75,7 @@ export function EditMapDialog({
     VISIBILITY_OPTIONS.some((o) => o.value === initialVisibility) ? initialVisibility : "public"
   );
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>(initialAllowedUserIds);
+  const [selectedPartyIds, setSelectedPartyIds] = useState<string[]>(initialAllowedPartyIds);
 
   function handleOpenChange(next: boolean) {
     if (!next) {
@@ -78,12 +83,19 @@ export function EditMapDialog({
       setMapType(MAP_TYPE_OPTIONS.some((o) => o.value === initialMapType) ? initialMapType : "region");
       setVisibility(VISIBILITY_OPTIONS.some((o) => o.value === initialVisibility) ? initialVisibility : "public");
       setSelectedPlayerIds(initialAllowedUserIds);
+      setSelectedPartyIds(initialAllowedPartyIds);
     }
     setOpen(next);
   }
 
   function togglePlayer(id: string) {
     setSelectedPlayerIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  }
+
+  function toggleParty(id: string) {
+    setSelectedPartyIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   }
@@ -103,6 +115,7 @@ export function EditMapDialog({
         map_type: mapType,
         visibility: visibility as "public" | "secret" | "selective",
         allowed_user_ids: visibility === "selective" ? selectedPlayerIds : [],
+        allowed_party_ids: visibility === "selective" ? selectedPartyIds : [],
       });
       if (result.success) {
         toast.success(result.message);
@@ -190,6 +203,24 @@ export function EditMapDialog({
             </Select>
             {visibility === "selective" && (
               <div className="mt-2 max-h-40 overflow-y-auto rounded-md border border-slate-700 bg-slate-900/60 p-2">
+                {eligibleParties.length > 0 && (
+                  <>
+                    <p className="mb-2 text-xs font-medium text-slate-300">Gruppi che possono vedere questa mappa</p>
+                    <div className="mb-3 flex flex-col gap-1">
+                      {eligibleParties.map((party) => (
+                        <label key={party.id} className="flex cursor-pointer items-center gap-2 text-sm text-slate-200">
+                          <input
+                            type="checkbox"
+                            checked={selectedPartyIds.includes(party.id)}
+                            onChange={() => toggleParty(party.id)}
+                            className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-emerald-500"
+                          />
+                          {party.label}
+                        </label>
+                      ))}
+                    </div>
+                  </>
+                )}
                 <p className="mb-2 text-xs font-medium text-slate-300">Giocatori che possono vedere questa mappa</p>
                 {eligiblePlayers.length === 0 ? (
                   <p className="text-xs text-slate-500">Nessun giocatore iscritto.</p>

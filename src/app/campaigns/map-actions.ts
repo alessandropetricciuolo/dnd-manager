@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { uploadToTelegram } from "@/lib/telegram-storage";
-import { syncEntityPermissions, parseAllowedUserIds } from "@/lib/entity-permissions";
+import {
+  syncEntityPermissions,
+  parseAllowedUserIds,
+  parseAllowedPartyIds,
+  resolveAllowedUserIdsFromParties,
+} from "@/lib/entity-permissions";
 
 const VISIBILITY_VALUES = ["public", "secret", "selective"] as const;
 type Visibility = (typeof VISIBILITY_VALUES)[number];
@@ -30,6 +35,7 @@ export async function uploadMap(
   const visibilityRaw = (formData.get("visibility") as string | null)?.trim() || "public";
   const visibility: Visibility = VISIBILITY_VALUES.includes(visibilityRaw as Visibility) ? visibilityRaw as Visibility : "public";
   const allowedUserIds = parseAllowedUserIds(formData, "allowed_user_ids");
+  const allowedPartyIds = parseAllowedPartyIds(formData, "allowed_party_ids");
 
   if (!campaignId) {
     return { success: false, message: "Campagna non valida." };
@@ -104,13 +110,15 @@ export async function uploadMap(
       };
     }
 
-    if (visibility === "selective" && allowedUserIds.length > 0) {
+    if (visibility === "selective") {
+      const partyUserIds = await resolveAllowedUserIdsFromParties(supabase, campaignId, allowedPartyIds);
+      const mergedUserIds = [...new Set([...allowedUserIds, ...partyUserIds])];
       const { error: permError } = await syncEntityPermissions(
         supabase,
         campaignId,
         "map",
         inserted.id,
-        allowedUserIds
+        mergedUserIds
       );
       if (permError) {
         console.error("[uploadMap] entity_permissions", permError);
@@ -140,6 +148,7 @@ export async function updateMap(
     map_type?: string;
     visibility?: Visibility;
     allowed_user_ids?: string[];
+    allowed_party_ids?: string[];
   }
 ): Promise<UpdateMapResult> {
   if (!mapId || !campaignId) {
@@ -149,6 +158,7 @@ export async function updateMap(
   const mapType = payload.map_type?.trim();
   const visibility = payload.visibility && VISIBILITY_VALUES.includes(payload.visibility) ? payload.visibility : undefined;
   const allowedUserIds = payload.allowed_user_ids ?? [];
+  const allowedPartyIds = payload.allowed_party_ids ?? [];
 
   if (!name && !mapType && visibility === undefined) {
     return { success: false, message: "Inserisci nome, categoria o visibilità da aggiornare." };
@@ -190,12 +200,17 @@ export async function updateMap(
       }
     }
     if (visibility !== undefined) {
+      const partyUserIds =
+        visibility === "selective"
+          ? await resolveAllowedUserIdsFromParties(supabase, campaignId, allowedPartyIds)
+          : [];
+      const mergedUserIds = [...new Set([...allowedUserIds, ...partyUserIds])];
       const { error: permError } = await syncEntityPermissions(
         supabase,
         campaignId,
         "map",
         mapId,
-        visibility === "selective" ? allowedUserIds : []
+        visibility === "selective" ? mergedUserIds : []
       );
       if (permError) console.error("[updateMap] entity_permissions", permError);
     }

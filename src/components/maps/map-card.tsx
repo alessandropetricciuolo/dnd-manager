@@ -18,11 +18,24 @@ type MapCardProps = {
   map: { id: string; name: string; image_url: string; description?: string | null; map_type?: string; visibility?: string };
   isGmOrAdmin: boolean;
   eligiblePlayers?: { id: string; label: string }[];
+  eligibleParties?: { id: string; label: string; memberIds: string[] }[];
   permittedUserIds?: string[];
+  selectiveAudienceLabel?: string | null;
 };
 
-export function MapCard({ campaignId, map, isGmOrAdmin, eligiblePlayers = [], permittedUserIds = [] }: MapCardProps) {
+export function MapCard({
+  campaignId,
+  map,
+  isGmOrAdmin,
+  eligiblePlayers = [],
+  eligibleParties = [],
+  permittedUserIds = [],
+  selectiveAudienceLabel = null,
+}: MapCardProps) {
   const router = useRouter();
+  const inferredPartyIds = eligibleParties
+    .filter((party) => party.memberIds.length > 0 && party.memberIds.every((id) => permittedUserIds.includes(id)))
+    .map((party) => party.id);
 
   async function handleDelete(e: React.MouseEvent) {
     e.preventDefault();
@@ -55,7 +68,9 @@ export function MapCard({ campaignId, map, isGmOrAdmin, eligiblePlayers = [], pe
             initialMapType={map.map_type ?? "region"}
             initialVisibility={map.visibility ?? "public"}
             initialAllowedUserIds={permittedUserIds}
+            initialAllowedPartyIds={inferredPartyIds}
             eligiblePlayers={eligiblePlayers}
+            eligibleParties={eligibleParties}
             onSuccess={() => router.refresh()}
           />
           <Button
@@ -119,6 +134,11 @@ export function MapCard({ campaignId, map, isGmOrAdmin, eligiblePlayers = [], pe
         {map.description ? (
           <p className="line-clamp-2 text-xs text-barber-paper/70">{map.description}</p>
         ) : null}
+        {isGmOrAdmin && map.visibility === "selective" && selectiveAudienceLabel && (
+          <span className="mt-1 inline-block rounded-md border border-barber-gold/30 bg-barber-gold/10 px-2 py-1 text-[11px] text-barber-gold/90">
+            Visibile a: {selectiveAudienceLabel}
+          </span>
+        )}
         <span className="mt-1 block text-xs text-barber-gold">
           Clicca sull&apos;immagine per aprire la mappa o inviarla a un secondo schermo
         </span>
