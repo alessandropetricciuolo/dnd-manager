@@ -1,12 +1,21 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 /**
  * Route di setup: attiva il webhook Telegram puntando a /api/telegram-webhook.
  * Chiama GET /api/setup-webhook (una tantum) dopo aver impostato TELEGRAM_WEBHOOK_BASE_URL in .env.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const setupToken = process.env.TELEGRAM_SETUP_TOKEN?.trim();
+  const requestTokenFromHeader = request.headers.get("x-setup-token");
+  const requestTokenFromQuery = request.nextUrl.searchParams.get("token");
+  const requestToken = requestTokenFromHeader || requestTokenFromQuery;
+  if (setupToken && requestToken !== setupToken) {
+    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  }
+
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const baseUrl = process.env.TELEGRAM_WEBHOOK_BASE_URL;
+  const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET?.trim();
 
   if (!token) {
     return NextResponse.json(
@@ -26,7 +35,10 @@ export async function GET() {
   }
 
   const webhookUrl = `${baseUrl.replace(/\/$/, "")}/api/telegram-webhook`;
-  const setWebhookUrl = `https://api.telegram.org/bot${token}/setWebhook?url=${encodeURIComponent(webhookUrl)}&allowed_updates=${encodeURIComponent(JSON.stringify(["message"]))}`;
+  const setWebhookUrl =
+    `https://api.telegram.org/bot${token}/setWebhook?url=${encodeURIComponent(webhookUrl)}` +
+    `&allowed_updates=${encodeURIComponent(JSON.stringify(["message"]))}` +
+    (webhookSecret ? `&secret_token=${encodeURIComponent(webhookSecret)}` : "");
 
   try {
     const res = await fetch(setWebhookUrl);

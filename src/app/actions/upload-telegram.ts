@@ -1,6 +1,7 @@
 "use server";
 
 import { uploadToTelegram } from "@/lib/telegram-storage";
+import { createSupabaseServerClient } from "@/utils/supabase/server";
 
 const MAX_UPLOAD_BYTES = 4 * 1024 * 1024; // 4MB (limite body Vercel/Server Actions)
 
@@ -16,6 +17,15 @@ export type UploadTelegramResult =
 export async function uploadFileToTelegram(
   formData: FormData
 ): Promise<UploadTelegramResult> {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return { success: false, error: "Devi essere autenticato per caricare file." };
+  }
+
   const file = formData.get("file") as File | null;
   const type = (formData.get("type") as "photo" | "document" | null) || "photo";
 

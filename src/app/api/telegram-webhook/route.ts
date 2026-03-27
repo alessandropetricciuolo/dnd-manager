@@ -18,6 +18,14 @@ type TelegramUpdate = {
 };
 
 export async function POST(request: NextRequest) {
+  const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET?.trim();
+  if (expectedSecret) {
+    const providedSecret = request.headers.get("x-telegram-bot-api-secret-token")?.trim();
+    if (!providedSecret || providedSecret !== expectedSecret) {
+      return NextResponse.json({ ok: true });
+    }
+  }
+
   let body: TelegramUpdate;
   try {
     body = (await request.json()) as TelegramUpdate;

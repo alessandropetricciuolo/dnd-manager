@@ -92,6 +92,23 @@ export async function updateLeadStatusAction(
   const status = newStatus as LeadStatus;
   const payload: Database["public"]["Tables"]["leads"]["Update"] = { status };
   try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { success: false, message: "Non autenticato." };
+    }
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    if (profile?.role !== "admin") {
+      return { success: false, message: "Non autorizzato." };
+    }
+
     const admin = createSupabaseAdminClient();
     // Cast to never: Supabase client infers update() param as never for this table
     const { error } = await admin.from("leads").update(payload as never).eq("id", leadId);
