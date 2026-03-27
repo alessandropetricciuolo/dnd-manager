@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { uploadToTelegram } from "@/lib/telegram-storage";
+import { parseSafeExternalUrl } from "@/lib/security/url";
 
 const GM_FILES_BUCKET = "gm_files";
 const GM_FILES_TELEGRAM_PREFIX = "tg:";
@@ -217,7 +218,11 @@ export async function createGmNote(
   const sessionIdRaw = formData.get("session_id") as string | null;
   const session_id = sessionIdRaw === undefined || sessionIdRaw === "" ? null : (sessionIdRaw?.trim() || null);
 
-  let image_url: string | null = (formData.get("image_url") as string | null)?.trim() || null;
+  const imageUrlRaw = (formData.get("image_url") as string | null)?.trim() || null;
+  let image_url: string | null =
+    imageUrlRaw && imageUrlRaw.startsWith("http")
+      ? parseSafeExternalUrl(imageUrlRaw)
+      : imageUrlRaw;
   const imageFile = formData.get("image") as File | null;
   if (imageFile && imageFile instanceof File && imageFile.size > 0) {
     const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
@@ -234,6 +239,9 @@ export async function createGmNote(
         error: err instanceof Error ? err.message : "Errore nel caricamento dell'immagine su Telegram.",
       };
     }
+  }
+  if (imageUrlRaw && imageUrlRaw.startsWith("http") && !image_url) {
+    return { success: false, error: "URL immagine non valido o non consentito." };
   }
 
   const { data, error } = await supabase
@@ -285,7 +293,11 @@ export async function updateGmNote(noteId: string, formData: FormData): Promise<
     image_url = null;
   } else {
     const imageFile = formData.get("image") as File | null;
-    const urlFromForm = (formData.get("image_url") as string | null)?.trim() || null;
+    const urlFromFormRaw = (formData.get("image_url") as string | null)?.trim() || null;
+    const urlFromForm =
+      urlFromFormRaw && urlFromFormRaw.startsWith("http")
+        ? parseSafeExternalUrl(urlFromFormRaw)
+        : urlFromFormRaw;
     if (imageFile && imageFile instanceof File && imageFile.size > 0) {
       const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
       if (!allowed.includes(imageFile.type)) {
@@ -303,6 +315,9 @@ export async function updateGmNote(noteId: string, formData: FormData): Promise<
       }
     } else if (urlFromForm) {
       image_url = urlFromForm;
+    }
+    if (urlFromFormRaw && urlFromFormRaw.startsWith("http") && !urlFromForm) {
+      return { success: false, error: "URL immagine non valido o non consentito." };
     }
   }
 

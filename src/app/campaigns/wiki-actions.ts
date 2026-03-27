@@ -16,6 +16,7 @@ import {
   type WikiGeneratorEntityType,
   type WikiAiTextGeneration,
 } from "@/lib/ai/generator";
+import { parseSafeExternalUrl } from "@/lib/security/url";
 
 export type { WikiGeneratorEntityType, WikiAiTextGeneration } from "@/lib/ai/generator";
 
@@ -107,7 +108,11 @@ export async function createEntity(
   const allowedUserIds = parseAllowedUserIds(formData, "allowed_user_ids");
   const allowedPartyIds = parseAllowedPartyIds(formData, "allowed_party_ids");
   const imageFile = formData.get("image") as File | null;
-  let imageUrl = (formData.get("image_url") as string | null)?.trim() || null;
+  const imageUrlRaw = (formData.get("image_url") as string | null)?.trim() || null;
+  let imageUrl =
+    imageUrlRaw && imageUrlRaw.startsWith("http")
+      ? parseSafeExternalUrl(imageUrlRaw)
+      : imageUrlRaw;
   const attributes = parseAttributes(formData);
   const sortOrderRaw = formData.get("sort_order") as string | null;
   const sortOrder = sortOrderRaw != null && sortOrderRaw !== "" ? parseInt(sortOrderRaw, 10) : null;
@@ -169,6 +174,9 @@ export async function createEntity(
 
     // Se arriva un URL temporaneo dal bucket pubblico `campaigns`,
     // trasferiscilo su Telegram (CDN definitivo) e poi elimina il file da Supabase.
+    if (imageUrlRaw && imageUrlRaw.startsWith("http") && !imageUrl) {
+      return { success: false, message: "URL immagine non valido o non consentito." };
+    }
     if (!imageFile?.size && imageUrl) {
       const campaignsPath = extractCampaignsPathFromPublicUrl(imageUrl);
       if (campaignsPath) {
@@ -291,7 +299,11 @@ export async function updateEntity(
   const allowedUserIds = parseAllowedUserIds(formData, "allowed_user_ids");
   const allowedPartyIds = parseAllowedPartyIds(formData, "allowed_party_ids");
   const imageFile = formData.get("image") as File | null;
-  const imageUrlFromForm = (formData.get("image_url") as string | null)?.trim() || null;
+  const imageUrlFromFormRaw = (formData.get("image_url") as string | null)?.trim() || null;
+  const imageUrlFromForm =
+    imageUrlFromFormRaw && imageUrlFromFormRaw.startsWith("http")
+      ? parseSafeExternalUrl(imageUrlFromFormRaw)
+      : imageUrlFromFormRaw;
   const removeImage = formData.get("remove_image") === "on" || formData.get("remove_image") === "true";
   const attributes = parseAttributes(formData);
   const sortOrderRaw = formData.get("sort_order") as string | null;
@@ -376,6 +388,9 @@ export async function updateEntity(
       } else {
         imageUrl = imageUrlFromForm;
       }
+    }
+    if (imageUrlFromFormRaw && imageUrlFromFormRaw.startsWith("http") && !imageUrlFromForm) {
+      return { success: false, message: "URL immagine non valido o non consentito." };
     }
 
     const updatePayload: Record<string, unknown> = {

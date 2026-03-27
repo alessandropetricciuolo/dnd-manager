@@ -27,7 +27,7 @@ export function WikiDetails({ entity, contentBody, isGmOrAdmin = false }: WikiDe
         body={contentBody}
         imageUrl={imageUrl}
         telegramFallbackId={telegramFallbackId}
-        attributes={attrs as { relationships?: string; loot?: string }}
+        attributes={attrs as { race?: string; class?: string; age?: string; relationships?: string; loot?: string }}
         isGmOrAdmin={isGmOrAdmin}
       />
     ) : entity.type === "monster" ? (

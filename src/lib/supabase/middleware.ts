@@ -29,6 +29,16 @@ function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.includes(normalized);
 }
 
+function redirectWithSupabaseCookies(redirectUrl: URL, supabaseResponse: NextResponse) {
+  const res = NextResponse.redirect(redirectUrl);
+  const setCookie = supabaseResponse.headers.get("set-cookie");
+  if (setCookie) {
+    // Preserve cookie attributes emitted by Supabase (Secure/HttpOnly/SameSite/etc).
+    res.headers.set("set-cookie", setCookie);
+  }
+  return res;
+}
+
 export async function updateSession(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -68,18 +78,14 @@ export async function updateSession(request: NextRequest) {
   // Caso A: Utente loggato che accede a pagine di auth → redirect a /dashboard
   if (user && isAuthRoute(pathname)) {
     const redirectUrl = new URL("/dashboard", request.url);
-    const res = NextResponse.redirect(redirectUrl);
-    supabaseResponse.cookies.getAll().forEach((c) => res.cookies.set(c.name, c.value, { path: "/" }));
-    return res;
+    return redirectWithSupabaseCookies(redirectUrl, supabaseResponse);
   }
 
   // Caso B: Utente ospite che accede a rotte protette → redirect a /login
   if (!user && isProtectedRoute(pathname)) {
     const redirectUrl = new URL("/login", request.url);
     redirectUrl.searchParams.set("next", pathname);
-    const res = NextResponse.redirect(redirectUrl);
-    supabaseResponse.cookies.getAll().forEach((c) => res.cookies.set(c.name, c.value, { path: "/" }));
-    return res;
+    return redirectWithSupabaseCookies(redirectUrl, supabaseResponse);
   }
 
   return supabaseResponse;

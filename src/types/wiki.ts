@@ -3,6 +3,9 @@
  */
 
 export interface NpcAttributes {
+  race?: string;
+  class?: string;
+  age?: string;
   relationships?: string;
   loot?: string;
 }
@@ -46,7 +49,7 @@ export function getEmptyAttributes(type: string): Record<string, unknown> {
   const base = { [GM_NOTES_KEY]: "" as string };
   switch (type) {
     case "npc":
-      return { ...base, relationships: "", loot: "" };
+      return { ...base, race: "", class: "", age: "", relationships: "", loot: "" };
     case "location":
       return { ...base, loot: "" };
     case "monster":

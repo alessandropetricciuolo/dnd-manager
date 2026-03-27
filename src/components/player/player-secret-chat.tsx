@@ -29,7 +29,8 @@ type PlayerSecretChatProps = {
 };
 
 function proxyImageUrl(fileIdOrUrl: string): string {
-  if (fileIdOrUrl.startsWith("http") || fileIdOrUrl.startsWith("/")) return fileIdOrUrl;
+  if (fileIdOrUrl.startsWith("/api/tg-image/")) return fileIdOrUrl;
+  if (fileIdOrUrl.startsWith("http")) return fileIdOrUrl;
   return `/api/tg-image/${encodeURIComponent(fileIdOrUrl)}`;
 }
 

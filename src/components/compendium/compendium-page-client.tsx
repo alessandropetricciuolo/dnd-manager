@@ -46,6 +46,27 @@ function badgeClass(type: CompendiumType): string {
   }
 }
 
+function findDetailValue(details: Record<string, string>, targetKey: string): string | null {
+  const hit = Object.entries(details).find(([k]) => k.trim().toLowerCase() === targetKey.toLowerCase());
+  const value = hit?.[1]?.trim();
+  return value ? value : null;
+}
+
+function npcQuickFacts(details: Record<string, string>): Array<{ label: string; value: string }> {
+  const race = findDetailValue(details, "race");
+  const npcClass = findDetailValue(details, "class");
+  const age = findDetailValue(details, "age");
+  return [
+    race ? { label: "Razza", value: race } : null,
+    npcClass ? { label: "Classe", value: npcClass } : null,
+    age ? { label: "Età", value: age } : null,
+  ].filter((v): v is { label: string; value: string } => Boolean(v));
+}
+
+function isNpcType(type: CompendiumType): boolean {
+  return type === "NPC";
+}
+
 export function CompendiumPageClient() {
   const searchParams = useSearchParams();
   const campaignIdFromUrl = searchParams.get("campaignId");
@@ -142,6 +163,19 @@ export function CompendiumPageClient() {
     [filtered, selectedId]
   );
   const selected = selectedIndex >= 0 ? filtered[selectedIndex] : null;
+  const selectedNpcFacts = useMemo(
+    () => (selected && isNpcType(selected.type) ? npcQuickFacts(selected.details) : []),
+    [selected]
+  );
+  const selectedDetailEntries = useMemo(() => {
+    if (!selected) return [] as Array<[string, string]>;
+    const entries = Object.entries(selected.details);
+    if (!isNpcType(selected.type)) return entries;
+    return entries.filter(([k]) => {
+      const key = k.trim().toLowerCase();
+      return key !== "race" && key !== "class" && key !== "age";
+    });
+  }, [selected]);
 
   function openCard(id: string) {
     setSelectedId(id);
@@ -287,6 +321,18 @@ export function CompendiumPageClient() {
                       <Image src={el.imageUrl} alt={el.name} fill className="object-cover" unoptimized />
                     </div>
                     <div className="min-w-0 flex-1">
+                      {el.type === "NPC" && npcQuickFacts(el.details).length > 0 && (
+                        <div className="mb-1 flex flex-wrap gap-1.5">
+                          {npcQuickFacts(el.details).map((fact) => (
+                            <span
+                              key={`${el.id}-npc-fact-${fact.label}`}
+                              className="rounded border border-sky-500/30 bg-sky-950/30 px-2 py-0.5 text-[11px] text-sky-100"
+                            >
+                              {fact.label}: {fact.value}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                       <div className="mb-1 flex items-start justify-between gap-2">
                         <h2 className="line-clamp-1 text-base font-semibold text-barber-paper group-hover:text-barber-gold">
                           {el.name}
@@ -355,6 +401,18 @@ export function CompendiumPageClient() {
                   {selectedIndex + 1} / {filtered.length}
                 </div>
                 <DialogTitle className="text-barber-gold">{selected.name}</DialogTitle>
+                {selectedNpcFacts.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {selectedNpcFacts.map((fact) => (
+                      <span
+                        key={`selected-npc-fact-${selected.id}-${fact.label}`}
+                        className="rounded border border-sky-500/30 bg-sky-950/30 px-2 py-0.5 text-[11px] text-sky-100"
+                      >
+                        {fact.label}: {fact.value}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </DialogHeader>
 
               <div
@@ -431,11 +489,26 @@ export function CompendiumPageClient() {
 
                     {activeTab === "details" && (
                       <div className="rounded-lg border border-barber-gold/25 bg-barber-dark/70 p-4">
-                        {Object.keys(selected.details).length === 0 ? (
+                        {selectedNpcFacts.length > 0 && (
+                          <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                            {selectedNpcFacts.map((fact) => (
+                              <div
+                                key={`npc-fact-details-${selected.id}-${fact.label}`}
+                                className="min-h-16 rounded-md border border-sky-500/30 bg-sky-950/20 px-3 py-2"
+                              >
+                                <p className="text-[11px] uppercase tracking-wide text-sky-200/85">{fact.label}</p>
+                                <p className="whitespace-pre-wrap break-words text-sm leading-snug text-sky-100">
+                                  {fact.value}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {selectedDetailEntries.length === 0 ? (
                           <p className="text-sm text-barber-paper/70">Nessuna info extra disponibile.</p>
                         ) : (
                           <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
-                            {Object.entries(selected.details).map(([k, v]) => (
+                            {selectedDetailEntries.map(([k, v]) => (
                               <div
                                 key={`${selected.id}-${k}`}
                                 className="min-h-16 rounded-md border border-barber-gold/20 px-3 py-2"

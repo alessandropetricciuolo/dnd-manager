@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { uploadToTelegram } from "@/lib/telegram-storage";
+import { parseSafeExternalUrl } from "@/lib/security/url";
 import {
   syncEntityPermissions,
   parseAllowedUserIds,
@@ -30,8 +31,13 @@ export async function uploadMap(
     ? mapTypeRaw
     : "region";
   const imageFile = formData.get("image") as File | null;
-  let imageUrl = (formData.get("image_url") as string | null)?.trim() || null;
-  const imageUrlOverride = (formData.get("image_url_override") as string | null)?.trim() || null;
+  const imageUrlRaw = (formData.get("image_url") as string | null)?.trim() || null;
+  let imageUrl =
+    imageUrlRaw && imageUrlRaw.startsWith("http")
+      ? parseSafeExternalUrl(imageUrlRaw)
+      : imageUrlRaw;
+  const imageUrlOverrideRaw = (formData.get("image_url_override") as string | null)?.trim() || null;
+  const imageUrlOverride = imageUrlOverrideRaw ? parseSafeExternalUrl(imageUrlOverrideRaw) : null;
   const visibilityRaw = (formData.get("visibility") as string | null)?.trim() || "public";
   const visibility: Visibility = VISIBILITY_VALUES.includes(visibilityRaw as Visibility) ? visibilityRaw as Visibility : "public";
   const allowedUserIds = parseAllowedUserIds(formData, "allowed_user_ids");
@@ -63,8 +69,14 @@ export async function uploadMap(
       };
     }
   }
+  if (imageUrlRaw && imageUrlRaw.startsWith("http") && !imageUrl) {
+    return { success: false, message: "URL immagine non valido o non consentito." };
+  }
 
   const finalImageUrl = imageUrlOverride || imageUrl;
+  if (imageUrlOverrideRaw && !imageUrlOverride) {
+    return { success: false, message: "URL esterno non valido o non consentito." };
+  }
   if (!finalImageUrl) {
     return { success: false, message: "Carica un'immagine, incolla un URL o un link (es. Google Drive)." };
   }

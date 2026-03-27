@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { uploadToTelegram } from "@/lib/telegram-storage";
+import { parseSafeExternalUrl } from "@/lib/security/url";
 
 export type CreateCampaignResult = {
   success: boolean;
@@ -22,7 +23,11 @@ export async function createCampaign(
   const isLongCampaign = formData.get("is_long_campaign") === "on" || formData.get("is_long_campaign") === "true";
   const playerPrimer = (formData.get("player_primer") as string | null)?.trim() || null;
   const imageFile = formData.get("image") as File | null;
-  const imageUrlFromForm = (formData.get("image_url") as string | null)?.trim() || null;
+  const imageUrlFromFormRaw = (formData.get("image_url") as string | null)?.trim() || null;
+  const imageUrlFromForm =
+    imageUrlFromFormRaw && imageUrlFromFormRaw.startsWith("http")
+      ? parseSafeExternalUrl(imageUrlFromFormRaw)
+      : imageUrlFromFormRaw;
 
   if (!title) {
     return { success: false, message: "Il titolo è obbligatorio." };
@@ -69,6 +74,9 @@ export async function createCampaign(
       player_primer: isLongCampaign ? playerPrimer : null,
       image_url: hasImageFile ? null : (imageUrlFromForm || null),
     };
+    if (imageUrlFromFormRaw && imageUrlFromFormRaw.startsWith("http") && !imageUrlFromForm) {
+      return { success: false, message: "URL immagine non valido o non consentito." };
+    }
 
     const { data: newCampaign, error } = await supabase
       .from("campaigns")

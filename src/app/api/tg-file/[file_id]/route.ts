@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createSupabaseServerClient } from "@/utils/supabase/server";
 
 /**
  * Proxy download per file (PDF, documenti) salvati su Telegram.
@@ -33,6 +34,15 @@ export async function GET(
   request: NextRequest,
   context: { params: Promise<{ file_id: string }> }
 ) {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
+  }
+
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!token) {
     return NextResponse.json(
@@ -88,8 +98,7 @@ export async function GET(
       headers: {
         "Content-Type": contentType,
         "Content-Disposition": `attachment; filename="${filename}"`,
-        "Cache-Control":
-          "public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400",
+        "Cache-Control": "private, no-store",
       },
     });
   } catch (e) {

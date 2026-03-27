@@ -284,10 +284,15 @@ export function CreateEntityDialog({
         toast.error(result.message);
         return;
       }
-      const { description, statblock, stats } = result;
+      const { description, statblock, stats, npcTraits } = result;
       setContentValue(description);
       if (type === "npc" || type === "monster") {
         setAttr("statblock", statblock);
+      }
+      if (type === "npc" && npcTraits) {
+        if (npcTraits.race) setAttr("race", npcTraits.race);
+        if (npcTraits.class) setAttr("class", npcTraits.class);
+        if (npcTraits.age) setAttr("age", npcTraits.age);
       }
       if (type === "monster" && stats) {
         if (stats.hp) {
@@ -754,6 +759,41 @@ export function CreateEntityDialog({
           {/* Campi dinamici per tipo */}
           {type === "npc" && (
             <>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="attr-race-npc">Razza</Label>
+                  <Input
+                    id="attr-race-npc"
+                    value={getAttr("race")}
+                    onChange={(e) => setAttr("race", e.target.value)}
+                    placeholder="Es. Elfo, Nano, Umano..."
+                    className="bg-barber-dark border-barber-gold/30 text-barber-paper"
+                    disabled={isLoading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="attr-class-npc">Classe</Label>
+                  <Input
+                    id="attr-class-npc"
+                    value={getAttr("class")}
+                    onChange={(e) => setAttr("class", e.target.value)}
+                    placeholder="Es. Mago, Guerriero, Ladro..."
+                    className="bg-barber-dark border-barber-gold/30 text-barber-paper"
+                    disabled={isLoading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="attr-age-npc">Età</Label>
+                  <Input
+                    id="attr-age-npc"
+                    value={getAttr("age")}
+                    onChange={(e) => setAttr("age", e.target.value)}
+                    placeholder="Es. 42 anni"
+                    className="bg-barber-dark border-barber-gold/30 text-barber-paper"
+                    disabled={isLoading}
+                  />
+                </div>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="attr-statblock-npc">Statblock</Label>
                 <Textarea

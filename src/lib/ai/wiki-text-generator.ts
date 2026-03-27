@@ -19,8 +19,20 @@ export type ExtractedWikiStats = {
   cr: string | null;
 };
 
+export type ExtractedNpcTraits = {
+  race: string | null;
+  class: string | null;
+  age: string | null;
+};
+
 export type GenerateWikiMarkdownResult =
-  | { success: true; description: string; statblock: string; stats?: ExtractedWikiStats }
+  | {
+      success: true;
+      description: string;
+      statblock: string;
+      stats?: ExtractedWikiStats;
+      npcTraits?: ExtractedNpcTraits;
+    }
   | { success: false; message: string };
 
 function cleanSingleLine(value: string): string {
@@ -143,6 +155,30 @@ function splitNarrativeAndMechanics(raw: string): { description: string; statblo
   return { description, statblock };
 }
 
+function extractNpcTraitsFromMarkdown(markdown: string): ExtractedNpcTraits {
+  const source = markdown.replace(/\r/g, "");
+  const raceMatch =
+    source.match(/(?:Razza|Race)\*{0,2}\s*[:\-]\s*([^\n|]+)/i) ??
+    source.match(/\|\s*(?:Razza|Race)\s*\|\s*([^\n|]+)\|/i);
+  const classMatch =
+    source.match(/(?:Classe|Class)\*{0,2}\s*[:\-]\s*([^\n|]+)/i) ??
+    source.match(/\|\s*(?:Classe|Class)\s*\|\s*([^\n|]+)\|/i);
+  const ageMatch =
+    source.match(/(?:Et[aà]|Age)\*{0,2}\s*[:\-]\s*([^\n|]+)/i) ??
+    source.match(/\|\s*(?:Et[aà]|Age)\s*\|\s*([^\n|]+)\|/i);
+
+  const pick = (v?: string | null) => {
+    const t = v?.trim() ?? "";
+    return t ? t : null;
+  };
+
+  return {
+    race: pick(raceMatch?.[1]),
+    class: pick(classMatch?.[1]),
+    age: pick(ageMatch?.[1]),
+  };
+}
+
 export async function generateWikiMarkdownAction(
   campaignId: string,
   entityType: WikiMarkdownEntityType,
@@ -210,13 +246,17 @@ export async function generateWikiMarkdownAction(
         "Usa sezioni in quest'ordine:",
         "1) # Nome",
         "2) > Tag: NPC",
-        "3) ## Aspetto",
-        "4) ## Tratti Caratteriali",
-        "5) ### Ideali",
-        "6) ### Legami",
-        "7) ### Difetti",
-        "8) ## Ruolo / Occupazione",
-        "9) ## Segreti / Rumors",
+        "3) ## Profilo Rapido",
+        "4) - Razza: <valore>",
+        "5) - Classe: <valore>",
+        "6) - Età: <valore>",
+        "7) ## Aspetto",
+        "8) ## Tratti Caratteriali",
+        "9) ### Ideali",
+        "10) ### Legami",
+        "11) ### Difetti",
+        "12) ## Ruolo / Occupazione",
+        "13) ## Segreti / Rumors",
       ].join("\n"),
       location: [
         "Genera una scheda LUOGO in Markdown pronta per wiki GM.",
@@ -397,12 +437,20 @@ export async function generateWikiMarkdownAction(
           return extractStatsFromMarkdown(normalized);
         })()
       : undefined;
+    const extractedNpcTraits = normalizedType === "npc"
+      ? (() => {
+          const fromStatblock = extractNpcTraitsFromMarkdown(statblock || "");
+          if (fromStatblock.race || fromStatblock.class || fromStatblock.age) return fromStatblock;
+          return extractNpcTraitsFromMarkdown(normalized);
+        })()
+      : undefined;
 
     return {
       success: true,
       description,
       statblock,
       stats: extractedStats,
+      npcTraits: extractedNpcTraits,
     };
   } catch (err) {
     console.error("[generateWikiMarkdownAction]", err);

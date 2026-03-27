@@ -7,6 +7,7 @@ import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { sendEmail, wrapInTemplate, escapeHtml } from "@/lib/email";
 import { getNotificationsPaused, hasNotificationsDisabled } from "@/lib/player-emails";
 import { uploadToTelegram } from "@/lib/telegram-storage";
+import { parseSafeExternalUrl } from "@/lib/security/url";
 
 const CHARACTER_SHEETS_BUCKET = "character_sheets";
 const SIGNED_URL_EXPIRY_SEC = 3600;
@@ -140,9 +141,14 @@ export async function createCharacter(
   const hitPointsRaw = (formData.get("hit_points") as string | null)?.trim() || "";
   const background = (formData.get("background") as string | null)?.trim() ?? null;
   const imageFile = formData.get("image") as File | null;
-  const imageUrlFromForm = (formData.get("image_url") as string | null)?.trim() || null;
+  const imageUrlFromFormRaw = (formData.get("image_url") as string | null)?.trim() || null;
+  const imageUrlFromForm =
+    imageUrlFromFormRaw && imageUrlFromFormRaw.startsWith("http")
+      ? parseSafeExternalUrl(imageUrlFromFormRaw)
+      : imageUrlFromFormRaw;
   const sheetFile = formData.get("sheet") as File | null;
-  const sheetUrlFromForm = (formData.get("sheet_url") as string | null)?.trim() || null;
+  const sheetUrlFromFormRaw = (formData.get("sheet_url") as string | null)?.trim() || null;
+  const sheetUrlFromForm = sheetUrlFromFormRaw ? parseSafeExternalUrl(sheetUrlFromFormRaw) : null;
 
   if (!name) return { success: false, error: "Il nome del personaggio è obbligatorio." };
   const armorClass = armorClassRaw !== "" ? Number.parseInt(armorClassRaw, 10) : null;
@@ -170,12 +176,15 @@ export async function createCharacter(
   } else if (imageUrlFromForm) {
     image_url = imageUrlFromForm;
   }
+  if (imageUrlFromFormRaw && imageUrlFromFormRaw.startsWith("http") && !imageUrlFromForm) {
+    return { success: false, error: "URL immagine non valido o non consentito." };
+  }
 
   let sheet_file_path: string | null = null;
+  if (sheetUrlFromFormRaw && !sheetUrlFromForm) {
+    return { success: false, error: "URL scheda non valido o non consentito." };
+  }
   if (sheetUrlFromForm) {
-    if (!/^https?:\/\/.+/.test(sheetUrlFromForm)) {
-      return { success: false, error: "L'URL della scheda deve iniziare con https:// (o http://)." };
-    }
     sheet_file_path = sheetUrlFromForm;
   } else if (sheetFile && sheetFile instanceof File && sheetFile.size > 0) {
     if (sheetFile.type !== "application/pdf") {
@@ -249,9 +258,14 @@ export async function updateCharacter(
   const removeImage = formData.get("remove_image") === "on";
   const removeSheet = formData.get("remove_sheet") === "on";
   const imageFile = formData.get("image") as File | null;
-  const imageUrlFromForm = (formData.get("image_url") as string | null)?.trim() || null;
+  const imageUrlFromFormRaw = (formData.get("image_url") as string | null)?.trim() || null;
+  const imageUrlFromForm =
+    imageUrlFromFormRaw && imageUrlFromFormRaw.startsWith("http")
+      ? parseSafeExternalUrl(imageUrlFromFormRaw)
+      : imageUrlFromFormRaw;
   const sheetFile = formData.get("sheet") as File | null;
-  const sheetUrlFromForm = (formData.get("sheet_url") as string | null)?.trim() || null;
+  const sheetUrlFromFormRaw = (formData.get("sheet_url") as string | null)?.trim() || null;
+  const sheetUrlFromForm = sheetUrlFromFormRaw ? parseSafeExternalUrl(sheetUrlFromFormRaw) : null;
 
   const { data: existing, error: fetchErr } = await supabase
     .from("campaign_characters")
@@ -279,6 +293,9 @@ export async function updateCharacter(
   } else if (imageUrlFromForm) {
     image_url = imageUrlFromForm;
   }
+  if (imageUrlFromFormRaw && imageUrlFromFormRaw.startsWith("http") && !imageUrlFromForm) {
+    return { success: false, error: "URL immagine non valido o non consentito." };
+  }
 
   let sheet_file_path: string | null = (existing as { sheet_file_path: string | null }).sheet_file_path;
   if (removeSheet) {
@@ -286,10 +303,9 @@ export async function updateCharacter(
       await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([sheet_file_path]);
     }
     sheet_file_path = null;
+  } else if (sheetUrlFromFormRaw && !sheetUrlFromForm) {
+    return { success: false, error: "URL scheda non valido o non consentito." };
   } else if (sheetUrlFromForm) {
-    if (!/^https?:\/\/.+/.test(sheetUrlFromForm)) {
-      return { success: false, error: "L'URL della scheda deve iniziare con https:// (o http://)." };
-    }
     if (sheet_file_path && !sheet_file_path.startsWith("http")) {
       await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([sheet_file_path]);
     }

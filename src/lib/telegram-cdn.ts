@@ -1,3 +1,5 @@
+import { parseSafeExternalUrl } from "@/lib/security/url";
+
 const TELEGRAM_API = "https://api.telegram.org/bot";
 
 type TelegramPhotoSize = {
@@ -37,7 +39,10 @@ function getTelegramConfig() {
  */
 export async function uploadToTelegram(imageUrl: string, caption?: string): Promise<string> {
   const { token, chatId } = getTelegramConfig();
-  const source = imageUrl.trim();
+  const source = parseSafeExternalUrl(imageUrl, {
+    allowedProtocols: ["https:"],
+    allowedHosts: ["supabase.co", "googleusercontent.com", "drive.google.com"],
+  });
   if (!source) {
     throw new Error("imageUrl vuoto.");
   }

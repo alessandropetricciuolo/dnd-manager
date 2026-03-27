@@ -1,6 +1,7 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { isSafeTelegramProxyPath } from "@/lib/security/url";
 
 type WhisperResult<T = void> =
   | { success: true; data?: T }
@@ -134,6 +135,10 @@ export async function insertSecretWhisper(
   const hasImage = payload.image_url != null && payload.image_url.trim() !== "";
   if (!hasMessage && !hasImage) {
     return { success: false, error: "Inserisci un messaggio o un'immagine." };
+  }
+
+  if (hasImage && !isSafeTelegramProxyPath(payload.image_url!)) {
+    return { success: false, error: "URL immagine non valido." };
   }
 
   const { data, error } = await supabase
