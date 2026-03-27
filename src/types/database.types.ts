@@ -155,6 +155,50 @@ export interface Database {
         };
         Update: Partial<Database["public"]["Tables"]["ai_image_styles"]["Insert"]>;
       };
+      admin_communications: {
+        Row: {
+          id: string;
+          subject: string;
+          body_html: string;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          subject: string;
+          body_html: string;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["admin_communications"]["Insert"]>;
+      };
+      admin_communication_recipients: {
+        Row: {
+          id: string;
+          communication_id: string;
+          player_id: string;
+          recipient_email: string | null;
+          status: "pending" | "sent" | "failed" | "skipped_no_email";
+          sent_at: string | null;
+          last_error: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          communication_id: string;
+          player_id: string;
+          recipient_email?: string | null;
+          status?: "pending" | "sent" | "failed" | "skipped_no_email";
+          sent_at?: string | null;
+          last_error?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["admin_communication_recipients"]["Insert"]>;
+      };
       campaigns: {
         Row: {
           id: string;
