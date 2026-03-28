@@ -15,7 +15,16 @@ const POPOUT_FEATURES =
 
 type MapCardProps = {
   campaignId: string;
-  map: { id: string; name: string; image_url: string; description?: string | null; map_type?: string; visibility?: string };
+  campaignType?: "oneshot" | "quest" | "long" | null;
+  map: {
+    id: string;
+    name: string;
+    image_url: string;
+    description?: string | null;
+    map_type?: string;
+    visibility?: string;
+    parent_map_id?: string | null;
+  };
   isGmOrAdmin: boolean;
   eligiblePlayers?: { id: string; label: string }[];
   eligibleParties?: { id: string; label: string; memberIds: string[] }[];
@@ -25,6 +34,7 @@ type MapCardProps = {
 
 export function MapCard({
   campaignId,
+  campaignType = null,
   map,
   isGmOrAdmin,
   eligiblePlayers = [],
@@ -63,9 +73,11 @@ export function MapCard({
         <>
           <EditMapDialog
             campaignId={campaignId}
+            campaignType={campaignType}
             mapId={map.id}
             initialName={map.name}
             initialMapType={map.map_type ?? "region"}
+            initialParentMapId={map.parent_map_id ?? null}
             initialVisibility={map.visibility ?? "public"}
             initialAllowedUserIds={permittedUserIds}
             initialAllowedPartyIds={inferredPartyIds}

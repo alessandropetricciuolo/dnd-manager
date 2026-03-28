@@ -272,6 +272,10 @@ export interface Database {
           name: string;
           description: string | null;
           image_url: string;
+          map_type: string;
+          visibility: string;
+          parent_map_id: string | null;
+          telegram_fallback_id: string | null;
           created_at: string;
           updated_at: string;
         };

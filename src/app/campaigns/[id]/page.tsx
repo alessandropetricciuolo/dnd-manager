@@ -515,6 +515,7 @@ export default async function CampaignPage({ params }: PageProps) {
                   {isGmOrAdmin && (
                     <UploadMapDialog
                       campaignId={campaign.id}
+                      campaignType={campaign.type ?? null}
                       eligiblePlayers={eligiblePlayers}
                       eligibleParties={eligibleParties}
                     />
@@ -522,6 +523,7 @@ export default async function CampaignPage({ params }: PageProps) {
                 </div>
                 <MapGallery
                   campaignId={campaign.id}
+                  campaignType={campaign.type ?? null}
                   eligiblePlayers={eligiblePlayers}
                   eligibleParties={eligibleParties}
                 />

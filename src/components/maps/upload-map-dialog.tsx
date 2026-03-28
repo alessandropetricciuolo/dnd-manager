@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Upload, Loader2 } from "lucide-react";
 
@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { uploadMap } from "@/app/campaigns/map-actions";
+import { listMapsForParentPickerAction, uploadMap, type MapParentOption } from "@/app/campaigns/map-actions";
 
 const MAP_TYPE_OPTIONS: { label: string; value: string }[] = [
   { label: "Mondo", value: "world" },
@@ -33,6 +33,17 @@ const MAP_TYPE_OPTIONS: { label: string; value: string }[] = [
   { label: "Regione", value: "region" },
   { label: "Città/Urbano", value: "city" },
   { label: "Dungeon/Wild", value: "dungeon" },
+  { label: "Quartiere", value: "district" },
+  { label: "Edificio", value: "building" },
+];
+
+/** Campagna lunga: scala geografica esplicita (mondo unico → continenti → regioni → città) + dettaglio. */
+const LONG_MAP_TYPE_OPTIONS: { label: string; value: string }[] = [
+  { label: "Mappa del mondo (unica per campagna)", value: "world" },
+  { label: "Continente (sotto il mondo)", value: "continent" },
+  { label: "Regione (sotto un continente)", value: "region" },
+  { label: "Città (sotto una regione)", value: "city" },
+  { label: "Dungeon / zona di dettaglio", value: "dungeon" },
   { label: "Quartiere", value: "district" },
   { label: "Edificio", value: "building" },
 ];
@@ -45,6 +56,7 @@ const VISIBILITY_OPTIONS: { label: string; value: string }[] = [
 
 type UploadMapDialogProps = {
   campaignId: string;
+  campaignType?: "oneshot" | "quest" | "long" | null;
   /** Giocatori iscritti alla campagna per la visibilità selettiva. */
   eligiblePlayers?: { id: string; label: string }[];
   /** Gruppi campagna disponibili per visibilità selettiva. */
@@ -53,15 +65,52 @@ type UploadMapDialogProps = {
 
 export function UploadMapDialog({
   campaignId,
+  campaignType = null,
   eligiblePlayers = [],
   eligibleParties = [],
 }: UploadMapDialogProps) {
+  const isLongCampaign = campaignType === "long";
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [mapType, setMapType] = useState<string>("region");
+  const [mapType, setMapType] = useState<string>(isLongCampaign ? "continent" : "region");
   const [visibility, setVisibility] = useState<string>("public");
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [selectedPartyIds, setSelectedPartyIds] = useState<string[]>([]);
+  const [parentMapId, setParentMapId] = useState<string>("");
+  const [parentOptions, setParentOptions] = useState<MapParentOption[]>([]);
+  const [loadingParents, setLoadingParents] = useState(false);
+
+  const typeOptions = isLongCampaign ? LONG_MAP_TYPE_OPTIONS : MAP_TYPE_OPTIONS;
+
+  const hasWorldMap = useMemo(() => parentOptions.some((m) => m.map_type === "world"), [parentOptions]);
+
+  const parentCandidates = useMemo(() => {
+    if (!isLongCampaign) return [];
+    if (mapType === "world") return [];
+    if (mapType === "continent") return parentOptions.filter((m) => m.map_type === "world");
+    if (mapType === "region") return parentOptions.filter((m) => m.map_type === "continent");
+    if (mapType === "city") return parentOptions.filter((m) => m.map_type === "region");
+    return parentOptions;
+  }, [isLongCampaign, mapType, parentOptions]);
+
+  useEffect(() => {
+    if (!open || !isLongCampaign) return;
+    let cancelled = false;
+    setLoadingParents(true);
+    void listMapsForParentPickerAction(campaignId).then((res) => {
+      if (cancelled) return;
+      if (res.success) setParentOptions(res.data);
+      else toast.error(res.message);
+      setLoadingParents(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, isLongCampaign, campaignId]);
+
+  useEffect(() => {
+    if (mapType === "world") setParentMapId("");
+  }, [mapType]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -74,6 +123,9 @@ export function UploadMapDialog({
     formData.set("visibility", visibility);
     formData.set("allowed_user_ids", JSON.stringify(visibility === "selective" ? selectedPlayerIds : []));
     formData.set("allowed_party_ids", JSON.stringify(visibility === "selective" ? selectedPartyIds : []));
+    if (isLongCampaign) {
+      formData.set("parent_map_id", parentMapId);
+    }
 
     const name = (formData.get("name") as string)?.trim();
     const imageFile = formData.get("image") as File | null;
@@ -89,6 +141,17 @@ export function UploadMapDialog({
       return;
     }
 
+    if (isLongCampaign) {
+      if (mapType === "world" && hasWorldMap) {
+        toast.error("Esiste già una mappa del mondo. Modificala o eliminala prima di crearne un'altra.");
+        return;
+      }
+      if (["continent", "region", "city"].includes(mapType) && !parentMapId) {
+        toast.error("Seleziona la mappa genitore nella gerarchia (mondo → continente → regione → città).");
+        return;
+      }
+    }
+
     setIsLoading(true);
     try {
       const result = await uploadMap(formData);
@@ -96,10 +159,11 @@ export function UploadMapDialog({
       if (result.success) {
         toast.success(result.message);
         setOpen(false);
-        setMapType("region");
+        setMapType(isLongCampaign ? "continent" : "region");
         setVisibility("public");
         setSelectedPlayerIds([]);
         setSelectedPartyIds([]);
+        setParentMapId("");
         form.reset();
       } else {
         toast.error(result.message);
@@ -116,6 +180,7 @@ export function UploadMapDialog({
       setVisibility("public");
       setSelectedPlayerIds([]);
       setSelectedPartyIds([]);
+      setParentMapId("");
     }
     setOpen(next);
   }
@@ -148,6 +213,12 @@ export function UploadMapDialog({
           <DialogTitle>Carica mappa</DialogTitle>
           <DialogDescription className="text-barber-paper/70">
             Aggiungi un&apos;immagine per la mappa della campagna (JPG, PNG, WebP, GIF).
+            {isLongCampaign && (
+              <span className="mt-2 block text-xs text-barber-gold/90">
+                Campagna lunga: scala Mondo (una sola) → Continenti → Regioni → Città. Le mappe del mondo restano
+                disponibili anche per progetti futuri (es. viste globali).
+              </span>
+            )}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -174,18 +245,65 @@ export function UploadMapDialog({
                 <SelectValue placeholder="Seleziona categoria" />
               </SelectTrigger>
               <SelectContent className="border-barber-gold/30 bg-barber-dark text-barber-paper">
-                {MAP_TYPE_OPTIONS.map((opt) => (
+                {typeOptions.map((opt) => (
                   <SelectItem
                     key={opt.value}
                     value={opt.value}
+                    disabled={isLongCampaign && opt.value === "world" && hasWorldMap}
                     className="focus:bg-barber-dark focus:text-barber-paper"
                   >
                     {opt.label}
+                    {isLongCampaign && opt.value === "world" && hasWorldMap ? " (già presente)" : ""}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+
+          {isLongCampaign && mapType !== "world" && (
+            <div className="space-y-2">
+              <Label>Mappa genitore (scala superiore)</Label>
+              {loadingParents ? (
+                <p className="text-xs text-barber-paper/60">Caricamento elenco mappe…</p>
+              ) : ["continent", "region", "city"].includes(mapType) ? (
+                <select
+                  className="h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-3 text-sm text-barber-paper"
+                  value={parentMapId}
+                  onChange={(e) => setParentMapId(e.target.value)}
+                  disabled={isLoading}
+                  required
+                >
+                  <option value="">Seleziona…</option>
+                  {parentCandidates.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name} ({m.map_type})
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <select
+                  className="h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-3 text-sm text-barber-paper"
+                  value={parentMapId}
+                  onChange={(e) => setParentMapId(e.target.value)}
+                  disabled={isLoading}
+                >
+                  <option value="">Nessun collegamento (opzionale)</option>
+                  {parentCandidates.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name} ({m.map_type})
+                    </option>
+                  ))}
+                </select>
+              )}
+              <p className="text-xs text-barber-paper/55">
+                {mapType === "continent" && "Il continente deve appartenere alla mappa del mondo."}
+                {mapType === "region" && "La regione deve appartenere a un continente."}
+                {mapType === "city" && "La città deve appartenere a una regione."}
+                {["dungeon", "district", "building"].includes(mapType) &&
+                  "Opzionale: collega a una mappa più grande per orientarti in galleria."}
+              </p>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>Visibilità</Label>

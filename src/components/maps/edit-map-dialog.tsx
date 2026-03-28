@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Loader2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { updateMap } from "@/app/campaigns/map-actions";
+import { listMapsForParentPickerAction, updateMap, type MapParentOption } from "@/app/campaigns/map-actions";
 
 const MAP_TYPE_OPTIONS: { label: string; value: string }[] = [
   { label: "Mondo", value: "world" },
@@ -30,6 +30,16 @@ const MAP_TYPE_OPTIONS: { label: string; value: string }[] = [
   { label: "Regione", value: "region" },
   { label: "Città/Urbano", value: "city" },
   { label: "Dungeon/Wild", value: "dungeon" },
+  { label: "Quartiere", value: "district" },
+  { label: "Edificio", value: "building" },
+];
+
+const LONG_MAP_TYPE_OPTIONS: { label: string; value: string }[] = [
+  { label: "Mappa del mondo (unica per campagna)", value: "world" },
+  { label: "Continente (sotto il mondo)", value: "continent" },
+  { label: "Regione (sotto un continente)", value: "region" },
+  { label: "Città (sotto una regione)", value: "city" },
+  { label: "Dungeon / zona di dettaglio", value: "dungeon" },
   { label: "Quartiere", value: "district" },
   { label: "Edificio", value: "building" },
 ];
@@ -42,9 +52,11 @@ const VISIBILITY_OPTIONS: { label: string; value: string }[] = [
 
 type EditMapDialogProps = {
   campaignId: string;
+  campaignType?: "oneshot" | "quest" | "long" | null;
   mapId: string;
   initialName: string;
   initialMapType: string;
+  initialParentMapId?: string | null;
   initialVisibility?: string;
   initialAllowedUserIds?: string[];
   initialAllowedPartyIds?: string[];
@@ -55,9 +67,11 @@ type EditMapDialogProps = {
 
 export function EditMapDialog({
   campaignId,
+  campaignType = null,
   mapId,
   initialName,
   initialMapType,
+  initialParentMapId = null,
   initialVisibility = "public",
   initialAllowedUserIds = [],
   initialAllowedPartyIds = [],
@@ -65,22 +79,66 @@ export function EditMapDialog({
   eligibleParties = [],
   onSuccess,
 }: EditMapDialogProps) {
+  const isLongCampaign = campaignType === "long";
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [name, setName] = useState(initialName);
   const [mapType, setMapType] = useState(
     MAP_TYPE_OPTIONS.some((o) => o.value === initialMapType) ? initialMapType : "region"
   );
+  const [parentMapId, setParentMapId] = useState<string>(initialParentMapId ?? "");
+  const [parentOptions, setParentOptions] = useState<MapParentOption[]>([]);
+  const [loadingParents, setLoadingParents] = useState(false);
   const [visibility, setVisibility] = useState(
     VISIBILITY_OPTIONS.some((o) => o.value === initialVisibility) ? initialVisibility : "public"
   );
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>(initialAllowedUserIds);
   const [selectedPartyIds, setSelectedPartyIds] = useState<string[]>(initialAllowedPartyIds);
 
+  const typeOptions = isLongCampaign ? LONG_MAP_TYPE_OPTIONS : MAP_TYPE_OPTIONS;
+
+  const hasWorldMapOther = useMemo(
+    () => parentOptions.some((m) => m.map_type === "world" && m.id !== mapId),
+    [parentOptions, mapId]
+  );
+
+  const parentCandidates = useMemo(() => {
+    if (!isLongCampaign) return [];
+    return parentOptions.filter((m) => m.id !== mapId);
+  }, [isLongCampaign, parentOptions, mapId]);
+
+  const filteredParents = useMemo(() => {
+    if (mapType === "world") return [];
+    if (mapType === "continent") return parentCandidates.filter((m) => m.map_type === "world");
+    if (mapType === "region") return parentCandidates.filter((m) => m.map_type === "continent");
+    if (mapType === "city") return parentCandidates.filter((m) => m.map_type === "region");
+    return parentCandidates;
+  }, [mapType, parentCandidates]);
+
+  useEffect(() => {
+    if (!open || !isLongCampaign) return;
+    let cancelled = false;
+    setLoadingParents(true);
+    void listMapsForParentPickerAction(campaignId).then((res) => {
+      if (cancelled) return;
+      if (res.success) setParentOptions(res.data);
+      else toast.error(res.message);
+      setLoadingParents(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, isLongCampaign, campaignId]);
+
+  useEffect(() => {
+    if (mapType === "world") setParentMapId("");
+  }, [mapType]);
+
   function handleOpenChange(next: boolean) {
     if (!next) {
       setName(initialName);
       setMapType(MAP_TYPE_OPTIONS.some((o) => o.value === initialMapType) ? initialMapType : "region");
+      setParentMapId(initialParentMapId ?? "");
       setVisibility(VISIBILITY_OPTIONS.some((o) => o.value === initialVisibility) ? initialVisibility : "public");
       setSelectedPlayerIds(initialAllowedUserIds);
       setSelectedPartyIds(initialAllowedPartyIds);
@@ -108,12 +166,27 @@ export function EditMapDialog({
       toast.error("Il nome è obbligatorio.");
       return;
     }
+    if (isLongCampaign) {
+      if (mapType === "world" && hasWorldMapOther) {
+        toast.error("Esiste già un'altra mappa del mondo in questa campagna.");
+        return;
+      }
+      if (["continent", "region", "city"].includes(mapType) && !parentMapId) {
+        toast.error("Seleziona la mappa genitore nella gerarchia.");
+        return;
+      }
+    }
     setIsLoading(true);
     try {
       const result = await updateMap(mapId, campaignId, {
         name: trimmedName,
         map_type: mapType,
         visibility: visibility as "public" | "secret" | "selective",
+        ...(isLongCampaign
+          ? {
+              parent_map_id: mapType === "world" ? null : parentMapId || null,
+            }
+          : {}),
         allowed_user_ids: visibility === "selective" ? selectedPlayerIds : [],
         allowed_party_ids: visibility === "selective" ? selectedPartyIds : [],
       });
@@ -171,18 +244,59 @@ export function EditMapDialog({
                 <SelectValue placeholder="Seleziona categoria" />
               </SelectTrigger>
               <SelectContent className="border-slate-700 bg-slate-900 text-slate-50">
-                {MAP_TYPE_OPTIONS.map((opt) => (
+                {typeOptions.map((opt) => (
                   <SelectItem
                     key={opt.value}
                     value={opt.value}
+                    disabled={isLongCampaign && opt.value === "world" && hasWorldMapOther && mapType !== "world"}
                     className="focus:bg-slate-800 focus:text-slate-50"
                   >
                     {opt.label}
+                    {isLongCampaign && opt.value === "world" && hasWorldMapOther && mapType !== "world"
+                      ? " (già presente)"
+                      : ""}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+          {isLongCampaign && mapType !== "world" && (
+            <div className="space-y-2">
+              <Label>Mappa genitore</Label>
+              {loadingParents ? (
+                <p className="text-xs text-slate-500">Caricamento…</p>
+              ) : ["continent", "region", "city"].includes(mapType) ? (
+                <select
+                  className="h-10 w-full rounded-md border border-slate-700 bg-slate-900/70 px-3 text-sm text-slate-50"
+                  value={parentMapId}
+                  onChange={(e) => setParentMapId(e.target.value)}
+                  disabled={isLoading}
+                  required
+                >
+                  <option value="">Seleziona…</option>
+                  {filteredParents.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name} ({m.map_type})
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <select
+                  className="h-10 w-full rounded-md border border-slate-700 bg-slate-900/70 px-3 text-sm text-slate-50"
+                  value={parentMapId}
+                  onChange={(e) => setParentMapId(e.target.value)}
+                  disabled={isLoading}
+                >
+                  <option value="">Nessuno (opzionale)</option>
+                  {filteredParents.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name} ({m.map_type})
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          )}
           <div className="space-y-2">
             <Label>Visibilità</Label>
             <Select value={visibility} onValueChange={setVisibility} disabled={isLoading}>

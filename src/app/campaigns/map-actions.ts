@@ -14,10 +14,86 @@ import {
 const VISIBILITY_VALUES = ["public", "secret", "selective"] as const;
 type Visibility = (typeof VISIBILITY_VALUES)[number];
 
+const MAP_TYPES_ALL = ["world", "continent", "region", "city", "dungeon", "district", "building"] as const;
+
 export type UploadMapResult = {
   success: boolean;
   message: string;
 };
+
+/** Elenco mappe per collegamento gerarchico (campagne long). */
+export type MapParentOption = {
+  id: string;
+  name: string;
+  map_type: string;
+  parent_map_id: string | null;
+};
+
+export type ListMapsForParentPickerResult =
+  | { success: true; data: MapParentOption[] }
+  | { success: false; message: string };
+
+export async function listMapsForParentPickerAction(
+  campaignId: string
+): Promise<ListMapsForParentPickerResult> {
+  if (!campaignId?.trim()) return { success: false, message: "Campagna non valida." };
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) return { success: false, message: "Non autenticato." };
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    if (profile?.role !== "gm" && profile?.role !== "admin") {
+      return { success: false, message: "Non autorizzato." };
+    }
+    const { data, error } = await supabase
+      .from("maps")
+      .select("id, name, map_type, parent_map_id")
+      .eq("campaign_id", campaignId)
+      .order("name", { ascending: true });
+    if (error) {
+      if (error.message?.includes("parent_map_id")) {
+        const { data: fallback, error: err2 } = await supabase
+          .from("maps")
+          .select("id, name, map_type")
+          .eq("campaign_id", campaignId)
+          .order("name", { ascending: true });
+        if (err2) return { success: false, message: err2.message };
+        return {
+          success: true,
+          data: ((fallback ?? []) as Array<{ id: string; name: string; map_type?: string }>).map((m) => ({
+            id: m.id,
+            name: m.name,
+            map_type: m.map_type ?? "region",
+            parent_map_id: null,
+          })),
+        };
+      }
+      return { success: false, message: error.message };
+    }
+    return {
+      success: true,
+      data: (data ?? []) as MapParentOption[],
+    };
+  } catch (err) {
+    console.error("[listMapsForParentPickerAction]", err);
+    return { success: false, message: "Errore imprevisto." };
+  }
+}
+
+function mapPgMapError(err: { message?: string; code?: string } | null): string | null {
+  const msg = err?.message ?? "";
+  const code = err?.code ?? "";
+  if (code === "23505" && (msg.includes("maps_one_world") || msg.includes("one_world"))) {
+    return "Esiste già una mappa del mondo per questa campagna. Ne è consentita una sola.";
+  }
+  if (/per campagne lunghe|La mappa del mondo|genitore|continente|regione|città/i.test(msg)) {
+    return msg.replace(/^ERROR:\s*/i, "").trim() || "Gerarchia mappe non valida per campagna lunga.";
+  }
+  return null;
+}
 
 export async function uploadMap(
   formData: FormData
@@ -26,10 +102,12 @@ export async function uploadMap(
   const name = (formData.get("name") as string | null)?.trim();
   const description = (formData.get("description") as string | null)?.trim() || null;
   const mapTypeRaw = (formData.get("map_type") as string | null)?.trim() || "region";
-  const allowedMapTypes = ["world", "continent", "region", "city", "dungeon", "district", "building"] as const;
+  const allowedMapTypes = MAP_TYPES_ALL;
   const mapType = allowedMapTypes.includes(mapTypeRaw as (typeof allowedMapTypes)[number])
     ? mapTypeRaw
     : "region";
+  const parentMapIdRaw = (formData.get("parent_map_id") as string | null)?.trim() || "";
+  const parentMapId = parentMapIdRaw || null;
   const imageFile = formData.get("image") as File | null;
   const imageUrlRaw = (formData.get("image_url") as string | null)?.trim() || null;
   let imageUrl =
@@ -101,24 +179,30 @@ export async function uploadMap(
       return { success: false, message: "Non autorizzato. Solo GM e Admin possono caricare mappe." };
     }
 
+    const insertPayload: Record<string, unknown> = {
+      campaign_id: campaignId,
+      name,
+      description,
+      map_type: mapType,
+      image_url: finalImageUrl,
+      visibility,
+    };
+    if (parentMapId) {
+      insertPayload.parent_map_id = parentMapId;
+    }
+
     const { data: inserted, error: insertError } = await supabase
       .from("maps")
-      .insert({
-        campaign_id: campaignId,
-        name,
-        description,
-        map_type: mapType,
-        image_url: finalImageUrl,
-        visibility,
-      })
+      .insert(insertPayload as never)
       .select("id")
       .single();
 
     if (insertError || !inserted) {
       console.error("[uploadMap] insert", insertError);
+      const friendly = mapPgMapError(insertError);
       return {
         success: false,
-        message: insertError?.message ?? "Errore nel salvataggio della mappa.",
+        message: friendly ?? insertError?.message ?? "Errore nel salvataggio della mappa.",
       };
     }
 
@@ -150,7 +234,7 @@ export async function uploadMap(
 
 export type UpdateMapResult = { success: boolean; message: string };
 
-const MAP_TYPES = ["world", "continent", "region", "city", "dungeon", "district", "building"] as const;
+const MAP_TYPES = MAP_TYPES_ALL;
 
 export async function updateMap(
   mapId: string,
@@ -159,6 +243,7 @@ export async function updateMap(
     name?: string;
     map_type?: string;
     visibility?: Visibility;
+    parent_map_id?: string | null;
     allowed_user_ids?: string[];
     allowed_party_ids?: string[];
   }
@@ -169,11 +254,17 @@ export async function updateMap(
   const name = payload.name?.trim();
   const mapType = payload.map_type?.trim();
   const visibility = payload.visibility && VISIBILITY_VALUES.includes(payload.visibility) ? payload.visibility : undefined;
+  const parentMapId =
+    payload.parent_map_id === undefined
+      ? undefined
+      : payload.parent_map_id === null || payload.parent_map_id === ""
+        ? null
+        : payload.parent_map_id.trim();
   const allowedUserIds = payload.allowed_user_ids ?? [];
   const allowedPartyIds = payload.allowed_party_ids ?? [];
 
-  if (!name && !mapType && visibility === undefined) {
-    return { success: false, message: "Inserisci nome, categoria o visibilità da aggiornare." };
+  if (!name && !mapType && visibility === undefined && parentMapId === undefined) {
+    return { success: false, message: "Inserisci nome, categoria, genitore o visibilità da aggiornare." };
   }
   try {
     const supabase = await createSupabaseServerClient();
@@ -192,13 +283,21 @@ export async function updateMap(
     if (profile?.role !== "gm" && profile?.role !== "admin") {
       return { success: false, message: "Solo GM e Admin possono modificare le mappe." };
     }
-    const updates: { name?: string; map_type?: string; visibility?: Visibility } = {};
+    const updates: {
+      name?: string;
+      map_type?: string;
+      visibility?: Visibility;
+      parent_map_id?: string | null;
+    } = {};
     if (name) updates.name = name;
     if (mapType && MAP_TYPES.includes(mapType as (typeof MAP_TYPES)[number])) {
       updates.map_type = mapType;
     }
     if (visibility !== undefined) {
       updates.visibility = visibility;
+    }
+    if (parentMapId !== undefined) {
+      updates.parent_map_id = parentMapId;
     }
     if (Object.keys(updates).length > 0) {
       const { error } = await supabase
@@ -208,7 +307,8 @@ export async function updateMap(
         .eq("campaign_id", campaignId);
       if (error) {
         console.error("[updateMap]", error);
-        return { success: false, message: error.message ?? "Errore durante l'aggiornamento." };
+        const friendly = mapPgMapError(error);
+        return { success: false, message: friendly ?? error.message ?? "Errore durante l'aggiornamento." };
       }
     }
     if (visibility !== undefined) {
