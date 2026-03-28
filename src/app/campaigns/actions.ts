@@ -1200,6 +1200,8 @@ export type CloseSessionActionPayload = {
   entityStatusUpdates: Record<string, "alive" | "dead" | "missing">;
   /** Trofei assegnati ai presenti (opzionale). */
   awardedAchievements?: { playerId: string; achievementId: string; addedProgress: number }[];
+  /** Ore di gioco (viaggio + esplorazione) da sommare al tempo dei PG dei presenti (assigned_to). */
+  elapsedHours: number;
 };
 
 /** Chiusura sessione unificata: sessioni, presenze, XP, summary, note GM, mondo (global_status), sblocco contenuti. */
@@ -1329,6 +1331,29 @@ export async function closeSessionAction(
       const batchRes = await batchUnlockContent(session.campaign_id, presentUserIds, payload.unlockContentIds);
       if (!batchRes.success) {
         console.warn("[closeSessionAction] batchUnlockContent", batchRes.message);
+      }
+    }
+
+    const elapsedHours = Math.max(0, Math.floor(Number(payload.elapsedHours ?? 0)));
+    if (elapsedHours > 0 && presentUserIds.length > 0) {
+      const { data: epochChars, error: epochFetchErr } = await admin
+        .from("campaign_characters")
+        .select("id, time_offset_hours")
+        .eq("campaign_id", session.campaign_id)
+        .in("assigned_to", presentUserIds);
+      if (epochFetchErr) {
+        console.error("[closeSessionAction] epoch fetch campaign_characters", epochFetchErr);
+      } else {
+        for (const row of (epochChars ?? []) as { id: string; time_offset_hours: number | null }[]) {
+          const cur = typeof row.time_offset_hours === "number" ? row.time_offset_hours : 0;
+          const { error: epochUpdErr } = await admin
+            .from("campaign_characters")
+            .update({ time_offset_hours: cur + elapsedHours } as never)
+            .eq("id", row.id);
+          if (epochUpdErr) {
+            console.error("[closeSessionAction] epoch update", row.id, epochUpdErr);
+          }
+        }
       }
     }
 

@@ -40,6 +40,9 @@ export function CharacterCardPlayer({ character }: CharacterCardPlayerProps) {
             </h2>
             <p className="mt-1 text-sm text-barber-paper/85">
               {classLabel} · Livello {storedLevel}
+              <span className="mt-0.5 block text-xs text-barber-paper/65 tabular-nums">
+                Tempo vissuto: {character.time_offset_hours ?? 0} h
+              </span>
             </p>
           </div>
         </div>

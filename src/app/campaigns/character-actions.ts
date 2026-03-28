@@ -32,6 +32,8 @@ export type CampaignCharacterRow = {
   sheet_url?: string | null;
   background: string | null;
   assigned_to: string | null;
+  /** Ore vissute (Epoch / West Marches). */
+  time_offset_hours?: number;
   created_at: string;
   updated_at: string;
 };
@@ -69,7 +71,9 @@ export async function getCampaignCharacters(
   if (isGmOrAdmin) {
     const { data: rows, error } = await supabase
       .from("campaign_characters")
-      .select("id, campaign_id, name, image_url, character_class, armor_class, hit_points, current_xp, level, sheet_file_path, background, assigned_to, created_at, updated_at")
+      .select(
+        "id, campaign_id, name, image_url, character_class, armor_class, hit_points, current_xp, level, sheet_file_path, background, assigned_to, time_offset_hours, created_at, updated_at"
+      )
       .eq("campaign_id", campaignId)
       .order("created_at", { ascending: false });
 
@@ -96,7 +100,11 @@ export async function getCampaignCharacters(
         }
       }
       const { sheet_file_path: _, ...rest } = row;
-      withUrls.push({ ...rest, sheet_url });
+      withUrls.push({
+        ...rest,
+        sheet_url,
+        time_offset_hours: typeof rest.time_offset_hours === "number" ? rest.time_offset_hours : 0,
+      });
     }
 
     return { success: true, data: withUrls };
@@ -105,7 +113,9 @@ export async function getCampaignCharacters(
   // Player: solo il proprio PG, senza sheet_url / sheet_file_path
   const { data: rows, error } = await supabase
     .from("campaign_characters")
-    .select("id, campaign_id, name, image_url, character_class, current_xp, level, background, assigned_to, created_at, updated_at")
+    .select(
+      "id, campaign_id, name, image_url, character_class, current_xp, level, background, assigned_to, time_offset_hours, created_at, updated_at"
+    )
     .eq("campaign_id", campaignId)
     .eq("assigned_to", userId)
     .order("created_at", { ascending: false })
@@ -121,6 +131,10 @@ export async function getCampaignCharacters(
     armor_class: null,
     hit_points: null,
     sheet_url: null,
+    time_offset_hours:
+      typeof (r as { time_offset_hours?: number }).time_offset_hours === "number"
+        ? (r as { time_offset_hours: number }).time_offset_hours
+        : 0,
   }));
   return { success: true, data: list };
 }
@@ -538,4 +552,65 @@ export async function getCampaignEligiblePlayers(
 
   list.sort((a, b) => a.label.localeCompare(b.label));
   return { success: true, data: list };
+}
+
+export type ForceCharacterTimeSyncResult =
+  | { success: true; message: string }
+  | { success: false; error: string };
+
+/**
+ * GM/Admin: sovrascrive le ore Epoch del personaggio (sincronizzazione forzata).
+ */
+export async function forceCharacterTimeSync(
+  characterId: string,
+  newTime: number
+): Promise<ForceCharacterTimeSyncResult> {
+  const ctx = await getCurrentUserAndRole();
+  if (!ctx) return { success: false, error: "Non autenticato." };
+  if (!ctx.isGmOrAdmin) return { success: false, error: "Solo GM o Admin." };
+  const id = characterId?.trim();
+  if (!id) return { success: false, error: "Personaggio non valido." };
+
+  const hours = Number.isFinite(newTime) ? Math.max(0, Math.floor(newTime)) : 0;
+
+  const supabase = ctx.supabase;
+  const admin = createSupabaseAdminClient();
+
+  const { data: me } = await supabase.from("profiles").select("role").eq("id", ctx.userId).single();
+  const isAdmin = me?.role === "admin";
+
+  const { data: rowRaw, error: fetchErr } = await admin
+    .from("campaign_characters")
+    .select("id, campaign_id")
+    .eq("id", id)
+    .maybeSingle();
+
+  const row = rowRaw as { id: string; campaign_id: string } | null;
+  if (fetchErr || !row) {
+    return { success: false, error: fetchErr?.message ?? "Personaggio non trovato." };
+  }
+
+  const { data: camp } = await supabase
+    .from("campaigns")
+    .select("gm_id")
+    .eq("id", row.campaign_id)
+    .single();
+
+  if (!isAdmin && camp?.gm_id !== ctx.userId) {
+    return { success: false, error: "Non sei il Master di questa campagna." };
+  }
+
+  const { error: updErr } = await admin
+    .from("campaign_characters")
+    .update({ time_offset_hours: hours } as never)
+    .eq("id", id);
+
+  if (updErr) {
+    console.error("[forceCharacterTimeSync]", updErr);
+    return { success: false, error: updErr.message ?? "Errore durante l'aggiornamento." };
+  }
+
+  revalidatePath(`/campaigns/${row.campaign_id}`);
+  revalidatePath("/dashboard");
+  return { success: true, message: "Timeline del personaggio aggiornata." };
 }

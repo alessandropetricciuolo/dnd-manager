@@ -296,6 +296,7 @@ export interface Database {
           hit_points: number | null;
           background: string | null;
           assigned_to: string | null;
+          time_offset_hours: number;
           created_at: string;
           updated_at: string;
         };

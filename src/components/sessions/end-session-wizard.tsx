@@ -124,6 +124,8 @@ export function EndSessionWizard({
 
   const [attendance, setAttendance] = useState<Record<string, "attended" | "absent">>({});
   const [xpGained, setXpGained] = useState(0);
+  /** Ore di gioco (Epoch) sommate ai PG dei presenti (assigned_to). */
+  const [elapsedHours, setElapsedHours] = useState(0);
   const [unlockContent, setUnlockContent] = useState(false);
   const [secretItems, setSecretItems] = useState<UnlockableItem[]>([]);
   const [itemsLoading, setItemsLoading] = useState(false);
@@ -179,6 +181,7 @@ export function EndSessionWizard({
     setStatusByEntityId({});
     setAwardedAchievements([]);
     setAchievementSearchByPlayer({});
+    setElapsedHours(0);
     (async () => {
       // Metadati sessione: se è in pre-chiusura, salta direttamente allo step 2
       const meta = await getSessionWizardMeta(sessionId);
@@ -320,6 +323,7 @@ export function EndSessionWizard({
       gm_private_notes: gmPrivateNotes.trim() || null,
       entityStatusUpdates: isLongCampaign ? statusByEntityId : {},
       awardedAchievements: awardedAchievements.length > 0 ? awardedAchievements : undefined,
+      elapsedHours: Math.max(0, Math.floor(elapsedHours)),
     };
     const res = await closeSessionAction(sessionId, payload);
     setSubmitting(false);
@@ -490,6 +494,24 @@ export function EndSessionWizard({
                       placeholder="0"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="wizard-epoch-hours" className="text-barber-paper/90">
+                      Ore di gioco trascorse (es. viaggio + esplorazione)
+                    </Label>
+                    <Input
+                      id="wizard-epoch-hours"
+                      type="number"
+                      min={0}
+                      value={elapsedHours || ""}
+                      onChange={(e) => setElapsedHours(parseInt(e.target.value, 10) || 0)}
+                      className="border-barber-gold/30 bg-barber-dark text-barber-paper"
+                      placeholder="0"
+                    />
+                    <p className="text-xs text-barber-paper/55">
+                      Sommate al tempo dei personaggi assegnati ai giocatori segnati come presenti (Epoch / West
+                      Marches).
+                    </p>
+                  </div>
                   {isLongCampaign && (
                     <div className="space-y-2">
                       <label className="flex cursor-pointer items-center gap-2 text-sm text-barber-paper/90">
@@ -557,6 +579,26 @@ export function EndSessionWizard({
           {/* Step 2: Diario */}
           {step === 2 && (
             <div className="space-y-4">
+              {isPreClosed && (
+                <div className="space-y-2 rounded-lg border border-barber-gold/25 bg-barber-dark/60 p-3">
+                  <Label htmlFor="wizard-epoch-hours-pre" className="text-barber-paper/90">
+                    Ore di gioco trascorse (es. viaggio + esplorazione)
+                  </Label>
+                  <Input
+                    id="wizard-epoch-hours-pre"
+                    type="number"
+                    min={0}
+                    value={elapsedHours || ""}
+                    onChange={(e) => setElapsedHours(parseInt(e.target.value, 10) || 0)}
+                    className="border-barber-gold/30 bg-barber-dark text-barber-paper"
+                    placeholder="0"
+                  />
+                  <p className="text-xs text-barber-paper/55">
+                    Sessione già in bozza: indica le ore da aggiungere ai PG dei presenti al momento della chiusura
+                    definitiva.
+                  </p>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="wizard-summary" className="text-barber-paper/90">
                   Riassunto pubblico

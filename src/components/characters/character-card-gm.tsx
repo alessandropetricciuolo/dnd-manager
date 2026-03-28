@@ -4,9 +4,10 @@ import Image from "next/image";
 import { useRouter } from "nextjs-toploader/app";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Download, Eye, Pencil, Trash2 } from "lucide-react";
+import { Download, Eye, Pencil, Trash2, Clock } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
@@ -34,6 +35,12 @@ import {
 import { calculateLevelProgress } from "@/lib/dnd-constants";
 import { Progress } from "@/components/ui/progress";
 import { MapPopoutButton } from "@/components/maps/map-popout-button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { forceCharacterTimeSync } from "@/app/campaigns/character-actions";
 
 const PLACEHOLDER_AVATAR = "https://placehold.co/200x280/1c1917/fbbf24/png?text=PG";
 
@@ -51,6 +58,9 @@ export function CharacterCardGm({ character, eligiblePlayers }: CharacterCardGmP
   const [imgError, setImgError] = useState(false);
   const [sheetImgError, setSheetImgError] = useState(false);
   const [isLeveling, startTransition] = useTransition();
+  const [epochOpen, setEpochOpen] = useState(false);
+  const [epochDraft, setEpochDraft] = useState(String(character.time_offset_hours ?? 0));
+  const [epochSaving, setEpochSaving] = useState(false);
   const imageSrc = imgError ? PLACEHOLDER_AVATAR : character.image_url ?? PLACEHOLDER_AVATAR;
   const sheetImageSrc = sheetImgError
     ? PLACEHOLDER_AVATAR
@@ -70,6 +80,7 @@ export function CharacterCardGm({ character, eligiblePlayers }: CharacterCardGmP
   const classLabel = character.character_class?.trim() || "—";
   const hpLabel = character.hit_points != null ? String(character.hit_points) : "—";
   const acLabel = character.armor_class != null ? String(character.armor_class) : "—";
+  const epochHours = character.time_offset_hours ?? 0;
 
   const backgroundPreview = character.background?.trim() ?? "";
   const backgroundForSheet = character.background?.trim()
@@ -106,6 +117,27 @@ export function CharacterCardGm({ character, eligiblePlayers }: CharacterCardGmP
       }
     } finally {
       setDeleting(false);
+    }
+  }
+
+  async function onEpochSync() {
+    const n = parseInt(epochDraft, 10);
+    if (Number.isNaN(n) || n < 0) {
+      toast.error("Inserisci un numero di ore valido (≥ 0).");
+      return;
+    }
+    setEpochSaving(true);
+    try {
+      const result = await forceCharacterTimeSync(character.id, n);
+      if (result.success) {
+        toast.success(result.message);
+        setEpochOpen(false);
+        router.refresh();
+      } else {
+        toast.error(result.error);
+      }
+    } finally {
+      setEpochSaving(false);
     }
   }
 
@@ -156,6 +188,51 @@ export function CharacterCardGm({ character, eligiblePlayers }: CharacterCardGmP
           >
             <Pencil className="h-4 w-4" />
           </Button>
+          <Popover
+            open={epochOpen}
+            onOpenChange={(o) => {
+              setEpochOpen(o);
+              if (o) setEpochDraft(String(character.time_offset_hours ?? 0));
+            }}
+          >
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-amber-400/90 hover:bg-amber-500/15"
+                title="Epoch: ore vissute (sincronizza)"
+                type="button"
+              >
+                <Clock className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-72 border-barber-gold/30 bg-barber-dark text-barber-paper"
+              align="end"
+            >
+              <p className="mb-2 text-xs font-medium text-barber-gold">Timeline personaggio</p>
+              <p className="mb-3 text-sm text-barber-paper/80">
+                Ore attuali: <span className="font-semibold tabular-nums text-barber-paper">{epochHours}</span>
+              </p>
+              <label className="mb-1 block text-xs text-barber-paper/70">Nuovo valore (sovrascrive)</label>
+              <Input
+                type="number"
+                min={0}
+                value={epochDraft}
+                onChange={(e) => setEpochDraft(e.target.value)}
+                className="mb-3 border-barber-gold/30 bg-barber-dark/80 text-barber-paper"
+              />
+              <Button
+                type="button"
+                size="sm"
+                className="w-full bg-amber-600 text-white hover:bg-amber-500"
+                disabled={epochSaving}
+                onClick={() => void onEpochSync()}
+              >
+                {epochSaving ? "Salvataggio…" : "Sincronizza tempo"}
+              </Button>
+            </PopoverContent>
+          </Popover>
         </div>
 
         <CardContent className="space-y-3 p-3 pt-10">
@@ -189,6 +266,10 @@ export function CharacterCardGm({ character, eligiblePlayers }: CharacterCardGmP
                 <div className="flex justify-between gap-1">
                   <dt className="text-muted-foreground">Lv</dt>
                   <dd className="font-medium tabular-nums text-barber-paper">{storedLevel}</dd>
+                </div>
+                <div className="col-span-2 flex justify-between gap-1 border-t border-barber-gold/10 pt-0.5">
+                  <dt className="text-muted-foreground">Ore (epoch)</dt>
+                  <dd className="font-medium tabular-nums text-amber-200/90">{epochHours}</dd>
                 </div>
               </dl>
               <p className="mt-1 text-[10px] text-barber-paper/55 tabular-nums">{xpLabel}</p>
