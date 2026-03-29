@@ -614,3 +614,41 @@ export async function forceCharacterTimeSync(
   revalidatePath("/dashboard");
   return { success: true, message: "Timeline del personaggio aggiornata." };
 }
+
+/**
+ * GM/Admin: aggiorna la posizione sulla griglia mondo (West Marches / mappa GM).
+ */
+export async function updateCharacterGridPositionAction(
+  campaignId: string,
+  characterId: string,
+  gridX: number,
+  gridY: number
+): Promise<CharResult<void>> {
+  const ctx = await getCurrentUserAndRole();
+  if (!ctx) return { success: false, error: "Non autenticato." };
+  if (!ctx.isGmOrAdmin) {
+    return { success: false, error: "Solo il Master può spostare i personaggi sulla mappa." };
+  }
+
+  const supabase = ctx.supabase;
+  const posX = Math.trunc(gridX);
+  const posY = Math.trunc(gridY);
+
+  const { error } = await supabase
+    .from("campaign_characters")
+    .update({
+      pos_x_grid: posX,
+      pos_y_grid: posY,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", characterId)
+    .eq("campaign_id", campaignId);
+
+  if (error) {
+    console.error("[updateCharacterGridPositionAction]", error);
+    return { success: false, error: error.message ?? "Errore nell'aggiornamento della posizione." };
+  }
+
+  revalidatePath(`/campaigns/${campaignId}`);
+  return { success: true };
+}

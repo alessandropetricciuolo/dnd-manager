@@ -282,6 +282,19 @@ export interface Database {
         Insert: Omit<Database["public"]["Tables"]["maps"]["Row"], "created_at" | "updated_at">;
         Update: Partial<Database["public"]["Tables"]["maps"]["Insert"]>;
       };
+      portals: {
+        Row: {
+          id: string;
+          campaign_id: string;
+          name: string;
+          pos_x_grid: number;
+          pos_y_grid: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database["public"]["Tables"]["portals"]["Row"], "created_at" | "updated_at">;
+        Update: Partial<Database["public"]["Tables"]["portals"]["Insert"]>;
+      };
       campaign_characters: {
         Row: {
           id: string;
@@ -297,6 +310,8 @@ export interface Database {
           background: string | null;
           assigned_to: string | null;
           time_offset_hours: number;
+          pos_x_grid: number;
+          pos_y_grid: number;
           created_at: string;
           updated_at: string;
         };

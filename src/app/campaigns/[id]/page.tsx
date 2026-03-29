@@ -24,7 +24,9 @@ import { GmFiles } from "@/components/gm/gm-files";
 import { CampaignPrimerEditor } from "@/components/gm/campaign-primer-editor";
 import { GmQuickActions } from "@/components/gm/gm-quick-actions";
 import Link from "next/link";
-import { Palette } from "lucide-react";
+import { Map as MapIcon, Palette } from "lucide-react";
+import { InteractiveMap, type MapCharacterPin } from "@/components/map/InteractiveMap";
+import type { Portal } from "@/lib/nav/navigation-math";
 import { CharactersSection } from "@/components/characters/characters-section";
 import { getCampaignCharacters, getCampaignEligiblePlayers } from "@/app/campaigns/character-actions";
 import { getPreClosedSessionForCampaign, type PreClosedSessionRow } from "@/app/campaigns/gm-actions";
@@ -199,6 +201,38 @@ export default async function CampaignPage({ params }: PageProps) {
     }));
   }
   const isViewerLockedOut = !isGmOrAdmin && campaign.type === "long" && !isCampaignMember;
+
+  /** Griglia mondo / portali: solo GM e Admin (modello gilda: qualsiasi GM vede e modifica). */
+  let worldOperationalMapUrl: string | null = null;
+  let operationalPortals: Portal[] = [];
+  let operationalMapCharacters: MapCharacterPin[] = [];
+  if (isGmOrAdmin) {
+    const [wmRes, prRes, chRes] = await Promise.all([
+      supabase
+        .from("maps")
+        .select("image_url")
+        .eq("campaign_id", id)
+        .eq("map_type", "world")
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+      supabase.from("portals").select("*").eq("campaign_id", id),
+      supabase
+        .from("campaign_characters")
+        .select("id, name, pos_x_grid, pos_y_grid")
+        .eq("campaign_id", id)
+        .order("name"),
+    ]);
+    worldOperationalMapUrl = wmRes.data?.image_url?.trim() || null;
+    operationalPortals = (prRes.data ?? []) as Portal[];
+    operationalMapCharacters =
+      chRes.data?.map((r) => ({
+        id: r.id,
+        name: r.name,
+        pos_x_grid: r.pos_x_grid,
+        pos_y_grid: r.pos_y_grid,
+      })) ?? [];
+  }
 
   const campaignTypeLabels: Record<string, string> = {
     oneshot: "Oneshot",
@@ -521,6 +555,38 @@ export default async function CampaignPage({ params }: PageProps) {
                     />
                   )}
                 </div>
+                {isGmOrAdmin && (
+                  <section className="mb-10 rounded-xl border border-barber-gold/30 bg-barber-dark/90 p-4 shadow-inner md:p-6">
+                    <div className="mb-4 flex flex-wrap items-center gap-2 border-b border-barber-gold/20 pb-3">
+                      <MapIcon className="h-5 w-5 shrink-0 text-barber-gold" aria-hidden />
+                      <h3 className="text-base font-semibold text-barber-paper md:text-lg">
+                        Mappa operativa
+                      </h3>
+                      <span className="text-xs text-barber-paper/55">
+                        Griglia mondo · portali · posizioni PG · solo GM / Admin
+                      </span>
+                    </div>
+                    {worldOperationalMapUrl ? (
+                      <InteractiveMap
+                        campaignId={campaign.id}
+                        imageUrl={worldOperationalMapUrl}
+                        portals={operationalPortals}
+                        characters={operationalMapCharacters}
+                      />
+                    ) : (
+                      <div className="rounded-lg border border-dashed border-barber-gold/35 bg-barber-dark/50 px-5 py-8 text-center text-sm text-barber-paper/70">
+                        <p>
+                          Carica una mappa con tipo{" "}
+                          <strong className="text-barber-gold">Mondo</strong> per usare la griglia,
+                          registrare i portali e spostare i personaggi.
+                        </p>
+                        <p className="mt-2 text-xs text-barber-paper/50">
+                          Usa il pulsante &quot;Carica mappa&quot; qui sopra e scegli categoria Mondo.
+                        </p>
+                      </div>
+                    )}
+                  </section>
+                )}
                 <MapGallery
                   campaignId={campaign.id}
                   campaignType={campaign.type ?? null}
