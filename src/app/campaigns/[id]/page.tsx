@@ -27,6 +27,7 @@ import Link from "next/link";
 import { Map as MapIcon, Palette } from "lucide-react";
 import { InteractiveMap, type MapCharacterPin } from "@/components/map/InteractiveMap";
 import type { Portal } from "@/lib/nav/navigation-math";
+import { MissionBoardSection } from "@/components/missions/mission-board-section";
 import { CharactersSection } from "@/components/characters/characters-section";
 import { getCampaignCharacters, getCampaignEligiblePlayers } from "@/app/campaigns/character-actions";
 import { getPreClosedSessionForCampaign, type PreClosedSessionRow } from "@/app/campaigns/gm-actions";
@@ -201,6 +202,8 @@ export default async function CampaignPage({ params }: PageProps) {
     }));
   }
   const isViewerLockedOut = !isGmOrAdmin && campaign.type === "long" && !isCampaignMember;
+  const isLongCampaign = campaign.type === "long";
+  const showMissionsTab = isLongCampaign && (isGmOrAdmin || isCampaignMember);
 
   /** Griglia mondo / portali: solo GM e Admin (modello gilda: qualsiasi GM vede e modifica). */
   let worldOperationalMapUrl: string | null = null;
@@ -596,6 +599,14 @@ export default async function CampaignPage({ params }: PageProps) {
               </>
             ) : null
           }
+          missionsContent={
+            showMissionsTab ? (
+              <MissionBoardSection
+                campaignId={campaign.id}
+                isGmOrAdmin={isGmOrAdmin}
+              />
+            ) : null
+          }
           pgContent={
             <CharactersSection
               campaignId={campaign.id}
@@ -648,6 +659,7 @@ export default async function CampaignPage({ params }: PageProps) {
               </div>
             ) : undefined
           }
+          showMissionsTab={showMissionsTab}
         />
               )}
             </div>

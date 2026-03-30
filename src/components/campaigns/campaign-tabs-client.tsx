@@ -9,13 +9,14 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { BookOpen, CalendarDays, Map, Lock, ScrollText, User, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const VALID_TABS = ["sessioni", "wiki", "mappe", "pg", "gm"] as const;
+const VALID_TABS = ["sessioni", "wiki", "mappe", "missioni", "pg", "gm"] as const;
 type TabValue = (typeof VALID_TABS)[number];
 
 const TAB_LABELS: Record<TabValue, string> = {
   sessioni: "Sessioni",
   wiki: "Wiki",
   mappe: "Mappe",
+  missioni: "Missioni",
   pg: "PG",
   gm: "Solo GM",
 };
@@ -37,10 +38,12 @@ type CampaignTabsClientProps = {
   sessioniContent: React.ReactNode;
   wikiContent: React.ReactNode;
   mappeContent: React.ReactNode;
+  missionsContent: React.ReactNode;
   /** Tab PG: Personaggi (GM) / Il Mio Personaggio (Player) */
   pgContent: React.ReactNode;
   /** Area GM: passato solo se user è GM o Admin; tab e contenuto visibili solo in quel caso */
   gmAreaContent?: React.ReactNode | null;
+  showMissionsTab: boolean;
 };
 
 export function CampaignTabsClient({
@@ -52,8 +55,10 @@ export function CampaignTabsClient({
   sessioniContent,
   wikiContent,
   mappeContent,
+  missionsContent,
   pgContent,
   gmAreaContent,
+  showMissionsTab,
 }: CampaignTabsClientProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -67,6 +72,7 @@ export function CampaignTabsClient({
       ? (tabParam as TabValue)
       : defaultTab;
   if (tab === "gm" && !showGmTab) tab = defaultTab;
+  if (tab === "missioni" && !showMissionsTab) tab = defaultTab;
 
   const effectiveTab =
     (tab === "wiki" || tab === "mappe") && !hasPlayedCampaign
@@ -105,7 +111,9 @@ export function CampaignTabsClient({
             >
               <p className="mb-4 px-1 text-sm font-medium text-barber-paper/70">Sezione campagna</p>
               <nav className="flex flex-col gap-1">
-                {(["sessioni", "wiki", "mappe", "pg"] as const).map((value) => {
+                {(["sessioni", "wiki", "mappe", "missioni", "pg"] as const)
+                  .filter((v) => v !== "missioni" || showMissionsTab)
+                  .map((value) => {
                   const disabled = (value === "wiki" || value === "mappe") && !hasPlayedCampaign;
                   const isActive = effectiveTab === value;
                   return (
@@ -190,6 +198,15 @@ export function CampaignTabsClient({
             )}
             Mappe
           </TabsTrigger>
+          {showMissionsTab && (
+            <TabsTrigger
+              value="missioni"
+              className="data-[state=active]:bg-barber-gold/20 data-[state=active]:text-barber-gold"
+            >
+              <ScrollText className="mr-2 h-4 w-4" />
+              Missioni
+            </TabsTrigger>
+          )}
           <TabsTrigger
             value="pg"
             className="data-[state=active]:bg-barber-gold/20 data-[state=active]:text-barber-gold"
@@ -220,6 +237,11 @@ export function CampaignTabsClient({
       <TabsContent value="mappe" className="mt-0">
         {mappeContent}
       </TabsContent>
+      {showMissionsTab && (
+        <TabsContent value="missioni" className="mt-0">
+          {missionsContent}
+        </TabsContent>
+      )}
       <TabsContent value="pg" className="mt-0">
         {pgContent}
       </TabsContent>
