@@ -249,17 +249,35 @@ export function MissionBoard({
   }
 
   return (
-    <div className="relative overflow-hidden rounded-xl border border-amber-600/30 bg-zinc-950/65 p-4 font-serif shadow-[0_0_0_1px_rgba(217,119,6,0.18)] md:p-6">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(56,189,248,0.22),transparent_55%),radial-gradient(ellipse_at_bottom,_rgba(168,85,247,0.20),transparent_60%),linear-gradient(180deg,rgba(0,0,0,0.0),rgba(0,0,0,0.55))] opacity-100" />
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-xl border p-4 font-serif md:p-6",
+        "border-amber-600/25 bg-[linear-gradient(180deg,rgba(28,25,23,0.2),rgba(0,0,0,0.35))]",
+        "shadow-[0_0_0_1px_rgba(217,119,6,0.16),0_0_40px_rgba(56,189,248,0.06)]"
+      )}
+    >
+      {/* "Muro di pietra" (finto) */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-90"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 2px, transparent 2px, transparent 10px), repeating-linear-gradient(-45deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 9px), linear-gradient(180deg, rgba(0,0,0,0.10), rgba(0,0,0,0.55))",
+        }}
+      />
+
+      {/* Cristallo: proiezione luce */}
+      <div className="pointer-events-none absolute inset-0 opacity-100">
+        <div className="absolute -left-24 -top-12 h-72 w-72 rounded-full bg-[radial-gradient(circle_at_center,rgba(56,189,248,0.35),transparent_60%)] blur-sm" />
+        <div className="absolute left-1/2 top-[-30px] h-64 w-64 -translate-x-1/2 rounded-full bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.35),transparent_60%)] blur-sm" />
+        <div className="absolute inset-0 bg-[linear-gradient(115deg,rgba(56,189,248,0.10),transparent_45%),linear-gradient(250deg,rgba(168,85,247,0.12),transparent_40%)] mix-blend-screen" />
+      </div>
+
       <div className="relative">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold tracking-widest text-amber-200 md:text-xl">
-              TABELLA DELLE MISSIONI
+            <h2 className="text-lg font-semibold tracking-widest text-amber-200 drop-shadow-[0_0_18px_rgba(56,189,248,0.25)] md:text-xl">
+              Missioni
             </h2>
-            <p className="text-xs text-amber-100/70">
-              Disponibili · Classifica delle Gilde
-            </p>
           </div>
           {isGmOrAdmin && (
             <div className="flex gap-2">
@@ -272,7 +290,7 @@ export function MissionBoard({
         </div>
 
         <Tabs defaultValue="missions">
-          <TabsList className="mb-3 bg-zinc-950/40 border border-amber-600/20">
+          <TabsList className="mb-3 bg-zinc-950/30 border border-amber-600/25 backdrop-blur supports-[backdrop-filter]:bg-zinc-950/40">
             <TabsTrigger value="missions">Missioni</TabsTrigger>
             <TabsTrigger value="ranking">Classifica</TabsTrigger>
           </TabsList>
