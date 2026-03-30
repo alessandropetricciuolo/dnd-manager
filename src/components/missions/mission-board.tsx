@@ -252,6 +252,7 @@ export function MissionBoard({
     <div
       className={cn(
         "relative overflow-hidden rounded-xl border p-4 font-serif md:p-6",
+        "font-[var(--font-missions)]",
         "border-amber-600/25 bg-[linear-gradient(180deg,rgba(28,25,23,0.2),rgba(0,0,0,0.35))]",
         "shadow-[0_0_0_1px_rgba(217,119,6,0.16),0_0_40px_rgba(56,189,248,0.06)]"
       )}
