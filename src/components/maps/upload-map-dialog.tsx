@@ -208,7 +208,7 @@ export function UploadMapDialog({
           Carica mappa
         </Button>
       </DialogTrigger>
-      <DialogContent className="border-barber-gold/40 bg-barber-dark text-barber-paper">
+      <DialogContent className="flex max-h-[90vh] w-[min(95vw,700px)] flex-col overflow-hidden border-barber-gold/40 bg-barber-dark text-barber-paper">
         <DialogHeader>
           <DialogTitle>Carica mappa</DialogTitle>
           <DialogDescription className="text-barber-paper/70">
@@ -221,7 +221,8 @@ export function UploadMapDialog({
             )}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="mt-2 flex min-h-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
           <div className="space-y-2">
             <Label htmlFor="map-name">Nome mappa</Label>
             <Input
@@ -409,8 +410,9 @@ export function UploadMapDialog({
               className="bg-barber-dark border-barber-gold/30 text-barber-paper placeholder:text-barber-paper/50"
             />
           </div>
+          </div>
 
-          <DialogFooter>
+          <DialogFooter className="mt-4 shrink-0 border-t border-barber-gold/20 pt-3">
             <Button
               type="button"
               variant="outline"
