@@ -23,7 +23,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { EditCharacterDialog } from "./edit-character-dialog";
 import {
   assignCharacter,
@@ -145,7 +144,7 @@ export function CharacterCardGm({ character, eligiblePlayers }: CharacterCardGmP
     <>
       <Card className="relative overflow-hidden border-barber-gold/40 bg-barber-dark/80">
         {/* Azioni compatte in alto a destra */}
-        <div className="absolute right-2 top-2 z-10 flex items-center gap-0.5">
+        <div className="absolute right-2 top-2 z-[1] flex items-center gap-0.5">
           {character.sheet_url && (
             <Button
               variant="ghost"
@@ -368,7 +367,7 @@ export function CharacterCardGm({ character, eligiblePlayers }: CharacterCardGmP
       <Sheet open={detailsOpen} onOpenChange={setDetailsOpen}>
         <SheetContent
           side="right"
-          className="flex w-full max-w-lg flex-col border-barber-gold/40 bg-barber-dark text-barber-paper sm:max-w-lg"
+          className="flex h-full max-h-[100dvh] w-full max-w-lg flex-col overflow-hidden border-barber-gold/40 bg-barber-dark text-barber-paper sm:max-w-lg"
         >
           <SheetHeader className="shrink-0 space-y-1 text-left">
             <SheetTitle className="text-barber-paper">Scheda di lettura — {character.name}</SheetTitle>
@@ -423,21 +422,19 @@ export function CharacterCardGm({ character, eligiblePlayers }: CharacterCardGmP
             </div>
           </div>
 
-          <div className="mt-4 min-h-0 flex-1">
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-barber-paper/60">
+          <div className="mt-4 flex min-h-0 flex-1 flex-col pb-[env(safe-area-inset-bottom)]">
+            <p className="mb-2 shrink-0 text-xs font-medium uppercase tracking-wide text-barber-paper/60">
               Background / Lore
             </p>
-            <ScrollArea className="h-[min(50vh,420px)] rounded-md border border-barber-gold/25 pr-3">
-              <div className="p-3 pr-1">
-                {backgroundForSheet ? (
-                  <div className="whitespace-pre-wrap break-words text-sm leading-relaxed text-barber-paper/90">
-                    {backgroundForSheet}
-                  </div>
-                ) : (
-                  <p className="text-sm italic text-muted-foreground">Nessun background inserito.</p>
-                )}
-              </div>
-            </ScrollArea>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-md border border-barber-gold/25 p-3 [-webkit-overflow-scrolling:touch]">
+              {backgroundForSheet ? (
+                <div className="whitespace-pre-wrap break-words text-sm leading-relaxed text-barber-paper/90">
+                  {backgroundForSheet}
+                </div>
+              ) : (
+                <p className="text-sm italic text-muted-foreground">Nessun background inserito.</p>
+              )}
+            </div>
           </div>
         </SheetContent>
       </Sheet>

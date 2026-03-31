@@ -92,7 +92,7 @@ export function CampaignTabsClient({
       onValueChange={setTab}
       className="min-w-0 w-full max-w-full"
     >
-      <div className="sticky top-0 z-10 -mt-4 mb-4 min-w-0 max-w-full bg-barber-dark/95 px-4 pt-4 backdrop-blur-md supports-[backdrop-filter]:bg-barber-dark/80 md:-mx-4 md:px-4 lg:-mx-6 lg:-mt-6 lg:px-6 lg:pt-6">
+      <div className="sticky top-0 z-30 -mt-4 mb-4 min-w-0 max-w-full bg-barber-dark/95 px-4 pt-4 backdrop-blur-md supports-[backdrop-filter]:bg-barber-dark/80 md:-mx-4 md:px-4 lg:-mx-6 lg:-mt-6 lg:px-6 lg:pt-6 isolate">
         {/* Mobile: selettore tab a tendina (evita overflow/sovrapposizioni) */}
         <div className="md:hidden w-full min-w-0">
           <Sheet open={tabSheetOpen} onOpenChange={setTabSheetOpen}>
