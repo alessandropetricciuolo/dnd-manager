@@ -6,6 +6,9 @@ import { createSupabaseServerClient } from "@/utils/supabase/server";
 export type DiscoverPortalResult =
   | { success: true }
   | { success: false; message: string };
+export type DeletePortalResult =
+  | { success: true }
+  | { success: false; message: string };
 
 async function isGmOrAdminByRole(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>
@@ -72,6 +75,42 @@ export async function discoverPortalAction(
       pos_x_grid: posX,
       pos_y_grid: posY,
     });
+
+    if (error) {
+      return { success: false, message: error.message };
+    }
+
+    revalidatePath(`/campaigns/${campaignId}`);
+    return { success: true };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Errore sconosciuto.";
+    return { success: false, message: msg };
+  }
+}
+
+/**
+ * Elimina un portale esistente dalla campagna.
+ */
+export async function deletePortalAction(
+  campaignId: string,
+  portalId: string
+): Promise<DeletePortalResult> {
+  if (!campaignId || !portalId) {
+    return { success: false, message: "Dati portale non validi." };
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    const allowed = await canManageCampaign(supabase, campaignId);
+    if (!allowed) {
+      return { success: false, message: "Non autorizzato." };
+    }
+
+    const { error } = await supabase
+      .from("portals")
+      .delete()
+      .eq("id", portalId)
+      .eq("campaign_id", campaignId);
 
     if (error) {
       return { success: false, message: error.message };

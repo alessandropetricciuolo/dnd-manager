@@ -652,3 +652,45 @@ export async function updateCharacterGridPositionAction(
   revalidatePath(`/campaigns/${campaignId}`);
   return { success: true };
 }
+
+/**
+ * GM/Admin: aggiorna la posizione sulla griglia per piu personaggi (es. intero gruppo).
+ */
+export async function updateCharactersGridPositionAction(
+  campaignId: string,
+  characterIds: string[],
+  gridX: number,
+  gridY: number
+): Promise<CharResult<void>> {
+  const ctx = await getCurrentUserAndRole();
+  if (!ctx) return { success: false, error: "Non autenticato." };
+  if (!ctx.isGmOrAdmin) {
+    return { success: false, error: "Solo il Master può spostare i personaggi sulla mappa." };
+  }
+  const ids = [...new Set(characterIds.filter(Boolean))];
+  if (ids.length === 0) {
+    return { success: false, error: "Seleziona almeno un personaggio." };
+  }
+
+  const supabase = ctx.supabase;
+  const posX = Math.trunc(gridX);
+  const posY = Math.trunc(gridY);
+
+  const { error } = await supabase
+    .from("campaign_characters")
+    .update({
+      pos_x_grid: posX,
+      pos_y_grid: posY,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("campaign_id", campaignId)
+    .in("id", ids);
+
+  if (error) {
+    console.error("[updateCharactersGridPositionAction]", error);
+    return { success: false, error: error.message ?? "Errore nell'aggiornamento delle posizioni." };
+  }
+
+  revalidatePath(`/campaigns/${campaignId}`);
+  return { success: true };
+}

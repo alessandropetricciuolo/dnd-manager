@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Lock, MapPin } from "lucide-react";
+import { Lock, MapPin, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { discoverPortalAction } from "@/lib/actions/portal-actions";
-import { updateCharacterGridPositionAction } from "@/app/campaigns/character-actions";
+import { deletePortalAction } from "@/lib/actions/portal-actions";
+import {
+  updateCharacterGridPositionAction,
+  updateCharactersGridPositionAction,
+} from "@/app/campaigns/character-actions";
 import {
   computeNearestPortalLocal,
   HOURS_PER_GRID_SQUARE,
@@ -39,15 +43,24 @@ export type MapCharacterPin = {
   name: string;
   pos_x_grid: number;
   pos_y_grid: number;
+  assigned_to?: string | null;
 };
 
 type MapMode = "portal" | "move";
+type MoveTargetType = "character" | "party";
+
+type MapPartyOption = {
+  id: string;
+  label: string;
+  memberIds: string[];
+};
 
 type InteractiveMapProps = {
   campaignId: string;
   imageUrl: string;
   portals: Portal[];
   characters: MapCharacterPin[];
+  parties?: MapPartyOption[];
 };
 
 export function InteractiveMap({
@@ -55,16 +68,21 @@ export function InteractiveMap({
   imageUrl,
   portals,
   characters,
+  parties = [],
 }: InteractiveMapProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [mode, setMode] = useState<MapMode>("portal");
+  const [moveTargetType, setMoveTargetType] = useState<MoveTargetType>("character");
   const [selectedCharacterId, setSelectedCharacterId] = useState<string>("");
+  const [selectedPartyId, setSelectedPartyId] = useState<string>("");
   const [portalDialogOpen, setPortalDialogOpen] = useState(false);
   const [pendingGrid, setPendingGrid] = useState<{ x: number; y: number } | null>(
     null
   );
   const [portalName, setPortalName] = useState("");
+  const imageRef = useRef<HTMLImageElement | null>(null);
+  const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null);
 
   const selectedCharacter = useMemo(
     () => characters.find((c) => c.id === selectedCharacterId) ?? null,
@@ -82,11 +100,42 @@ export function InteractiveMap({
     );
   }, [portals, selectedCharacter]);
 
+  const selectedParty = useMemo(
+    () => parties.find((p) => p.id === selectedPartyId) ?? null,
+    [parties, selectedPartyId]
+  );
+
+  const selectedPartyCharacterIds = useMemo(() => {
+    if (!selectedParty) return [];
+    const memberSet = new Set(selectedParty.memberIds);
+    return characters
+      .filter((c) => c.assigned_to && memberSet.has(c.assigned_to))
+      .map((c) => c.id);
+  }, [characters, selectedParty]);
+
+  function getGridFromClick(e: React.MouseEvent<HTMLImageElement>) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const ox = e.clientX - rect.left;
+    const oy = e.clientY - rect.top;
+    const displayedW = rect.width;
+    const displayedH = rect.height;
+
+    if (displayedW <= 0 || displayedH <= 0) return null;
+    const natW = naturalSize?.w ?? displayedW;
+    const natH = naturalSize?.h ?? displayedH;
+    const sx = natW / displayedW;
+    const sy = natH / displayedH;
+
+    // Salviamo coordinate in "source pixels / 50" cosi restano coerenti a qualsiasi viewport.
+    const gridX = Math.round((ox * sx) / PIXELS_PER_SQUARE);
+    const gridY = Math.round((oy * sy) / PIXELS_PER_SQUARE);
+    return { gridX, gridY };
+  }
+
   function handleImageClick(e: React.MouseEvent<HTMLImageElement>) {
-    const ox = e.nativeEvent.offsetX;
-    const oy = e.nativeEvent.offsetY;
-    const gridX = Math.round(ox / PIXELS_PER_SQUARE);
-    const gridY = Math.round(oy / PIXELS_PER_SQUARE);
+    const coords = getGridFromClick(e);
+    if (!coords) return;
+    const { gridX, gridY } = coords;
 
     if (mode === "portal") {
       setPendingGrid({ x: gridX, y: gridY });
@@ -95,23 +144,40 @@ export function InteractiveMap({
       return;
     }
 
-    if (!selectedCharacterId) {
-      toast.error("Seleziona un personaggio da spostare.");
-      return;
-    }
-
     startTransition(async () => {
-      const res = await updateCharacterGridPositionAction(
-        campaignId,
-        selectedCharacterId,
-        gridX,
-        gridY
-      );
+      let res: { success: boolean; error?: string };
+      if (moveTargetType === "party") {
+        if (!selectedPartyId) {
+          toast.error("Seleziona un gruppo da spostare.");
+          return;
+        }
+        if (selectedPartyCharacterIds.length === 0) {
+          toast.error("Il gruppo selezionato non ha personaggi assegnati.");
+          return;
+        }
+        res = await updateCharactersGridPositionAction(
+          campaignId,
+          selectedPartyCharacterIds,
+          gridX,
+          gridY
+        );
+      } else {
+        if (!selectedCharacterId) {
+          toast.error("Seleziona un personaggio da spostare.");
+          return;
+        }
+        res = await updateCharacterGridPositionAction(
+          campaignId,
+          selectedCharacterId,
+          gridX,
+          gridY
+        );
+      }
       if (!res.success) {
-        toast.error(res.error);
+        toast.error(res.error ?? "Errore aggiornamento posizione.");
         return;
       }
-      toast.success("Posizione aggiornata.");
+      toast.success(moveTargetType === "party" ? "Posizione gruppo aggiornata." : "Posizione aggiornata.");
       router.refresh();
     });
   }
@@ -137,6 +203,19 @@ export function InteractiveMap({
       toast.success("Portale registrato.");
       setPortalDialogOpen(false);
       setPendingGrid(null);
+      router.refresh();
+    });
+  }
+
+  function deletePortal(portalId: string) {
+    if (!window.confirm("Vuoi rimuovere questo portale?")) return;
+    startTransition(async () => {
+      const res = await deletePortalAction(campaignId, portalId);
+      if (!res.success) {
+        toast.error(res.message ?? "Errore rimozione portale.");
+        return;
+      }
+      toast.success("Portale rimosso.");
       router.refresh();
     });
   }
@@ -198,6 +277,58 @@ export function InteractiveMap({
           </Select>
         </div>
 
+        {mode === "move" && (
+          <>
+            <div className="flex min-w-[180px] flex-col gap-2">
+              <Label htmlFor="move-target" className="text-zinc-400">
+                Tipo spostamento
+              </Label>
+              <Select
+                value={moveTargetType}
+                onValueChange={(v) => setMoveTargetType(v as MoveTargetType)}
+              >
+                <SelectTrigger id="move-target" className="border-amber-600/30 bg-zinc-950 text-zinc-200">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="border-amber-600/20 bg-zinc-900">
+                  <SelectItem value="character" className="text-zinc-200">
+                    Singolo personaggio
+                  </SelectItem>
+                  <SelectItem value="party" className="text-zinc-200">
+                    Intero gruppo
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {moveTargetType === "party" && (
+              <div className="flex min-w-[220px] flex-1 flex-col gap-2">
+                <Label htmlFor="map-party" className="text-zinc-400">
+                  Gruppo
+                </Label>
+                <Select
+                  value={selectedPartyId || "none"}
+                  onValueChange={(v) => setSelectedPartyId(v === "none" ? "" : v)}
+                >
+                  <SelectTrigger id="map-party" className="border-amber-600/30 bg-zinc-950 text-zinc-200">
+                    <SelectValue placeholder="— Nessuno —" />
+                  </SelectTrigger>
+                  <SelectContent className="border-amber-600/20 bg-zinc-900">
+                    <SelectItem value="none" className="text-zinc-400">
+                      — Nessuno —
+                    </SelectItem>
+                    {parties.map((p) => (
+                      <SelectItem key={p.id} value={p.id} className="text-zinc-200">
+                        {p.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </>
+        )}
+
         <p className="max-w-md text-xs text-zinc-500">
           {mode === "portal"
             ? "Clic sulla mappa per fissare un portale fast travel (1 quadretto = 50 px)."
@@ -209,25 +340,49 @@ export function InteractiveMap({
         <div className="relative inline-block max-w-full">
           {/* eslint-disable-next-line @next/next/no-img-element -- offsetX/offsetY devono essere nativi sull'elemento cliccato */}
           <img
+            ref={imageRef}
             src={imageUrl}
             alt="Mappa campagna"
             className="block max-h-[70vh] w-auto max-w-full cursor-crosshair select-none"
             draggable={false}
+            onLoad={(e) => {
+              const t = e.currentTarget;
+              if (t.naturalWidth > 0 && t.naturalHeight > 0) {
+                setNaturalSize({ w: t.naturalWidth, h: t.naturalHeight });
+              }
+            }}
             onClick={handleImageClick}
           />
 
-          <div className="pointer-events-none absolute inset-0">
+          <div className="absolute inset-0">
           {portals.map((p) => (
             <div
               key={p.id}
-              className="absolute flex h-4 w-4 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-sky-300 bg-sky-600 shadow-md shadow-sky-900/50"
+              className="group absolute flex h-4 w-4 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-sky-300 bg-sky-600 shadow-md shadow-sky-900/50"
               style={{
-                left: p.pos_x_grid * PIXELS_PER_SQUARE,
-                top: p.pos_y_grid * PIXELS_PER_SQUARE,
+                left: naturalSize
+                  ? `${((p.pos_x_grid * PIXELS_PER_SQUARE) / naturalSize.w) * 100}%`
+                  : p.pos_x_grid * PIXELS_PER_SQUARE,
+                top: naturalSize
+                  ? `${((p.pos_y_grid * PIXELS_PER_SQUARE) / naturalSize.h) * 100}%`
+                  : p.pos_y_grid * PIXELS_PER_SQUARE,
               }}
               title={p.name}
             >
               <Lock className="h-2 w-2 text-white" aria-hidden />
+              {mode === "portal" && (
+                <button
+                  type="button"
+                  className="pointer-events-auto absolute -right-3 -top-3 hidden h-5 w-5 items-center justify-center rounded-full border border-red-300/70 bg-red-600/90 text-white group-hover:flex"
+                  title="Rimuovi portale"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deletePortal(p.id);
+                  }}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              )}
             </div>
           ))}
           {characters.map((c) => (
@@ -238,8 +393,12 @@ export function InteractiveMap({
                 selectedCharacterId === c.id && "ring-2 ring-amber-400 ring-offset-2 ring-offset-zinc-950"
               )}
               style={{
-                left: c.pos_x_grid * PIXELS_PER_SQUARE,
-                top: c.pos_y_grid * PIXELS_PER_SQUARE,
+                left: naturalSize
+                  ? `${((c.pos_x_grid * PIXELS_PER_SQUARE) / naturalSize.w) * 100}%`
+                  : c.pos_x_grid * PIXELS_PER_SQUARE,
+                top: naturalSize
+                  ? `${((c.pos_y_grid * PIXELS_PER_SQUARE) / naturalSize.h) * 100}%`
+                  : c.pos_y_grid * PIXELS_PER_SQUARE,
               }}
               title={c.name}
             >

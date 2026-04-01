@@ -222,7 +222,7 @@ export default async function CampaignPage({ params }: PageProps) {
       supabase.from("portals").select("*").eq("campaign_id", id),
       supabase
         .from("campaign_characters")
-        .select("id, name, pos_x_grid, pos_y_grid")
+        .select("id, name, pos_x_grid, pos_y_grid, assigned_to")
         .eq("campaign_id", id)
         .order("name"),
     ]);
@@ -234,6 +234,7 @@ export default async function CampaignPage({ params }: PageProps) {
         name: r.name,
         pos_x_grid: r.pos_x_grid,
         pos_y_grid: r.pos_y_grid,
+        assigned_to: r.assigned_to ?? null,
       })) ?? [];
   }
 
@@ -575,6 +576,7 @@ export default async function CampaignPage({ params }: PageProps) {
                         imageUrl={worldOperationalMapUrl}
                         portals={operationalPortals}
                         characters={operationalMapCharacters}
+                        parties={eligibleParties}
                       />
                     ) : (
                       <div className="rounded-lg border border-dashed border-barber-gold/35 bg-barber-dark/50 px-5 py-8 text-center text-sm text-barber-paper/70">
