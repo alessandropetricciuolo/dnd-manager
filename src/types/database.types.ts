@@ -295,6 +295,39 @@ export interface Database {
         Insert: Omit<Database["public"]["Tables"]["portals"]["Row"], "created_at" | "updated_at">;
         Update: Partial<Database["public"]["Tables"]["portals"]["Insert"]>;
       };
+      campaign_email_settings: {
+        Row: {
+          campaign_id: string;
+          join_enabled: boolean;
+          join_subject: string;
+          join_body_html: string;
+          updated_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database["public"]["Tables"]["campaign_email_settings"]["Row"], "created_at" | "updated_at"> & {
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["campaign_email_settings"]["Insert"]>;
+      };
+      campaign_bulk_email_templates: {
+        Row: {
+          id: string;
+          campaign_id: string;
+          subject: string;
+          body_html: string;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database["public"]["Tables"]["campaign_bulk_email_templates"]["Row"], "id" | "created_at" | "updated_at"> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["campaign_bulk_email_templates"]["Insert"]>;
+      };
       campaign_characters: {
         Row: {
           id: string;

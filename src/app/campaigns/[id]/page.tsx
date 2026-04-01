@@ -35,6 +35,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { CampaignMobileHeader } from "@/components/campaigns/campaign-mobile-header";
 import { CampaignAiArchitectPanel } from "@/components/campaigns/campaign-ai-architect-panel";
+import { CampaignEmailPanel } from "@/components/campaigns/campaign-email-panel";
 import {
   parseCampaignAiContextFromDb,
   type CampaignAiContext,
@@ -256,6 +257,29 @@ export default async function CampaignPage({ params }: PageProps) {
     } catch (e) {
       console.error("[campaigns/[id]] getPreClosedSessionForCampaign", e);
     }
+  }
+
+  let joinEmailSettings:
+    | { join_enabled: boolean; join_subject: string; join_body_html: string }
+    | null = null;
+  let bulkEmailTemplates: Array<{ id: string; subject: string; body_html: string; created_at: string }> = [];
+  if (isGmOrAdmin && campaign.type === "long") {
+    const [joinRes, bulkRes] = await Promise.all([
+      supabase
+        .from("campaign_email_settings")
+        .select("join_enabled, join_subject, join_body_html")
+        .eq("campaign_id", campaign.id)
+        .maybeSingle(),
+      supabase
+        .from("campaign_bulk_email_templates")
+        .select("id, subject, body_html, created_at")
+        .eq("campaign_id", campaign.id)
+        .order("created_at", { ascending: false }),
+    ]);
+    joinEmailSettings =
+      (joinRes.data as { join_enabled: boolean; join_subject: string; join_body_html: string } | null) ?? null;
+    bulkEmailTemplates =
+      (bulkRes.data as Array<{ id: string; subject: string; body_html: string; created_at: string }> | null) ?? [];
   }
 
   /** Tab iniziale: player con PG assegnato → PG, player senza PG o GM → Sessioni */
@@ -646,6 +670,18 @@ export default async function CampaignPage({ params }: PageProps) {
                     initialPlayerPrimer={campaign.player_primer ?? null}
                     initialTypography={campaign.primer_typography ?? undefined}
                   />
+                  {campaign.type === "long" && (
+                    <CampaignEmailPanel
+                      campaignId={campaign.id}
+                      initialJoinEnabled={joinEmailSettings?.join_enabled ?? true}
+                      initialJoinSubject={joinEmailSettings?.join_subject ?? "Benvenuto nella campagna!"}
+                      initialJoinBodyHtml={
+                        joinEmailSettings?.join_body_html ??
+                        "<h2>Benvenuto, avventuriero!</h2><p>La tua iscrizione alla campagna è stata completata con successo.</p>"
+                      }
+                      initialBulkTemplates={bulkEmailTemplates}
+                    />
+                  )}
                   <div className="rounded-lg border border-violet-600/30 bg-violet-950/30 p-4">
                     <h3 className="mb-2 text-sm font-medium text-violet-200">Mappa Concettuale</h3>
                     <p className="mb-3 text-xs text-violet-200/70">

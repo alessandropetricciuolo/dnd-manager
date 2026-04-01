@@ -71,6 +71,41 @@ export function wrapInTemplate(content: string): string {
   `.trim();
 }
 
+/** Template parchment/fantasy per campagne Long. */
+export function wrapInParchmentTemplate(content: string, title = "Dispaccio di Gilda"): string {
+  const logoHtml = `<a href="${SITE_URL}" style="color:#6b3f18;font-size:1.1rem;font-weight:700;text-decoration:none;">Barber &amp; Dragons</a>`;
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(title)}</title>
+</head>
+<body style="margin:0;padding:0;background:#221711;font-family:Georgia,'Times New Roman',serif;color:#2a1a10;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:680px;margin:0 auto;padding:24px 12px;">
+    <tr>
+      <td style="border:2px solid #8a5a2a;border-radius:12px;background:linear-gradient(180deg,#f7e7c7,#e8cf9f);box-shadow:0 12px 30px rgba(0,0,0,0.35);overflow:hidden;">
+        <div style="padding:14px 18px;border-bottom:1px solid rgba(122,81,39,0.35);background:rgba(255,255,255,0.25);text-align:center;">
+          ${logoHtml}
+        </div>
+        <div style="padding:20px 24px;">
+          <h1 style="margin:0 0 14px;font-size:22px;line-height:1.2;color:#5a3418;">${escapeHtml(title)}</h1>
+          <div style="font-size:16px;line-height:1.65;color:#2a1a10;">
+            ${content}
+          </div>
+        </div>
+        <div style="padding:12px 18px;border-top:1px solid rgba(122,81,39,0.35);font-size:12px;text-align:center;color:#6b4b2b;background:rgba(255,255,255,0.2);">
+          Messaggio automatico della campagna · Barber &amp; Dragons
+        </div>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+}
+
 export type SendEmailOptions = {
   to: string | string[];
   subject: string;

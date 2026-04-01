@@ -8,6 +8,7 @@ import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { getPlayerEmails, getNotificationsPaused, hasNotificationsDisabled } from "@/lib/player-emails";
 import { sendEmail, wrapInTemplate, escapeHtml } from "@/lib/email";
+import { sendJoinCampaignEmailIfEnabled } from "@/lib/campaign-long-emails";
 import { uploadToTelegram } from "@/lib/telegram-storage";
 import { incrementSessionsAttendedWithAdmin, applyAwardedAchievementWithAdmin } from "@/lib/actions/gamification";
 import { sendAdminNotification } from "@/lib/telegram-notifier";
@@ -574,6 +575,8 @@ export async function joinLongCampaign(campaignId: string): Promise<JoinLongCamp
 
     revalidatePath(`/campaigns/${campaignId}`);
     revalidatePath("/dashboard");
+    // Invio best-effort: eventuali errori SMTP non bloccano l'iscrizione.
+    void sendJoinCampaignEmailIfEnabled(campaignId, user.id);
     return { success: true, message: "Iscrizione alla campagna completata." };
   } catch (err) {
     console.error("[joinLongCampaign]", err);
