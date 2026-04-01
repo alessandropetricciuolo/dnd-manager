@@ -247,10 +247,14 @@ export interface Database {
           content: Json;
           image_url: string | null;
           tags: string[];
+          include_in_campaign_ai_memory: boolean;
           created_at: string;
           updated_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["wiki_entities"]["Row"], "created_at" | "updated_at">;
+        Insert: Omit<
+          Database["public"]["Tables"]["wiki_entities"]["Row"],
+          "created_at" | "updated_at" | "include_in_campaign_ai_memory"
+        > & { include_in_campaign_ai_memory?: boolean };
         Update: Partial<Database["public"]["Tables"]["wiki_entities"]["Insert"]>;
       };
       wiki_relationships: {

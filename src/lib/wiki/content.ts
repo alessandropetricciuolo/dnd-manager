@@ -6,3 +6,15 @@ export function getWikiContentBody(content: unknown): string {
   }
   return "";
 }
+
+/**
+ * CommonMark collassa 3+ newline consecutivi in un solo salto tra paragrafi.
+ * Inseriamo paragrafi con NBSP così le righe vuote volute restano visibili nel render.
+ */
+export function preserveMarkdownBlankLines(src: string): string {
+  return src.replace(/\n{3,}/g, (block) => {
+    const extra = block.length - 2;
+    if (extra < 1) return block;
+    return `\n\n${Array.from({ length: extra }, () => "\u00a0").join("\n\n")}\n\n`;
+  });
+}

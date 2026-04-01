@@ -110,6 +110,9 @@ export function EditEntityDialog({
   const [mapOptions, setMapOptions] = useState<{ id: string; name: string }[]>([]);
   const isLongCampaign = campaignType === "long";
   const showCoreFields = isLongCampaign && (type === "npc" || type === "monster");
+  const [includeInAiMemory, setIncludeInAiMemory] = useState(
+    () => entity.include_in_campaign_ai_memory ?? false
+  );
 
   useEffect(() => {
     if (open) {
@@ -123,11 +126,26 @@ export function EditEntityDialog({
       setIsCore(entity.is_core ?? false);
       setGlobalStatus(entity.global_status === "dead" ? "dead" : "alive");
       setMonsterXp(entity.xp_value ?? 0);
+      setIncludeInAiMemory(entity.include_in_campaign_ai_memory ?? false);
       getWikiEntitiesForCampaign(campaignId).then((r) => r.success && setWikiOptions(r.data));
       getMapsForCampaign(campaignId).then((r) => r.success && setMapOptions(r.data));
       getWikiRelationshipsForEntity(campaignId, entity.id).then((r) => r.success && setRelations(r.data));
     }
-  }, [open, campaignId, entity.id, entity.type, entity.attributes, entity.sort_order, entity.is_core, entity.global_status, entity.xp_value, initialVisibility, initialAllowedUserIds, initialAllowedPartyIds]);
+  }, [
+    open,
+    campaignId,
+    entity.id,
+    entity.type,
+    entity.attributes,
+    entity.sort_order,
+    entity.is_core,
+    entity.global_status,
+    entity.xp_value,
+    entity.include_in_campaign_ai_memory,
+    initialVisibility,
+    initialAllowedUserIds,
+    initialAllowedPartyIds,
+  ]);
 
   function onTypeChange(newType: string) {
     const t = newType as EntityType;
@@ -173,6 +191,7 @@ export function EditEntityDialog({
     if (sortOrder.trim() !== "") formData.set("sort_order", sortOrder.trim());
     if (removeImage) formData.set("remove_image", "on");
     if (showCoreFields && isCore) formData.set("is_core", "on");
+    if (isLongCampaign && includeInAiMemory) formData.set("include_in_campaign_ai_memory", "on");
     formData.set("relations", JSON.stringify(relations));
 
     setIsLoading(true);
@@ -279,6 +298,29 @@ export function EditEntityDialog({
                   </Button>
                 </div>
               )}
+            </div>
+          )}
+
+          {isLongCampaign && (
+            <div className="rounded-md border border-violet-500/25 bg-barber-dark/50 p-3">
+              <div className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  id="edit-entity-ai-memory"
+                  checked={includeInAiMemory}
+                  onChange={(e) => setIncludeInAiMemory(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-violet-500/40 bg-barber-dark text-violet-400"
+                />
+                <div className="min-w-0 space-y-1">
+                  <Label htmlFor="edit-entity-ai-memory" className="cursor-pointer text-barber-paper/90">
+                    Includi nella memoria IA della campagna (cronaca canon)
+                  </Label>
+                  <p className="text-xs text-barber-paper/60">
+                    Titolo e contenuto di questa voce entrano nel contesto quando generi altre schede wiki con
+                    l’AI.
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 

@@ -11,6 +11,7 @@ import {
   parseCampaignAiContextFromDb,
   type CampaignAiContext,
 } from "@/lib/campaign-ai-context";
+import { fetchLongCampaignWikiMemoryPromptBlock } from "@/lib/campaign-wiki-ai-memory";
 
 export type WikiGeneratorEntityType = "npc" | "location" | "item" | "lore";
 
@@ -68,7 +69,8 @@ function buildCampaignContextBlock(ctx: CampaignAiContext | null): string {
 export async function generateContextualText(
   campaignId: string,
   userPrompt: string,
-  entityType: WikiGeneratorEntityType
+  entityType: WikiGeneratorEntityType,
+  options?: { excludeWikiEntityId?: string }
 ): Promise<TextResult> {
   const prompt = userPrompt.trim();
   if (!prompt) {
@@ -83,7 +85,7 @@ export async function generateContextualText(
     const admin = createSupabaseAdminClient();
     const { data: row, error } = await admin
       .from("campaigns")
-      .select("ai_context")
+      .select("ai_context, type")
       .eq("id", campaignId)
       .single();
 
@@ -96,6 +98,13 @@ export async function generateContextualText(
       (row as { ai_context: Json | null } | null)?.ai_context ?? null
     );
 
+    const wikiMemory =
+      (row as { type?: string }).type === "long"
+        ? await fetchLongCampaignWikiMemoryPromptBlock(admin, campaignId, {
+            excludeEntityId: options?.excludeWikiEntityId,
+          })
+        : "";
+
     const ruleBase = `Sei un Game Master di D&D 5e. Devi generare un ${ENTITY_LABEL_IT[entityType]}. Tutte le statistiche devono rispettare fedelmente le regole di D&D 5e.`;
 
     const contextBlock = buildCampaignContextBlock(ctx);
@@ -105,7 +114,9 @@ export async function generateContextualText(
     const outputForce =
       "Rispondi ESCLUSIVAMENTE con un oggetto JSON valido contenente le chiavi: title (string), content (string, formattato in markdown), hp e ac (string o numero; usa null se non applicabili per questa entità, es. lore senza combattimento). Non usare markdown fuori dal valore della chiave content.";
 
-    const fullPrompt = [ruleBase, contextBlock, userRequest, outputForce].join("\n\n");
+    const fullPrompt = [ruleBase, contextBlock, wikiMemory, userRequest, outputForce]
+      .filter((s) => typeof s === "string" && s.trim().length > 0)
+      .join("\n\n");
 
     let rawText: string;
     try {

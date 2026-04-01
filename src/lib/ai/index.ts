@@ -5,6 +5,7 @@ export {
   generateAiText,
   generateAiImage,
   generateEmbedding,
+  generateRagEmbedding,
 } from "./huggingface-client";
 
 export { ARCHITECT_SYSTEM_PROMPT } from "./prompts";

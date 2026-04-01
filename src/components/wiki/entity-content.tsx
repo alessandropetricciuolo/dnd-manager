@@ -1,4 +1,5 @@
 import ReactMarkdown from "react-markdown";
+import { preserveMarkdownBlankLines } from "@/lib/wiki/content";
 
 type EntityContentProps = {
   content: string;
@@ -11,9 +12,11 @@ export function EntityContent({ content }: EntityContentProps) {
     );
   }
 
+  const markdown = preserveMarkdownBlankLines(content);
+
   return (
     <div className="prose prose-invert max-w-none min-w-0 overflow-hidden break-words prose-headings:text-barber-gold prose-headings:break-words prose-a:text-barber-gold prose-strong:text-barber-paper prose-p:text-barber-paper/90 prose-p:break-words">
-      <ReactMarkdown>{content}</ReactMarkdown>
+      <ReactMarkdown>{markdown}</ReactMarkdown>
     </div>
   );
 }

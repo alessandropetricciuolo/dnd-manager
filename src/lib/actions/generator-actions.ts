@@ -1,7 +1,7 @@
 'use server';
 
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
-import { generateCharacterSheetJSON, generateEmbedding } from "@/lib/ai/huggingface-client";
+import { generateCharacterSheetJSON, generateRagEmbedding } from "@/lib/ai/huggingface-client";
 
 export type GenerateSheetResult = {
   success: boolean;
@@ -222,7 +222,7 @@ export async function generateSheetAction(
     let retrievalMode = "semantic";
 
     try {
-      const embedding = await generateEmbedding(searchQuery);
+      const embedding = await generateRagEmbedding(searchQuery);
       const { data: chunks, error } = await runRpc("match_manuals_knowledge", {
         query_embedding: embedding,
         match_threshold: 0.3,

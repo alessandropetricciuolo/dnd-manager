@@ -264,30 +264,22 @@ export async function generateAiImage(
   return buf;
 }
 
-/** Genera embedding vettoriale via router OpenAI-compatible (/v1/embeddings). */
-export async function generateEmbedding(text: string): Promise<number[]> {
-  const rawKey = process.env.HUGGINGFACE_API_KEY || process.env.HF_TOKEN;
-  const apiKey = typeof rawKey === "string" ? rawKey.trim() : "";
-  if (!apiKey) {
-    throw new Error("Errore Critico Server: HUGGINGFACE_API_KEY non trovata a runtime.");
-  }
+/** Solo varianti router per {@link MODELS.embedding} (MiniLM multilingue). Nessun altro modello: allineato a chunk caricati con SentenceTransformers locale o ingest app. */
+const RAG_EMBEDDING_MODEL_CANDIDATES: readonly string[] = [
+  `${MODELS.embedding}:hf-inference`,
+  MODELS.embedding,
+];
 
-  const input = text.trim();
-  if (!input) {
-    throw new HuggingFaceInferenceError("Il testo per embedding non può essere vuoto.", { status: 400 });
-  }
-
+async function embedWithOpenAiCompatibleRouter(
+  apiKey: string,
+  input: string,
+  candidateModels: readonly string[]
+): Promise<number[]> {
   const headers = {
     Authorization: `Bearer ${apiKey}`,
     "Content-Type": "application/json",
     Accept: "application/json",
   };
-  const candidateModels = [
-    `${MODELS.embedding}:hf-inference`,
-    MODELS.embedding,
-    "intfloat/multilingual-e5-small:hf-inference", // fallback multilingua 384d
-    "intfloat/multilingual-e5-small",
-  ];
 
   let lastErrorText = "";
   for (const model of candidateModels) {
@@ -297,7 +289,6 @@ export async function generateEmbedding(text: string): Promise<number[]> {
       body: JSON.stringify({ model, input }),
     });
 
-    // Alcuni provider accettano solo input array.
     if (!response.ok && (response.status === 400 || response.status === 422)) {
       response = await fetch(HF_OPENAI_EMBEDDINGS_URL, {
         method: "POST",
@@ -335,6 +326,48 @@ export async function generateEmbedding(text: string): Promise<number[]> {
       lastErrorText || "nessun modello embeddings disponibile su router"
     }`
   );
+}
+
+/**
+ * Embedding per RAG su `manuals_knowledge`: **solo** `paraphrase-multilingual-MiniLM-L12-v2`
+ * (stesso spazio vettoriale di ingest locale SentenceTransformers / `ingest-manuals`).
+ * Non usa fallback su altri modelli, per evitare retrieval incoerente.
+ */
+export async function generateRagEmbedding(text: string): Promise<number[]> {
+  const rawKey = process.env.HUGGINGFACE_API_KEY || process.env.HF_TOKEN;
+  const apiKey = typeof rawKey === "string" ? rawKey.trim() : "";
+  if (!apiKey) {
+    throw new Error("Errore Critico Server: HUGGINGFACE_API_KEY non trovata a runtime.");
+  }
+
+  const input = text.trim();
+  if (!input) {
+    throw new HuggingFaceInferenceError("Il testo per embedding non può essere vuoto.", { status: 400 });
+  }
+
+  return embedWithOpenAiCompatibleRouter(apiKey, input, RAG_EMBEDDING_MODEL_CANDIDATES);
+}
+
+/** Genera embedding vettoriale via router OpenAI-compatible (/v1/embeddings), con fallback multilingue. */
+export async function generateEmbedding(text: string): Promise<number[]> {
+  const rawKey = process.env.HUGGINGFACE_API_KEY || process.env.HF_TOKEN;
+  const apiKey = typeof rawKey === "string" ? rawKey.trim() : "";
+  if (!apiKey) {
+    throw new Error("Errore Critico Server: HUGGINGFACE_API_KEY non trovata a runtime.");
+  }
+
+  const input = text.trim();
+  if (!input) {
+    throw new HuggingFaceInferenceError("Il testo per embedding non può essere vuoto.", { status: 400 });
+  }
+
+  const candidateModels = [
+    ...RAG_EMBEDDING_MODEL_CANDIDATES,
+    "intfloat/multilingual-e5-small:hf-inference",
+    "intfloat/multilingual-e5-small",
+  ] as const;
+
+  return embedWithOpenAiCompatibleRouter(apiKey, input, candidateModels);
 }
 
 /**

@@ -3,8 +3,9 @@
 import type { Json } from "@/types/database.types";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
-import { generateAiText, generateEmbedding, HuggingFaceInferenceError } from "@/lib/ai/huggingface-client";
+import { generateAiText, generateRagEmbedding, HuggingFaceInferenceError } from "@/lib/ai/huggingface-client";
 import { parseCampaignAiContextFromDb } from "@/lib/campaign-ai-context";
+import { fetchLongCampaignWikiMemoryPromptBlock } from "@/lib/campaign-wiki-ai-memory";
 
 export type WikiMarkdownEntityType = "npc" | "location" | "item" | "lore" | "monster" | "magic_item";
 
@@ -210,7 +211,7 @@ export async function generateWikiMarkdownAction(
     const admin = createSupabaseAdminClient();
     const { data: campaign, error: campaignError } = await admin
       .from("campaigns")
-      .select("ai_context")
+      .select("ai_context, type")
       .eq("id", campaignId)
       .single();
     if (campaignError) {
@@ -218,6 +219,10 @@ export async function generateWikiMarkdownAction(
     }
 
     const ctx = parseCampaignAiContextFromDb((campaign as { ai_context: Json | null } | null)?.ai_context ?? null);
+    const wikiMemory =
+      (campaign as { type?: string }).type === "long"
+        ? await fetchLongCampaignWikiMemoryPromptBlock(admin, campaignId)
+        : "";
     const loreTone = ctx?.narrative_tone?.trim() || "fantasy epico e coerente con D&D 5e";
     const magicLevel = ctx?.magic_level?.trim() || "livello di magia standard D&D 5e";
     const mechanics = ctx?.mechanics_focus?.trim() || "regole ufficiali D&D 5e";
@@ -302,19 +307,22 @@ export async function generateWikiMarkdownAction(
       `Livello magia: ${magicLevel}`,
       `Focus meccanico: ${mechanics}`,
       `Tipo elemento: ${normalizedType}`,
+      wikiMemory.trim() ? wikiMemory : "",
       `RICHIESTA SPECIFICA DELL'UTENTE: Il nome dell'entità è "${safeName}". Segui queste istruzioni per i dettagli: "${safeNarrativePrompt || "Nessuna istruzione aggiuntiva."}".`,
       `Nome elemento: ${safeName}`,
       paramLine,
       templateInstructionMap[normalizedType],
       "Devi dividere la tua risposta esattamente in due parti usando questi delimitatori esatti: inizia la descrizione narrativa con il tag [NARRATIVA] e inizia lo statblock con il tag [MECCANICA]. Non inserire testo prima di [NARRATIVA].",
       "Rispondi SOLO con Markdown valido, senza JSON e senza testo extra prima/dopo.",
-    ].join("\n\n");
+    ]
+      .filter((s) => typeof s === "string" && s.trim().length > 0)
+      .join("\n\n");
 
     if (normalizedType === "monster") {
       const searchQuery = `Regole, privilegi e statblock completo del mostro: ${safeName}. Dettagli tecnici: ${safeRetrievalPrompt || "nessuno"}.`;
       let technicalContext = "";
       try {
-        const embedding = await generateEmbedding(searchQuery);
+        const embedding = await generateRagEmbedding(searchQuery);
         // Tipizzazione RPC best-effort: la firma generated potrebbe non includere ancora la funzione.
         const runRpc = admin.rpc as unknown as (
           fn: string,
@@ -385,6 +393,9 @@ export async function generateWikiMarkdownAction(
 
       prompt = [
         "Sei un motore di formattazione.",
+        wikiMemory.trim()
+          ? `${wikiMemory}\n\nLa parte [NARRATIVA] deve restare coerente con questa memoria di campagna quando non entra in conflitto con il [CONTESTO TECNICO].`
+          : "",
         `[CONTESTO TECNICO]:\n${technicalContext}`,
         `RICHIESTA SPECIFICA DELL'UTENTE: Il nome dell'entità è "${safeName}". Segui queste istruzioni per i dettagli: "${safeNarrativePrompt || "Nessuna istruzione aggiuntiva."}".`,
         `Nome mostro richiesto: ${safeName}`,
@@ -396,7 +407,9 @@ export async function generateWikiMarkdownAction(
         templateInstructionMap.monster,
         "Devi dividere la tua risposta esattamente in due parti usando questi delimitatori esatti: inizia la descrizione narrativa con il tag [NARRATIVA] e inizia lo statblock con il tag [MECCANICA]. Non inserire testo prima di [NARRATIVA].",
         "NO parole extra prima o dopo.",
-      ].join("\n\n");
+      ]
+        .filter((s) => typeof s === "string" && s.trim().length > 0)
+        .join("\n\n");
     }
 
     let markdown = "";

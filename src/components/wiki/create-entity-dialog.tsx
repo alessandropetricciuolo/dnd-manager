@@ -99,6 +99,8 @@ export function CreateEntityDialog({
   const [selectedPartyIds, setSelectedPartyIds] = useState<string[]>([]);
   const [isCore, setIsCore] = useState(false);
   const showCoreCheckbox = campaignType === "long" && (type === "npc" || type === "monster");
+  const showAiMemoryCheckbox = campaignType === "long";
+  const [includeInAiMemory, setIncludeInAiMemory] = useState(false);
   const [monsterXp, setMonsterXp] = useState<number>(0);
   const [tags, setTags] = useState<string[]>([]);
   const [titleValue, setTitleValue] = useState("");
@@ -202,6 +204,7 @@ export function CreateEntityDialog({
     formData.set("allowed_party_ids", JSON.stringify(visibility === "selective" ? selectedPartyIds : []));
     if (sortOrder.trim() !== "") formData.set("sort_order", sortOrder.trim());
     if (showCoreCheckbox && isCore) formData.set("is_core", "on");
+    if (showAiMemoryCheckbox && includeInAiMemory) formData.set("include_in_campaign_ai_memory", "on");
     formData.set("relations", JSON.stringify(relations));
 
     setIsLoading(true);
@@ -221,6 +224,7 @@ export function CreateEntityDialog({
         setRelations([]);
         setSelectedPlayerIds([]);
         setSelectedPartyIds([]);
+        setIncludeInAiMemory(false);
         router.refresh();
       } else {
         toast.error(result.message);
@@ -373,6 +377,7 @@ export function CreateEntityDialog({
       setSelectedPlayerIds([]);
       setSelectedPartyIds([]);
       setVisibility("public");
+      setIncludeInAiMemory(false);
     }
   }
 
@@ -526,6 +531,29 @@ export function CreateEntityDialog({
               <Label htmlFor="entity-is-core" className="text-barber-paper/90">
                 NPC/Mostro Core (stato vita/morte condiviso nella campagna)
               </Label>
+            </div>
+          )}
+
+          {showAiMemoryCheckbox && (
+            <div className="rounded-md border border-violet-500/25 bg-barber-dark/50 p-3">
+              <div className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  id="entity-ai-memory"
+                  checked={includeInAiMemory}
+                  onChange={(e) => setIncludeInAiMemory(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-violet-500/40 bg-barber-dark text-violet-400"
+                />
+                <div className="min-w-0 space-y-1">
+                  <Label htmlFor="entity-ai-memory" className="text-barber-paper/90 cursor-pointer">
+                    Includi nella memoria IA della campagna (cronaca canon)
+                  </Label>
+                  <p className="text-xs text-barber-paper/60">
+                    Solo campagne lunghe: testo e titolo di questa voce entrano nel contesto quando generi altre
+                    schede wiki con l’AI, per mantenere coerenza narrativa.
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 

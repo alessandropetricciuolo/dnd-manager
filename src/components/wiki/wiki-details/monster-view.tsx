@@ -1,4 +1,5 @@
 import ReactMarkdown from "react-markdown";
+import { preserveMarkdownBlankLines } from "@/lib/wiki/content";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPopoutButton } from "@/components/maps/map-popout-button";
 import { Coins } from "lucide-react";
@@ -32,6 +33,7 @@ export function MonsterView({
   const hasStats = !!(stats.hp?.trim() || stats.ac?.trim() || stats.cr?.trim());
   const attacks = stats.attacks?.trim();
   const loot = attrs.loot?.trim();
+  const bodyMd = body ? preserveMarkdownBlankLines(body) : "";
 
   return (
     <div className="space-y-8">
@@ -96,7 +98,7 @@ export function MonsterView({
             )}
             {body && (
               <div className="prose prose-sm mt-4 max-w-none border-t border-barber-gold/30 pt-4 prose-p:text-barber-paper/90 prose-headings:text-barber-gold">
-                <ReactMarkdown>{body}</ReactMarkdown>
+                <ReactMarkdown>{bodyMd}</ReactMarkdown>
               </div>
             )}
           </div>
@@ -108,7 +110,7 @@ export function MonsterView({
           </h2>
           {body ? (
             <div className="prose prose-invert prose-sm mt-4 max-w-none prose-p:text-barber-paper/90 prose-headings:text-barber-gold">
-              <ReactMarkdown>{body}</ReactMarkdown>
+              <ReactMarkdown>{bodyMd}</ReactMarkdown>
             </div>
           ) : (
             <p className="mt-4 text-barber-paper/60 italic">Nessuna descrizione.</p>

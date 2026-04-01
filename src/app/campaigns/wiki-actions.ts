@@ -220,6 +220,12 @@ export async function createEntity(
       insertPayload.is_core = isCore;
       insertPayload.global_status = "alive";
     }
+    if (camp?.type === "long") {
+      const includeMem =
+        formData.get("include_in_campaign_ai_memory") === "on" ||
+        formData.get("include_in_campaign_ai_memory") === "true";
+      insertPayload.include_in_campaign_ai_memory = includeMem;
+    }
     if (type === "monster") {
       insertPayload.xp_value = xpValue;
     }
@@ -422,6 +428,13 @@ export async function updateEntity(
     }
     if (type === "monster") {
       updatePayload.xp_value = xpValue;
+    }
+
+    if (campaign?.type === "long") {
+      const includeMem =
+        formData.get("include_in_campaign_ai_memory") === "on" ||
+        formData.get("include_in_campaign_ai_memory") === "true";
+      updatePayload.include_in_campaign_ai_memory = includeMem;
     }
 
     const { error } = await supabase
@@ -637,6 +650,8 @@ export type WikiEntity = {
   global_status?: "alive" | "dead";
   xp_value?: number | null;
   tags?: string[] | null;
+  /** Campagne long: voce inclusa nel contesto IA per generazioni wiki successive. */
+  include_in_campaign_ai_memory?: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -651,8 +666,9 @@ function sanitizeEntityForPlayer(entity: WikiEntity): WikiEntity {
     if (SENSITIVE_ATTRIBUTE_KEYS.includes(k as (typeof SENSITIVE_ATTRIBUTE_KEYS)[number])) continue;
     sanitized[k] = v;
   }
+  const { include_in_campaign_ai_memory: _mem, ...rest } = entity;
   return {
-    ...entity,
+    ...rest,
     attributes: Object.keys(sanitized).length ? sanitized : {},
   };
 }
@@ -681,7 +697,7 @@ export async function getEntity(
 
     const { data: entity, error } = await supabase
       .from("wiki_entities")
-      .select("id, campaign_id, name, type, content, image_url, telegram_fallback_id, is_secret, visibility, attributes, sort_order, is_core, global_status, xp_value, tags, created_at, updated_at")
+      .select("id, campaign_id, name, type, content, image_url, telegram_fallback_id, is_secret, visibility, attributes, sort_order, is_core, global_status, xp_value, tags, include_in_campaign_ai_memory, created_at, updated_at")
       .eq("id", entityId)
       .eq("campaign_id", campaignId)
       .single();

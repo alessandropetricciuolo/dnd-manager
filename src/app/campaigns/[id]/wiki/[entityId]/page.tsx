@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { getEntity } from "@/app/campaigns/wiki-actions";
 import { getCampaignEligiblePlayers } from "@/app/campaigns/character-actions";
 import { WikiDetails } from "@/components/wiki/wiki-details";
@@ -126,6 +127,14 @@ export default async function WikiEntityPage({ params }: PageProps) {
                 entityId={entity.id}
                 entityName={entity.name}
               />
+              {campaign?.type === "long" && entity.include_in_campaign_ai_memory && (
+                <Badge
+                  variant="outline"
+                  className="border-violet-500/50 bg-violet-950/40 text-violet-200"
+                >
+                  Memoria IA
+                </Badge>
+              )}
             </>
           )}
         </div>
