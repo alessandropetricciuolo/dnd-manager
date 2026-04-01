@@ -18,6 +18,7 @@ import { CampaignVisibilityToggle } from "@/components/campaign-visibility-toggl
 import { EditCampaignDialog } from "@/components/campaigns/edit-campaign-dialog";
 import { CampaignTabsClient } from "@/components/campaigns/campaign-tabs-client";
 import { JoinLongCampaignButton } from "@/components/campaigns/join-long-campaign-button";
+import { LongRegistrationsToggle } from "@/components/campaigns/long-registrations-toggle";
 import { CampaignPartyMembersPanel } from "@/components/campaigns/campaign-party-members-panel";
 import { GmNotes } from "@/components/gm/gm-notes";
 import { GmFiles } from "@/components/gm/gm-files";
@@ -74,7 +75,9 @@ export default async function CampaignPage({ params }: PageProps) {
 
   const { data: campaign, error } = await supabase
     .from("campaigns")
-    .select("id, name, description, gm_id, is_public, type, image_url, is_long_campaign, player_primer, primer_typography")
+    .select(
+      "id, name, description, gm_id, is_public, type, image_url, is_long_campaign, player_primer, primer_typography, long_registrations_open"
+    )
     .eq("id", id)
     .single();
 
@@ -205,6 +208,8 @@ export default async function CampaignPage({ params }: PageProps) {
   const isViewerLockedOut = !isGmOrAdmin && campaign.type === "long" && !isCampaignMember;
   const isLongCampaign = campaign.type === "long";
   const showMissionsTab = isLongCampaign && (isGmOrAdmin || isCampaignMember);
+  const longRegistrationsOpen =
+    (campaign as { long_registrations_open?: boolean }).long_registrations_open !== false;
 
   /** Griglia mondo / portali: solo GM e Admin (modello gilda: qualsiasi GM vede e modifica). */
   let worldOperationalMapUrl: string | null = null;
@@ -339,8 +344,14 @@ export default async function CampaignPage({ params }: PageProps) {
             <p className="text-xs text-barber-gold">
               Per campagne Long devi prima iscriverti alla campagna, poi potrai prenotare le sessioni.
             </p>
+            {!longRegistrationsOpen ? (
+              <p className="text-xs text-amber-200/90">
+                Le iscrizioni sono chiuse in questo momento. Scrivi al GM se vuoi entrare in campagna.
+              </p>
+            ) : null}
             <JoinLongCampaignButton
               campaignId={campaign.id}
+              registrationsOpen={longRegistrationsOpen}
               className="h-8 bg-barber-red text-xs text-barber-paper hover:bg-barber-red/90"
             />
           </div>
@@ -367,6 +378,12 @@ export default async function CampaignPage({ params }: PageProps) {
               campaignId={campaign.id}
               isPublic={campaign.is_public ?? false}
             />
+            {isLongCampaign && (
+              <LongRegistrationsToggle
+                campaignId={campaign.id}
+                registrationsOpen={longRegistrationsOpen}
+              />
+            )}
             <DeleteCampaignButton campaignId={campaign.id} campaignName={campaign.name} />
           </div>
         )}
@@ -448,8 +465,14 @@ export default async function CampaignPage({ params }: PageProps) {
                   <p className="mb-2 text-sm text-barber-gold">
                     Per questa campagna devi prima iscriverti. Finche non sei iscritto puoi vedere solo la sinossi.
                   </p>
+                  {!longRegistrationsOpen ? (
+                    <p className="mb-2 text-xs text-amber-200/90">
+                      Le iscrizioni sono chiuse. Contatta il GM per essere aggiunto manualmente.
+                    </p>
+                  ) : null}
                   <JoinLongCampaignButton
                     campaignId={campaign.id}
+                    registrationsOpen={longRegistrationsOpen}
                     className="h-8 bg-barber-red text-xs text-barber-paper hover:bg-barber-red/90"
                   />
                 </section>
@@ -503,8 +526,14 @@ export default async function CampaignPage({ params }: PageProps) {
                   <p className="mb-2 text-sm text-barber-gold">
                     Iscriviti prima alla campagna Long per poter prenotare le sessioni.
                   </p>
+                  {!longRegistrationsOpen ? (
+                    <p className="mb-2 text-xs text-amber-200/90">
+                      Le iscrizioni sono chiuse in questo momento.
+                    </p>
+                  ) : null}
                   <JoinLongCampaignButton
                     campaignId={campaign.id}
+                    registrationsOpen={longRegistrationsOpen}
                     className="h-8 bg-barber-red text-xs text-barber-paper hover:bg-barber-red/90"
                   />
                 </div>

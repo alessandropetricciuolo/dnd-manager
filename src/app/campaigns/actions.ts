@@ -513,7 +513,12 @@ async function sendFeedbackRequestEmailsForSession(
 
 export type JoinSessionResult = { success: boolean; message: string };
 
-export type JoinLongCampaignResult = { success: boolean; message: string };
+export type JoinLongCampaignResult = {
+  success: boolean;
+  message: string;
+  /** true solo al primo inserimento riuscito (per redirect pagina conferma). */
+  justJoined?: boolean;
+};
 
 /** Iscrizione diretta a una campagna Long. Necessaria prima della prenotazione sessioni. */
 export async function joinLongCampaign(campaignId: string): Promise<JoinLongCampaignResult> {
@@ -538,7 +543,7 @@ export async function joinLongCampaign(campaignId: string): Promise<JoinLongCamp
 
     const { data: campaign, error: campaignError } = await supabase
       .from("campaigns")
-      .select("id, type, is_public")
+      .select("id, type, is_public, long_registrations_open")
       .eq("id", campaignId)
       .single();
     if (campaignError || !campaign) {
@@ -551,6 +556,8 @@ export async function joinLongCampaign(campaignId: string): Promise<JoinLongCamp
       return { success: false, message: "Campagna privata: chiedi al GM di aggiungerti manualmente." };
     }
 
+    const registrationsOpen = (campaign as { long_registrations_open?: boolean }).long_registrations_open !== false;
+
     const { data: existing } = await supabase
       .from("campaign_members")
       .select("id")
@@ -558,7 +565,14 @@ export async function joinLongCampaign(campaignId: string): Promise<JoinLongCamp
       .eq("player_id", user.id)
       .maybeSingle();
     if (existing) {
-      return { success: true, message: "Sei già iscritto a questa campagna." };
+      return { success: true, message: "Sei già iscritto a questa campagna.", justJoined: false };
+    }
+
+    if (!registrationsOpen) {
+      return {
+        success: false,
+        message: "Le iscrizioni a questa campagna sono chiuse. Contatta il GM o l'organizzazione.",
+      };
     }
 
     const { error: insertError } = await supabase.from("campaign_members").insert({
@@ -567,7 +581,7 @@ export async function joinLongCampaign(campaignId: string): Promise<JoinLongCamp
     } as never);
     if (insertError) {
       if (insertError.code === "23505") {
-        return { success: true, message: "Sei già iscritto a questa campagna." };
+        return { success: true, message: "Sei già iscritto a questa campagna.", justJoined: false };
       }
       console.error("[joinLongCampaign]", insertError);
       return { success: false, message: insertError.message ?? "Errore durante l'iscrizione alla campagna." };
@@ -577,9 +591,77 @@ export async function joinLongCampaign(campaignId: string): Promise<JoinLongCamp
     revalidatePath("/dashboard");
     // Invio best-effort: eventuali errori SMTP non bloccano l'iscrizione.
     void sendJoinCampaignEmailIfEnabled(campaignId, user.id);
-    return { success: true, message: "Iscrizione alla campagna completata." };
+    return { success: true, message: "Iscrizione alla campagna completata.", justJoined: true };
   } catch (err) {
     console.error("[joinLongCampaign]", err);
+    return { success: false, message: "Errore imprevisto. Riprova." };
+  }
+}
+
+export type SetLongRegistrationsOpenResult = { success: boolean; message: string };
+
+/** Apre/chiude le iscrizioni autonome (solo campagne Long). Solo GM/Admin. */
+export async function setLongCampaignRegistrationsOpen(
+  campaignId: string,
+  open: boolean
+): Promise<SetLongRegistrationsOpenResult> {
+  if (!campaignId?.trim()) {
+    return { success: false, message: "Campagna non valida." };
+  }
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { success: false, message: "Devi essere autenticato." };
+    }
+
+    const allowed = await isGmOrAdminByRole(supabase);
+    if (!allowed) {
+      return { success: false, message: "Solo GM o Admin possono modificare le iscrizioni." };
+    }
+
+    const { data: campaign } = await supabase
+      .from("campaigns")
+      .select("id, type")
+      .eq("id", campaignId)
+      .single();
+    if (!campaign) {
+      return { success: false, message: "Campagna non trovata." };
+    }
+    if (campaign.type !== "long") {
+      return { success: false, message: "Le iscrizioni guidate valgono solo per campagne Long." };
+    }
+
+    const admin = createSupabaseAdminClient();
+    const { error } = await admin
+      .from("campaigns")
+      .update({ long_registrations_open: open } as never)
+      .eq("id", campaignId);
+
+    if (error) {
+      if (error.message?.toLowerCase().includes("long_registrations_open")) {
+        return {
+          success: false,
+          message: "Aggiorna il database (migration long_registrations_open) e riprova.",
+        };
+      }
+      console.error("[setLongCampaignRegistrationsOpen]", error);
+      return { success: false, message: error.message ?? "Errore durante l'aggiornamento." };
+    }
+
+    revalidatePath(`/campaigns/${campaignId}`);
+    revalidatePath("/dashboard");
+    return {
+      success: true,
+      message: open
+        ? "Iscrizioni alla campagna aperte: i giocatori possono iscriversi da soli."
+        : "Iscrizioni alla campagna chiuse.",
+    };
+  } catch (err) {
+    console.error("[setLongCampaignRegistrationsOpen]", err);
     return { success: false, message: "Errore imprevisto. Riprova." };
   }
 }

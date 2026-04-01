@@ -76,7 +76,7 @@ export function MapCard({
             campaignType={campaignType}
             mapId={map.id}
             initialName={map.name}
-            initialMapType={map.map_type ?? "region"}
+            initialMapType={map.map_type ?? "city"}
             initialParentMapId={map.parent_map_id ?? null}
             initialVisibility={map.visibility ?? "public"}
             initialAllowedUserIds={permittedUserIds}
@@ -144,7 +144,9 @@ export function MapCard({
       </CardHeader>
       <CardContent className="pt-0">
         {map.description ? (
-          <p className="line-clamp-2 text-xs text-barber-paper/70">{map.description}</p>
+          <div className="scrollbar-barber-y max-h-28 overflow-y-auto text-xs text-barber-paper/70">
+            <p className="whitespace-pre-wrap break-words pr-1">{map.description}</p>
+          </div>
         ) : null}
         {isGmOrAdmin && map.visibility === "selective" && selectiveAudienceLabel && (
           <span className="mt-1 inline-block rounded-md border border-barber-gold/30 bg-barber-gold/10 px-2 py-1 text-[11px] text-barber-gold/90">

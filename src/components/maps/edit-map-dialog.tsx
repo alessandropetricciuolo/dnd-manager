@@ -27,7 +27,6 @@ import { listMapsForParentPickerAction, updateMap, type MapParentOption } from "
 const MAP_TYPE_OPTIONS: { label: string; value: string }[] = [
   { label: "Mondo", value: "world" },
   { label: "Continente", value: "continent" },
-  { label: "Regione", value: "region" },
   { label: "Città/Urbano", value: "city" },
   { label: "Dungeon/Wild", value: "dungeon" },
   { label: "Quartiere", value: "district" },
@@ -37,12 +36,15 @@ const MAP_TYPE_OPTIONS: { label: string; value: string }[] = [
 const LONG_MAP_TYPE_OPTIONS: { label: string; value: string }[] = [
   { label: "Mappa del mondo (unica per campagna)", value: "world" },
   { label: "Continente (sotto il mondo)", value: "continent" },
-  { label: "Regione (sotto un continente)", value: "region" },
-  { label: "Città (sotto una regione)", value: "city" },
+  { label: "Città (sotto un continente)", value: "city" },
   { label: "Dungeon / zona di dettaglio", value: "dungeon" },
   { label: "Quartiere", value: "district" },
   { label: "Edificio", value: "building" },
 ];
+
+function coerceMapTypeFromDb(t: string): string {
+  return t === "region" ? "city" : t;
+}
 
 const VISIBILITY_OPTIONS: { label: string; value: string }[] = [
   { label: "Pubblico (tutti)", value: "public" },
@@ -83,9 +85,11 @@ export function EditMapDialog({
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [name, setName] = useState(initialName);
-  const [mapType, setMapType] = useState(
-    MAP_TYPE_OPTIONS.some((o) => o.value === initialMapType) ? initialMapType : "region"
-  );
+  const [mapType, setMapType] = useState(() => {
+    const n = coerceMapTypeFromDb(initialMapType);
+    const opts = isLongCampaign ? LONG_MAP_TYPE_OPTIONS : MAP_TYPE_OPTIONS;
+    return opts.some((o) => o.value === n) ? n : "city";
+  });
   const [parentMapId, setParentMapId] = useState<string>(initialParentMapId ?? "");
   const [parentOptions, setParentOptions] = useState<MapParentOption[]>([]);
   const [loadingParents, setLoadingParents] = useState(false);
@@ -110,8 +114,7 @@ export function EditMapDialog({
   const filteredParents = useMemo(() => {
     if (mapType === "world") return [];
     if (mapType === "continent") return parentCandidates.filter((m) => m.map_type === "world");
-    if (mapType === "region") return parentCandidates.filter((m) => m.map_type === "continent");
-    if (mapType === "city") return parentCandidates.filter((m) => m.map_type === "region");
+    if (mapType === "city") return parentCandidates.filter((m) => m.map_type === "continent");
     return parentCandidates;
   }, [mapType, parentCandidates]);
 
@@ -137,7 +140,11 @@ export function EditMapDialog({
   function handleOpenChange(next: boolean) {
     if (!next) {
       setName(initialName);
-      setMapType(MAP_TYPE_OPTIONS.some((o) => o.value === initialMapType) ? initialMapType : "region");
+      setMapType(() => {
+        const n = coerceMapTypeFromDb(initialMapType);
+        const opts = isLongCampaign ? LONG_MAP_TYPE_OPTIONS : MAP_TYPE_OPTIONS;
+        return opts.some((o) => o.value === n) ? n : "city";
+      });
       setParentMapId(initialParentMapId ?? "");
       setVisibility(VISIBILITY_OPTIONS.some((o) => o.value === initialVisibility) ? initialVisibility : "public");
       setSelectedPlayerIds(initialAllowedUserIds);
@@ -171,8 +178,8 @@ export function EditMapDialog({
         toast.error("Esiste già un'altra mappa del mondo in questa campagna.");
         return;
       }
-      if (["continent", "region", "city"].includes(mapType) && !parentMapId) {
-        toast.error("Seleziona la mappa genitore nella gerarchia.");
+      if (["continent", "city"].includes(mapType) && !parentMapId) {
+        toast.error("Seleziona la mappa genitore nella gerarchia (mondo → continente → città).");
         return;
       }
     }
@@ -265,7 +272,7 @@ export function EditMapDialog({
               <Label>Mappa genitore</Label>
               {loadingParents ? (
                 <p className="text-xs text-slate-500">Caricamento…</p>
-              ) : ["continent", "region", "city"].includes(mapType) ? (
+              ) : ["continent", "city"].includes(mapType) ? (
                 <select
                   className="h-10 w-full rounded-md border border-slate-700 bg-slate-900/70 px-3 text-sm text-slate-50"
                   value={parentMapId}

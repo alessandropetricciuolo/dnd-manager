@@ -4,11 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
 import rehypeSlug from "rehype-slug";
 import { Download, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { getHeadingsFromMarkdown, type TocEntry } from "@/lib/primer-toc";
+import { preserveMarkdownBlankLines } from "@/lib/wiki/content";
 import { cn } from "@/lib/utils";
 
 const BODY_CLASS = "primer-print-page";
@@ -149,7 +151,7 @@ export function PrimerView({ campaignId, campaignName, markdown, typography }: P
 
             <div
               className={cn(
-                "prose prose-invert max-w-none",
+                "prose prose-invert max-w-none space-y-4",
                 fontSizeClass,
                 fontFamilyClass,
                 typography?.fontFamily === "sans"
@@ -167,8 +169,8 @@ export function PrimerView({ campaignId, campaignName, markdown, typography }: P
                 "print:prose-headings:!text-gray-900 print:prose-p:!text-gray-800 print:prose-strong:!text-gray-900 print:prose-a:!text-gray-800 print:prose-blockquote:!bg-gray-100 print:prose-blockquote:!border-gray-400 print:prose-blockquote:!text-gray-800"
               )}
             >
-              <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSlug]}>
-                {markdown}
+              <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeSlug]}>
+                {preserveMarkdownBlankLines(markdown)}
               </ReactMarkdown>
             </div>
           </div>

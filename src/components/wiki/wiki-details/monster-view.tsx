@@ -1,4 +1,5 @@
 import ReactMarkdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
 import { preserveMarkdownBlankLines } from "@/lib/wiki/content";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPopoutButton } from "@/components/maps/map-popout-button";
@@ -97,8 +98,8 @@ export function MonsterView({
               </div>
             )}
             {body && (
-              <div className="prose prose-sm mt-4 max-w-none border-t border-barber-gold/30 pt-4 prose-p:text-barber-paper/90 prose-headings:text-barber-gold">
-                <ReactMarkdown>{bodyMd}</ReactMarkdown>
+              <div className="prose prose-sm mt-4 max-w-none space-y-4 border-t border-barber-gold/30 pt-4 prose-p:text-barber-paper/90 prose-headings:text-barber-gold">
+                <ReactMarkdown remarkPlugins={[remarkBreaks]}>{bodyMd}</ReactMarkdown>
               </div>
             )}
           </div>
@@ -109,8 +110,8 @@ export function MonsterView({
             {name}
           </h2>
           {body ? (
-            <div className="prose prose-invert prose-sm mt-4 max-w-none prose-p:text-barber-paper/90 prose-headings:text-barber-gold">
-              <ReactMarkdown>{bodyMd}</ReactMarkdown>
+            <div className="prose prose-invert prose-sm mt-4 max-w-none space-y-4 prose-p:text-barber-paper/90 prose-headings:text-barber-gold">
+              <ReactMarkdown remarkPlugins={[remarkBreaks]}>{bodyMd}</ReactMarkdown>
             </div>
           ) : (
             <p className="mt-4 text-barber-paper/60 italic">Nessuna descrizione.</p>

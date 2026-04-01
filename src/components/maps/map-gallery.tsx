@@ -1,7 +1,10 @@
 import type { ReactNode } from "react";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
-import { Map as MapIcon, Globe, Mountain, MapPin, Castle, Skull, Home, Building2, AlertTriangle } from "lucide-react";
+import { Map as MapIcon, Globe, Mountain, Castle, Skull, Home, Building2, AlertTriangle } from "lucide-react";
 import { MapCard } from "./map-card";
+
+/** DB legacy: prima della migration le mappe potevano essere "region". */
+const LEGACY_REGION = "region";
 
 type MapGalleryProps = {
   campaignId: string;
@@ -25,7 +28,6 @@ type MapRow = {
 const CATEGORY_ORDER: { type: string; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { type: "world", label: "Mondi", icon: Globe },
   { type: "continent", label: "Continenti", icon: Mountain },
-  { type: "region", label: "Regioni", icon: MapPin },
   { type: "city", label: "Aree Urbane", icon: Castle },
   { type: "dungeon", label: "Dungeon & Zone Aperte", icon: Skull },
   { type: "district", label: "Quartieri", icon: Home },
@@ -35,9 +37,10 @@ const CATEGORY_ORDER: { type: string; label: string; icon: React.ComponentType<{
 const LOCAL_MAP_TYPES = new Set(["dungeon", "district", "building"]);
 
 function mapTypeFallback(m: MapRow, hasMapType: boolean): string {
-  if (!hasMapType) return "region";
+  if (!hasMapType) return "city";
   const t = m.map_type;
-  return t && CATEGORY_ORDER.some((c) => c.type === t) ? t : "region";
+  if (t === LEGACY_REGION) return "city";
+  return t && CATEGORY_ORDER.some((c) => c.type === t) ? t : "city";
 }
 
 function sortByName(a: MapRow, b: MapRow) {
@@ -322,8 +325,8 @@ export async function MapGallery({
           <div className="space-y-4 border-l border-barber-gold/20 pl-4">
             {continents.map((co) => {
               used.add(co.id);
-              const regions = mapsForScale
-                .filter((m) => tf(m) === "region" && m.parent_map_id === co.id)
+              const cities = mapsForScale
+                .filter((m) => tf(m) === "city" && m.parent_map_id === co.id)
                 .sort(sortByName);
               return (
                 <div key={co.id} className="space-y-3">
@@ -334,43 +337,20 @@ export async function MapGallery({
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     <MapCard {...cardProps(co)} />
                   </div>
-                  {regions.length > 0 && (
-                    <div className="space-y-3 border-l border-barber-gold/15 pl-4">
-                      {regions.map((reg) => {
-                        used.add(reg.id);
-                        const cities = mapsForScale
-                          .filter((m) => tf(m) === "city" && m.parent_map_id === reg.id)
-                          .sort(sortByName);
-                        return (
-                          <div key={reg.id} className="space-y-2">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <MapPin className="h-3.5 w-3.5 text-barber-gold/85" />
-                              <span className="text-[11px] font-medium uppercase tracking-wide text-barber-paper/65">
-                                Regione
-                              </span>
-                            </div>
-                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                              <MapCard {...cardProps(reg)} />
-                            </div>
-                            {cities.length > 0 && (
-                              <div className="space-y-2 border-l border-barber-gold/10 pl-3">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <Castle className="h-3.5 w-3.5 text-barber-gold/80" />
-                                  <span className="text-[11px] font-medium uppercase tracking-wide text-barber-paper/60">
-                                    Città
-                                  </span>
-                                </div>
-                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                  {cities.map((city) => {
-                                    used.add(city.id);
-                                    return <MapCard key={city.id} {...cardProps(city)} />;
-                                  })}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
+                  {cities.length > 0 && (
+                    <div className="space-y-2 border-l border-barber-gold/15 pl-4">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Castle className="h-3.5 w-3.5 text-barber-gold/85" />
+                        <span className="text-[11px] font-medium uppercase tracking-wide text-barber-paper/65">
+                          Città
+                        </span>
+                      </div>
+                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {cities.map((city) => {
+                          used.add(city.id);
+                          return <MapCard key={city.id} {...cardProps(city)} />;
+                        })}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -396,8 +376,8 @@ export async function MapGallery({
           Scala geografica (campagna lunga)
         </h3>
         <p className="text-sm text-barber-paper/65">
-          Una sola mappa del mondo per campagna; continenti, regioni e città si collegano dalla scala più ampia a
-          quella più dettagliata. La mappa del mondo resta identificabile per usi futuri (es. export o viste globali).
+          Una sola mappa del mondo per campagna; continenti e città si collegano dalla scala più ampia a quella più
+          dettagliata. La mappa del mondo resta identificabile per usi futuri (es. export o viste globali).
         </p>
         {hierarchyBlocks.length > 0 ? (
           <div className="space-y-6">{hierarchyBlocks}</div>

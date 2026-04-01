@@ -10,18 +10,28 @@ import { joinLongCampaign } from "@/app/campaigns/actions";
 type JoinLongCampaignButtonProps = {
   campaignId: string;
   className?: string;
+  /** Se false, le iscrizioni autonome sono chiuse dal GM (default: true se omesso). */
+  registrationsOpen?: boolean;
 };
 
-export function JoinLongCampaignButton({ campaignId, className }: JoinLongCampaignButtonProps) {
+export function JoinLongCampaignButton({
+  campaignId,
+  className,
+  registrationsOpen = true,
+}: JoinLongCampaignButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
   async function handleJoin() {
-    if (loading) return;
+    if (loading || !registrationsOpen) return;
     setLoading(true);
     const res = await joinLongCampaign(campaignId);
     setLoading(false);
     if (res.success) {
+      if (res.justJoined) {
+        router.push(`/campaigns/${campaignId}/iscrizione-confermata`);
+        return;
+      }
       toast.success(res.message);
       router.refresh();
       return;
@@ -30,7 +40,17 @@ export function JoinLongCampaignButton({ campaignId, className }: JoinLongCampai
   }
 
   return (
-    <Button type="button" onClick={handleJoin} disabled={loading} className={className}>
+    <Button
+      type="button"
+      onClick={handleJoin}
+      disabled={loading || !registrationsOpen}
+      className={className}
+      title={
+        !registrationsOpen
+          ? "Le iscrizioni sono chiuse. Contatta il GM."
+          : undefined
+      }
+    >
       {loading ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />

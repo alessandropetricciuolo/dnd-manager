@@ -14,7 +14,7 @@ import {
 const VISIBILITY_VALUES = ["public", "secret", "selective"] as const;
 type Visibility = (typeof VISIBILITY_VALUES)[number];
 
-const MAP_TYPES_ALL = ["world", "continent", "region", "city", "dungeon", "district", "building"] as const;
+const MAP_TYPES_ALL = ["world", "continent", "city", "dungeon", "district", "building"] as const;
 
 export type UploadMapResult = {
   success: boolean;
@@ -66,7 +66,7 @@ export async function listMapsForParentPickerAction(
           data: ((fallback ?? []) as Array<{ id: string; name: string; map_type?: string }>).map((m) => ({
             id: m.id,
             name: m.name,
-            map_type: m.map_type ?? "region",
+            map_type: m.map_type ?? "city",
             parent_map_id: null,
           })),
         };
@@ -101,11 +101,11 @@ export async function uploadMap(
   const campaignId = (formData.get("campaign_id") as string | null)?.trim();
   const name = (formData.get("name") as string | null)?.trim();
   const description = (formData.get("description") as string | null)?.trim() || null;
-  const mapTypeRaw = (formData.get("map_type") as string | null)?.trim() || "region";
+  const mapTypeRaw = (formData.get("map_type") as string | null)?.trim() || "city";
   const allowedMapTypes = MAP_TYPES_ALL;
   const mapType = allowedMapTypes.includes(mapTypeRaw as (typeof allowedMapTypes)[number])
     ? mapTypeRaw
-    : "region";
+    : "city";
   const parentMapIdRaw = (formData.get("parent_map_id") as string | null)?.trim() || "";
   const parentMapId = parentMapIdRaw || null;
   const imageFile = formData.get("image") as File | null;

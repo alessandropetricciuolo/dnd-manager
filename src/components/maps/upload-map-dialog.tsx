@@ -30,19 +30,17 @@ import { listMapsForParentPickerAction, uploadMap, type MapParentOption } from "
 const MAP_TYPE_OPTIONS: { label: string; value: string }[] = [
   { label: "Mondo", value: "world" },
   { label: "Continente", value: "continent" },
-  { label: "Regione", value: "region" },
   { label: "Città/Urbano", value: "city" },
   { label: "Dungeon/Wild", value: "dungeon" },
   { label: "Quartiere", value: "district" },
   { label: "Edificio", value: "building" },
 ];
 
-/** Campagna lunga: scala geografica esplicita (mondo unico → continenti → regioni → città) + dettaglio. */
+/** Campagna lunga: Mondo (unico) → Continenti → Città + dettaglio (dungeon, ecc.). */
 const LONG_MAP_TYPE_OPTIONS: { label: string; value: string }[] = [
   { label: "Mappa del mondo (unica per campagna)", value: "world" },
   { label: "Continente (sotto il mondo)", value: "continent" },
-  { label: "Regione (sotto un continente)", value: "region" },
-  { label: "Città (sotto una regione)", value: "city" },
+  { label: "Città (sotto un continente)", value: "city" },
   { label: "Dungeon / zona di dettaglio", value: "dungeon" },
   { label: "Quartiere", value: "district" },
   { label: "Edificio", value: "building" },
@@ -72,7 +70,7 @@ export function UploadMapDialog({
   const isLongCampaign = campaignType === "long";
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [mapType, setMapType] = useState<string>(isLongCampaign ? "continent" : "region");
+  const [mapType, setMapType] = useState<string>(isLongCampaign ? "continent" : "city");
   const [visibility, setVisibility] = useState<string>("public");
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [selectedPartyIds, setSelectedPartyIds] = useState<string[]>([]);
@@ -88,8 +86,7 @@ export function UploadMapDialog({
     if (!isLongCampaign) return [];
     if (mapType === "world") return [];
     if (mapType === "continent") return parentOptions.filter((m) => m.map_type === "world");
-    if (mapType === "region") return parentOptions.filter((m) => m.map_type === "continent");
-    if (mapType === "city") return parentOptions.filter((m) => m.map_type === "region");
+    if (mapType === "city") return parentOptions.filter((m) => m.map_type === "continent");
     return parentOptions;
   }, [isLongCampaign, mapType, parentOptions]);
 
@@ -146,8 +143,8 @@ export function UploadMapDialog({
         toast.error("Esiste già una mappa del mondo. Modificala o eliminala prima di crearne un'altra.");
         return;
       }
-      if (["continent", "region", "city"].includes(mapType) && !parentMapId) {
-        toast.error("Seleziona la mappa genitore nella gerarchia (mondo → continente → regione → città).");
+      if (["continent", "city"].includes(mapType) && !parentMapId) {
+        toast.error("Seleziona la mappa genitore nella gerarchia (mondo → continente → città).");
         return;
       }
     }
@@ -159,7 +156,7 @@ export function UploadMapDialog({
       if (result.success) {
         toast.success(result.message);
         setOpen(false);
-        setMapType(isLongCampaign ? "continent" : "region");
+        setMapType(isLongCampaign ? "continent" : "city");
         setVisibility("public");
         setSelectedPlayerIds([]);
         setSelectedPartyIds([]);
@@ -215,8 +212,8 @@ export function UploadMapDialog({
             Aggiungi un&apos;immagine per la mappa della campagna (JPG, PNG, WebP, GIF).
             {isLongCampaign && (
               <span className="mt-2 block text-xs text-barber-gold/90">
-                Campagna lunga: scala Mondo (una sola) → Continenti → Regioni → Città. Le mappe del mondo restano
-                disponibili anche per progetti futuri (es. viste globali).
+                Campagna lunga: scala Mondo (una sola) → Continenti → Città. Le mappe del mondo restano disponibili
+                anche per progetti futuri (es. viste globali).
               </span>
             )}
           </DialogDescription>
@@ -266,7 +263,7 @@ export function UploadMapDialog({
               <Label>Mappa genitore (scala superiore)</Label>
               {loadingParents ? (
                 <p className="text-xs text-barber-paper/60">Caricamento elenco mappe…</p>
-              ) : ["continent", "region", "city"].includes(mapType) ? (
+              ) : ["continent", "city"].includes(mapType) ? (
                 <select
                   className="h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-3 text-sm text-barber-paper"
                   value={parentMapId}
@@ -298,8 +295,7 @@ export function UploadMapDialog({
               )}
               <p className="text-xs text-barber-paper/55">
                 {mapType === "continent" && "Il continente deve appartenere alla mappa del mondo."}
-                {mapType === "region" && "La regione deve appartenere a un continente."}
-                {mapType === "city" && "La città deve appartenere a una regione."}
+                {mapType === "city" && "La città deve appartenere a un continente."}
                 {["dungeon", "district", "building"].includes(mapType) &&
                   "Opzionale: collega a una mappa più grande per orientarti in galleria."}
               </p>

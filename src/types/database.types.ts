@@ -206,6 +206,8 @@ export interface Database {
           name: string;
           description: string | null;
           is_public: boolean;
+          /** Se false, i player non possono iscriversi da soli (campagna Long pubblica). */
+          long_registrations_open?: boolean;
           type: "oneshot" | "quest" | "long" | null;
           image_url: string | null;
           image_style_prompt: string | null;
