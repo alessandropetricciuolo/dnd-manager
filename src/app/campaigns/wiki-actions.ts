@@ -95,6 +95,15 @@ function parseRelations(formData: FormData): RelationFormRow[] {
   }
 }
 
+/** Se la migration `include_in_campaign_ai_memory` non è ancora su Supabase, PostgREST rifiuta il payload. */
+function isMissingWikiAiMemoryColumnError(err: { message?: string } | null | undefined): boolean {
+  const m = (err?.message ?? "").toLowerCase();
+  return (
+    m.includes("include_in_campaign_ai_memory") &&
+    (m.includes("schema cache") || m.includes("could not find") || m.includes("column"))
+  );
+}
+
 export async function createEntity(
   campaignId: string,
   formData: FormData
@@ -230,11 +239,18 @@ export async function createEntity(
       insertPayload.xp_value = xpValue;
     }
 
-    const { data: inserted, error } = await supabase
-      .from("wiki_entities")
-      .insert(insertPayload)
-      .select("id")
-      .single();
+    let insertRes = await supabase.from("wiki_entities").insert(insertPayload).select("id").single();
+
+    if (
+      insertRes.error &&
+      "include_in_campaign_ai_memory" in insertPayload &&
+      isMissingWikiAiMemoryColumnError(insertRes.error)
+    ) {
+      const { include_in_campaign_ai_memory: _d, ...rest } = insertPayload;
+      insertRes = await supabase.from("wiki_entities").insert(rest).select("id").single();
+    }
+
+    const { data: inserted, error } = insertRes;
 
     if (error || !inserted) {
       console.error("[createEntity]", error);
@@ -437,11 +453,26 @@ export async function updateEntity(
       updatePayload.include_in_campaign_ai_memory = includeMem;
     }
 
-    const { error } = await supabase
+    let updateRes = await supabase
       .from("wiki_entities")
       .update(updatePayload)
       .eq("id", entityId)
       .eq("campaign_id", campaignId);
+
+    if (
+      updateRes.error &&
+      "include_in_campaign_ai_memory" in updatePayload &&
+      isMissingWikiAiMemoryColumnError(updateRes.error)
+    ) {
+      const { include_in_campaign_ai_memory: _d, ...rest } = updatePayload;
+      updateRes = await supabase
+        .from("wiki_entities")
+        .update(rest)
+        .eq("id", entityId)
+        .eq("campaign_id", campaignId);
+    }
+
+    const { error } = updateRes;
 
     if (error) {
       console.error("[updateEntity]", error);
