@@ -23,7 +23,7 @@ export default async function CampaignMapPage({ params }: PageProps) {
 
   const { data: map, error: mapError } = await supabase
     .from("maps")
-    .select("id, name, image_url, campaign_id")
+    .select("id, name, image_url, campaign_id, parent_map_id")
     .eq("id", mapId)
     .eq("campaign_id", campaignId)
     .single();
@@ -83,6 +83,18 @@ export default async function CampaignMapPage({ params }: PageProps) {
     .neq("id", mapId)
     .order("name");
 
+  const parentMapId = (map as { parent_map_id?: string | null }).parent_map_id ?? null;
+  let parentMapName: string | null = null;
+  if (parentMapId) {
+    const { data: parentMap } = await supabase
+      .from("maps")
+      .select("name")
+      .eq("id", parentMapId)
+      .eq("campaign_id", campaignId)
+      .maybeSingle();
+    parentMapName = parentMap?.name ?? null;
+  }
+
   return (
     <div className="flex h-screen flex-col">
       <header className="flex shrink-0 flex-wrap items-center gap-3 border-b border-barber-gold/40 bg-barber-dark px-4 py-3">
@@ -96,6 +108,19 @@ export default async function CampaignMapPage({ params }: PageProps) {
             Campagna
           </Button>
         </Link>
+        {parentMapId && (
+          <Link href={`/campaigns/${campaignId}/maps/${parentMapId}`}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-slate-300 hover:text-slate-50"
+              title={parentMapName ? `Torna a: ${parentMapName}` : "Torna alla mappa precedente"}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Mappa precedente
+            </Button>
+          </Link>
+        )}
         <h1 className="min-w-0 flex-1 truncate text-lg font-semibold text-slate-50">
           {map.name}
         </h1>
