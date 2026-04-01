@@ -39,7 +39,7 @@ export async function fetchLongCampaignWikiMemoryPromptBlock(
 
   const { data: rowsRaw, error: qErr } = await admin
     .from("wiki_entities")
-    .select("id, name, type, content, updated_at, include_in_campaign_ai_memory")
+    .select("*")
     .eq("campaign_id", campaignId)
     .order("updated_at", { ascending: true });
 

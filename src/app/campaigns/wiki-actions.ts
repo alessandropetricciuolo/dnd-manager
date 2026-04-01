@@ -697,7 +697,7 @@ export async function getEntity(
 
     const { data: entity, error } = await supabase
       .from("wiki_entities")
-      .select("id, campaign_id, name, type, content, image_url, telegram_fallback_id, is_secret, visibility, attributes, sort_order, is_core, global_status, xp_value, tags, include_in_campaign_ai_memory, created_at, updated_at")
+      .select("*")
       .eq("id", entityId)
       .eq("campaign_id", campaignId)
       .single();
