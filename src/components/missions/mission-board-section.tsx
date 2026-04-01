@@ -10,13 +10,20 @@ export type MissionBoardMission = {
   paga: string;
   urgenza: string;
   description: string;
+  status?: string;
+  points_reward?: number;
+  completed_at?: string | null;
+  completed_by_guild_id?: string | null;
+  completed_by_guild_name?: string | null;
 };
 
 export type MissionBoardGuild = {
   id: string;
   name: string;
-  grade: number;
+  /** Rango lettera D–S (dopo migration). Fallback legacy: assente. */
+  rank?: string;
   score: number;
+  auto_rank?: boolean;
 };
 
 type MissionBoardSectionProps = {
@@ -31,23 +38,42 @@ export async function MissionBoardSection({
   const supabase = await createSupabaseServerClient();
 
   const [{ data: missionsRaw }, { data: guildsRaw }] = await Promise.all([
-    supabase
-      .from("campaign_missions")
-      .select(
-        "id, grade, title, committente, ubicazione, paga, urgenza, description"
-      )
-      .eq("campaign_id", campaignId)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("campaign_guilds")
-      .select("id, name, grade, score")
-      .eq("campaign_id", campaignId)
-      .order("score", { ascending: false })
-      .order("grade", { ascending: false }),
+    supabase.from("campaign_missions").select("*").eq("campaign_id", campaignId).order("created_at", { ascending: false }),
+    supabase.from("campaign_guilds").select("*").eq("campaign_id", campaignId).order("score", { ascending: false }),
   ]);
 
-  const missions = (missionsRaw ?? []) as MissionBoardMission[];
-  const guilds = (guildsRaw ?? []) as MissionBoardGuild[];
+  const guilds = (guildsRaw ?? []).map((row) => {
+    const r = row as Record<string, unknown>;
+    return {
+      id: String(r.id),
+      name: String(r.name ?? ""),
+      rank: typeof r.rank === "string" ? r.rank : undefined,
+      score: typeof r.score === "number" ? r.score : Number(r.score ?? 0) || 0,
+      auto_rank: r.auto_rank !== false,
+    };
+  }) as MissionBoardGuild[];
+  const guildNameById = new Map(guilds.map((g) => [g.id, g.name]));
+
+  const missions = (missionsRaw ?? []).map((row) => {
+    const m = row as Record<string, unknown>;
+    const gid = m.completed_by_guild_id != null ? String(m.completed_by_guild_id) : null;
+    const pts = m.points_reward;
+    return {
+      id: String(m.id),
+      grade: String(m.grade ?? ""),
+      title: String(m.title ?? ""),
+      committente: String(m.committente ?? ""),
+      ubicazione: String(m.ubicazione ?? ""),
+      paga: String(m.paga ?? ""),
+      urgenza: String(m.urgenza ?? ""),
+      description: String(m.description ?? ""),
+      status: typeof m.status === "string" ? m.status : "open",
+      points_reward: typeof pts === "number" ? pts : Number(pts ?? 0) || 0,
+      completed_at: m.completed_at != null ? String(m.completed_at) : null,
+      completed_by_guild_id: gid,
+      completed_by_guild_name: gid ? (guildNameById.get(gid) ?? null) : null,
+    } satisfies MissionBoardMission;
+  });
 
   return (
     <MissionBoard
@@ -58,4 +84,3 @@ export async function MissionBoardSection({
     />
   );
 }
-

@@ -25,17 +25,28 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import {
+  applyGuildRankFromPointsAction,
+  completeMissionAction,
   createGuildAction,
   createMissionAction,
   deleteGuildAction,
   deleteMissionAction,
+  reopenMissionAction,
   updateGuildAction,
   updateMissionAction,
 } from "@/lib/actions/mission-actions";
+import { GUILD_RANK_LETTERS, guildRankOrder } from "@/lib/missions/guild-ranks";
 
 type MissionBoardMission = {
   id: string;
@@ -46,13 +57,19 @@ type MissionBoardMission = {
   paga: string;
   urgenza: string;
   description: string;
+  status: string;
+  points_reward: number;
+  completed_at?: string | null;
+  completed_by_guild_id?: string | null;
+  completed_by_guild_name?: string | null;
 };
 
 type MissionBoardGuild = {
   id: string;
   name: string;
-  grade: number;
+  rank?: string;
   score: number;
+  auto_rank?: boolean;
 };
 
 type MissionBoardProps = {
@@ -70,12 +87,14 @@ const EMPTY_MISSION_DRAFT = {
   paga: "",
   urgenza: "",
   description: "",
+  points_reward: "0",
 };
 
 const EMPTY_GUILD_DRAFT = {
   name: "",
-  grade: "",
-  score: "",
+  rank: "D" as (typeof GUILD_RANK_LETTERS)[number],
+  score: "0",
+  autoRank: true,
 };
 
 export function MissionBoard({
@@ -90,12 +109,22 @@ export function MissionBoard({
   const sortedGuilds = useMemo(() => {
     return [...guilds].sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
-      return b.grade - a.grade;
+      return guildRankOrder(b.rank ?? "D") - guildRankOrder(a.rank ?? "D");
     });
   }, [guilds]);
 
+  const sortedMissions = useMemo(() => {
+    return [...missions].sort((a, b) => {
+      const ao = a.status === "open" ? 0 : 1;
+      const bo = b.status === "open" ? 0 : 1;
+      if (ao !== bo) return ao - bo;
+      return 0;
+    });
+  }, [missions]);
+
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsMission, setDetailsMission] = useState<MissionBoardMission | null>(null);
+  const [completeGuildId, setCompleteGuildId] = useState<string>("");
 
   const [editOpen, setEditOpen] = useState(false);
   const [editMode, setEditMode] = useState<"add" | "edit">("add");
@@ -120,12 +149,14 @@ export function MissionBoard({
       paga: m.paga,
       urgenza: m.urgenza,
       description: m.description,
+      points_reward: String(m.points_reward ?? 0),
     });
     setEditOpen(true);
   };
 
   const openDetailsMission = (m: MissionBoardMission) => {
     setDetailsMission(m);
+    setCompleteGuildId(guilds[0]?.id ?? "");
     setDetailsOpen(true);
   };
 
@@ -146,14 +177,27 @@ export function MissionBoard({
     setEditGuildId(g.id);
     setGuildDraft({
       name: g.name,
-      grade: String(g.grade),
+      rank: (GUILD_RANK_LETTERS.includes((g.rank ?? "D").toUpperCase() as (typeof GUILD_RANK_LETTERS)[number])
+        ? (g.rank ?? "D").toUpperCase()
+        : "D") as (typeof GUILD_RANK_LETTERS)[number],
       score: String(g.score),
+      autoRank: g.auto_rank !== false,
     });
     setGuildDialogOpen(true);
   };
 
   async function submitMission() {
-    const { grade, title, committente, ubicazione, paga, urgenza, description } = missionDraft;
+    const {
+      grade,
+      title,
+      committente,
+      ubicazione,
+      paga,
+      urgenza,
+      description,
+      points_reward,
+    } = missionDraft;
+    const pts = Number.parseInt(points_reward, 10);
 
     startTransition(async () => {
       const res =
@@ -166,7 +210,8 @@ export function MissionBoard({
               ubicazione,
               paga,
               urgenza,
-              description
+              description,
+              Number.isNaN(pts) ? 0 : pts
             )
           : await updateMissionAction(
               campaignId,
@@ -177,7 +222,8 @@ export function MissionBoard({
               ubicazione,
               paga,
               urgenza,
-              description
+              description,
+              Number.isNaN(pts) ? 0 : pts
             );
 
       if (!res.success) {
@@ -193,19 +239,25 @@ export function MissionBoard({
 
   async function submitGuild() {
     const name = guildDraft.name.trim();
-    const gradeNum = Number.parseInt(guildDraft.grade, 10);
     const scoreNum = Number.parseInt(guildDraft.score, 10);
 
-    if (!name || Number.isNaN(gradeNum) || Number.isNaN(scoreNum)) {
-      toast.error("Compila correttamente nome, grado e punteggio.");
+    if (!name || Number.isNaN(scoreNum) || scoreNum < 0) {
+      toast.error("Compila correttamente nome e punteggio.");
       return;
     }
 
     startTransition(async () => {
       const res =
         guildDialogMode === "add" || !editGuildId
-          ? await createGuildAction(campaignId, name, gradeNum, scoreNum)
-          : await updateGuildAction(campaignId, editGuildId, name, gradeNum, scoreNum);
+          ? await createGuildAction(campaignId, name, guildDraft.rank, scoreNum, guildDraft.autoRank)
+          : await updateGuildAction(
+              campaignId,
+              editGuildId,
+              name,
+              guildDraft.rank,
+              scoreNum,
+              guildDraft.autoRank
+            );
 
       if (!res.success) {
         toast.error(res.message ?? "Errore gilda");
@@ -248,6 +300,53 @@ export function MissionBoard({
     });
   }
 
+  function submitCompleteMission() {
+    if (!detailsMission || detailsMission.status !== "open") return;
+    if (!completeGuildId) {
+      toast.error("Seleziona la gilda che completa la missione.");
+      return;
+    }
+    startTransition(async () => {
+      const res = await completeMissionAction(campaignId, detailsMission.id, completeGuildId);
+      if (!res.success) {
+        toast.error(res.message ?? "Errore");
+        return;
+      }
+      toast.success("Missione segnata come completata; punti assegnati alla gilda.");
+      setDetailsOpen(false);
+      router.refresh();
+    });
+  }
+
+  function submitReopenMission() {
+    if (!detailsMission || detailsMission.status !== "completed") return;
+    if (!window.confirm("Riaprire la missione? I punti premio verranno detratti dalla gilda che l’aveva completata.")) {
+      return;
+    }
+    startTransition(async () => {
+      const res = await reopenMissionAction(campaignId, detailsMission.id);
+      if (!res.success) {
+        toast.error(res.message ?? "Errore");
+        return;
+      }
+      toast.success("Missione riaperta.");
+      setDetailsOpen(false);
+      router.refresh();
+    });
+  }
+
+  function syncRankFromPoints(guildId: string) {
+    startTransition(async () => {
+      const res = await applyGuildRankFromPointsAction(campaignId, guildId);
+      if (!res.success) {
+        toast.error(res.message ?? "Errore");
+        return;
+      }
+      toast.success("Rango aggiornato in base ai punti.");
+      router.refresh();
+    });
+  }
+
   return (
     <div
       className={cn(
@@ -257,7 +356,6 @@ export function MissionBoard({
         "shadow-[0_0_0_1px_rgba(217,119,6,0.16),0_0_40px_rgba(56,189,248,0.06)]"
       )}
     >
-      {/* "Muro di pietra" (finto) */}
       <div
         className="pointer-events-none absolute inset-0 opacity-90"
         style={{
@@ -266,7 +364,6 @@ export function MissionBoard({
         }}
       />
 
-      {/* Cristallo: proiezione luce */}
       <div className="pointer-events-none absolute inset-0 opacity-100">
         <div className="absolute -left-24 -top-12 h-72 w-72 rounded-full bg-[radial-gradient(circle_at_center,rgba(56,189,248,0.35),transparent_60%)] blur-sm" />
         <div className="absolute left-1/2 top-[-30px] h-64 w-64 -translate-x-1/2 rounded-full bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.35),transparent_60%)] blur-sm" />
@@ -279,6 +376,11 @@ export function MissionBoard({
             <h2 className="text-lg font-semibold tracking-widest text-amber-200 drop-shadow-[0_0_18px_rgba(56,189,248,0.25)] md:text-xl">
               Missioni
             </h2>
+            <p className="mt-1 max-w-xl text-xs text-zinc-400">
+              Ranghi gilda: D → C → B → A → S. I punti premio delle missioni completate aumentano il punteggio; se
+              «Rango automatico» è attivo, il rango si aggiorna alle soglie (modificabili nel codice). Puoi sempre
+              impostare rango e punti a mano nella gilda.
+            </p>
           </div>
           {isGmOrAdmin && (
             <div className="flex gap-2">
@@ -297,53 +399,48 @@ export function MissionBoard({
           </TabsList>
 
           <TabsContent value="missions">
-            <div className="rounded-lg border border-amber-600/20 bg-zinc-950/30 p-3">
+            <div className="rounded-lg border border-amber-600/20 bg-zinc-950/30 p-3 overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="border-amber-600/20 hover:bg-transparent">
-                    <TableHead className="text-[11px] uppercase tracking-wider text-amber-200/90">
-                      Grado
-                    </TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider text-amber-200/90">
-                      Titolo
-                    </TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider text-amber-200/90">
-                      Committente
-                    </TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider text-amber-200/90">
-                      Ubicazione
-                    </TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider text-amber-200/90">
-                      Paga
-                    </TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider text-amber-200/90">
-                      Urgenza
-                    </TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider text-amber-200/90">Stato</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider text-amber-200/90">Grado</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider text-amber-200/90">Titolo</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider text-amber-200/90">Committente</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider text-amber-200/90">Ubicazione</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider text-amber-200/90">Paga</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider text-amber-200/90">Urgenza</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider text-amber-200/90">Pt.</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {missions.length === 0 ? (
+                  {sortedMissions.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-zinc-400">
+                      <TableCell colSpan={8} className="text-zinc-400">
                         Nessuna missione disponibile.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    missions.map((m) => (
+                    sortedMissions.map((m) => (
                       <TableRow
                         key={m.id}
                         className={cn(
                           "cursor-pointer transition-colors",
-                          "hover:bg-amber-600/10"
+                          "hover:bg-amber-600/10",
+                          m.status === "completed" && "opacity-70"
                         )}
                         onClick={() => openDetailsMission(m)}
                       >
+                        <TableCell className="whitespace-nowrap text-xs text-amber-100/90">
+                          {m.status === "completed" ? "Completata" : "Disponibile"}
+                        </TableCell>
                         <TableCell className="font-medium text-amber-100">{m.grade}</TableCell>
                         <TableCell className="text-zinc-100">{m.title}</TableCell>
                         <TableCell className="text-zinc-200">{m.committente}</TableCell>
                         <TableCell className="text-zinc-200">{m.ubicazione}</TableCell>
                         <TableCell className="text-zinc-200">{m.paga}</TableCell>
                         <TableCell className="text-zinc-200">{m.urgenza}</TableCell>
+                        <TableCell className="text-zinc-200">{m.points_reward ?? 0}</TableCell>
                       </TableRow>
                     ))
                   )}
@@ -370,22 +467,17 @@ export function MissionBoard({
               <Table>
                 <TableHeader>
                   <TableRow className="border-amber-600/20 hover:bg-transparent">
-                    <TableHead className="text-[11px] uppercase tracking-wider text-amber-200/90">
-                      Nome della gilda
-                    </TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider text-amber-200/90">
-                      Grado
-                    </TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider text-amber-200/90">
-                      Punteggio
-                    </TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider text-amber-200/90">Nome della gilda</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider text-amber-200/90">Rango</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider text-amber-200/90">Punteggio</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider text-amber-200/90">Auto rango</TableHead>
                     {isGmOrAdmin && <TableHead className="text-amber-200">Azioni</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {sortedGuilds.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={isGmOrAdmin ? 4 : 3} className="text-zinc-400">
+                      <TableCell colSpan={isGmOrAdmin ? 5 : 4} className="text-zinc-400">
                         Nessuna gilda in classifica.
                       </TableCell>
                     </TableRow>
@@ -393,11 +485,26 @@ export function MissionBoard({
                     sortedGuilds.map((g) => (
                       <TableRow key={g.id} className="hover:bg-amber-600/10">
                         <TableCell className="text-zinc-100">{g.name}</TableCell>
-                        <TableCell className="text-zinc-200">{g.grade}</TableCell>
+                        <TableCell className="text-zinc-200">{g.rank ?? "—"}</TableCell>
                         <TableCell className="text-zinc-200">{g.score}</TableCell>
+                        <TableCell className="text-zinc-300 text-sm">{g.auto_rank !== false ? "Sì" : "No"}</TableCell>
                         {isGmOrAdmin && (
                           <TableCell>
-                            <div className="flex justify-end gap-2">
+                            <div className="flex flex-wrap justify-end gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                title="Imposta il rango solo in base ai punti attuali"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  syncRankFromPoints(g.id);
+                                }}
+                                className="border-sky-500/40 text-sky-100 hover:bg-sky-500/15"
+                              >
+                                <RefreshCw className="mr-1 h-3.5 w-3.5" />
+                                Rango da punti
+                              </Button>
                               <Button
                                 type="button"
                                 variant="outline"
@@ -436,7 +543,6 @@ export function MissionBoard({
         </Tabs>
       </div>
 
-      {/* Mission details */}
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
         <DialogContent className="border-amber-600/30 bg-zinc-950 text-zinc-100 sm:max-w-2xl">
           <DialogHeader>
@@ -445,6 +551,36 @@ export function MissionBoard({
 
           {detailsMission ? (
             <div className="space-y-4">
+              <div className="flex flex-wrap gap-2 text-sm">
+                <span
+                  className={cn(
+                    "rounded-md px-2 py-0.5 text-xs font-semibold",
+                    detailsMission.status === "completed"
+                      ? "bg-emerald-900/50 text-emerald-200"
+                      : "bg-amber-900/40 text-amber-200"
+                  )}
+                >
+                  {detailsMission.status === "completed" ? "Completata" : "Disponibile"}
+                </span>
+                <span className="text-zinc-400">
+                  Punti premio: <strong className="text-zinc-200">{detailsMission.points_reward ?? 0}</strong>
+                </span>
+              </div>
+
+              {detailsMission.status === "completed" && (
+                <div className="rounded-lg border border-emerald-600/20 bg-emerald-950/20 p-3 text-sm text-zinc-200">
+                  <p>
+                    Completata da:{" "}
+                    <strong>{detailsMission.completed_by_guild_name ?? detailsMission.completed_by_guild_id ?? "—"}</strong>
+                  </p>
+                  {detailsMission.completed_at && (
+                    <p className="text-xs text-zinc-400 mt-1">
+                      {new Date(detailsMission.completed_at).toLocaleString("it-IT")}
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <p className="text-xs text-amber-200/70">Grado</p>
@@ -474,13 +610,55 @@ export function MissionBoard({
 
               <div className="rounded-lg border border-amber-600/20 bg-zinc-950/30 p-3">
                 <p className="mb-2 text-xs text-amber-200/70">Descrizione</p>
-                <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-100">
-                  {detailsMission.description}
-                </p>
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-100">{detailsMission.description}</p>
               </div>
 
+              {isGmOrAdmin && detailsMission.status === "open" && guilds.length > 0 && (
+                <div className="rounded-lg border border-amber-600/30 bg-zinc-900/40 p-3 space-y-2">
+                  <Label className="text-amber-100">Segna completata dalla gilda</Label>
+                  <Select value={completeGuildId} onValueChange={setCompleteGuildId}>
+                    <SelectTrigger className="border-amber-600/40 bg-zinc-950 text-zinc-100">
+                      <SelectValue placeholder="Scegli gilda" />
+                    </SelectTrigger>
+                    <SelectContent className="border-amber-600/30 bg-zinc-950 text-zinc-100">
+                      {guilds.map((g) => (
+                        <SelectItem key={g.id} value={g.id}>
+                          {g.name} ({g.rank ?? "?"}) — {g.score} pt
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    className="w-full bg-emerald-700 text-white hover:bg-emerald-600"
+                    disabled={isPending || !completeGuildId}
+                    onClick={() => submitCompleteMission()}
+                  >
+                    Completa missione e assegna punti
+                  </Button>
+                </div>
+              )}
+
+              {isGmOrAdmin && detailsMission.status === "open" && guilds.length === 0 && (
+                <p className="text-sm text-amber-200/80">
+                  Aggiungi almeno una gilda nella tab Classifica per poter chiudere una missione.
+                </p>
+              )}
+
+              {isGmOrAdmin && detailsMission.status === "completed" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-amber-600/40 text-amber-100"
+                  disabled={isPending}
+                  onClick={() => submitReopenMission()}
+                >
+                  Riapri missione (ritira i punti dalla gilda)
+                </Button>
+              )}
+
               {isGmOrAdmin && (
-                <div className="flex flex-wrap justify-end gap-2">
+                <div className="flex flex-wrap justify-end gap-2 border-t border-amber-600/20 pt-3">
                   <Button
                     type="button"
                     variant="outline"
@@ -493,11 +671,7 @@ export function MissionBoard({
                     <Pencil className="mr-2 h-4 w-4" />
                     Modifica
                   </Button>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    onClick={() => onDeleteMission(detailsMission.id)}
-                  >
+                  <Button type="button" variant="destructive" onClick={() => onDeleteMission(detailsMission.id)}>
                     <Trash2 className="mr-2 h-4 w-4" />
                     Elimina
                   </Button>
@@ -510,7 +684,6 @@ export function MissionBoard({
         </DialogContent>
       </Dialog>
 
-      {/* Mission add/edit */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="border-amber-600/30 bg-zinc-950 text-zinc-100 sm:max-w-2xl">
           <DialogHeader>
@@ -521,12 +694,25 @@ export function MissionBoard({
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1">
                 <Label htmlFor="m-grade" className="text-zinc-200">
-                  Grado
+                  Grado (testo libero, es. difficoltà)
                 </Label>
                 <Input
                   id="m-grade"
                   value={missionDraft.grade}
                   onChange={(e) => setMissionDraft((d) => ({ ...d, grade: e.target.value }))}
+                  className="border-amber-600/30 bg-zinc-950"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="m-pts" className="text-zinc-200">
+                  Punti premio (gilda)
+                </Label>
+                <Input
+                  id="m-pts"
+                  type="number"
+                  min={0}
+                  value={missionDraft.points_reward}
+                  onChange={(e) => setMissionDraft((d) => ({ ...d, points_reward: e.target.value }))}
                   className="border-amber-600/30 bg-zinc-950"
                 />
               </div>
@@ -601,12 +787,7 @@ export function MissionBoard({
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setEditOpen(false)}
-              className="text-zinc-300"
-            >
+            <Button type="button" variant="ghost" onClick={() => setEditOpen(false)} className="text-zinc-300">
               Annulla
             </Button>
             <Button
@@ -621,7 +802,6 @@ export function MissionBoard({
         </DialogContent>
       </Dialog>
 
-      {/* Guild add/edit */}
       <Dialog open={guildDialogOpen} onOpenChange={setGuildDialogOpen}>
         <DialogContent className="border-amber-600/30 bg-zinc-950 text-zinc-100 sm:max-w-xl">
           <DialogHeader>
@@ -643,16 +823,27 @@ export function MissionBoard({
 
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1">
-                <Label htmlFor="g-grade" className="text-zinc-200">
-                  Grado
-                </Label>
-                <Input
-                  id="g-grade"
-                  type="number"
-                  value={guildDraft.grade}
-                  onChange={(e) => setGuildDraft((d) => ({ ...d, grade: e.target.value }))}
-                  className="border-amber-600/30 bg-zinc-950"
-                />
+                <Label className="text-zinc-200">Rango (D–S)</Label>
+                <Select
+                  value={guildDraft.rank}
+                  onValueChange={(v) =>
+                    setGuildDraft((d) => ({
+                      ...d,
+                      rank: v as (typeof GUILD_RANK_LETTERS)[number],
+                    }))
+                  }
+                >
+                  <SelectTrigger className="border-amber-600/40 bg-zinc-950 text-zinc-100">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="border-amber-600/30 bg-zinc-950 text-zinc-100">
+                    {GUILD_RANK_LETTERS.map((r) => (
+                      <SelectItem key={r} value={r}>
+                        {r}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1">
                 <Label htmlFor="g-score" className="text-zinc-200">
@@ -661,21 +852,37 @@ export function MissionBoard({
                 <Input
                   id="g-score"
                   type="number"
+                  min={0}
                   value={guildDraft.score}
                   onChange={(e) => setGuildDraft((d) => ({ ...d, score: e.target.value }))}
                   className="border-amber-600/30 bg-zinc-950"
                 />
               </div>
             </div>
+
+            <div className="flex items-start gap-2 rounded-md border border-amber-600/25 bg-zinc-900/50 p-3">
+              <input
+                type="checkbox"
+                id="g-auto-rank"
+                checked={guildDraft.autoRank}
+                onChange={(e) => setGuildDraft((d) => ({ ...d, autoRank: e.target.checked }))}
+                className="mt-1 h-4 w-4 rounded border-amber-600/50 bg-zinc-950 text-amber-600"
+              />
+              <div>
+                <Label htmlFor="g-auto-rank" className="cursor-pointer text-zinc-200">
+                  Rango automatico dai punti
+                </Label>
+                <p className="text-xs text-zinc-400 mt-1">
+                  Se attivo, al completamento di una missione il rango viene ricalcolato dalle soglie. Se disattivo,
+                  solo i punti cambiano: puoi tenere un rango narrativo diverso finché non usi «Rango da punti» nella
+                  tabella.
+                </p>
+              </div>
+            </div>
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setGuildDialogOpen(false)}
-              className="text-zinc-300"
-            >
+            <Button type="button" variant="ghost" onClick={() => setGuildDialogOpen(false)} className="text-zinc-300">
               Annulla
             </Button>
             <Button
@@ -692,4 +899,3 @@ export function MissionBoard({
     </div>
   );
 }
-
