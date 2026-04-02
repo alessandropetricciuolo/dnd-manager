@@ -154,23 +154,22 @@ export default async function CampaignMapPage({ params }: PageProps) {
             />
           </div>
 
-          <details
-            className="group flex max-h-[min(42vh,28rem)] min-h-0 w-full shrink-0 flex-col overflow-hidden rounded-lg border border-barber-gold/25 bg-barber-dark/90 lg:h-full lg:max-h-none lg:w-[320px]"
-            open
+          {/* aside + flex: <details> spesso non vincola l’altezza del blocco dopo <summary>, quindi overflow-y non scrolla. */}
+          <aside
+            className="flex min-h-0 w-full max-h-[min(45dvh,32rem)] shrink-0 flex-col overflow-hidden rounded-lg border border-barber-gold/25 bg-barber-dark/90 lg:h-full lg:max-h-none lg:w-[320px] lg:self-stretch"
+            aria-label="Descrizione mappa"
           >
-            <summary className="shrink-0 cursor-pointer list-none border-b border-barber-gold/20 px-3 py-2 text-sm font-medium text-barber-gold marker:content-['']">
+            <div className="shrink-0 border-b border-barber-gold/20 px-3 py-2 text-sm font-medium text-barber-gold">
               Descrizione mappa
-              <span className="ml-2 text-xs text-barber-paper/60 group-open:hidden">(apri)</span>
-              <span className="ml-2 text-xs text-barber-paper/60 hidden group-open:inline">(chiudi)</span>
-            </summary>
-            <div className="scrollbar-barber-y min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-3 text-sm leading-relaxed text-barber-paper/90">
+            </div>
+            <div className="scrollbar-barber-y min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain p-3 text-sm leading-relaxed text-barber-paper/90 [-webkit-overflow-scrolling:touch]">
               {map.description?.trim() ? (
                 <p className="whitespace-pre-wrap break-words">{map.description}</p>
               ) : (
                 <p className="italic text-barber-paper/50">Nessuna descrizione per questa mappa.</p>
               )}
             </div>
-          </details>
+          </aside>
         </div>
       </main>
     </div>
