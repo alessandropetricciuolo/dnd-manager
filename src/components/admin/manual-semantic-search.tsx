@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import {
   searchManualsSemanticAction,
   type ManualSearchHit,
+  type ManualSearchMode,
 } from "@/lib/actions/manual-search-actions";
 import { cn } from "@/lib/utils";
 
@@ -16,7 +17,7 @@ export function ManualSemanticSearch() {
   const [query, setQuery] = useState("");
   const [primaryText, setPrimaryText] = useState<string | null>(null);
   const [hits, setHits] = useState<ManualSearchHit[]>([]);
-  const [mode, setMode] = useState<"semantic" | "text-fallback" | null>(null);
+  const [mode, setMode] = useState<ManualSearchMode | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function runSearch() {
@@ -38,9 +39,11 @@ export function ManualSemanticSearch() {
       setHits(res.hits);
       setMode(res.mode);
       toast.success(
-        res.mode === "semantic"
-          ? "Risultato da ricerca semantica (chunk vicini uniti se disponibili)."
-          : "Risultato da ricerca testuale (embedding non disponibile)."
+        res.mode === "phrase-focus"
+          ? "Risultato dalla frase esatta nel manuale (blocco regola estratto)."
+          : res.mode === "semantic"
+            ? "Risultato da ricerca semantica (chunk vicini uniti se disponibili)."
+            : "Risultato da ricerca testuale (fallback o embedding non disponibile)."
       );
     });
   }
@@ -87,7 +90,12 @@ export function ManualSemanticSearch() {
 
       {mode && (
         <p className="text-[11px] uppercase tracking-wide text-barber-paper/45">
-          Modalità: {mode === "semantic" ? "semantica + espansione chunk" : "testuale (fallback)"}
+          Modalità:{" "}
+          {mode === "phrase-focus"
+            ? "frase esatta (estrattore regola)"
+            : mode === "semantic"
+              ? "semantica + espansione chunk"
+              : "testuale (fallback)"}
         </p>
       )}
 
