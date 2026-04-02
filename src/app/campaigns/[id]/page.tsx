@@ -20,12 +20,9 @@ import { CampaignTabsClient } from "@/components/campaigns/campaign-tabs-client"
 import { JoinLongCampaignButton } from "@/components/campaigns/join-long-campaign-button";
 import { LongRegistrationsToggle } from "@/components/campaigns/long-registrations-toggle";
 import { CampaignPartyMembersPanel } from "@/components/campaigns/campaign-party-members-panel";
-import { GmNotes } from "@/components/gm/gm-notes";
-import { GmFiles } from "@/components/gm/gm-files";
-import { CampaignPrimerEditor } from "@/components/gm/campaign-primer-editor";
-import { GmQuickActions } from "@/components/gm/gm-quick-actions";
+import { GmHomepage } from "@/components/gm/gm-homepage";
 import Link from "next/link";
-import { Map as MapIcon, Palette } from "lucide-react";
+import { Map as MapIcon } from "lucide-react";
 import { InteractiveMap, type MapCharacterPin } from "@/components/map/InteractiveMap";
 import type { Portal } from "@/lib/nav/navigation-math";
 import { MissionBoardSection } from "@/components/missions/mission-board-section";
@@ -35,8 +32,6 @@ import { getPreClosedSessionForCampaign, type PreClosedSessionRow } from "@/app/
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { CampaignMobileHeader } from "@/components/campaigns/campaign-mobile-header";
-import { CampaignAiArchitectPanel } from "@/components/campaigns/campaign-ai-architect-panel";
-import { CampaignEmailPanel } from "@/components/campaigns/campaign-email-panel";
 import {
   parseCampaignAiContextFromDb,
   type CampaignAiContext,
@@ -674,56 +669,15 @@ export default async function CampaignPage({ params }: PageProps) {
           }
           gmAreaContent={
             isGmOrAdmin ? (
-              <div className="rounded-xl border-2 border-violet-800/60 bg-slate-950/80 p-6 shadow-inner">
-                <GmQuickActions campaignId={campaign.id} />
-                <div className="space-y-8">
-                  <CampaignAiArchitectPanel
-                    campaignId={campaign.id}
-                    initialContext={aiContextParsed}
-                  />
-                  <div className="rounded-lg border border-violet-600/30 bg-violet-950/30 p-4">
-                    <h3 className="mb-2 text-sm font-medium text-violet-200">Template Stile Immagini AI</h3>
-                    <p className="mb-3 text-xs text-violet-200/70">
-                      Configura il prompt visivo globale della campagna: verra&apos; usato come stile base per le
-                      immagini generate dall&apos;assistente AI.
-                    </p>
-                    <Button asChild variant="outline" size="sm" className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20">
-                      <Link href={`/campaigns/${campaign.id}/settings/ai-style`}>
-                        <Palette className="mr-2 h-4 w-4" />
-                        Apri Impostazioni Stile
-                      </Link>
-                    </Button>
-                  </div>
-                  <CampaignPrimerEditor
-                    campaignId={campaign.id}
-                    initialPlayerPrimer={campaign.player_primer ?? null}
-                    initialTypography={campaign.primer_typography ?? undefined}
-                  />
-                  {campaign.type === "long" && (
-                    <CampaignEmailPanel
-                      campaignId={campaign.id}
-                      initialJoinEnabled={joinEmailSettings?.join_enabled ?? true}
-                      initialJoinSubject={joinEmailSettings?.join_subject ?? "Benvenuto nella campagna!"}
-                      initialJoinBodyHtml={
-                        joinEmailSettings?.join_body_html ??
-                        "<h2>Benvenuto, avventuriero!</h2><p>La tua iscrizione alla campagna è stata completata con successo.</p>"
-                      }
-                      initialBulkTemplates={bulkEmailTemplates}
-                    />
-                  )}
-                  <div className="rounded-lg border border-violet-600/30 bg-violet-950/30 p-4">
-                    <h3 className="mb-2 text-sm font-medium text-violet-200">Mappa Concettuale</h3>
-                    <p className="mb-3 text-xs text-violet-200/70">
-                      Grafo di voci wiki e mappe con relazioni. Crea relazioni dal form di creazione/modifica delle voci wiki.
-                    </p>
-                    <p className="text-xs text-violet-200/60">
-                      Usa i pulsanti rapidi in alto per aprire mappa, compendio e strumenti operativi.
-                    </p>
-                  </div>
-                  <GmNotes campaignId={campaign.id} />
-                  <GmFiles campaignId={campaign.id} />
-                </div>
-              </div>
+              <GmHomepage
+                campaignId={campaign.id}
+                campaignType={campaign.type ?? null}
+                aiContextParsed={aiContextParsed}
+                joinEmailSettings={joinEmailSettings}
+                bulkEmailTemplates={bulkEmailTemplates}
+                initialPlayerPrimer={campaign.player_primer ?? null}
+                initialTypography={campaign.primer_typography ?? null}
+              />
             ) : undefined
           }
           showMissionsTab={showMissionsTab}

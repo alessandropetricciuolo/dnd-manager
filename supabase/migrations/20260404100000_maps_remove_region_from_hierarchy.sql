@@ -1,46 +1,8 @@
 -- Scala long: solo Mondo → Continente → Città (niente più "regione").
-
--- 1) Città sotto una regione: collega il gruppo al continente (genitore della regione).
-UPDATE public.maps AS child
-SET parent_map_id = region.parent_map_id
-FROM public.maps AS region
-WHERE child.map_type = 'city'
-  AND child.parent_map_id = region.id
-  AND region.map_type = 'region'
-  AND region.parent_map_id IS NOT NULL;
-
--- 2) Ex-regioni diventano città sullo stesso continente.
-UPDATE public.maps
-SET map_type = 'city'
-WHERE map_type = 'region';
-
--- 3) Vincolo map_type senza 'region' (nome auto-generato può variare)
-DO $$
-DECLARE
-  conname text;
-BEGIN
-  SELECT c.conname INTO conname
-  FROM pg_constraint c
-  JOIN pg_class t ON c.conrelid = t.oid
-  JOIN pg_namespace n ON n.oid = t.relnamespace
-  WHERE n.nspname = 'public'
-    AND t.relname = 'maps'
-    AND c.contype = 'c'
-    AND pg_get_constraintdef(c.oid) LIKE '%map_type%'
-  LIMIT 1;
-  IF conname IS NOT NULL THEN
-    EXECUTE format('ALTER TABLE public.maps DROP CONSTRAINT %I', conname);
-  END IF;
-END $$;
-
-ALTER TABLE public.maps
-  ADD CONSTRAINT maps_map_type_check
-  CHECK (map_type IN ('world', 'continent', 'city', 'dungeon', 'district', 'building'));
-
-ALTER TABLE public.maps ALTER COLUMN map_type SET DEFAULT 'city';
-
-COMMENT ON COLUMN public.maps.parent_map_id IS
-  'Per campagne long: collegamento alla mappa di scala superiore (mondo→continente→città).';
+--
+-- IMPORTANTE: aggiornare PRIMA la funzione del trigger. Gli UPDATE sotto innescano
+-- BEFORE UPDATE e, con la vecchia logica, una città sotto un continente falliva
+-- ("Una città deve essere collegata a una regione").
 
 CREATE OR REPLACE FUNCTION public.maps_validate_long_parent_hierarchy()
 RETURNS TRIGGER
@@ -97,3 +59,45 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+
+-- 1) Città sotto una regione: collega al continente (genitore della regione).
+UPDATE public.maps AS child
+SET parent_map_id = region.parent_map_id
+FROM public.maps AS region
+WHERE child.map_type = 'city'
+  AND child.parent_map_id = region.id
+  AND region.map_type = 'region'
+  AND region.parent_map_id IS NOT NULL;
+
+-- 2) Ex-regioni diventano città sullo stesso continente.
+UPDATE public.maps
+SET map_type = 'city'
+WHERE map_type = 'region';
+
+-- 3) Vincolo map_type senza 'region' (nome auto-generato può variare)
+DO $$
+DECLARE
+  conname text;
+BEGIN
+  SELECT c.conname INTO conname
+  FROM pg_constraint c
+  JOIN pg_class t ON c.conrelid = t.oid
+  JOIN pg_namespace n ON n.oid = t.relnamespace
+  WHERE n.nspname = 'public'
+    AND t.relname = 'maps'
+    AND c.contype = 'c'
+    AND pg_get_constraintdef(c.oid) LIKE '%map_type%'
+  LIMIT 1;
+  IF conname IS NOT NULL THEN
+    EXECUTE format('ALTER TABLE public.maps DROP CONSTRAINT %I', conname);
+  END IF;
+END $$;
+
+ALTER TABLE public.maps
+  ADD CONSTRAINT maps_map_type_check
+  CHECK (map_type IN ('world', 'continent', 'city', 'dungeon', 'district', 'building'));
+
+ALTER TABLE public.maps ALTER COLUMN map_type SET DEFAULT 'city';
+
+COMMENT ON COLUMN public.maps.parent_map_id IS
+  'Per campagne long: collegamento alla mappa di scala superiore (mondo→continente→città).';
