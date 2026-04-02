@@ -6,6 +6,7 @@ import { GmNotesGrid } from "./gm-notes-grid";
 import { PlayerSessionTracker } from "./player-session-tracker";
 import { SecretWhispersSheet } from "./secret-whispers-sheet";
 import { GmGallerySheet } from "./gm-gallery-sheet";
+import { LongEconomyPanel } from "./long-economy-panel";
 import { Button } from "@/components/ui/button";
 import { ListOrdered, Calendar, Flag, MessageCircle, Images } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -162,8 +163,15 @@ export function GmScreenLayout({
               />
             </div>
             <div className="w-full shrink-0 lg:w-[420px] lg:max-w-[40%]">
-              <div className="h-full overflow-auto rounded-xl border border-amber-600/20 bg-zinc-900/40 p-3">
-                <PlayerSessionTracker campaignId={campaignId} />
+              <div className="flex h-full min-h-0 flex-col gap-3 overflow-hidden">
+                <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-amber-600/20 bg-zinc-900/40 p-3">
+                  <PlayerSessionTracker campaignId={campaignId} />
+                </div>
+                {campaignType === "long" && (
+                  <div className="shrink-0 max-h-[min(52vh,26rem)] overflow-y-auto rounded-xl border border-amber-600/20 bg-zinc-900/40 p-3">
+                    <LongEconomyPanel campaignId={campaignId} />
+                  </div>
+                )}
               </div>
             </div>
           </div>

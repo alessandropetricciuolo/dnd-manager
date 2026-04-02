@@ -10,10 +10,11 @@ const PLACEHOLDER_AVATAR = "https://placehold.co/400x560/1c1917/fbbf24/png?text=
 
 type CharacterCardPlayerProps = {
   character: CampaignCharacterRow;
+  isLongCampaign?: boolean;
 };
 
 /** Versione immersiva per il giocatore: immagine grande, nome, background. Nessun link al PDF. */
-export function CharacterCardPlayer({ character }: CharacterCardPlayerProps) {
+export function CharacterCardPlayer({ character, isLongCampaign }: CharacterCardPlayerProps) {
   const [imgError, setImgError] = useState(false);
   const imageSrc = imgError ? PLACEHOLDER_AVATAR : (character.image_url ?? PLACEHOLDER_AVATAR);
   const storedLevel = character.level ?? 1;
@@ -43,6 +44,11 @@ export function CharacterCardPlayer({ character }: CharacterCardPlayerProps) {
               <span className="mt-0.5 block text-xs text-barber-paper/65 tabular-nums">
                 Tempo vissuto: {character.time_offset_hours ?? 0} h
               </span>
+              {isLongCampaign && (
+                <span className="mt-0.5 block text-xs text-barber-gold/90 tabular-nums">
+                  {character.coins_gp ?? 0} oro · {character.coins_sp ?? 0} arg · {character.coins_cp ?? 0} ram
+                </span>
+              )}
             </p>
           </div>
         </div>

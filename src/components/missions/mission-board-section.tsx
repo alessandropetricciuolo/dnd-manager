@@ -15,6 +15,9 @@ export type MissionBoardMission = {
   completed_at?: string | null;
   completed_by_guild_id?: string | null;
   completed_by_guild_name?: string | null;
+  treasure_gp?: number;
+  treasure_sp?: number;
+  treasure_cp?: number;
 };
 
 export type MissionBoardGuild = {
@@ -58,6 +61,9 @@ export async function MissionBoardSection({
     const m = row as Record<string, unknown>;
     const gid = m.completed_by_guild_id != null ? String(m.completed_by_guild_id) : null;
     const pts = m.points_reward;
+    const tg = m.treasure_gp;
+    const ts = m.treasure_sp;
+    const tc = m.treasure_cp;
     return {
       id: String(m.id),
       grade: String(m.grade ?? ""),
@@ -72,6 +78,9 @@ export async function MissionBoardSection({
       completed_at: m.completed_at != null ? String(m.completed_at) : null,
       completed_by_guild_id: gid,
       completed_by_guild_name: gid ? (guildNameById.get(gid) ?? null) : null,
+      treasure_gp: typeof tg === "number" ? tg : Number(tg ?? 0) || 0,
+      treasure_sp: typeof ts === "number" ? ts : Number(ts ?? 0) || 0,
+      treasure_cp: typeof tc === "number" ? tc : Number(tc ?? 0) || 0,
     } satisfies MissionBoardMission;
   });
 

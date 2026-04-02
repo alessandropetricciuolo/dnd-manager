@@ -28,12 +28,14 @@ type EditCharacterDialogProps = {
   character: CampaignCharacterRow;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  isLongCampaign?: boolean;
 };
 
 export function EditCharacterDialog({
   character,
   open,
   onOpenChange,
+  isLongCampaign = false,
 }: EditCharacterDialogProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -165,6 +167,56 @@ export function EditCharacterDialog({
               />
             </div>
           </div>
+
+          {isLongCampaign && (
+            <div className="space-y-2 rounded-lg border border-barber-gold/25 bg-barber-dark/50 p-3">
+              <p className="text-xs font-medium text-barber-gold">Ricchezza (campagna lunga)</p>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="edit-char-coins-gp" className="text-[11px] text-barber-paper/80">
+                    Oro
+                  </Label>
+                  <Input
+                    id="edit-char-coins-gp"
+                    name="coins_gp"
+                    type="number"
+                    min={0}
+                    defaultValue={character.coins_gp ?? 0}
+                    className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
+                    disabled={isLoading}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="edit-char-coins-sp" className="text-[11px] text-barber-paper/80">
+                    Argento
+                  </Label>
+                  <Input
+                    id="edit-char-coins-sp"
+                    name="coins_sp"
+                    type="number"
+                    min={0}
+                    defaultValue={character.coins_sp ?? 0}
+                    className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
+                    disabled={isLoading}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="edit-char-coins-cp" className="text-[11px] text-barber-paper/80">
+                    Rame
+                  </Label>
+                  <Input
+                    id="edit-char-coins-cp"
+                    name="coins_cp"
+                    type="number"
+                    min={0}
+                    defaultValue={character.coins_cp ?? 0}
+                    className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
+                    disabled={isLoading}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           <ImageSourceField
             fileInputName="image"

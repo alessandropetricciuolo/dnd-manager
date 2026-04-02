@@ -12,6 +12,10 @@ import { sendJoinCampaignEmailIfEnabled } from "@/lib/campaign-long-emails";
 import { uploadToTelegram } from "@/lib/telegram-storage";
 import { incrementSessionsAttendedWithAdmin, applyAwardedAchievementWithAdmin } from "@/lib/actions/gamification";
 import { sendAdminNotification } from "@/lib/telegram-notifier";
+import {
+  applyCloseSessionEconomy,
+  type SessionEconomyPayload,
+} from "@/lib/actions/campaign-economy-actions";
 
 export type CreateSessionResult = {
   success: boolean;
@@ -1287,6 +1291,8 @@ export type CloseSessionActionPayload = {
   awardedAchievements?: { playerId: string; achievementId: string; addedProgress: number }[];
   /** Ore di gioco (viaggio + esplorazione) da sommare al tempo dei PG dei presenti (assigned_to). */
   elapsedHours: number;
+  /** Solo campagne long: tesoretto missione e aggiustamenti monete PG. */
+  economy?: SessionEconomyPayload;
 };
 
 /** Chiusura sessione unificata: sessioni, presenze, XP, summary, note GM, mondo (global_status), sblocco contenuti. */
@@ -1458,6 +1464,30 @@ export async function closeSessionAction(
     }
 
     void sendFeedbackRequestEmailsForSession(admin, session.campaign_id, sessionId);
+
+    if (isLongCampaign && payload.economy) {
+      const hasEconomy =
+        (payload.economy.missionTreasurePayout?.allocations?.length ?? 0) > 0 ||
+        (payload.economy.characterCoinDeltas?.some(
+          (d) =>
+            Math.trunc(Number(d.coins_gp) || 0) !== 0 ||
+            Math.trunc(Number(d.coins_sp) || 0) !== 0 ||
+            Math.trunc(Number(d.coins_cp) || 0) !== 0
+        ) ??
+          false);
+      if (hasEconomy) {
+        const econ = await applyCloseSessionEconomy(admin, session.campaign_id, payload.economy);
+        if (!econ.success) {
+          revalidatePath(`/campaigns/${session.campaign_id}`);
+          revalidatePath("/dashboard");
+          return {
+            success: false,
+            message: `${econ.message} La sessione risulta comunque chiusa: correggi l’economia dal GM Screen o dalla pagina campagna.`,
+            campaignId: session.campaign_id,
+          };
+        }
+      }
+    }
 
     revalidatePath(`/campaigns/${session.campaign_id}`);
     revalidatePath("/dashboard");

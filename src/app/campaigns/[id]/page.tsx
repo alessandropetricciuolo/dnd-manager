@@ -660,6 +660,7 @@ export default async function CampaignPage({ params }: PageProps) {
           pgContent={
             <CharactersSection
               campaignId={campaign.id}
+              campaignType={campaign.type ?? null}
               characters={characters}
               eligiblePlayers={eligiblePlayers}
               isGm={isGmOrAdmin}

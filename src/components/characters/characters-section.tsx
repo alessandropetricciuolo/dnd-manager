@@ -8,6 +8,7 @@ import type { CampaignCharacterRow, EligiblePlayer } from "@/app/campaigns/chara
 
 type CharactersSectionProps = {
   campaignId: string;
+  campaignType?: "oneshot" | "quest" | "long" | null;
   characters: CampaignCharacterRow[];
   eligiblePlayers: EligiblePlayer[];
   isGm: boolean;
@@ -18,12 +19,15 @@ type CharactersSectionProps = {
 
 export function CharactersSection({
   campaignId,
+  campaignType,
   characters,
   eligiblePlayers,
   isGm,
   currentUserId,
   gmId,
 }: CharactersSectionProps) {
+  const isLongCampaign = campaignType === "long";
+
   if (isGm) {
     return (
       <div className="space-y-6">
@@ -42,6 +46,7 @@ export function CharactersSection({
                 key={char.id}
                 character={char}
                 eligiblePlayers={eligiblePlayers}
+                isLongCampaign={isLongCampaign}
               />
             ))}
           </div>
@@ -66,7 +71,7 @@ export function CharactersSection({
   return (
     <div className="space-y-6">
       <h2 className="text-lg font-semibold text-barber-paper">Il Mio Personaggio</h2>
-      <CharacterCardPlayer character={myCharacter} />
+      <CharacterCardPlayer character={myCharacter} isLongCampaign={isLongCampaign} />
       {currentUserId && gmId && (
         <PlayerSecretChat
           campaignId={campaignId}

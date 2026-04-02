@@ -1,6 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import {
+  getLongCampaignEconomySnapshot,
+  type EconomyCharacterSnapshot,
+  type EconomyMissionSnapshot,
+  type SessionEconomyPayload,
+} from "@/lib/actions/campaign-economy-actions";
 import { useRouter } from "nextjs-toploader/app";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -97,15 +103,7 @@ type EndSessionWizardProps = {
   onSuccess?: () => void;
 };
 
-const STEPS = [
-  { id: 1, label: "Logistica" },
-  { id: 2, label: "Diario" },
-  { id: 3, label: "Mondo" },
-  { id: 4, label: "Trofei (Opzionale)" },
-  { id: 5, label: "Conferma" },
-] as const;
-
-type StepId = (typeof STEPS)[number]["id"];
+type StepId = 1 | 2 | 3 | 4 | 5 | 6;
 
 export function EndSessionWizard({
   open,
@@ -154,6 +152,38 @@ export function EndSessionWizard({
   const isLongCampaign = campaignType === "long";
   const isOneshot = campaignType === "oneshot";
 
+  const confirmStep = isLongCampaign ? 6 : 5;
+  const worldStep = isLongCampaign ? 4 : 3;
+  const trophiesStep = isLongCampaign ? 5 : 4;
+
+  const wizardSteps = useMemo(
+    () =>
+      isLongCampaign
+        ? ([
+            { id: 1 as const, label: "Logistica" },
+            { id: 2 as const, label: "Diario" },
+            { id: 3 as const, label: "Economia" },
+            { id: 4 as const, label: "Mondo" },
+            { id: 5 as const, label: "Trofei (Opzionale)" },
+            { id: 6 as const, label: "Conferma" },
+          ] as const)
+        : ([
+            { id: 1 as const, label: "Logistica" },
+            { id: 2 as const, label: "Diario" },
+            { id: 3 as const, label: "Mondo" },
+            { id: 4 as const, label: "Trofei (Opzionale)" },
+            { id: 5 as const, label: "Conferma" },
+          ] as const),
+    [isLongCampaign]
+  );
+
+  const [economyLoading, setEconomyLoading] = useState(false);
+  const [economyMissions, setEconomyMissions] = useState<EconomyMissionSnapshot[]>([]);
+  const [economyCharacters, setEconomyCharacters] = useState<EconomyCharacterSnapshot[]>([]);
+  const [payoutMissionId, setPayoutMissionId] = useState<string>("");
+  const [payoutAlloc, setPayoutAlloc] = useState<Record<string, { gp: string; sp: string; cp: string }>>({});
+  const [coinDeltaAlloc, setCoinDeltaAlloc] = useState<Record<string, { gp: string; sp: string; cp: string }>>({});
+
   const loadTrackerEntityIds = useCallback(() => {
     try {
       const raw = localStorage.getItem(`${STORAGE_KEY_PREFIX}${campaignId}`);
@@ -182,6 +212,11 @@ export function EndSessionWizard({
     setAwardedAchievements([]);
     setAchievementSearchByPlayer({});
     setElapsedHours(0);
+    setPayoutMissionId("");
+    setPayoutAlloc({});
+    setCoinDeltaAlloc({});
+    setEconomyMissions([]);
+    setEconomyCharacters([]);
     (async () => {
       // Metadati sessione: se è in pre-chiusura, salta direttamente allo step 2
       const meta = await getSessionWizardMeta(sessionId);
@@ -232,6 +267,26 @@ export function EndSessionWizard({
 
   useEffect(() => {
     if (!open || step !== 3 || !campaignId || !isLongCampaign) return;
+    setEconomyLoading(true);
+    getLongCampaignEconomySnapshot(campaignId).then((res) => {
+      setEconomyLoading(false);
+      if (res.success && res.data) {
+        setEconomyMissions(res.data.missions);
+        setEconomyCharacters(res.data.characters);
+        const initP: Record<string, { gp: string; sp: string; cp: string }> = {};
+        const initD: Record<string, { gp: string; sp: string; cp: string }> = {};
+        for (const c of res.data.characters) {
+          initP[c.id] = { gp: "", sp: "", cp: "" };
+          initD[c.id] = { gp: "", sp: "", cp: "" };
+        }
+        setPayoutAlloc(initP);
+        setCoinDeltaAlloc(initD);
+      }
+    });
+  }, [open, step, campaignId, isLongCampaign]);
+
+  useEffect(() => {
+    if (!open || step !== worldStep || !campaignId || !isLongCampaign) return;
     setLoadingEntities(true);
     const { entityIds, zeroHpEntityIds } = loadTrackerEntityIds();
     getCoreEntitiesForDebrief(campaignId, entityIds).then((res) => {
@@ -247,17 +302,17 @@ export function EndSessionWizard({
         setCoreEntities([]);
       }
     });
-  }, [open, step, campaignId, isLongCampaign, loadTrackerEntityIds]);
+  }, [open, step, campaignId, isLongCampaign, loadTrackerEntityIds, worldStep]);
 
   useEffect(() => {
-    if (!open || step !== 4) return;
+    if (!open || step !== trophiesStep) return;
     setLoadingAchievements(true);
     getAchievementsForWizard().then((res) => {
       setLoadingAchievements(false);
       if (res.success && res.data) setAchievements(res.data);
       else setAchievements([]);
     });
-  }, [open, step]);
+  }, [open, step, trophiesStep]);
 
   const filteredAndGrouped = useMemo(() => {
     const q = contentSearch.trim().toLowerCase();
@@ -299,8 +354,25 @@ export function EndSessionWizard({
     [signups, attendance]
   );
 
+  const missionsWithTreasure = useMemo(
+    () =>
+      economyMissions.filter(
+        (m) => m.status === "completed" && (m.treasure_gp > 0 || m.treasure_sp > 0 || m.treasure_cp > 0)
+      ),
+    [economyMissions]
+  );
+
+  const selectedPayoutMission = useMemo(
+    () => economyMissions.find((m) => m.id === payoutMissionId),
+    [economyMissions, payoutMissionId]
+  );
+
+  function parseNonNeg(s: string): number {
+    return Math.max(0, Math.trunc(Number.parseInt(s, 10) || 0));
+  }
+
   const handleNext = () => {
-    if (step < 5) setStep((s) => (s + 1) as StepId);
+    if (step < confirmStep) setStep((s) => (s + 1) as StepId);
   };
 
   const handleBack = () => {
@@ -308,7 +380,82 @@ export function EndSessionWizard({
   };
 
   const handleSubmit = async () => {
+    if (isLongCampaign && payoutMissionId && selectedPayoutMission) {
+      const allocations = economyCharacters.map((c) => {
+        const a = payoutAlloc[c.id] ?? { gp: "", sp: "", cp: "" };
+        return {
+          characterId: c.id,
+          coins_gp: parseNonNeg(a.gp),
+          coins_sp: parseNonNeg(a.sp),
+          coins_cp: parseNonNeg(a.cp),
+        };
+      });
+      const sum = allocations.reduce(
+        (acc, a) => ({
+          gp: acc.gp + a.coins_gp,
+          sp: acc.sp + a.coins_sp,
+          cp: acc.cp + a.coins_cp,
+        }),
+        { gp: 0, sp: 0, cp: 0 }
+      );
+      if (sum.gp > 0 || sum.sp > 0 || sum.cp > 0) {
+        if (
+          sum.gp > selectedPayoutMission.treasure_gp ||
+          sum.sp > selectedPayoutMission.treasure_sp ||
+          sum.cp > selectedPayoutMission.treasure_cp
+        ) {
+          toast.error("La distribuzione dal tesoretto supera i saldi disponibili.");
+          return;
+        }
+      }
+    }
+
     setSubmitting(true);
+
+    let economy: SessionEconomyPayload | undefined = undefined;
+    if (isLongCampaign) {
+      let missionTreasurePayout: SessionEconomyPayload["missionTreasurePayout"] = undefined;
+      if (payoutMissionId && selectedPayoutMission) {
+        const allocations = economyCharacters.map((c) => {
+          const a = payoutAlloc[c.id] ?? { gp: "", sp: "", cp: "" };
+          return {
+            characterId: c.id,
+            coins_gp: parseNonNeg(a.gp),
+            coins_sp: parseNonNeg(a.sp),
+            coins_cp: parseNonNeg(a.cp),
+          };
+        });
+        const sum = allocations.reduce(
+          (acc, a) => ({
+            gp: acc.gp + a.coins_gp,
+            sp: acc.sp + a.coins_sp,
+            cp: acc.cp + a.coins_cp,
+          }),
+          { gp: 0, sp: 0, cp: 0 }
+        );
+        if (sum.gp > 0 || sum.sp > 0 || sum.cp > 0) {
+          missionTreasurePayout = { missionId: payoutMissionId, allocations };
+        }
+      }
+      const characterCoinDeltas = economyCharacters
+        .map((c) => {
+          const d = coinDeltaAlloc[c.id] ?? { gp: "", sp: "", cp: "" };
+          return {
+            characterId: c.id,
+            coins_gp: Math.trunc(Number.parseInt(d.gp, 10) || 0),
+            coins_sp: Math.trunc(Number.parseInt(d.sp, 10) || 0),
+            coins_cp: Math.trunc(Number.parseInt(d.cp, 10) || 0),
+          };
+        })
+        .filter((d) => d.coins_gp !== 0 || d.coins_sp !== 0 || d.coins_cp !== 0);
+      if (missionTreasurePayout || characterCoinDeltas.length > 0) {
+        economy = {
+          missionTreasurePayout: missionTreasurePayout,
+          characterCoinDeltas: characterCoinDeltas.length > 0 ? characterCoinDeltas : undefined,
+        };
+      }
+    }
+
     const payload: CloseSessionActionPayload = {
       attendance,
       xpGained: Math.max(0, Math.floor(xpGained)),
@@ -324,6 +471,7 @@ export function EndSessionWizard({
       entityStatusUpdates: isLongCampaign ? statusByEntityId : {},
       awardedAchievements: awardedAchievements.length > 0 ? awardedAchievements : undefined,
       elapsedHours: Math.max(0, Math.floor(elapsedHours)),
+      economy,
     };
     const res = await closeSessionAction(sessionId, payload);
     setSubmitting(false);
@@ -410,13 +558,13 @@ export function EndSessionWizard({
             {sessionLabel && <span className="text-sm font-normal text-barber-paper/70">— {sessionLabel}</span>}
           </DialogTitle>
           <DialogDescription className="text-barber-paper/70">
-            Step {step} di 5: {STEPS.find((s) => s.id === step)?.label}
+            Step {step} di {confirmStep}: {wizardSteps.find((s) => s.id === step)?.label}
           </DialogDescription>
         </DialogHeader>
 
         {/* Stepper */}
         <div className="flex gap-1 rounded-lg border border-barber-gold/20 bg-barber-dark/80 p-1">
-          {STEPS.map((s) => (
+          {wizardSteps.map((s) => (
             <div
               key={s.id}
               className={cn(
@@ -629,8 +777,146 @@ export function EndSessionWizard({
             </div>
           )}
 
-          {/* Step 3: Mondo */}
-          {step === 3 && (
+          {/* Step Economia (solo campagne long) */}
+          {step === 3 && isLongCampaign && (
+            <div className="space-y-4">
+              <p className="text-sm text-barber-paper/80">
+                Opzionale: distribuisci monete dal tesoretto di una missione completata e applica aggiustamenti liberi ai
+                personaggi. Le operazioni si applicano alla chiusura definitiva della sessione (dopo conferma).
+              </p>
+              {economyLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-barber-gold" />
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <Label className="text-barber-paper/90">Tesoretto missione</Label>
+                    <Select value={payoutMissionId || "none"} onValueChange={(v) => setPayoutMissionId(v === "none" ? "" : v)}>
+                      <SelectTrigger className="border-barber-gold/30 bg-barber-dark text-barber-paper">
+                        <SelectValue placeholder="Nessuna distribuzione dal tesoretto" />
+                      </SelectTrigger>
+                      <SelectContent className="border-barber-gold/20 bg-barber-dark">
+                        <SelectItem value="none" className="text-barber-paper focus:bg-barber-gold/20">
+                          Nessuna
+                        </SelectItem>
+                        {missionsWithTreasure.map((m) => (
+                          <SelectItem key={m.id} value={m.id} className="text-barber-paper focus:bg-barber-gold/20">
+                            {m.title.slice(0, 48)}
+                            {m.title.length > 48 ? "…" : ""} — {m.treasure_gp}/{m.treasure_sp}/{m.treasure_cp} (o/a/r)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedPayoutMission && (
+                      <p className="text-xs text-barber-paper/55">
+                        Saldo:{" "}
+                        <span className="tabular-nums text-barber-paper/80">{selectedPayoutMission.treasure_gp}</span> oro,{" "}
+                        <span className="tabular-nums text-barber-paper/80">{selectedPayoutMission.treasure_sp}</span> arg,{" "}
+                        <span className="tabular-nums text-barber-paper/80">{selectedPayoutMission.treasure_cp}</span> rame.
+                      </p>
+                    )}
+                    <div className="max-h-40 space-y-2 overflow-y-auto rounded-lg border border-barber-gold/20 bg-barber-dark/50 p-2">
+                      {economyCharacters.map((c) => {
+                        const a = payoutAlloc[c.id] ?? { gp: "", sp: "", cp: "" };
+                        return (
+                          <div key={c.id} className="grid grid-cols-[minmax(0,1fr)_repeat(3,3.5rem)] gap-1.5 text-xs">
+                            <div className="min-w-0 truncate pt-2 text-barber-paper">{c.name}</div>
+                            <Input
+                              placeholder="O"
+                              value={a.gp}
+                              onChange={(e) =>
+                                setPayoutAlloc((prev) => ({
+                                  ...prev,
+                                  [c.id]: { ...a, gp: e.target.value },
+                                }))
+                              }
+                              className="h-8 border-barber-gold/25 bg-barber-dark px-1.5 text-barber-paper"
+                            />
+                            <Input
+                              placeholder="A"
+                              value={a.sp}
+                              onChange={(e) =>
+                                setPayoutAlloc((prev) => ({
+                                  ...prev,
+                                  [c.id]: { ...a, sp: e.target.value },
+                                }))
+                              }
+                              className="h-8 border-barber-gold/25 bg-barber-dark px-1.5 text-barber-paper"
+                            />
+                            <Input
+                              placeholder="R"
+                              value={a.cp}
+                              onChange={(e) =>
+                                setPayoutAlloc((prev) => ({
+                                  ...prev,
+                                  [c.id]: { ...a, cp: e.target.value },
+                                }))
+                              }
+                              className="h-8 border-barber-gold/25 bg-barber-dark px-1.5 text-barber-paper"
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-barber-paper/90">Variazioni libere (delta rispetto al saldo attuale)</Label>
+                    <p className="text-[11px] text-barber-paper/55">
+                      Numeri positivi aggiungono, negativi tolgono (es. +10 / -5). Applicato alla chiusura insieme al
+                      tesoretto.
+                    </p>
+                    <div className="max-h-36 space-y-2 overflow-y-auto rounded-lg border border-barber-gold/20 bg-barber-dark/50 p-2">
+                      {economyCharacters.map((c) => {
+                        const d = coinDeltaAlloc[c.id] ?? { gp: "", sp: "", cp: "" };
+                        return (
+                          <div key={c.id} className="grid grid-cols-[minmax(0,1fr)_repeat(3,3.5rem)] gap-1.5 text-xs">
+                            <div className="min-w-0 truncate pt-2 text-barber-paper">{c.name}</div>
+                            <Input
+                              placeholder="ΔO"
+                              value={d.gp}
+                              onChange={(e) =>
+                                setCoinDeltaAlloc((prev) => ({
+                                  ...prev,
+                                  [c.id]: { ...d, gp: e.target.value },
+                                }))
+                              }
+                              className="h-8 border-barber-gold/25 bg-barber-dark px-1.5 text-barber-paper"
+                            />
+                            <Input
+                              placeholder="ΔA"
+                              value={d.sp}
+                              onChange={(e) =>
+                                setCoinDeltaAlloc((prev) => ({
+                                  ...prev,
+                                  [c.id]: { ...d, sp: e.target.value },
+                                }))
+                              }
+                              className="h-8 border-barber-gold/25 bg-barber-dark px-1.5 text-barber-paper"
+                            />
+                            <Input
+                              placeholder="ΔR"
+                              value={d.cp}
+                              onChange={(e) =>
+                                setCoinDeltaAlloc((prev) => ({
+                                  ...prev,
+                                  [c.id]: { ...d, cp: e.target.value },
+                                }))
+                              }
+                              className="h-8 border-barber-gold/25 bg-barber-dark px-1.5 text-barber-paper"
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Mondo (step 3 per campagne non-long, step 4 per long) */}
+          {step === worldStep && (
             <>
               {isOneshot ? (
                 <p className="rounded-lg border border-barber-gold/20 bg-barber-dark/60 px-4 py-6 text-center text-sm text-barber-paper/70">
@@ -692,8 +978,8 @@ export function EndSessionWizard({
             </>
           )}
 
-          {/* Step 4: Trofei (Opzionale) */}
-          {step === 4 && (
+          {/* Trofei (Opzionale) */}
+          {step === trophiesStep && (
             <div className="space-y-4">
               <p className="rounded-lg border border-barber-gold/20 bg-barber-dark/60 px-3 py-3 text-sm text-barber-paper/90">
                 Vuoi premiare i giocatori per una giocata epica? Assegna medaglie o titoli. Questo passaggio è opzionale, puoi concludere la sessione direttamente.
@@ -838,8 +1124,8 @@ export function EndSessionWizard({
             </div>
           )}
 
-          {/* Step 5: Conferma */}
-          {step === 5 && (
+          {/* Conferma */}
+          {step === confirmStep && (
             <div className="space-y-3 text-sm">
               <p className="text-barber-paper/80">
                 <strong>Presenze:</strong> {presentCount} presenti su {signups.length} iscritti.
@@ -864,6 +1150,23 @@ export function EndSessionWizard({
                   <strong>Trofei assegnati:</strong> {awardedAchievements.length} premiazioni.
                 </p>
               )}
+              {isLongCampaign && (payoutMissionId || economyCharacters.some((c) => {
+                const d = coinDeltaAlloc[c.id];
+                if (!d) return false;
+                return (
+                  (Number.parseInt(d.gp, 10) || 0) !== 0 ||
+                  (Number.parseInt(d.sp, 10) || 0) !== 0 ||
+                  (Number.parseInt(d.cp, 10) || 0) !== 0
+                );
+              })) && (
+                <p className="text-barber-paper/80">
+                  <strong>Economia:</strong>{" "}
+                  {payoutMissionId
+                    ? `distribuzione da tesoretto (${selectedPayoutMission?.title?.slice(0, 40) ?? "missione"}) e/o `
+                    : ""}
+                  aggiustamenti ai salvadanai dei PG (se indicati nello step Economia).
+                </p>
+              )}
               <p className="pt-2 text-barber-paper/60">Clicca &quot;Concludi Sessione Definitivamente&quot; per salvare tutto.</p>
             </div>
           )}
@@ -879,7 +1182,7 @@ export function EndSessionWizard({
           >
             {step === 1 ? "Annulla" : "Indietro"}
           </Button>
-          {step < 5 ? (
+          {step < confirmStep ? (
             <>
               {step === 1 && !isPreClosed && (
                 <Button
@@ -899,7 +1202,7 @@ export function EndSessionWizard({
                 disabled={
                   (step === 1 && !canProceedStep1) ||
                   (step === 2 && !canProceedStep2) ||
-                  (step === 3 && !canProceedStep3)
+                  (step === worldStep && !canProceedStep3)
                 }
                 className="bg-barber-gold text-barber-dark hover:bg-barber-gold/90"
               >

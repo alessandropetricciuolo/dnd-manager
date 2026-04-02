@@ -351,6 +351,9 @@ export interface Database {
           time_offset_hours: number;
           pos_x_grid: number;
           pos_y_grid: number;
+          coins_gp: number;
+          coins_sp: number;
+          coins_cp: number;
           created_at: string;
           updated_at: string;
         };

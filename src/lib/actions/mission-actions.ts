@@ -335,11 +335,16 @@ export async function updateMissionAction(
 export async function completeMissionAction(
   campaignId: string,
   missionId: string,
-  guildId: string
+  guildId: string,
+  treasure?: { gp: number; sp: number; cp: number } | null
 ): Promise<MissionBoardResult> {
   if (!campaignId || !missionId || !guildId) {
     return { success: false, message: "Dati non validi." };
   }
+
+  const tgp = treasure != null && Number.isFinite(treasure.gp) ? Math.max(0, Math.trunc(treasure.gp)) : 0;
+  const tsp = treasure != null && Number.isFinite(treasure.sp) ? Math.max(0, Math.trunc(treasure.sp)) : 0;
+  const tcp = treasure != null && Number.isFinite(treasure.cp) ? Math.max(0, Math.trunc(treasure.cp)) : 0;
 
   try {
     const supabase = await createSupabaseServerClient();
@@ -417,6 +422,9 @@ export async function completeMissionAction(
       completed_at: now,
       completed_by_guild_id: guildId,
       updated_at: now,
+      treasure_gp: tgp,
+      treasure_sp: tsp,
+      treasure_cp: tcp,
     };
 
     const errM = (
@@ -508,6 +516,9 @@ export async function reopenMissionAction(campaignId: string, missionId: string)
       status: "open",
       completed_at: null,
       completed_by_guild_id: null,
+      treasure_gp: 0,
+      treasure_sp: 0,
+      treasure_cp: 0,
       updated_at: now,
     };
 

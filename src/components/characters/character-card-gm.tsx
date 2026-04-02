@@ -46,9 +46,10 @@ const PLACEHOLDER_AVATAR = "https://placehold.co/200x280/1c1917/fbbf24/png?text=
 type CharacterCardGmProps = {
   character: CampaignCharacterRow;
   eligiblePlayers: EligiblePlayer[];
+  isLongCampaign?: boolean;
 };
 
-export function CharacterCardGm({ character, eligiblePlayers }: CharacterCardGmProps) {
+export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign }: CharacterCardGmProps) {
   const router = useRouter();
   const [assigning, setAssigning] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -270,6 +271,14 @@ export function CharacterCardGm({ character, eligiblePlayers }: CharacterCardGmP
                   <dt className="text-muted-foreground">Ore (epoch)</dt>
                   <dd className="font-medium tabular-nums text-amber-200/90">{epochHours}</dd>
                 </div>
+                {isLongCampaign && (
+                  <div className="col-span-2 flex flex-col gap-0.5 border-t border-barber-gold/10 pt-1">
+                    <dt className="text-[10px] text-muted-foreground">Monete</dt>
+                    <dd className="text-[11px] font-medium tabular-nums text-barber-gold/95">
+                      {character.coins_gp ?? 0} oro · {character.coins_sp ?? 0} arg · {character.coins_cp ?? 0} ram
+                    </dd>
+                  </div>
+                )}
               </dl>
               <p className="mt-1 text-[10px] text-barber-paper/55 tabular-nums">{xpLabel}</p>
             </div>
@@ -439,7 +448,12 @@ export function CharacterCardGm({ character, eligiblePlayers }: CharacterCardGmP
         </SheetContent>
       </Sheet>
 
-      <EditCharacterDialog character={character} open={editOpen} onOpenChange={setEditOpen} />
+      <EditCharacterDialog
+        character={character}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        isLongCampaign={Boolean(isLongCampaign)}
+      />
     </>
   );
 }

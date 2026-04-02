@@ -34,6 +34,10 @@ export type CampaignCharacterRow = {
   assigned_to: string | null;
   /** Ore vissute (Epoch / West Marches). */
   time_offset_hours?: number;
+  /** Monete (campagne lunghe): oro, argento, rame. */
+  coins_gp?: number;
+  coins_sp?: number;
+  coins_cp?: number;
   created_at: string;
   updated_at: string;
 };
@@ -72,7 +76,7 @@ export async function getCampaignCharacters(
     const { data: rows, error } = await supabase
       .from("campaign_characters")
       .select(
-        "id, campaign_id, name, image_url, character_class, armor_class, hit_points, current_xp, level, sheet_file_path, background, assigned_to, time_offset_hours, created_at, updated_at"
+        "id, campaign_id, name, image_url, character_class, armor_class, hit_points, current_xp, level, sheet_file_path, background, assigned_to, time_offset_hours, coins_gp, coins_sp, coins_cp, created_at, updated_at"
       )
       .eq("campaign_id", campaignId)
       .order("created_at", { ascending: false });
@@ -104,6 +108,9 @@ export async function getCampaignCharacters(
         ...rest,
         sheet_url,
         time_offset_hours: typeof rest.time_offset_hours === "number" ? rest.time_offset_hours : 0,
+        coins_gp: typeof (rest as { coins_gp?: number }).coins_gp === "number" ? (rest as { coins_gp: number }).coins_gp : 0,
+        coins_sp: typeof (rest as { coins_sp?: number }).coins_sp === "number" ? (rest as { coins_sp: number }).coins_sp : 0,
+        coins_cp: typeof (rest as { coins_cp?: number }).coins_cp === "number" ? (rest as { coins_cp: number }).coins_cp : 0,
       });
     }
 
@@ -114,7 +121,7 @@ export async function getCampaignCharacters(
   const { data: rows, error } = await supabase
     .from("campaign_characters")
     .select(
-      "id, campaign_id, name, image_url, character_class, current_xp, level, background, assigned_to, time_offset_hours, created_at, updated_at"
+      "id, campaign_id, name, image_url, character_class, current_xp, level, background, assigned_to, time_offset_hours, coins_gp, coins_sp, coins_cp, created_at, updated_at"
     )
     .eq("campaign_id", campaignId)
     .eq("assigned_to", userId)
@@ -135,6 +142,9 @@ export async function getCampaignCharacters(
       typeof (r as { time_offset_hours?: number }).time_offset_hours === "number"
         ? (r as { time_offset_hours: number }).time_offset_hours
         : 0,
+    coins_gp: typeof (r as { coins_gp?: number }).coins_gp === "number" ? (r as { coins_gp: number }).coins_gp : 0,
+    coins_sp: typeof (r as { coins_sp?: number }).coins_sp === "number" ? (r as { coins_sp: number }).coins_sp : 0,
+    coins_cp: typeof (r as { coins_cp?: number }).coins_cp === "number" ? (r as { coins_cp: number }).coins_cp : 0,
   }));
   return { success: true, data: list };
 }
@@ -269,6 +279,25 @@ export async function updateCharacter(
   }
 
   const background = (formData.get("background") as string | null)?.trim() ?? null;
+  const { data: campaignRow } = await supabase
+    .from("campaigns")
+    .select("type")
+    .eq("id", campaignId)
+    .single();
+  const isLong = campaignRow?.type === "long";
+
+  const coinsGpRaw = (formData.get("coins_gp") as string | null)?.trim() ?? "0";
+  const coinsSpRaw = (formData.get("coins_sp") as string | null)?.trim() ?? "0";
+  const coinsCpRaw = (formData.get("coins_cp") as string | null)?.trim() ?? "0";
+  const coinsGp = Number.parseInt(coinsGpRaw, 10);
+  const coinsSp = Number.parseInt(coinsSpRaw, 10);
+  const coinsCp = Number.parseInt(coinsCpRaw, 10);
+  if (
+    isLong &&
+    (Number.isNaN(coinsGp) || coinsGp < 0 || Number.isNaN(coinsSp) || coinsSp < 0 || Number.isNaN(coinsCp) || coinsCp < 0)
+  ) {
+    return { success: false, error: "Monete non valide (numeri interi ≥ 0)." };
+  }
   const removeImage = formData.get("remove_image") === "on";
   const removeSheet = formData.get("remove_sheet") === "on";
   const imageFile = formData.get("image") as File | null;
@@ -353,9 +382,12 @@ export async function updateCharacter(
       hit_points: hitPoints,
       sheet_file_path,
       background,
+      ...(isLong ? { coins_gp: coinsGp, coins_sp: coinsSp, coins_cp: coinsCp } : {}),
     })
     .eq("id", characterId)
-    .select("id, campaign_id, name, image_url, character_class, armor_class, hit_points, current_xp, level, background, assigned_to, created_at, updated_at")
+    .select(
+      "id, campaign_id, name, image_url, character_class, armor_class, hit_points, current_xp, level, background, assigned_to, coins_gp, coins_sp, coins_cp, created_at, updated_at"
+    )
     .single();
 
   if (error) {

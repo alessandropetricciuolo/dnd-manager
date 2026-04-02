@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -46,6 +46,7 @@ import {
   updateGuildAction,
   updateMissionAction,
 } from "@/lib/actions/mission-actions";
+import { updateMissionTreasureAction } from "@/lib/actions/campaign-economy-actions";
 import { GUILD_RANK_LETTERS, guildRankOrder } from "@/lib/missions/guild-ranks";
 
 type MissionBoardMission = {
@@ -62,6 +63,9 @@ type MissionBoardMission = {
   completed_at?: string | null;
   completed_by_guild_id?: string | null;
   completed_by_guild_name?: string | null;
+  treasure_gp?: number;
+  treasure_sp?: number;
+  treasure_cp?: number;
 };
 
 type MissionBoardGuild = {
@@ -125,6 +129,13 @@ export function MissionBoard({
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsMission, setDetailsMission] = useState<MissionBoardMission | null>(null);
   const [completeGuildId, setCompleteGuildId] = useState<string>("");
+  const [completeTreasureGp, setCompleteTreasureGp] = useState("0");
+  const [completeTreasureSp, setCompleteTreasureSp] = useState("0");
+  const [completeTreasureCp, setCompleteTreasureCp] = useState("0");
+  const [treasureEditGp, setTreasureEditGp] = useState("0");
+  const [treasureEditSp, setTreasureEditSp] = useState("0");
+  const [treasureEditCp, setTreasureEditCp] = useState("0");
+  const [savingTreasure, setSavingTreasure] = useState(false);
 
   const [editOpen, setEditOpen] = useState(false);
   const [editMode, setEditMode] = useState<"add" | "edit">("add");
@@ -157,8 +168,18 @@ export function MissionBoard({
   const openDetailsMission = (m: MissionBoardMission) => {
     setDetailsMission(m);
     setCompleteGuildId(guilds[0]?.id ?? "");
+    setCompleteTreasureGp("0");
+    setCompleteTreasureSp("0");
+    setCompleteTreasureCp("0");
     setDetailsOpen(true);
   };
+
+  useEffect(() => {
+    if (!detailsMission || detailsMission.status !== "completed") return;
+    setTreasureEditGp(String(detailsMission.treasure_gp ?? 0));
+    setTreasureEditSp(String(detailsMission.treasure_sp ?? 0));
+    setTreasureEditCp(String(detailsMission.treasure_cp ?? 0));
+  }, [detailsMission]);
 
   const [guildDialogOpen, setGuildDialogOpen] = useState(false);
   const [guildDialogMode, setGuildDialogMode] = useState<"add" | "edit">("add");
@@ -306,16 +327,47 @@ export function MissionBoard({
       toast.error("Seleziona la gilda che completa la missione.");
       return;
     }
+    const tgp = Math.max(0, Math.trunc(Number.parseInt(completeTreasureGp, 10) || 0));
+    const tsp = Math.max(0, Math.trunc(Number.parseInt(completeTreasureSp, 10) || 0));
+    const tcp = Math.max(0, Math.trunc(Number.parseInt(completeTreasureCp, 10) || 0));
     startTransition(async () => {
-      const res = await completeMissionAction(campaignId, detailsMission.id, completeGuildId);
+      const res = await completeMissionAction(campaignId, detailsMission.id, completeGuildId, {
+        gp: tgp,
+        sp: tsp,
+        cp: tcp,
+      });
       if (!res.success) {
         toast.error(res.message ?? "Errore");
         return;
       }
-      toast.success("Missione segnata come completata; punti assegnati alla gilda.");
+      toast.success("Missione completata. Punti gilda e tesoretto registrati.");
       setDetailsOpen(false);
       router.refresh();
     });
+  }
+
+  async function saveMissionTreasure() {
+    if (!detailsMission || detailsMission.status !== "completed") return;
+    const tgp = Math.max(0, Math.trunc(Number.parseInt(treasureEditGp, 10) || 0));
+    const tsp = Math.max(0, Math.trunc(Number.parseInt(treasureEditSp, 10) || 0));
+    const tcp = Math.max(0, Math.trunc(Number.parseInt(treasureEditCp, 10) || 0));
+    setSavingTreasure(true);
+    try {
+      const res = await updateMissionTreasureAction(campaignId, detailsMission.id, tgp, tsp, tcp);
+      if (!res.success) {
+        toast.error(res.message ?? "Errore");
+        return;
+      }
+      toast.success("Tesoretto missione aggiornato.");
+      setDetailsMission((prev) =>
+        prev
+          ? { ...prev, treasure_gp: tgp, treasure_sp: tsp, treasure_cp: tcp }
+          : null
+      );
+      router.refresh();
+    } finally {
+      setSavingTreasure(false);
+    }
   }
 
   function submitReopenMission() {
@@ -568,7 +620,7 @@ export function MissionBoard({
               </div>
 
               {detailsMission.status === "completed" && (
-                <div className="rounded-lg border border-emerald-600/20 bg-emerald-950/20 p-3 text-sm text-zinc-200">
+                <div className="rounded-lg border border-emerald-600/20 bg-emerald-950/20 p-3 text-sm text-zinc-200 space-y-3">
                   <p>
                     Completata da:{" "}
                     <strong>{detailsMission.completed_by_guild_name ?? detailsMission.completed_by_guild_id ?? "—"}</strong>
@@ -578,6 +630,59 @@ export function MissionBoard({
                       {new Date(detailsMission.completed_at).toLocaleString("it-IT")}
                     </p>
                   )}
+                  <div className="rounded-md border border-emerald-600/25 bg-zinc-950/40 p-2">
+                    <p className="text-xs font-medium text-emerald-200/90 mb-2">Tesoretto di gruppo (non ancora distribuito)</p>
+                    {isGmOrAdmin ? (
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <Label className="text-[10px] text-zinc-400">Oro</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={treasureEditGp}
+                            onChange={(e) => setTreasureEditGp(e.target.value)}
+                            className="h-8 border-emerald-600/30 bg-zinc-950 text-zinc-100 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-[10px] text-zinc-400">Argento</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={treasureEditSp}
+                            onChange={(e) => setTreasureEditSp(e.target.value)}
+                            className="h-8 border-emerald-600/30 bg-zinc-950 text-zinc-100 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-[10px] text-zinc-400">Rame</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={treasureEditCp}
+                            onChange={(e) => setTreasureEditCp(e.target.value)}
+                            className="h-8 border-emerald-600/30 bg-zinc-950 text-zinc-100 text-sm"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-xs tabular-nums text-zinc-300">
+                        {detailsMission.treasure_gp ?? 0} oro · {detailsMission.treasure_sp ?? 0} arg ·{" "}
+                        {detailsMission.treasure_cp ?? 0} rame
+                      </p>
+                    )}
+                    {isGmOrAdmin && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="mt-2 w-full bg-emerald-800 text-white hover:bg-emerald-700"
+                        disabled={savingTreasure}
+                        onClick={() => void saveMissionTreasure()}
+                      >
+                        {savingTreasure ? "Salvataggio…" : "Salva tesoretto"}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -628,6 +733,41 @@ export function MissionBoard({
                       ))}
                     </SelectContent>
                   </Select>
+                  <div className="grid grid-cols-3 gap-2 pt-1">
+                    <div>
+                      <Label className="text-[10px] text-amber-200/70">Tesoretto oro</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={completeTreasureGp}
+                        onChange={(e) => setCompleteTreasureGp(e.target.value)}
+                        className="h-8 border-amber-600/40 bg-zinc-950 text-zinc-100 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] text-amber-200/70">Argento</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={completeTreasureSp}
+                        onChange={(e) => setCompleteTreasureSp(e.target.value)}
+                        className="h-8 border-amber-600/40 bg-zinc-950 text-zinc-100 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] text-amber-200/70">Rame</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={completeTreasureCp}
+                        onChange={(e) => setCompleteTreasureCp(e.target.value)}
+                        className="h-8 border-amber-600/40 bg-zinc-950 text-zinc-100 text-sm"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-zinc-500">
+                    Crea il tesoretto di gruppo: in chiusura sessione o dal GM Screen potrai distribuirlo ai PG.
+                  </p>
                   <Button
                     type="button"
                     className="w-full bg-emerald-700 text-white hover:bg-emerald-600"
