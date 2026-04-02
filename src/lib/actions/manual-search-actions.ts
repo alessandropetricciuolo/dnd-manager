@@ -135,7 +135,7 @@ function allRawIndicesOfPhrase(content: string, phrase: string): number[] {
   return out;
 }
 
-function scoreOccurrenceWindow(content: string, idx: number): number {
+function scoreOccurrenceWindow(content: string, idx: number, phrase: string): number {
   const winStart = Math.max(0, idx - 520);
   const win = content.slice(winStart, Math.min(content.length, idx + 420));
   let score = -countTableLikeLines(win, 55) * 22;
@@ -143,15 +143,34 @@ function scoreOccurrenceWindow(content: string, idx: number): number {
   if (/\n[!A-ZÀ-ÖI][!A-ZÀ-ÖI0-9 '\u2019·•\-]{4,58}\s*$/m.test(beforePhrase)) score += 95;
   const right = content.slice(idx, Math.min(content.length, idx + 200));
   if (/Un bardo può|Per farlo usa un['’]azione bonus/i.test(right)) score += 55;
+  const beforeLong = content.slice(Math.max(0, idx - 1100), idx);
+  if (/Un bardo può ispirare/i.test(beforeLong)) score += 130;
+  if (/\bgranello\b|Collegio della Creazione|CREAZIONE ANIMATA/i.test(beforeLong.slice(-650)))
+    score -= 200;
+  const sig = normalizeForMatch(phrase)
+    .split(/\s+/)
+    .filter((t) => t.length >= 3);
+  if (
+    sig.length >= 2 &&
+    sig.every((t) => normalizeForMatch(beforePhrase).includes(t)) &&
+    /^[!A-ZÀ-Ö]/m.test(beforePhrase.slice(-120))
+  )
+    score += 90;
   return score;
 }
 
-/** Risale poche righe sopra la frase per includere un titolo sezione (maiuscole / OCR ! al posto di I). */
+/**
+ * Risale poche righe sopra la frase per il titolo sezione (maiuscole / OCR ! al posto di I).
+ * Per query multi-parola richiede che ogni token significativo compaia nella stessa riga titolo
+ * (es. evita "Ispirazione contagiosa" per la ricerca "ispirazione bardica").
+ */
 function scanTitleLineStartAbove(content: string, idx: number, phrase: string): number | null {
-  const p0 = normalizeForMatch(phrase.trim().split(/\s+/)[0] ?? "");
-  if (p0.length < 3) return null;
+  const sig = normalizeForMatch(phrase.trim())
+    .split(/\s+/)
+    .filter((t) => t.length >= 3);
+  if (sig.length === 0) return null;
   let pos = idx;
-  for (let n = 0; n < 36; n++) {
+  for (let n = 0; n < 40; n++) {
     const ls = content.lastIndexOf("\n", pos - 1);
     const lineStart = ls + 1;
     if (lineStart >= idx || lineStart < 0) break;
@@ -164,7 +183,7 @@ function scanTitleLineStartAbove(content: string, idx: number, phrase: string): 
       continue;
     }
     const ln = normalizeForMatch(line);
-    if (!ln.includes(p0)) {
+    if (!sig.every((t) => ln.includes(t))) {
       if (pos < 0) break;
       continue;
     }
@@ -174,6 +193,32 @@ function scanTitleLineStartAbove(content: string, idx: number, phrase: string): 
     if (pos < 0) break;
   }
   return null;
+}
+
+/** Rimuove righe iniziali rumorose se più sotto ricompare lo stesso titolo sezione. */
+function trimDuplicateTitlePrefix(text: string, phrase: string): string {
+  const sig = normalizeForMatch(phrase.trim())
+    .split(/\s+/)
+    .filter((t) => t.length >= 3);
+  if (sig.length < 2) return text;
+  const lines = text.split("\n");
+  let secondHit = -1;
+  for (let i = 1; i < lines.length; i++) {
+    const ln = normalizeForMatch(lines[i].trim());
+    if (!sig.every((t) => ln.includes(t))) continue;
+    const raw = lines[i].trim();
+    if (raw.length > 72) continue;
+    const compact = raw.replace(/\s/g, "");
+    const up = (compact.match(/[A-ZÀ-Ö!]/g) ?? []).length / Math.max(1, compact.length);
+    if (up >= 0.35) {
+      secondHit = i;
+      break;
+    }
+  }
+  if (secondHit > 0) {
+    return lines.slice(secondHit).join("\n").trim();
+  }
+  return text;
 }
 
 /**
@@ -195,10 +240,10 @@ function extractRuleBlockAroundPhrase(content: string, phrase: string): string {
     idx = rawCandidates[0];
   } else {
     let best = rawCandidates[0];
-    let bestScore = scoreOccurrenceWindow(content, best);
+    let bestScore = scoreOccurrenceWindow(content, best, phrase);
     for (let k = 1; k < rawCandidates.length; k++) {
       const c = rawCandidates[k];
-      const s = scoreOccurrenceWindow(content, c);
+      const s = scoreOccurrenceWindow(content, c, phrase);
       if (s > bestScore) {
         bestScore = s;
         best = c;
@@ -207,21 +252,29 @@ function extractRuleBlockAroundPhrase(content: string, phrase: string): string {
     idx = best;
   }
 
-  let start = idx;
-  const paraBreak = content.lastIndexOf("\n\n", idx);
-  if (paraBreak !== -1 && idx - paraBreak < 380) {
-    const afterBreak = content.slice(paraBreak + 2, idx);
-    const firstLine = afterBreak.split("\n")[0]?.trim() ?? "";
-    if (firstLine.length >= 6 && firstLine.length <= 72) {
-      start = paraBreak + 2;
-    }
-  } else {
-    start = content.lastIndexOf("\n", idx - 1) + 1;
-    if (start < 0) start = 0;
-  }
-
   const titleLine = scanTitleLineStartAbove(content, idx, phrase);
-  if (titleLine !== null && titleLine < start) start = titleLine;
+
+  let start: number;
+  if (titleLine !== null) {
+    start = titleLine;
+  } else {
+    start = idx;
+    const paraBreak = content.lastIndexOf("\n\n", idx);
+    if (paraBreak !== -1 && idx - paraBreak < 380) {
+      const afterBreak = content.slice(paraBreak + 2, idx);
+      const firstLine = afterBreak.split("\n")[0]?.trim() ?? "";
+      const looksLikeHeading =
+        firstLine.length >= 6 &&
+        firstLine.length <= 72 &&
+        /^[!A-ZÀ-Ö\d]/.test(firstLine) &&
+        (firstLine === firstLine.toUpperCase() ||
+          (firstLine.match(/[A-ZÀ-Ö!]/g) ?? []).length / Math.max(1, firstLine.replace(/\s/g, "").length) > 0.45);
+      if (looksLikeHeading) start = paraBreak + 2;
+    } else {
+      start = content.lastIndexOf("\n", idx - 1) + 1;
+      if (start < 0) start = 0;
+    }
+  }
 
   let end = content.length;
   const tailFromPhrase = content.slice(idx);
@@ -251,7 +304,7 @@ function extractRuleBlockAroundPhrase(content: string, phrase: string): string {
   end = Math.min(end, firstSectionAfter);
 
   const maxLen = 3600;
-  let out = content.slice(start, end).trim();
+  let out = trimDuplicateTitlePrefix(content.slice(start, end).trim(), phrase);
   if (out.length > maxLen) {
     out = `${out.slice(0, maxLen).trim()}\n\n[… testo troncato …]`;
   }
