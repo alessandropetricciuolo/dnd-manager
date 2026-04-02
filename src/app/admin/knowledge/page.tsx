@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { ingestAllTxtManualsAction, ingestTxtManualAction } from "@/lib/actions/ingest-manuals";
 import { Button } from "@/components/ui/button";
+import { ManualSemanticSearch } from "@/components/admin/manual-semantic-search";
 
 export const dynamic = "force-dynamic";
 
@@ -67,6 +68,8 @@ export default async function AdminKnowledgePage({ searchParams }: KnowledgePage
             Ingestion manuali `.txt` da `public/manuals/` con embeddings via runtime Hugging Face (allineati alla query) in `manuals_knowledge`.
           </p>
         </header>
+
+        <ManualSemanticSearch />
 
         <div className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 p-4">
           <div className="space-y-4">
