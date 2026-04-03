@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { parseMapOverlayItems } from "@/lib/maps/overlay-parse";
 import { InteractiveMap } from "@/components/maps/interactive-map";
 
 type PageProps = {
@@ -23,7 +24,7 @@ export default async function MapViewPage({ params }: PageProps) {
 
   const { data: map, error: mapError } = await supabase
     .from("maps")
-    .select("id, name, image_url, campaign_id")
+    .select("id, name, image_url, campaign_id, overlay_items")
     .eq("id", mapId)
     .eq("campaign_id", campaignId)
     .single();
@@ -82,6 +83,10 @@ export default async function MapViewPage({ params }: PageProps) {
     .neq("id", mapId)
     .order("name");
 
+  const overlayItems = parseMapOverlayItems(
+    (map as { overlay_items?: unknown }).overlay_items
+  );
+
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col">
       <main className="min-h-0 flex-1 overflow-hidden">
@@ -102,6 +107,7 @@ export default async function MapViewPage({ params }: PageProps) {
             id: m.id,
             name: m.name,
           }))}
+          overlayItems={overlayItems}
         />
       </main>
     </div>

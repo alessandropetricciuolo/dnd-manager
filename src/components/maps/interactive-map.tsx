@@ -9,7 +9,9 @@ import { toast } from "sonner";
 
 import { addPin } from "@/app/campaigns/map-actions";
 import { NewPinDialog } from "./new-pin-dialog";
+import { MapOverlayLayer } from "./map-overlay-layer";
 import { cn } from "@/lib/utils";
+import type { MapOverlayItem } from "@/types/map-overlay";
 
 const DEFAULT_ASPECT_RATIO = 16 / 9;
 
@@ -34,6 +36,8 @@ type InteractiveMapProps = {
   pins: MapPinData[];
   isCreator: boolean;
   campaignMaps: CampaignMapOption[];
+  /** Annotazioni pubblicate (campagne lunghe). */
+  overlayItems?: MapOverlayItem[];
 };
 
 export function InteractiveMap({
@@ -44,6 +48,7 @@ export function InteractiveMap({
   pins,
   isCreator,
   campaignMaps,
+  overlayItems = [],
 }: InteractiveMapProps) {
   const router = useRouter();
   const [newPinCoords, setNewPinCoords] = useState<{ x: number; y: number } | null>(null);
@@ -135,6 +140,8 @@ export function InteractiveMap({
                 unoptimized={isExternalOrProxyUrl}
                 onLoad={handleImageLoad}
               />
+              {/* Overlay testo/simboli (sotto i pin). */}
+              {overlayItems.length > 0 && <MapOverlayLayer items={overlayItems} />}
               {/* Pin layer: absolute inset-0 so pins (left/top %) match the image coordinate system. */}
               <div className="absolute inset-0 pointer-events-none" aria-hidden />
               <div className="absolute inset-0 pointer-events-auto">

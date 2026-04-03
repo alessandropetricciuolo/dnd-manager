@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { Button } from "@/components/ui/button";
 import { InteractiveMap } from "@/components/maps/interactive-map";
 import { MapDetailActions } from "@/components/maps/map-detail-actions";
+import { parseMapOverlayItems } from "@/lib/maps/overlay-parse";
 import { ArrowLeft } from "lucide-react";
 
 type PageProps = {
@@ -23,7 +24,7 @@ export default async function CampaignMapPage({ params }: PageProps) {
 
   const { data: map, error: mapError } = await supabase
     .from("maps")
-    .select("id, name, image_url, campaign_id, parent_map_id, description")
+    .select("id, name, image_url, campaign_id, parent_map_id, description, overlay_items")
     .eq("id", mapId)
     .eq("campaign_id", campaignId)
     .single();
@@ -37,7 +38,18 @@ export default async function CampaignMapPage({ params }: PageProps) {
     .select("role")
     .eq("id", user.id)
     .single();
-  const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
+  const role = (profile as { role?: string } | null)?.role;
+  const isGmOrAdmin = role === "gm" || role === "admin";
+
+  const { data: campaignRow } = await supabase
+    .from("campaigns")
+    .select("type, gm_id")
+    .eq("id", campaignId)
+    .single();
+  const campaignMeta = campaignRow as { type?: string; gm_id?: string } | null;
+  const canEditMapOverlay =
+    campaignMeta?.type === "long" &&
+    (role === "admin" || campaignMeta?.gm_id === user.id);
 
   const { data: mapMeta } = await supabase
     .from("maps")
@@ -85,6 +97,10 @@ export default async function CampaignMapPage({ params }: PageProps) {
 
   const parentMapId = (map as { parent_map_id?: string | null }).parent_map_id ?? null;
   let parentMapName: string | null = null;
+  const overlayItems = parseMapOverlayItems(
+    (map as { overlay_items?: unknown }).overlay_items
+  );
+
   if (parentMapId) {
     const { data: parentMap } = await supabase
       .from("maps")
@@ -124,12 +140,26 @@ export default async function CampaignMapPage({ params }: PageProps) {
         <h1 className="min-w-0 flex-1 truncate text-lg font-semibold text-slate-50">
           {map.name}
         </h1>
-        <MapDetailActions
-          imageUrl={map.image_url}
-          mapName={map.name}
-          viewUrl={`/campaigns/${campaignId}/maps/${mapId}/view`}
-          showPopout={isGmOrAdmin}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          {canEditMapOverlay && (
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="hidden border-barber-gold/50 lg:inline-flex"
+            >
+              <Link href={`/campaigns/${campaignId}/maps/${mapId}/overlay-edit`}>
+                Annotazioni
+              </Link>
+            </Button>
+          )}
+          <MapDetailActions
+            imageUrl={map.image_url}
+            mapName={map.name}
+            viewUrl={`/campaigns/${campaignId}/maps/${mapId}/view`}
+            showPopout={isGmOrAdmin}
+          />
+        </div>
       </header>
       <main className="min-h-0 flex-1 overflow-hidden p-3">
         <div className="flex h-full min-h-0 flex-col gap-3 lg:flex-row">
@@ -151,6 +181,7 @@ export default async function CampaignMapPage({ params }: PageProps) {
                 id: m.id,
                 name: m.name,
               }))}
+              overlayItems={overlayItems}
             />
           </div>
 

@@ -12,6 +12,8 @@ export type ManualSearchHit = {
   sourceLabel: string | null;
   fileName: string | null;
   chunkIndex: number | null;
+  chapter: string | null;
+  chunkType: string | null;
 };
 
 export type ManualSearchMode = "phrase-focus" | "semantic" | "text-fallback";
@@ -53,11 +55,45 @@ function rowToHit(r: MatchRow): ManualSearchHit {
   return {
     content: typeof r.content === "string" ? r.content : "",
     similarity: typeof r.similarity === "number" && Number.isFinite(r.similarity) ? r.similarity : null,
-    sectionTitle: metaString(md, "section_title"),
+    sectionTitle: metaString(md, "section_heading") ?? metaString(md, "section_title"),
     sourceLabel: metaString(md, "source"),
     fileName: metaString(md, "file_name"),
     chunkIndex: metaInt(md, "chunk_index"),
+    chapter: metaString(md, "chapter"),
+    chunkType: metaString(md, "chunk_type"),
   };
+}
+
+/** Intestazione leggibile (v3) + corpo; `bodyOverride` per estrazione phrase senza riscrivere metadata. */
+function formatPrimaryFromRow(row: MatchRow, bodyOverride?: string): string {
+  const md = (row.metadata ?? null) as Record<string, unknown> | null;
+  const content =
+    bodyOverride ?? (typeof row.content === "string" ? row.content.trim() : "");
+  const source = metaString(md, "source");
+  const file = metaString(md, "file_name");
+  const ch = metaString(md, "chapter");
+  const sec = metaString(md, "section_heading") ?? metaString(md, "section_title");
+  const typ = metaString(md, "chunk_type");
+  const lines: string[] = [];
+  if (source || file) lines.push(`Manuale: ${[source, file].filter(Boolean).join(" · ")}`);
+  if (ch) lines.push(`Capitolo: ${ch}`);
+  if (sec) lines.push(`Sezione: ${sec}`);
+  if (typ) lines.push(`Tipo: ${typ}`);
+  if (lines.length === 0) return content;
+  return `${lines.join("\n")}\n\n— — —\n\n${content}`;
+}
+
+function formatPrimaryFromHit(hit: ManualSearchHit): string {
+  const lines: string[] = [];
+  if (hit.sourceLabel || hit.fileName) {
+    lines.push(`Manuale: ${[hit.sourceLabel, hit.fileName].filter(Boolean).join(" · ")}`);
+  }
+  if (hit.chapter) lines.push(`Capitolo: ${hit.chapter}`);
+  if (hit.sectionTitle) lines.push(`Sezione: ${hit.sectionTitle}`);
+  if (hit.chunkType) lines.push(`Tipo: ${hit.chunkType}`);
+  const content = hit.content.trim();
+  if (lines.length === 0) return content;
+  return `${lines.join("\n")}\n\n— — —\n\n${content}`;
 }
 
 function sanitizeIlikeFragment(raw: string): string {
@@ -380,12 +416,13 @@ export async function searchManualsSemanticAction(query: string): Promise<Manual
       .filter((x): x is { r: MatchRow; s: number } => x.s != null)
       .sort((a, b) => b.s - a.s);
     const bestRow = scored[0]?.r;
-    const primaryText = bestRow && typeof bestRow.content === "string"
-      ? extractRuleBlockAroundPhrase(bestRow.content, q)
-      : hits
-          .map((h) => h.content.trim())
-          .filter(Boolean)
-          .join("\n\n— — —\n\n");
+    const primaryText =
+      bestRow && typeof bestRow.content === "string"
+        ? formatPrimaryFromRow(bestRow, extractRuleBlockAroundPhrase(bestRow.content, q))
+        : hits
+            .map((h) => h.content.trim())
+            .filter(Boolean)
+            .join("\n\n— — —\n\n");
     return { success: true, mode: "text-fallback", primaryText, hits };
   }
 
@@ -426,8 +463,11 @@ export async function searchManualsSemanticAction(query: string): Promise<Manual
       if (phraseRows.length > 0) {
         const hits = phraseRows.map(rowToHit).filter((h) => h.content.trim().length > 0);
         const primaryText =
-          usePhraseFocus && bestPhrase
-            ? extractRuleBlockAroundPhrase(String(bestPhrase.r.content), q)
+          usePhraseFocus && bestPhrase && typeof bestPhrase.r.content === "string"
+            ? formatPrimaryFromRow(
+                bestPhrase.r,
+                extractRuleBlockAroundPhrase(String(bestPhrase.r.content), q)
+              )
             : hits.map((h) => h.content).join("\n\n— — —\n\n");
         return { success: true, mode: "text-fallback", primaryText, hits };
       }
@@ -440,7 +480,10 @@ export async function searchManualsSemanticAction(query: string): Promise<Manual
       return {
         success: true,
         mode: "phrase-focus",
-        primaryText: extractRuleBlockAroundPhrase(bestPhrase.r.content, q),
+        primaryText: formatPrimaryFromRow(
+          bestPhrase.r,
+          extractRuleBlockAroundPhrase(String(bestPhrase.r.content), q)
+        ),
         hits,
       };
     }
@@ -451,7 +494,10 @@ export async function searchManualsSemanticAction(query: string): Promise<Manual
   const phraseHits = phraseRows.map(rowToHit).filter((h) => h.content.trim().length > 0);
 
   if (usePhraseFocus && bestPhrase && typeof bestPhrase.r.content === "string") {
-    const primaryText = extractRuleBlockAroundPhrase(bestPhrase.r.content, q);
+    const primaryText = formatPrimaryFromRow(
+      bestPhrase.r,
+      extractRuleBlockAroundPhrase(bestPhrase.r.content, q)
+    );
     const hits = mergeHitsUnique(phraseHits, vectorHits);
     return { success: true, mode: "phrase-focus", primaryText, hits };
   }
@@ -460,36 +506,7 @@ export async function searchManualsSemanticAction(query: string): Promise<Manual
     return textFallback();
   }
 
-  const best = vectorHits[0];
-  const qn = normalizeForMatch(q);
-  const bestContainsPhrase = normalizeForMatch(best.content).includes(qn);
-  let primaryText = best.content.trim();
-
-  if (
-    best.fileName != null &&
-    best.chunkIndex != null &&
-    bestContainsPhrase &&
-    !isTableHeavyChunk(best.content)
-  ) {
-    const { data: neighbors, error: nErr } = await runRpc("manuals_knowledge_neighbors", {
-      p_file_name: best.fileName,
-      p_center_index: best.chunkIndex,
-      p_radius: 1,
-    });
-    if (!nErr && Array.isArray(neighbors) && neighbors.length > 0) {
-      const parts = (neighbors as Array<{ content?: string }>)
-        .map((n) => (typeof n.content === "string" ? n.content.trim() : ""))
-        .filter(Boolean);
-      if (parts.length > 0) {
-        const stitched = parts.join("\n\n");
-        if (normalizeForMatch(stitched).includes(qn)) {
-          primaryText = extractRuleBlockAroundPhrase(stitched, q);
-        }
-      }
-    }
-  } else if (bestContainsPhrase && !isTableHeavyChunk(primaryText)) {
-    primaryText = extractRuleBlockAroundPhrase(primaryText, q);
-  }
+  const primaryText = formatPrimaryFromHit(vectorHits[0]);
 
   const hits = mergeHitsUnique(vectorHits, phraseHits);
   return { success: true, mode: "semantic", primaryText, hits };

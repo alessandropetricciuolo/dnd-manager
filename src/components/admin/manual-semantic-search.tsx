@@ -42,7 +42,7 @@ export function ManualSemanticSearch() {
         res.mode === "phrase-focus"
           ? "Risultato dalla frase esatta nel manuale (blocco regola estratto)."
           : res.mode === "semantic"
-            ? "Risultato da ricerca semantica (chunk vicini uniti se disponibili)."
+            ? "Risultato da ricerca semantica (chunk più pertinente)."
             : "Risultato da ricerca testuale (fallback o embedding non disponibile)."
       );
     });
@@ -57,7 +57,8 @@ export function ManualSemanticSearch() {
           <p className="text-xs text-barber-paper/65">
             Cerca per significato (es. <em>palla di fuoco</em>, <em>attacco opportunità</em>). I manuali indicizzati sono
             tutti in <strong className="font-medium text-barber-paper/80">italiano</strong>: usa termini IT per risultati
-            migliori. Il testo mostrato unisce i chunk adiacenti quando possibile (incantesimi e passaggi lunghi).
+            migliori. Il risultato principale è un <strong className="font-medium text-barber-paper/80">singolo chunk</strong> con
+            intestazione (manuale, capitolo, sezione) se indicizzato con ingest v3.
           </p>
         </div>
       </div>
@@ -92,9 +93,9 @@ export function ManualSemanticSearch() {
         <p className="text-[11px] uppercase tracking-wide text-barber-paper/45">
           Modalità:{" "}
           {mode === "phrase-focus"
-            ? "frase esatta (estrattore regola)"
+            ? "frase esatta (estrattore regola + intestazione)"
             : mode === "semantic"
-              ? "semantica + espansione chunk"
+              ? "semantica (miglior chunk unico)"
               : "testuale (fallback)"}
         </p>
       )}
@@ -122,6 +123,7 @@ export function ManualSemanticSearch() {
             {hits.slice(0, 8).map((h, i) => (
               <li key={i} className="text-xs text-barber-paper/75">
                 <span className="text-barber-gold/80">
+                  {h.chapter ? `${h.chapter} › ` : ""}
                   {h.sectionTitle ?? "—"}
                   {h.similarity != null ? ` · score ${h.similarity.toFixed(3)}` : ""}
                 </span>

@@ -270,6 +270,133 @@ const RAG_EMBEDDING_MODEL_CANDIDATES: readonly string[] = [
   MODELS.embedding,
 ];
 
+/**
+ * Embedding via **hf-inference** (`POST .../hf-inference/models/{modelId}` + `{ inputs: string }`).
+ * Serve quando `/v1/embeddings` del router risponde 404 (molti sentence-transformers non sono mappati lì).
+ */
+function parseHfInferenceEmbeddingPayload(data: unknown): number[] | null {
+  const isNum = (x: unknown): x is number => typeof x === "number" && Number.isFinite(x);
+
+  function firstNumberVector(node: unknown): number[] | null {
+    if (!Array.isArray(node) || node.length === 0) return null;
+    if (isNum(node[0])) {
+      return node.every(isNum) ? (node as number[]) : null;
+    }
+    for (const item of node) {
+      const v = firstNumberVector(item);
+      if (v) return v;
+    }
+    return null;
+  }
+
+  if (Array.isArray(data)) {
+    const direct = firstNumberVector(data);
+    if (direct) return direct;
+  }
+  if (data && typeof data === "object") {
+    const o = data as Record<string, unknown>;
+    for (const key of ["embeddings", "data", "last_hidden_state", "sentence_embeddings"] as const) {
+      if (key in o) {
+        const v = firstNumberVector(o[key]);
+        if (v) return v;
+      }
+    }
+  }
+  return null;
+}
+
+/** ID modello nel path URL (niente suffisso provider tipo `:hf-inference`). */
+function hfInferenceModelPathId(model: string): string {
+  return model.replace(/:hf-inference$/i, "").trim();
+}
+
+/** Cold start hf-inference può superare 1 min; 60s causava AbortError frequente. */
+const HF_FEATURE_EXTRACTION_TIMEOUT_MS = 240_000;
+
+function isAbortError(e: unknown): boolean {
+  return (
+    e instanceof Error &&
+    (e.name === "AbortError" || /aborted/i.test(e.message))
+  );
+}
+
+/**
+ * Embedding via hf-inference **feature-extraction** (non il default del modello, che spesso è
+ * `SentenceSimilarityPipeline` e richiede `sentences`).
+ * @see https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/discussions/115
+ */
+async function embedWithHfInferenceModel(apiKey: string, model: string, input: string): Promise<number[]> {
+  const id = hfInferenceModelPathId(model);
+  const url = `${HF_IMAGE_INFERENCE_BASE}/${encodeURIComponent(id)}/pipeline/feature-extraction`;
+  const headers = {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+
+  const payloads: Record<string, unknown>[] = [
+    { inputs: input, truncate: true },
+    { inputs: [input], truncate: true },
+  ];
+
+  let lastErr = "";
+  for (const body of payloads) {
+    let response: Response | undefined;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), HF_FEATURE_EXTRACTION_TIMEOUT_MS);
+      try {
+        response = await fetch(url, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        });
+        break;
+      } catch (e) {
+        if (isAbortError(e) && attempt === 0) {
+          lastErr = `timeout/abort dopo ${HF_FEATURE_EXTRACTION_TIMEOUT_MS}ms, retry…`;
+          await new Promise((r) => setTimeout(r, 500));
+          continue;
+        }
+        throw new Error(
+          `hf-inference feature-extraction: ${e instanceof Error ? e.message : String(e)}`
+        );
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    }
+
+    if (!response) {
+      lastErr = "fetch senza risposta";
+      continue;
+    }
+
+    if (!response.ok) {
+      lastErr = `model=${id} status=${response.status} body=${await response.text()}`;
+      continue;
+    }
+
+    let data: unknown;
+    try {
+      data = await response.json();
+    } catch {
+      throw new HuggingFaceInferenceError("Risposta embeddings hf-inference non JSON.", { status: 502 });
+    }
+
+    const vec = parseHfInferenceEmbeddingPayload(data);
+    if (!vec || vec.length < 8) {
+      lastErr = `formato embedding non valido: ${
+        typeof data === "object" ? JSON.stringify(data).slice(0, 400) : String(data).slice(0, 400)
+      }`;
+      continue;
+    }
+    return vec;
+  }
+
+  throw new Error(`hf-inference feature-extraction: ${lastErr || "nessun payload ha funzionato"}`);
+}
+
 async function embedWithOpenAiCompatibleRouter(
   apiKey: string,
   input: string,
@@ -322,8 +449,8 @@ async function embedWithOpenAiCompatibleRouter(
   }
 
   throw new Error(
-    `Errore API Hugging Face (embedding): ${
-      lastErrorText || "nessun modello embeddings disponibile su router"
+    `Errore API Hugging Face (embedding /v1/embeddings): ${
+      lastErrorText || "nessun modello candidato ha risposto OK"
     }`
   );
 }
@@ -345,7 +472,19 @@ export async function generateRagEmbedding(text: string): Promise<number[]> {
     throw new HuggingFaceInferenceError("Il testo per embedding non può essere vuoto.", { status: 400 });
   }
 
-  return embedWithOpenAiCompatibleRouter(apiKey, input, RAG_EMBEDDING_MODEL_CANDIDATES);
+  try {
+    return await embedWithOpenAiCompatibleRouter(apiKey, input, RAG_EMBEDDING_MODEL_CANDIDATES);
+  } catch (routerErr) {
+    const routerMsg = routerErr instanceof Error ? routerErr.message : String(routerErr);
+    try {
+      return await embedWithHfInferenceModel(apiKey, MODELS.embedding, input);
+    } catch (hfErr) {
+      const hfMsg = hfErr instanceof Error ? hfErr.message : String(hfErr);
+      throw new Error(
+        `Errore API Hugging Face (embedding): router OpenAI-compat: ${routerMsg}; hf-inference feature-extraction: ${hfMsg}`
+      );
+    }
+  }
 }
 
 /** Genera embedding vettoriale via router OpenAI-compatible (/v1/embeddings), con fallback multilingue. */
