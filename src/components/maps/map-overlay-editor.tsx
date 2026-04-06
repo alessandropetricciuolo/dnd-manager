@@ -81,6 +81,8 @@ type MapOverlayEditorProps = {
   mapName: string;
   campaignMaps: CampaignMapOption[];
   initialItems: MapOverlayItem[];
+  /** Cambia dopo ogni salvataggio/pubblicazione lato server per sincronizzare la lista elementi. */
+  overlayRevision: string;
 };
 
 function newId(): string {
@@ -114,11 +116,13 @@ export function MapOverlayEditor({
   mapName,
   campaignMaps,
   initialItems,
+  overlayRevision,
 }: MapOverlayEditorProps) {
   void campaignMaps;
   const router = useRouter();
   const [items, setItems] = useState<MapOverlayItem[]>(() => initialItems);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const overlayRevRef = useRef(overlayRevision);
   const [tool, setTool] = useState<Tool>("select");
   const [symbolId, setSymbolId] = useState<MapOverlaySymbolId>("star");
   const [placeColor, setPlaceColor] = useState("#e8c97a");
@@ -185,6 +189,13 @@ export function MapOverlayEditor({
   }, [historyOpen, refreshSnapshots]);
 
   useEffect(() => {
+    if (overlayRevRef.current === overlayRevision) return;
+    overlayRevRef.current = overlayRevision;
+    setItems(initialItems);
+    setSelectedId(null);
+  }, [overlayRevision, initialItems]);
+
+  useEffect(() => {
     if (!draggingId) return;
     const d = dragRef.current;
     if (!d || d.id !== draggingId) return;
@@ -206,6 +217,17 @@ export function MapOverlayEditor({
 
     const onUp = (e: PointerEvent) => {
       if (e.pointerId !== d.pointerId) return;
+      try {
+        document
+          .querySelectorAll("[data-map-overlay-item]")
+          .forEach((el) => {
+            if (el instanceof HTMLElement && el.hasPointerCapture(e.pointerId)) {
+              el.releasePointerCapture(e.pointerId);
+            }
+          });
+      } catch {
+        /* ignore */
+      }
       dragRef.current = null;
       setDraggingId(null);
     };
@@ -238,7 +260,6 @@ export function MapOverlayEditor({
       e.preventDefault();
       e.stopPropagation();
       setSelectedId(id);
-      if (tool !== "select") return;
       const item = items.find((i) => i.id === id);
       if (!item) return;
       dragRef.current = {
@@ -250,8 +271,13 @@ export function MapOverlayEditor({
         origY: item.y,
       };
       setDraggingId(id);
+      try {
+        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
     },
-    [items, tool]
+    [items]
   );
 
   const handleContainerPointerDown = useCallback(
@@ -516,6 +542,9 @@ export function MapOverlayEditor({
               maxScale={4}
               centerOnInit
               limitToBounds={false}
+              panning={{ excluded: ["[data-map-overlay-item]"] }}
+              wheel={{ excluded: ["[data-map-overlay-item]"] }}
+              doubleClick={{ excluded: ["[data-map-overlay-item]"] }}
             >
               <TransformComponent
                 wrapperStyle={{ width: "100%", height: "100%" }}
@@ -687,15 +716,44 @@ export function MapOverlayEditor({
               )}
 
               {selected.kind === "symbol" && (
-                <div className="space-y-2">
-                  <Label className="text-slate-300">Colore</Label>
-                  <Input
-                    type="color"
-                    value={selected.color ?? "#e8c97a"}
-                    onChange={(e) => updateSelected({ color: e.target.value } as Partial<MapOverlayItem>)}
-                    className="h-9 border-barber-gold/30 bg-slate-900"
-                  />
-                </div>
+                <>
+                  <div className="space-y-2">
+                    <Label className="text-slate-300">Simbolo</Label>
+                    <div className="grid grid-cols-5 gap-2">
+                      {MAP_OVERLAY_SYMBOL_IDS.map((sid) => {
+                        const Icon = SYMBOL_ICONS[sid];
+                        const active = selected.symbolId === sid;
+                        return (
+                          <button
+                            key={sid}
+                            type="button"
+                            title={sid}
+                            onClick={() =>
+                              updateSelected({ symbolId: sid } as Partial<MapOverlayItem>)
+                            }
+                            className={cn(
+                              "flex h-9 items-center justify-center rounded-md border transition-colors",
+                              active
+                                ? "border-barber-gold bg-barber-gold/20 text-barber-gold"
+                                : "border-barber-gold/25 bg-slate-900/50 text-slate-300 hover:border-barber-gold/50"
+                            )}
+                          >
+                            <Icon className="h-4 w-4" strokeWidth={2} />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-slate-300">Colore</Label>
+                    <Input
+                      type="color"
+                      value={selected.color ?? "#e8c97a"}
+                      onChange={(e) => updateSelected({ color: e.target.value } as Partial<MapOverlayItem>)}
+                      className="h-9 border-barber-gold/30 bg-slate-900"
+                    />
+                  </div>
+                </>
               )}
 
               <div className="space-y-2">
@@ -722,8 +780,11 @@ export function MapOverlayEditor({
           )}
 
           <p className="text-xs leading-relaxed text-slate-500">
-            Suggerimento: con <strong className="font-medium text-slate-400">Seleziona</strong> trascina un
-            elemento. Con Testo o Simbolo, clicca sul vuoto della mappa per aggiungere.
+            Trascina un&apos;etichetta o un simbolo cliccandolo e trascinando (anche mentre usi Testo o Simbolo per
+            nuovi elementi). Il pan/zoom della mappa non interferisce sugli elementi. Dopo
+            <strong className="font-medium text-slate-400"> Salva bozza </strong>
+            o <strong className="font-medium text-slate-400">Pubblica</strong>, puoi ancora modificare testo, simbolo
+            e stile nel pannello qui a destra; poi salva di nuovo la bozza o ripubblica.
           </p>
         </aside>
       </div>

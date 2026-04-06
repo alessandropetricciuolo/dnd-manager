@@ -57,6 +57,14 @@ export default async function MapOverlayEditPage({ params }: PageProps) {
   const draft =
     row.overlay_draft != null ? parseMapOverlayItems(row.overlay_draft) : null;
   const initialItems = draft ?? published;
+  /** Allinea lo stato client dopo salvataggio/pubblicazione (router.refresh). */
+  const overlayRevision = (() => {
+    try {
+      return JSON.stringify({ draft: row.overlay_draft ?? null, published: row.overlay_items ?? null });
+    } catch {
+      return `${String(row.overlay_draft)}|${String(row.overlay_items)}`;
+    }
+  })();
 
   const { data: campaignMaps } = await supabase
     .from("maps")
@@ -75,6 +83,7 @@ export default async function MapOverlayEditPage({ params }: PageProps) {
           mapName={row.name}
           campaignMaps={(campaignMaps ?? []).map((m) => ({ id: m.id, name: m.name }))}
           initialItems={initialItems}
+          overlayRevision={overlayRevision}
         />
       </div>
 
