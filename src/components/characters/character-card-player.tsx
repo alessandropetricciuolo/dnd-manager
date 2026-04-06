@@ -7,29 +7,35 @@ import type { CampaignCharacterRow } from "@/app/campaigns/character-actions";
 import { MapPopoutButton } from "@/components/maps/map-popout-button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { parseRulesSnapshot } from "@/lib/character-rules-snapshot";
+import type { CharacterRulesSnapshotV1 } from "@/lib/character-rules-snapshot";
 import { backgroundBySlug, raceBySlug } from "@/lib/character-build-catalog";
 
 const PLACEHOLDER_AVATAR = "https://placehold.co/400x560/1c1917/fbbf24/png?text=PG";
+
+const STALE_SNAPSHOT_HINT =
+  "Snapshot regole non presente o non aggiornato. Il Master deve aprire «Modifica personaggio» sulla scheda del personaggio in campagna e premere Salva per generare i testi dal Manuale del Giocatore indicizzato. Se hai già salvato, verifica che la migration del database sia applicata e che il manuale non sia escluso nei paletti della campagna.";
 
 type CharacterCardPlayerProps = {
   character: CampaignCharacterRow;
   isLongCampaign?: boolean;
 };
 
-function TipSpan({ label, body }: { label: string; body: string }) {
-  const t = body?.trim();
+/** Trigger accessibile senza <button> dentro flussi di testo (evita HTML invalido in <p>). */
+function RulesTip({ label, children }: { label: string; children: string }) {
+  const t = children.trim();
   if (!t) {
     return <span className="text-barber-paper/85">{label}</span>;
   }
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <button
-          type="button"
-          className="cursor-help border-b border-dotted border-barber-gold/55 text-barber-paper/90 hover:text-barber-gold"
+        <span
+          role="button"
+          tabIndex={0}
+          className="cursor-help border-b border-dotted border-barber-gold/55 text-barber-paper/90 outline-none hover:text-barber-gold focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-barber-gold/40"
         >
           {label}
-        </button>
+        </span>
       </TooltipTrigger>
       <TooltipContent
         side="bottom"
@@ -39,6 +45,18 @@ function TipSpan({ label, body }: { label: string; body: string }) {
       </TooltipContent>
     </Tooltip>
   );
+}
+
+function tooltipOrWarnings(
+  md: string | null | undefined,
+  snap: CharacterRulesSnapshotV1 | null,
+  staleFallback: string | undefined
+): string {
+  const m = md?.trim();
+  if (m) return m;
+  const w = snap?.warnings?.filter(Boolean).join("\n\n").trim();
+  if (w) return w;
+  return staleFallback?.trim() ?? "";
 }
 
 /** Versione immersiva per il giocatore: immagine grande, nome, background. Nessun link al PDF. */
@@ -54,8 +72,25 @@ export function CharacterCardPlayer({ character, isLongCampaign }: CharacterCard
   const bgRulesLabel = backgroundBySlug(character.background_slug ?? null)?.label ?? null;
   const snap = parseRulesSnapshot(character.rules_snapshot ?? null);
 
+  const hasBuild = !!(
+    character.race_slug ||
+    character.character_class?.trim() ||
+    character.background_slug
+  );
+  const staleFallback = !snap && hasBuild ? STALE_SNAPSHOT_HINT : undefined;
+
+  const raceBody = tooltipOrWarnings(snap?.raceTraitsMd, snap, staleFallback);
+  const showSubrace =
+    !!(character.subclass_slug && subraceLabel) || !!snap?.subraceTraitsMd?.trim();
+  const classBody = tooltipOrWarnings(snap?.classPrivilegesMd, snap, staleFallback);
+  const spellsBody = tooltipOrWarnings(
+    [snap?.spellcastingMd, snap?.spellsListMd].filter(Boolean).join("\n\n"),
+    snap,
+    staleFallback
+  );
+
   return (
-    <TooltipProvider delayDuration={200}>
+    <TooltipProvider delayDuration={150} skipDelayDuration={0}>
       <Card className="overflow-hidden border-barber-gold/40 bg-barber-dark/90 min-w-0">
         <div className="space-y-2 min-w-0">
           <div className="relative aspect-[4/5] w-full max-w-md mx-auto overflow-hidden bg-barber-dark min-w-0">
@@ -74,28 +109,28 @@ export function CharacterCardPlayer({ character, isLongCampaign }: CharacterCard
               <h2 className="text-xl font-semibold text-barber-paper break-words md:text-2xl lg:text-3xl">
                 {character.name}
               </h2>
-              <p className="mt-1 text-sm text-barber-paper/85">
+              {/* div: non usare <p> qui — i trigger tooltip non possono stare dentro <p> (HTML invalido). */}
+              <div className="mt-1 text-sm text-barber-paper/85">
                 {raceLabel ? (
                   <>
-                    <TipSpan label={raceLabel} body={snap?.raceTraitsMd ?? ""} />
-                    {snap?.subraceTraitsMd?.trim() ? (
+                    <RulesTip label={raceLabel}>{raceBody}</RulesTip>
+                    {showSubrace ? (
                       <>
                         {" · "}
-                        <TipSpan label={subraceLabel ?? "Sottorazza"} body={snap.subraceTraitsMd} />
+                        <RulesTip label={subraceLabel ?? "Sottorazza"}>
+                          {tooltipOrWarnings(snap?.subraceTraitsMd, snap, staleFallback)}
+                        </RulesTip>
                       </>
                     ) : null}
                     {" · "}
                   </>
                 ) : null}
-                <TipSpan label={classLabel} body={snap?.classPrivilegesMd ?? ""} />
+                <RulesTip label={classLabel}>{classBody}</RulesTip>
                 {" · "}Livello {storedLevel}
-                {snap?.spellcastingMd?.trim() || snap?.spellsListMd?.trim() ? (
+                {spellsBody ? (
                   <>
                     {" · "}
-                    <TipSpan
-                      label="Incantesimi"
-                      body={[snap?.spellcastingMd, snap?.spellsListMd].filter(Boolean).join("\n\n—\n\n")}
-                    />
+                    <RulesTip label="Incantesimi">{spellsBody}</RulesTip>
                   </>
                 ) : null}
                 <span className="mt-0.5 block text-xs text-barber-paper/65 tabular-nums">
@@ -106,7 +141,7 @@ export function CharacterCardPlayer({ character, isLongCampaign }: CharacterCard
                     {character.coins_gp ?? 0} oro · {character.coins_sp ?? 0} arg · {character.coins_cp ?? 0} ram
                   </span>
                 )}
-              </p>
+              </div>
             </div>
           </div>
           {character.image_url && (
@@ -118,9 +153,13 @@ export function CharacterCardPlayer({ character, isLongCampaign }: CharacterCard
         <CardHeader className="pb-2">
           <CardTitle className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-barber-gold">
             Background
-            {bgRulesLabel && snap?.backgroundRulesMd?.trim() ? (
+            {bgRulesLabel ? (
               <span className="text-sm font-normal text-barber-paper/70">
-                (<TipSpan label={`PHB: ${bgRulesLabel}`} body={snap.backgroundRulesMd} />)
+                (
+                <RulesTip label={`PHB: ${bgRulesLabel}`}>
+                  {tooltipOrWarnings(snap?.backgroundRulesMd, snap, staleFallback)}
+                </RulesTip>
+                )
               </span>
             ) : null}
           </CardTitle>

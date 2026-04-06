@@ -165,10 +165,21 @@ function clipBackgroundRules(md: string): string {
 }
 
 export function parseRulesSnapshot(raw: Json | null): CharacterRulesSnapshotV1 | null {
-  if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return null;
-  const o = raw as Record<string, unknown>;
+  if (raw === null || raw === undefined) return null;
+  let o: Record<string, unknown>;
+  if (typeof raw === "string") {
+    try {
+      o = JSON.parse(raw) as Record<string, unknown>;
+    } catch {
+      return null;
+    }
+  } else if (typeof raw === "object" && !Array.isArray(raw)) {
+    o = raw as Record<string, unknown>;
+  } else {
+    return null;
+  }
   if (o.version !== 1) return null;
-  return raw as unknown as CharacterRulesSnapshotV1;
+  return o as unknown as CharacterRulesSnapshotV1;
 }
 
 export async function recomputeCharacterRulesSnapshot(input: {
