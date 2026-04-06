@@ -20,6 +20,7 @@ import { ImageSourceField } from "@/components/ui/image-source-field";
 import { Textarea } from "@/components/ui/textarea";
 import { updateCharacter } from "@/app/campaigns/character-actions";
 import type { CampaignCharacterRow } from "@/app/campaigns/character-actions";
+import { CharacterBuildFormFields } from "@/components/characters/character-build-form-fields";
 
 const MAX_TOTAL_MB = 4;
 const MAX_TOTAL_BYTES = MAX_TOTAL_MB * 1024 * 1024;
@@ -127,17 +128,13 @@ export function EditCharacterDialog({
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="edit-char-class">Classe</Label>
-            <Input
-              id="edit-char-class"
-              name="character_class"
-              defaultValue={character.character_class ?? ""}
-              placeholder="Es. Mago, Guerriero, Chierico"
-              className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
-              disabled={isLoading}
-            />
-          </div>
+          <CharacterBuildFormFields
+            disabled={isLoading}
+            initialRaceSlug={character.race_slug}
+            initialSubclassSlug={character.subclass_slug}
+            initialBackgroundSlug={character.background_slug}
+            initialClassLabel={character.character_class}
+          />
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

@@ -8,6 +8,9 @@ import { sendEmail, wrapInTemplate, escapeHtml } from "@/lib/email";
 import { getNotificationsPaused, hasNotificationsDisabled } from "@/lib/player-emails";
 import { uploadToTelegram } from "@/lib/telegram-storage";
 import { parseSafeExternalUrl } from "@/lib/security/url";
+import type { Json } from "@/types/database.types";
+import { backgroundBySlug, raceBySlug } from "@/lib/character-build-catalog";
+import { recomputeCharacterRulesSnapshot } from "@/lib/character-rules-snapshot";
 
 const CHARACTER_SHEETS_BUCKET = "character_sheets";
 const SIGNED_URL_EXPIRY_SEC = 3600;
@@ -38,9 +41,26 @@ export type CampaignCharacterRow = {
   coins_gp?: number;
   coins_sp?: number;
   coins_cp?: number;
+  race_slug?: string | null;
+  subclass_slug?: string | null;
+  background_slug?: string | null;
+  rules_snapshot?: Json | null;
   created_at: string;
   updated_at: string;
 };
+
+function formSlug(formData: FormData, key: string): string | null {
+  const v = (formData.get(key) as string | null)?.trim();
+  if (!v || v === "__none__") return null;
+  return v;
+}
+
+function normalizeSubraceForRace(raceSlug: string | null, subclassSlug: string | null): string | null {
+  if (!raceSlug || !subclassSlug) return null;
+  const r = raceBySlug(raceSlug);
+  if (!r?.subraces?.some((s) => s.slug === subclassSlug)) return null;
+  return subclassSlug;
+}
 
 async function getCurrentUserAndRole(): Promise<
   { userId: string; isGmOrAdmin: boolean; supabase: Awaited<ReturnType<typeof createSupabaseServerClient>> } | null
@@ -76,7 +96,7 @@ export async function getCampaignCharacters(
     const { data: rows, error } = await supabase
       .from("campaign_characters")
       .select(
-        "id, campaign_id, name, image_url, character_class, armor_class, hit_points, current_xp, level, sheet_file_path, background, assigned_to, time_offset_hours, coins_gp, coins_sp, coins_cp, created_at, updated_at"
+        "id, campaign_id, name, image_url, character_class, armor_class, hit_points, current_xp, level, sheet_file_path, background, race_slug, subclass_slug, background_slug, rules_snapshot, assigned_to, time_offset_hours, coins_gp, coins_sp, coins_cp, created_at, updated_at"
       )
       .eq("campaign_id", campaignId)
       .order("created_at", { ascending: false });
@@ -121,7 +141,7 @@ export async function getCampaignCharacters(
   const { data: rows, error } = await supabase
     .from("campaign_characters")
     .select(
-      "id, campaign_id, name, image_url, character_class, current_xp, level, background, assigned_to, time_offset_hours, coins_gp, coins_sp, coins_cp, created_at, updated_at"
+      "id, campaign_id, name, image_url, character_class, current_xp, level, background, race_slug, subclass_slug, background_slug, rules_snapshot, assigned_to, time_offset_hours, coins_gp, coins_sp, coins_cp, created_at, updated_at"
     )
     .eq("campaign_id", campaignId)
     .eq("assigned_to", userId)
@@ -164,6 +184,11 @@ export async function createCharacter(
   const armorClassRaw = (formData.get("armor_class") as string | null)?.trim() || "";
   const hitPointsRaw = (formData.get("hit_points") as string | null)?.trim() || "";
   const background = (formData.get("background") as string | null)?.trim() ?? null;
+  const raceRaw = formSlug(formData, "race_slug");
+  const race_slug = raceBySlug(raceRaw) ? raceRaw : null;
+  const subclass_slug = normalizeSubraceForRace(race_slug, formSlug(formData, "subclass_slug"));
+  const bgRaw = formSlug(formData, "background_slug");
+  const background_slug = backgroundBySlug(bgRaw) ? bgRaw : null;
   const imageFile = formData.get("image") as File | null;
   const imageUrlFromFormRaw = (formData.get("image_url") as string | null)?.trim() || null;
   const imageUrlFromForm =
@@ -226,6 +251,15 @@ export async function createCharacter(
     sheet_file_path = path;
   }
 
+  const rules_snapshot = await recomputeCharacterRulesSnapshot({
+    campaignId,
+    level: 1,
+    characterClass: characterClass,
+    raceSlug: race_slug,
+    subclassSlug: subclass_slug,
+    backgroundSlug: background_slug,
+  });
+
   const { data: row, error } = await supabase
     .from("campaign_characters")
     .insert({
@@ -237,9 +271,15 @@ export async function createCharacter(
       hit_points: hitPoints,
       sheet_file_path,
       background,
+      race_slug,
+      subclass_slug,
+      background_slug,
+      rules_snapshot: rules_snapshot as unknown as Json,
       assigned_to: null,
     })
-    .select("id, campaign_id, name, image_url, character_class, armor_class, hit_points, current_xp, level, background, assigned_to, created_at, updated_at")
+    .select(
+      "id, campaign_id, name, image_url, character_class, armor_class, hit_points, current_xp, level, background, race_slug, subclass_slug, background_slug, rules_snapshot, assigned_to, created_at, updated_at"
+    )
     .single();
 
   if (error) {
@@ -279,6 +319,11 @@ export async function updateCharacter(
   }
 
   const background = (formData.get("background") as string | null)?.trim() ?? null;
+  const raceRaw = formSlug(formData, "race_slug");
+  const race_slug = raceBySlug(raceRaw) ? raceRaw : null;
+  const subclass_slug = normalizeSubraceForRace(race_slug, formSlug(formData, "subclass_slug"));
+  const bgRaw = formSlug(formData, "background_slug");
+  const background_slug = backgroundBySlug(bgRaw) ? bgRaw : null;
   const { data: campaignRow } = await supabase
     .from("campaigns")
     .select("type")
@@ -312,7 +357,7 @@ export async function updateCharacter(
 
   const { data: existing, error: fetchErr } = await supabase
     .from("campaign_characters")
-    .select("image_url, sheet_file_path")
+    .select("image_url, sheet_file_path, level")
     .eq("id", characterId)
     .single();
 
@@ -372,6 +417,16 @@ export async function updateCharacter(
     sheet_file_path = path;
   }
 
+  const prevLevel = typeof (existing as { level?: number }).level === "number" ? (existing as { level: number }).level : 1;
+  const rules_snapshot = await recomputeCharacterRulesSnapshot({
+    campaignId,
+    level: prevLevel,
+    characterClass,
+    raceSlug: race_slug,
+    subclassSlug: subclass_slug,
+    backgroundSlug: background_slug,
+  });
+
   const { data: row, error } = await supabase
     .from("campaign_characters")
     .update({
@@ -382,11 +437,15 @@ export async function updateCharacter(
       hit_points: hitPoints,
       sheet_file_path,
       background,
+      race_slug,
+      subclass_slug,
+      background_slug,
+      rules_snapshot: rules_snapshot as unknown as Json,
       ...(isLong ? { coins_gp: coinsGp, coins_sp: coinsSp, coins_cp: coinsCp } : {}),
     })
     .eq("id", characterId)
     .select(
-      "id, campaign_id, name, image_url, character_class, armor_class, hit_points, current_xp, level, background, assigned_to, coins_gp, coins_sp, coins_cp, created_at, updated_at"
+      "id, campaign_id, name, image_url, character_class, armor_class, hit_points, current_xp, level, background, race_slug, subclass_slug, background_slug, rules_snapshot, assigned_to, coins_gp, coins_sp, coins_cp, created_at, updated_at"
     )
     .single();
 
@@ -487,27 +546,25 @@ export async function deleteCharacter(characterId: string): Promise<CharResult<{
 
 export type EligiblePlayer = { id: string; label: string };
 
-/** Incrementa di 1 il livello del personaggio (max 20). Consentito a GM/Admin o al proprietario del PG. */
+/** Incrementa di 1 il livello del personaggio (max 20). Solo GM/Admin; aggiorna anche `rules_snapshot`. */
 export async function levelUpCharacter(
   characterId: string
 ): Promise<CharResult<{ campaignId: string; newLevel: number }>> {
   const ctx = await getCurrentUserAndRole();
   if (!ctx) return { success: false, error: "Non autenticato." };
-  const { userId, isGmOrAdmin, supabase } = ctx;
+  const { isGmOrAdmin, supabase } = ctx;
+  if (!isGmOrAdmin) {
+    return { success: false, error: "Solo il Master o un admin può confermare il passaggio di livello." };
+  }
 
   const { data: row, error } = await supabase
     .from("campaign_characters")
-    .select("campaign_id, assigned_to, level")
+    .select("campaign_id, level, character_class, race_slug, subclass_slug, background_slug")
     .eq("id", characterId)
     .maybeSingle();
 
   if (error || !row) {
     return { success: false, error: "Personaggio non trovato." };
-  }
-
-  const canEdit = isGmOrAdmin || row.assigned_to === userId;
-  if (!canEdit) {
-    return { success: false, error: "Non sei autorizzato a far salire di livello questo personaggio." };
   }
 
   const currentLevel = typeof row.level === "number" ? row.level : 1;
@@ -516,9 +573,17 @@ export async function levelUpCharacter(
   }
 
   const newLevel = currentLevel + 1;
+  const rules_snapshot = await recomputeCharacterRulesSnapshot({
+    campaignId: row.campaign_id,
+    level: newLevel,
+    characterClass: (row as { character_class?: string | null }).character_class ?? null,
+    raceSlug: (row as { race_slug?: string | null }).race_slug ?? null,
+    subclassSlug: (row as { subclass_slug?: string | null }).subclass_slug ?? null,
+    backgroundSlug: (row as { background_slug?: string | null }).background_slug ?? null,
+  });
   const { error: updateError } = await supabase
     .from("campaign_characters")
-    .update({ level: newLevel })
+    .update({ level: newLevel, rules_snapshot: rules_snapshot as unknown as Json })
     .eq("id", characterId);
 
   if (updateError) {

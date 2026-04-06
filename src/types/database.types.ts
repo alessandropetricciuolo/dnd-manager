@@ -347,6 +347,10 @@ export interface Database {
           armor_class: number | null;
           hit_points: number | null;
           background: string | null;
+          race_slug: string | null;
+          subclass_slug: string | null;
+          background_slug: string | null;
+          rules_snapshot: Json;
           assigned_to: string | null;
           time_offset_hours: number;
           pos_x_grid: number;

@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { ImageSourceField } from "@/components/ui/image-source-field";
 import { Textarea } from "@/components/ui/textarea";
 import { createCharacter } from "@/app/campaigns/character-actions";
+import { CharacterBuildFormFields } from "@/components/characters/character-build-form-fields";
 
 const MAX_TOTAL_MB = 4;
 const MAX_TOTAL_BYTES = MAX_TOTAL_MB * 1024 * 1024;
@@ -112,16 +113,7 @@ export function CreateCharacterDialog({ campaignId }: CreateCharacterDialogProps
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="char-class">Classe</Label>
-            <Input
-              id="char-class"
-              name="character_class"
-              placeholder="Es. Mago, Guerriero, Chierico"
-              className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
-              disabled={isLoading}
-            />
-          </div>
+          <CharacterBuildFormFields disabled={isLoading} />
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
