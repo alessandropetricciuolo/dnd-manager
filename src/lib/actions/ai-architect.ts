@@ -7,6 +7,7 @@ import { ARCHITECT_SYSTEM_PROMPT } from "@/lib/ai/prompts";
 import { generateAiText, HuggingFaceInferenceError } from "@/lib/ai/huggingface-client";
 import {
   normalizeAiContextForSave,
+  readExcludedManualBookKeysFromAiContextJson,
   type CampaignAiContext,
 } from "@/lib/campaign-ai-context";
 
@@ -132,9 +133,22 @@ export async function generateCampaignContextAction(
       };
     }
 
+    const { data: existingCampaign } = await supabase
+      .from("campaigns")
+      .select("ai_context")
+      .eq("id", campaignId)
+      .single();
+    const preservedExcluded = readExcludedManualBookKeysFromAiContextJson(
+      (existingCampaign as { ai_context?: Json } | null)?.ai_context ?? null
+    );
+    const toSave: CampaignAiContext = {
+      ...normalized,
+      excluded_manual_book_keys: preservedExcluded,
+    };
+
     const { error: updateError } = await supabase
       .from("campaigns")
-      .update({ ai_context: normalized as unknown as Json })
+      .update({ ai_context: toSave as unknown as Json })
       .eq("id", campaignId);
 
     if (updateError) {
@@ -143,7 +157,7 @@ export async function generateCampaignContextAction(
     }
 
     revalidatePath(`/campaigns/${campaignId}`);
-    return { success: true, data: normalized };
+    return { success: true, data: toSave };
   } catch (err) {
     console.error("[generateCampaignContextAction]", err);
     return { success: false, message: "Si è verificato un errore imprevisto. Riprova." };

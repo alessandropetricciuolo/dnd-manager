@@ -4,7 +4,10 @@ import type { Json } from "@/types/database.types";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { generateAiText, generateRagEmbedding, HuggingFaceInferenceError } from "@/lib/ai/huggingface-client";
-import { parseCampaignAiContextFromDb } from "@/lib/campaign-ai-context";
+import {
+  parseCampaignAiContextFromDb,
+  readExcludedManualBookKeysFromAiContextJson,
+} from "@/lib/campaign-ai-context";
 import { fetchLongCampaignWikiMemoryPromptBlock } from "@/lib/campaign-wiki-ai-memory";
 
 export type WikiMarkdownEntityType = "npc" | "location" | "item" | "lore" | "monster" | "magic_item";
@@ -12,6 +15,15 @@ export type WikiMarkdownEntityType = "npc" | "location" | "item" | "lore" | "mon
 export type WikiMarkdownExtraParams = {
   cr?: string;
   rarity?: string;
+  /** Per NPC: valori espliciti per retrieval mirato sui manuali. */
+  npcRace?: string;
+  npcClass?: string;
+  npcLevel?: string;
+  /**
+   * Statblock mostro già estratto dal bestiario indicizzato (testo meccanico senza riscrittura LLM).
+   * Accostato a narrativa generata con priorità alla memoria di campagna.
+   */
+  verbatimMonsterStatblock?: string;
 };
 
 export type ExtractedWikiStats = {
@@ -156,6 +168,31 @@ function splitNarrativeAndMechanics(raw: string): { description: string; statblo
   return { description, statblock };
 }
 
+function filterRowsByExcludedManuals<T extends { metadata?: unknown }>(rows: T[], excluded: string[]): T[] {
+  if (!excluded.length) return rows;
+  const ex = new Set(excluded);
+  return rows.filter((r) => {
+    const m = r.metadata as Record<string, unknown> | null | undefined;
+    const k = m?.manual_book_key;
+    if (typeof k !== "string") return true;
+    return !ex.has(k);
+  });
+}
+
+function campaignMemoryPriorityBlock(wikiMemory: string): string {
+  const mem = wikiMemory.trim();
+  if (!mem) {
+    return [
+      "REGOLA PRIORITARIA — Memoria di campagna: quando attiva, le voci wiki segnate per la cronaca canon hanno priorità su qualsiasi descrizione generica del modello su personaggi, luoghi e eventi.",
+    ].join("\n");
+  }
+  return [
+    mem,
+    "",
+    "REGOLA PRIORITARIA: il testo sopra (memoria / cronaca di campagna) HA PRECEDENZA su ipotesi generiche. Se entra in conflitto con una descrizione «tipica» del multiverso D&D, segui SEMPRE la memoria di campagna per nomi propri, relazioni, fatti accaduti e interpretazione della creatura o del PNG nel mondo.",
+  ].join("\n");
+}
+
 function extractNpcTraitsFromMarkdown(markdown: string): ExtractedNpcTraits {
   const source = markdown.replace(/\r/g, "");
   const raceMatch =
@@ -228,6 +265,9 @@ export async function generateWikiMarkdownAction(
     const mechanics = ctx?.mechanics_focus?.trim() || "regole ufficiali D&D 5e";
     const cr = cleanSingleLine(extraParams.cr ?? "");
     const rarity = cleanSingleLine(extraParams.rarity ?? "");
+    const excludedManuals = readExcludedManualBookKeysFromAiContextJson(
+      (campaign as { ai_context: Json | null } | null)?.ai_context ?? null
+    );
 
     const normalizedType: Exclude<WikiMarkdownEntityType, "magic_item"> =
       entityType === "magic_item" ? "item" : entityType;
@@ -301,46 +341,68 @@ export async function generateWikiMarkdownAction(
           ? `Parametro richiesto: Rarita' target = ${rarity || "scegli una rarita' coerente e bilanciata."}`
           : "Parametro richiesto: mantieni coerenza con ambientazione, tono e regole della campagna.";
 
-    let prompt = [
-      "Sei un Senior D&D 5e Content Designer.",
-      `Tono campagna: ${loreTone}`,
-      `Livello magia: ${magicLevel}`,
-      `Focus meccanico: ${mechanics}`,
-      `Tipo elemento: ${normalizedType}`,
-      wikiMemory.trim() ? wikiMemory : "",
-      `RICHIESTA SPECIFICA DELL'UTENTE: Il nome dell'entità è "${safeName}". Segui queste istruzioni per i dettagli: "${safeNarrativePrompt || "Nessuna istruzione aggiuntiva."}".`,
-      `Nome elemento: ${safeName}`,
-      paramLine,
-      templateInstructionMap[normalizedType],
-      "Devi dividere la tua risposta esattamente in due parti usando questi delimitatori esatti: inizia la descrizione narrativa con il tag [NARRATIVA] e inizia lo statblock con il tag [MECCANICA]. Non inserire testo prima di [NARRATIVA].",
-      "Rispondi SOLO con Markdown valido, senza JSON e senza testo extra prima/dopo.",
-    ]
-      .filter((s) => typeof s === "string" && s.trim().length > 0)
-      .join("\n\n");
+    const runRpc = admin.rpc as unknown as (
+      fn: string,
+      args: Record<string, unknown>
+    ) => Promise<{ data: unknown; error: { message: string } | null }>;
 
-    if (normalizedType === "monster") {
+    type RagRow = { content?: string | null; metadata?: Record<string, unknown> | null };
+
+    let prompt = "";
+    let prebuiltMarkdown: string | null = null;
+
+    if (normalizedType === "monster" && extraParams.verbatimMonsterStatblock?.trim()) {
+      const verbatim = extraParams.verbatimMonsterStatblock.trim();
+      const narrativePrompt = [
+        campaignMemoryPriorityBlock(wikiMemory),
+        `Tono narrativo campagna: ${loreTone}`,
+        `Livello di magia: ${magicLevel}`,
+        "",
+        `Il mostro "${safeName}" userà lo statblock copiato dal manuale indicizzato (testo sotto [MECCANICA], senza riscrittura). NON inventare né elencare CA, PF, punteggi caratteristica, TS, azioni, danni o CD.`,
+        `Richiesta narrativa e di trama: ${safeNarrativePrompt || "Nessuna istruzione aggiuntiva."}`,
+        "",
+        "Scrivi solo parte descrittiva (aspetto, comportamento, ruolo nella storia), in Markdown.",
+        "Apri con il tag esatto [NARRATIVA] sulla prima riga, poi il contenuto. Non usare [MECCANICA].",
+      ]
+        .filter(Boolean)
+        .join("\n");
+      let narrativeRaw = "";
+      try {
+        narrativeRaw = (await generateAiText(narrativePrompt)).trim();
+      } catch (e) {
+        const msg =
+          e instanceof HuggingFaceInferenceError
+            ? e.message
+            : e instanceof Error
+              ? e.message
+              : "Errore generazione narrativa.";
+        return { success: false, message: msg };
+      }
+      narrativeRaw = narrativeRaw
+        .replace(/^```(?:markdown)?\s*/i, "")
+        .replace(/\s*```$/i, "")
+        .trim();
+      if (/^\[NARRATIVA\]/i.test(narrativeRaw)) {
+        narrativeRaw = narrativeRaw.replace(/^\[NARRATIVA\]\s*/i, "").trim();
+      }
+      prebuiltMarkdown = `[NARRATIVA]\n${narrativeRaw}\n\n[MECCANICA]\n\n${verbatim}`;
+    } else if (normalizedType === "monster") {
       const searchQuery = `Regole, privilegi e statblock completo del mostro: ${safeName}. Dettagli tecnici: ${safeRetrievalPrompt || "nessuno"}.`;
       let technicalContext = "";
       try {
         const embedding = await generateRagEmbedding(searchQuery);
-        // Tipizzazione RPC best-effort: la firma generated potrebbe non includere ancora la funzione.
-        const runRpc = admin.rpc as unknown as (
-          fn: string,
-          args: Record<string, unknown>
-        ) => Promise<{ data: unknown; error: { message: string } | null }>;
-
-        let chunks: unknown = null;
+        let lastFiltered: RagRow[] = [];
         let rpcError: { message: string } | null = null;
-        // Tentativi progressivi: conserviamo rigore ma riduciamo falsi negativi.
         for (const threshold of [0.35, 0.28, 0.2]) {
           const res = await runRpc("match_manuals_knowledge", {
             query_embedding: embedding,
             match_threshold: threshold,
-            match_count: 6,
+            match_count: 10,
           });
-          chunks = res.data;
           rpcError = res.error;
-          const list = (res.data ?? []) as Array<{ content?: string | null }>;
+          if (rpcError) break;
+          const list = filterRowsByExcludedManuals((res.data ?? []) as RagRow[], excludedManuals);
+          lastFiltered = list;
           if (list.some((c) => typeof c.content === "string" && c.content.trim().length > 0)) {
             break;
           }
@@ -350,14 +412,12 @@ export async function generateWikiMarkdownAction(
           return { success: false, message: `Errore RPC match_manuals_knowledge: ${rpcError.message}` };
         }
 
-        const list = (chunks ?? []) as Array<{ content?: string | null }>;
+        const list = lastFiltered;
         technicalContext = list
           .map((c) => (typeof c.content === "string" ? c.content.trim() : ""))
           .filter(Boolean)
           .join("\n\n");
       } catch (ragError) {
-        // Fallback robusto: se embeddings o RPC non sono disponibili runtime,
-        // proviamo retrieval testuale best-effort sui chunk manuali.
         console.error("[generateWikiMarkdownAction] semantic RAG failed, fallback text", ragError);
         const keywords = buildKeywordCandidates(safeName, safeRetrievalPrompt || safeUserPrompt);
 
@@ -365,16 +425,17 @@ export async function generateWikiMarkdownAction(
           const orExpr = keywords.map((kw) => `content.ilike.%${kw}%`).join(",");
           const { data: rows, error: textErr } = await admin
             .from("manuals_knowledge")
-            .select("content")
+            .select("content, metadata")
             .or(orExpr)
-            .limit(12);
+            .limit(24);
           if (textErr) {
             return {
               success: false,
               message: `Errore fallback retrieval testuale manuals_knowledge: ${textErr.message}`,
             };
           }
-          technicalContext = ((rows ?? []) as Array<{ content?: string | null }>)
+          const filtered = filterRowsByExcludedManuals((rows ?? []) as RagRow[], excludedManuals);
+          technicalContext = filtered
             .map((r) => (typeof r.content === "string" ? r.content.trim() : ""))
             .filter(Boolean)
             .join("\n\n");
@@ -387,26 +448,132 @@ export async function generateWikiMarkdownAction(
       if (!technicalContext.trim()) {
         return {
           success: false,
-          message: "Nessuna informazione tecnica trovata nei manuali per questo mostro.",
+          message:
+            excludedManuals.length > 0
+              ? "Nessun estratto dai manuali ammessi (verifica i manuali non esclusi nei paletti campagna)."
+              : "Nessuna informazione tecnica trovata nei manuali per questo mostro.",
         };
       }
 
       prompt = [
         "Sei un motore di formattazione.",
-        wikiMemory.trim()
-          ? `${wikiMemory}\n\nLa parte [NARRATIVA] deve restare coerente con questa memoria di campagna quando non entra in conflitto con il [CONTESTO TECNICO].`
-          : "",
+        campaignMemoryPriorityBlock(wikiMemory),
         `[CONTESTO TECNICO]:\n${technicalContext}`,
         `RICHIESTA SPECIFICA DELL'UTENTE: Il nome dell'entità è "${safeName}". Segui queste istruzioni per i dettagli: "${safeNarrativePrompt || "Nessuna istruzione aggiuntiva."}".`,
         `Nome mostro richiesto: ${safeName}`,
         `Grado di Sfida target: ${cr || "1"}`,
-        "Usa ESCLUSIVAMENTE il [CONTESTO TECNICO] fornito.",
+        "Usa ESCLUSIVAMENTE il [CONTESTO TECNICO] fornito (fonte: manuali importati).",
         "Se contiene lo statblock di un mostro diverso, ignoralo.",
-        "Se non contiene nulla, restituisci solo il messaggio di errore: NO_TECHNICAL_DATA.",
-        `Se contiene i dati, compila il template Markdown seguente bilanciando matematica (PF, CA, Danni) e attacchi per GS ${cr || "1"}:`,
+        "Se non contiene nulla di pertinente, restituisci solo: NO_TECHNICAL_DATA",
+        `Se contiene i dati, compila il template Markdown copiando i valori numerici e le azioni dal contesto senza alterarli:`,
         templateInstructionMap.monster,
         "Devi dividere la tua risposta esattamente in due parti usando questi delimitatori esatti: inizia la descrizione narrativa con il tag [NARRATIVA] e inizia lo statblock con il tag [MECCANICA]. Non inserire testo prima di [NARRATIVA].",
         "NO parole extra prima o dopo.",
+      ]
+        .filter((s) => typeof s === "string" && s.trim().length > 0)
+        .join("\n\n");
+    } else if (normalizedType === "npc") {
+      const npcRace = cleanSingleLine(extraParams.npcRace ?? "");
+      const npcClass = cleanSingleLine(extraParams.npcClass ?? "");
+      const npcLevel = cleanSingleLine(extraParams.npcLevel ?? "");
+      if (!npcRace || !npcClass || !npcLevel) {
+        return {
+          success: false,
+          message:
+            "Per gli NPC con AI devi indicare razza, classe e livello (menu sotto l'assistente) così il sistema usa solo i manuali ammessi.",
+        };
+      }
+      const searchQuery = `D&D 5e razza ${npcRace}: tratti, taglia, velocità. Classe ${npcClass} livello ${npcLevel}: privilegi di classe, tabella progressione, sottoclasse se presente. ${safeRetrievalPrompt || ""}`;
+      let technicalContext = "";
+      try {
+        const embedding = await generateRagEmbedding(searchQuery);
+        let picked: RagRow[] = [];
+        let rpcError: { message: string } | null = null;
+        for (const threshold of [0.34, 0.26, 0.18]) {
+          const res = await runRpc("match_manuals_knowledge", {
+            query_embedding: embedding,
+            match_threshold: threshold,
+            match_count: 14,
+          });
+          rpcError = res.error;
+          if (rpcError) break;
+          const list = filterRowsByExcludedManuals((res.data ?? []) as RagRow[], excludedManuals);
+          if (list.some((c) => typeof c.content === "string" && c.content.trim().length > 0)) {
+            picked = list;
+            break;
+          }
+        }
+        if (rpcError) {
+          return { success: false, message: `Errore RPC match_manuals_knowledge: ${rpcError.message}` };
+        }
+        technicalContext = picked
+          .map((c) => (typeof c.content === "string" ? c.content.trim() : ""))
+          .filter(Boolean)
+          .join("\n\n");
+      } catch (ragError) {
+        console.error("[generateWikiMarkdownAction] NPC RAG failed, fallback", ragError);
+        const keywords = buildKeywordCandidates(`${npcRace} ${npcClass} ${npcLevel}`, safeUserPrompt);
+        try {
+          const orExpr = keywords.map((kw) => `content.ilike.%${kw}%`).join(",");
+          const { data: rows, error: textErr } = await admin
+            .from("manuals_knowledge")
+            .select("content, metadata")
+            .or(orExpr)
+            .limit(24);
+          if (textErr) {
+            return { success: false, message: `Errore retrieval NPC: ${textErr.message}` };
+          }
+          const filtered = filterRowsByExcludedManuals((rows ?? []) as RagRow[], excludedManuals);
+          technicalContext = filtered
+            .map((r) => (typeof r.content === "string" ? r.content.trim() : ""))
+            .filter(Boolean)
+            .join("\n\n");
+        } catch (fallbackErr) {
+          console.error("[generateWikiMarkdownAction] NPC text fallback failed", fallbackErr);
+          return { success: false, message: "Errore durante il retrieval dai manuali per l'NPC." };
+        }
+      }
+      if (!technicalContext.trim()) {
+        return {
+          success: false,
+          message:
+            excludedManuals.length > 0
+              ? "Nessun estratto utile dai manuali ammessi per questa razza/classe. Controlla esclusioni o prova altri termini nella richiesta (prima del -)."
+              : "Nessun estratto dai manuali per questa razza/classe/livello.",
+        };
+      }
+      prompt = [
+        "Sei un motore di compilazione per schede NPC D&D 5e.",
+        campaignMemoryPriorityBlock(wikiMemory),
+        `[CONTESTO TECNICO — solo dai manuali importati]:\n${technicalContext}`,
+        `Nome PNG: ${safeName}`,
+        `Razza (vincolata): ${npcRace}`,
+        `Classe (vincolata): ${npcClass}`,
+        `Livello (vincolato): ${npcLevel}`,
+        `Richiesta narrativa/aggiuntiva: ${safeNarrativePrompt || "Nessuna."}`,
+        "Per la parte [MECCANICA] usa ESCLUSIVAMENTE privilegi e numeri supportati dal CONTESTO TECNICO (tiri salvezza, CD, attacchi, PF se deducibili). Non inventare privilegi non presenti.",
+        "La [NARRATIVA] (personalità, aspetto, storia nel mondo) deve rispettare la memoria di campagna quando presente.",
+        templateInstructionMap.npc,
+        "Nelle righe Profilo Rapido, usa esattamente la razza, classe ed età coerenti con le istruzioni (età puoi dedurla dalla richiesta o indicare un valore plausibile).",
+        "Apri con [NARRATIVA] poi dopo [MECCANICA] come da formato standard.",
+        "Rispondi SOLO in Markdown, senza JSON.",
+      ]
+        .filter((s) => typeof s === "string" && s.trim().length > 0)
+        .join("\n\n");
+    } else {
+      prompt = [
+        "Sei un Senior D&D 5e Content Designer.",
+        campaignMemoryPriorityBlock(wikiMemory),
+        `Tono campagna: ${loreTone}`,
+        `Livello magia: ${magicLevel}`,
+        `Focus meccanico: ${mechanics}`,
+        `Tipo elemento: ${normalizedType}`,
+        `RICHIESTA SPECIFICA DELL'UTENTE: Il nome dell'entità è "${safeName}". Segui queste istruzioni per i dettagli: "${safeNarrativePrompt || "Nessuna istruzione aggiuntiva."}".`,
+        `Nome elemento: ${safeName}`,
+        paramLine,
+        templateInstructionMap[normalizedType],
+        "Devi dividere la tua risposta esattamente in due parti usando questi delimitatori esatti: inizia la descrizione narrativa con il tag [NARRATIVA] e inizia lo statblock con il tag [MECCANICA]. Non inserire testo prima di [NARRATIVA].",
+        "Rispondi SOLO con Markdown valido, senza JSON e senza testo extra prima/dopo.",
       ]
         .filter((s) => typeof s === "string" && s.trim().length > 0)
         .join("\n\n");
@@ -414,7 +581,7 @@ export async function generateWikiMarkdownAction(
 
     let markdown = "";
     try {
-      markdown = (await generateAiText(prompt)).trim();
+      markdown = prebuiltMarkdown ?? (await generateAiText(prompt)).trim();
     } catch (err) {
       const msg =
         err instanceof HuggingFaceInferenceError
@@ -452,9 +619,18 @@ export async function generateWikiMarkdownAction(
       : undefined;
     const extractedNpcTraits = normalizedType === "npc"
       ? (() => {
-          const fromStatblock = extractNpcTraitsFromMarkdown(statblock || "");
-          if (fromStatblock.race || fromStatblock.class || fromStatblock.age) return fromStatblock;
-          return extractNpcTraitsFromMarkdown(normalized);
+          const fromMd = (() => {
+            const fromStatblock = extractNpcTraitsFromMarkdown(statblock || "");
+            if (fromStatblock.race || fromStatblock.class || fromStatblock.age) return fromStatblock;
+            return extractNpcTraitsFromMarkdown(normalized);
+          })();
+          const raceFallback = cleanSingleLine(extraParams.npcRace ?? "");
+          const classFallback = cleanSingleLine(extraParams.npcClass ?? "");
+          return {
+            race: (fromMd.race?.trim() || raceFallback) || null,
+            class: (fromMd.class?.trim() || classFallback) || null,
+            age: fromMd.age,
+          };
         })()
       : undefined;
 

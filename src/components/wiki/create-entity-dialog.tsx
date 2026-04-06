@@ -31,9 +31,15 @@ import {
 import { generateFullAiWikiEntity } from "@/lib/actions/ai-wiki-chain";
 import { generateContextualPortraitAction } from "@/lib/actions/ai-generator";
 import { generateWikiMarkdownAction } from "@/lib/ai/wiki-text-generator";
+import {
+  searchBestiaryChunksAction,
+  fetchExpandedBestiaryChunkAction,
+  type BestiarySearchHit,
+} from "@/lib/actions/wiki-bestiary-search-actions";
 import { getWikiEntitiesForCampaign, getMapsForCampaign } from "@/app/campaigns/entity-graph-actions";
 import { getEmptyAttributes } from "@/types/wiki";
 import { CHALLENGE_RATING_OPTIONS } from "@/lib/dnd-constants";
+import { WIKI_NPC_CLASS_OPTIONS, WIKI_NPC_LEVEL_OPTIONS, WIKI_NPC_RACE_OPTIONS } from "@/lib/wiki-npc-ai-options";
 import { type WikiEntityType, WIKI_ENTITY_LABELS_IT, WIKI_ENTITY_OPTIONS } from "@/lib/wiki/entity-types";
 
 /** Tipi supportati dal generatore rapido AI (Fase 2). */
@@ -114,6 +120,14 @@ export function CreateEntityDialog({
   const [aiCr, setAiCr] = useState("");
   const [aiRarity, setAiRarity] = useState("");
   const [aiPrompt, setAiPrompt] = useState("");
+  const [bestiaryQuery, setBestiaryQuery] = useState("");
+  const [bestiaryHits, setBestiaryHits] = useState<BestiarySearchHit[]>([]);
+  const [bestiarySearchLoading, setBestiarySearchLoading] = useState(false);
+  const [monsterVerbatimStatblock, setMonsterVerbatimStatblock] = useState("");
+  const [loadingChunkId, setLoadingChunkId] = useState<string | null>(null);
+  const [npcAiRace, setNpcAiRace] = useState("");
+  const [npcAiClass, setNpcAiClass] = useState("");
+  const [npcAiLevel, setNpcAiLevel] = useState("");
   const [aiProgress, setAiProgress] = useState(0);
   const [aiProgressLabel, setAiProgressLabel] = useState<string | null>(null);
   const [aiImagePreview, setAiImagePreview] = useState<string | null>(null);
@@ -165,7 +179,17 @@ export function CreateEntityDialog({
     if (typeof currentGmNotes === "string") next.gm_notes = currentGmNotes;
     setAttributes(next);
     setSortOrder("");
-    if (t === "monster") setMonsterXp(0);
+    if (t === "monster") {
+      setMonsterXp(0);
+      setMonsterVerbatimStatblock("");
+      setBestiaryHits([]);
+      setBestiaryQuery("");
+    }
+    if (t === "npc") {
+      setNpcAiRace("");
+      setNpcAiClass("");
+      setNpcAiLevel("");
+    }
   }
 
   function setAttr(path: string, value: unknown) {
@@ -256,11 +280,61 @@ export function CreateEntityDialog({
     targetInput.dispatchEvent(new Event("change", { bubbles: true }));
   }
 
+  async function handleBestiarySearch() {
+    if (bestiarySearchLoading || isLoading) return;
+    const q = bestiaryQuery.trim() || titleValue.trim();
+    if (q.length < 2) {
+      toast.error("Inserisci un termine di ricerca o il titolo del mostro.");
+      return;
+    }
+    setBestiarySearchLoading(true);
+    try {
+      const res = await searchBestiaryChunksAction(campaignId, q);
+      if (!res.success) {
+        toast.error(res.message);
+        return;
+      }
+      setBestiaryHits(res.hits);
+      if (res.hits.length === 0) {
+        toast.info("Nessun risultato: prova un nome diverso o più corto.");
+      }
+    } finally {
+      setBestiarySearchLoading(false);
+    }
+  }
+
+  async function handleUseBestiaryHit(hitId: string) {
+    if (loadingChunkId || isLoading) return;
+    setLoadingChunkId(hitId);
+    try {
+      const res = await fetchExpandedBestiaryChunkAction(campaignId, hitId);
+      if (!res.success) {
+        toast.error(res.message);
+        return;
+      }
+      setMonsterVerbatimStatblock(res.text);
+      setAttr("statblock", res.text);
+      toast.success("Statblock caricato dai manuali (chunk espansi).");
+    } finally {
+      setLoadingChunkId(null);
+    }
+  }
+
   async function handleAssistGenerateText() {
     if (aiTextLoading || isLoading) return;
     const safeName = titleValue.trim();
     if (!safeName) {
       toast.error("Inserisci prima il Titolo dell'elemento.");
+      return;
+    }
+    if (type === "monster" && !monsterVerbatimStatblock.trim()) {
+      toast.error("Cerca un mostro nel bestiario e premi «Usa questo» per caricare lo statblock dai manuali.");
+      return;
+    }
+    const raceForAi = npcAiRace.trim() || getAttr("race").trim();
+    const classForAi = npcAiClass.trim() || getAttr("class").trim();
+    if (type === "npc" && (!raceForAi || !classForAi || !npcAiLevel.trim())) {
+      toast.error("Per gli NPC indica razza, classe e livello (menu sotto) oppure compila almeno Razza e Classe nei campi scheda.");
       return;
     }
     setAiTextLoading(true);
@@ -277,12 +351,24 @@ export function CreateEntityDialog({
               : type === "lore"
                 ? "lore"
                 : "npc";
+      const extra =
+        type === "monster"
+          ? { cr: aiCr.trim(), verbatimMonsterStatblock: monsterVerbatimStatblock.trim() }
+          : type === "item"
+            ? { rarity: aiRarity.trim() }
+            : type === "npc"
+              ? {
+                  npcRace: raceForAi,
+                  npcClass: classForAi,
+                  npcLevel: npcAiLevel.trim(),
+                }
+              : {};
       const result = await generateWikiMarkdownAction(
         campaignId,
         aiEntityType,
         safeName,
         aiPrompt,
-        type === "monster" ? { cr: aiCr.trim() } : type === "item" ? { rarity: aiRarity.trim() } : {}
+        extra
       );
       if (!result.success) {
         toast.error(result.message);
@@ -700,11 +786,152 @@ export function CreateEntityDialog({
                     id="assist-prompt"
                     value={aiPrompt}
                     onChange={(e) => setAiPrompt(e.target.value)}
-                    placeholder="Es. Un oste nano burbero legato alla gilda dei ladri..."
+                    placeholder={
+                      type === "monster"
+                        ? "Prima del trattino (-): parole chiave per il contesto. Dopo il -: storia / ruolo nella campagna."
+                        : "Es. Un oste nano burbero legato alla gilda dei ladri..."
+                    }
                     disabled={isLoading || aiTextLoading}
                     className="min-h-[72px] resize-y bg-barber-dark border-violet-500/35 text-barber-paper"
                   />
+                  <p className="text-[11px] text-violet-200/65">
+                    Puoi usare il trattino <strong className="font-medium text-violet-100/90">-</strong>: a sinistra
+                    contesto per i manuali, a destra narrazione e richieste di trama (priorità alla memoria di campagna
+                    se attiva).
+                  </p>
                 </div>
+
+                {type === "monster" && (
+                  <div className="space-y-2 rounded-md border border-sky-600/30 bg-sky-950/25 p-3">
+                    <p className="text-xs leading-snug text-sky-100/90">
+                      Statistiche di combattimento: scegli un passaggio dal bestiario indicizzato (allineato al testo
+                      importato dai PDF; i chunk vicini vengono uniti per ricostruire blocchi lunghi). L&apos;IA genera
+                      solo la parte narrativa, coerente con la cronaca di campagna.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <Input
+                        value={bestiaryQuery}
+                        onChange={(e) => setBestiaryQuery(e.target.value)}
+                        placeholder="Cerca nel bestiario (es. Drago verde)…"
+                        disabled={isLoading || aiTextLoading || bestiarySearchLoading}
+                        className="min-w-[140px] flex-1 border-sky-600/35 bg-barber-dark text-barber-paper"
+                      />
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        disabled={isLoading || aiTextLoading || bestiarySearchLoading}
+                        onClick={() => void handleBestiarySearch()}
+                        className="border-sky-500/40 text-sky-100"
+                      >
+                        {bestiarySearchLoading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Ricerca…
+                          </>
+                        ) : (
+                          "Cerca nel bestiario"
+                        )}
+                      </Button>
+                    </div>
+                    {bestiaryHits.length > 0 && (
+                      <ul className="max-h-44 space-y-1.5 overflow-y-auto rounded border border-sky-800/35 bg-barber-dark/50 p-2 text-[11px]">
+                        {bestiaryHits.map((h) => (
+                          <li
+                            key={h.id}
+                            className="flex flex-col gap-1 rounded border border-sky-900/40 bg-barber-dark/70 p-2 sm:flex-row sm:items-center sm:justify-between"
+                          >
+                            <div className="min-w-0 flex-1 text-sky-50/95">
+                              <span className="line-clamp-2">{h.excerpt}</span>
+                              <span className="mt-0.5 block text-sky-300/70">
+                                {h.manual_label}
+                                {h.section_heading ? ` · ${h.section_heading}` : ""}
+                              </span>
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={loadingChunkId === h.id || aiTextLoading}
+                              className="shrink-0 border-sky-500/45 text-sky-100"
+                              onClick={() => void handleUseBestiaryHit(h.id)}
+                            >
+                              {loadingChunkId === h.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                "Usa questo statblock"
+                              )}
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {monsterVerbatimStatblock.trim() ? (
+                      <p className="text-[11px] text-emerald-200/85">
+                        Statblock caricato ({monsterVerbatimStatblock.length} caratteri) — verrà incollato in [MECCANICA]
+                        senza riscrittura.
+                      </p>
+                    ) : (
+                      <p className="text-[11px] text-amber-200/85">Obbligatorio: carica uno statblock dal bestiario prima di generare.</p>
+                    )}
+                  </div>
+                )}
+
+                {type === "npc" && (
+                  <div className="grid gap-2 rounded-md border border-emerald-800/35 bg-emerald-950/30 p-3 sm:grid-cols-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-emerald-100">Razza (manuali)</Label>
+                      <select
+                        value={npcAiRace}
+                        onChange={(e) => setNpcAiRace(e.target.value)}
+                        disabled={isLoading || aiTextLoading}
+                        className="flex h-10 w-full rounded-md border border-emerald-700/40 bg-barber-dark px-2 text-sm text-barber-paper"
+                      >
+                        <option value="">— Come campo «Razza» sotto —</option>
+                        {WIKI_NPC_RACE_OPTIONS.map((r) => (
+                          <option key={r} value={r}>
+                            {r}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-emerald-100">Classe</Label>
+                      <select
+                        value={npcAiClass}
+                        onChange={(e) => setNpcAiClass(e.target.value)}
+                        disabled={isLoading || aiTextLoading}
+                        className="flex h-10 w-full rounded-md border border-emerald-700/40 bg-barber-dark px-2 text-sm text-barber-paper"
+                      >
+                        <option value="">— Come campo «Classe» sotto —</option>
+                        {WIKI_NPC_CLASS_OPTIONS.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-emerald-100">Livello</Label>
+                      <select
+                        value={npcAiLevel}
+                        onChange={(e) => setNpcAiLevel(e.target.value)}
+                        disabled={isLoading || aiTextLoading}
+                        className="flex h-10 w-full rounded-md border border-emerald-700/40 bg-barber-dark px-2 text-sm text-barber-paper"
+                      >
+                        <option value="">— Livello PG —</option>
+                        {WIKI_NPC_LEVEL_OPTIONS.map((lv) => (
+                          <option key={lv} value={lv}>
+                            {lv}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <p className="sm:col-span-3 text-[11px] text-emerald-100/70">
+                      La scheda userà solo estratti dai manuali non esclusi nei paletti campagna. Razza/Classe possono
+                      essere lette dai campi della scheda se non scegli un valore qui.
+                    </p>
+                  </div>
+                )}
 
                 <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
                 <div className="space-y-2">

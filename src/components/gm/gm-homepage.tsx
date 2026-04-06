@@ -33,6 +33,8 @@ type GmHomepageProps = {
   campaignId: string;
   campaignType?: "oneshot" | "quest" | "long" | null;
   aiContextParsed: CampaignAiContext | null;
+  /** Manuali esclusi dal RAG wiki (anche senza i sei paletti Architetto). */
+  excludedManualBookKeys: string[];
   joinEmailSettings: JoinEmailSettings | null;
   bulkEmailTemplates: BulkTemplate[];
   initialPlayerPrimer: string | null;
@@ -43,6 +45,7 @@ export function GmHomepage({
   campaignId,
   campaignType,
   aiContextParsed,
+  excludedManualBookKeys,
   joinEmailSettings,
   bulkEmailTemplates,
   initialPlayerPrimer,
@@ -135,7 +138,11 @@ export function GmHomepage({
       {/* Card AI (un solo pulsante → una card) */}
       {aiOpen ? (
         <Card className="mb-8 border-violet-600/30 bg-violet-950/20 p-4 space-y-4">
-          <CampaignAiArchitectPanel campaignId={campaignId} initialContext={aiContextParsed} />
+          <CampaignAiArchitectPanel
+            campaignId={campaignId}
+            initialContext={aiContextParsed}
+            initialExcludedManualBookKeys={excludedManualBookKeys}
+          />
 
           <div className="rounded-lg border border-violet-600/30 bg-violet-950/30 p-4">
             <h3 className="mb-2 text-sm font-medium text-violet-200">Template Stile Immagini AI</h3>

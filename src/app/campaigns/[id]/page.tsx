@@ -34,6 +34,7 @@ import { Button } from "@/components/ui/button";
 import { CampaignMobileHeader } from "@/components/campaigns/campaign-mobile-header";
 import {
   parseCampaignAiContextFromDb,
+  readExcludedManualBookKeysFromAiContextJson,
   type CampaignAiContext,
 } from "@/lib/campaign-ai-context";
 import type { Json } from "@/types/database.types";
@@ -116,15 +117,16 @@ export default async function CampaignPage({ params }: PageProps) {
 
   /** Contesto AI: solo GM/Admin (non esposto ai player nel payload). */
   let aiContextParsed: CampaignAiContext | null = null;
+  let excludedManualBookKeys: string[] = [];
   if (isGmOrAdmin) {
     const { data: aiRow } = await supabase
       .from("campaigns")
       .select("ai_context")
       .eq("id", id)
       .single();
-    aiContextParsed = parseCampaignAiContextFromDb(
-      (aiRow as { ai_context: Json | null } | null)?.ai_context ?? null
-    );
+    const rawAi = (aiRow as { ai_context: Json | null } | null)?.ai_context ?? null;
+    aiContextParsed = parseCampaignAiContextFromDb(rawAi);
+    excludedManualBookKeys = readExcludedManualBookKeysFromAiContextJson(rawAi);
   }
 
   /** Lista GM/Admin per la select DM nel form Nuova Sessione (solo se isGmOrAdmin). */
@@ -675,6 +677,7 @@ export default async function CampaignPage({ params }: PageProps) {
                 campaignId={campaign.id}
                 campaignType={campaign.type ?? null}
                 aiContextParsed={aiContextParsed}
+                excludedManualBookKeys={excludedManualBookKeys}
                 joinEmailSettings={joinEmailSettings}
                 bulkEmailTemplates={bulkEmailTemplates}
                 initialPlayerPrimer={campaign.player_primer ?? null}
