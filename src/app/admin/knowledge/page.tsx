@@ -3,7 +3,7 @@ import { BookText } from "lucide-react";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { ManualSemanticSearch } from "@/components/admin/manual-semantic-search";
-import { ManualIngestControls } from "@/components/admin/manual-ingest-controls";
+import { ManualV4IngestControls } from "@/components/admin/manual-v4-ingest-controls";
 
 export const dynamic = "force-dynamic";
 
@@ -39,16 +39,14 @@ export default async function AdminKnowledgePage({ searchParams }: KnowledgePage
             Knowledge Base (RAG)
           </h1>
           <p className="text-sm text-barber-paper/70">
-            Ingestion <strong className="font-medium text-barber-paper/85">v3 strutturata</strong> (capitolo / sezione / tipo) da{" "}
-            <code>public/manuals/</code> verso <code>manuals_knowledge</code>, con embedding Hugging Face. Dopo un
-            <code className="mx-1">TRUNCATE</code>
-            su Supabase, usa &quot;Elabora tutti i manuali&quot; per reimportare.
+            Ricerca sui chunk in <code className="text-barber-paper/80">manuals_knowledge</code> e ingest v4 da{" "}
+            <code className="text-barber-paper/80">public/manuals/</code>.
           </p>
         </header>
 
         <ManualSemanticSearch />
 
-        <ManualIngestControls />
+        <ManualV4IngestControls />
 
         {status && message && (
           <div

@@ -48,6 +48,7 @@ import {
 } from "@/lib/actions/mission-actions";
 import { updateMissionTreasureAction } from "@/lib/actions/campaign-economy-actions";
 import { GUILD_RANK_LETTERS, guildRankOrder } from "@/lib/missions/guild-ranks";
+import { BulkImportMissionsDialog } from "@/components/missions/bulk-import-missions-dialog";
 
 type MissionBoardMission = {
   id: string;
@@ -81,6 +82,7 @@ type MissionBoardProps = {
   missions: MissionBoardMission[];
   guilds: MissionBoardGuild[];
   isGmOrAdmin: boolean;
+  isAdmin: boolean;
 };
 
 const EMPTY_MISSION_DRAFT = {
@@ -106,6 +108,7 @@ export function MissionBoard({
   missions,
   guilds,
   isGmOrAdmin,
+  isAdmin,
 }: MissionBoardProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -435,7 +438,8 @@ export function MissionBoard({
             </p>
           </div>
           {isGmOrAdmin && (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              {isAdmin ? <BulkImportMissionsDialog campaignId={campaignId} /> : null}
               <Button onClick={openAddMission} disabled={isPending} className="bg-amber-600 text-zinc-950 hover:bg-amber-500">
                 <Plus className="mr-2 h-4 w-4" />
                 Nuova Missione

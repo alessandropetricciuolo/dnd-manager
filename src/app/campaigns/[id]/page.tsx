@@ -654,6 +654,7 @@ export default async function CampaignPage({ params }: PageProps) {
               <MissionBoardSection
                 campaignId={campaign.id}
                 isGmOrAdmin={isGmOrAdmin}
+                isAdmin={isAdmin}
               />
             ) : null
           }

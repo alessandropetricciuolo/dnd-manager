@@ -17,6 +17,9 @@
 # Nested template (non usare per il deploy: la vera app è in src/)
 /dnd-manager
 
+# Export tooling (cache JSON voluminoso)
+/scripts/.cache/
+
 # Misc
 .DS_Store
 *.pem

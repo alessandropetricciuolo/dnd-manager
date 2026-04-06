@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { parseGuildRank, rankFromPoints } from "@/lib/missions/guild-ranks";
+import type { BulkMissionImportItem } from "@/lib/missions/mission-bulk-import";
 
 export type MissionBoardResult =
   | { success: true }
@@ -24,6 +25,24 @@ async function isGmOrAdminByRole(
     .single();
 
   return profile?.role === "gm" || profile?.role === "admin";
+}
+
+async function isAdminByRole(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>
+): Promise<boolean> {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) return false;
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  return profile?.role === "admin";
 }
 
 // =============================
@@ -248,6 +267,69 @@ export async function createMissionAction(
 
     revalidatePath(`/campaigns/${campaignId}`);
     return { success: true };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Errore sconosciuto.";
+    return { success: false, message: msg };
+  }
+}
+
+export type BulkImportMissionsResult =
+  | { success: true; message: string; imported: number }
+  | { success: false; message: string };
+
+/** Import massivo missioni (solo ruolo admin). Tutte le righe vengono create come status "open". */
+export async function bulkImportMissionsAction(
+  campaignId: string,
+  items: BulkMissionImportItem[]
+): Promise<BulkImportMissionsResult> {
+  if (!campaignId?.trim()) {
+    return { success: false, message: "Campagna non valida." };
+  }
+  if (!Array.isArray(items) || items.length === 0) {
+    return { success: false, message: "Nessuna missione da importare." };
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    const allowed = await isAdminByRole(supabase);
+    if (!allowed) return { success: false, message: "Solo gli amministratori possono importare missioni in massa." };
+
+    const now = new Date().toISOString();
+    const fullRows: Record<string, unknown>[] = items.map((it) => ({
+      campaign_id: campaignId,
+      grade: it.grade,
+      title: it.title,
+      committente: it.committente,
+      ubicazione: it.ubicazione,
+      paga: it.paga,
+      urgenza: it.urgenza,
+      description: it.description,
+      points_reward: it.points_reward,
+      status: "open",
+      updated_at: now,
+    }));
+
+    let { data, error } = await supabase.from("campaign_missions").insert(fullRows).select("id");
+
+    if (error && isMissingMissionProgressColumns(error)) {
+      const legacyRows = fullRows.map((row) => {
+        const { points_reward, status, ...rest } = row;
+        void points_reward;
+        void status;
+        return rest;
+      });
+      ({ data, error } = await supabase.from("campaign_missions").insert(legacyRows).select("id"));
+    }
+
+    if (error) {
+      return { success: false, message: error.message ?? "Errore durante l'importazione." };
+    }
+
+    const imported = Array.isArray(data) ? data.length : 0;
+    revalidatePath(`/campaigns/${campaignId}`);
+    const message =
+      imported === 1 ? "1 missione importata." : `${imported} missioni importate.`;
+    return { success: true, message, imported };
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Errore sconosciuto.";
     return { success: false, message: msg };

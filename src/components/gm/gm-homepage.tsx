@@ -12,6 +12,7 @@ import { GmFiles } from "@/components/gm/gm-files";
 import { CampaignAiArchitectPanel } from "@/components/campaigns/campaign-ai-architect-panel";
 import { CampaignEmailPanel } from "@/components/campaigns/campaign-email-panel";
 import { CampaignPrimerEditor } from "@/components/gm/campaign-primer-editor";
+import { ManualSemanticSearch } from "@/components/admin/manual-semantic-search";
 import type { CampaignAiContext } from "@/lib/campaign-ai-context";
 import type { PrimerTypography } from "@/app/campaigns/actions";
 
@@ -125,6 +126,10 @@ export function GmHomepage({
             Guida
           </Button>
         </div>
+      </div>
+
+      <div className="mb-8">
+        <ManualSemanticSearch />
       </div>
 
       {/* Card AI (un solo pulsante → una card) */}

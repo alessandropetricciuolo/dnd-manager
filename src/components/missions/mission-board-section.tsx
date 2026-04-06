@@ -32,11 +32,13 @@ export type MissionBoardGuild = {
 type MissionBoardSectionProps = {
   campaignId: string;
   isGmOrAdmin: boolean;
+  isAdmin: boolean;
 };
 
 export async function MissionBoardSection({
   campaignId,
   isGmOrAdmin,
+  isAdmin,
 }: MissionBoardSectionProps) {
   const supabase = await createSupabaseServerClient();
 
@@ -90,6 +92,7 @@ export async function MissionBoardSection({
       missions={missions}
       guilds={guilds}
       isGmOrAdmin={isGmOrAdmin}
+      isAdmin={isAdmin}
     />
   );
 }
