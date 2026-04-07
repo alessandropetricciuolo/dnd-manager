@@ -217,6 +217,24 @@ async function fetchRowsChapter(
   return out;
 }
 
+async function fetchRowsBySectionKey(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  sectionKey: string,
+  excluded: string[]
+): Promise<MkRow[]> {
+  if (!sectionKey.trim()) return [];
+  const { data, error } = await admin
+    .from("manuals_knowledge" as "campaign_characters")
+    .select("content, metadata")
+    .eq("metadata->>section_key", sectionKey)
+    .limit(160);
+  if (error) {
+    console.error("[character-rules-snapshot] fetchRowsBySectionKey", error);
+    return [];
+  }
+  return filterExcluded(((data ?? []) as MkRow[]).filter(isPhbLikeRow), excluded);
+}
+
 function clipBackgroundRules(md: string): string {
   const MAX = 6_000;
   if (md.length <= MAX) return md;
@@ -418,7 +436,12 @@ export async function recomputeCharacterRulesSnapshot(input: {
 
   let classPrivilegesMd = "";
   if (classDef) {
-    const rows = await fetchRowsContentIlike(admin, `%${classDef.privilegesAnchor}%`, excluded);
+    let rows = await fetchRowsContentIlike(admin, `%${classDef.privilegesAnchor}%`, excluded);
+    const sectionKey = metaStr(rows[0]?.metadata, "section_key");
+    if (sectionKey) {
+      const expanded = await fetchRowsBySectionKey(admin, sectionKey, excluded);
+      if (expanded.length) rows = expanded;
+    }
     classPrivilegesMd = filterClassRulesByLevel(mergeMdChunks(rows), level);
     if (!classPrivilegesMd.trim())
       warnings.push(`Privilegi di classe non trovati per «${classDef.label}». Verifica ingest ${PHB_MD_FILE}.`);

@@ -21,6 +21,12 @@ type CharacterCardPlayerProps = {
 };
 
 function renderRichTooltipText(text: string) {
+  const cleanInline = (s: string): string =>
+    s
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
+      .replace(/\*([^*]+)\*/g, "$1")
+      .replace(/^[-*]\s+/, "")
+      .trimEnd();
   const lines = text.replace(/\r/g, "").split("\n");
   return (
     <div className="space-y-1">
@@ -30,7 +36,7 @@ function renderRichTooltipText(text: string) {
         if (heading) {
           return (
             <p key={idx} className="font-semibold text-barber-gold">
-              {heading[1]}
+              {cleanInline(heading[1] ?? "")}
             </p>
           );
         }
@@ -38,13 +44,13 @@ function renderRichTooltipText(text: string) {
         if (strong) {
           return (
             <p key={idx} className="font-semibold text-barber-paper">
-              {strong[1]}
+              {cleanInline(strong[1] ?? "")}
             </p>
           );
         }
         return (
           <p key={idx} className="text-barber-paper">
-            {line}
+            {cleanInline(line)}
           </p>
         );
       })}
