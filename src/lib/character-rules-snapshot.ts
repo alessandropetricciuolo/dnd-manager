@@ -121,12 +121,15 @@ function escapeRegExp(s: string): string {
 
 function extractSpellEntryFromMarkdown(raw: string, spellName: string): string {
   const txt = raw.replace(/\r/g, "");
-  const head = new RegExp(`^#\\s+${escapeRegExp(spellName)}\\s*$`, "im");
+  const head = new RegExp(
+    `^#{1,6}\\s+${escapeRegExp(spellName)}(?:\\s*\\([^)]*\\))?\\s*$`,
+    "im"
+  );
   const m = head.exec(txt);
   if (!m || m.index < 0) return "";
   const start = m.index;
   const rest = txt.slice(start + m[0].length);
-  const next = /^#\s+.+$/m.exec(rest);
+  const next = /^#{1,6}\s+.+$/m.exec(rest);
   const end = next && typeof next.index === "number" ? start + m[0].length + next.index : txt.length;
   return txt.slice(start, end).trim();
 }
@@ -408,6 +411,12 @@ async function fetchSpellDetails(
       if (expanded.length) rows = expanded;
     }
     const merged = mergeMdChunks(rows).trim();
+    if (!merged) continue;
+    // Se abbiamo la sezione già isolata da section_key, preferiamo il testo completo.
+    if (sectionKey) {
+      out[s] = merged;
+      continue;
+    }
     const one = extractSpellEntryFromMarkdown(merged, s);
     if (one) out[s] = one;
   }
