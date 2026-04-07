@@ -344,6 +344,7 @@ export interface Database {
           current_xp: number;
           level: number;
           character_class: string | null;
+          class_subclass: string | null;
           armor_class: number | null;
           hit_points: number | null;
           background: string | null;

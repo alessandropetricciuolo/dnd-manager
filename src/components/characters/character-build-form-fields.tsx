@@ -15,6 +15,7 @@ type CharacterBuildFormFieldsProps = {
   disabled?: boolean;
   initialRaceSlug?: string | null;
   initialSubclassSlug?: string | null;
+  initialClassSubclass?: string | null;
   initialBackgroundSlug?: string | null;
   initialClassLabel?: string | null;
 };
@@ -23,6 +24,7 @@ export function CharacterBuildFormFields({
   disabled = false,
   initialRaceSlug = null,
   initialSubclassSlug = null,
+  initialClassSubclass = null,
   initialBackgroundSlug = null,
   initialClassLabel = null,
 }: CharacterBuildFormFieldsProps) {
@@ -30,6 +32,7 @@ export function CharacterBuildFormFields({
   const [sub, setSub] = useState<string>(initialSubclassSlug ?? "__none__");
   const [bg, setBg] = useState<string>(initialBackgroundSlug ?? "__none__");
   const [cls, setCls] = useState<string>(initialClassLabel ?? "__none__");
+  const [classSubclass, setClassSubclass] = useState<string>(initialClassSubclass ?? "");
   const customClass =
     initialClassLabel &&
     !CLASS_OPTIONS.some((c) => c.label === initialClassLabel) &&
@@ -40,9 +43,10 @@ export function CharacterBuildFormFields({
   useEffect(() => {
     setRace(initialRaceSlug ?? "__none__");
     setSub(initialSubclassSlug ?? "__none__");
+    setClassSubclass(initialClassSubclass ?? "");
     setBg(initialBackgroundSlug ?? "__none__");
     setCls(initialClassLabel ?? "__none__");
-  }, [initialRaceSlug, initialSubclassSlug, initialBackgroundSlug, initialClassLabel]);
+  }, [initialRaceSlug, initialSubclassSlug, initialClassSubclass, initialBackgroundSlug, initialClassLabel]);
 
   const subOptions = useMemo(() => raceBySlug(race === "__none__" ? null : race)?.subraces ?? [], [race]);
 
@@ -117,6 +121,17 @@ export function CharacterBuildFormFields({
             </SelectContent>
           </Select>
           <input type="hidden" name="character_class" value={cls === "__none__" ? "" : cls} readOnly />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-barber-paper/90">Sottoclasse (classe)</Label>
+          <input
+            name="class_subclass"
+            value={classSubclass}
+            onChange={(e) => setClassSubclass(e.target.value)}
+            placeholder="Es. Dominio della Vita, Scuola di Evocazione..."
+            className="h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper placeholder:text-barber-paper/45"
+            disabled={disabled}
+          />
         </div>
         <div className="space-y-1.5">
           <Label className="text-barber-paper/90">Background (PHB)</Label>

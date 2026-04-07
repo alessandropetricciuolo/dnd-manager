@@ -132,6 +132,7 @@ export function EditCharacterDialog({
             disabled={isLoading}
             initialRaceSlug={character.race_slug}
             initialSubclassSlug={character.subclass_slug}
+            initialClassSubclass={character.class_subclass}
             initialBackgroundSlug={character.background_slug}
             initialClassLabel={character.character_class}
           />

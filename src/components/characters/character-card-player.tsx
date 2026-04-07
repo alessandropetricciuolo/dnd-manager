@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { CampaignCharacterRow } from "@/app/campaigns/character-actions";
 import { MapPopoutButton } from "@/components/maps/map-popout-button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { parseRulesSnapshot } from "@/lib/character-rules-snapshot";
 import type { CharacterRulesSnapshotV1 } from "@/lib/character-rules-snapshot";
 import { backgroundBySlug, raceBySlug } from "@/lib/character-build-catalog";
@@ -20,15 +20,15 @@ type CharacterCardPlayerProps = {
   isLongCampaign?: boolean;
 };
 
-/** Trigger accessibile senza <button> dentro flussi di testo (evita HTML invalido in <p>). */
+/** Trigger click/tap friendly (desktop + mobile). */
 function RulesTip({ label, children }: { label: string; children: string }) {
   const t = children.trim();
   if (!t) {
     return <span className="text-barber-paper/85">{label}</span>;
   }
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
+    <Popover>
+      <PopoverTrigger asChild>
         <span
           role="button"
           tabIndex={0}
@@ -36,14 +36,58 @@ function RulesTip({ label, children }: { label: string; children: string }) {
         >
           {label}
         </span>
-      </TooltipTrigger>
-      <TooltipContent
+      </PopoverTrigger>
+      <PopoverContent
         side="bottom"
-        className="max-h-72 max-w-md overflow-y-auto whitespace-pre-wrap border-barber-gold/30 bg-barber-dark px-3 py-2 text-left text-xs leading-relaxed text-barber-paper"
+        className="max-h-72 w-[min(92vw,36rem)] overflow-y-auto whitespace-pre-wrap border-barber-gold/30 bg-barber-dark px-3 py-2 text-left text-xs leading-relaxed text-barber-paper"
       >
         {t}
-      </TooltipContent>
-    </Tooltip>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function SpellsTip({
+  listText,
+  details,
+}: {
+  listText: string;
+  details: Record<string, string> | null | undefined;
+}) {
+  const txt = listText.trim();
+  if (!txt) return null;
+  const spellNames = Object.keys(details ?? {});
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <span
+          role="button"
+          tabIndex={0}
+          className="cursor-help border-b border-dotted border-barber-gold/55 text-barber-paper/90 outline-none hover:text-barber-gold focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-barber-gold/40"
+        >
+          Incantesimi
+        </span>
+      </PopoverTrigger>
+      <PopoverContent
+        side="bottom"
+        className="max-h-[75vh] w-[min(95vw,40rem)] overflow-y-auto border-barber-gold/30 bg-barber-dark px-3 py-2 text-left text-xs leading-relaxed text-barber-paper"
+      >
+        <div className="whitespace-pre-wrap">{txt}</div>
+        {spellNames.length > 0 ? (
+          <div className="mt-3 space-y-2 border-t border-barber-gold/20 pt-3">
+            <p className="text-[11px] uppercase tracking-wide text-barber-gold/85">
+              Clicca un incantesimo per la descrizione
+            </p>
+            {spellNames.map((name) => (
+              <details key={name} className="rounded border border-barber-gold/20 bg-black/20 p-2">
+                <summary className="cursor-pointer text-barber-gold/90">{name}</summary>
+                <div className="mt-2 whitespace-pre-wrap text-barber-paper/90">{details?.[name]}</div>
+              </details>
+            ))}
+          </div>
+        ) : null}
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -65,6 +109,7 @@ export function CharacterCardPlayer({ character, isLongCampaign }: CharacterCard
   const imageSrc = imgError ? PLACEHOLDER_AVATAR : (character.image_url ?? PLACEHOLDER_AVATAR);
   const storedLevel = character.level ?? 1;
   const classLabel = character.character_class?.trim() || "Classe non specificata";
+  const classSubclassLabel = character.class_subclass?.trim() || null;
   const raceDef = raceBySlug(character.race_slug ?? null);
   const raceLabel = raceDef?.label ?? null;
   const subraceLabel =
@@ -82,7 +127,12 @@ export function CharacterCardPlayer({ character, isLongCampaign }: CharacterCard
   const raceBody = tooltipOrWarnings(snap?.raceTraitsMd, snap, staleFallback);
   const showSubrace =
     !!(character.subclass_slug && subraceLabel) || !!snap?.subraceTraitsMd?.trim();
+  const raceDisplayLabel = showSubrace ? (subraceLabel ?? "Sottorazza") : raceLabel;
+  const raceDisplayBody = showSubrace
+    ? tooltipOrWarnings(snap?.subraceTraitsMd, snap, staleFallback)
+    : raceBody;
   const classBody = tooltipOrWarnings(snap?.classPrivilegesMd, snap, staleFallback);
+  const classSubclassBody = tooltipOrWarnings(snap?.classSubclassMd, snap, staleFallback);
   const spellsBody = tooltipOrWarnings(
     [snap?.spellcastingMd, snap?.spellsListMd].filter(Boolean).join("\n\n"),
     snap,
@@ -90,7 +140,6 @@ export function CharacterCardPlayer({ character, isLongCampaign }: CharacterCard
   );
 
   return (
-    <TooltipProvider delayDuration={150} skipDelayDuration={0}>
       <Card className="overflow-hidden border-barber-gold/40 bg-barber-dark/90 min-w-0">
         <div className="space-y-2 min-w-0">
           <div className="relative aspect-[4/5] w-full max-w-md mx-auto overflow-hidden bg-barber-dark min-w-0">
@@ -111,26 +160,24 @@ export function CharacterCardPlayer({ character, isLongCampaign }: CharacterCard
               </h2>
               {/* div: non usare <p> qui — i trigger tooltip non possono stare dentro <p> (HTML invalido). */}
               <div className="mt-1 text-sm text-barber-paper/85">
-                {raceLabel ? (
+                {raceDisplayLabel ? (
                   <>
-                    <RulesTip label={raceLabel}>{raceBody}</RulesTip>
-                    {showSubrace ? (
-                      <>
-                        {" · "}
-                        <RulesTip label={subraceLabel ?? "Sottorazza"}>
-                          {tooltipOrWarnings(snap?.subraceTraitsMd, snap, staleFallback)}
-                        </RulesTip>
-                      </>
-                    ) : null}
+                    <RulesTip label={raceDisplayLabel}>{raceDisplayBody}</RulesTip>
                     {" · "}
                   </>
                 ) : null}
                 <RulesTip label={classLabel}>{classBody}</RulesTip>
+                {classSubclassLabel ? (
+                  <>
+                    {" · "}
+                    <RulesTip label={classSubclassLabel}>{classSubclassBody}</RulesTip>
+                  </>
+                ) : null}
                 {" · "}Livello {storedLevel}
                 {spellsBody ? (
                   <>
                     {" · "}
-                    <RulesTip label="Incantesimi">{spellsBody}</RulesTip>
+                    <SpellsTip listText={spellsBody} details={snap?.spellsDetailsMd} />
                   </>
                 ) : null}
                 <span className="mt-0.5 block text-xs text-barber-paper/65 tabular-nums">
@@ -174,6 +221,5 @@ export function CharacterCardPlayer({ character, isLongCampaign }: CharacterCard
           )}
         </CardContent>
       </Card>
-    </TooltipProvider>
   );
 }

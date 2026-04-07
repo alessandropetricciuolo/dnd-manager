@@ -15,14 +15,17 @@ export type CharacterRulesSnapshotV1 = {
   computedAt: string;
   level: number;
   raceSlug: string | null;
-  subclassSlug: string | null;
+  subraceSlug: string | null;
   classLabel: string | null;
+  classSubclass: string | null;
   backgroundSlug: string | null;
   raceTraitsMd: string;
   subraceTraitsMd: string | null;
   classPrivilegesMd: string;
+  classSubclassMd: string | null;
   spellcastingMd: string | null;
   spellsListMd: string | null;
+  spellsDetailsMd: Record<string, string> | null;
   backgroundRulesMd: string | null;
   warnings: string[];
 };
@@ -220,6 +223,66 @@ function clipBackgroundRules(md: string): string {
   return `${md.slice(0, MAX).trim()}\n\n_(Background PHB: testo troncato.)_`;
 }
 
+function stripEquipmentFromClassPrivileges(md: string): string {
+  const t = md.trim();
+  if (!t) return "";
+  const lines = t.replace(/\r/g, "").split("\n");
+  const idx = lines.findIndex((ln) => /^#{1,6}\s*equipaggiamento\b/i.test(ln.trim()));
+  if (idx <= 0) return t;
+  return lines.slice(0, idx).join("\n").trim();
+}
+
+function parseSpellNamesFromList(md: string): string[] {
+  if (!md.trim()) return [];
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const rawLine of md.replace(/\r/g, "").split("\n")) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    const m = line.match(/^(?:[-*]|\d+[.)])\s+(.+)$/);
+    if (!m) continue;
+    const core = (m[1] ?? "")
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      .replace(/\s*\([^)]*\)\s*$/g, "")
+      .replace(/[;,:.]+$/g, "")
+      .trim();
+    if (!core || core.length < 2 || core.length > 60) continue;
+    const key = core.toLocaleLowerCase("it");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(core);
+  }
+  return out;
+}
+
+async function fetchSpellDetails(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  spellNames: string[],
+  excluded: string[]
+): Promise<Record<string, string> | null> {
+  const out: Record<string, string> = {};
+  for (const s of spellNames.slice(0, 24)) {
+    const { data, error } = await admin
+      .from("manuals_knowledge" as "campaign_characters")
+      .select("content, metadata")
+      .eq("metadata->>section_heading", s.toUpperCase())
+      .limit(20);
+    if (error) continue;
+    let rows = filterExcluded(((data ?? []) as MkRow[]).filter(isPhbLikeRow), excluded);
+    if (!rows.length) {
+      const { data: loose } = await admin
+        .from("manuals_knowledge" as "campaign_characters")
+        .select("content, metadata")
+        .ilike("content", `%${s}%`)
+        .limit(40);
+      rows = filterExcluded(((loose ?? []) as MkRow[]).filter(isPhbLikeRow), excluded);
+    }
+    const merged = mergeMdChunks(rows).trim();
+    if (merged) out[s] = merged;
+  }
+  return Object.keys(out).length ? out : null;
+}
+
 export function parseRulesSnapshot(raw: Json | null): CharacterRulesSnapshotV1 | null {
   if (raw === null || raw === undefined) return null;
   let o: Record<string, unknown>;
@@ -242,6 +305,7 @@ export async function recomputeCharacterRulesSnapshot(input: {
   campaignId: string;
   level: number;
   characterClass: string | null;
+  classSubclass: string | null;
   raceSlug: string | null;
   subclassSlug: string | null;
   backgroundSlug: string | null;
@@ -260,14 +324,17 @@ export async function recomputeCharacterRulesSnapshot(input: {
       computedAt: new Date().toISOString(),
       level,
       raceSlug: input.raceSlug,
-      subclassSlug: input.subclassSlug,
+      subraceSlug: input.subclassSlug,
       classLabel: input.characterClass,
+      classSubclass: input.classSubclass,
       backgroundSlug: input.backgroundSlug,
       raceTraitsMd: "",
       subraceTraitsMd: null,
       classPrivilegesMd: "",
+      classSubclassMd: null,
       spellcastingMd: null,
       spellsListMd: null,
+      spellsDetailsMd: null,
       backgroundRulesMd: null,
       warnings,
     };
@@ -303,9 +370,22 @@ export async function recomputeCharacterRulesSnapshot(input: {
   let classPrivilegesMd = "";
   if (classDef) {
     const rows = await fetchRowsContentIlike(admin, `%${classDef.privilegesAnchor}%`, excluded);
-    classPrivilegesMd = mergeMdChunks(rows);
+    classPrivilegesMd = stripEquipmentFromClassPrivileges(mergeMdChunks(rows));
     if (!classPrivilegesMd.trim())
       warnings.push(`Privilegi di classe non trovati per «${classDef.label}». Verifica ingest ${PHB_MD_FILE}.`);
+  }
+
+  let classSubclassMd: string | null = null;
+  if (classDef && input.classSubclass?.trim()) {
+    const rowByHeading = await fetchRowsSectionHeading(admin, input.classSubclass.trim().toUpperCase(), excluded);
+    classSubclassMd = mergeMdChunks(rowByHeading) || null;
+    if (!classSubclassMd?.trim()) {
+      const byContent = await fetchRowsContentIlike(admin, `%${input.classSubclass.trim()}%`, excluded);
+      classSubclassMd = mergeMdChunks(byContent) || null;
+    }
+    if (!classSubclassMd?.trim()) {
+      warnings.push(`Sottoclasse «${input.classSubclass}»: estratto non trovato nel PHB.`);
+    }
   }
 
   let spellcastingMd: string | null = null;
@@ -329,6 +409,8 @@ export async function recomputeCharacterRulesSnapshot(input: {
     if (!spellsListMd?.trim())
       warnings.push(`Lista incantesimi non trovata o vuota per «${classDef.label}» (capitolo PHB).`);
   }
+  const spellNames = parseSpellNamesFromList(spellsListMd ?? "");
+  const spellsDetailsMd = spellNames.length ? await fetchSpellDetails(admin, spellNames, excluded) : null;
 
   let backgroundRulesMd: string | null = null;
   if (bgDef) {
@@ -343,14 +425,17 @@ export async function recomputeCharacterRulesSnapshot(input: {
     computedAt: new Date().toISOString(),
     level,
     raceSlug: input.raceSlug,
-    subclassSlug: input.subclassSlug,
+    subraceSlug: input.subclassSlug,
     classLabel: input.characterClass,
+    classSubclass: input.classSubclass,
     backgroundSlug: input.backgroundSlug,
     raceTraitsMd,
     subraceTraitsMd,
     classPrivilegesMd,
+    classSubclassMd,
     spellcastingMd,
     spellsListMd,
+    spellsDetailsMd,
     backgroundRulesMd,
     warnings,
   };

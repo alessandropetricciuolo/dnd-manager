@@ -25,6 +25,7 @@ export type CampaignCharacterRow = {
   name: string;
   image_url: string | null;
   character_class: string | null;
+  class_subclass?: string | null;
   armor_class?: number | null;
   hit_points?: number | null;
   /** XP correnti del personaggio. */
@@ -96,7 +97,7 @@ export async function getCampaignCharacters(
     const { data: rows, error } = await supabase
       .from("campaign_characters")
       .select(
-        "id, campaign_id, name, image_url, character_class, armor_class, hit_points, current_xp, level, sheet_file_path, background, race_slug, subclass_slug, background_slug, rules_snapshot, assigned_to, time_offset_hours, coins_gp, coins_sp, coins_cp, created_at, updated_at"
+        "id, campaign_id, name, image_url, character_class, class_subclass, armor_class, hit_points, current_xp, level, sheet_file_path, background, race_slug, subclass_slug, background_slug, rules_snapshot, assigned_to, time_offset_hours, coins_gp, coins_sp, coins_cp, created_at, updated_at"
       )
       .eq("campaign_id", campaignId)
       .order("created_at", { ascending: false });
@@ -141,7 +142,7 @@ export async function getCampaignCharacters(
   const { data: rows, error } = await supabase
     .from("campaign_characters")
     .select(
-      "id, campaign_id, name, image_url, character_class, current_xp, level, background, race_slug, subclass_slug, background_slug, rules_snapshot, assigned_to, time_offset_hours, coins_gp, coins_sp, coins_cp, created_at, updated_at"
+      "id, campaign_id, name, image_url, character_class, class_subclass, current_xp, level, background, race_slug, subclass_slug, background_slug, rules_snapshot, assigned_to, time_offset_hours, coins_gp, coins_sp, coins_cp, created_at, updated_at"
     )
     .eq("campaign_id", campaignId)
     .eq("assigned_to", userId)
@@ -181,6 +182,7 @@ export async function createCharacter(
   const supabase = ctx.supabase;
   const name = (formData.get("name") as string | null)?.trim();
   const characterClass = (formData.get("character_class") as string | null)?.trim() || null;
+  const classSubclass = (formData.get("class_subclass") as string | null)?.trim() || null;
   const armorClassRaw = (formData.get("armor_class") as string | null)?.trim() || "";
   const hitPointsRaw = (formData.get("hit_points") as string | null)?.trim() || "";
   const background = (formData.get("background") as string | null)?.trim() ?? null;
@@ -255,6 +257,7 @@ export async function createCharacter(
     campaignId,
     level: 1,
     characterClass: characterClass,
+    classSubclass,
     raceSlug: race_slug,
     subclassSlug: subclass_slug,
     backgroundSlug: background_slug,
@@ -267,6 +270,7 @@ export async function createCharacter(
       name,
       image_url,
       character_class: characterClass,
+      class_subclass: classSubclass,
       armor_class: armorClass,
       hit_points: hitPoints,
       sheet_file_path,
@@ -278,7 +282,7 @@ export async function createCharacter(
       assigned_to: null,
     })
     .select(
-      "id, campaign_id, name, image_url, character_class, armor_class, hit_points, current_xp, level, background, race_slug, subclass_slug, background_slug, rules_snapshot, assigned_to, created_at, updated_at"
+      "id, campaign_id, name, image_url, character_class, class_subclass, armor_class, hit_points, current_xp, level, background, race_slug, subclass_slug, background_slug, rules_snapshot, assigned_to, created_at, updated_at"
     )
     .single();
 
@@ -307,6 +311,7 @@ export async function updateCharacter(
   if (!name) return { success: false, error: "Il nome del personaggio è obbligatorio." };
 
   const characterClass = (formData.get("character_class") as string | null)?.trim() || null;
+  const classSubclass = (formData.get("class_subclass") as string | null)?.trim() || null;
   const armorClassRaw = (formData.get("armor_class") as string | null)?.trim() || "";
   const hitPointsRaw = (formData.get("hit_points") as string | null)?.trim() || "";
   const armorClass = armorClassRaw !== "" ? Number.parseInt(armorClassRaw, 10) : null;
@@ -422,6 +427,7 @@ export async function updateCharacter(
     campaignId,
     level: prevLevel,
     characterClass,
+    classSubclass,
     raceSlug: race_slug,
     subclassSlug: subclass_slug,
     backgroundSlug: background_slug,
@@ -433,6 +439,7 @@ export async function updateCharacter(
       name,
       image_url,
       character_class: characterClass,
+      class_subclass: classSubclass,
       armor_class: armorClass,
       hit_points: hitPoints,
       sheet_file_path,
@@ -445,7 +452,7 @@ export async function updateCharacter(
     })
     .eq("id", characterId)
     .select(
-      "id, campaign_id, name, image_url, character_class, armor_class, hit_points, current_xp, level, background, race_slug, subclass_slug, background_slug, rules_snapshot, assigned_to, coins_gp, coins_sp, coins_cp, created_at, updated_at"
+      "id, campaign_id, name, image_url, character_class, class_subclass, armor_class, hit_points, current_xp, level, background, race_slug, subclass_slug, background_slug, rules_snapshot, assigned_to, coins_gp, coins_sp, coins_cp, created_at, updated_at"
     )
     .single();
 
@@ -559,7 +566,7 @@ export async function levelUpCharacter(
 
   const { data: row, error } = await supabase
     .from("campaign_characters")
-    .select("campaign_id, level, character_class, race_slug, subclass_slug, background_slug")
+    .select("campaign_id, level, character_class, class_subclass, race_slug, subclass_slug, background_slug")
     .eq("id", characterId)
     .maybeSingle();
 
@@ -577,6 +584,7 @@ export async function levelUpCharacter(
     campaignId: row.campaign_id,
     level: newLevel,
     characterClass: (row as { character_class?: string | null }).character_class ?? null,
+    classSubclass: (row as { class_subclass?: string | null }).class_subclass ?? null,
     raceSlug: (row as { race_slug?: string | null }).race_slug ?? null,
     subclassSlug: (row as { subclass_slug?: string | null }).subclass_slug ?? null,
     backgroundSlug: (row as { background_slug?: string | null }).background_slug ?? null,
