@@ -105,6 +105,22 @@ export function extractSpellListByMaxLevel(raw: string, maxSpellLevel: number): 
   return text;
 }
 
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function extractSpellEntryFromMarkdown(raw: string, spellName: string): string {
+  const txt = raw.replace(/\r/g, "");
+  const head = new RegExp(`^#\\s+${escapeRegExp(spellName)}\\s*$`, "im");
+  const m = head.exec(txt);
+  if (!m || m.index < 0) return "";
+  const start = m.index;
+  const rest = txt.slice(start + m[0].length);
+  const next = /^#\s+.+$/m.exec(rest);
+  const end = next && typeof next.index === "number" ? start + m[0].length + next.index : txt.length;
+  return txt.slice(start, end).trim();
+}
+
 function filterExcluded(rows: MkRow[], excluded: string[]): MkRow[] {
   if (!excluded.length) return rows;
   const ex = new Set(excluded);
@@ -343,17 +359,7 @@ async function fetchSpellDetails(
       const ch = (metaStr(r.metadata, "chapter") ?? "").toUpperCase();
       return ch.includes("INCANTESIMI");
     });
-    if (!rows.length) {
-      const { data: byHeading } = await admin
-        .from("manuals_knowledge" as "campaign_characters")
-        .select("content, metadata")
-        .ilike("content", `%# ${upper}%`)
-        .limit(80);
-      rows = filterExcluded(((byHeading ?? []) as MkRow[]).filter(isPhbLikeRow), excluded).filter((r) => {
-        const ch = (metaStr(r.metadata, "chapter") ?? "").toUpperCase();
-        return ch.includes("INCANTESIMI");
-      });
-    }
+    if (!rows.length) continue;
     const sectionKey = metaStr(rows[0]?.metadata, "section_key");
     const chapter = metaStr(rows[0]?.metadata, "chapter");
     if (sectionKey) {
@@ -361,7 +367,8 @@ async function fetchSpellDetails(
       if (expanded.length) rows = expanded;
     }
     const merged = mergeMdChunks(rows).trim();
-    if (merged) out[s] = merged;
+    const single = extractSpellEntryFromMarkdown(merged, s);
+    if (single) out[s] = single;
   }
   return Object.keys(out).length ? out : null;
 }
