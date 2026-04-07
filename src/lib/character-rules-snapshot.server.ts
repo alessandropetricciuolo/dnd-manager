@@ -10,7 +10,7 @@ import {
   raceBySlug,
 } from "@/lib/character-build-catalog";
 import type { CharacterRulesSnapshotV1 } from "@/lib/character-rules-snapshot";
-import { extractPhbSpellMarkdown } from "@/lib/server/phb-spell-excerpt";
+import { extractPhbSpellMarkdown, preloadPhbMarkdown } from "@/lib/server/phb-spell-excerpt";
 
 type MkRow = { content: string | null; metadata: Record<string, unknown> | null };
 const PHB_BOOK_KEY_ALIASES = new Set([
@@ -102,7 +102,7 @@ function headingMatchesSpellName(headingRaw: string, spellRaw: string): boolean 
   const spell = normalizeHeadingForMatch(spellRaw);
   if (!heading || !spell) return false;
   if (heading === spell) return true;
-  if (heading.startsWith(`${spell} `)) return true;
+  // Solo titolo con suffisso tra parentesi, es. "BENEDIZIONE (RITUALE)" — non "BENEDIZIONE DELL'OSCURO".
   if (heading.startsWith(`${spell} (`)) return true;
   return false;
 }
@@ -376,6 +376,8 @@ async function fetchSpellDetails(
   spellNames: string[],
   excluded: string[]
 ): Promise<Record<string, string> | null> {
+  await preloadPhbMarkdown();
+
   const out: Record<string, string> = {};
   let chapterIncantesimiMerged = "";
   let chapterIncantesimiLoaded = false;
