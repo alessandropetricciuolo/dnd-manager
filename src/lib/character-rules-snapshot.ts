@@ -363,6 +363,26 @@ async function fetchSpellDetails(
   excluded: string[]
 ): Promise<Record<string, string> | null> {
   const out: Record<string, string> = {};
+  let chapterIncantesimiMerged = "";
+  let chapterIncantesimiLoaded = false;
+
+  const loadChapterIncantesimi = async (): Promise<string> => {
+    if (chapterIncantesimiLoaded) return chapterIncantesimiMerged;
+    chapterIncantesimiLoaded = true;
+    const { data, error } = await admin
+      .from("manuals_knowledge" as "campaign_characters")
+      .select("content, metadata")
+      .ilike("metadata->>chapter", "%INCANTESIMI%")
+      .limit(1200);
+    if (error) return "";
+    const rawRows = (data ?? []) as MkRow[];
+    const byBook = filterExcluded(rawRows, excluded);
+    const phbRows = byBook.filter(isPhbLikeRow);
+    const rows = phbRows.length ? phbRows : byBook;
+    chapterIncantesimiMerged = mergeMdChunks(rows).trim();
+    return chapterIncantesimiMerged;
+  };
+
   for (const s of spellNames.slice(0, 24)) {
     const upper = s.toUpperCase().trim();
     const { data, error } = await admin
@@ -418,7 +438,16 @@ async function fetchSpellDetails(
       continue;
     }
     const one = extractSpellEntryFromMarkdown(merged, s);
-    if (one) out[s] = one;
+    if (one) {
+      out[s] = one;
+      continue;
+    }
+
+    // Fallback finale: ricava la voce dal capitolo INCANTESIMI completo.
+    const chapterMd = await loadChapterIncantesimi();
+    if (!chapterMd) continue;
+    const fromChapter = extractSpellEntryFromMarkdown(chapterMd, s);
+    if (fromChapter) out[s] = fromChapter;
   }
   return Object.keys(out).length ? out : null;
 }
