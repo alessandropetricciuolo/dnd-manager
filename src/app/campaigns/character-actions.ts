@@ -10,7 +10,7 @@ import { uploadToTelegram } from "@/lib/telegram-storage";
 import { parseSafeExternalUrl } from "@/lib/security/url";
 import type { Json } from "@/types/database.types";
 import { backgroundBySlug, raceBySlug } from "@/lib/character-build-catalog";
-import { recomputeCharacterRulesSnapshot } from "@/lib/character-rules-snapshot";
+import { recomputeCharacterRulesSnapshot } from "@/lib/character-rules-snapshot.server";
 
 const CHARACTER_SHEETS_BUCKET = "character_sheets";
 const SIGNED_URL_EXPIRY_SEC = 3600;
