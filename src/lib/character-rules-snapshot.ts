@@ -115,6 +115,17 @@ function normalizeHeadingForMatch(s: string): string {
     .toUpperCase();
 }
 
+function headingMatchesSpellName(headingRaw: string, spellRaw: string): boolean {
+  const heading = normalizeHeadingForMatch(headingRaw);
+  const spell = normalizeHeadingForMatch(spellRaw);
+  if (!heading || !spell) return false;
+  if (heading === spell) return true;
+  if (heading.startsWith(`${spell} `)) return true;
+  if (heading.startsWith(`${spell} (`)) return true;
+  if (heading.includes(` ${spell} `)) return true;
+  return false;
+}
+
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -406,7 +417,22 @@ async function fetchSpellDetails(
           const ch = (metaStr(r.metadata, "chapter") ?? "").toUpperCase();
           if (!ch.includes("INCANTESIMI")) return false;
           const h = normalizeHeadingForMatch(metaStr(r.metadata, "section_heading") ?? "");
-          return h === normalizeHeadingForMatch(s);
+          return headingMatchesSpellName(h, s);
+        });
+      }
+    }
+    if (!rows.length) {
+      const { data: titleRows, error: titleErr } = await admin
+        .from("manuals_knowledge" as "campaign_characters")
+        .select("content, metadata")
+        .ilike("metadata->>section_title", `%${upper}%`)
+        .limit(120);
+      if (!titleErr) {
+        rows = filterExcluded(((titleRows ?? []) as MkRow[]).filter(isPhbLikeRow), excluded).filter((r) => {
+          const ch = (metaStr(r.metadata, "chapter") ?? "").toUpperCase();
+          if (!ch.includes("INCANTESIMI")) return false;
+          const t = metaStr(r.metadata, "section_title") ?? "";
+          return headingMatchesSpellName(t, s);
         });
       }
     }
