@@ -220,14 +220,17 @@ async function fetchRowsChapter(
 async function fetchRowsBySectionKey(
   admin: ReturnType<typeof createSupabaseAdminClient>,
   sectionKey: string,
+  chapter: string | null,
   excluded: string[]
 ): Promise<MkRow[]> {
   if (!sectionKey.trim()) return [];
-  const { data, error } = await admin
+  let q = admin
     .from("manuals_knowledge" as "campaign_characters")
     .select("content, metadata")
     .eq("metadata->>section_key", sectionKey)
-    .limit(160);
+    .limit(220);
+  if (chapter?.trim()) q = q.eq("metadata->>chapter", chapter.trim());
+  const { data, error } = await q;
   if (error) {
     console.error("[character-rules-snapshot] fetchRowsBySectionKey", error);
     return [];
@@ -329,20 +332,33 @@ async function fetchSpellDetails(
 ): Promise<Record<string, string> | null> {
   const out: Record<string, string> = {};
   for (const s of spellNames.slice(0, 24)) {
+    const upper = s.toUpperCase().trim();
     const { data, error } = await admin
       .from("manuals_knowledge" as "campaign_characters")
       .select("content, metadata")
-      .eq("metadata->>section_heading", s.toUpperCase())
-      .limit(20);
+      .eq("metadata->>section_heading", upper)
+      .limit(50);
     if (error) continue;
-    let rows = filterExcluded(((data ?? []) as MkRow[]).filter(isPhbLikeRow), excluded);
+    let rows = filterExcluded(((data ?? []) as MkRow[]).filter(isPhbLikeRow), excluded).filter((r) => {
+      const ch = (metaStr(r.metadata, "chapter") ?? "").toUpperCase();
+      return ch.includes("INCANTESIMI");
+    });
     if (!rows.length) {
-      const { data: loose } = await admin
+      const { data: byHeading } = await admin
         .from("manuals_knowledge" as "campaign_characters")
         .select("content, metadata")
-        .ilike("content", `%${s}%`)
-        .limit(40);
-      rows = filterExcluded(((loose ?? []) as MkRow[]).filter(isPhbLikeRow), excluded);
+        .ilike("content", `%# ${upper}%`)
+        .limit(80);
+      rows = filterExcluded(((byHeading ?? []) as MkRow[]).filter(isPhbLikeRow), excluded).filter((r) => {
+        const ch = (metaStr(r.metadata, "chapter") ?? "").toUpperCase();
+        return ch.includes("INCANTESIMI");
+      });
+    }
+    const sectionKey = metaStr(rows[0]?.metadata, "section_key");
+    const chapter = metaStr(rows[0]?.metadata, "chapter");
+    if (sectionKey) {
+      const expanded = await fetchRowsBySectionKey(admin, sectionKey, chapter, excluded);
+      if (expanded.length) rows = expanded;
     }
     const merged = mergeMdChunks(rows).trim();
     if (merged) out[s] = merged;
@@ -438,8 +454,9 @@ export async function recomputeCharacterRulesSnapshot(input: {
   if (classDef) {
     let rows = await fetchRowsContentIlike(admin, `%${classDef.privilegesAnchor}%`, excluded);
     const sectionKey = metaStr(rows[0]?.metadata, "section_key");
+    const chapter = metaStr(rows[0]?.metadata, "chapter");
     if (sectionKey) {
-      const expanded = await fetchRowsBySectionKey(admin, sectionKey, excluded);
+      const expanded = await fetchRowsBySectionKey(admin, sectionKey, chapter, excluded);
       if (expanded.length) rows = expanded;
     }
     classPrivilegesMd = filterClassRulesByLevel(mergeMdChunks(rows), level);

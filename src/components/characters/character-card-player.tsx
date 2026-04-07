@@ -25,6 +25,7 @@ function renderRichTooltipText(text: string) {
     s
       .replace(/\*\*([^*]+)\*\*/g, "$1")
       .replace(/\*([^*]+)\*/g, "$1")
+      .replace(/\*\*/g, "")
       .replace(/^[-*]\s+/, "")
       .trimEnd();
   const lines = text.replace(/\r/g, "").split("\n");
