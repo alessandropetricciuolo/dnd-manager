@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { readExcludedManualBookKeysFromAiContextJson } from "@/lib/campaign-ai-context";
 import type { Json } from "@/types/database.types";
@@ -134,6 +135,36 @@ function sanitizeSpellExcerpt(md: string): string {
     t = t.replace(/\n\d{1,4}\s*$/g, "").trim();
   }
   return t.trim();
+}
+
+/** Il primo titolo ATX del testo deve essere l’incantesimo richiesto (evita chunk «BENEDIZIONE DELL'OSCURO» per «Benedizione»). */
+function excerptFirstHeadingMatchesSpell(md: string, spellRaw: string): boolean {
+  const m = md.replace(/\r/g, "").match(/^#{1,6}\s+(.+?)(?:\s+#+\s*)?$/m);
+  if (!m) return false;
+  const title = normalizeHeadingForMatch(m[1].trim());
+  const spell = normalizeHeadingForMatch(spellRaw);
+  if (!title || !spell) return false;
+  if (title === spell) return true;
+  if (title.startsWith(`${spell} (`)) return true;
+  return false;
+}
+
+async function resolveRequestOriginForPhb(): Promise<string | null> {
+  try {
+    const h = await headers();
+    const host = h.get("x-forwarded-host") ?? h.get("host");
+    if (!host) return null;
+    const xf = h.get("x-forwarded-proto");
+    const proto =
+      xf && xf.trim() !== ""
+        ? xf.split(",")[0].trim()
+        : host.includes("localhost") || host.startsWith("127.")
+          ? "http"
+          : "https";
+    return `${proto}://${host}`;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -371,12 +402,22 @@ function parseSpellNamesFromList(md: string): string[] {
   return out;
 }
 
+function spellRowQualityForMerge(r: MkRow, s: string): number {
+  const sec = normalizeHeadingForMatch(metaStr(r.metadata, "section_heading") ?? "");
+  const sn = normalizeHeadingForMatch(s);
+  if (sec && sec === sn) return 0;
+  const c = typeof r.content === "string" ? r.content : "";
+  if (c && excerptFirstHeadingMatchesSpell(c, s)) return 1;
+  return 2;
+}
+
 async function fetchSpellDetails(
   admin: ReturnType<typeof createSupabaseAdminClient>,
   spellNames: string[],
-  excluded: string[]
+  excluded: string[],
+  requestOrigin: string | null
 ): Promise<Record<string, string> | null> {
-  await preloadPhbMarkdown();
+  await preloadPhbMarkdown(requestOrigin);
 
   const out: Record<string, string> = {};
   let chapterIncantesimiMerged = "";
@@ -399,24 +440,19 @@ async function fetchSpellDetails(
     return chapterIncantesimiMerged;
   };
 
-  const assignFromMerged = (s: string, merged: string, sectionKey: string | null) => {
+  const assignFromMerged = (s: string, merged: string, _sectionKey: string | null) => {
     if (!merged) return false;
     const sliced = extractSpellEntryFromMarkdown(merged, s);
-    if (sliced) {
-      out[s] = sanitizeSpellExcerpt(sliced);
-      return true;
-    }
-    if (sectionKey) {
-      out[s] = sanitizeSpellExcerpt(merged);
-      return true;
-    }
-    out[s] = sanitizeSpellExcerpt(merged);
+    const pick =
+      sliced && excerptFirstHeadingMatchesSpell(sliced, s) ? sliced : merged;
+    if (!excerptFirstHeadingMatchesSpell(pick, s)) return false;
+    out[s] = sanitizeSpellExcerpt(pick);
     return true;
   };
 
   for (const s of spellNames.slice(0, 24)) {
     const fromPhbFirst = extractPhbSpellMarkdown(s);
-    if (fromPhbFirst.trim()) {
+    if (fromPhbFirst.trim() && excerptFirstHeadingMatchesSpell(fromPhbFirst, s)) {
       out[s] = sanitizeSpellExcerpt(fromPhbFirst);
       continue;
     }
@@ -475,6 +511,9 @@ async function fetchSpellDetails(
       }
     }
     if (rows.length) {
+      if (rows.length > 1) {
+        rows = [...rows].sort((a, b) => spellRowQualityForMerge(a, s) - spellRowQualityForMerge(b, s));
+      }
       const sectionKey = metaStr(rows[0]?.metadata, "section_key");
       const chapter = metaStr(rows[0]?.metadata, "chapter");
       if (sectionKey) {
@@ -488,7 +527,7 @@ async function fetchSpellDetails(
     const chapterMd = await loadChapterIncantesimi();
     if (chapterMd) {
       const fromChapter = extractSpellEntryFromMarkdown(chapterMd, s);
-      if (fromChapter) {
+      if (fromChapter && excerptFirstHeadingMatchesSpell(fromChapter, s)) {
         out[s] = sanitizeSpellExcerpt(fromChapter);
         continue;
       }
@@ -613,7 +652,10 @@ export async function recomputeCharacterRulesSnapshot(input: {
       warnings.push(`Lista incantesimi non trovata o vuota per «${classDef.label}» (capitolo PHB).`);
   }
   const spellNames = parseSpellNamesFromList(spellsListMd ?? "");
-  const spellsDetailsMd = spellNames.length ? await fetchSpellDetails(admin, spellNames, excluded) : null;
+  const requestOrigin = spellNames.length ? await resolveRequestOriginForPhb() : null;
+  const spellsDetailsMd = spellNames.length
+    ? await fetchSpellDetails(admin, spellNames, excluded, requestOrigin)
+    : null;
 
   let backgroundRulesMd: string | null = null;
   if (bgDef) {

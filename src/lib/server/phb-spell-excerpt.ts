@@ -2,15 +2,14 @@ import fs from "fs";
 import path from "path";
 import { PHB_MD_FILE } from "@/lib/character-build-catalog";
 
-/** Contenuto PHB caricato; `undefined` = non ancora tentato in questa sessione di preload. */
-let cachedRaw: string | undefined;
-
-/** Promise condivisa se preload parte più volte in parallelo. */
+/** Testo PHB; `undefined` = preload non completato; stringa vuota = nessun sorgente disponibile. */
+let cachedPhb: string | undefined;
+let preloadDone = false;
 let preloadPromise: Promise<void> | null = null;
 
 function resolvePhbAbsolutePath(): string | null {
   const rel = path.join("public", "manuals", PHB_MD_FILE);
-  for (const cwd of [process.cwd(), path.join(process.cwd(), "dnd-manager")]) {
+  for (const cwd of [ process.cwd(), path.join(process.cwd(), "dnd-manager") ]) {
     const p = path.join(cwd, rel);
     if (fs.existsSync(p)) return p;
   }
@@ -27,45 +26,49 @@ function tryReadPhbFromFs(): string | null {
   }
 }
 
-/** URL assoluto del manuale servito da `public/manuals` (Vercel / sito pubblico). */
-function publicManualUrl(): string | null {
+function publicManualUrlCandidates(requestOrigin?: string | null): string[] {
   const pathSeg = `/manuals/${encodeURI(PHB_MD_FILE)}`;
+  const out: string[] = [];
+  const origin = requestOrigin?.trim().replace(/\/$/, "");
+  if (origin) out.push(`${origin}${pathSeg}`);
   const site = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, "");
-  if (site) return `${site}${pathSeg}`;
+  if (site) out.push(`${site}${pathSeg}`);
   const vercel = process.env.VERCEL_URL?.trim().replace(/^https?:\/\//, "");
-  if (vercel) return `https://${vercel}${pathSeg}`;
-  return null;
+  if (vercel) out.push(`https://${vercel}${pathSeg}`);
+  return [...new Set(out)];
 }
 
 /**
- * Carica il markdown PHB una volta: prima da filesystem (dev / Docker), altrimenti via HTTP
- * (es. deploy Vercel: `VERCEL_URL` o `NEXT_PUBLIC_SITE_URL`).
- * Chiamare all’inizio di `fetchSpellDetails` prima di `extractPhbSpellMarkdown`.
+ * Carica il markdown PHB: filesystem, poi URL (host della richiesta corrente, env pubblico, VERCEL_URL).
  */
-export async function preloadPhbMarkdown(): Promise<void> {
-  if (typeof cachedRaw === "string") return;
+export async function preloadPhbMarkdown(requestOrigin?: string | null): Promise<void> {
+  if (preloadDone) return;
   preloadPromise ??= (async () => {
     try {
       const fromFs = tryReadPhbFromFs();
       if (fromFs && fromFs.length > 5000) {
-        cachedRaw = fromFs;
+        cachedPhb = fromFs;
         return;
       }
-      const url = publicManualUrl();
-      if (url) {
-        const res = await fetch(url, { next: { revalidate: 86_400 } });
-        if (res.ok) {
-          const t = await res.text();
-          if (t.length > 5000) {
-            cachedRaw = t;
-            return;
+      for (const url of publicManualUrlCandidates(requestOrigin)) {
+        try {
+          const res = await fetch(url, { next: { revalidate: 86_400 } });
+          if (res.ok) {
+            const t = await res.text();
+            if (t.length > 5000) {
+              cachedPhb = t;
+              return;
+            }
           }
+        } catch {
+          /* prova il prossimo URL */
         }
       }
-      cachedRaw = fromFs ?? "";
+      cachedPhb = fromFs ?? "";
     } catch {
-      cachedRaw = "";
+      cachedPhb = tryReadPhbFromFs() ?? "";
     } finally {
+      preloadDone = true;
       preloadPromise = null;
     }
   })();
@@ -73,13 +76,8 @@ export async function preloadPhbMarkdown(): Promise<void> {
 }
 
 function getPhbMarkdown(): string {
-  if (typeof cachedRaw === "string") return cachedRaw;
-  const fromFs = tryReadPhbFromFs();
-  if (fromFs) {
-    cachedRaw = fromFs;
-    return cachedRaw;
-  }
-  return "";
+  if (cachedPhb !== undefined) return cachedPhb;
+  return tryReadPhbFromFs() ?? "";
 }
 
 function escapeRegExp(s: string): string {
