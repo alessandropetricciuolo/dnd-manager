@@ -104,7 +104,6 @@ function headingMatchesSpellName(headingRaw: string, spellRaw: string): boolean 
   if (heading === spell) return true;
   if (heading.startsWith(`${spell} `)) return true;
   if (heading.startsWith(`${spell} (`)) return true;
-  if (heading.includes(` ${spell} `)) return true;
   return false;
 }
 
@@ -125,6 +124,16 @@ function extractSpellEntryFromMarkdown(raw: string, spellName: string): string {
   const next = /^#{1,6}\s+.+$/m.exec(rest);
   const end = next && typeof next.index === "number" ? start + m[0].length + next.index : txt.length;
   return txt.slice(start, end).trim();
+}
+
+/** Rimuove code di impaginazione tipici del PHB in coda al chunk (numeri pagina, header cap. 11). */
+function sanitizeSpellExcerpt(md: string): string {
+  let t = md.trim();
+  t = t.replace(/\nCAPITOLO\s+11\s*\|[^\n]*(?:\n\d+)?\s*$/gim, "");
+  while (/\n\d{1,4}\s*$/.test(t)) {
+    t = t.replace(/\n\d{1,4}\s*$/g, "").trim();
+  }
+  return t.trim();
 }
 
 /**
@@ -390,20 +399,26 @@ async function fetchSpellDetails(
 
   const assignFromMerged = (s: string, merged: string, sectionKey: string | null) => {
     if (!merged) return false;
+    const sliced = extractSpellEntryFromMarkdown(merged, s);
+    if (sliced) {
+      out[s] = sanitizeSpellExcerpt(sliced);
+      return true;
+    }
     if (sectionKey) {
-      out[s] = merged;
+      out[s] = sanitizeSpellExcerpt(merged);
       return true;
     }
-    const one = extractSpellEntryFromMarkdown(merged, s);
-    if (one) {
-      out[s] = one;
-      return true;
-    }
-    out[s] = merged;
+    out[s] = sanitizeSpellExcerpt(merged);
     return true;
   };
 
   for (const s of spellNames.slice(0, 24)) {
+    const fromPhbFirst = extractPhbSpellMarkdown(s);
+    if (fromPhbFirst.trim()) {
+      out[s] = sanitizeSpellExcerpt(fromPhbFirst);
+      continue;
+    }
+
     const upper = s.toUpperCase().trim();
     let rows: MkRow[] = [];
 
@@ -472,13 +487,10 @@ async function fetchSpellDetails(
     if (chapterMd) {
       const fromChapter = extractSpellEntryFromMarkdown(chapterMd, s);
       if (fromChapter) {
-        out[s] = fromChapter;
+        out[s] = sanitizeSpellExcerpt(fromChapter);
         continue;
       }
     }
-
-    const fromPhb = extractPhbSpellMarkdown(s);
-    if (fromPhb) out[s] = fromPhb;
   }
   return Object.keys(out).length ? out : null;
 }
