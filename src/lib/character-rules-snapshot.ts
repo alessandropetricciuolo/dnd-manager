@@ -105,20 +105,14 @@ export function extractSpellListByMaxLevel(raw: string, maxSpellLevel: number): 
   return text;
 }
 
-function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function extractSpellEntryFromMarkdown(raw: string, spellName: string): string {
-  const txt = raw.replace(/\r/g, "");
-  const head = new RegExp(`^#\\s+${escapeRegExp(spellName)}\\s*$`, "im");
-  const m = head.exec(txt);
-  if (!m || m.index < 0) return "";
-  const start = m.index;
-  const rest = txt.slice(start + m[0].length);
-  const next = /^#\s+.+$/m.exec(rest);
-  const end = next && typeof next.index === "number" ? start + m[0].length + next.index : txt.length;
-  return txt.slice(start, end).trim();
+function normalizeHeadingForMatch(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[*_`>#]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
 }
 
 function filterExcluded(rows: MkRow[], excluded: string[]): MkRow[] {
@@ -366,12 +360,14 @@ async function fetchSpellDetails(
       const { data: headingRows, error: headingErr } = await admin
         .from("manuals_knowledge" as "campaign_characters")
         .select("content, metadata")
-        .ilike("content", `%# ${upper}%`)
+        .ilike("metadata->>section_heading", `%${upper}%`)
         .limit(80);
       if (!headingErr) {
         rows = filterExcluded(((headingRows ?? []) as MkRow[]).filter(isPhbLikeRow), excluded).filter((r) => {
           const ch = (metaStr(r.metadata, "chapter") ?? "").toUpperCase();
-          return ch.includes("INCANTESIMI");
+          if (!ch.includes("INCANTESIMI")) return false;
+          const h = normalizeHeadingForMatch(metaStr(r.metadata, "section_heading") ?? "");
+          return h === normalizeHeadingForMatch(s);
         });
       }
     }
@@ -383,8 +379,7 @@ async function fetchSpellDetails(
       if (expanded.length) rows = expanded;
     }
     const merged = mergeMdChunks(rows).trim();
-    const single = extractSpellEntryFromMarkdown(merged, s);
-    if (single) out[s] = single;
+    if (merged) out[s] = merged;
   }
   return Object.keys(out).length ? out : null;
 }
