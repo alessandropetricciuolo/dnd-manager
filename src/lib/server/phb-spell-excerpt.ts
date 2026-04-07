@@ -26,15 +26,22 @@ function tryReadPhbFromFs(): string | null {
   }
 }
 
+const PHB_API_PATH = "/api/manuals/player-handbook-md";
+
 function publicManualUrlCandidates(requestOrigin?: string | null): string[] {
   const pathSeg = `/manuals/${encodeURI(PHB_MD_FILE)}`;
   const out: string[] = [];
-  const origin = requestOrigin?.trim().replace(/\/$/, "");
-  if (origin) out.push(`${origin}${pathSeg}`);
-  const site = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, "");
-  if (site) out.push(`${site}${pathSeg}`);
+  const pushPair = (origin: string) => {
+    const o = origin.replace(/\/$/, "");
+    out.push(`${o}${PHB_API_PATH}`);
+    out.push(`${o}${pathSeg}`);
+  };
+  const origin = requestOrigin?.trim();
+  if (origin) pushPair(origin);
+  const site = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (site) pushPair(site);
   const vercel = process.env.VERCEL_URL?.trim().replace(/^https?:\/\//, "");
-  if (vercel) out.push(`https://${vercel}${pathSeg}`);
+  if (vercel) pushPair(`https://${vercel}`);
   return [...new Set(out)];
 }
 
@@ -52,7 +59,7 @@ export async function preloadPhbMarkdown(requestOrigin?: string | null): Promise
       }
       for (const url of publicManualUrlCandidates(requestOrigin)) {
         try {
-          const res = await fetch(url, { next: { revalidate: 86_400 } });
+          const res = await fetch(url, { cache: "no-store" });
           if (res.ok) {
             const t = await res.text();
             if (t.length > 5000) {
