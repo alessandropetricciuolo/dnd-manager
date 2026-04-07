@@ -28,6 +28,17 @@ export type CharacterRulesSnapshotV1 = {
 };
 
 type MkRow = { content: string | null; metadata: Record<string, unknown> | null };
+const PHB_BOOK_KEY_ALIASES = new Set([
+  PHB_BOOK_KEY,
+  "manuale_giocatore",
+  "manuale-del-giocatore",
+  "phb",
+]);
+const PHB_FILE_ALIASES = new Set([
+  PHB_MD_FILE.toLowerCase(),
+  "manuale del giocatore.md",
+  "manuale-giocatore.md",
+]);
 
 function metaStr(m: Record<string, unknown> | null | undefined, key: string): string | null {
   if (!m || !(key in m)) return null;
@@ -101,6 +112,14 @@ function filterExcluded(rows: MkRow[], excluded: string[]): MkRow[] {
   });
 }
 
+function isPhbLikeRow(row: MkRow): boolean {
+  const k = (metaStr(row.metadata, "manual_book_key") ?? "").trim().toLowerCase();
+  const f = (metaStr(row.metadata, "file_name") ?? "").trim().toLowerCase();
+  if (k && PHB_BOOK_KEY_ALIASES.has(k)) return true;
+  if (f && (PHB_FILE_ALIASES.has(f) || f.includes("giocatore"))) return true;
+  return false;
+}
+
 async function fetchRowsContentIlike(
   admin: ReturnType<typeof createSupabaseAdminClient>,
   ilike: string,
@@ -117,7 +136,20 @@ async function fetchRowsContentIlike(
     console.error("[character-rules-snapshot] fetchRowsContentIlike", error);
     return [];
   }
-  return filterExcluded((data ?? []) as MkRow[], excluded);
+  let out = filterExcluded((data ?? []) as MkRow[], excluded);
+  if (out.length > 0) return out;
+  // Fallback: supporta ingest legacy con metadati PHB non uniformi.
+  const { data: looseData, error: looseErr } = await admin
+    .from("manuals_knowledge" as "campaign_characters")
+    .select("content, metadata")
+    .ilike("content", ilike)
+    .limit(120);
+  if (looseErr) {
+    console.error("[character-rules-snapshot] fetchRowsContentIlike fallback", looseErr);
+    return [];
+  }
+  out = filterExcluded(((looseData ?? []) as MkRow[]).filter(isPhbLikeRow), excluded);
+  return out;
 }
 
 async function fetchRowsSectionHeading(
@@ -136,7 +168,19 @@ async function fetchRowsSectionHeading(
     console.error("[character-rules-snapshot] fetchRowsSectionHeading", error);
     return [];
   }
-  return filterExcluded((data ?? []) as MkRow[], excluded);
+  let out = filterExcluded((data ?? []) as MkRow[], excluded);
+  if (out.length > 0) return out;
+  const { data: looseData, error: looseErr } = await admin
+    .from("manuals_knowledge" as "campaign_characters")
+    .select("content, metadata")
+    .eq("metadata->>section_heading", sectionHeading)
+    .limit(120);
+  if (looseErr) {
+    console.error("[character-rules-snapshot] fetchRowsSectionHeading fallback", looseErr);
+    return [];
+  }
+  out = filterExcluded(((looseData ?? []) as MkRow[]).filter(isPhbLikeRow), excluded);
+  return out;
 }
 
 async function fetchRowsChapter(
@@ -155,7 +199,19 @@ async function fetchRowsChapter(
     console.error("[character-rules-snapshot] fetchRowsChapter", error);
     return [];
   }
-  return filterExcluded((data ?? []) as MkRow[], excluded);
+  let out = filterExcluded((data ?? []) as MkRow[], excluded);
+  if (out.length > 0) return out;
+  const { data: looseData, error: looseErr } = await admin
+    .from("manuals_knowledge" as "campaign_characters")
+    .select("content, metadata")
+    .eq("metadata->>chapter", chapter)
+    .limit(180);
+  if (looseErr) {
+    console.error("[character-rules-snapshot] fetchRowsChapter fallback", looseErr);
+    return [];
+  }
+  out = filterExcluded(((looseData ?? []) as MkRow[]).filter(isPhbLikeRow), excluded);
+  return out;
 }
 
 function clipBackgroundRules(md: string): string {
