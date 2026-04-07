@@ -226,10 +226,12 @@ function clipBackgroundRules(md: string): string {
 function stripEquipmentFromClassPrivileges(md: string): string {
   const t = md.trim();
   if (!t) return "";
-  const lines = t.replace(/\r/g, "").split("\n");
-  const idx = lines.findIndex((ln) => /^#{1,6}\s*equipaggiamento\b/i.test(ln.trim()));
+  const normalized = t.replace(/\r/g, "");
+  const idx = normalized.search(
+    /(?:^|\n)\s*(?:#{1,6}\s*)?(?:\*{1,2}|_{1,2})?\s*equipaggiamento(?:\s*(?:\*{1,2}|_{1,2}))?\b/i
+  );
   if (idx <= 0) return t;
-  return lines.slice(0, idx).join("\n").trim();
+  return normalized.slice(0, idx).trim();
 }
 
 function parseSpellNamesFromList(md: string): string[] {
@@ -239,9 +241,10 @@ function parseSpellNamesFromList(md: string): string[] {
   for (const rawLine of md.replace(/\r/g, "").split("\n")) {
     const line = rawLine.trim();
     if (!line) continue;
-    const m = line.match(/^(?:[-*]|\d+[.)])\s+(.+)$/);
-    if (!m) continue;
-    const core = (m[1] ?? "")
+    if (/^#{1,6}\s*/.test(line)) continue;
+    if (/^_*\s*(TRUCCHETTI|\d+°\s*LIVELLO)\s*_*\s*$/i.test(line)) continue;
+    const core = line
+      .replace(/^(?:[-*]|\d+[.)])\s+/, "")
       .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
       .replace(/\s*\([^)]*\)\s*$/g, "")
       .replace(/[;,:.]+$/g, "")
