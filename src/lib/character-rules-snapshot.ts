@@ -223,15 +223,61 @@ function clipBackgroundRules(md: string): string {
   return `${md.slice(0, MAX).trim()}\n\n_(Background PHB: testo troncato.)_`;
 }
 
-function stripEquipmentFromClassPrivileges(md: string): string {
-  const t = md.trim();
-  if (!t) return "";
-  const normalized = t.replace(/\r/g, "");
-  const idx = normalized.search(
-    /(?:^|\n)\s*(?:#{1,6}\s*)?(?:\*{1,2}|_{1,2})?\s*equipaggiamento(?:\s*(?:\*{1,2}|_{1,2}))?\b/i
-  );
-  if (idx <= 0) return t;
-  return normalized.slice(0, idx).trim();
+function inferUnlockLevel(text: string): number {
+  const t = text.replace(/\r/g, " ");
+  const m =
+    t.match(/\b(?:a partire dal|al|all['’])\s+(\d+)\s*°\s*livello\b/i) ??
+    t.match(/\b(?:quando arriva al)\s+(\d+)\s*°\s*livello\b/i) ??
+    t.match(/\b(?:poi di nuovo all['’])\s+(\d+)\s*°\s*livello\b/i);
+  const n = m?.[1] ? Number.parseInt(m[1], 10) : 1;
+  if (!Number.isFinite(n) || n < 1) return 1;
+  return n;
+}
+
+function filterClassRulesByLevel(md: string, level: number): string {
+  const src = md.replace(/\r/g, "").trim();
+  if (!src) return "";
+  const lines = src.split("\n");
+  const out: string[] = [];
+  let i = 0;
+
+  // Preambolo iniziale prima del primo heading: sempre visibile.
+  while (i < lines.length && !/^#{1,6}\s+/.test(lines[i].trim())) {
+    out.push(lines[i]);
+    i += 1;
+  }
+
+  type Section = { heading: string; body: string[] };
+  const sections: Section[] = [];
+  while (i < lines.length) {
+    if (!/^#{1,6}\s+/.test(lines[i].trim())) {
+      if (sections.length === 0) {
+        out.push(lines[i]);
+      } else {
+        sections[sections.length - 1].body.push(lines[i]);
+      }
+      i += 1;
+      continue;
+    }
+    const heading = lines[i];
+    i += 1;
+    const body: string[] = [];
+    while (i < lines.length && !/^#{1,6}\s+/.test(lines[i].trim())) {
+      body.push(lines[i]);
+      i += 1;
+    }
+    sections.push({ heading, body });
+  }
+
+  for (const sec of sections) {
+    const unlock = inferUnlockLevel([sec.heading, ...sec.body].join("\n"));
+    if (unlock <= level) {
+      if (out.length > 0 && out[out.length - 1].trim() !== "") out.push("");
+      out.push(sec.heading, ...sec.body);
+    }
+  }
+
+  return out.join("\n").trim();
 }
 
 function parseSpellNamesFromList(md: string): string[] {
@@ -373,7 +419,7 @@ export async function recomputeCharacterRulesSnapshot(input: {
   let classPrivilegesMd = "";
   if (classDef) {
     const rows = await fetchRowsContentIlike(admin, `%${classDef.privilegesAnchor}%`, excluded);
-    classPrivilegesMd = stripEquipmentFromClassPrivileges(mergeMdChunks(rows));
+    classPrivilegesMd = filterClassRulesByLevel(mergeMdChunks(rows), level);
     if (!classPrivilegesMd.trim())
       warnings.push(`Privilegi di classe non trovati per «${classDef.label}». Verifica ingest ${PHB_MD_FILE}.`);
   }
@@ -386,6 +432,7 @@ export async function recomputeCharacterRulesSnapshot(input: {
       const byContent = await fetchRowsContentIlike(admin, `%${input.classSubclass.trim()}%`, excluded);
       classSubclassMd = mergeMdChunks(byContent) || null;
     }
+    classSubclassMd = classSubclassMd ? filterClassRulesByLevel(classSubclassMd, level) : null;
     if (!classSubclassMd?.trim()) {
       warnings.push(`Sottoclasse «${input.classSubclass}»: estratto non trovato nel PHB.`);
     }

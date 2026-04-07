@@ -20,6 +20,38 @@ type CharacterCardPlayerProps = {
   isLongCampaign?: boolean;
 };
 
+function renderRichTooltipText(text: string) {
+  const lines = text.replace(/\r/g, "").split("\n");
+  return (
+    <div className="space-y-1">
+      {lines.map((raw, idx) => {
+        const line = raw.trimEnd();
+        const heading = line.match(/^\s*#+\s*(.+)$/);
+        if (heading) {
+          return (
+            <p key={idx} className="font-semibold text-barber-gold">
+              {heading[1]}
+            </p>
+          );
+        }
+        const strong = line.match(/^\s*\*+\s*(.+)$/);
+        if (strong) {
+          return (
+            <p key={idx} className="font-semibold text-barber-paper">
+              {strong[1]}
+            </p>
+          );
+        }
+        return (
+          <p key={idx} className="text-barber-paper">
+            {line}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
 /** Trigger click/tap friendly (desktop + mobile). */
 function RulesTip({ label, children }: { label: string; children: string }) {
   const t = children.trim();
@@ -41,7 +73,7 @@ function RulesTip({ label, children }: { label: string; children: string }) {
         side="bottom"
         className="max-h-72 w-[min(92vw,36rem)] overflow-y-auto whitespace-pre-wrap border-barber-gold/30 bg-barber-dark px-3 py-2 text-left text-xs leading-relaxed text-barber-paper"
       >
-        {t}
+        {renderRichTooltipText(t)}
       </PopoverContent>
     </Popover>
   );
@@ -72,7 +104,7 @@ function SpellsTip({
         side="bottom"
         className="max-h-[75vh] w-[min(95vw,40rem)] overflow-y-auto border-barber-gold/30 bg-barber-dark px-3 py-2 text-left text-xs leading-relaxed text-barber-paper"
       >
-        <div className="whitespace-pre-wrap">{txt}</div>
+        {renderRichTooltipText(txt)}
         {spellNames.length > 0 ? (
           <div className="mt-3 space-y-2 border-t border-barber-gold/20 pt-3">
             <p className="text-[11px] uppercase tracking-wide text-barber-gold/85">
@@ -81,7 +113,7 @@ function SpellsTip({
             {spellNames.map((name) => (
               <details key={name} className="rounded border border-barber-gold/20 bg-black/20 p-2">
                 <summary className="cursor-pointer text-barber-gold/90">{name}</summary>
-                <div className="mt-2 whitespace-pre-wrap text-barber-paper/90">{details?.[name]}</div>
+                <div className="mt-2 text-barber-paper/90">{renderRichTooltipText(details?.[name] ?? "")}</div>
               </details>
             ))}
           </div>
