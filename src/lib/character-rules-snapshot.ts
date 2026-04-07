@@ -307,6 +307,9 @@ function filterClassRulesByLevel(md: string, level: number): string {
   }
 
   for (const sec of sections) {
+    if (/^#{1,6}\s+equipaggiamento\b/i.test(sec.heading.trim())) {
+      continue;
+    }
     const unlock = inferUnlockLevel([sec.heading, ...sec.body].join("\n"));
     if (unlock <= level) {
       if (out.length > 0 && out[out.length - 1].trim() !== "") out.push("");
@@ -359,6 +362,19 @@ async function fetchSpellDetails(
       const ch = (metaStr(r.metadata, "chapter") ?? "").toUpperCase();
       return ch.includes("INCANTESIMI");
     });
+    if (!rows.length) {
+      const { data: headingRows, error: headingErr } = await admin
+        .from("manuals_knowledge" as "campaign_characters")
+        .select("content, metadata")
+        .ilike("content", `%# ${upper}%`)
+        .limit(80);
+      if (!headingErr) {
+        rows = filterExcluded(((headingRows ?? []) as MkRow[]).filter(isPhbLikeRow), excluded).filter((r) => {
+          const ch = (metaStr(r.metadata, "chapter") ?? "").toUpperCase();
+          return ch.includes("INCANTESIMI");
+        });
+      }
+    }
     if (!rows.length) continue;
     const sectionKey = metaStr(rows[0]?.metadata, "section_key");
     const chapter = metaStr(rows[0]?.metadata, "chapter");
