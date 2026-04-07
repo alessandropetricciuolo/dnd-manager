@@ -95,7 +95,39 @@ function SpellsTip({
 }) {
   const txt = listText.trim();
   if (!txt) return null;
-  const spellNames = Object.keys(details ?? {});
+  const detailMap = details ?? {};
+  const parseLines = txt.replace(/\r/g, "").split("\n");
+  const normalize = (s: string) => s.trim().toLocaleLowerCase("it");
+  const detailByNorm = new Map<string, { label: string; body: string }>(
+    Object.entries(detailMap).map(([k, v]) => [normalize(k), { label: k, body: v }])
+  );
+
+  const renderedRows = parseLines.map((raw, idx) => {
+    const line = raw.trim();
+    if (!line) return <div key={`sp-empty-${idx}`} className="h-1" />;
+    if (/^#{1,6}\s+/.test(line)) {
+      return (
+        <p key={`sp-h-${idx}`} className="font-semibold text-barber-gold">
+          {line.replace(/^#{1,6}\s+/, "")}
+        </p>
+      );
+    }
+    const hit = detailByNorm.get(normalize(line));
+    if (!hit) {
+      return (
+        <p key={`sp-t-${idx}`} className="text-barber-paper">
+          {line}
+        </p>
+      );
+    }
+    return (
+      <details key={`sp-d-${idx}`} className="rounded border border-barber-gold/20 bg-black/20 p-1.5">
+        <summary className="cursor-pointer text-barber-gold/90">{hit.label}</summary>
+        <div className="mt-2 text-barber-paper/90">{renderRichTooltipText(hit.body)}</div>
+      </details>
+    );
+  });
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -111,20 +143,7 @@ function SpellsTip({
         side="bottom"
         className="max-h-[75vh] w-[min(95vw,40rem)] overflow-y-auto border-barber-gold/30 bg-barber-dark px-3 py-2 text-left text-xs leading-relaxed text-barber-paper"
       >
-        {renderRichTooltipText(txt)}
-        {spellNames.length > 0 ? (
-          <div className="mt-3 space-y-2 border-t border-barber-gold/20 pt-3">
-            <p className="text-[11px] uppercase tracking-wide text-barber-gold/85">
-              Clicca un incantesimo per la descrizione
-            </p>
-            {spellNames.map((name) => (
-              <details key={name} className="rounded border border-barber-gold/20 bg-black/20 p-2">
-                <summary className="cursor-pointer text-barber-gold/90">{name}</summary>
-                <div className="mt-2 text-barber-paper/90">{renderRichTooltipText(details?.[name] ?? "")}</div>
-              </details>
-            ))}
-          </div>
-        ) : null}
+        <div className="space-y-1">{renderedRows}</div>
       </PopoverContent>
     </Popover>
   );
