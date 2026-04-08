@@ -63,6 +63,23 @@ export function EditCharacterDialog({
       toast.error("Il nome del personaggio è obbligatorio.");
       return;
     }
+    const levelRaw = (formData.get("level") as string | null)?.trim() || "";
+    if (levelRaw) {
+      const nextLevel = Number.parseInt(levelRaw, 10);
+      if (Number.isNaN(nextLevel) || nextLevel < 1 || nextLevel > 20) {
+        toast.error("Livello non valido (1-20).");
+        return;
+      }
+      if (nextLevel < (character.level ?? 1)) {
+        toast.error("Puoi solo aumentare manualmente il livello.");
+        return;
+      }
+      const classSubclass = (formData.get("class_subclass") as string | null)?.trim() || "";
+      if (nextLevel >= 3 && !classSubclass) {
+        toast.error("Dal livello 3 in poi seleziona una sottoclasse.");
+        return;
+      }
+    }
 
     const imageFile = formData.get("image") as File | null;
     const imageUrl = (formData.get("image_url") as string | null)?.trim() || null;
@@ -137,7 +154,23 @@ export function EditCharacterDialog({
             initialClassLabel={character.character_class}
           />
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="edit-char-level">Livello</Label>
+              <Input
+                id="edit-char-level"
+                name="level"
+                type="number"
+                min={1}
+                max={20}
+                defaultValue={character.level ?? 1}
+                className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
+                disabled={isLoading}
+              />
+              <p className="text-[11px] text-barber-paper/60">
+                Aumento manuale: dal livello 3 richiede una sottoclasse.
+              </p>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="edit-char-ac">CA</Label>
               <Input

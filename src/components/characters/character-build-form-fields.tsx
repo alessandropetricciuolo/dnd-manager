@@ -10,6 +10,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { BACKGROUND_OPTIONS, CLASS_OPTIONS, RACE_OPTIONS, raceBySlug } from "@/lib/character-build-catalog";
+import {
+  matchSupplementSubclass,
+  subclassCatalogSourceSuffix,
+  supplementSubclassBySlug,
+  supplementSubclassesForClass,
+} from "@/lib/character-subclass-catalog";
 
 type CharacterBuildFormFieldsProps = {
   disabled?: boolean;
@@ -40,13 +46,37 @@ export function CharacterBuildFormFields({
       ? initialClassLabel.trim()
       : null;
 
+  const effectiveClassLabel = cls !== "__none__" ? cls : customClass;
+  const supplementSubs = useMemo(
+    () => supplementSubclassesForClass(effectiveClassLabel ?? null),
+    [effectiveClassLabel]
+  );
+
+  function deriveSubclassPick(parent: string | null | undefined, subText: string): string {
+    if (!subText.trim()) return "__none__";
+    if (!parent?.trim()) return "__custom__";
+    const m = matchSupplementSubclass(parent, subText);
+    return m ? m.slug : "__custom__";
+  }
+
+  const [subclassPick, setSubclassPick] = useState<string>(() =>
+    deriveSubclassPick(initialClassLabel?.trim() ? initialClassLabel.trim() : null, initialClassSubclass ?? "")
+  );
+
   useEffect(() => {
     setRace(initialRaceSlug ?? "__none__");
     setSub(initialSubclassSlug ?? "__none__");
     setClassSubclass(initialClassSubclass ?? "");
     setBg(initialBackgroundSlug ?? "__none__");
     setCls(initialClassLabel ?? "__none__");
-  }, [initialRaceSlug, initialSubclassSlug, initialClassSubclass, initialBackgroundSlug, initialClassLabel]);
+    const parent =
+      initialClassLabel && initialClassLabel !== "__none__" ? initialClassLabel.trim() : customClass;
+    setSubclassPick(deriveSubclassPick(parent ?? null, initialClassSubclass ?? ""));
+  }, [initialRaceSlug, initialSubclassSlug, initialClassSubclass, initialBackgroundSlug, initialClassLabel, customClass]);
+
+  useEffect(() => {
+    setSubclassPick(deriveSubclassPick(effectiveClassLabel ?? null, classSubclass));
+  }, [effectiveClassLabel]);
 
   const subOptions = useMemo(() => raceBySlug(race === "__none__" ? null : race)?.subraces ?? [], [race]);
 
@@ -56,9 +86,9 @@ export function CharacterBuildFormFields({
 
   return (
     <div className="space-y-3 rounded-lg border border-barber-gold/25 bg-barber-dark/50 p-3">
-      <p className="text-xs font-medium text-barber-gold">Regole (Manuale del Giocatore)</p>
+      <p className="text-xs font-medium text-barber-gold">Regole (PHB + supplementi mappati)</p>
       <p className="text-[11px] text-barber-paper/60">
-        Selezioni per generare i testi di riferimento in scheda (snapshot). Il background narrativo resta nel campo testo sotto.
+        Sottoclassi PHB, XGE e TCE in elenco; altre fonti o testo libero con &quot;Altro&quot;. Il background narrativo resta nel campo testo sotto.
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
@@ -122,16 +152,51 @@ export function CharacterBuildFormFields({
           </Select>
           <input type="hidden" name="character_class" value={cls === "__none__" ? "" : cls} readOnly />
         </div>
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 sm:col-span-2">
           <Label className="text-barber-paper/90">Sottoclasse (classe)</Label>
-          <input
-            name="class_subclass"
-            value={classSubclass}
-            onChange={(e) => setClassSubclass(e.target.value)}
-            placeholder="Es. Dominio della Vita, Scuola di Evocazione..."
-            className="h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper placeholder:text-barber-paper/45"
-            disabled={disabled}
-          />
+          {supplementSubs.length > 0 ? (
+            <Select
+              value={subclassPick}
+              onValueChange={(slug) => {
+                setSubclassPick(slug);
+                if (slug === "__none__") setClassSubclass("");
+                else if (slug === "__custom__") {
+                  /* testo sotto */
+                } else {
+                  const e = supplementSubclassBySlug(slug);
+                  setClassSubclass(e?.label ?? "");
+                }
+              }}
+              disabled={disabled}
+            >
+              <SelectTrigger className="border-barber-gold/30 bg-barber-dark/80 text-barber-paper">
+                <SelectValue placeholder="Scegli o altro" />
+              </SelectTrigger>
+              <SelectContent className="border-barber-gold/30 bg-barber-dark text-barber-paper max-h-64 overflow-y-auto">
+                <SelectItem value="__none__">— Nessuna —</SelectItem>
+                {supplementSubs.map((s) => (
+                  <SelectItem key={s.slug} value={s.slug}>
+                    {s.label} ({subclassCatalogSourceSuffix(s)})
+                  </SelectItem>
+                ))}
+                <SelectItem value="__custom__">Altro (PHB o testo libero)…</SelectItem>
+              </SelectContent>
+            </Select>
+          ) : null}
+          {(subclassPick === "__custom__" || supplementSubs.length === 0) && (
+            <input
+              value={classSubclass}
+              onChange={(e) => {
+                const v = e.target.value;
+                setClassSubclass(v);
+                setSubclassPick(deriveSubclassPick(effectiveClassLabel ?? null, v));
+              }}
+              placeholder="Es. Cammino del Berserker, Dominio della Vita…"
+              className="mt-1.5 h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper placeholder:text-barber-paper/45"
+              disabled={disabled}
+            />
+          )}
+          <input type="hidden" name="class_subclass" value={classSubclass} readOnly />
         </div>
         <div className="space-y-1.5">
           <Label className="text-barber-paper/90">Background (PHB)</Label>

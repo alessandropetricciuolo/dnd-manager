@@ -28,6 +28,7 @@ const CLASSES = [
   "Stregone",
   "Warlock",
   "Barbaro",
+  "Artefice",
 ] as const;
 
 export default function GeneratorPage() {

@@ -1,19 +1,43 @@
 /**
- * Liste chiuse (PHB IT) per PG campagna lunga. Allineate a `manuale_giocatore.md` + ingest v4.
+ * Liste chiuse per PG campagna lunga. Classi PHB: `manuale_giocatore.md` + ingest v4.
+ * Classe Artefice: `Tasha.md` (stesso testo in ingest con `manual_book_key` tasha).
  */
 
-export type SpellProgression = "none" | "full" | "half" | "pact" | "subclass";
+import type { WikiManualBookKey } from "@/lib/manual-book-catalog";
+
+export type SpellProgression = "none" | "full" | "half" | "half_up" | "pact" | "subclass";
+
+export type ClassSupplementRulesSource = {
+  markdownFile: string;
+  manualBookKey: WikiManualBookKey;
+};
+
+/** Rimuove un blocco (inclusa la riga `afterLine`, esclusa `untilLine`) dopo l’estratto principale. */
+export type ClassPrivilegesMdStrip = { afterLine: string; untilLine: string };
 
 export type ClassCatalogEntry = {
   slug: string;
   label: string;
-  /** Sottostringa unica per trovare il blocco «Privilegi di classe» (testo). */
+  /** Sottostringa unica per trovare il blocco «Privilegi di classe» (testo / Supabase). */
   privilegesAnchor: string;
+  /** Varianti di frase (es. Eberron vs Tasha); la prima che matcha nel markdown vince. */
+  privilegesAnchors?: string[];
   /**
-   * Fine blocco privilegi in `manuale_giocatore.md`: regex su una riga; l’estratto PHB termina prima di questa riga.
+   * File markdown da cui estrarre i privilegi (default: {@link PHB_MD_FILE}).
+   */
+  privilegesMarkdownFile?: string;
+  /**
+   * Se impostato, le query Supabase per privilegi/spellcasting/lista possono privilegiare questo manuale.
+   * Di solito coincide con `privilegesMarkdownFile` + chiave ingest.
+   */
+  supplementRulesSource?: ClassSupplementRulesSource;
+  /**
+   * Fine blocco privilegi nel file indicato: regex su una riga; l’estratto termina prima di questa riga.
    * Se assente, si usa solo l’indice su Supabase.
    */
   privilegesExcerptStopPattern?: string;
+  /** Ritagli aggiuntivi (es. lista incantesimi collocata nel mezzo della classe in Tasha). */
+  privilegesMdStrips?: ClassPrivilegesMdStrip[];
   /** Ancora per il blocco regole di lancio / incantesimi di classe (opzionale). */
   spellcastingAnchor?: string;
   spellProgression: SpellProgression;
@@ -201,6 +225,27 @@ export const CLASS_OPTIONS: ClassCatalogEntry[] = [
     spellProgression: "pact",
     spellList: { style: "h1", chapter: "INCANTESIMI DA WARLOCK" },
   },
+  {
+    slug: "artefice",
+    label: "Artefice",
+    privilegesAnchor: "L'artefice ottiene i seguenti privilegi di classe",
+    privilegesAnchors: [
+      "L'artefice ottiene i seguenti privilegi di classe",
+      "Un artefice ottiene i seguenti privilegi di classe",
+    ],
+    privilegesMarkdownFile: "Tasha.md",
+    supplementRulesSource: { markdownFile: "Tasha.md", manualBookKey: "tasha" },
+    privilegesExcerptStopPattern: "^##\\s+SPECIALIZZAZIONI DA ARTEFICE\\s*$",
+    privilegesMdStrips: [
+      {
+        afterLine: "# LISTA DEGLI INCANESIMI DA ARTEFICE",
+        untilLine: "# INFONDERE NEGLI OGGETTI",
+      },
+    ],
+    spellcastingAnchor: `La tabella "Artefice" indica quanti slot incantesimo`,
+    spellProgression: "half_up",
+    spellList: { style: "h1", chapter: "LISTA DEGLI INCANESIMI DA ARTEFICE" },
+  },
 ];
 
 export const BACKGROUND_OPTIONS: BackgroundCatalogEntry[] = [
@@ -248,6 +293,8 @@ export function maxSpellLevelOnSheet(classDef: ClassCatalogEntry | null, charact
       return Math.min(9, Math.ceil(L / 2));
     case "half":
       if (L < 2) return -1;
+      return Math.min(5, Math.ceil(L / 4));
+    case "half_up":
       return Math.min(5, Math.ceil(L / 4));
     case "pact":
       return Math.min(5, Math.ceil(L / 2));

@@ -3,7 +3,7 @@
 export const WIKI_NPC_LEVEL_OPTIONS = Array.from({ length: 20 }, (_, i) => String(i + 1));
 
 export const WIKI_NPC_CLASS_OPTIONS: string[] = [
-  "Artificiere",
+  "Artefice",
   "Barbaro",
   "Bardo",
   "Chierico",

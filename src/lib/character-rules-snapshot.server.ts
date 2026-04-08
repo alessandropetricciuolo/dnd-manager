@@ -11,14 +11,21 @@ import {
   raceBySlug,
 } from "@/lib/character-build-catalog";
 import type { CharacterRulesSnapshotV1 } from "@/lib/character-rules-snapshot";
-import { extractPhbClassPrivilegesMarkdown } from "@/lib/server/phb-class-privileges-excerpt";
+import { wikiManualBookLabel } from "@/lib/manual-book-catalog";
+import { matchSupplementSubclass } from "@/lib/character-subclass-catalog";
+import {
+  extractClassPrivilegesMarkdown,
+} from "@/lib/server/phb-class-privileges-excerpt";
 import {
   extractPhbSpellMarkdown,
+  getManualMarkdownByFileName,
   normalizeSpellExcerptFirstHeading,
+  preloadManualMarkdownFile,
   preloadPhbMarkdown,
 } from "@/lib/server/phb-spell-excerpt";
 
 type MkRow = { content: string | null; metadata: Record<string, unknown> | null };
+type MkSource = { fileName: string; bookKey: string };
 const PHB_BOOK_KEY_ALIASES = new Set([
   PHB_BOOK_KEY,
   "manuale_giocatore",
@@ -72,6 +79,7 @@ function extractSpellListByMaxLevel(raw: string, maxSpellLevel: number): string 
     const trimmed = line.trim();
     const m =
       trimmed.match(/^(#{2,3})\s+(TRUCCHETTI(?:\s*\(LIVELLO\s*0\))?)\s*$/i) ||
+      trimmed.match(/^(#{2,3})\s+(TRUCCHETTI(?:\s*\(LIVELLO\s*0\))?)\s+/i) ||
       trimmed.match(/^(#{2,3})\s+(\d+)°\s*LIVELLO\s*$/i);
     if (m) {
       if (/TRUCCHETTI/i.test(m[2] ?? "")) {
@@ -216,11 +224,45 @@ function isPhbLikeRow(row: MkRow): boolean {
   return false;
 }
 
+function rowMatchesManualSource(row: MkRow, source: MkSource): boolean {
+  const k = (metaStr(row.metadata, "manual_book_key") ?? "").trim().toLowerCase();
+  const f = (metaStr(row.metadata, "file_name") ?? "").trim().toLowerCase();
+  return k === source.bookKey.trim().toLowerCase() && f === source.fileName.trim().toLowerCase();
+}
+
 async function fetchRowsContentIlike(
   admin: ReturnType<typeof createSupabaseAdminClient>,
   ilike: string,
-  excluded: string[]
+  excluded: string[],
+  source: MkSource | null = null
 ): Promise<MkRow[]> {
+  if (source) {
+    const { data, error } = await admin
+      .from("manuals_knowledge" as "campaign_characters")
+      .select("content, metadata")
+      .eq("metadata->>file_name", source.fileName)
+      .eq("metadata->>manual_book_key", source.bookKey)
+      .ilike("content", ilike)
+      .limit(36);
+    if (error) {
+      console.error("[character-rules-snapshot] fetchRowsContentIlike (source)", error);
+      return [];
+    }
+    let out = filterExcluded((data ?? []) as MkRow[], excluded);
+    if (out.length > 0) return out;
+    const { data: looseData, error: looseErr } = await admin
+      .from("manuals_knowledge" as "campaign_characters")
+      .select("content, metadata")
+      .ilike("content", ilike)
+      .limit(120);
+    if (looseErr) {
+      console.error("[character-rules-snapshot] fetchRowsContentIlike source fallback", looseErr);
+      return [];
+    }
+    out = filterExcluded(((looseData ?? []) as MkRow[]).filter((r) => rowMatchesManualSource(r, source)), excluded);
+    return out;
+  }
+
   const { data, error } = await admin
     .from("manuals_knowledge" as "campaign_characters")
     .select("content, metadata")
@@ -250,8 +292,36 @@ async function fetchRowsContentIlike(
 async function fetchRowsSectionHeading(
   admin: ReturnType<typeof createSupabaseAdminClient>,
   sectionHeading: string,
-  excluded: string[]
+  excluded: string[],
+  source: MkSource | null = null
 ): Promise<MkRow[]> {
+  if (source) {
+    const { data, error } = await admin
+      .from("manuals_knowledge" as "campaign_characters")
+      .select("content, metadata")
+      .eq("metadata->>file_name", source.fileName)
+      .eq("metadata->>manual_book_key", source.bookKey)
+      .eq("metadata->>section_heading", sectionHeading)
+      .limit(36);
+    if (error) {
+      console.error("[character-rules-snapshot] fetchRowsSectionHeading (source)", error);
+      return [];
+    }
+    let out = filterExcluded((data ?? []) as MkRow[], excluded);
+    if (out.length > 0) return out;
+    const { data: looseData, error: looseErr } = await admin
+      .from("manuals_knowledge" as "campaign_characters")
+      .select("content, metadata")
+      .eq("metadata->>section_heading", sectionHeading)
+      .limit(120);
+    if (looseErr) {
+      console.error("[character-rules-snapshot] fetchRowsSectionHeading source fallback", looseErr);
+      return [];
+    }
+    out = filterExcluded(((looseData ?? []) as MkRow[]).filter((r) => rowMatchesManualSource(r, source)), excluded);
+    return out;
+  }
+
   const { data, error } = await admin
     .from("manuals_knowledge" as "campaign_characters")
     .select("content, metadata")
@@ -281,8 +351,36 @@ async function fetchRowsSectionHeading(
 async function fetchRowsChapter(
   admin: ReturnType<typeof createSupabaseAdminClient>,
   chapter: string,
-  excluded: string[]
+  excluded: string[],
+  source: MkSource | null = null
 ): Promise<MkRow[]> {
+  if (source) {
+    const { data, error } = await admin
+      .from("manuals_knowledge" as "campaign_characters")
+      .select("content, metadata")
+      .eq("metadata->>file_name", source.fileName)
+      .eq("metadata->>manual_book_key", source.bookKey)
+      .eq("metadata->>chapter", chapter)
+      .limit(80);
+    if (error) {
+      console.error("[character-rules-snapshot] fetchRowsChapter (source)", error);
+      return [];
+    }
+    let out = filterExcluded((data ?? []) as MkRow[], excluded);
+    if (out.length > 0) return out;
+    const { data: looseData, error: looseErr } = await admin
+      .from("manuals_knowledge" as "campaign_characters")
+      .select("content, metadata")
+      .eq("metadata->>chapter", chapter)
+      .limit(180);
+    if (looseErr) {
+      console.error("[character-rules-snapshot] fetchRowsChapter source fallback", looseErr);
+      return [];
+    }
+    out = filterExcluded(((looseData ?? []) as MkRow[]).filter((r) => rowMatchesManualSource(r, source)), excluded);
+    return out;
+  }
+
   const { data, error } = await admin
     .from("manuals_knowledge" as "campaign_characters")
     .select("content, metadata")
@@ -593,6 +691,12 @@ export async function recomputeCharacterRulesSnapshot(input: {
   const raceDef = raceBySlug(input.raceSlug);
   const bgDef = backgroundBySlug(input.backgroundSlug);
 
+  if (classDef?.supplementRulesSource && excluded.includes(classDef.supplementRulesSource.manualBookKey)) {
+    warnings.push(
+      `Manuale «${wikiManualBookLabel(classDef.supplementRulesSource.manualBookKey)}» escluso nei paletti campagna: estratti per «${classDef.label}» potrebbero mancare.`
+    );
+  }
+
   let raceTraitsMd = "";
   if (raceDef) {
     if (raceDef.traitsContentAnchor) {
@@ -618,18 +722,30 @@ export async function recomputeCharacterRulesSnapshot(input: {
 
   let classPrivilegesMd = "";
   if (classDef) {
-    await preloadPhbMarkdown(await resolveRequestOriginForPhb());
+    const mdFile = classDef.privilegesMarkdownFile ?? PHB_MD_FILE;
+    const mkSource: MkSource | null = classDef.supplementRulesSource
+      ? {
+          fileName: classDef.supplementRulesSource.markdownFile,
+          bookKey: classDef.supplementRulesSource.manualBookKey,
+        }
+      : null;
+    await preloadManualMarkdownFile(mdFile, await resolveRequestOriginForPhb());
+    const mdText = getManualMarkdownByFileName(mdFile);
+    const anchors =
+      classDef.privilegesAnchors && classDef.privilegesAnchors.length > 0
+        ? classDef.privilegesAnchors
+        : [classDef.privilegesAnchor];
     if (classDef.privilegesExcerptStopPattern?.trim()) {
-      const fromPhb = extractPhbClassPrivilegesMarkdown(
-        classDef.privilegesAnchor,
-        classDef.privilegesExcerptStopPattern
+      const fromMd = extractClassPrivilegesMarkdown(
+        anchors,
+        classDef.privilegesExcerptStopPattern,
+        mdText,
+        classDef.privilegesMdStrips
       );
-      if (fromPhb.trim()) {
-        classPrivilegesMd = filterClassRulesByLevel(fromPhb, level);
-      }
+      if (fromMd.trim()) classPrivilegesMd = filterClassRulesByLevel(fromMd, level);
     }
     if (!classPrivilegesMd.trim()) {
-      let rows = await fetchRowsContentIlike(admin, `%${classDef.privilegesAnchor}%`, excluded);
+      let rows = await fetchRowsContentIlike(admin, `%${classDef.privilegesAnchor}%`, excluded, mkSource);
       const sectionKey = metaStr(rows[0]?.metadata, "section_key");
       const chapter = metaStr(rows[0]?.metadata, "chapter");
       if (sectionKey) {
@@ -639,26 +755,63 @@ export async function recomputeCharacterRulesSnapshot(input: {
       classPrivilegesMd = filterClassRulesByLevel(mergeMdChunks(rows), level);
     }
     if (!classPrivilegesMd.trim())
-      warnings.push(`Privilegi di classe non trovati per «${classDef.label}». Verifica ingest ${PHB_MD_FILE}.`);
+      warnings.push(`Privilegi di classe non trovati per «${classDef.label}». Verifica ingest ${mdFile}.`);
   }
 
   let classSubclassMd: string | null = null;
   if (classDef && input.classSubclass?.trim()) {
-    const rowByHeading = await fetchRowsSectionHeading(admin, input.classSubclass.trim().toUpperCase(), excluded);
-    classSubclassMd = mergeMdChunks(rowByHeading) || null;
-    if (!classSubclassMd?.trim()) {
-      const byContent = await fetchRowsContentIlike(admin, `%${input.classSubclass.trim()}%`, excluded);
-      classSubclassMd = mergeMdChunks(byContent) || null;
+    const sub = input.classSubclass.trim();
+    const matched = matchSupplementSubclass(classDef.label, sub);
+    if (matched?.supplementRulesSource && excluded.includes(matched.supplementRulesSource.manualBookKey)) {
+      warnings.push(
+        `Sottoclasse «${sub}»: manuale «${wikiManualBookLabel(matched.supplementRulesSource.manualBookKey)}» escluso nei paletti campagna.`
+      );
     }
-    classSubclassMd = classSubclassMd ? filterClassRulesByLevel(classSubclassMd, level) : null;
+    const mkSub: MkSource | null = matched
+      ? {
+          fileName: matched.supplementRulesSource.markdownFile,
+          bookKey: matched.supplementRulesSource.manualBookKey,
+        }
+      : null;
+    const headings = matched ? [...new Set(matched.sectionHeadings)] : [sub.toUpperCase()];
+    let rawSubclass = "";
+    for (const h of headings) {
+      if (!h.trim()) continue;
+      const rows = await fetchRowsSectionHeading(admin, h, excluded, mkSub);
+      const merged = mergeMdChunks(rows);
+      if (merged.trim()) {
+        rawSubclass = merged;
+        break;
+      }
+    }
+    if (!rawSubclass.trim() && matched?.contentIlikeFallback) {
+      const rows = await fetchRowsContentIlike(admin, matched.contentIlikeFallback, excluded, mkSub);
+      rawSubclass = mergeMdChunks(rows);
+    }
+    if (!rawSubclass.trim()) {
+      rawSubclass = mergeMdChunks(await fetchRowsSectionHeading(admin, sub.toUpperCase(), excluded, null));
+    }
+    if (!rawSubclass.trim()) {
+      rawSubclass = mergeMdChunks(await fetchRowsContentIlike(admin, `%${sub}%`, excluded, null));
+    }
+    classSubclassMd = rawSubclass.trim() ? filterClassRulesByLevel(rawSubclass, level) : null;
     if (!classSubclassMd?.trim()) {
-      warnings.push(`Sottoclasse «${input.classSubclass}»: estratto non trovato nel PHB.`);
+      const hint = matched
+        ? `${matched.supplementRulesSource.markdownFile} (manual_book_key: ${matched.supplementRulesSource.manualBookKey})`
+        : `${PHB_MD_FILE}`;
+      warnings.push(`Sottoclasse «${sub}»: estratto non trovato. Verifica ingest ${hint}.`);
     }
   }
 
   let spellcastingMd: string | null = null;
   if (classDef?.spellcastingAnchor) {
-    const rows = await fetchRowsContentIlike(admin, `%${classDef.spellcastingAnchor}%`, excluded);
+    const mkSource: MkSource | null = classDef.supplementRulesSource
+      ? {
+          fileName: classDef.supplementRulesSource.markdownFile,
+          bookKey: classDef.supplementRulesSource.manualBookKey,
+        }
+      : null;
+    const rows = await fetchRowsContentIlike(admin, `%${classDef.spellcastingAnchor}%`, excluded, mkSource);
     spellcastingMd = mergeMdChunks(rows) || null;
     if (!spellcastingMd?.trim()) warnings.push(`Regole incantesimi di classe non trovate per «${classDef.label}».`);
   }
@@ -666,11 +819,25 @@ export async function recomputeCharacterRulesSnapshot(input: {
   let spellsListMd: string | null = null;
   const maxSpl = maxSpellLevelOnSheet(classDef, level);
   if (classDef?.spellList && maxSpl >= 0) {
+    const mkSource: MkSource | null = classDef.supplementRulesSource
+      ? {
+          fileName: classDef.supplementRulesSource.markdownFile,
+          bookKey: classDef.supplementRulesSource.manualBookKey,
+        }
+      : null;
     let listRows: MkRow[] = [];
     if (classDef.spellList.style === "h1") {
-      listRows = await fetchRowsChapter(admin, classDef.spellList.chapter, excluded);
+      listRows = await fetchRowsChapter(admin, classDef.spellList.chapter, excluded, mkSource);
+      if (!listRows.length && mkSource) {
+        listRows = await fetchRowsSectionHeading(
+          admin,
+          classDef.spellList.chapter.toUpperCase(),
+          excluded,
+          mkSource
+        );
+      }
     } else {
-      listRows = await fetchRowsSectionHeading(admin, classDef.spellList.sectionHeading, excluded);
+      listRows = await fetchRowsSectionHeading(admin, classDef.spellList.sectionHeading, excluded, mkSource);
     }
     const mergedList = mergeMdChunks(listRows);
     spellsListMd = extractSpellListByMaxLevel(mergedList, maxSpl) || null;

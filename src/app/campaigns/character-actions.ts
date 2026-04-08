@@ -312,6 +312,7 @@ export async function updateCharacter(
 
   const characterClass = (formData.get("character_class") as string | null)?.trim() || null;
   const classSubclass = (formData.get("class_subclass") as string | null)?.trim() || null;
+  const levelRaw = (formData.get("level") as string | null)?.trim() || "";
   const armorClassRaw = (formData.get("armor_class") as string | null)?.trim() || "";
   const hitPointsRaw = (formData.get("hit_points") as string | null)?.trim() || "";
   const armorClass = armorClassRaw !== "" ? Number.parseInt(armorClassRaw, 10) : null;
@@ -367,6 +368,21 @@ export async function updateCharacter(
     .single();
 
   if (fetchErr || !existing) return { success: false, error: "Personaggio non trovato." };
+  const prevLevel = typeof (existing as { level?: number }).level === "number" ? (existing as { level: number }).level : 1;
+  let nextLevel = prevLevel;
+  if (levelRaw !== "") {
+    const parsed = Number.parseInt(levelRaw, 10);
+    if (Number.isNaN(parsed) || parsed < 1 || parsed > 20) {
+      return { success: false, error: "Livello non valido (consentito: 1-20)." };
+    }
+    if (parsed < prevLevel) {
+      return { success: false, error: "Puoi solo aumentare manualmente il livello del personaggio." };
+    }
+    nextLevel = parsed;
+  }
+  if (nextLevel >= 3 && !classSubclass) {
+    return { success: false, error: "Dal livello 3 in poi seleziona una sottoclasse." };
+  }
 
   let image_url: string | null = existing.image_url;
   if (removeImage) {
@@ -422,10 +438,9 @@ export async function updateCharacter(
     sheet_file_path = path;
   }
 
-  const prevLevel = typeof (existing as { level?: number }).level === "number" ? (existing as { level: number }).level : 1;
   const rules_snapshot = await recomputeCharacterRulesSnapshot({
     campaignId,
-    level: prevLevel,
+    level: nextLevel,
     characterClass,
     classSubclass,
     raceSlug: race_slug,
@@ -443,6 +458,7 @@ export async function updateCharacter(
       armor_class: armorClass,
       hit_points: hitPoints,
       sheet_file_path,
+      level: nextLevel,
       background,
       race_slug,
       subclass_slug,
@@ -580,11 +596,18 @@ export async function levelUpCharacter(
   }
 
   const newLevel = currentLevel + 1;
+  const classSubclass = (row as { class_subclass?: string | null }).class_subclass ?? null;
+  if (newLevel >= 3 && !classSubclass?.trim()) {
+    return {
+      success: false,
+      error: "Per passare al livello 3 o superiore devi prima selezionare la sottoclasse nella modifica del personaggio.",
+    };
+  }
   const rules_snapshot = await recomputeCharacterRulesSnapshot({
     campaignId: row.campaign_id,
     level: newLevel,
     characterClass: (row as { character_class?: string | null }).character_class ?? null,
-    classSubclass: (row as { class_subclass?: string | null }).class_subclass ?? null,
+    classSubclass,
     raceSlug: (row as { race_slug?: string | null }).race_slug ?? null,
     subclassSlug: (row as { subclass_slug?: string | null }).subclass_slug ?? null,
     backgroundSlug: (row as { background_slug?: string | null }).background_slug ?? null,

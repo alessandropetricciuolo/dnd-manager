@@ -7,13 +7,21 @@ let cachedPhb: string | undefined;
 let preloadDone = false;
 let preloadPromise: Promise<void> | null = null;
 
-function resolvePhbAbsolutePath(): string | null {
-  const rel = path.join("public", "manuals", PHB_MD_FILE);
+/** Altri manuali pubblici (`public/manuals/*.md`), cache per nome file. */
+const manualFileCache = new Map<string, string | undefined>();
+const manualFilePreloadPromises = new Map<string, Promise<void>>();
+
+function resolveManualAbsolutePath(fileName: string): string | null {
+  const rel = path.join("public", "manuals", fileName);
   for (const cwd of [ process.cwd(), path.join(process.cwd(), "dnd-manager") ]) {
     const p = path.join(cwd, rel);
     if (fs.existsSync(p)) return p;
   }
   return null;
+}
+
+function resolvePhbAbsolutePath(): string | null {
+  return resolveManualAbsolutePath(PHB_MD_FILE);
 }
 
 function tryReadPhbFromFs(): string | null {
@@ -28,12 +36,12 @@ function tryReadPhbFromFs(): string | null {
 
 const PHB_API_PATH = "/api/manuals/player-handbook-md";
 
-function publicManualUrlCandidates(requestOrigin?: string | null): string[] {
-  const pathSeg = `/manuals/${encodeURI(PHB_MD_FILE)}`;
+function publicManualUrlCandidatesForFile(fileName: string, requestOrigin?: string | null): string[] {
+  const pathSeg = `/manuals/${encodeURI(fileName)}`;
   const out: string[] = [];
   const pushPair = (origin: string) => {
     const o = origin.replace(/\/$/, "");
-    out.push(`${o}${PHB_API_PATH}`);
+    if (fileName === PHB_MD_FILE) out.push(`${o}${PHB_API_PATH}`);
     out.push(`${o}${pathSeg}`);
   };
   const origin = requestOrigin?.trim();
@@ -43,6 +51,10 @@ function publicManualUrlCandidates(requestOrigin?: string | null): string[] {
   const vercel = process.env.VERCEL_URL?.trim().replace(/^https?:\/\//, "");
   if (vercel) pushPair(`https://${vercel}`);
   return [...new Set(out)];
+}
+
+function publicManualUrlCandidates(requestOrigin?: string | null): string[] {
+  return publicManualUrlCandidatesForFile(PHB_MD_FILE, requestOrigin);
 }
 
 /**
@@ -86,6 +98,72 @@ export async function preloadPhbMarkdown(requestOrigin?: string | null): Promise
 export function getPhbMarkdownText(): string {
   if (cachedPhb !== undefined) return cachedPhb;
   return tryReadPhbFromFs() ?? "";
+}
+
+function tryReadManualFromFs(fileName: string): string | null {
+  const p = resolveManualAbsolutePath(fileName);
+  if (!p) return null;
+  try {
+    return fs.readFileSync(p, "utf-8");
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Carica un markdown in `public/manuals` (filesystem poi URL). Per il PHB usa comunque {@link preloadPhbMarkdown}.
+ */
+export async function preloadManualMarkdownFile(fileName: string, requestOrigin?: string | null): Promise<void> {
+  const fn = fileName.trim();
+  if (!fn) return;
+  if (fn === PHB_MD_FILE) {
+    await preloadPhbMarkdown(requestOrigin);
+    return;
+  }
+  if (manualFileCache.has(fn)) return;
+  const pending = manualFilePreloadPromises.get(fn);
+  if (pending) {
+    await pending;
+    return;
+  }
+  const task = (async () => {
+    try {
+      const fromFs = tryReadManualFromFs(fn);
+      if (fromFs && fromFs.length > 5000) {
+        manualFileCache.set(fn, fromFs);
+        return;
+      }
+      for (const url of publicManualUrlCandidatesForFile(fn, requestOrigin)) {
+        try {
+          const res = await fetch(url, { cache: "no-store" });
+          if (res.ok) {
+            const t = await res.text();
+            if (t.length > 5000) {
+              manualFileCache.set(fn, t);
+              return;
+            }
+          }
+        } catch {
+          /* prova il prossimo URL */
+        }
+      }
+      manualFileCache.set(fn, fromFs ?? "");
+    } catch {
+      manualFileCache.set(fn, tryReadManualFromFs(fn) ?? "");
+    }
+  })();
+  manualFilePreloadPromises.set(fn, task);
+  await task;
+  manualFilePreloadPromises.delete(fn);
+}
+
+/** Testo di un manuale dopo {@link preloadManualMarkdownFile} (o lettura da disco). */
+export function getManualMarkdownByFileName(fileName: string): string {
+  const fn = fileName.trim();
+  if (!fn) return "";
+  if (fn === PHB_MD_FILE) return getPhbMarkdownText();
+  if (manualFileCache.has(fn)) return manualFileCache.get(fn) ?? "";
+  return tryReadManualFromFs(fn) ?? "";
 }
 
 function escapeRegExp(s: string): string {
