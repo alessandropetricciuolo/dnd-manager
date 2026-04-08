@@ -463,6 +463,32 @@ function applyAbilityBonuses(
   return out;
 }
 
+function applyLevelAbilityIncreases(
+  abilities: Record<AbilityKey, number>,
+  level: number,
+  primaryOrder: AbilityKey[]
+): Record<AbilityKey, number> {
+  const out = { ...abilities };
+  const milestones = [4, 8, 12, 16, 20];
+  const asiCount = milestones.filter((m) => level >= m).length;
+  let points = asiCount * 2;
+  if (points <= 0) return out;
+
+  const priority: AbilityKey[] = Array.from(new Set([...primaryOrder, "con", "dex", "wis", "cha", "int", "str"]));
+  while (points > 0) {
+    let spent = false;
+    for (const a of priority) {
+      if (points <= 0) break;
+      if (out[a] >= 20) continue;
+      out[a] += 1;
+      points -= 1;
+      spent = true;
+    }
+    if (!spent) break;
+  }
+  return out;
+}
+
 export function computeCoreSheet(
   classLabel: string,
   level: number
@@ -518,7 +544,8 @@ export async function buildGeneratedCharacterSheet(
     acc[a] = (raceBaseBonuses[a] ?? 0) + (subraceBonuses[a] ?? 0);
     return acc;
   }, {} as Partial<Record<AbilityKey, number>>);
-  const boostedAbilities = applyAbilityBonuses(baseCore.abilities, raceBonuses);
+  const raceBoosted = applyAbilityBonuses(baseCore.abilities, raceBonuses);
+  const boostedAbilities = applyLevelAbilityIncreases(raceBoosted, input.level, cfg.primary);
   const core = computeCoreFromAbilities(input.classLabel, input.level, boostedAbilities);
   const rules = await resolveGeneratorRules(
     {
