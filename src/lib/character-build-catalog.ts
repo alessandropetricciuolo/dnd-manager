@@ -52,6 +52,8 @@ export type RaceCatalogEntry = {
   label: string;
   /** Sezione ## tratti (ingest). */
   traitsSectionHeading: string;
+  /** Manuale sorgente per i tratti (default: PHB). */
+  supplementRulesSource?: ClassSupplementRulesSource;
   /** Se i tratti non sono una ## (halfling/gnomo/tiefling), usa contenuto. */
   traitsContentAnchor?: string;
   subraces?: { slug: string; label: string; sectionHeading: string }[];
@@ -66,6 +68,13 @@ export type BackgroundCatalogEntry = {
 
 export const PHB_MD_FILE = "manuale_giocatore.md";
 export const PHB_BOOK_KEY = "player_handbook" as const;
+export const MPMM_MD_FILE = "Mostri del multiverso.md";
+export const MPMM_BOOK_KEY = "mordenkainen_multiverse" as const;
+
+const MPMM_SOURCE: ClassSupplementRulesSource = {
+  markdownFile: MPMM_MD_FILE,
+  manualBookKey: MPMM_BOOK_KEY,
+};
 
 export const RACE_OPTIONS: RaceCatalogEntry[] = [
   {
@@ -117,6 +126,53 @@ export const RACE_OPTIONS: RaceCatalogEntry[] = [
     traitsSectionHeading: "__CONTENT__",
     traitsContentAnchor: "I tiefling condividono alcuni tratti razziali",
   },
+  { slug: "aarakocra", label: "Aarakocra", traitsSectionHeading: "TRATTI DELL'AARAKOCRA", supplementRulesSource: MPMM_SOURCE },
+  { slug: "aasimar", label: "Aasimar", traitsSectionHeading: "TRATTI DELL'AASIMAR", supplementRulesSource: MPMM_SOURCE },
+  { slug: "cangiante", label: "Cangiante", traitsSectionHeading: "CANGIANTE", supplementRulesSource: MPMM_SOURCE },
+  { slug: "centauro", label: "Centauro", traitsSectionHeading: "TRATTI DEL CENTAURO", supplementRulesSource: MPMM_SOURCE },
+  { slug: "coboldo", label: "Coboldo", traitsSectionHeading: "TRATTI DEL COBOLDO", supplementRulesSource: MPMM_SOURCE },
+  { slug: "duergar", label: "Duergar", traitsSectionHeading: "TRATTI DEL DUERGAR", supplementRulesSource: MPMM_SOURCE },
+  { slug: "eladrin", label: "Eladrin", traitsSectionHeading: "TRATTI DELL'ELADRIN", supplementRulesSource: MPMM_SOURCE },
+  { slug: "elfo_mare", label: "Elfo del mare", traitsSectionHeading: "ELFO DEL MARE", supplementRulesSource: MPMM_SOURCE },
+  { slug: "fata", label: "Fata", traitsSectionHeading: "TRATTI DELLA FATA", supplementRulesSource: MPMM_SOURCE },
+  { slug: "firbolg", label: "Firbolg", traitsSectionHeading: "TRATTI DEL FIRBOLG", supplementRulesSource: MPMM_SOURCE },
+  {
+    slug: "genasi",
+    label: "Genasi",
+    traitsSectionHeading: "__CONTENT__",
+    traitsContentAnchor: "TRATTI DEL GENASI DELL'ACQUA",
+    supplementRulesSource: MPMM_SOURCE,
+    subraces: [
+      { slug: "genasi_acqua", label: "Genasi dell'acqua", sectionHeading: "TRATTI DEL GENASI DELL'ACQUA" },
+      { slug: "genasi_aria", label: "Genasi dell'aria", sectionHeading: "TRATTI DEL GENASI DELL'ARIA" },
+      { slug: "genasi_fuoco", label: "Genasi del fuoco", sectionHeading: "TRATTI DEL GENASI DEL FUOCO" },
+      { slug: "genasi_terra", label: "Genasi della terra", sectionHeading: "TRATTI DEL GENASI DELLA TERRA" },
+    ],
+  },
+  { slug: "githyanki", label: "Githyanki", traitsSectionHeading: "TRATTI DEL GITHYANKI", supplementRulesSource: MPMM_SOURCE },
+  { slug: "githzerai", label: "Githzerai", traitsSectionHeading: "TRATTI DEL GITHZERAI", supplementRulesSource: MPMM_SOURCE },
+  {
+    slug: "gnomo_profondita",
+    label: "Gnomo delle profondità",
+    traitsSectionHeading: "TRATTI DELLO GNOMO DELLE PROFONDITÀ",
+    supplementRulesSource: MPMM_SOURCE,
+  },
+  { slug: "goblin", label: "Goblin", traitsSectionHeading: "TRATTI DEL GOBLIN", supplementRulesSource: MPMM_SOURCE },
+  { slug: "goliath", label: "Goliath", traitsSectionHeading: "TRATTI DEL GOLIATH", supplementRulesSource: MPMM_SOURCE },
+  { slug: "hobgoblin", label: "Hobgoblin", traitsSectionHeading: "TRATTI DELL'HOBGOBLIN", supplementRulesSource: MPMM_SOURCE },
+  { slug: "kenku", label: "Kenku", traitsSectionHeading: "TRATTI DEL KENKU", supplementRulesSource: MPMM_SOURCE },
+  { slug: "leporidion", label: "Leporidion", traitsSectionHeading: "TRATTI DEL LEPORIDION", supplementRulesSource: MPMM_SOURCE },
+  { slug: "lucertoloide", label: "Lucertoloide", traitsSectionHeading: "TRATTI DEL LUCERTOLOIDE", supplementRulesSource: MPMM_SOURCE },
+  { slug: "minotauro", label: "Minotauro", traitsSectionHeading: "TRATTI DEL MINOTAURO", supplementRulesSource: MPMM_SOURCE },
+  { slug: "morfico", label: "Morfico", traitsSectionHeading: "TRATTI DEL MORFICO", supplementRulesSource: MPMM_SOURCE },
+  { slug: "orco", label: "Orco", traitsSectionHeading: "TRATTI DELL'ORCO", supplementRulesSource: MPMM_SOURCE },
+  { slug: "satiro", label: "Satiro", traitsSectionHeading: "TRATTI DEL SATIRO", supplementRulesSource: MPMM_SOURCE },
+  { slug: "shadar_kai", label: "Shadar-kai", traitsSectionHeading: "TRATTI DELLO SHADAR-KAI", supplementRulesSource: MPMM_SOURCE },
+  { slug: "tabaxi", label: "Tabaxi", traitsSectionHeading: "TRATTI DEL TABAXI", supplementRulesSource: MPMM_SOURCE },
+  { slug: "tortuga", label: "Tortuga", traitsSectionHeading: "TRATTI DEL TORTUGA", supplementRulesSource: MPMM_SOURCE },
+  { slug: "tritone", label: "Tritone", traitsSectionHeading: "TRATTI DEL TRITONE", supplementRulesSource: MPMM_SOURCE },
+  { slug: "urgoblin", label: "Urgoblin", traitsSectionHeading: "TRATTI DELL'URGOBLIN", supplementRulesSource: MPMM_SOURCE },
+  { slug: "yuan_ti", label: "Yuan-ti", traitsSectionHeading: "TRATTI DELLO YUAN-TI", supplementRulesSource: MPMM_SOURCE },
 ];
 
 export const CLASS_OPTIONS: ClassCatalogEntry[] = [

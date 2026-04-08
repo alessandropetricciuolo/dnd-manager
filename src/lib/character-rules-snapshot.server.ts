@@ -698,14 +698,25 @@ export async function recomputeCharacterRulesSnapshot(input: {
       `Manuale «${wikiManualBookLabel(classDef.supplementRulesSource.manualBookKey)}» escluso nei paletti campagna: estratti per «${classDef.label}» potrebbero mancare.`
     );
   }
+  if (raceDef?.supplementRulesSource && excluded.includes(raceDef.supplementRulesSource.manualBookKey)) {
+    warnings.push(
+      `Manuale «${wikiManualBookLabel(raceDef.supplementRulesSource.manualBookKey)}» escluso nei paletti campagna: estratti per «${raceDef.label}» potrebbero mancare.`
+    );
+  }
 
   let raceTraitsMd = "";
   if (raceDef) {
+    const mkRace: MkSource | null = raceDef.supplementRulesSource
+      ? {
+          fileName: raceDef.supplementRulesSource.markdownFile,
+          bookKey: raceDef.supplementRulesSource.manualBookKey,
+        }
+      : null;
     if (raceDef.traitsContentAnchor) {
-      const rows = await fetchRowsContentIlike(admin, `%${raceDef.traitsContentAnchor}%`, excluded);
+      const rows = await fetchRowsContentIlike(admin, `%${raceDef.traitsContentAnchor}%`, excluded, mkRace);
       raceTraitsMd = mergeMdChunks(rows);
     } else {
-      const rows = await fetchRowsSectionHeading(admin, raceDef.traitsSectionHeading, excluded);
+      const rows = await fetchRowsSectionHeading(admin, raceDef.traitsSectionHeading, excluded, mkRace);
       raceTraitsMd = mergeMdChunks(rows);
     }
     if (!raceTraitsMd.trim()) warnings.push(`Tratti razza non trovati in manuals_knowledge per «${raceDef.label}».`);
@@ -715,10 +726,16 @@ export async function recomputeCharacterRulesSnapshot(input: {
   if (raceDef?.subraces?.length && input.subclassSlug?.trim()) {
     const sr = raceDef.subraces.find((sub) => sub.slug === input.subclassSlug);
     if (sr) {
-      const rows = await fetchRowsSectionHeading(admin, sr.sectionHeading, excluded);
+      const mkRace: MkSource | null = raceDef.supplementRulesSource
+        ? {
+            fileName: raceDef.supplementRulesSource.markdownFile,
+            bookKey: raceDef.supplementRulesSource.manualBookKey,
+          }
+        : null;
+      const rows = await fetchRowsSectionHeading(admin, sr.sectionHeading, excluded, mkRace);
       subraceTraitsMd = mergeMdChunks(rows) || null;
       if (!subraceTraitsMd?.trim())
-        warnings.push(`Sottorazza «${sr.label}»: nessun estratto trovato (ingest PHB?).`);
+        warnings.push(`Sottorazza «${sr.label}»: nessun estratto trovato in ingest.`);
     }
   }
 

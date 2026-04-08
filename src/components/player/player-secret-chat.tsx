@@ -139,7 +139,7 @@ export function PlayerSecretChat({ campaignId, currentUserId, gmId }: PlayerSecr
 
   return (
     <>
-      <div className="fixed bottom-6 right-6 z-30">
+      <div className="fixed right-6 z-30 bottom-[max(5.5rem,calc(env(safe-area-inset-bottom)+1.5rem))]">
         <Button
           type="button"
           size="icon"
