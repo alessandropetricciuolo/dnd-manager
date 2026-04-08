@@ -6,7 +6,7 @@ import {
   raceBySlug,
   type ClassCatalogEntry,
 } from "@/lib/character-build-catalog";
-import { matchSupplementSubclass } from "@/lib/character-subclass-catalog";
+import { matchSupplementSubclass, supplementSubclassesForClass } from "@/lib/character-subclass-catalog";
 import { extractClassPrivilegesMarkdown } from "@/lib/server/phb-class-privileges-excerpt";
 import {
   extractPhbSpellMarkdown,
@@ -68,6 +68,65 @@ function extractSectionByHeadingsMarkdown(raw: string, headings: string[]): stri
   return lines.slice(startIdx, endIdx).join("\n").trim();
 }
 
+function extractSectionByHeadingsUntilAnyHeadingMarkdown(
+  raw: string,
+  headings: string[],
+  stopHeadings: string[]
+): string {
+  const txt = raw.replace(/\r/g, "");
+  if (!txt.trim()) return "";
+  const targets = headings.map(normalizeHeadingForMatch).filter(Boolean);
+  const stops = stopHeadings.map(normalizeHeadingForMatch).filter(Boolean);
+  if (!targets.length) return "";
+  const lines = txt.split("\n");
+  let startIdx = -1;
+  let startLevel = 7;
+  for (let i = 0; i < lines.length; i += 1) {
+    const ht = headingTextRaw(lines[i]);
+    if (!ht) continue;
+    if (!targets.includes(normalizeHeadingForMatch(ht))) continue;
+    const lv = headingLevel(lines[i]);
+    if (!lv) continue;
+    startIdx = i;
+    startLevel = lv;
+    break;
+  }
+  if (startIdx < 0) return "";
+  let endIdx = lines.length;
+  for (let i = startIdx + 1; i < lines.length; i += 1) {
+    const ht = headingTextRaw(lines[i]);
+    const lv = headingLevel(lines[i]);
+    if (!lv || !ht) continue;
+    const n = normalizeHeadingForMatch(ht);
+    if (stops.includes(n)) {
+      endIdx = i;
+      break;
+    }
+    if (lv <= startLevel && targets.includes(n) && i > startIdx) {
+      endIdx = i;
+      break;
+    }
+  }
+  return lines.slice(startIdx, endIdx).join("\n").trim();
+}
+
+function cleanRulesExcerpt(md: string): string {
+  let t = md.replace(/\r/g, "");
+  t = t.replace(/^!\[[^\]]*]\([^)]*\)\s*$/gm, "");
+  t = t.replace(/^CAPITOLO\s+\d+\s*\|[^\n]*$/gim, "");
+  t = t.replace(/^Offrimi un caff[eè]:.*$/gim, "");
+  t = t.replace(/\n{3,}/g, "\n\n");
+  return t.trim();
+}
+
+function stripOptionalHumanTraits(md: string): string {
+  const txt = md.replace(/\r/g, "");
+  const marker = /^(?:\s*>\s*)+#{1,6}\s*TRATTI UMANI ALTERNATIVI\b.*$/im;
+  const m = marker.exec(txt);
+  if (!m || m.index < 0) return txt.trim();
+  return txt.slice(0, m.index).trim();
+}
+
 function extractSectionByContentAnchorMarkdown(raw: string, anchor: string): string {
   const txt = raw.replace(/\r/g, "");
   if (!txt.trim() || !anchor.trim()) return "";
@@ -127,25 +186,36 @@ function extractSpellListByMaxLevel(raw: string, maxSpellLevel: number): string 
   return out.join("\n").trim();
 }
 
-function parseSpellNamesFromList(md: string): string[] {
+function parseSpellsWithLevelFromList(md: string): Array<{ name: string; level: number }> {
   if (!md.trim()) return [];
-  const out: string[] = [];
+  const out: Array<{ name: string; level: number }> = [];
   const seen = new Set<string>();
+  let currentLevel = 0;
   for (const rawLine of md.replace(/\r/g, "").split("\n")) {
     const line = rawLine.trim();
-    if (!line || /^#{1,6}\s*/.test(line)) continue;
-    if (/^_*\s*(TRUCCHETTI|\d+°\s*LIVELLO)\s*_*\s*$/i.test(line)) continue;
+    if (!line) continue;
+    const cantripHead = line.match(/^#{1,6}\s+TRUCCHETTI(?:\s*\(LIVELLO\s*0\))?\s*$/i);
+    if (cantripHead) {
+      currentLevel = 0;
+      continue;
+    }
+    const lvlHead = line.match(/^#{1,6}\s+(\d+)°\s*LIVELLO\s*$/i);
+    if (lvlHead) {
+      currentLevel = Number.parseInt(lvlHead[1], 10) || currentLevel;
+      continue;
+    }
+    if (/^#{1,6}\s+/.test(line)) continue;
     const core = line
       .replace(/^(?:[-*]|\d+[.)])\s+/, "")
       .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
       .replace(/\s*\([^)]*\)\s*$/g, "")
       .replace(/[;,:.]+$/g, "")
       .trim();
-    if (!core || core.length < 2 || core.length > 60) continue;
-    const key = core.toLocaleLowerCase("it");
+    if (!core || core.length < 2 || core.length > 70) continue;
+    const key = `${currentLevel}:${core.toLocaleLowerCase("it")}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    out.push(core);
+    out.push({ name: core, level: currentLevel });
   }
   return out;
 }
@@ -177,45 +247,136 @@ const SPELLCASTING_ABILITY_BY_CLASS: Record<string, AbilityKey | null> = {
 };
 
 const CANTRIPS_BY_CLASS_LEVEL: Partial<Record<string, number[]>> = {
-  Bardo: [2, 2, 2, 3, 3, 3, 3, 3, 4],
-  Chierico: [3, 3, 3, 4, 4],
-  Druido: [2, 2, 2, 3, 3, 3, 3, 3, 4],
-  Mago: [3, 3, 3, 4, 4],
-  Stregone: [4, 4, 4, 5, 5],
-  Warlock: [2, 2, 2, 3, 3, 3, 3, 3, 4],
-  Artefice: [2, 2, 2, 2, 2, 2, 2, 2, 2],
+  Bardo: [2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+  Chierico: [3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
+  Druido: [2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+  Mago: [3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
+  Stregone: [4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
+  Warlock: [2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+  Artefice: [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
 };
 
 function cantripsKnownForClass(classLabel: string, level: number): number {
   const table = CANTRIPS_BY_CLASS_LEVEL[classLabel];
   if (!table) return 0;
-  const idx = Math.min(table.length - 1, Math.max(0, Math.floor((Math.max(1, level) - 1) / 4)));
+  const idx = Math.min(table.length - 1, Math.max(0, Math.max(1, level) - 1));
   return table[idx] ?? table[table.length - 1] ?? 0;
 }
 
 function slotsForClassLevel(classDef: ClassCatalogEntry | null, level: number): Record<1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9, number> {
-  const max = maxSpellLevelOnSheet(classDef, level);
   const out = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 };
-  for (let i = 1 as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9; i <= max; i = (i + 1) as typeof i) {
-    if (i <= 2) out[i] = 3;
-    else if (i <= 5) out[i] = 2;
-    else out[i] = 1;
+  if (!classDef?.spellList) return out;
+  const lvl = Math.max(1, Math.min(20, level));
+  const full: Array<[number, number, number, number, number, number, number, number, number]> = [
+    [2, 0, 0, 0, 0, 0, 0, 0, 0],
+    [3, 0, 0, 0, 0, 0, 0, 0, 0],
+    [4, 2, 0, 0, 0, 0, 0, 0, 0],
+    [4, 3, 0, 0, 0, 0, 0, 0, 0],
+    [4, 3, 2, 0, 0, 0, 0, 0, 0],
+    [4, 3, 3, 0, 0, 0, 0, 0, 0],
+    [4, 3, 3, 1, 0, 0, 0, 0, 0],
+    [4, 3, 3, 2, 0, 0, 0, 0, 0],
+    [4, 3, 3, 3, 1, 0, 0, 0, 0],
+    [4, 3, 3, 3, 2, 0, 0, 0, 0],
+    [4, 3, 3, 3, 2, 1, 0, 0, 0],
+    [4, 3, 3, 3, 2, 1, 0, 0, 0],
+    [4, 3, 3, 3, 2, 1, 1, 0, 0],
+    [4, 3, 3, 3, 2, 1, 1, 0, 0],
+    [4, 3, 3, 3, 2, 1, 1, 1, 0],
+    [4, 3, 3, 3, 2, 1, 1, 1, 0],
+    [4, 3, 3, 3, 2, 1, 1, 1, 1],
+    [4, 3, 3, 3, 3, 1, 1, 1, 1],
+    [4, 3, 3, 3, 3, 2, 1, 1, 1],
+    [4, 3, 3, 3, 3, 2, 2, 1, 1],
+  ];
+  const row = full[lvl - 1] ?? full[full.length - 1];
+  if (classDef.spellProgression === "full") {
+    row.forEach((v, i) => {
+      out[(i + 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9] = v;
+    });
+    return out;
+  }
+  const half: Array<[number, number, number, number, number]> = [
+    [0, 0, 0, 0, 0],
+    [2, 0, 0, 0, 0],
+    [3, 0, 0, 0, 0],
+    [3, 0, 0, 0, 0],
+    [4, 2, 0, 0, 0],
+    [4, 2, 0, 0, 0],
+    [4, 3, 0, 0, 0],
+    [4, 3, 0, 0, 0],
+    [4, 3, 2, 0, 0],
+    [4, 3, 2, 0, 0],
+    [4, 3, 3, 0, 0],
+    [4, 3, 3, 0, 0],
+    [4, 3, 3, 1, 0],
+    [4, 3, 3, 1, 0],
+    [4, 3, 3, 2, 0],
+    [4, 3, 3, 2, 0],
+    [4, 3, 3, 3, 1],
+    [4, 3, 3, 3, 1],
+    [4, 3, 3, 3, 2],
+    [4, 3, 3, 3, 2],
+  ];
+  const halfUp: Array<[number, number, number, number, number]> = [
+    [2, 0, 0, 0, 0],
+    [2, 0, 0, 0, 0],
+    [3, 0, 0, 0, 0],
+    [3, 0, 0, 0, 0],
+    [4, 2, 0, 0, 0],
+    [4, 2, 0, 0, 0],
+    [4, 3, 0, 0, 0],
+    [4, 3, 0, 0, 0],
+    [4, 3, 2, 0, 0],
+    [4, 3, 2, 0, 0],
+    [4, 3, 3, 0, 0],
+    [4, 3, 3, 0, 0],
+    [4, 3, 3, 1, 0],
+    [4, 3, 3, 1, 0],
+    [4, 3, 3, 2, 0],
+    [4, 3, 3, 2, 0],
+    [4, 3, 3, 3, 1],
+    [4, 3, 3, 3, 1],
+    [4, 3, 3, 3, 2],
+    [4, 3, 3, 3, 2],
+  ];
+  const pactSlots = [1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4];
+  const pactSlotLevel = [1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5];
+  if (classDef.spellProgression === "half") {
+    const r = half[lvl - 1];
+    if (r) r.forEach((v, i) => (out[(i + 1) as 1 | 2 | 3 | 4 | 5] = v));
+    return out;
+  }
+  if (classDef.spellProgression === "half_up") {
+    const r = halfUp[lvl - 1];
+    if (r) r.forEach((v, i) => (out[(i + 1) as 1 | 2 | 3 | 4 | 5] = v));
+    return out;
+  }
+  if (classDef.spellProgression === "pact") {
+    const slots = pactSlots[lvl - 1] ?? 0;
+    const slotLevel = pactSlotLevel[lvl - 1] ?? 1;
+    out[slotLevel as 1 | 2 | 3 | 4 | 5] = slots;
+    return out;
   }
   return out;
 }
 
-function preparedCount(classLabel: string, level: number, castingMod: number): number {
-  if (["Chierico", "Druido", "Paladino", "Artefice"].includes(classLabel)) {
-    return Math.max(1, level + castingMod);
-  }
-  const knownBaseline: Record<string, number> = {
-    Bardo: 4,
-    Ranger: 2,
-    Stregone: 2,
-    Warlock: 2,
-    Mago: 6,
+function spellSelectionCount(classLabel: string, level: number, castingMod: number): number {
+  const lvl = Math.max(1, Math.min(20, level));
+  if (classLabel === "Chierico" || classLabel === "Druido") return Math.max(1, lvl + castingMod);
+  if (classLabel === "Paladino") return Math.max(1, Math.floor(lvl / 2) + castingMod);
+  if (classLabel === "Artefice") return Math.max(1, Math.floor(lvl / 2) + castingMod);
+  if (classLabel === "Mago") return Math.max(1, lvl + castingMod);
+
+  const knownByClass: Partial<Record<string, number[]>> = {
+    Bardo: [4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 15, 16, 18, 19, 19, 20, 22, 22, 22],
+    Stregone: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 12, 13, 13, 14, 14, 15, 15, 15, 15],
+    Warlock: [2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15],
+    Ranger: [0, 0, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11],
   };
-  return Math.max(1, (knownBaseline[classLabel] ?? 3) + Math.floor((level - 1) * 0.8));
+  const table = knownByClass[classLabel];
+  if (!table) return Math.max(1, 3 + Math.floor((lvl - 1) * 0.8));
+  return table[lvl - 1] ?? table[table.length - 1] ?? 0;
 }
 
 export type ResolvedRules = {
@@ -340,7 +501,7 @@ export async function resolveGeneratorRules(
   const cantripsKnown = cantripsKnownForClass(input.classLabel, input.level);
   const castingMod = spellcastingAbility ? abilityModByKey[spellcastingAbility] : 0;
   const spellsPrepared = spellcastingAbility
-    ? preparedCount(input.classLabel, input.level, castingMod)
+    ? spellSelectionCount(input.classLabel, input.level, castingMod)
     : 0;
 
   const spells: GeneratedSpell[] = [];
@@ -353,16 +514,18 @@ export async function resolveGeneratorRules(
         ? extractSectionByHeadingsMarkdown(md, [classDef.spellList.chapter])
         : extractSectionByHeadingsMarkdown(md, [classDef.spellList.sectionHeading]);
     const listByLevel = extractSpellListByMaxLevel(listRaw, maxSpellLevelOnSheet(classDef, input.level));
-    const names = parseSpellNamesFromList(listByLevel);
-    const picked = names.slice(0, spellsPrepared);
+    const entries = parseSpellsWithLevelFromList(listByLevel);
+    const cantripEntries = entries.filter((e) => e.level === 0).slice(0, cantripsKnown);
+    const leveledEntries = entries.filter((e) => e.level >= 1).slice(0, spellsPrepared);
+    const picked = [...cantripEntries, ...leveledEntries];
     await preloadPhbMarkdown(requestOrigin);
-    for (const name of picked) {
-      const mdSpell = extractPhbSpellMarkdown(name);
+    for (const pickedSpell of picked) {
+      const mdSpell = extractPhbSpellMarkdown(pickedSpell.name);
       const summary = mdSpell ? compactSpellSummary(mdSpell) : "";
       const body = (mdSpell ?? "").replace(/\r/g, "");
       spells.push({
-        level: inferSpellLevelFromList(listByLevel, name),
-        name,
+        level: pickedSpell.level,
+        name: pickedSpell.name,
         summary,
         ritual: /\brituale\b/i.test(body),
         concentration: /\bconcentrazione\b/i.test(body),
@@ -373,10 +536,20 @@ export async function resolveGeneratorRules(
   }
 
   return {
-    raceTraitsMd,
+    raceTraitsMd: cleanRulesExcerpt(stripOptionalHumanTraits(raceTraitsMd)),
     subraceTraitsMd,
     classFeaturesMd,
-    subclassFeaturesMd,
+    subclassFeaturesMd: subclassFeaturesMd
+      ? cleanRulesExcerpt(
+          extractSectionByHeadingsUntilAnyHeadingMarkdown(
+            subclassFeaturesMd,
+            [input.classSubclass ?? ""],
+            supplementSubclassesForClass(input.classLabel)
+              .map((s) => s.label)
+              .filter((h) => h.toLowerCase() !== (input.classSubclass ?? "").toLowerCase())
+          ) || subclassFeaturesMd
+        )
+      : null,
     backgroundMd,
     spellcastingAbility,
     spellSlots,
