@@ -57,7 +57,11 @@ function isMarked(value: string): boolean {
 
 function enrichFieldsFromSpellList(fields: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = { ...fields };
-  const list = Array.isArray(fields.SpellList) ? (fields.SpellList as Array<Record<string, unknown>>) : [];
+  const listRaw = Array.isArray(fields.SpellList) ? (fields.SpellList as Array<Record<string, unknown>>) : [];
+  const list = listRaw.filter((s) => {
+    const lvl = Number.parseInt(valueToString(s?.level), 10);
+    return Number.isFinite(lvl) && lvl >= 1;
+  });
   if (!list.length) return out;
   for (let i = 0; i < Math.min(20, list.length); i += 1) {
     const row = i + 1;

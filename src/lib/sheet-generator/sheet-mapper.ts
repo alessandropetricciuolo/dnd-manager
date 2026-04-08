@@ -102,7 +102,7 @@ export function mapGeneratedSheetToPdfFields(sheet: GeneratedCharacterSheet): Re
     fields[`Cantrip_${i + 1}`] = cantrip?.name ?? "";
     fields[`Cantrip_${i + 1}_Desc`] = cantrip?.summary ?? "";
   }
-  const rowSpells = sheet.spells.slice(0, 20);
+  const rowSpells = sheet.spells.filter((s) => s.level >= 1).slice(0, 20);
   for (let i = 0; i < 20; i += 1) {
     const s = rowSpells[i];
     const row = i + 1;
