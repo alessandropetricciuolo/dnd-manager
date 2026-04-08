@@ -104,6 +104,8 @@ export function CreateCharacterDialog({ campaignId }: CreateCharacterDialogProps
       backgroundSlug,
       level: "1",
       autogen: "1",
+      campaignId,
+      returnTo: `/campaigns/${campaignId}`,
     });
     if (subraceSlug) params.set("subraceSlug", subraceSlug);
     if (classSubclass) params.set("classSubclass", classSubclass);

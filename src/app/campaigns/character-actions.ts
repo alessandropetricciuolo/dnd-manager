@@ -822,3 +822,60 @@ export async function updateCharactersGridPositionAction(
   revalidatePath(`/campaigns/${campaignId}`);
   return { success: true };
 }
+
+/** Solo GM/Admin. Salva un PDF generato come scheda tecnica del PG. */
+export async function saveGeneratedSheetToCharacter(
+  campaignId: string,
+  characterId: string,
+  pdfBase64: string,
+  fileName: string
+): Promise<CharResult<void>> {
+  const ctx = await getCurrentUserAndRole();
+  if (!ctx) return { success: false, error: "Non autenticato." };
+  if (!ctx.isGmOrAdmin) return { success: false, error: "Solo il Master può salvare schede tecniche." };
+  const supabase = ctx.supabase;
+
+  const cid = campaignId.trim();
+  const chid = characterId.trim();
+  if (!cid || !chid) return { success: false, error: "Campagna o personaggio non validi." };
+  if (!pdfBase64.trim()) return { success: false, error: "PDF non valido." };
+
+  const { data: row, error: fetchErr } = await supabase
+    .from("campaign_characters")
+    .select("id, campaign_id, sheet_file_path")
+    .eq("id", chid)
+    .eq("campaign_id", cid)
+    .single();
+  if (fetchErr || !row) return { success: false, error: "Personaggio non trovato." };
+
+  let bytes: Buffer;
+  try {
+    bytes = Buffer.from(pdfBase64, "base64");
+  } catch {
+    return { success: false, error: "Impossibile decodificare il PDF." };
+  }
+  if (!bytes.length) return { success: false, error: "PDF vuoto." };
+
+  const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80) || "scheda-generata.pdf";
+  const path = `${cid}/${randomUUID()}-${safeName}`;
+  const { error: uploadErr } = await supabase.storage
+    .from(CHARACTER_SHEETS_BUCKET)
+    .upload(path, bytes, { contentType: "application/pdf", upsert: false });
+  if (uploadErr) return { success: false, error: uploadErr.message ?? "Errore upload PDF." };
+
+  const prevPath = row.sheet_file_path;
+  const { error: updateErr } = await supabase
+    .from("campaign_characters")
+    .update({ sheet_file_path: path })
+    .eq("id", chid);
+  if (updateErr) {
+    await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([path]);
+    return { success: false, error: updateErr.message ?? "Errore salvataggio scheda." };
+  }
+  if (prevPath && !prevPath.startsWith("http")) {
+    await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([prevPath]);
+  }
+
+  revalidatePath(`/campaigns/${cid}`);
+  return { success: true };
+}

@@ -8,6 +8,7 @@ import { subclassCatalogSourceSuffix, supplementSubclassesForClass } from "@/lib
 import { GeneratedSheetView } from "@/components/sheet-generator/generated-sheet-view";
 import type { GeneratedCharacterSheet } from "@/lib/sheet-generator/types";
 import { useSearchParams } from "next/navigation";
+import { saveGeneratedSheetToCharacter } from "@/app/campaigns/character-actions";
 
 export default function GeneratorPage() {
   const searchParams = useSearchParams();
@@ -26,6 +27,9 @@ export default function GeneratorPage() {
       height: searchParams.get("height") ?? "",
       weight: searchParams.get("weight") ?? "",
       sex: searchParams.get("sex") ?? "",
+      campaignId: searchParams.get("campaignId") ?? "",
+      characterId: searchParams.get("characterId") ?? "",
+      returnTo: searchParams.get("returnTo") ?? "",
       autogen: searchParams.get("autogen") === "1",
     }),
     [searchParams]
@@ -41,6 +45,47 @@ export default function GeneratorPage() {
 
   const race = RACE_OPTIONS.find((r) => r.slug === selectedRaceSlug) ?? null;
   const classSubclasses = supplementSubclassesForClass(selectedClass);
+
+  function arrayBufferToBase64(buffer: ArrayBuffer): string {
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    for (const b of bytes) binary += String.fromCharCode(b);
+    return btoa(binary);
+  }
+
+  async function handleSaveToCharacterSheet() {
+    if (!sheetDataObj || !sheet) {
+      setResultMessage("Genera prima una scheda.");
+      return;
+    }
+    if (!initial.campaignId || !initial.characterId) {
+      setResultMessage("Per salvare nella scheda tecnica PG apri il generatore dal personaggio (campagna/characterId mancanti).");
+      return;
+    }
+    const pdfRes = await fetch("/api/sheet-pdf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fields: sheetDataObj,
+        fileName: `${sheet.characterName || "scheda"}-compilata.pdf`,
+      }),
+    });
+    if (!pdfRes.ok) {
+      const err = await pdfRes.json().catch(() => ({}));
+      setResultMessage(err?.error ?? "Errore generazione PDF.");
+      return;
+    }
+    const ab = await pdfRes.arrayBuffer();
+    const base64 = arrayBufferToBase64(ab);
+    const saved = await saveGeneratedSheetToCharacter(
+      initial.campaignId,
+      initial.characterId,
+      base64,
+      `${sheet.characterName || "scheda"}-compilata.pdf`
+    );
+    if (saved.success) setResultMessage("Scheda PDF salvata nella scheda tecnica del personaggio.");
+    else setResultMessage(saved.error);
+  }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -104,6 +149,25 @@ export default function GeneratorPage() {
     <main className="min-h-[calc(100vh-64px)] bg-gradient-to-b from-[#12100f] via-[#161312] to-[#1d1714] px-4 py-10 text-barber-paper md:px-8">
       <section className="mx-auto w-full max-w-3xl rounded-2xl border border-barber-gold/30 bg-barber-dark/80 p-6 shadow-[0_0_50px_rgba(251,191,36,0.08)]">
         <header className="mb-6 space-y-2">
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (initial.returnTo) window.location.href = initial.returnTo;
+                else window.history.back();
+              }}
+              className="rounded border border-barber-gold/40 px-3 py-1.5 text-xs text-barber-gold hover:bg-barber-gold/10"
+            >
+              Torna alla creazione PG
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveToCharacterSheet}
+              className="rounded border border-barber-gold/40 px-3 py-1.5 text-xs text-barber-gold hover:bg-barber-gold/10"
+            >
+              Salva scheda PDF (scheda tecnica PG)
+            </button>
+          </div>
           <h1 className="flex items-center gap-2 text-2xl font-semibold text-barber-gold">
             <Sparkles className="h-5 w-5" />
             Generatore Schede D&D (HTML)
