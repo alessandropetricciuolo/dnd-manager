@@ -317,9 +317,10 @@ function computeHpMax(level: number, hitDie: number, conMod: number): number {
   return Math.max(level, first + others);
 }
 
-export function computeCoreSheet(
+function computeCoreFromAbilities(
   classLabel: string,
-  level: number
+  level: number,
+  abilities: Record<AbilityKey, number>
 ): Pick<
   GeneratedCharacterSheet,
   | "abilities"
@@ -344,7 +345,6 @@ export function computeCoreSheet(
 > {
   const cfg = CLASS_CONFIG[classLabel] ?? CLASS_CONFIG.Guerriero;
   const lvl = Math.max(1, Math.min(20, level));
-  const abilities = buildPointBuy(cfg.primary);
   const abilityMods = ABILITIES.reduce(
     (acc, a) => ({ ...acc, [a]: modifier(abilities[a]) }),
     {} as Record<AbilityKey, number>
@@ -353,10 +353,7 @@ export function computeCoreSheet(
 
   const savingThrows = ABILITIES.reduce((acc, a) => {
     const proficient = cfg.savingThrows.includes(a);
-    acc[a] = {
-      value: abilityMods[a] + (proficient ? pb : 0),
-      proficient,
-    };
+    acc[a] = { value: abilityMods[a] + (proficient ? pb : 0), proficient };
     return acc;
   }, {} as Record<AbilityKey, { value: number; proficient: boolean }>);
 
@@ -402,11 +399,127 @@ export function computeCoreSheet(
   };
 }
 
+function parseAbilityBonusesFromTraits(
+  text: string,
+  primaryOrder: AbilityKey[]
+): Partial<Record<AbilityKey, number>> {
+  const bonuses: Partial<Record<AbilityKey, number>> = {};
+  const t = text.toLowerCase();
+  const add = (a: AbilityKey, n: number) => {
+    bonuses[a] = (bonuses[a] ?? 0) + n;
+  };
+  const abilityPatterns: Array<{ key: AbilityKey; re: RegExp }> = [
+    { key: "str", re: /forza/gi },
+    { key: "dex", re: /destrezza/gi },
+    { key: "con", re: /costituzione/gi },
+    { key: "int", re: /intelligenza/gi },
+    { key: "wis", re: /saggezza/gi },
+    { key: "cha", re: /carisma/gi },
+  ];
+
+  if (/ogni punteggio di caratteristica.*aumenta di 1/.test(t)) {
+    for (const a of ABILITIES) add(a, 1);
+  }
+
+  for (const { key, re } of abilityPatterns) {
+    const single = new RegExp(`${re.source}[^.\\n]{0,60}aumenta di\\s*([12])`, "i");
+    const m = t.match(single);
+    if (m) add(key, Number.parseInt(m[1], 10));
+  }
+
+  // Pattern: "forza e costituzione aumentano di 1"
+  for (let i = 0; i < abilityPatterns.length; i += 1) {
+    for (let j = i + 1; j < abilityPatterns.length; j += 1) {
+      const a = abilityPatterns[i];
+      const b = abilityPatterns[j];
+      const pair = new RegExp(`${a.re.source}[^.\\n]{0,20}e[^.\\n]{0,20}${b.re.source}[^.\\n]{0,30}aumentan[oa] di\\s*([12])`, "i");
+      const m = t.match(pair);
+      if (m) {
+        const n = Number.parseInt(m[1], 10);
+        add(a.key, n);
+        add(b.key, n);
+      }
+    }
+  }
+
+  // Fallback per razze "choose +2/+1" (es. MPMM).
+  if (Object.keys(bonuses).length === 0) {
+    if (/aumenta di 2.*aumenta di 1|due punteggi.*aumentano di 1|un punteggio.*aumenta di 2/.test(t)) {
+      add(primaryOrder[0] ?? "str", 2);
+      add(primaryOrder[1] ?? "dex", 1);
+    }
+  }
+  return bonuses;
+}
+
+function applyAbilityBonuses(
+  base: Record<AbilityKey, number>,
+  bonuses: Partial<Record<AbilityKey, number>>
+): Record<AbilityKey, number> {
+  const out = { ...base };
+  for (const a of ABILITIES) {
+    out[a] = Math.max(1, Math.min(20, out[a] + (bonuses[a] ?? 0)));
+  }
+  return out;
+}
+
+export function computeCoreSheet(
+  classLabel: string,
+  level: number
+): Pick<
+  GeneratedCharacterSheet,
+  | "abilities"
+  | "abilityMods"
+  | "proficiencyBonus"
+  | "savingThrows"
+  | "skills"
+  | "passivePerception"
+  | "speed"
+  | "armorClass"
+  | "initiative"
+  | "hpMax"
+  | "hitDie"
+  | "hitDiceTotal"
+  | "weaponRows"
+  | "proficiencies"
+  | "armorProficiencies"
+  | "weaponProficiencies"
+  | "toolProficiencies"
+  | "inventory"
+  | "languages"
+> {
+  const cfg = CLASS_CONFIG[classLabel] ?? CLASS_CONFIG.Guerriero;
+  const abilities = buildPointBuy(cfg.primary);
+  return computeCoreFromAbilities(classLabel, level, abilities);
+}
+
 export async function buildGeneratedCharacterSheet(
   input: CharacterGeneratorInput,
   requestOrigin?: string | null
 ): Promise<GeneratorBuildResult> {
-  const core = computeCoreSheet(input.classLabel, input.level);
+  const baseCore = computeCoreSheet(input.classLabel, input.level);
+  const initialRules = await resolveGeneratorRules(
+    {
+      raceSlug: input.raceSlug,
+      subraceSlug: input.subraceSlug,
+      classLabel: input.classLabel,
+      classSubclass: input.classSubclass,
+      backgroundSlug: input.backgroundSlug,
+      level: input.level,
+    },
+    baseCore.abilityMods,
+    baseCore.proficiencyBonus,
+    requestOrigin
+  );
+  const cfg = CLASS_CONFIG[input.classLabel] ?? CLASS_CONFIG.Guerriero;
+  const raceBaseBonuses = parseAbilityBonusesFromTraits(initialRules.raceTraitsMd, cfg.primary);
+  const subraceBonuses = parseAbilityBonusesFromTraits(initialRules.subraceTraitsMd ?? "", cfg.primary);
+  const raceBonuses = ABILITIES.reduce((acc, a) => {
+    acc[a] = (raceBaseBonuses[a] ?? 0) + (subraceBonuses[a] ?? 0);
+    return acc;
+  }, {} as Partial<Record<AbilityKey, number>>);
+  const boostedAbilities = applyAbilityBonuses(baseCore.abilities, raceBonuses);
+  const core = computeCoreFromAbilities(input.classLabel, input.level, boostedAbilities);
   const rules = await resolveGeneratorRules(
     {
       raceSlug: input.raceSlug,
