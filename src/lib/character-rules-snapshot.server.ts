@@ -530,6 +530,8 @@ async function fetchSpellDetails(
   requestOrigin: string | null
 ): Promise<Record<string, string> | null> {
   await preloadPhbMarkdown(requestOrigin);
+  // Evita di troncare troppo presto: ai bassi livelli alcune liste (es. chierico) superano facilmente 24 voci.
+  const MAX_SPELL_DETAILS = 80;
 
   const out: Record<string, string> = {};
   let chapterIncantesimiMerged = "";
@@ -562,7 +564,7 @@ async function fetchSpellDetails(
     return true;
   };
 
-  for (const s of spellNames.slice(0, 24)) {
+  for (const s of spellNames.slice(0, MAX_SPELL_DETAILS)) {
     const fromPhbFirst = extractPhbSpellMarkdown(s);
     if (fromPhbFirst.trim() && excerptFirstHeadingMatchesSpell(fromPhbFirst, s)) {
       out[s] = sanitizeSpellExcerpt(fromPhbFirst);
