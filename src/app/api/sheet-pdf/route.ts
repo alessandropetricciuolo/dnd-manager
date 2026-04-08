@@ -7,8 +7,10 @@ function resolveTemplatePath(): string | null {
   const candidates = [
     envPath || "",
     path.join(process.cwd(), "public", "Scheda_Base.pdf"),
+    path.join(process.cwd(), "dnd-manager", "public", "Scheda_Base.pdf"),
     path.join(process.cwd(), "Scheda_Base.pdf"),
     path.join(process.cwd(), "..", "Scheda_Base.pdf"),
+    path.join(process.cwd(), "..", "dnd-manager", "public", "Scheda_Base.pdf"),
   ].filter(Boolean);
   for (const p of candidates) {
     if (fs.existsSync(p)) return p;
