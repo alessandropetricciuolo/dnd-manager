@@ -3,38 +3,22 @@
 import { useState, useTransition } from "react";
 import { Sparkles } from "lucide-react";
 import { generateSheetAction } from "@/lib/actions/generator-actions";
-
-const RACES = [
-  "Umano",
-  "Nano",
-  "Elfo",
-  "Mezzelfo",
-  "Halfling",
-  "Mezzorco",
-  "Gnomo",
-  "Tiefling",
-] as const;
-
-const CLASSES = [
-  "Guerriero",
-  "Mago",
-  "Ladro",
-  "Chierico",
-  "Paladino",
-  "Ranger",
-  "Druido",
-  "Bardo",
-  "Monaco",
-  "Stregone",
-  "Warlock",
-  "Barbaro",
-  "Artefice",
-] as const;
+import { BACKGROUND_OPTIONS, CLASS_OPTIONS, RACE_OPTIONS } from "@/lib/character-build-catalog";
+import { subclassCatalogSourceSuffix, supplementSubclassesForClass } from "@/lib/character-subclass-catalog";
+import { GeneratedSheetView } from "@/components/sheet-generator/generated-sheet-view";
+import type { GeneratedCharacterSheet } from "@/lib/sheet-generator/types";
 
 export default function GeneratorPage() {
   const [isPending, startTransition] = useTransition();
+  const [selectedClass, setSelectedClass] = useState<string>("");
+  const [selectedRaceSlug, setSelectedRaceSlug] = useState<string>("");
   const [resultMessage, setResultMessage] = useState<string | null>(null);
   const [resultJson, setResultJson] = useState<string | null>(null);
+  const [sheet, setSheet] = useState<GeneratedCharacterSheet | null>(null);
+  const [warnings, setWarnings] = useState<string[]>([]);
+
+  const race = RACE_OPTIONS.find((r) => r.slug === selectedRaceSlug) ?? null;
+  const classSubclasses = supplementSubclassesForClass(selectedClass);
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -45,9 +29,13 @@ export default function GeneratorPage() {
 
     setResultMessage(null);
     setResultJson(null);
+    setSheet(null);
+    setWarnings([]);
     startTransition(async () => {
       const result = await generateSheetAction(formData);
       setResultMessage(result.message);
+      setWarnings(result.warnings ?? []);
+      if (result.success && result.sheet) setSheet(result.sheet);
       if (result.success && result.sheetData) {
         setResultJson(JSON.stringify(result.sheetData, null, 2));
       }
@@ -60,10 +48,10 @@ export default function GeneratorPage() {
         <header className="mb-6 space-y-2">
           <h1 className="flex items-center gap-2 text-2xl font-semibold text-barber-gold">
             <Sparkles className="h-5 w-5" />
-            Generatore Schede D&D (RAG)
+            Generatore Schede D&D (HTML)
           </h1>
           <p className="text-sm text-barber-paper/70">
-            Inserisci i parametri del personaggio: nel prossimo step collegheremo la consultazione dei manuali vettorializzati.
+            Flusso deterministico: point-buy, abilita, privilegi, equipaggiamento e incantesimi da manuali catalogati.
           </p>
         </header>
 
@@ -85,68 +73,156 @@ export default function GeneratorPage() {
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <label htmlFor="race" className="text-sm font-medium text-barber-paper">
+              <label htmlFor="raceSlug" className="text-sm font-medium text-barber-paper">
                 Razza
               </label>
               <select
-                id="race"
-                name="race"
+                id="raceSlug"
+                name="raceSlug"
                 required
                 defaultValue=""
                 disabled={isPending}
+                onChange={(e) => {
+                  setSelectedRaceSlug(e.target.value);
+                }}
                 className="h-11 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
               >
                 <option value="" disabled>
                   Seleziona razza
                 </option>
-                {RACES.map((race) => (
-                  <option key={race} value={race}>
-                    {race}
+                {RACE_OPTIONS.map((r) => (
+                  <option key={r.slug} value={r.slug}>
+                    {r.label}
                   </option>
                 ))}
               </select>
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="dndClass" className="text-sm font-medium text-barber-paper">
-                Classe
+              <label htmlFor="subraceSlug" className="text-sm font-medium text-barber-paper">
+                Sottorazza (opzionale)
               </label>
               <select
-                id="dndClass"
-                name="dndClass"
-                required
+                id="subraceSlug"
+                name="subraceSlug"
                 defaultValue=""
-                disabled={isPending}
+                disabled={isPending || !race?.subraces?.length}
                 className="h-11 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
               >
-                <option value="" disabled>
-                  Seleziona classe
-                </option>
-                {CLASSES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
+                <option value="">Nessuna</option>
+                {(race?.subraces ?? []).map((s) => (
+                  <option key={s.slug} value={s.slug}>
+                    {s.label}
                   </option>
                 ))}
               </select>
             </div>
           </div>
 
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <label htmlFor="classLabel" className="text-sm font-medium text-barber-paper">
+                Classe
+              </label>
+              <select
+                id="classLabel"
+                name="classLabel"
+                required
+                defaultValue=""
+                disabled={isPending}
+                onChange={(e) => setSelectedClass(e.target.value)}
+                className="h-11 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
+              >
+                <option value="" disabled>
+                  Seleziona classe
+                </option>
+                {CLASS_OPTIONS.map((c) => (
+                  <option key={c.slug} value={c.label}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="classSubclass" className="text-sm font-medium text-barber-paper">
+                Sottoclasse
+              </label>
+              <select
+                id="classSubclass"
+                name="classSubclass"
+                defaultValue=""
+                disabled={isPending || classSubclasses.length === 0}
+                className="h-11 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
+              >
+                <option value="">Nessuna</option>
+                {classSubclasses.map((s) => (
+                  <option key={s.slug} value={s.label}>
+                    {s.label} ({subclassCatalogSourceSuffix(s)})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <label htmlFor="backgroundSlug" className="text-sm font-medium text-barber-paper">
+                Background
+              </label>
+              <select
+                id="backgroundSlug"
+                name="backgroundSlug"
+                required
+                defaultValue=""
+                disabled={isPending}
+                className="h-11 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
+              >
+                <option value="" disabled>Seleziona background</option>
+                {BACKGROUND_OPTIONS.map((b) => (
+                  <option key={b.slug} value={b.slug}>{b.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="level" className="text-sm font-medium text-barber-paper">Livello</label>
+              <input
+                id="level"
+                name="level"
+                type="number"
+                min={1}
+                max={20}
+                step={1}
+                required
+                defaultValue={1}
+                disabled={isPending}
+                className="h-11 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="alignment" className="text-sm font-medium text-barber-paper">Allineamento</label>
+              <input id="alignment" name="alignment" type="text" disabled={isPending} className="h-11 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold" />
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <label htmlFor="age" className="text-sm font-medium text-barber-paper">Eta</label>
+              <input id="age" name="age" type="text" disabled={isPending} className="h-11 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold" />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="height" className="text-sm font-medium text-barber-paper">Altezza</label>
+              <input id="height" name="height" type="text" disabled={isPending} className="h-11 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold" />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="weight" className="text-sm font-medium text-barber-paper">Peso</label>
+              <input id="weight" name="weight" type="text" disabled={isPending} className="h-11 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold" />
+            </div>
+          </div>
+
           <div className="space-y-2">
-            <label htmlFor="level" className="text-sm font-medium text-barber-paper">
-              Livello
-            </label>
-            <input
-              id="level"
-              name="level"
-              type="number"
-              min={1}
-              max={20}
-              step={1}
-              required
-              defaultValue={1}
-              disabled={isPending}
-              className="h-11 w-32 rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
-            />
+            <label htmlFor="sex" className="text-sm font-medium text-barber-paper">Sesso</label>
+            <input id="sex" name="sex" type="text" disabled={isPending} className="h-11 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold" />
           </div>
 
           <button
@@ -154,7 +230,7 @@ export default function GeneratorPage() {
             disabled={isPending}
             className="inline-flex h-11 items-center justify-center rounded-md bg-barber-red px-5 text-sm font-medium text-barber-paper transition hover:bg-barber-red/90 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {isPending ? "Consultazione manuali in corso..." : "Genera Scheda"}
+            {isPending ? "Generazione scheda in corso..." : "Genera Scheda"}
           </button>
         </form>
 
@@ -163,6 +239,14 @@ export default function GeneratorPage() {
             {resultMessage}
           </p>
         )}
+        {warnings.length > 0 && (
+          <div className="mt-5 rounded-md border border-yellow-500/30 bg-yellow-900/20 px-4 py-3 text-sm text-yellow-100">
+            {warnings.map((w) => (
+              <div key={w}>- {w}</div>
+            ))}
+          </div>
+        )}
+        {sheet && <GeneratedSheetView sheet={sheet} />}
         {resultJson && (
           <div className="mt-5 rounded-md border border-barber-gold/25 bg-black/30 p-4">
             <p className="mb-2 text-xs uppercase tracking-wide text-barber-gold/80">

@@ -249,6 +249,29 @@ function sanitizeSpellExcerpt(md: string): string {
   return normalizeSpellExcerptFirstHeading(t.trim()).trim();
 }
 
+/** Sanitizza estratti regole (razza/sottoclasse/background): rimuove artefatti OCR e immagini markdown. */
+function sanitizeRulesExcerpt(md: string): string {
+  let t = (md ?? "").replace(/\r/g, "").trim();
+  if (!t) return "";
+  const lines = t.split("\n");
+  const cleaned: string[] = [];
+  for (const line of lines) {
+    const s = line.trim();
+    if (!s) {
+      cleaned.push("");
+      continue;
+    }
+    if (/^!\[[^\]]*\]\([^)]+\)\s*$/i.test(s)) continue;
+    if (/^scansionato con camscanner\b/i.test(s)) continue;
+    if (/^CAPITOLO\s+\d+\s*\|/i.test(s)) continue;
+    if (/^\d{1,4}$/.test(s)) continue;
+    cleaned.push(line);
+  }
+  t = cleaned.join("\n");
+  t = t.replace(/\n{3,}/g, "\n\n").trim();
+  return t;
+}
+
 /** Il primo titolo ATX del testo deve essere l’incantesimo richiesto (evita chunk «BENEDIZIONE DELL'OSCURO» per «Benedizione»). */
 function excerptFirstHeadingMatchesSpell(md: string, spellRaw: string): boolean {
   const m = md.replace(/\r/g, "").match(/^#{1,6}\s+(.+?)(?:\s+#+\s*)?$/m);
@@ -815,6 +838,11 @@ export async function recomputeCharacterRulesSnapshot(input: {
         raceTraitsMd = extractSectionByHeadingsMarkdown(md, [raceDef.traitsSectionHeading]);
       }
     }
+    if (raceTraitsMd.trim() && raceDef.traitsSectionHeading) {
+      const narrowed = extractSectionByHeadingsMarkdown(raceTraitsMd, [raceDef.traitsSectionHeading]);
+      if (narrowed.trim()) raceTraitsMd = narrowed;
+    }
+    raceTraitsMd = sanitizeRulesExcerpt(raceTraitsMd);
     if (!raceTraitsMd.trim()) warnings.push(`Tratti razza non trovati in manuals_knowledge per «${raceDef.label}».`);
   }
 
@@ -835,6 +863,10 @@ export async function recomputeCharacterRulesSnapshot(input: {
         const md = getManualMarkdownByFileName(mkRace.fileName);
         const fromMd = extractSectionByHeadingsMarkdown(md, [sr.sectionHeading]);
         subraceTraitsMd = fromMd.trim() ? fromMd : null;
+      }
+      if (subraceTraitsMd?.trim()) {
+        const narrowed = extractSectionByHeadingsMarkdown(subraceTraitsMd, [sr.sectionHeading]);
+        subraceTraitsMd = sanitizeRulesExcerpt(narrowed.trim() ? narrowed : subraceTraitsMd);
       }
       if (!subraceTraitsMd?.trim())
         warnings.push(`Sottorazza «${sr.label}»: nessun estratto trovato in ingest.`);
@@ -896,7 +928,14 @@ export async function recomputeCharacterRulesSnapshot(input: {
       : null;
     const headings = matched ? [...new Set(matched.sectionHeadings)] : [sub.toUpperCase()];
     let rawSubclass = "";
+    if (matched) {
+      await preloadManualMarkdownFile(matched.supplementRulesSource.markdownFile, await resolveRequestOriginForPhb());
+      const md = getManualMarkdownByFileName(matched.supplementRulesSource.markdownFile);
+      const fromMd = extractSectionByHeadingsMarkdown(md, matched.sectionHeadings);
+      if (fromMd.trim()) rawSubclass = fromMd;
+    }
     for (const h of headings) {
+      if (rawSubclass.trim()) break;
       if (!h.trim()) continue;
       const rows = await fetchRowsSectionHeading(admin, h, excluded, mkSub);
       const merged = mergeMdChunks(rows);
@@ -909,18 +948,17 @@ export async function recomputeCharacterRulesSnapshot(input: {
       const rows = await fetchRowsContentIlike(admin, matched.contentIlikeFallback, excluded, mkSub);
       rawSubclass = mergeMdChunks(rows);
     }
-    if (!rawSubclass.trim() && matched) {
-      await preloadManualMarkdownFile(matched.supplementRulesSource.markdownFile, await resolveRequestOriginForPhb());
-      const md = getManualMarkdownByFileName(matched.supplementRulesSource.markdownFile);
-      rawSubclass = extractSectionByHeadingsMarkdown(md, matched.sectionHeadings);
-    }
     if (!rawSubclass.trim()) {
       rawSubclass = mergeMdChunks(await fetchRowsSectionHeading(admin, sub.toUpperCase(), excluded, null));
     }
     if (!rawSubclass.trim()) {
       rawSubclass = mergeMdChunks(await fetchRowsContentIlike(admin, `%${sub}%`, excluded, null));
     }
-    classSubclassMd = rawSubclass.trim() ? filterClassRulesByLevel(rawSubclass, level) : null;
+    if (rawSubclass.trim() && headings.length > 0) {
+      const narrowed = extractSectionByHeadingsMarkdown(rawSubclass, headings);
+      if (narrowed.trim()) rawSubclass = narrowed;
+    }
+    classSubclassMd = rawSubclass.trim() ? sanitizeRulesExcerpt(filterClassRulesByLevel(rawSubclass, level)) : null;
     if (!classSubclassMd?.trim()) {
       const hint = matched
         ? `${matched.supplementRulesSource.markdownFile} (manual_book_key: ${matched.supplementRulesSource.manualBookKey})`
