@@ -140,6 +140,93 @@ function extractSpellEntryFromMarkdown(raw: string, spellName: string): string {
   return txt.slice(start, end).trim();
 }
 
+function headingTextRaw(line: string): string | null {
+  const m = line.match(/^(\s*#{1,6})\s+(.+?)\s*$/);
+  if (!m) return null;
+  return m[2].replace(/\s+#+\s*$/, "").trim();
+}
+
+function headingLevel(line: string): number | null {
+  const m = line.match(/^(\s*#{1,6})\s+.+$/);
+  if (!m) return null;
+  return (m[1].match(/#/g) ?? []).length;
+}
+
+/**
+ * Estrae una sezione markdown a partire da un heading (uno tra `headings`), fino al prossimo heading
+ * di livello <= heading trovato. Match tolerant su accenti/case/spazi.
+ */
+function extractSectionByHeadingsMarkdown(raw: string, headings: string[]): string {
+  const txt = raw.replace(/\r/g, "");
+  if (!txt.trim()) return "";
+  const targets = headings
+    .map((h) => normalizeHeadingForMatch(h))
+    .filter(Boolean);
+  if (!targets.length) return "";
+  const lines = txt.split("\n");
+  let startIdx = -1;
+  let startLevel = 7;
+  for (let i = 0; i < lines.length; i += 1) {
+    const ht = headingTextRaw(lines[i]);
+    if (!ht) continue;
+    const hn = normalizeHeadingForMatch(ht);
+    if (!targets.includes(hn)) continue;
+    const lv = headingLevel(lines[i]);
+    if (!lv) continue;
+    startIdx = i;
+    startLevel = lv;
+    break;
+  }
+  if (startIdx < 0) return "";
+  let endIdx = lines.length;
+  for (let i = startIdx + 1; i < lines.length; i += 1) {
+    const lv = headingLevel(lines[i]);
+    if (lv && lv <= startLevel) {
+      endIdx = i;
+      break;
+    }
+  }
+  return lines.slice(startIdx, endIdx).join("\n").trim();
+}
+
+/**
+ * Trova una porzione tramite ancora testuale, poi risale all'heading precedente e
+ * restituisce l'intera sezione fino al prossimo heading di livello <=.
+ */
+function extractSectionByContentAnchorMarkdown(raw: string, anchor: string): string {
+  const txt = raw.replace(/\r/g, "");
+  if (!txt.trim() || !anchor.trim()) return "";
+  const idx = txt.toLocaleLowerCase("it").indexOf(anchor.toLocaleLowerCase("it"));
+  if (idx < 0) return "";
+  const lines = txt.split("\n");
+  let charCount = 0;
+  let lineIdx = 0;
+  for (; lineIdx < lines.length; lineIdx += 1) {
+    const lineLen = lines[lineIdx].length + 1;
+    if (charCount + lineLen > idx) break;
+    charCount += lineLen;
+  }
+  let startIdx = -1;
+  let startLevel = 7;
+  for (let i = lineIdx; i >= 0; i -= 1) {
+    const lv = headingLevel(lines[i]);
+    if (!lv) continue;
+    startIdx = i;
+    startLevel = lv;
+    break;
+  }
+  if (startIdx < 0) return "";
+  let endIdx = lines.length;
+  for (let i = startIdx + 1; i < lines.length; i += 1) {
+    const lv = headingLevel(lines[i]);
+    if (lv && lv <= startLevel) {
+      endIdx = i;
+      break;
+    }
+  }
+  return lines.slice(startIdx, endIdx).join("\n").trim();
+}
+
 /**
  * Rimuove artefatti d’impaginazione OCR (numeri pagina isolati, header «CAPITOLO 11 | …») in coda o in mezzo al testo,
  * e unifica il primo titolo ATX a livello H1 (anche per estratti da manuals_knowledge).
@@ -719,6 +806,15 @@ export async function recomputeCharacterRulesSnapshot(input: {
       const rows = await fetchRowsSectionHeading(admin, raceDef.traitsSectionHeading, excluded, mkRace);
       raceTraitsMd = mergeMdChunks(rows);
     }
+    if (!raceTraitsMd.trim() && mkRace) {
+      await preloadManualMarkdownFile(mkRace.fileName, await resolveRequestOriginForPhb());
+      const md = getManualMarkdownByFileName(mkRace.fileName);
+      if (raceDef.traitsContentAnchor) {
+        raceTraitsMd = extractSectionByContentAnchorMarkdown(md, raceDef.traitsContentAnchor);
+      } else {
+        raceTraitsMd = extractSectionByHeadingsMarkdown(md, [raceDef.traitsSectionHeading]);
+      }
+    }
     if (!raceTraitsMd.trim()) warnings.push(`Tratti razza non trovati in manuals_knowledge per «${raceDef.label}».`);
   }
 
@@ -734,6 +830,12 @@ export async function recomputeCharacterRulesSnapshot(input: {
         : null;
       const rows = await fetchRowsSectionHeading(admin, sr.sectionHeading, excluded, mkRace);
       subraceTraitsMd = mergeMdChunks(rows) || null;
+      if (!subraceTraitsMd?.trim() && mkRace) {
+        await preloadManualMarkdownFile(mkRace.fileName, await resolveRequestOriginForPhb());
+        const md = getManualMarkdownByFileName(mkRace.fileName);
+        const fromMd = extractSectionByHeadingsMarkdown(md, [sr.sectionHeading]);
+        subraceTraitsMd = fromMd.trim() ? fromMd : null;
+      }
       if (!subraceTraitsMd?.trim())
         warnings.push(`Sottorazza «${sr.label}»: nessun estratto trovato in ingest.`);
     }
@@ -807,6 +909,11 @@ export async function recomputeCharacterRulesSnapshot(input: {
       const rows = await fetchRowsContentIlike(admin, matched.contentIlikeFallback, excluded, mkSub);
       rawSubclass = mergeMdChunks(rows);
     }
+    if (!rawSubclass.trim() && matched) {
+      await preloadManualMarkdownFile(matched.supplementRulesSource.markdownFile, await resolveRequestOriginForPhb());
+      const md = getManualMarkdownByFileName(matched.supplementRulesSource.markdownFile);
+      rawSubclass = extractSectionByHeadingsMarkdown(md, matched.sectionHeadings);
+    }
     if (!rawSubclass.trim()) {
       rawSubclass = mergeMdChunks(await fetchRowsSectionHeading(admin, sub.toUpperCase(), excluded, null));
     }
@@ -874,6 +981,12 @@ export async function recomputeCharacterRulesSnapshot(input: {
     const rows = await fetchRowsContentIlike(admin, `%${bgDef.opener}%`, excluded);
     const merged = mergeMdChunks(rows);
     backgroundRulesMd = merged.trim() ? clipBackgroundRules(merged) : null;
+    if (!backgroundRulesMd?.trim()) {
+      await preloadManualMarkdownFile(PHB_MD_FILE, await resolveRequestOriginForPhb());
+      const phb = getManualMarkdownByFileName(PHB_MD_FILE);
+      const fromMd = extractSectionByHeadingsMarkdown(phb, [bgDef.phbH1]);
+      backgroundRulesMd = fromMd.trim() ? clipBackgroundRules(fromMd) : null;
+    }
     if (!backgroundRulesMd?.trim()) warnings.push(`Background PHB «${bgDef.label}»: estratto non trovato.`);
   }
 
