@@ -50,10 +50,34 @@ function valueToString(v: unknown): string {
   return JSON.stringify(v);
 }
 
+function isMarked(value: string): boolean {
+  const v = value.trim().toLowerCase();
+  return v === "x" || v === "true" || v === "1" || v === "yes" || v === "/yes" || v === "on";
+}
+
+function enrichFieldsFromSpellList(fields: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...fields };
+  const list = Array.isArray(fields.SpellList) ? (fields.SpellList as Array<Record<string, unknown>>) : [];
+  if (!list.length) return out;
+  for (let i = 0; i < Math.min(20, list.length); i += 1) {
+    const row = i + 1;
+    const s = list[i] ?? {};
+    const level = valueToString(s.level);
+    out[`Row_${row}_Lvl`] = level;
+    out[`Row_${row}_Name`] = valueToString(s.name);
+    out[`Row_${row}_Desc`] = valueToString(s.desc);
+    out[`Row_${row}_V`] = isMarked(valueToString(s.v)) ? "x" : "";
+    out[`Row_${row}_S`] = isMarked(valueToString(s.s)) ? "x" : "";
+    out[`Row_${row}_Conc`] = isMarked(valueToString(s.conc)) ? "x" : "";
+    out[`Row_${row}_Rit`] = isMarked(valueToString(s.rit)) ? "x" : "";
+  }
+  return out;
+}
+
 export async function POST(req: Request): Promise<Response> {
   try {
     const body = (await req.json()) as { fields?: Record<string, unknown>; fileName?: string };
-    const fields = body?.fields ?? {};
+    const fields = enrichFieldsFromSpellList(body?.fields ?? {});
     const templateBytes = await resolveTemplateBytes(req);
     if (!templateBytes) {
       return Response.json(
@@ -77,7 +101,7 @@ export async function POST(req: Request): Promise<Response> {
       const val = valueToString(raw);
       // Checkbox / radio via API comune setText fallback.
       if ("check" in fld && typeof (fld as { check?: () => void }).check === "function") {
-        if (val.trim().toLowerCase() === "x" || val.trim().toLowerCase() === "true") {
+        if (isMarked(val)) {
           (fld as { check: () => void }).check();
         } else if ("uncheck" in fld && typeof (fld as { uncheck?: () => void }).uncheck === "function") {
           (fld as { uncheck: () => void }).uncheck();
