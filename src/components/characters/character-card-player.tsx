@@ -28,46 +28,117 @@ function renderRichTooltipText(text: string) {
       .replace(/\*\*/g, "")
       .replace(/^[-*]\s+/, "")
       .trimEnd();
+  const stripTags = (s: string): string =>
+    cleanInline(
+      s
+        .replace(/<br\s*\/?>/gi, " ")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+    );
   const lines = text.replace(/\r/g, "").split("\n");
-  return (
-    <div className="space-y-1">
-      {lines.map((raw, idx) => {
-        const line = raw.trimEnd();
-        const heading = line.match(/^\s*#+\s*(.+)$/);
-        if (heading) {
-          return (
-            <p key={idx} className="font-semibold text-barber-gold">
-              {cleanInline(heading[1] ?? "")}
-            </p>
-          );
+  const nodes: JSX.Element[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i]?.trimEnd() ?? "";
+    if (/^\s*<table[\s>]/i.test(line)) {
+      const tableLines: string[] = [line];
+      i += 1;
+      while (i < lines.length) {
+        tableLines.push(lines[i] ?? "");
+        if (/<\/table>\s*$/i.test(lines[i] ?? "")) {
+          i += 1;
+          break;
         }
-        const listItem = line.match(/^\s*\*\s+(\S.*)$/);
-        if (listItem) {
-          return (
-            <p key={idx} className="flex gap-2 text-barber-paper">
-              <span className="shrink-0 text-barber-gold/85" aria-hidden>
-                •
-              </span>
-              <span className="min-w-0">{cleanInline(listItem[1] ?? "")}</span>
-            </p>
-          );
-        }
-        const leadBold = line.match(/^\s*\*\*([^*]+)\*\*\s*(.*)$/);
-        if (leadBold) {
-          const rest = [leadBold[1], leadBold[2]].filter(Boolean).join(" ").trim();
-          return (
-            <p key={idx} className="font-semibold text-barber-paper">
-              {cleanInline(rest)}
-            </p>
-          );
-        }
-        return (
-          <p key={idx} className="text-barber-paper">
-            {cleanInline(line)}
-          </p>
+        i += 1;
+      }
+      const tableHtml = tableLines.join("\n");
+      const rowMatches = Array.from(tableHtml.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi));
+      const rows = rowMatches.map((m) => {
+        const cells = Array.from(m[1].matchAll(/<(th|td)[^>]*>([\s\S]*?)<\/\1>/gi));
+        return cells.map((c) => stripTags(c[2] ?? ""));
+      });
+      const header = rows.find((r) => r.length > 0) ?? [];
+      const body = rows.slice(header.length ? 1 : 0).filter((r) => r.length > 0);
+      if (header.length || body.length) {
+        nodes.push(
+          <div key={`tbl-${i}`} className="overflow-x-auto rounded border border-barber-gold/20">
+            <table className="min-w-full border-collapse text-[11px]">
+              {header.length ? (
+                <thead className="bg-barber-gold/10 text-barber-gold">
+                  <tr>
+                    {header.map((h, hIdx) => (
+                      <th key={`h-${hIdx}`} className="border-b border-barber-gold/20 px-2 py-1 text-left font-semibold">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+              ) : null}
+              {body.length ? (
+                <tbody>
+                  {body.map((row, rIdx) => (
+                    <tr key={`r-${rIdx}`} className="border-t border-barber-gold/10">
+                      {row.map((cell, cIdx) => (
+                        <td key={`c-${rIdx}-${cIdx}`} className="px-2 py-1 text-barber-paper/95">
+                          {cell}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              ) : null}
+            </table>
+          </div>
         );
-      })}
-    </div>
+      }
+      continue;
+    }
+
+    const heading = line.match(/^\s*#+\s*(.+)$/);
+    if (heading) {
+      nodes.push(
+        <p key={`ln-${i}`} className="font-semibold text-barber-gold">
+          {cleanInline(heading[1] ?? "")}
+        </p>
+      );
+      i += 1;
+      continue;
+    }
+    const listItem = line.match(/^\s*\*\s+(\S.*)$/);
+    if (listItem) {
+      nodes.push(
+        <p key={`ln-${i}`} className="flex gap-2 text-barber-paper">
+          <span className="shrink-0 text-barber-gold/85" aria-hidden>
+            •
+          </span>
+          <span className="min-w-0">{cleanInline(listItem[1] ?? "")}</span>
+        </p>
+      );
+      i += 1;
+      continue;
+    }
+    const leadBold = line.match(/^\s*\*\*([^*]+)\*\*\s*(.*)$/);
+    if (leadBold) {
+      const rest = [leadBold[1], leadBold[2]].filter(Boolean).join(" ").trim();
+      nodes.push(
+        <p key={`ln-${i}`} className="font-semibold text-barber-paper">
+          {cleanInline(rest)}
+        </p>
+      );
+      i += 1;
+      continue;
+    }
+    nodes.push(
+      <p key={`ln-${i}`} className="text-barber-paper">
+        {cleanInline(line)}
+      </p>
+    );
+    i += 1;
+  }
+
+  return (
+    <div className="space-y-1">{nodes}</div>
   );
 }
 
