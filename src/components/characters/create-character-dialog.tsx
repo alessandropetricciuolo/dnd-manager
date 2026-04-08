@@ -82,6 +82,35 @@ export function CreateCharacterDialog({ campaignId }: CreateCharacterDialogProps
     }
   }
 
+  function openSheetGeneratorPreview() {
+    if (!formRef.current) return;
+    const fd = new FormData(formRef.current);
+    const characterName = (fd.get("name") as string | null)?.trim() ?? "";
+    const raceSlug = (fd.get("race_slug") as string | null)?.trim() ?? "";
+    const subraceSlug = (fd.get("subclass_slug") as string | null)?.trim() ?? "";
+    const classLabel = (fd.get("character_class") as string | null)?.trim() ?? "";
+    const classSubclass = (fd.get("class_subclass") as string | null)?.trim() ?? "";
+    const backgroundSlug = (fd.get("background_slug") as string | null)?.trim() ?? "";
+
+    if (!characterName || !raceSlug || !classLabel || !backgroundSlug) {
+      toast.error("Per l'anteprima compila almeno nome, razza, classe e background.");
+      return;
+    }
+
+    const params = new URLSearchParams({
+      characterName,
+      raceSlug,
+      classLabel,
+      backgroundSlug,
+      level: "1",
+      autogen: "1",
+    });
+    if (subraceSlug) params.set("subraceSlug", subraceSlug);
+    if (classSubclass) params.set("classSubclass", classSubclass);
+
+    window.open(`/generator?${params.toString()}`, "_blank", "noopener,noreferrer");
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -188,6 +217,15 @@ export function CreateCharacterDialog({ campaignId }: CreateCharacterDialogProps
           </div>
 
           <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={openSheetGeneratorPreview}
+              disabled={isLoading}
+              className="border-barber-gold/40 text-barber-gold"
+            >
+              Anteprima scheda
+            </Button>
             <Button
               type="button"
               variant="outline"

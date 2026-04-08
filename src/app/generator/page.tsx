@@ -1,17 +1,38 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { Sparkles } from "lucide-react";
 import { generateSheetAction } from "@/lib/actions/generator-actions";
 import { BACKGROUND_OPTIONS, CLASS_OPTIONS, RACE_OPTIONS } from "@/lib/character-build-catalog";
 import { subclassCatalogSourceSuffix, supplementSubclassesForClass } from "@/lib/character-subclass-catalog";
 import { GeneratedSheetView } from "@/components/sheet-generator/generated-sheet-view";
 import type { GeneratedCharacterSheet } from "@/lib/sheet-generator/types";
+import { useSearchParams } from "next/navigation";
 
 export default function GeneratorPage() {
+  const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
-  const [selectedClass, setSelectedClass] = useState<string>("");
-  const [selectedRaceSlug, setSelectedRaceSlug] = useState<string>("");
+  const initial = useMemo(
+    () => ({
+      characterName: searchParams.get("characterName") ?? "",
+      raceSlug: searchParams.get("raceSlug") ?? "",
+      subraceSlug: searchParams.get("subraceSlug") ?? "",
+      classLabel: searchParams.get("classLabel") ?? "",
+      classSubclass: searchParams.get("classSubclass") ?? "",
+      backgroundSlug: searchParams.get("backgroundSlug") ?? "",
+      level: searchParams.get("level") ?? "1",
+      alignment: searchParams.get("alignment") ?? "",
+      age: searchParams.get("age") ?? "",
+      height: searchParams.get("height") ?? "",
+      weight: searchParams.get("weight") ?? "",
+      sex: searchParams.get("sex") ?? "",
+      autogen: searchParams.get("autogen") === "1",
+    }),
+    [searchParams]
+  );
+
+  const [selectedClass, setSelectedClass] = useState<string>(initial.classLabel);
+  const [selectedRaceSlug, setSelectedRaceSlug] = useState<string>(initial.raceSlug);
   const [resultMessage, setResultMessage] = useState<string | null>(null);
   const [resultJson, setResultJson] = useState<string | null>(null);
   const [sheet, setSheet] = useState<GeneratedCharacterSheet | null>(null);
@@ -42,6 +63,37 @@ export default function GeneratorPage() {
     });
   }
 
+  useEffect(() => {
+    setSelectedClass(initial.classLabel);
+    setSelectedRaceSlug(initial.raceSlug);
+  }, [initial.classLabel, initial.raceSlug]);
+
+  useEffect(() => {
+    if (!initial.autogen) return;
+    if (!initial.characterName || !initial.raceSlug || !initial.classLabel || !initial.backgroundSlug) return;
+    const fd = new FormData();
+    fd.set("characterName", initial.characterName);
+    fd.set("raceSlug", initial.raceSlug);
+    if (initial.subraceSlug) fd.set("subraceSlug", initial.subraceSlug);
+    fd.set("classLabel", initial.classLabel);
+    if (initial.classSubclass) fd.set("classSubclass", initial.classSubclass);
+    fd.set("backgroundSlug", initial.backgroundSlug);
+    fd.set("level", initial.level || "1");
+    if (initial.alignment) fd.set("alignment", initial.alignment);
+    if (initial.age) fd.set("age", initial.age);
+    if (initial.height) fd.set("height", initial.height);
+    if (initial.weight) fd.set("weight", initial.weight);
+    if (initial.sex) fd.set("sex", initial.sex);
+
+    startTransition(async () => {
+      const result = await generateSheetAction(fd);
+      setResultMessage(result.message);
+      setWarnings(result.warnings ?? []);
+      if (result.success && result.sheet) setSheet(result.sheet);
+      if (result.success && result.sheetData) setResultJson(JSON.stringify(result.sheetData, null, 2));
+    });
+  }, [initial, startTransition]);
+
   return (
     <main className="min-h-[calc(100vh-64px)] bg-gradient-to-b from-[#12100f] via-[#161312] to-[#1d1714] px-4 py-10 text-barber-paper md:px-8">
       <section className="mx-auto w-full max-w-3xl rounded-2xl border border-barber-gold/30 bg-barber-dark/80 p-6 shadow-[0_0_50px_rgba(251,191,36,0.08)]">
@@ -66,6 +118,7 @@ export default function GeneratorPage() {
               type="text"
               required
               placeholder="Es. Tharion il Grigio"
+              defaultValue={initial.characterName}
               disabled={isPending}
               className="h-11 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper placeholder:text-barber-paper/45 focus:outline-none focus:ring-2 focus:ring-barber-gold"
             />
@@ -80,7 +133,7 @@ export default function GeneratorPage() {
                 id="raceSlug"
                 name="raceSlug"
                 required
-                defaultValue=""
+                defaultValue={initial.raceSlug}
                 disabled={isPending}
                 onChange={(e) => {
                   setSelectedRaceSlug(e.target.value);
@@ -105,7 +158,7 @@ export default function GeneratorPage() {
               <select
                 id="subraceSlug"
                 name="subraceSlug"
-                defaultValue=""
+                defaultValue={initial.subraceSlug}
                 disabled={isPending || !race?.subraces?.length}
                 className="h-11 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
               >
@@ -128,7 +181,7 @@ export default function GeneratorPage() {
                 id="classLabel"
                 name="classLabel"
                 required
-                defaultValue=""
+                defaultValue={initial.classLabel}
                 disabled={isPending}
                 onChange={(e) => setSelectedClass(e.target.value)}
                 className="h-11 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
@@ -151,7 +204,7 @@ export default function GeneratorPage() {
               <select
                 id="classSubclass"
                 name="classSubclass"
-                defaultValue=""
+                defaultValue={initial.classSubclass}
                 disabled={isPending || classSubclasses.length === 0}
                 className="h-11 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
               >
@@ -174,7 +227,7 @@ export default function GeneratorPage() {
                 id="backgroundSlug"
                 name="backgroundSlug"
                 required
-                defaultValue=""
+                defaultValue={initial.backgroundSlug}
                 disabled={isPending}
                 className="h-11 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
               >
@@ -194,35 +247,35 @@ export default function GeneratorPage() {
                 max={20}
                 step={1}
                 required
-                defaultValue={1}
+                defaultValue={Number.parseInt(initial.level, 10) || 1}
                 disabled={isPending}
                 className="h-11 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
               />
             </div>
             <div className="space-y-2">
               <label htmlFor="alignment" className="text-sm font-medium text-barber-paper">Allineamento</label>
-              <input id="alignment" name="alignment" type="text" disabled={isPending} className="h-11 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold" />
+              <input id="alignment" name="alignment" type="text" defaultValue={initial.alignment} disabled={isPending} className="h-11 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold" />
             </div>
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2">
               <label htmlFor="age" className="text-sm font-medium text-barber-paper">Eta</label>
-              <input id="age" name="age" type="text" disabled={isPending} className="h-11 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold" />
+              <input id="age" name="age" type="text" defaultValue={initial.age} disabled={isPending} className="h-11 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold" />
             </div>
             <div className="space-y-2">
               <label htmlFor="height" className="text-sm font-medium text-barber-paper">Altezza</label>
-              <input id="height" name="height" type="text" disabled={isPending} className="h-11 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold" />
+              <input id="height" name="height" type="text" defaultValue={initial.height} disabled={isPending} className="h-11 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold" />
             </div>
             <div className="space-y-2">
               <label htmlFor="weight" className="text-sm font-medium text-barber-paper">Peso</label>
-              <input id="weight" name="weight" type="text" disabled={isPending} className="h-11 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold" />
+              <input id="weight" name="weight" type="text" defaultValue={initial.weight} disabled={isPending} className="h-11 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold" />
             </div>
           </div>
 
           <div className="space-y-2">
             <label htmlFor="sex" className="text-sm font-medium text-barber-paper">Sesso</label>
-            <input id="sex" name="sex" type="text" disabled={isPending} className="h-11 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold" />
+            <input id="sex" name="sex" type="text" defaultValue={initial.sex} disabled={isPending} className="h-11 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold" />
           </div>
 
           <button
