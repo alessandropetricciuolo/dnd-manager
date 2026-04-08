@@ -18,6 +18,31 @@ function resolveTemplatePath(): string | null {
   return null;
 }
 
+async function resolveTemplateBytes(req: Request): Promise<Uint8Array | null> {
+  const p = resolveTemplatePath();
+  if (p) return fs.readFileSync(p);
+
+  const origin = new URL(req.url).origin;
+  const baseCandidates = [
+    process.env.SHEET_BASE_PDF_URL?.trim() || "",
+    `${origin}/Scheda_Base.pdf`,
+    `${origin}/dnd-manager/Scheda_Base.pdf`,
+    `${origin}/public/Scheda_Base.pdf`,
+  ].filter(Boolean);
+
+  for (const url of baseCandidates) {
+    try {
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) continue;
+      const ab = await res.arrayBuffer();
+      if (ab.byteLength > 1000) return new Uint8Array(ab);
+    } catch {
+      // prova URL successivo
+    }
+  }
+  return null;
+}
+
 function valueToString(v: unknown): string {
   if (v == null) return "";
   if (typeof v === "string") return v;
@@ -29,18 +54,18 @@ export async function POST(req: Request): Promise<Response> {
   try {
     const body = (await req.json()) as { fields?: Record<string, unknown>; fileName?: string };
     const fields = body?.fields ?? {};
-    const templatePath = resolveTemplatePath();
-    if (!templatePath) {
+    const templateBytes = await resolveTemplateBytes(req);
+    if (!templateBytes) {
       return Response.json(
         {
           success: false,
-          error: "Template PDF non trovato. Aggiungi `Scheda_Base.pdf` in `public/` o configura `SHEET_BASE_PDF_PATH`.",
+          error:
+            "Template PDF non trovato. Pubblica `Scheda_Base.pdf` sotto `/public` oppure configura `SHEET_BASE_PDF_PATH` / `SHEET_BASE_PDF_URL`.",
         },
         { status: 404 }
       );
     }
 
-    const templateBytes = fs.readFileSync(templatePath);
     const pdfDoc = await PDFDocument.load(templateBytes);
     const form = pdfDoc.getForm();
     const formFields = form.getFields();
