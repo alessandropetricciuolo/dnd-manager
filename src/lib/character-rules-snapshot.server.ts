@@ -11,7 +11,11 @@ import {
   raceBySlug,
 } from "@/lib/character-build-catalog";
 import type { CharacterRulesSnapshotV1 } from "@/lib/character-rules-snapshot";
-import { extractPhbSpellMarkdown, preloadPhbMarkdown } from "@/lib/server/phb-spell-excerpt";
+import {
+  extractPhbSpellMarkdown,
+  normalizeSpellExcerptFirstHeading,
+  preloadPhbMarkdown,
+} from "@/lib/server/phb-spell-excerpt";
 
 type MkRow = { content: string | null; metadata: Record<string, unknown> | null };
 const PHB_BOOK_KEY_ALIASES = new Set([
@@ -127,14 +131,26 @@ function extractSpellEntryFromMarkdown(raw: string, spellName: string): string {
   return txt.slice(start, end).trim();
 }
 
-/** Rimuove code di impaginazione tipici del PHB in coda al chunk (numeri pagina, header cap. 11). */
+/**
+ * Rimuove artefatti d’impaginazione OCR (numeri pagina isolati, header «CAPITOLO 11 | …») in coda o in mezzo al testo,
+ * e unifica il primo titolo ATX a livello H1 (anche per estratti da manuals_knowledge).
+ */
 function sanitizeSpellExcerpt(md: string): string {
-  let t = md.trim();
-  t = t.replace(/\nCAPITOLO\s+11\s*\|[^\n]*(?:\n\d+)?\s*$/gim, "");
+  let t = md.trim().replace(/\r/g, "");
+  t = t.replace(/\nCAPITOLO\s+\d+\s*\|[^\n]*/gi, "");
+  const lines = t.split("\n");
+  const cleaned: string[] = [];
+  for (const line of lines) {
+    const s = line.trim();
+    if (/^\d{3}$/.test(s)) continue;
+    if (/^CAPITOLO\s+\d+\s*\|/i.test(s)) continue;
+    cleaned.push(line);
+  }
+  t = cleaned.join("\n");
   while (/\n\d{1,4}\s*$/.test(t)) {
     t = t.replace(/\n\d{1,4}\s*$/g, "").trim();
   }
-  return t.trim();
+  return normalizeSpellExcerptFirstHeading(t.trim()).trim();
 }
 
 /** Il primo titolo ATX del testo deve essere l’incantesimo richiesto (evita chunk «BENEDIZIONE DELL'OSCURO» per «Benedizione»). */

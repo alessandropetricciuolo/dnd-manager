@@ -111,7 +111,7 @@ export function extractPhbSpellMarkdown(spellName: string): string {
 }
 
 /** Il PHB italiano mescola `#` / `##` / `###` per i titoli incantesimo; unifichiamo a `#` per UI/tooltip. */
-function normalizeSpellExcerptFirstHeading(md: string): string {
+export function normalizeSpellExcerptFirstHeading(md: string): string {
   const lines = md.split("\n");
   const first = lines[0]?.match(/^(#{1,6})(\s+\S.*)$/);
   if (!first) return md;
