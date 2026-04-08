@@ -242,7 +242,8 @@ export async function resolveGeneratorRules(
     level: number;
   },
   abilityModByKey: Record<AbilityKey, number>,
-  proficiencyBonus: number
+  proficiencyBonus: number,
+  requestOrigin?: string | null
 ): Promise<ResolvedRules> {
   const warnings: string[] = [];
   const raceDef = raceBySlug(input.raceSlug);
@@ -253,7 +254,7 @@ export async function resolveGeneratorRules(
   let subraceTraitsMd: string | null = null;
   if (raceDef) {
     const source = raceDef.supplementRulesSource?.markdownFile ?? PHB_MD_FILE;
-    await preloadManualMarkdownFile(source);
+    await preloadManualMarkdownFile(source, requestOrigin);
     const md = getManualMarkdownByFileName(source);
     raceTraitsMd = raceDef.traitsContentAnchor
       ? extractSectionByContentAnchorMarkdown(md, raceDef.traitsContentAnchor)
@@ -262,13 +263,16 @@ export async function resolveGeneratorRules(
       const sr = raceDef.subraces.find((s) => s.slug === input.subraceSlug);
       if (sr) subraceTraitsMd = extractSectionByHeadingsMarkdown(md, [sr.sectionHeading]) || null;
     }
+    if (!raceTraitsMd.trim()) {
+      raceTraitsMd = extractSectionByHeadingsMarkdown(md, [raceDef.label.toUpperCase()]);
+    }
   }
   if (!raceTraitsMd.trim()) warnings.push("Tratti razziali non trovati nel manuale sorgente.");
 
   let classFeaturesMd = "";
   if (classDef) {
     const mdFile = classDef.privilegesMarkdownFile ?? PHB_MD_FILE;
-    await preloadManualMarkdownFile(mdFile);
+    await preloadManualMarkdownFile(mdFile, requestOrigin);
     const md = getManualMarkdownByFileName(mdFile);
     const anchors =
       classDef.privilegesAnchors && classDef.privilegesAnchors.length > 0
@@ -285,13 +289,30 @@ export async function resolveGeneratorRules(
       classFeaturesMd = extractSectionByHeadingsMarkdown(md, anchors);
     }
   }
+  if (!classFeaturesMd.trim() && classDef) {
+    const mdFile = classDef.privilegesMarkdownFile ?? PHB_MD_FILE;
+    const md = getManualMarkdownByFileName(mdFile);
+    const classChapter = extractSectionByHeadingsMarkdown(md, [classDef.label.toUpperCase()]);
+    if (classChapter.trim()) {
+      const anchors =
+        classDef.privilegesAnchors && classDef.privilegesAnchors.length > 0
+          ? classDef.privilegesAnchors
+          : [classDef.privilegesAnchor];
+      classFeaturesMd = extractClassPrivilegesMarkdown(
+        anchors,
+        classDef.privilegesExcerptStopPattern,
+        classChapter,
+        classDef.privilegesMdStrips
+      );
+    }
+  }
   if (!classFeaturesMd.trim()) warnings.push("Privilegi di classe non trovati nel manuale sorgente.");
 
   let subclassFeaturesMd: string | null = null;
   if (input.classSubclass?.trim()) {
     const matched = matchSupplementSubclass(input.classLabel, input.classSubclass);
     if (matched) {
-      await preloadManualMarkdownFile(matched.supplementRulesSource.markdownFile);
+      await preloadManualMarkdownFile(matched.supplementRulesSource.markdownFile, requestOrigin);
       const md = getManualMarkdownByFileName(matched.supplementRulesSource.markdownFile);
       subclassFeaturesMd = extractSectionByHeadingsMarkdown(md, matched.sectionHeadings) || null;
       if (!subclassFeaturesMd?.trim() && matched.contentIlikeFallback) {
@@ -301,7 +322,7 @@ export async function resolveGeneratorRules(
         ) || null;
       }
     } else {
-      await preloadPhbMarkdown();
+      await preloadPhbMarkdown(requestOrigin);
       subclassFeaturesMd = extractSectionByHeadingsMarkdown(getManualMarkdownByFileName(PHB_MD_FILE), [
         input.classSubclass.toUpperCase(),
       ]) || null;
@@ -310,7 +331,7 @@ export async function resolveGeneratorRules(
 
   let backgroundMd: string | null = null;
   if (bgDef) {
-    await preloadManualMarkdownFile(PHB_MD_FILE);
+    await preloadManualMarkdownFile(PHB_MD_FILE, requestOrigin);
     backgroundMd = extractSectionByHeadingsMarkdown(getManualMarkdownByFileName(PHB_MD_FILE), [bgDef.phbH1]) || null;
   }
 
@@ -325,7 +346,7 @@ export async function resolveGeneratorRules(
   const spells: GeneratedSpell[] = [];
   if (classDef?.spellList && spellsPrepared > 0) {
     const mdFile = classDef.supplementRulesSource?.markdownFile ?? PHB_MD_FILE;
-    await preloadManualMarkdownFile(mdFile);
+    await preloadManualMarkdownFile(mdFile, requestOrigin);
     const md = getManualMarkdownByFileName(mdFile);
     const listRaw =
       classDef.spellList.style === "h1"
@@ -334,11 +355,11 @@ export async function resolveGeneratorRules(
     const listByLevel = extractSpellListByMaxLevel(listRaw, maxSpellLevelOnSheet(classDef, input.level));
     const names = parseSpellNamesFromList(listByLevel);
     const picked = names.slice(0, spellsPrepared);
-    await preloadPhbMarkdown();
+    await preloadPhbMarkdown(requestOrigin);
     for (const name of picked) {
       const mdSpell = extractPhbSpellMarkdown(name);
       const summary = mdSpell ? compactSpellSummary(mdSpell) : "";
-      const body = mdSpell.replace(/\r/g, "");
+      const body = (mdSpell ?? "").replace(/\r/g, "");
       spells.push({
         level: inferSpellLevelFromList(listByLevel, name),
         name,

@@ -402,7 +402,10 @@ export function computeCoreSheet(
   };
 }
 
-export async function buildGeneratedCharacterSheet(input: CharacterGeneratorInput): Promise<GeneratorBuildResult> {
+export async function buildGeneratedCharacterSheet(
+  input: CharacterGeneratorInput,
+  requestOrigin?: string | null
+): Promise<GeneratorBuildResult> {
   const core = computeCoreSheet(input.classLabel, input.level);
   const rules = await resolveGeneratorRules(
     {
@@ -414,7 +417,8 @@ export async function buildGeneratedCharacterSheet(input: CharacterGeneratorInpu
       level: input.level,
     },
     core.abilityMods,
-    core.proficiencyBonus
+    core.proficiencyBonus,
+    requestOrigin
   );
   const raceDef = raceBySlug(input.raceSlug);
   const subraceLabel = raceDef?.subraces?.find((s) => s.slug === input.subraceSlug)?.label ?? null;

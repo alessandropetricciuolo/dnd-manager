@@ -35,6 +35,7 @@ export default function GeneratorPage() {
   const [selectedRaceSlug, setSelectedRaceSlug] = useState<string>(initial.raceSlug);
   const [resultMessage, setResultMessage] = useState<string | null>(null);
   const [resultJson, setResultJson] = useState<string | null>(null);
+  const [sheetDataObj, setSheetDataObj] = useState<Record<string, unknown> | null>(null);
   const [sheet, setSheet] = useState<GeneratedCharacterSheet | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
 
@@ -50,6 +51,7 @@ export default function GeneratorPage() {
 
     setResultMessage(null);
     setResultJson(null);
+    setSheetDataObj(null);
     setSheet(null);
     setWarnings([]);
     startTransition(async () => {
@@ -58,6 +60,7 @@ export default function GeneratorPage() {
       setWarnings(result.warnings ?? []);
       if (result.success && result.sheet) setSheet(result.sheet);
       if (result.success && result.sheetData) {
+        setSheetDataObj(result.sheetData);
         setResultJson(JSON.stringify(result.sheetData, null, 2));
       }
     });
@@ -90,7 +93,10 @@ export default function GeneratorPage() {
       setResultMessage(result.message);
       setWarnings(result.warnings ?? []);
       if (result.success && result.sheet) setSheet(result.sheet);
-      if (result.success && result.sheetData) setResultJson(JSON.stringify(result.sheetData, null, 2));
+      if (result.success && result.sheetData) {
+        setSheetDataObj(result.sheetData);
+        setResultJson(JSON.stringify(result.sheetData, null, 2));
+      }
     });
   }, [initial, startTransition]);
 
@@ -299,7 +305,7 @@ export default function GeneratorPage() {
             ))}
           </div>
         )}
-        {sheet && <GeneratedSheetView sheet={sheet} />}
+        {sheet && <GeneratedSheetView sheet={sheet} sheetData={sheetDataObj} />}
         {resultJson && (
           <div className="mt-5 rounded-md border border-barber-gold/25 bg-black/30 p-4">
             <p className="mb-2 text-xs uppercase tracking-wide text-barber-gold/80">

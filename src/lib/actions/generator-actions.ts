@@ -3,6 +3,7 @@
 import { buildGeneratedCharacterSheet } from "@/lib/sheet-generator/build-engine";
 import { mapGeneratedSheetToPdfFields } from "@/lib/sheet-generator/sheet-mapper";
 import type { CharacterGeneratorInput, GeneratedCharacterSheet } from "@/lib/sheet-generator/types";
+import { headers } from "next/headers";
 
 export type GenerateSheetResult = {
   success: boolean;
@@ -38,7 +39,11 @@ export async function generateSheetAction(formData: FormData): Promise<GenerateS
   }
 
   try {
-    const built = await buildGeneratedCharacterSheet(input);
+    const h = headers();
+    const host = h.get("x-forwarded-host") ?? h.get("host");
+    const proto = h.get("x-forwarded-proto") ?? "https";
+    const requestOrigin = host ? `${proto}://${host}` : null;
+    const built = await buildGeneratedCharacterSheet(input, requestOrigin);
     const sheetData = mapGeneratedSheetToPdfFields(built.sheet);
     return {
       success: true,
