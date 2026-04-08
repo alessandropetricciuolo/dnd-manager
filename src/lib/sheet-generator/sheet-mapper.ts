@@ -102,6 +102,18 @@ export function mapGeneratedSheetToPdfFields(sheet: GeneratedCharacterSheet): Re
     fields[`Cantrip_${i + 1}`] = cantrip?.name ?? "";
     fields[`Cantrip_${i + 1}_Desc`] = cantrip?.summary ?? "";
   }
+  const rowSpells = sheet.spells.slice(0, 20);
+  for (let i = 0; i < 20; i += 1) {
+    const s = rowSpells[i];
+    const row = i + 1;
+    fields[`Row_${row}_Name`] = s?.name ?? "";
+    fields[`Row_${row}_Desc`] = s?.summary ?? "";
+    fields[`Row_${row}_Lvl`] = s ? String(s.level) : "";
+    fields[`Row_${row}_V`] = s?.verbal ? "x" : "";
+    fields[`Row_${row}_S`] = s?.somatic ? "x" : "";
+    fields[`Row_${row}_Rit`] = s?.ritual ? "x" : "";
+    fields[`Row_${row}_Conc`] = s?.concentration ? "x" : "";
+  }
   fields.SpellList = sheet.spells.map((s) => ({
     level: s.level,
     name: s.name,

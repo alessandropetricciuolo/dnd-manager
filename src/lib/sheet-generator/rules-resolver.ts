@@ -120,25 +120,72 @@ function cleanRulesExcerpt(md: string): string {
   return t.trim();
 }
 
-function normalizeEntertainerDisciplineTable(md: string): string {
-  if (!/DISCIPLINE ARTISTICHE/i.test(md) || !/<table>/i.test(md)) return md;
-  const pairRe = /<tr>\s*<td>\s*(\d+)\s*<\/td>\s*<td>\s*([^<]+?)\s*<\/td>\s*<\/tr>/gim;
-  const rows: Array<{ n: number; label: string }> = [];
-  let m: RegExpExecArray | null;
-  while ((m = pairRe.exec(md)) !== null) {
-    const n = Number.parseInt(m[1], 10);
-    const label = m[2].trim();
-    if (Number.isFinite(n) && label) rows.push({ n, label });
+function stripHtmlTagsCellText(s: string): string {
+  return s
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function htmlTableToMarkdown(tableHtml: string): string | null {
+  const rowRe = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  const rows: string[][] = [];
+  let rowMatch: RegExpExecArray | null;
+  while ((rowMatch = rowRe.exec(tableHtml)) !== null) {
+    const cellRe = /<(th|td)[^>]*>([\s\S]*?)<\/\1>/gi;
+    const cells: string[] = [];
+    let cellMatch: RegExpExecArray | null;
+    while ((cellMatch = cellRe.exec(rowMatch[1])) !== null) {
+      const text = stripHtmlTagsCellText(cellMatch[2]);
+      if (text) cells.push(text);
+      else cells.push("");
+    }
+    if (cells.length > 0) rows.push(cells);
   }
-  if (!rows.length) return md;
-  rows.sort((a, b) => a.n - b.n);
-  const uniq = rows.filter((r, i) => i === 0 || r.n !== rows[i - 1].n);
-  const table = [
-    "| d10 | Disciplina Artistica |",
-    "| --- | --- |",
-    ...uniq.map((r) => `| ${r.n} | ${r.label} |`),
+  if (!rows.length) return null;
+  const colCount = Math.max(...rows.map((r) => r.length));
+  const normalized = rows.map((r) => {
+    if (r.length < colCount) return [...r, ...Array(colCount - r.length).fill("")];
+    return r;
+  });
+  const header = normalized[0];
+  const sep = Array(colCount).fill("---");
+  const body = normalized.slice(1);
+  return [
+    `| ${header.join(" | ")} |`,
+    `| ${sep.join(" | ")} |`,
+    ...body.map((r) => `| ${r.join(" | ")} |`),
   ].join("\n");
-  return md.replace(/<table>[\s\S]*?<\/table>\s*<table>[\s\S]*?<\/table>/im, table);
+}
+
+function normalizeBackgroundTables(md: string): string {
+  if (!/<table>/i.test(md)) return md;
+  const tableRe = /<table[^>]*>[\s\S]*?<\/table>/gi;
+  let out = md;
+  let match: RegExpExecArray | null;
+  const pieces: Array<{ raw: string; md: string }> = [];
+  while ((match = tableRe.exec(md)) !== null) {
+    const raw = match[0];
+    const conv = htmlTableToMarkdown(raw);
+    if (conv) pieces.push({ raw, md: conv });
+  }
+  for (const p of pieces) {
+    out = out.replace(p.raw, p.md);
+  }
+  // Compatta eventuali duplicati consecutivi (OCR a tabelle spezzate con stessa intestazione).
+  out = out.replace(
+    /(\|[^\n]+\|\n\|[^\n]+\|\n(?:\|[^\n]+\|\n)+)\s*(\|[^\n]+\|\n\|[^\n]+\|\n(?:\|[^\n]+\|\n)+)/g,
+    (full, t1, t2) => {
+      const h1 = t1.split("\n")[0]?.trim();
+      const h2 = t2.split("\n")[0]?.trim();
+      if (!h1 || h1 !== h2) return full;
+      const rows1 = t1.trim().split("\n");
+      const rows2 = t2.trim().split("\n");
+      return [...rows1, ...rows2.slice(2)].join("\n");
+    }
+  );
+  return out;
 }
 
 function stripOptionalHumanTraits(md: string): string {
@@ -572,7 +619,7 @@ export async function resolveGeneratorRules(
           ) || subclassFeaturesMd
         )
       : null,
-    backgroundMd: backgroundMd ? normalizeEntertainerDisciplineTable(cleanRulesExcerpt(backgroundMd)) : null,
+    backgroundMd: backgroundMd ? normalizeBackgroundTables(cleanRulesExcerpt(backgroundMd)) : null,
     spellcastingAbility,
     spellSlots,
     cantripsKnown,
