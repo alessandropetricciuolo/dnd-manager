@@ -82,7 +82,8 @@ export async function preloadPhbMarkdown(requestOrigin?: string | null): Promise
   await preloadPromise;
 }
 
-function getPhbMarkdown(): string {
+/** Testo PHB dopo preload (o lettura diretta da disco se già disponibile). */
+export function getPhbMarkdownText(): string {
   if (cachedPhb !== undefined) return cachedPhb;
   return tryReadPhbFromFs() ?? "";
 }
@@ -95,7 +96,7 @@ function escapeRegExp(s: string): string {
 export function extractPhbSpellMarkdown(spellName: string): string {
   const name = spellName.trim();
   if (!name) return "";
-  const txt = getPhbMarkdown().replace(/\r/g, "");
+  const txt = getPhbMarkdownText().replace(/\r/g, "");
   if (!txt) return "";
   const head = new RegExp(
     `^#{1,6}\\s+${escapeRegExp(name)}(?:\\s*\\([^)]*\\))?\\s*$`,

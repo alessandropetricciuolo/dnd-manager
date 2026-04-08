@@ -11,6 +11,7 @@ import {
   raceBySlug,
 } from "@/lib/character-build-catalog";
 import type { CharacterRulesSnapshotV1 } from "@/lib/character-rules-snapshot";
+import { extractPhbClassPrivilegesMarkdown } from "@/lib/server/phb-class-privileges-excerpt";
 import {
   extractPhbSpellMarkdown,
   normalizeSpellExcerptFirstHeading,
@@ -381,9 +382,6 @@ function filterClassRulesByLevel(md: string, level: number): string {
   }
 
   for (const sec of sections) {
-    if (/^#{1,6}\s+equipaggiamento\b/i.test(sec.heading.trim())) {
-      continue;
-    }
     const unlock = inferUnlockLevel([sec.heading, ...sec.body].join("\n"));
     if (unlock <= level) {
       if (out.length > 0 && out[out.length - 1].trim() !== "") out.push("");
@@ -620,14 +618,26 @@ export async function recomputeCharacterRulesSnapshot(input: {
 
   let classPrivilegesMd = "";
   if (classDef) {
-    let rows = await fetchRowsContentIlike(admin, `%${classDef.privilegesAnchor}%`, excluded);
-    const sectionKey = metaStr(rows[0]?.metadata, "section_key");
-    const chapter = metaStr(rows[0]?.metadata, "chapter");
-    if (sectionKey) {
-      const expanded = await fetchRowsBySectionKey(admin, sectionKey, chapter, excluded);
-      if (expanded.length) rows = expanded;
+    await preloadPhbMarkdown(await resolveRequestOriginForPhb());
+    if (classDef.privilegesExcerptStopPattern?.trim()) {
+      const fromPhb = extractPhbClassPrivilegesMarkdown(
+        classDef.privilegesAnchor,
+        classDef.privilegesExcerptStopPattern
+      );
+      if (fromPhb.trim()) {
+        classPrivilegesMd = filterClassRulesByLevel(fromPhb, level);
+      }
     }
-    classPrivilegesMd = filterClassRulesByLevel(mergeMdChunks(rows), level);
+    if (!classPrivilegesMd.trim()) {
+      let rows = await fetchRowsContentIlike(admin, `%${classDef.privilegesAnchor}%`, excluded);
+      const sectionKey = metaStr(rows[0]?.metadata, "section_key");
+      const chapter = metaStr(rows[0]?.metadata, "chapter");
+      if (sectionKey) {
+        const expanded = await fetchRowsBySectionKey(admin, sectionKey, chapter, excluded);
+        if (expanded.length) rows = expanded;
+      }
+      classPrivilegesMd = filterClassRulesByLevel(mergeMdChunks(rows), level);
+    }
     if (!classPrivilegesMd.trim())
       warnings.push(`Privilegi di classe non trovati per «${classDef.label}». Verifica ingest ${PHB_MD_FILE}.`);
   }

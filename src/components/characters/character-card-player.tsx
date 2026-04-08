@@ -41,11 +41,23 @@ function renderRichTooltipText(text: string) {
             </p>
           );
         }
-        const strong = line.match(/^\s*\*+\s*(.+)$/);
-        if (strong) {
+        const listItem = line.match(/^\s*\*\s+(\S.*)$/);
+        if (listItem) {
+          return (
+            <p key={idx} className="flex gap-2 text-barber-paper">
+              <span className="shrink-0 text-barber-gold/85" aria-hidden>
+                •
+              </span>
+              <span className="min-w-0">{cleanInline(listItem[1] ?? "")}</span>
+            </p>
+          );
+        }
+        const leadBold = line.match(/^\s*\*\*([^*]+)\*\*\s*(.*)$/);
+        if (leadBold) {
+          const rest = [leadBold[1], leadBold[2]].filter(Boolean).join(" ").trim();
           return (
             <p key={idx} className="font-semibold text-barber-paper">
-              {cleanInline(strong[1] ?? "")}
+              {cleanInline(rest)}
             </p>
           );
         }

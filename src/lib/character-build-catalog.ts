@@ -9,6 +9,11 @@ export type ClassCatalogEntry = {
   label: string;
   /** Sottostringa unica per trovare il blocco «Privilegi di classe» (testo). */
   privilegesAnchor: string;
+  /**
+   * Fine blocco privilegi in `manuale_giocatore.md`: regex su una riga; l’estratto PHB termina prima di questa riga.
+   * Se assente, si usa solo l’indice su Supabase.
+   */
+  privilegesExcerptStopPattern?: string;
   /** Ancora per il blocco regole di lancio / incantesimi di classe (opzionale). */
   spellcastingAnchor?: string;
   spellProgression: SpellProgression;
@@ -95,6 +100,7 @@ export const CLASS_OPTIONS: ClassCatalogEntry[] = [
     slug: "barbaro",
     label: "Barbaro",
     privilegesAnchor: "Un barbaro ottiene i seguenti privilegi di classe",
+    privilegesExcerptStopPattern: "^##\\s+CAMMINI PRIMORDIALI\\s*$",
     spellProgression: "none",
     spellList: null,
   },
@@ -102,6 +108,7 @@ export const CLASS_OPTIONS: ClassCatalogEntry[] = [
     slug: "bardo",
     label: "Bardo",
     privilegesAnchor: "Un bardo ottiene i seguenti privilegi di classe",
+    privilegesExcerptStopPattern: "^#\\s+BARDO\\s*$",
     spellcastingAnchor: `La tabella "Bardo" indica quanti slot incantesimo`,
     spellProgression: "full",
     spellList: { style: "h2", sectionHeading: "INCANTESIMI DA BARDO" },
@@ -110,6 +117,7 @@ export const CLASS_OPTIONS: ClassCatalogEntry[] = [
     slug: "chierico",
     label: "Chierico",
     privilegesAnchor: "Un chierico ottiene i seguenti privilegi di classe",
+    privilegesExcerptStopPattern: "^#\\s+INCANALARE DIVINITÀ",
     spellcastingAnchor: "Un chierico è un tramite del potere divino",
     spellProgression: "full",
     spellList: { style: "h2", sectionHeading: "INCANTESIMI DA CHIERICO" },
@@ -118,6 +126,7 @@ export const CLASS_OPTIONS: ClassCatalogEntry[] = [
     slug: "druido",
     label: "Druido",
     privilegesAnchor: "Un druido ottiene i seguenti privilegi di classe",
+    privilegesExcerptStopPattern: "^##\\s+FORMA SELVATICA",
     spellcastingAnchor: "Un druido attinge all'essenza divina della natura",
     spellProgression: "full",
     spellList: { style: "h1", chapter: "INCANTESIMI DA DRUIDO" },
@@ -126,6 +135,7 @@ export const CLASS_OPTIONS: ClassCatalogEntry[] = [
     slug: "guerriero",
     label: "Guerriero",
     privilegesAnchor: "Un guerriero ottiene i seguenti privilegi di classe",
+    privilegesExcerptStopPattern: "^##\\s+ARCHETIPI MARZIALI\\s*$",
     spellProgression: "none",
     spellList: null,
   },
@@ -133,6 +143,7 @@ export const CLASS_OPTIONS: ClassCatalogEntry[] = [
     slug: "ladro",
     label: "Ladro",
     privilegesAnchor: "Un ladro ottiene i seguenti privilegi di classe",
+    privilegesExcerptStopPattern: "^#\\s+COLPO DI FORTUNA",
     spellcastingAnchor: "Quando arriva al 3° livello, il ladro ottiene",
     spellProgression: "subclass",
     spellList: null,
@@ -141,6 +152,7 @@ export const CLASS_OPTIONS: ClassCatalogEntry[] = [
     slug: "mago",
     label: "Mago",
     privilegesAnchor: "Un mago ottiene i seguenti privilegi di classe",
+    privilegesExcerptStopPattern: "^#\\s+RECUPERO ARCANO",
     spellcastingAnchor: "Un mago è uno studioso di magia arcana",
     spellProgression: "full",
     spellList: { style: "h1", chapter: "INCANTESIMI DA MAGO" },
@@ -149,6 +161,7 @@ export const CLASS_OPTIONS: ClassCatalogEntry[] = [
     slug: "monaco",
     label: "Monaco",
     privilegesAnchor: "Un monaco ottiene i seguenti privilegi di classe",
+    privilegesExcerptStopPattern: "^##\\s+KI\\s*$",
     spellProgression: "none",
     spellList: null,
   },
@@ -156,6 +169,7 @@ export const CLASS_OPTIONS: ClassCatalogEntry[] = [
     slug: "paladino",
     label: "Paladino",
     privilegesAnchor: "Un paladino ottiene i seguenti privilegi di classe",
+    privilegesExcerptStopPattern: "^##\\s+PUNIZIONE DIVINA\\s*$",
     spellcastingAnchor: "Quando arriva al 2° livello, un paladino attinge",
     spellProgression: "half",
     spellList: { style: "h1", chapter: "INCANTESIMI DA PALADINO" },
@@ -164,6 +178,7 @@ export const CLASS_OPTIONS: ClassCatalogEntry[] = [
     slug: "ranger",
     label: "Ranger",
     privilegesAnchor: "Un ranger ottiene i seguenti privilegi di classe",
+    privilegesExcerptStopPattern: "^#\\s+STILE DI COMBATTIMENTO\\s*$",
     spellcastingAnchor: "Quando arriva al 2° livello, un ranger impara",
     spellProgression: "half",
     spellList: { style: "h1", chapter: "INCANTESIMI DA RANGER" },
@@ -172,6 +187,7 @@ export const CLASS_OPTIONS: ClassCatalogEntry[] = [
     slug: "stregone",
     label: "Stregone",
     privilegesAnchor: "Uno stregone ottiene i seguenti privilegi di classe",
+    privilegesExcerptStopPattern: "^##\\s+ORIGINE STREGONESCA\\s*$",
     spellcastingAnchor: "Un evento nel passato dello stregone o nella vita",
     spellProgression: "full",
     spellList: { style: "h1", chapter: "INCANTESIMI DA STREGONE" },
@@ -180,6 +196,7 @@ export const CLASS_OPTIONS: ClassCatalogEntry[] = [
     slug: "warlock",
     label: "Warlock",
     privilegesAnchor: "Un warlock ottiene i seguenti privilegi di classe",
+    privilegesExcerptStopPattern: "^##\\s+SUPPLICHE OCCULTE\\s*$",
     spellcastingAnchor: `La tabella "Warlock" indica quanti slot incantesimo`,
     spellProgression: "pact",
     spellList: { style: "h1", chapter: "INCANTESIMI DA WARLOCK" },
