@@ -115,8 +115,30 @@ function cleanRulesExcerpt(md: string): string {
   t = t.replace(/^!\[[^\]]*]\([^)]*\)\s*$/gm, "");
   t = t.replace(/^CAPITOLO\s+\d+\s*\|[^\n]*$/gim, "");
   t = t.replace(/^Offrimi un caff[eè]:.*$/gim, "");
+  t = t.replace(/^\s*\d{1,4}\s*$/gm, "");
   t = t.replace(/\n{3,}/g, "\n\n");
   return t.trim();
+}
+
+function normalizeEntertainerDisciplineTable(md: string): string {
+  if (!/DISCIPLINE ARTISTICHE/i.test(md) || !/<table>/i.test(md)) return md;
+  const pairRe = /<tr>\s*<td>\s*(\d+)\s*<\/td>\s*<td>\s*([^<]+?)\s*<\/td>\s*<\/tr>/gim;
+  const rows: Array<{ n: number; label: string }> = [];
+  let m: RegExpExecArray | null;
+  while ((m = pairRe.exec(md)) !== null) {
+    const n = Number.parseInt(m[1], 10);
+    const label = m[2].trim();
+    if (Number.isFinite(n) && label) rows.push({ n, label });
+  }
+  if (!rows.length) return md;
+  rows.sort((a, b) => a.n - b.n);
+  const uniq = rows.filter((r, i) => i === 0 || r.n !== rows[i - 1].n);
+  const table = [
+    "| d10 | Disciplina Artistica |",
+    "| --- | --- |",
+    ...uniq.map((r) => `| ${r.n} | ${r.label} |`),
+  ].join("\n");
+  return md.replace(/<table>[\s\S]*?<\/table>\s*<table>[\s\S]*?<\/table>/im, table);
 }
 
 function stripOptionalHumanTraits(md: string): string {
@@ -550,7 +572,7 @@ export async function resolveGeneratorRules(
           ) || subclassFeaturesMd
         )
       : null,
-    backgroundMd,
+    backgroundMd: backgroundMd ? normalizeEntertainerDisciplineTable(cleanRulesExcerpt(backgroundMd)) : null,
     spellcastingAbility,
     spellSlots,
     cantripsKnown,
