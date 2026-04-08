@@ -18448,8 +18448,6 @@ Identificare
 Immagine Silenziosa
 Individuazione del Magico
 
-208
-CAPITOLO 11 | INCANTESIMI
 
 Mani Brucianti
 Nube di Nebbia
@@ -19147,8 +19145,6 @@ L'incantatore assume una forma diversa, scegliendo al momento del lancio dell'in
 
 **Cambiare Aspetto.** L'incantatore altera il suo aspetto. Decide come apparire e definisce altezza, peso, lineamenti facciali, suono della voce, lunghezza dei capelli, carnagione e tratti distintivi, se lo desidera. Può apparire come un membro di un'altra razza, ma nessuna delle sue statistiche cambia di conseguenza. Non può apparire come una creatura di taglia diversa dalla propria e la sua forma base resta la stessa; per esempio, se è bipede, non può usare questo incantesimo per diventare quadrupede. In qualsiasi momento entro la durata dell'incantesimo può usare la sua azione per cambiare di nuovo aspetto in questo modo.
 
-212
-CAPITOLO 11 | INCANTESIMI
 
 # AMICIZIA
 *Trucchetto di Ammaliamento*
@@ -19323,8 +19319,6 @@ Se il bersaglio infligge danni a una creatura influenzata o le nuoce in altri mo
 
 Una creatura che supera un tiro salvezza contro questo effetto è immune a esso per 1 minuto, dopodiché può esserne influenzata di nuovo.
 
-214
-CAPITOLO 11 | INCANTESIMI
 
 # ARMA ELEMENTALE
 *Trasmutazione di 3° livello*
@@ -19491,8 +19485,6 @@ Nei suoi turni successivi, dopo avere lanciato questo incantesimo, l'incantatore
 
 **Ai Livelli Superiori.** Quando l'incantatore lancia questo incantesimo usando uno slot incantesimo di 3° livello o superiore, i danni aumentano di 1d10 per ogni slot di livello superiore al 2°.
 
-216
-CAPITOLO 11 | INCANTESIMI
 
 # BAGLIORE SOLARE
 *Invocazione di 6° livello*
@@ -19649,8 +19641,6 @@ Se una creatura si trova in forma gassosa e sta volando quando l'effetto termina
 
 Questo incantesimo conferisce la capacità di muoversi su una qualsiasi superficie liquida come l'acqua, l'acido, il fango, la neve, le sabbie mobili o la lava, come se si
 
-218
-CAPITOLO 11 | INCANTESIMI
 
 trattasse di un innocuo terreno solido (ma le creature che attraversano un tratto di lava fusa possono comunque subire danni dal calore). Fino a dieci creature consenzienti entro gittata e che l'incantatore sia in grado di vedere ottengono questa capacità per la durata dell'incantesimo.
 
@@ -19961,8 +19951,6 @@ Di seguito sono descritti alcuni tipici comandi assieme ai loro effetti. L'incan
 
 **Fuggi.** Il bersaglio usa il suo turno per allontanarsi dall'incantatore nel modo più rapido possibile.
 
-222
-CAPITOLO 11 | INCANTESIMI
 
 ***Lascia.*** Il bersaglio lascia cadere ciò che stava impugnando, poi termina il suo turno.
 
@@ -20152,8 +20140,6 @@ Se supera il tiro salvezza, l'incantatore può porre all'entità un massimo di c
 **Componenti:** V, S, M (una statuetta dell'incantatore scolpita in avorio e decorata di gemme del valore di almeno 1.500 mo)
 **Durata:** 10 giorni
 
-224
-CAPITOLO 11 | INCANTESIMI
 
 L'incantatore sceglie un incantesimo di 5° livello o inferiore che sia in grado di lanciare, che abbia un tempo di lancio di 1 azione e che abbia come bersaglio l'incantatore stesso. L'incantatore può lanciare quell'incantesimo (chiamato l'incantesimo contingente) come parte del lancio di *contingenza*, spendendo gli slot incantesimo per entrambi. L'incantesimo contingente, tuttavia, non ha effetto. Avrà invece effetto quando si verificherà una determinata circostanza descritta dall'incantatore al momento del lancio dei due incantesimi. Per esempio, un lancio di *contingenza* con *respirare sott'acqua* potrebbe stabilire che *respirare sott'acqua* avrà effetto quando l'incantatore sarà sommerso dall'acqua o da un liquido simile.
 
@@ -20403,8 +20389,6 @@ L'incantatore crea 22,5 kg di cibo e 120 litri di acqua sul terreno o nei conten
 
 **Durata:** Istantanea
 
-226
-CAPITOLO 11 | INCANTESIMI
 
 L'incantatore può lanciare questo incantesimo solo di notte. Sceglie fino a tre cadaveri umanoidi di taglia Media o Piccola situati entro gittata. Ogni cadavere diventa un ghoul sotto il suo controllo. (Il DM possiede le statistiche di gioco di queste creature.)
 
@@ -20872,8 +20856,6 @@ Ogni bestia è considerata un folletto e scompare quando scende a 0 punti ferita
 
 Le creature evocate sono amichevoli nei confronti dell'incantatore e dei suoi compagni. Si tira una sola volta per l'iniziativa di tutto il gruppo delle creature evocate, che svolgono poi il loro turno tutte assieme. Le creature obbediscono ai comandi verbali impartiti dall'incantatore (nessuna azione richiesta). Se l'incantatore non impartisce loro un comando, le creature si difendono da eventuali altre creature ostili, ma altrimenti non intraprendono alcuna azione.
 
-232
-CAPITOLO 11 | INCANTESIMI
 
 Il DM possiede le statistiche delle creature.
 
@@ -21198,8 +21180,6 @@ Questo incantesimo non ha effetto se l'incantatore lo lancia quando si trova sul
 
 **Ai Livelli Superiori.** Quando l'incantatore lancia questo incantesimo usando uno slot incantesimo di 8° livello o superiore, può bersagliare fino a un massimo di tre creature consenzienti (incluso se stesso) per ogni slot di livello superiore al 7°. Le creature devono trovarsi entro 3 metri dall'incantatore nel momento in cui quest'ultimo lancia l'incantesimo.
 
-236
-CAPITOLO 11 | INCANTESIMI
 
 # FORMA GASSOSA
 *Trasmutazione di 3° livello*
@@ -21350,8 +21330,6 @@ Una volta che l'incantatore ha posseduto il corpo di una creatura, ne assume il 
 
 Nel frattempo, l'anima della creatura posseduta può percepire ciò che accade attorno al contenitore usando
 
-238
-CAPITOLO 11 | INCANTESIMI
 
 i propri sensi, ma non può muoversi o effettuare alcuna azione.
 
@@ -21498,8 +21476,6 @@ L'incantatore sceglie un oggetto che deve toccare durante il lancio dell'incante
 
 Se invece tocca una creatura durante il lancio dell'incantesimo, apprende quali incantesimi influenzano attualmente quella creatura, se ce ne sono.
 
-240
-CAPITOLO 11 | INCANTESIMI
 
 # ILLUSIONE MINORE
 *Trucchetto di Illusione*
@@ -21710,8 +21686,6 @@ L'incantesimo può penetrare la maggior parte delle barriere, ma è bloccato da 
 
 Per la durata dell'incantesimo, l'incantatore può percepire la presenza e l'ubicazione di veleni, creature velenose e malattie situate entro 9 metri da lui. È inoltre in grado di identificare il tipo di veleno, creatura velenosa o malattia in ciascuno dei casi.
 
-244
-CAPITOLO 11 | INCANTESIMI
 
 L'incantesimo può penetrare la maggior parte delle barriere, ma è bloccato da 30 cm di pietra, 2,5 cm di metallo comune, una sottile lamina di piombo o 90 cm di legno o terriccio.
 
@@ -22065,8 +22039,6 @@ Questo incantesimo non può localizzare un oggetto se una cortina di piombo di q
 **Componenti:** V
 **Durata:** 1 ora
 
-248
-CAPITOLO 11 | INCANTESIMI
 
 Finché l'incantesimo non termina, quando l'incantatore effettua una prova di Carisma, può sostituire il risultato del tiro con un 15. Inoltre, a prescindere da ciò che dice, le magie in grado di determinare se un bersaglio dice o meno la verità indicheranno che ciò che l'incantatore sta dicendo è la verità.
 
@@ -22455,8 +22427,6 @@ Il muro emana luce intensa entro un raggio di 30 metri e luce fioca per altri 30
 
 Il muro è composto da sette strati, ognuno di un colore diverso. Quando una creatura tenta di protendersi oltre il muro o di attraversarlo, lo fa di uno strato alla volta, fino ad attraversare tutti gli strati del muro. Quando si protende o attraversa ogni strato, deve effettuare un tiro salvezza su
 
-254
-CAPITOLO 11 | INCANTESIMI
 
 Destrezza, altrimenti sarà influenzata dalle proprietà di quello strato, come descritto di seguito.
 
@@ -22574,8 +22544,6 @@ Con un'azione, l'incantatore può muovere l'occhio di 9 metri in qualsiasi direz
 
 L'incantatore colpisce il terreno, generando un'ondata di energia divina che si diffonde da lui. Ogni creatura scelta dall'incantatore e situata entro 9 metri deve superare un tiro salvezza su Costituzione, altrimenti subisce 5d6 danni radiosi o necrotici (a scelta dell'incantatore) e cade a terra prona. Se una creatura supera il tiro salvezza, subisce solo metà di quei danni e non cade a terra prona.
 
-256
-CAPITOLO 11 | INCANTESIMI
 
 # ONDA TONANTE
 *Invocazione di 1° livello*
@@ -22697,8 +22665,6 @@ Un'onda di energia curativa investe la creatura toccata dall'incantatore. Il ber
 **Componenti:** V
 **Durata:** Istantanea
 
-258
-CAPITOLO 11 | INCANTESIMI
 
 L'incantatore pronuncia una parola del potere che può sopraffare la mente di una creatura entro gittata e che egli sia in grado di vedere, lasciandola in uno stato confusionale. Se il bersaglio possiede 150 punti ferita o meno, è stordito. Altrimenti, l'incantesimo non ha effetto.
 
@@ -23040,8 +23006,6 @@ La forma astrale dell'incantatore può viaggiare liberamente per il Piano Astral
 
 L'incantesimo permane per l'incantatore e i suoi compagni fino a quando l'incantatore usa la sua azione per terminarlo. Quando l'incantesimo termina, la creatura influenzata fa ritorno al suo corpo fisico e si sveglia.
 
-264
-CAPITOLO 11 | INCANTESIMI
 
 L'incantesimo potrebbe terminare prematuramente per l'incantatore o uno dei suoi compagni. Un incantesimo *dissolvi magie* usato con successo contro una forma astrale o un corpo fisico termina l'incantesimo per quella creatura. Se il corpo originale o la forma astrale di una creatura scende a 0 punti ferita, l'incantesimo termina per quella creatura. Se l'incantesimo termina e il cordone argentato è intatto, il cordone trascina la forma astrale della creatura all'interno del suo corpo, cosa che pone fine allo stato di animazione sospesa.
 
@@ -23821,8 +23785,6 @@ Una creatura dotata di vista pura può leggere il messaggio nascosto.
 
 L'incantatore può vedere e udire una particolare creatura a sua scelta situata sul suo stesso piano di esistenza. Il bersaglio deve effettuare un tiro salvezza su Saggezza,
 
-274
-CAPITOLO 11 | INCANTESIMI
 
 modificato dalla conoscenza e dal tipo di legame che l'incantatore ha nei confronti del bersaglio. Se il bersaglio sa che l'incantatore sta lanciando questo incantesimo, può fallire il tiro salvezza volontariamente se desidera essere osservato.
 
@@ -24033,8 +23995,6 @@ L'incantatore può trattenersi dallo scagliare il globo quando completa l'incant
 
 **Ai Livelli Superiori.** Quando l'incantatore lancia questo incantesimo usando uno slot incantesimo di 7° livello o superiore, i danni aumentano di 1d6 per ogni slot di livello superiore al 6°.
 
-276
-CAPITOLO 11 | INCANTESIMI
 
 # SFERA ELASTICA DI OTILUKE
 *Invocazione di 4° livello*
@@ -24143,8 +24103,6 @@ Quando l'incantatore traccia il glifo, sceglie il suo effetto tra una delle opzi
 
 ***Sonno.*** Ogni bersaglio deve effettuare un tiro salvezza su Saggezza. Se lo fallisce, cade privo di sensi per 10 minuti. Una creatura si sveglia se subisce danni o se qualcuno usa un'azione per risvegliarla, scuotendola o schiaffeggiandola.
 
-278
-CAPITOLO 11 | INCANTESIMI
 
 **Stordimento.** Ogni bersaglio deve effettuare un tiro salvezza su Saggezza. Se lo fallisce, diventa stordito per 1 minuto.
 
@@ -24694,8 +24652,6 @@ Per la durata dell'incantesimo, l'incantatore può usare la sua azione per assum
 
 L'incantatore ottiene la capacità di entrare in un albero e di muoversi dall'interno di quell'albero a un altro albero dello stesso tipo situato entro 150 metri. Entrambi gli alberi devono essere vivi e di taglia pari o superiore a quella dell'incantatore. L'incantatore deve usare 1,5 metri di movimento per entrare in un albero. Apprende istantaneamente l'ubicazione di tutti gli altri alberi dello stesso tipo entro 150 metri e, come parte del movimento usato per entrare al suo interno, può scegliere se passare in uno di quegli alberi o emergere dall'albero in cui si trova. L'incantatore ricompare in un punto a sua scelta entro 1,5 metri dall'albero di destinazione usando ulteriori 1,5 metri di movimento. Se non gli rimane più alcun movimento, ricompare entro 1,5 metri dall'albero in cui è entrato.
 
-286
-CAPITOLO 11 | INCANTESIMI
 
 L'incantatore può usare questa capacità di trasporto una volta per round per la durata dell'incantesimo. Deve concludere ogni suo turno fuori da un albero.
 

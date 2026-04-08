@@ -107,5 +107,14 @@ export function extractPhbSpellMarkdown(spellName: string): string {
   const rest = txt.slice(start + m[0].length);
   const next = /^#{1,6}\s+.+$/m.exec(rest);
   const end = next && typeof next.index === "number" ? start + m[0].length + next.index : txt.length;
-  return txt.slice(start, end).trim();
+  return normalizeSpellExcerptFirstHeading(txt.slice(start, end).trim());
+}
+
+/** Il PHB italiano mescola `#` / `##` / `###` per i titoli incantesimo; unifichiamo a `#` per UI/tooltip. */
+function normalizeSpellExcerptFirstHeading(md: string): string {
+  const lines = md.split("\n");
+  const first = lines[0]?.match(/^(#{1,6})(\s+\S.*)$/);
+  if (!first) return md;
+  lines[0] = `#${first[2]}`;
+  return lines.join("\n");
 }
