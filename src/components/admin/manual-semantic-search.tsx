@@ -182,6 +182,30 @@ export function ManualSemanticSearch() {
     });
   }
 
+  function runSpellFirstSearch() {
+    const q = query.trim();
+    if (q.length < 2) {
+      toast.error("Inserisci almeno 2 caratteri.");
+      return;
+    }
+    startTransition(async () => {
+      const res = await searchManualsSemanticAction(q, { sourceFilter, spellOnly: true });
+      if (!res.success) {
+        toast.error(res.message);
+        setPrimaryText(null);
+        setHits([]);
+        setMode(null);
+        setCompare(null);
+        return;
+      }
+      setPrimaryText(res.primaryText);
+      setHits(res.hits);
+      setMode(res.mode);
+      setCompare(res.compare ?? null);
+      toast.success("Risultato ottenuto dal percorso spell-first (nuove funzioni).");
+    });
+  }
+
   return (
     <div className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 p-4 space-y-4">
       <div className="flex items-start gap-3">
@@ -243,19 +267,35 @@ export function ManualSemanticSearch() {
           Un solo flusso: ranking semantico + matching frase, con fast-path per incantesimi (allineato al tooltip
           giocatore) e fallback robusto su chunk indicizzati.
         </p>
-        <Button
-          type="button"
-          className="h-11 w-full shrink-0 bg-barber-gold text-barber-dark hover:bg-barber-gold/90"
-          disabled={isPending}
-          onClick={runSearch}
-        >
-          {isPending ? (
-            <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" />
-          ) : (
-            <Search className="mr-2 h-4 w-4 shrink-0" />
-          )}
-          Cerca
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button
+            type="button"
+            className="h-11 w-full shrink-0 bg-barber-gold text-barber-dark hover:bg-barber-gold/90"
+            disabled={isPending}
+            onClick={runSearch}
+          >
+            {isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" />
+            ) : (
+              <Search className="mr-2 h-4 w-4 shrink-0" />
+            )}
+            Cerca
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-11 w-full shrink-0 border-cyan-400/55 text-cyan-100 hover:bg-cyan-950/30"
+            disabled={isPending}
+            onClick={runSpellFirstSearch}
+          >
+            {isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" />
+            ) : (
+              <Search className="mr-2 h-4 w-4 shrink-0" />
+            )}
+            Cerca Spell-First (nuovo)
+          </Button>
+        </div>
       </div>
 
       {mode && (

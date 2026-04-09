@@ -955,7 +955,7 @@ function mergeHitsUnique(primary: ManualSearchHit[], secondary: ManualSearchHit[
 /** Ricerca sui manuali (GM/Admin): ibrido frase + semantica, estrazione blocco regola, filtro sorgente e confronto MD/TXT. */
 export async function searchManualsSemanticAction(
   query: string,
-  options?: { sourceFilter?: ManualSourceFilter }
+  options?: { sourceFilter?: ManualSourceFilter; spellOnly?: boolean }
 ): Promise<ManualSearchResult> {
   const q = query.trim();
   if (q.length < 2) {
@@ -963,6 +963,7 @@ export async function searchManualsSemanticAction(
   }
 
   const sourceFilter: ManualSourceFilter = options?.sourceFilter ?? "all";
+  const spellOnly = options?.spellOnly === true;
 
   const supabase = await createSupabaseServerClient();
   const {
@@ -1060,6 +1061,21 @@ export async function searchManualsSemanticAction(
         };
       }
     }
+    if (spellOnly) {
+      return {
+        success: false,
+        message:
+          "Nessuna scheda incantesimo trovata con il percorso spell-first. Prova un nome esatto o usa la ricerca standard.",
+      };
+    }
+  }
+
+  if (spellOnly) {
+    return {
+      success: false,
+      message:
+        "La modalità spell-first è disponibile solo per query nome-incantesimo (es. \"palla di fuoco\").",
+    };
   }
 
   const frag = sanitizeIlikeFragment(q);
