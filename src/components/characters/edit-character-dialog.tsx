@@ -119,6 +119,42 @@ export function EditCharacterDialog({
     }
   }
 
+  function openSheetGeneratorPreview() {
+    if (!formRef.current) return;
+    const fd = new FormData(formRef.current);
+    const characterName = (fd.get("name") as string | null)?.trim() ?? character.name;
+    const raceSlug = (fd.get("race_slug") as string | null)?.trim() ?? character.race_slug ?? "";
+    const subraceSlug = (fd.get("subclass_slug") as string | null)?.trim() ?? character.subclass_slug ?? "";
+    const classLabel =
+      (fd.get("character_class") as string | null)?.trim() ?? character.character_class?.trim() ?? "";
+    const classSubclass =
+      (fd.get("class_subclass") as string | null)?.trim() ?? character.class_subclass?.trim() ?? "";
+    const backgroundSlug =
+      (fd.get("background_slug") as string | null)?.trim() ?? character.background_slug ?? "";
+    const levelRaw = (fd.get("level") as string | null)?.trim() ?? String(character.level ?? 1);
+
+    if (!characterName || !raceSlug || !classLabel || !backgroundSlug) {
+      toast.error("Per l'anteprima compila almeno nome, razza, classe e background.");
+      return;
+    }
+
+    const params = new URLSearchParams({
+      characterName,
+      raceSlug,
+      classLabel,
+      backgroundSlug,
+      level: levelRaw || "1",
+      autogen: "1",
+      campaignId: character.campaign_id,
+      characterId: character.id,
+      returnTo: `/campaigns/${character.campaign_id}`,
+    });
+    if (subraceSlug) params.set("subraceSlug", subraceSlug);
+    if (classSubclass) params.set("classSubclass", classSubclass);
+
+    window.open(`/generator?${params.toString()}`, "_blank", "noopener,noreferrer");
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto border-barber-gold/40 bg-barber-dark text-barber-paper">
@@ -330,6 +366,15 @@ export function EditCharacterDialog({
           </div>
 
           <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={openSheetGeneratorPreview}
+              disabled={isLoading}
+              className="border-barber-gold/40 text-barber-gold"
+            >
+              Anteprima scheda
+            </Button>
             <Button
               type="button"
               variant="outline"
