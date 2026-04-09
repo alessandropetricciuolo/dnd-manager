@@ -13,9 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { searchCompendioMdAction } from "@/lib/actions/compendio-md-search-actions";
 import { searchManualsSemanticAction } from "@/lib/actions/manual-search-actions";
-import type { CompendioMdSearchResult } from "@/lib/manual-compendio-types";
 import type {
   ManualSearchCompareSide,
   ManualSearchHit,
@@ -23,6 +21,124 @@ import type {
   ManualSourceFilter,
 } from "@/lib/manual-search-types";
 import { cn } from "@/lib/utils";
+
+function renderRichManualText(text: string) {
+  const cleanInline = (s: string): string =>
+    s
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
+      .replace(/\*([^*]+)\*/g, "$1")
+      .replace(/\*\*/g, "")
+      .replace(/^[-*]\s+/, "")
+      .trimEnd();
+  const stripTags = (s: string): string =>
+    cleanInline(
+      s
+        .replace(/<br\s*\/?>/gi, " ")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+    );
+  const lines = text.replace(/\r/g, "").split("\n");
+  const nodes: JSX.Element[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i]?.trimEnd() ?? "";
+    if (/^\s*<table[\s>]/i.test(line)) {
+      const tableLines: string[] = [line];
+      i += 1;
+      while (i < lines.length) {
+        tableLines.push(lines[i] ?? "");
+        if (/<\/table>\s*$/i.test(lines[i] ?? "")) {
+          i += 1;
+          break;
+        }
+        i += 1;
+      }
+      const tableHtml = tableLines.join("\n");
+      const rowMatches = Array.from(tableHtml.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi));
+      const rows = rowMatches.map((m) => {
+        const cells = Array.from(m[1].matchAll(/<(th|td)[^>]*>([\s\S]*?)<\/\1>/gi));
+        return cells.map((c) => stripTags(c[2] ?? ""));
+      });
+      const header = rows.find((r) => r.length > 0) ?? [];
+      const body = rows.slice(header.length ? 1 : 0).filter((r) => r.length > 0);
+      if (header.length || body.length) {
+        nodes.push(
+          <div key={`tbl-${i}`} className="overflow-x-auto rounded border border-barber-gold/20">
+            <table className="min-w-full border-collapse text-[11px]">
+              {header.length ? (
+                <thead className="bg-barber-gold/10 text-barber-gold">
+                  <tr>
+                    {header.map((h, hIdx) => (
+                      <th key={`h-${hIdx}`} className="border-b border-barber-gold/20 px-2 py-1 text-left font-semibold">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+              ) : null}
+              {body.length ? (
+                <tbody>
+                  {body.map((row, rIdx) => (
+                    <tr key={`r-${rIdx}`} className="border-t border-barber-gold/10">
+                      {row.map((cell, cIdx) => (
+                        <td key={`c-${rIdx}-${cIdx}`} className="px-2 py-1 text-barber-paper/95">
+                          {cell}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              ) : null}
+            </table>
+          </div>
+        );
+      }
+      continue;
+    }
+    const heading = line.match(/^\s*#+\s*(.+)$/);
+    if (heading) {
+      nodes.push(
+        <p key={`ln-${i}`} className="font-semibold text-barber-gold">
+          {cleanInline(heading[1] ?? "")}
+        </p>
+      );
+      i += 1;
+      continue;
+    }
+    const listItem = line.match(/^\s*\*\s+(\S.*)$/);
+    if (listItem) {
+      nodes.push(
+        <p key={`ln-${i}`} className="flex gap-2 text-barber-paper">
+          <span className="shrink-0 text-barber-gold/85" aria-hidden>
+            •
+          </span>
+          <span className="min-w-0">{cleanInline(listItem[1] ?? "")}</span>
+        </p>
+      );
+      i += 1;
+      continue;
+    }
+    const leadBold = line.match(/^\s*\*\*([^*]+)\*\*\s*(.*)$/);
+    if (leadBold) {
+      const rest = [leadBold[1], leadBold[2]].filter(Boolean).join(" ").trim();
+      nodes.push(
+        <p key={`ln-${i}`} className="font-semibold text-barber-paper">
+          {cleanInline(rest)}
+        </p>
+      );
+      i += 1;
+      continue;
+    }
+    nodes.push(
+      <p key={`ln-${i}`} className="text-barber-paper">
+        {cleanInline(line)}
+      </p>
+    );
+    i += 1;
+  }
+  return <div className="space-y-1">{nodes}</div>;
+}
 
 export function ManualSemanticSearch() {
   const [query, setQuery] = useState("");
@@ -34,9 +150,7 @@ export function ManualSemanticSearch() {
     markdown: ManualSearchCompareSide | null;
     txt: ManualSearchCompareSide | null;
   } | null>(null);
-  const [compendioResult, setCompendioResult] = useState<CompendioMdSearchResult | null>(null);
   const [isPending, startTransition] = useTransition();
-  const [isCompendioPending, startCompendioTransition] = useTransition();
 
   function runSearch() {
     const q = query.trim();
@@ -52,7 +166,6 @@ export function ManualSemanticSearch() {
         setHits([]);
         setMode(null);
         setCompare(null);
-        setCompendioResult(null);
         return;
       }
       setPrimaryText(res.primaryText);
@@ -65,27 +178,6 @@ export function ManualSemanticSearch() {
           : res.mode === "semantic"
             ? "Risultato da ricerca semantica (chunk più pertinente)."
             : "Risultato da ricerca testuale (fallback o embedding non disponibile)."
-      );
-    });
-  }
-
-  function runCompendioSearch() {
-    const q = query.trim();
-    if (q.length < 2) {
-      toast.error("Inserisci almeno 2 caratteri.");
-      return;
-    }
-    startCompendioTransition(async () => {
-      const res = await searchCompendioMdAction(q);
-      setCompendioResult(res);
-      if (!res.success) {
-        toast.error(res.message);
-        return;
-      }
-      toast.success(
-        res.mode === "heading"
-          ? `Compendio: voce «${res.sectionTitle ?? "—"}» (intera sezione ##).`
-          : "Compendio: estratto testuale intorno alla frase (file MD, non Supabase)."
       );
     });
   }
@@ -118,7 +210,7 @@ export function ManualSemanticSearch() {
             onKeyDown={(e) => e.key === "Enter" && runSearch()}
             placeholder="Es. palla di fuoco, ispirazione bardica…"
             className="border-barber-gold/30 bg-barber-dark text-barber-paper"
-            disabled={isPending || isCompendioPending}
+            disabled={isPending}
           />
         </div>
         <div className="min-w-0 space-y-1.5 sm:w-[min(100%,14rem)]">
@@ -128,7 +220,7 @@ export function ManualSemanticSearch() {
           <Select
             value={sourceFilter}
             onValueChange={(v) => setSourceFilter(v as ManualSourceFilter)}
-            disabled={isPending || isCompendioPending}
+            disabled={isPending}
           >
             <SelectTrigger
               id="manual-search-source"
@@ -148,39 +240,22 @@ export function ManualSemanticSearch() {
       <div className="rounded-lg border-2 border-cyan-500/35 bg-cyan-950/25 p-3 sm:p-4">
         <p className="mb-2 text-xs font-medium tracking-wide text-cyan-100/90">Ricerca</p>
         <p className="mb-3 text-[11px] leading-snug text-barber-paper/60">
-          <strong className="text-cyan-200/90">Compendio MD</strong> legge il file{" "}
-          <code className="text-barber-gold/85">public/manuals/dungeonedraghi_compendio.md</code>.{" "}
-          <strong className="text-barber-gold/90">Supabase</strong> usa i chunk indicizzati (stessa query).
+          Un solo flusso: ranking semantico + matching frase, con fast-path per incantesimi (allineato al tooltip
+          giocatore) e fallback robusto su chunk indicizzati.
         </p>
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          <Button
-            type="button"
-            variant="outline"
-            className="h-11 w-full shrink-0 border-2 border-cyan-400/55 bg-barber-dark/80 text-cyan-50 hover:bg-cyan-950/50 sm:min-w-[12rem] sm:flex-1"
-            disabled={isPending || isCompendioPending}
-            onClick={runCompendioSearch}
-          >
-            {isCompendioPending ? (
-              <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" />
-            ) : (
-              <BookOpen className="mr-2 h-4 w-4 shrink-0" />
-            )}
-            Compendio MD (file locale)
-          </Button>
-          <Button
-            type="button"
-            className="h-11 w-full shrink-0 bg-barber-gold text-barber-dark hover:bg-barber-gold/90 sm:min-w-[12rem] sm:flex-1"
-            disabled={isPending || isCompendioPending}
-            onClick={runSearch}
-          >
-            {isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" />
-            ) : (
-              <Search className="mr-2 h-4 w-4 shrink-0" />
-            )}
-            Cerca (Supabase)
-          </Button>
-        </div>
+        <Button
+          type="button"
+          className="h-11 w-full shrink-0 bg-barber-gold text-barber-dark hover:bg-barber-gold/90"
+          disabled={isPending}
+          onClick={runSearch}
+        >
+          {isPending ? (
+            <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" />
+          ) : (
+            <Search className="mr-2 h-4 w-4 shrink-0" />
+          )}
+          Cerca
+        </Button>
       </div>
 
       {mode && (
@@ -199,25 +274,6 @@ export function ManualSemanticSearch() {
               ? "semantica (miglior chunk unico)"
               : "testuale (fallback)"}
         </p>
-      )}
-
-      {compendioResult?.success && (
-        <div className="space-y-2 rounded-lg border border-cyan-500/25 bg-cyan-950/20 p-4">
-          <Label className="text-cyan-100/90">Compendio — file locale</Label>
-          <p className="text-[11px] text-barber-paper/55">
-            {compendioResult.fileName} · modalità:{" "}
-            {compendioResult.mode === "heading" ? "voce ## (sezione intera)" : "frase nel testo (estratto)"}
-            {compendioResult.sectionTitle ? ` · «${compendioResult.sectionTitle}»` : ""}
-          </p>
-          <div
-            className={cn(
-              "max-h-[min(65vh,28rem)] overflow-y-auto rounded-md border border-cyan-500/20",
-              "bg-barber-dark/90 p-3 text-xs leading-relaxed text-barber-paper/95 whitespace-pre-wrap break-words"
-            )}
-          >
-            {compendioResult.excerpt}
-          </div>
-        </div>
       )}
 
       {primaryText &&
@@ -251,10 +307,10 @@ export function ManualSemanticSearch() {
           <div
             className={cn(
               "max-h-[min(70vh,32rem)] overflow-y-auto rounded-lg border border-barber-gold/20",
-              "bg-barber-dark/90 p-4 text-sm leading-relaxed text-barber-paper/95 whitespace-pre-wrap break-words"
+              "bg-barber-dark/90 p-4 text-sm leading-relaxed text-barber-paper/95 break-words"
             )}
           >
-            {primaryText}
+            {renderRichManualText(primaryText)}
           </div>
         </div>
       )}

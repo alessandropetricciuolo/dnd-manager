@@ -4,6 +4,7 @@ import { createHash } from "crypto";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { generateRagEmbedding } from "@/lib/ai/huggingface-client";
+import { extractPhbSpellMarkdown, preloadPhbMarkdown } from "@/lib/server/phb-spell-excerpt";
 import type {
   ManualSearchCompareSide,
   ManualSearchHit,
@@ -250,6 +251,40 @@ function rowToHit(r: MatchRow): ManualSearchHit {
   };
 }
 
+function isLikelySpellNameQuery(query: string): boolean {
+  const q = query.trim();
+  if (q.length < 3 || q.length > 60) return false;
+  const words = q.split(/\s+/).filter(Boolean);
+  if (words.length < 1 || words.length > 6) return false;
+  // Esclude query palesemente descrittive/fraseologiche.
+  if (/[,:;.!?]/.test(q)) return false;
+  return true;
+}
+
+function buildPhbSpellPrimaryText(spellName: string, spellMd: string): string {
+  const body = stripTwoColumnLines(spellMd.trim(), spellName);
+  const lines: string[] = [
+    "Manuale: Manuale del Giocatore · player-handbook.md",
+    `Sezione: ${spellName.toUpperCase()}`,
+    "Tipo: spell-entry",
+  ];
+  return `${lines.join("\n")}\n\n— — —\n\n${body}`;
+}
+
+function buildSpellPrimaryTextFromRow(spellName: string, row: MatchRow): string {
+  const md = (row.metadata ?? null) as Record<string, unknown> | null;
+  const source = metaString(md, "source");
+  const file = metaString(md, "file_name");
+  const section = metaString(md, "section_heading") ?? spellName.toUpperCase();
+  const body = stripTwoColumnLines(typeof row.content === "string" ? row.content.trim() : "", spellName);
+  const lines: string[] = [];
+  appendManualOriginPreamble(md, lines);
+  if (source || file) lines.push(`Manuale: ${[source, file].filter(Boolean).join(" · ")}`);
+  lines.push(`Sezione: ${section}`);
+  lines.push("Tipo: spell-entry");
+  return `${lines.join("\n")}\n\n— — —\n\n${body}`;
+}
+
 /** OCR / pdf-to-text: «I» iniziale spesso diventa «!» nei titoli maiuscoli. */
 function fixOcrHeadingLine(line: string): string {
   return line.replace(/^(\s*)(!{1,3})(?=[A-ZÀ-Ö])/, "$1I");
@@ -492,7 +527,7 @@ function chunkHasAtxHeadingMatchingQuery(content: string, query: string): boolea
     .map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
     .join("\\s+");
   if (!parts) return false;
-  const re = new RegExp(`^#\\s+${parts}\\s*$`, "im");
+  const re = new RegExp(`^#{1,6}\\s+${parts}(?:\\s*\\([^)]*\\))?\\s*$`, "im");
   return re.test(content);
 }
 
@@ -874,6 +909,46 @@ export async function searchManualsSemanticAction(
     fn: string,
     args: Record<string, unknown>
   ) => Promise<{ data: unknown; error: { message: string } | null }>;
+
+  // Fast-path incantesimi: prima PHB (stessa fonte del tooltip giocatore), poi knowledge markdown (supplementi).
+  if (sourceFilter !== "txt" && isLikelySpellNameQuery(q)) {
+    await preloadPhbMarkdown();
+    const spellMd = extractPhbSpellMarkdown(q);
+    if (spellMd.trim()) {
+      return {
+        success: true,
+        mode: "phrase-focus",
+        primaryText: buildPhbSpellPrimaryText(q, spellMd),
+        hits: [],
+        sourceFilter,
+      };
+    }
+
+    const upper = q.toUpperCase().trim();
+    const { data: spellRowsRaw, error: spellRowsErr } = await admin
+      .from("manuals_knowledge")
+      .select("content, metadata, similarity")
+      .eq("metadata->>section_heading", upper)
+      .limit(40);
+    if (!spellRowsErr) {
+      const spellRows = ((spellRowsRaw ?? []) as MatchRow[])
+        .filter((r) => rowMatchesSourceFilter(r, sourceFilter))
+        .filter((r) => {
+          const c = typeof r.content === "string" ? r.content : "";
+          return c.trim().length > 40 && hasMarkdownSpellStatBlock(c);
+        });
+      if (spellRows.length) {
+        const best = spellRows.sort((a, b) => phraseScoreMarkdownBonus(b) - phraseScoreMarkdownBonus(a))[0];
+        return {
+          success: true,
+          mode: "phrase-focus",
+          primaryText: buildSpellPrimaryTextFromRow(q, best),
+          hits: spellRows.map(rowToHit),
+          sourceFilter,
+        };
+      }
+    }
+  }
 
   const frag = sanitizeIlikeFragment(q);
 
