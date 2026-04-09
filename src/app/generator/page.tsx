@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { Sparkles } from "lucide-react";
+import { toast } from "sonner";
 import { generateSheetAction } from "@/lib/actions/generator-actions";
 import { BACKGROUND_OPTIONS, CLASS_OPTIONS, RACE_OPTIONS } from "@/lib/character-build-catalog";
 import { subclassCatalogSourceSuffix, supplementSubclassesForClass } from "@/lib/character-subclass-catalog";
@@ -42,6 +43,7 @@ export default function GeneratorPage() {
   const [sheetDataObj, setSheetDataObj] = useState<Record<string, unknown> | null>(null);
   const [sheet, setSheet] = useState<GeneratedCharacterSheet | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
+  const [isSavingSheet, setIsSavingSheet] = useState(false);
 
   const race = RACE_OPTIONS.find((r) => r.slug === selectedRaceSlug) ?? null;
   const classSubclasses = supplementSubclassesForClass(selectedClass);
@@ -54,37 +56,58 @@ export default function GeneratorPage() {
   }
 
   async function handleSaveToCharacterSheet() {
+    if (isSavingSheet) return;
     if (!sheetDataObj || !sheet) {
       setResultMessage("Genera prima una scheda.");
+      toast.error("Genera prima una scheda.");
       return;
     }
     if (!initial.campaignId || !initial.characterId) {
-      setResultMessage("Per salvare nella scheda tecnica PG apri il generatore dal personaggio (campagna/characterId mancanti).");
+      const msg = "Per salvare nella scheda tecnica PG apri il generatore dal personaggio (campagna/characterId mancanti).";
+      setResultMessage(msg);
+      toast.error(msg);
       return;
     }
-    const pdfRes = await fetch("/api/sheet-pdf", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        fields: sheetDataObj,
-        fileName: `${sheet.characterName || "scheda"}-compilata.pdf`,
-      }),
-    });
-    if (!pdfRes.ok) {
-      const err = await pdfRes.json().catch(() => ({}));
-      setResultMessage(err?.error ?? "Errore generazione PDF.");
-      return;
+    setIsSavingSheet(true);
+    try {
+      const pdfRes = await fetch("/api/sheet-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fields: sheetDataObj,
+          fileName: `${sheet.characterName || "scheda"}-compilata.pdf`,
+        }),
+      });
+      if (!pdfRes.ok) {
+        const err = await pdfRes.json().catch(() => ({}));
+        const msg = err?.error ?? "Errore generazione PDF.";
+        setResultMessage(msg);
+        toast.error(msg);
+        return;
+      }
+      const ab = await pdfRes.arrayBuffer();
+      const base64 = arrayBufferToBase64(ab);
+      const saved = await saveGeneratedSheetToCharacter(
+        initial.campaignId,
+        initial.characterId,
+        base64,
+        `${sheet.characterName || "scheda"}-compilata.pdf`
+      );
+      if (saved.success) {
+        const msg = "Scheda PDF salvata nella scheda tecnica del personaggio.";
+        setResultMessage(msg);
+        toast.success(msg);
+      } else {
+        setResultMessage(saved.error);
+        toast.error(saved.error);
+      }
+    } catch {
+      const msg = "Errore imprevisto durante il salvataggio della scheda PDF.";
+      setResultMessage(msg);
+      toast.error(msg);
+    } finally {
+      setIsSavingSheet(false);
     }
-    const ab = await pdfRes.arrayBuffer();
-    const base64 = arrayBufferToBase64(ab);
-    const saved = await saveGeneratedSheetToCharacter(
-      initial.campaignId,
-      initial.characterId,
-      base64,
-      `${sheet.characterName || "scheda"}-compilata.pdf`
-    );
-    if (saved.success) setResultMessage("Scheda PDF salvata nella scheda tecnica del personaggio.");
-    else setResultMessage(saved.error);
   }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -163,9 +186,10 @@ export default function GeneratorPage() {
             <button
               type="button"
               onClick={handleSaveToCharacterSheet}
+              disabled={isSavingSheet || !sheetDataObj || !sheet || !initial.campaignId || !initial.characterId}
               className="rounded border border-barber-gold/40 px-3 py-1.5 text-xs text-barber-gold hover:bg-barber-gold/10"
             >
-              Salva scheda PDF (scheda tecnica PG)
+              {isSavingSheet ? "Salvataggio PDF..." : "Salva scheda PDF (scheda tecnica PG)"}
             </button>
           </div>
           <h1 className="flex items-center gap-2 text-2xl font-semibold text-barber-gold">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "nextjs-toploader/app";
 import { toast } from "sonner";
 import { FileText, User } from "lucide-react";
@@ -27,14 +27,19 @@ const MAX_TOTAL_BYTES = MAX_TOTAL_MB * 1024 * 1024;
 
 type CreateCharacterDialogProps = {
   campaignId: string;
+  initialOpen?: boolean;
 };
 
-export function CreateCharacterDialog({ campaignId }: CreateCharacterDialogProps) {
+export function CreateCharacterDialog({ campaignId, initialOpen = false }: CreateCharacterDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const sheetInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (initialOpen) setOpen(true);
+  }, [initialOpen]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -105,7 +110,7 @@ export function CreateCharacterDialog({ campaignId }: CreateCharacterDialogProps
       level: "1",
       autogen: "1",
       campaignId,
-      returnTo: `/campaigns/${campaignId}`,
+      returnTo: `/campaigns/${campaignId}?tab=pg&openCreateCharacter=1`,
     });
     if (subraceSlug) params.set("subraceSlug", subraceSlug);
     if (classSubclass) params.set("classSubclass", classSubclass);

@@ -394,6 +394,41 @@ function compactSpellSummary(md: string): string {
   return lines.slice(0, 3).join(" ").slice(0, 260);
 }
 
+function pickLeveledSpellsBalanced(
+  entries: Array<{ name: string; level: number }>,
+  count: number,
+  maxLevel: number
+): Array<{ name: string; level: number }> {
+  if (count <= 0) return [];
+  const pool = entries.filter((e) => e.level >= 1 && e.level <= maxLevel);
+  if (!pool.length) return [];
+
+  const byLevel = new Map<number, Array<{ name: string; level: number }>>();
+  for (const e of pool) {
+    const list = byLevel.get(e.level) ?? [];
+    list.push(e);
+    byLevel.set(e.level, list);
+  }
+
+  const picked: Array<{ name: string; level: number }> = [];
+  // 1) Garantisci almeno un incantesimo per ogni livello disponibile (partendo dal più alto).
+  for (let lvl = maxLevel; lvl >= 1 && picked.length < count; lvl -= 1) {
+    const list = byLevel.get(lvl);
+    if (!list?.length) continue;
+    const next = list.shift();
+    if (next) picked.push(next);
+  }
+  // 2) Riempi i restanti slot privilegiando ancora i livelli più alti.
+  for (let lvl = maxLevel; lvl >= 1 && picked.length < count; lvl -= 1) {
+    const list = byLevel.get(lvl) ?? [];
+    while (list.length && picked.length < count) {
+      const next = list.shift();
+      if (next) picked.push(next);
+    }
+  }
+  return picked;
+}
+
 const SPELLCASTING_ABILITY_BY_CLASS: Record<string, AbilityKey | null> = {
   Barbaro: null,
   Bardo: "cha",
@@ -680,7 +715,8 @@ export async function resolveGeneratorRules(
     const listByLevel = extractSpellListByMaxLevel(listRaw, maxSpellLevelOnSheet(classDef, input.level));
     const entries = parseSpellsWithLevelFromList(listByLevel);
     const cantripEntries = entries.filter((e) => e.level === 0).slice(0, cantripsKnown);
-    const leveledEntries = entries.filter((e) => e.level >= 1).slice(0, spellsPrepared);
+    const maxOnSheet = maxSpellLevelOnSheet(classDef, input.level);
+    const leveledEntries = pickLeveledSpellsBalanced(entries, spellsPrepared, maxOnSheet);
     const picked = [...cantripEntries, ...leveledEntries];
     await preloadPhbMarkdown(requestOrigin);
     for (const pickedSpell of picked) {

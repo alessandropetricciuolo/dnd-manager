@@ -44,10 +44,14 @@ const PLACEHOLDER_IMAGE =
 
 type PageProps = {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default async function CampaignPage({ params }: PageProps) {
+export default async function CampaignPage({ params, searchParams }: PageProps) {
   const { id } = await params;
+  const sp = (await searchParams) ?? {};
+  const openCreateDialogOnLoad =
+    (typeof sp.openCreateCharacter === "string" ? sp.openCreateCharacter : "") === "1";
 
   let supabase;
   try {
@@ -667,6 +671,7 @@ export default async function CampaignPage({ params }: PageProps) {
               characters={characters}
               eligiblePlayers={eligiblePlayers}
               isGm={isGmOrAdmin}
+              openCreateDialogOnLoad={openCreateDialogOnLoad}
               currentUserId={user.id}
               gmId={campaign.gm_id ?? undefined}
             />

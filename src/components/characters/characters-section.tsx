@@ -12,6 +12,7 @@ type CharactersSectionProps = {
   characters: CampaignCharacterRow[];
   eligiblePlayers: EligiblePlayer[];
   isGm: boolean;
+  openCreateDialogOnLoad?: boolean;
   /** Per il giocatore: id utente loggato e id del GM (per Sussurri del Master). */
   currentUserId?: string;
   gmId?: string;
@@ -23,6 +24,7 @@ export function CharactersSection({
   characters,
   eligiblePlayers,
   isGm,
+  openCreateDialogOnLoad = false,
   currentUserId,
   gmId,
 }: CharactersSectionProps) {
@@ -33,7 +35,7 @@ export function CharactersSection({
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h2 className="text-lg font-semibold text-barber-paper">Personaggi</h2>
-          <CreateCharacterDialog campaignId={campaignId} />
+          <CreateCharacterDialog campaignId={campaignId} initialOpen={openCreateDialogOnLoad} />
         </div>
         {characters.length === 0 ? (
           <p className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 px-6 py-8 text-center text-barber-paper/70">
