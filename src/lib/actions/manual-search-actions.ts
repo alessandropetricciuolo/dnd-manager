@@ -338,6 +338,27 @@ function buildSpellPrimaryTextFromRow(spellName: string, row: MatchRow): string 
   return `${lines.join("\n")}\n\n— — —\n\n${body}`;
 }
 
+function rowIsPhbMarkdown(row: MatchRow): boolean {
+  const md = (row.metadata ?? null) as Record<string, unknown> | null;
+  return metaString(md, "file_name") === PHB_MD_FILE && rowIsMarkdownSource(row);
+}
+
+function rowHeadingMatchesSpell(row: MatchRow, spellName: string): boolean {
+  const md = (row.metadata ?? null) as Record<string, unknown> | null;
+  const sec = metaString(md, "section_heading") ?? metaString(md, "section_title") ?? "";
+  return normalizeHeadingForExactMatch(sec) === normalizeHeadingForExactMatch(spellName);
+}
+
+function hasSpellHeadingInBody(body: string, spellName: string): boolean {
+  const target = normalizeHeadingForExactMatch(spellName);
+  for (const line of body.replace(/\r/g, "").split("\n")) {
+    const h = line.match(/^#{1,6}\s+(.+?)\s*$/);
+    if (!h) continue;
+    if (normalizeHeadingForExactMatch(h[1]) === target) return true;
+  }
+  return false;
+}
+
 /** OCR / pdf-to-text: «I» iniziale spesso diventa «!» nei titoli maiuscoli. */
 function fixOcrHeadingLine(line: string): string {
   return line.replace(/^(\s*)(!{1,3})(?=[A-ZÀ-Ö])/, "$1I");
@@ -986,6 +1007,33 @@ export async function searchManualsSemanticAction(
         hits: [],
         sourceFilter,
       };
+    }
+
+    const spellHeading = q.toUpperCase().trim();
+    const { data: phbSpellRowsRaw, error: phbSpellRowsErr } = await admin
+      .from("manuals_knowledge")
+      .select("content, metadata, similarity")
+      .eq("metadata->>file_name", PHB_MD_FILE)
+      .ilike("metadata->>section_heading", `%${spellHeading}%`)
+      .limit(160);
+    if (!phbSpellRowsErr) {
+      const phbSpellRows = ((phbSpellRowsRaw ?? []) as MatchRow[])
+        .filter(rowIsPhbMarkdown)
+        .filter((r) => rowHeadingMatchesSpell(r, q));
+      for (const row of phbSpellRows) {
+        const merged = mergeMdSameSectionRows(row, phbSpellRowsRaw as MatchRow[]);
+        const mergedBody = typeof merged.content === "string" ? merged.content.trim() : "";
+        if (!mergedBody) continue;
+        if (!hasSpellHeadingInBody(mergedBody, q)) continue;
+        if (!hasMarkdownSpellStatBlock(mergedBody)) continue;
+        return {
+          success: true,
+          mode: "phrase-focus",
+          primaryText: buildSpellPrimaryTextFromRow(q, merged),
+          hits: phbSpellRows.map(rowToHit),
+          sourceFilter,
+        };
+      }
     }
 
     const upper = q.toUpperCase().trim();
