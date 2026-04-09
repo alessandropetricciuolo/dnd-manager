@@ -911,7 +911,7 @@ export async function searchManualsSemanticAction(
   ) => Promise<{ data: unknown; error: { message: string } | null }>;
 
   // Fast-path incantesimi: prima PHB (stessa fonte del tooltip giocatore), poi knowledge markdown (supplementi).
-  if (sourceFilter !== "txt" && isLikelySpellNameQuery(q)) {
+  if (isLikelySpellNameQuery(q)) {
     await preloadPhbMarkdown();
     const spellMd = extractPhbSpellMarkdown(q);
     if (spellMd.trim()) {

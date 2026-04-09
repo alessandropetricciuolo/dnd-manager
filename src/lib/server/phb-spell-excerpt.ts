@@ -61,7 +61,7 @@ function publicManualUrlCandidates(requestOrigin?: string | null): string[] {
  * Carica il markdown PHB: filesystem, poi URL (host della richiesta corrente, env pubblico, VERCEL_URL).
  */
 export async function preloadPhbMarkdown(requestOrigin?: string | null): Promise<void> {
-  if (preloadDone) return;
+  if (preloadDone && (cachedPhb?.length ?? 0) > 5000) return;
   preloadPromise ??= (async () => {
     try {
       const fromFs = tryReadPhbFromFs();
@@ -96,8 +96,12 @@ export async function preloadPhbMarkdown(requestOrigin?: string | null): Promise
 
 /** Testo PHB dopo preload (o lettura diretta da disco se già disponibile). */
 export function getPhbMarkdownText(): string {
-  if (cachedPhb !== undefined) return cachedPhb;
-  return tryReadPhbFromFs() ?? "";
+  if ((cachedPhb?.length ?? 0) > 5000) return cachedPhb as string;
+  const fromFs = tryReadPhbFromFs() ?? "";
+  if (fromFs.length > (cachedPhb?.length ?? 0)) {
+    cachedPhb = fromFs;
+  }
+  return cachedPhb ?? fromFs;
 }
 
 function tryReadManualFromFs(fileName: string): string | null {
