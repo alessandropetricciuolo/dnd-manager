@@ -1,10 +1,13 @@
 "use server";
 
 import { createHash } from "crypto";
+import fs from "fs";
+import path from "path";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { generateRagEmbedding } from "@/lib/ai/huggingface-client";
 import { extractPhbSpellMarkdown, preloadPhbMarkdown } from "@/lib/server/phb-spell-excerpt";
+import { PHB_MD_FILE } from "@/lib/character-build-catalog";
 import type {
   ManualSearchCompareSide,
   ManualSearchHit,
@@ -259,6 +262,56 @@ function isLikelySpellNameQuery(query: string): boolean {
   // Esclude query palesemente descrittive/fraseologiche.
   if (/[,:;.!?]/.test(q)) return false;
   return true;
+}
+
+function normalizeHeadingForExactMatch(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/[^A-Za-z0-9 ]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+}
+
+function extractSpellEntryFromPhbFileDirect(spellName: string): string {
+  const candidates = [
+    path.join(process.cwd(), "public", "manuals", PHB_MD_FILE),
+    path.join(process.cwd(), "dnd-manager", "public", "manuals", PHB_MD_FILE),
+  ];
+  let txt = "";
+  for (const p of candidates) {
+    try {
+      if (fs.existsSync(p)) {
+        txt = fs.readFileSync(p, "utf-8");
+        if (txt.length > 5000) break;
+      }
+    } catch {
+      // try next path
+    }
+  }
+  if (!txt.trim()) return "";
+  const lines = txt.replace(/\r/g, "").split("\n");
+  const target = normalizeHeadingForExactMatch(spellName);
+  let start = -1;
+  for (let i = 0; i < lines.length; i += 1) {
+    const h = lines[i].match(/^#{1,6}\s+(.+?)\s*$/);
+    if (!h) continue;
+    if (normalizeHeadingForExactMatch(h[1]) === target) {
+      start = i;
+      break;
+    }
+  }
+  if (start < 0) return "";
+  let end = lines.length;
+  for (let i = start + 1; i < lines.length; i += 1) {
+    if (/^#{1,6}\s+/.test(lines[i])) {
+      end = i;
+      break;
+    }
+  }
+  return lines.slice(start, end).join("\n").trim();
 }
 
 function buildPhbSpellPrimaryText(spellName: string, spellMd: string): string {
@@ -912,6 +965,17 @@ export async function searchManualsSemanticAction(
 
   // Fast-path incantesimi: prima PHB (stessa fonte del tooltip giocatore), poi knowledge markdown (supplementi).
   if (isLikelySpellNameQuery(q)) {
+    const directMd = extractSpellEntryFromPhbFileDirect(q);
+    if (directMd.trim()) {
+      return {
+        success: true,
+        mode: "phrase-focus",
+        primaryText: buildPhbSpellPrimaryText(q, directMd),
+        hits: [],
+        sourceFilter,
+      };
+    }
+
     await preloadPhbMarkdown();
     const spellMd = extractPhbSpellMarkdown(q);
     if (spellMd.trim()) {
