@@ -111,7 +111,7 @@ export default async function CampaignPage({ params }: PageProps) {
     .eq("id", user.id)
     .single();
 
-  /** Solo GM e Admin possono creare sessioni, wiki, mappe. I player solo visualizzano. */
+  /** Solo ruoli globali GM/Admin possono gestire PG/schede in tutte le campagne. */
   const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
   const isAdmin = profile?.role === "admin";
 
