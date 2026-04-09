@@ -19,6 +19,40 @@ type CharResult<T = void> =
   | { success: true; data?: T }
   | { success: false; error: string };
 
+function normalizeCharacterSheetStoragePath(rawPath: string | null | undefined): string | null {
+  const p = rawPath?.trim();
+  if (!p) return null;
+
+  // Legacy values may contain bucket prefix in DB.
+  if (p.startsWith(`${CHARACTER_SHEETS_BUCKET}/`)) {
+    return p.slice(CHARACTER_SHEETS_BUCKET.length + 1) || null;
+  }
+
+  // Legacy values may contain full storage URLs (public or signed).
+  if (p.startsWith("http://") || p.startsWith("https://")) {
+    try {
+      const u = new URL(p);
+      const marker = `/storage/v1/object/`;
+      const idx = u.pathname.indexOf(marker);
+      if (idx >= 0) {
+        const tail = u.pathname.slice(idx + marker.length);
+        // Tail examples:
+        // - public/character_sheets/<path>
+        // - sign/character_sheets/<path>
+        const segments = tail.split("/").filter(Boolean);
+        if (segments.length >= 3 && (segments[0] === "public" || segments[0] === "sign") && segments[1] === CHARACTER_SHEETS_BUCKET) {
+          return decodeURIComponent(segments.slice(2).join("/")) || null;
+        }
+      }
+    } catch {
+      // Fall through to null for unknown external URL formats.
+    }
+    return null;
+  }
+
+  return p;
+}
+
 export type CampaignCharacterRow = {
   id: string;
   campaign_id: string;
@@ -115,12 +149,11 @@ export async function getCampaignCharacters(
     for (const row of list) {
       let sheet_url: string | null = null;
       if (row.sheet_file_path) {
-        if (row.sheet_file_path.startsWith("http")) {
-          sheet_url = row.sheet_file_path;
-        } else {
+        const normalizedPath = normalizeCharacterSheetStoragePath(row.sheet_file_path);
+        if (normalizedPath) {
           const { data: signed } = await supabase.storage
             .from(CHARACTER_SHEETS_BUCKET)
-            .createSignedUrl(row.sheet_file_path, SIGNED_URL_EXPIRY_SEC);
+            .createSignedUrl(normalizedPath, SIGNED_URL_EXPIRY_SEC);
           sheet_url = signed?.signedUrl ?? null;
         }
       }
