@@ -18,6 +18,7 @@ import type {
   ManualSearchCompareSide,
   ManualSearchHit,
   ManualSearchMode,
+  ManualSearchPipeline,
   ManualSourceFilter,
 } from "@/lib/manual-search-types";
 import { cn } from "@/lib/utils";
@@ -146,6 +147,7 @@ export function ManualSemanticSearch() {
   const [primaryText, setPrimaryText] = useState<string | null>(null);
   const [hits, setHits] = useState<ManualSearchHit[]>([]);
   const [mode, setMode] = useState<ManualSearchMode | null>(null);
+  const [pipeline, setPipeline] = useState<ManualSearchPipeline | null>(null);
   const [compare, setCompare] = useState<{
     markdown: ManualSearchCompareSide | null;
     txt: ManualSearchCompareSide | null;
@@ -165,12 +167,14 @@ export function ManualSemanticSearch() {
         setPrimaryText(null);
         setHits([]);
         setMode(null);
+        setPipeline(null);
         setCompare(null);
         return;
       }
       setPrimaryText(res.primaryText);
       setHits(res.hits);
       setMode(res.mode);
+      setPipeline(res.pipeline);
       setCompare(res.compare ?? null);
       toast.success(
         res.mode === "phrase-focus"
@@ -179,30 +183,6 @@ export function ManualSemanticSearch() {
             ? "Risultato da ricerca semantica (chunk più pertinente)."
             : "Risultato da ricerca testuale (fallback o embedding non disponibile)."
       );
-    });
-  }
-
-  function runSpellFirstSearch() {
-    const q = query.trim();
-    if (q.length < 2) {
-      toast.error("Inserisci almeno 2 caratteri.");
-      return;
-    }
-    startTransition(async () => {
-      const res = await searchManualsSemanticAction(q, { sourceFilter, spellOnly: true });
-      if (!res.success) {
-        toast.error(res.message);
-        setPrimaryText(null);
-        setHits([]);
-        setMode(null);
-        setCompare(null);
-        return;
-      }
-      setPrimaryText(res.primaryText);
-      setHits(res.hits);
-      setMode(res.mode);
-      setCompare(res.compare ?? null);
-      toast.success("Risultato ottenuto dal percorso spell-first (nuove funzioni).");
     });
   }
 
@@ -267,35 +247,19 @@ export function ManualSemanticSearch() {
           Un solo flusso: ranking semantico + matching frase, con fast-path per incantesimi (allineato al tooltip
           giocatore) e fallback robusto su chunk indicizzati.
         </p>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Button
-            type="button"
-            className="h-11 w-full shrink-0 bg-barber-gold text-barber-dark hover:bg-barber-gold/90"
-            disabled={isPending}
-            onClick={runSearch}
-          >
-            {isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" />
-            ) : (
-              <Search className="mr-2 h-4 w-4 shrink-0" />
-            )}
-            Cerca
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="h-11 w-full shrink-0 border-cyan-400/55 text-cyan-100 hover:bg-cyan-950/30"
-            disabled={isPending}
-            onClick={runSpellFirstSearch}
-          >
-            {isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" />
-            ) : (
-              <Search className="mr-2 h-4 w-4 shrink-0" />
-            )}
-            Cerca Spell-First (nuovo)
-          </Button>
-        </div>
+        <Button
+          type="button"
+          className="h-11 w-full shrink-0 bg-barber-gold text-barber-dark hover:bg-barber-gold/90"
+          disabled={isPending}
+          onClick={runSearch}
+        >
+          {isPending ? (
+            <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" />
+          ) : (
+            <Search className="mr-2 h-4 w-4 shrink-0" />
+          )}
+          Cerca
+        </Button>
       </div>
 
       {mode && (
@@ -313,6 +277,7 @@ export function ManualSemanticSearch() {
             : mode === "semantic"
               ? "semantica (miglior chunk unico)"
               : "testuale (fallback)"}
+          {pipeline ? ` · pipeline: ${pipeline}` : ""}
         </p>
       )}
 

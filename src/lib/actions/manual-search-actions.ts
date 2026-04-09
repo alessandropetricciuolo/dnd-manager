@@ -31,6 +31,8 @@ type MatchRow = {
   similarity?: number | null;
 };
 
+let cachedPhbSpellIndex: Map<string, string> | null = null;
+
 function metaString(m: Record<string, unknown> | null | undefined, key: string): string | null {
   if (!m || !(key in m)) return null;
   const v = m[key];
@@ -275,24 +277,24 @@ function normalizeHeadingForExactMatch(s: string): string {
     .toUpperCase();
 }
 
-function extractSpellEntryFromPhbFileDirect(spellName: string): string {
-  const candidates = [
-    path.join(process.cwd(), "public", "manuals", PHB_MD_FILE),
-    path.join(process.cwd(), "dnd-manager", "public", "manuals", PHB_MD_FILE),
-  ];
-  let txt = "";
-  for (const p of candidates) {
-    try {
-      if (fs.existsSync(p)) {
-        txt = fs.readFileSync(p, "utf-8");
-        if (txt.length > 5000) break;
-      }
-    } catch {
-      // try next path
-    }
+function buildSpellNameIndexFromMarkdown(md: string): Map<string, string> {
+  const index = new Map<string, string>();
+  const lines = md.replace(/\r/g, "").split("\n");
+  for (let i = 0; i < lines.length; i += 1) {
+    const h = lines[i].match(/^#{1,6}\s+(.+?)\s*$/);
+    if (!h) continue;
+    const title = h[1].trim();
+    const norm = normalizeHeadingForExactMatch(title);
+    if (!norm) continue;
+    const window = lines.slice(i + 1, i + 14).join("\n");
+    if (!hasMarkdownSpellStatBlock(window)) continue;
+    if (!index.has(norm)) index.set(norm, title);
   }
-  if (!txt.trim()) return "";
-  const lines = txt.replace(/\r/g, "").split("\n");
+  return index;
+}
+
+function extractSpellEntryFromMarkdown(md: string, spellName: string): string {
+  const lines = md.replace(/\r/g, "").split("\n");
   const target = normalizeHeadingForExactMatch(spellName);
   let start = -1;
   for (let i = 0; i < lines.length; i += 1) {
@@ -313,6 +315,62 @@ function extractSpellEntryFromPhbFileDirect(spellName: string): string {
   }
   return lines.slice(start, end).join("\n").trim();
 }
+
+function extractSpellEntryFromPhbFileDirect(spellName: string): string {
+  const candidates = [
+    path.join(process.cwd(), "public", "manuals", PHB_MD_FILE),
+    path.join(process.cwd(), "dnd-manager", "public", "manuals", PHB_MD_FILE),
+  ];
+  let txt = "";
+  for (const p of candidates) {
+    try {
+      if (fs.existsSync(p)) {
+        txt = fs.readFileSync(p, "utf-8");
+        if (txt.length > 5000) break;
+      }
+    } catch {
+      // try next path
+    }
+  }
+  if (!txt.trim()) return "";
+  return extractSpellEntryFromMarkdown(txt, spellName);
+}
+
+function readPhbMarkdownFromDisk(): string {
+  const candidates = [
+    path.join(process.cwd(), "public", "manuals", PHB_MD_FILE),
+    path.join(process.cwd(), "dnd-manager", "public", "manuals", PHB_MD_FILE),
+  ];
+  for (const p of candidates) {
+    try {
+      if (fs.existsSync(p)) {
+        const t = fs.readFileSync(p, "utf-8");
+        if (t.length > 5000) return t;
+      }
+    } catch {
+      // try next
+    }
+  }
+  return "";
+}
+
+function classifyQueryAsSpell(query: string): { isSpell: boolean; canonical: string } {
+  const raw = query.trim();
+  if (!isLikelySpellNameQuery(raw)) return { isSpell: false, canonical: raw };
+  if (!cachedPhbSpellIndex) {
+    cachedPhbSpellIndex = buildSpellNameIndexFromMarkdown(readPhbMarkdownFromDisk());
+  }
+  const norm = normalizeHeadingForExactMatch(raw);
+  const canonical = cachedPhbSpellIndex.get(norm) ?? raw;
+  return { isSpell: cachedPhbSpellIndex.has(norm), canonical };
+}
+
+export const __manualSearchInternals = {
+  normalizeHeadingForExactMatch,
+  buildSpellNameIndexFromMarkdown,
+  extractSpellEntryFromMarkdown,
+  classifyQueryAsSpell,
+};
 
 function buildPhbSpellPrimaryText(spellName: string, spellMd: string): string {
   const body = stripTwoColumnLines(spellMd.trim(), spellName);
@@ -955,7 +1013,7 @@ function mergeHitsUnique(primary: ManualSearchHit[], secondary: ManualSearchHit[
 /** Ricerca sui manuali (GM/Admin): ibrido frase + semantica, estrazione blocco regola, filtro sorgente e confronto MD/TXT. */
 export async function searchManualsSemanticAction(
   query: string,
-  options?: { sourceFilter?: ManualSourceFilter; spellOnly?: boolean }
+  options?: { sourceFilter?: ManualSourceFilter }
 ): Promise<ManualSearchResult> {
   const q = query.trim();
   if (q.length < 2) {
@@ -963,7 +1021,6 @@ export async function searchManualsSemanticAction(
   }
 
   const sourceFilter: ManualSourceFilter = options?.sourceFilter ?? "all";
-  const spellOnly = options?.spellOnly === true;
 
   const supabase = await createSupabaseServerClient();
   const {
@@ -985,32 +1042,36 @@ export async function searchManualsSemanticAction(
     args: Record<string, unknown>
   ) => Promise<{ data: unknown; error: { message: string } | null }>;
 
-  // Fast-path incantesimi: prima PHB (stessa fonte del tooltip giocatore), poi knowledge markdown (supplementi).
-  if (isLikelySpellNameQuery(q)) {
-    const directMd = extractSpellEntryFromPhbFileDirect(q);
+  // Resolver deterministico spell-first: viene eseguito solo per query classificate come nome incantesimo.
+  const spellClass = classifyQueryAsSpell(q);
+  if (spellClass.isSpell) {
+    const spellName = spellClass.canonical;
+    const directMd = extractSpellEntryFromPhbFileDirect(spellName);
     if (directMd.trim()) {
       return {
         success: true,
         mode: "phrase-focus",
-        primaryText: buildPhbSpellPrimaryText(q, directMd),
+        pipeline: "spell-first",
+        primaryText: buildPhbSpellPrimaryText(spellName, directMd),
         hits: [],
         sourceFilter,
       };
     }
 
     await preloadPhbMarkdown();
-    const spellMd = extractPhbSpellMarkdown(q);
+    const spellMd = extractPhbSpellMarkdown(spellName);
     if (spellMd.trim()) {
       return {
         success: true,
         mode: "phrase-focus",
-        primaryText: buildPhbSpellPrimaryText(q, spellMd),
+        pipeline: "spell-first",
+        primaryText: buildPhbSpellPrimaryText(spellName, spellMd),
         hits: [],
         sourceFilter,
       };
     }
 
-    const spellHeading = q.toUpperCase().trim();
+    const spellHeading = spellName.toUpperCase().trim();
     const { data: phbSpellRowsRaw, error: phbSpellRowsErr } = await admin
       .from("manuals_knowledge")
       .select("content, metadata, similarity")
@@ -1020,24 +1081,25 @@ export async function searchManualsSemanticAction(
     if (!phbSpellRowsErr) {
       const phbSpellRows = ((phbSpellRowsRaw ?? []) as MatchRow[])
         .filter(rowIsPhbMarkdown)
-        .filter((r) => rowHeadingMatchesSpell(r, q));
+        .filter((r) => rowHeadingMatchesSpell(r, spellName));
       for (const row of phbSpellRows) {
         const merged = mergeMdSameSectionRows(row, phbSpellRowsRaw as MatchRow[]);
         const mergedBody = typeof merged.content === "string" ? merged.content.trim() : "";
         if (!mergedBody) continue;
-        if (!hasSpellHeadingInBody(mergedBody, q)) continue;
+        if (!hasSpellHeadingInBody(mergedBody, spellName)) continue;
         if (!hasMarkdownSpellStatBlock(mergedBody)) continue;
         return {
           success: true,
           mode: "phrase-focus",
-          primaryText: buildSpellPrimaryTextFromRow(q, merged),
+          pipeline: "spell-first",
+          primaryText: buildSpellPrimaryTextFromRow(spellName, merged),
           hits: phbSpellRows.map(rowToHit),
           sourceFilter,
         };
       }
     }
 
-    const upper = q.toUpperCase().trim();
+    const upper = spellName.toUpperCase().trim();
     const { data: spellRowsRaw, error: spellRowsErr } = await admin
       .from("manuals_knowledge")
       .select("content, metadata, similarity")
@@ -1055,27 +1117,13 @@ export async function searchManualsSemanticAction(
         return {
           success: true,
           mode: "phrase-focus",
-          primaryText: buildSpellPrimaryTextFromRow(q, best),
+          pipeline: "spell-first",
+          primaryText: buildSpellPrimaryTextFromRow(spellName, best),
           hits: spellRows.map(rowToHit),
           sourceFilter,
         };
       }
     }
-    if (spellOnly) {
-      return {
-        success: false,
-        message:
-          "Nessuna scheda incantesimo trovata con il percorso spell-first. Prova un nome esatto o usa la ricerca standard.",
-      };
-    }
-  }
-
-  if (spellOnly) {
-    return {
-      success: false,
-      message:
-        "La modalità spell-first è disponibile solo per query nome-incantesimo (es. \"palla di fuoco\").",
-    };
   }
 
   const frag = sanitizeIlikeFragment(q);
@@ -1151,7 +1199,7 @@ export async function searchManualsSemanticAction(
             .filter(Boolean)
             .join("\n\n— — —\n\n");
     return attachCompareToResult(
-      { success: true, mode: "text-fallback", primaryText, hits, sourceFilter },
+      { success: true, mode: "text-fallback", pipeline: "semantic", primaryText, hits, sourceFilter },
       phraseRowsRaw,
       vectorListFull,
       q
@@ -1188,7 +1236,7 @@ export async function searchManualsSemanticAction(
             ? phrasePrimaryFromRow(bestPhrase.r)
             : hits.map((h) => h.content).join("\n\n— — —\n\n");
         return attachCompareToResult(
-          { success: true, mode: "text-fallback", primaryText, hits, sourceFilter },
+          { success: true, mode: "text-fallback", pipeline: "semantic", primaryText, hits, sourceFilter },
           phraseRowsRaw,
           vectorListFull,
           q
@@ -1204,6 +1252,7 @@ export async function searchManualsSemanticAction(
         {
           success: true,
           mode: "phrase-focus",
+          pipeline: "semantic",
           primaryText: phrasePrimaryFromRow(bestPhrase.r),
           hits,
           sourceFilter,
@@ -1229,7 +1278,7 @@ export async function searchManualsSemanticAction(
     const primaryText = phrasePrimaryFromRow(bestPhrase.r);
     const hits = mergeHitsUnique(phraseHits, vectorHits);
     return attachCompareToResult(
-      { success: true, mode: "phrase-focus", primaryText, hits, sourceFilter },
+      { success: true, mode: "phrase-focus", pipeline: "semantic", primaryText, hits, sourceFilter },
       phraseRowsRaw,
       vectorListFull,
       q
@@ -1248,7 +1297,7 @@ export async function searchManualsSemanticAction(
 
   const hits = mergeHitsUnique(vectorHits, phraseHits);
   return attachCompareToResult(
-    { success: true, mode: "semantic", primaryText, hits, sourceFilter },
+    { success: true, mode: "semantic", pipeline: "semantic", primaryText, hits, sourceFilter },
     phraseRowsRaw,
     vectorListFull,
     q

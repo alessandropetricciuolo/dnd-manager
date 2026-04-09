@@ -12,6 +12,7 @@ export type ManualSearchHit = {
 };
 
 export type ManualSearchMode = "phrase-focus" | "semantic" | "text-fallback";
+export type ManualSearchPipeline = "spell-first" | "semantic";
 
 /** Filtro corpus per test confronto .txt vs Markdown. */
 export type ManualSourceFilter = "all" | "markdown" | "txt";
@@ -25,6 +26,7 @@ export type ManualSearchResult =
   | {
       success: true;
       mode: ManualSearchMode;
+      pipeline: ManualSearchPipeline;
       primaryText: string;
       hits: ManualSearchHit[];
       sourceFilter: ManualSourceFilter;

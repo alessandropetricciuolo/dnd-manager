@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test:sheet-generator": "tsx --test src/lib/sheet-generator/__tests__/*.test.ts",
+    "test:manual-search": "tsx --test src/lib/actions/__tests__/*.test.ts",
     "export:dungeonedraghi": "node scripts/export-dungeonedraghi-compendio.mjs",
     "mm:chunks": "tsx scripts/delimit-manuale-mostri.ts"
   },
