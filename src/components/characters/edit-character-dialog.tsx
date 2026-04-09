@@ -147,12 +147,13 @@ export function EditCharacterDialog({
       autogen: "1",
       campaignId: character.campaign_id,
       characterId: character.id,
-      returnTo: `/campaigns/${character.campaign_id}`,
+      returnTo: `/campaigns/${character.campaign_id}?tab=pg&openEditCharacter=${character.id}`,
     });
     if (subraceSlug) params.set("subraceSlug", subraceSlug);
     if (classSubclass) params.set("classSubclass", classSubclass);
 
-    window.open(`/generator?${params.toString()}`, "_blank", "noopener,noreferrer");
+    onOpenChange(false);
+    router.push(`/generator?${params.toString()}`);
   }
 
   return (

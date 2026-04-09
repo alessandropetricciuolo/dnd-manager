@@ -13,6 +13,7 @@ type CharactersSectionProps = {
   eligiblePlayers: EligiblePlayer[];
   isGm: boolean;
   openCreateDialogOnLoad?: boolean;
+  openEditCharacterId?: string | null;
   /** Per il giocatore: id utente loggato e id del GM (per Sussurri del Master). */
   currentUserId?: string;
   gmId?: string;
@@ -25,6 +26,7 @@ export function CharactersSection({
   eligiblePlayers,
   isGm,
   openCreateDialogOnLoad = false,
+  openEditCharacterId = null,
   currentUserId,
   gmId,
 }: CharactersSectionProps) {
@@ -49,6 +51,7 @@ export function CharactersSection({
                 character={char}
                 eligiblePlayers={eligiblePlayers}
                 isLongCampaign={isLongCampaign}
+                autoOpenEdit={openEditCharacterId === char.id}
               />
             ))}
           </div>

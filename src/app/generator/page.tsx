@@ -47,6 +47,17 @@ export default function GeneratorPage() {
 
   const race = RACE_OPTIONS.find((r) => r.slug === selectedRaceSlug) ?? null;
   const classSubclasses = supplementSubclassesForClass(selectedClass);
+  const returnLabel = useMemo(() => {
+    if (!initial.returnTo) return "Torna indietro";
+    try {
+      const parsed = new URL(initial.returnTo, "http://localhost");
+      if (parsed.searchParams.get("openEditCharacter")) return "Torna alla modifica PG";
+      if (parsed.searchParams.get("openCreateCharacter") === "1") return "Torna alla creazione PG";
+    } catch {
+      // Ignore malformed returnTo and use generic fallback.
+    }
+    return "Torna ai personaggi";
+  }, [initial.returnTo]);
 
   function arrayBufferToBase64(buffer: ArrayBuffer): string {
     const bytes = new Uint8Array(buffer);
@@ -97,6 +108,13 @@ export default function GeneratorPage() {
         const msg = "Scheda PDF salvata nella scheda tecnica del personaggio.";
         setResultMessage(msg);
         toast.success(msg);
+        if (initial.returnTo) {
+          const next = new URL(initial.returnTo, window.location.origin);
+          if (!next.searchParams.get("tab")) next.searchParams.set("tab", "pg");
+          if (initial.characterId) next.searchParams.set("openEditCharacter", initial.characterId);
+          window.location.href = `${next.pathname}?${next.searchParams.toString()}`;
+          return;
+        }
       } else {
         setResultMessage(saved.error);
         toast.error(saved.error);
@@ -181,7 +199,7 @@ export default function GeneratorPage() {
               }}
               className="rounded border border-barber-gold/40 px-3 py-1.5 text-xs text-barber-gold hover:bg-barber-gold/10"
             >
-              Torna alla creazione PG
+              {returnLabel}
             </button>
             <button
               type="button"

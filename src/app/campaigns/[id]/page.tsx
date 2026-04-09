@@ -52,6 +52,10 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
   const sp = (await searchParams) ?? {};
   const openCreateDialogOnLoad =
     (typeof sp.openCreateCharacter === "string" ? sp.openCreateCharacter : "") === "1";
+  const openEditCharacterId =
+    typeof sp.openEditCharacter === "string" && sp.openEditCharacter.trim()
+      ? sp.openEditCharacter.trim()
+      : null;
 
   let supabase;
   try {
@@ -672,6 +676,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
               eligiblePlayers={eligiblePlayers}
               isGm={isGmOrAdmin}
               openCreateDialogOnLoad={openCreateDialogOnLoad}
+              openEditCharacterId={openEditCharacterId}
               currentUserId={user.id}
               gmId={campaign.gm_id ?? undefined}
             />

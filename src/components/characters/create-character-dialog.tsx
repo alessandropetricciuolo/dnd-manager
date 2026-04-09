@@ -115,7 +115,8 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
     if (subraceSlug) params.set("subraceSlug", subraceSlug);
     if (classSubclass) params.set("classSubclass", classSubclass);
 
-    window.open(`/generator?${params.toString()}`, "_blank", "noopener,noreferrer");
+    setOpen(false);
+    router.push(`/generator?${params.toString()}`);
   }
 
   return (

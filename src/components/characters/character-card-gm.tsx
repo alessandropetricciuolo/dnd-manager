@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "nextjs-toploader/app";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Download, Eye, Pencil, Trash2, Clock } from "lucide-react";
 
@@ -47,9 +47,10 @@ type CharacterCardGmProps = {
   character: CampaignCharacterRow;
   eligiblePlayers: EligiblePlayer[];
   isLongCampaign?: boolean;
+  autoOpenEdit?: boolean;
 };
 
-export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign }: CharacterCardGmProps) {
+export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, autoOpenEdit = false }: CharacterCardGmProps) {
   const router = useRouter();
   const [assigning, setAssigning] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -86,6 +87,10 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign }: 
   const backgroundForSheet = character.background?.trim()
     ? character.background
     : null;
+
+  useEffect(() => {
+    if (autoOpenEdit) setEditOpen(true);
+  }, [autoOpenEdit]);
 
   async function onAssign(playerId: string | null) {
     const value = playerId === "__none__" ? null : playerId;
