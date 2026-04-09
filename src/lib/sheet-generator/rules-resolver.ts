@@ -115,9 +115,104 @@ function cleanRulesExcerpt(md: string): string {
   t = t.replace(/^!\[[^\]]*]\([^)]*\)\s*$/gm, "");
   t = t.replace(/^CAPITOLO\s+\d+\s*\|[^\n]*$/gim, "");
   t = t.replace(/^Offrimi un caff[eè]:.*$/gim, "");
+  t = t.replace(/^\s*(?:https?:\/\/)?(?:www\.)?paypal\.me\/\S+\s*$/gim, "");
   t = t.replace(/^\s*\d{1,4}\s*$/gm, "");
   t = t.replace(/\n{3,}/g, "\n\n");
   return t.trim();
+}
+
+function featureUnlockLevel(text: string): number | null {
+  const t = text.replace(/\r/g, "");
+  const patterns = [
+    /\ba partire dal\s+(\d+)[°º]?\s+livello\b/i,
+    /\bal\s+(\d+)[°º]?\s+livello\b/i,
+    /\bquando arriva al\s+(\d+)[°º]?\s+livello\b/i,
+    /\barriva al\s+(\d+)[°º]?\s+livello\b/i,
+  ];
+  for (const p of patterns) {
+    const m = t.match(p);
+    if (!m) continue;
+    const n = Number.parseInt(m[1], 10);
+    if (Number.isFinite(n)) return n;
+  }
+  return null;
+}
+
+function normalizeTitleForMatch(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Za-z0-9 ]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+}
+
+function filterClassFeaturesByLevel(md: string, level: number): string {
+  const txt = cleanRulesExcerpt(md)
+    .replace(/^##\s+PRIVILEGI DI CLASSE\s*$/gim, "")
+    .replace(/^Un\s+.+?\s+ottiene i seguenti privilegi di classe\.\s*$/gim, "")
+    .trim();
+  if (!txt) return "";
+
+  const omittedStaticSections = new Set([
+    "PUNTI FERITA",
+    "COMPETENZE",
+    "EQUIPAGGIAMENTO",
+  ]);
+  const lines = txt.split("\n");
+  const kept: string[] = [];
+  let currentHeading: string | null = null;
+  let currentLines: string[] = [];
+  const seenHeadings = new Set<string>();
+
+  function flushSection() {
+    if (!currentHeading) {
+      currentLines = [];
+      return;
+    }
+    const headingNorm = normalizeTitleForMatch(currentHeading);
+    if (omittedStaticSections.has(headingNorm)) {
+      currentHeading = null;
+      currentLines = [];
+      return;
+    }
+    if (seenHeadings.has(headingNorm)) {
+      currentHeading = null;
+      currentLines = [];
+      return;
+    }
+    const body = currentLines.join("\n").trim();
+    if (!body) {
+      currentHeading = null;
+      currentLines = [];
+      return;
+    }
+    const unlock = featureUnlockLevel(body);
+    if (unlock && unlock > level) {
+      currentHeading = null;
+      currentLines = [];
+      return;
+    }
+    seenHeadings.add(headingNorm);
+    kept.push(`### ${currentHeading}\n\n${body}`);
+    currentHeading = null;
+    currentLines = [];
+  }
+
+  for (const line of lines) {
+    const h = line.match(/^###\s+(.+?)\s*$/);
+    if (h) {
+      flushSection();
+      currentHeading = h[1].trim();
+      continue;
+    }
+    if (!currentHeading) continue;
+    currentLines.push(line);
+  }
+  flushSection();
+
+  return kept.join("\n\n").trim();
 }
 
 function stripHtmlTagsCellText(s: string): string {
@@ -159,7 +254,7 @@ function htmlTableToMarkdown(tableHtml: string): string | null {
   ].join("\n");
 }
 
-function normalizeBackgroundTables(md: string): string {
+function normalizeMarkdownTables(md: string): string {
   if (!/<table>/i.test(md)) return md;
   const tableRe = /<table[^>]*>[\s\S]*?<\/table>/gi;
   let out = md;
@@ -605,21 +700,23 @@ export async function resolveGeneratorRules(
   }
 
   return {
-    raceTraitsMd: cleanRulesExcerpt(stripOptionalHumanTraits(raceTraitsMd)),
-    subraceTraitsMd,
-    classFeaturesMd,
+    raceTraitsMd: normalizeMarkdownTables(cleanRulesExcerpt(stripOptionalHumanTraits(raceTraitsMd))),
+    subraceTraitsMd: subraceTraitsMd ? normalizeMarkdownTables(cleanRulesExcerpt(subraceTraitsMd)) : null,
+    classFeaturesMd: normalizeMarkdownTables(filterClassFeaturesByLevel(classFeaturesMd, input.level)),
     subclassFeaturesMd: subclassFeaturesMd
-      ? cleanRulesExcerpt(
+      ? normalizeMarkdownTables(
+          cleanRulesExcerpt(
           extractSectionByHeadingsUntilAnyHeadingMarkdown(
             subclassFeaturesMd,
             [input.classSubclass ?? ""],
             supplementSubclassesForClass(input.classLabel)
               .map((s) => s.label)
               .filter((h) => h.toLowerCase() !== (input.classSubclass ?? "").toLowerCase())
-          ) || subclassFeaturesMd
+            ) || subclassFeaturesMd
+          )
         )
       : null,
-    backgroundMd: backgroundMd ? normalizeBackgroundTables(cleanRulesExcerpt(backgroundMd)) : null,
+    backgroundMd: backgroundMd ? normalizeMarkdownTables(cleanRulesExcerpt(backgroundMd)) : null,
     spellcastingAbility,
     spellSlots,
     cantripsKnown,
