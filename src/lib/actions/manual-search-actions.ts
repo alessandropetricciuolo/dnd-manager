@@ -1036,7 +1036,17 @@ export async function searchManualsSemanticAction(
     return { success: false, message: "Solo GM e amministratori possono consultare la knowledge base manuali." };
   }
 
-  const admin = createSupabaseAdminClient();
+  let admin: ReturnType<typeof createSupabaseAdminClient>;
+  try {
+    admin = createSupabaseAdminClient();
+  } catch (e) {
+    console.error("[searchManualsSemanticAction] createSupabaseAdminClient", e);
+    return {
+      success: false,
+      message:
+        "Ricerca manuali non disponibile: errore inizializzazione Supabase admin. Verifica NEXT_PUBLIC_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY in Vercel (stesso Environment del deploy) e ridistribuisci.",
+    };
+  }
   const runRpc = admin.rpc as unknown as (
     fn: string,
     args: Record<string, unknown>
