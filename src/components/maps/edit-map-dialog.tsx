@@ -379,7 +379,7 @@ export function EditMapDialog({
             <Button
               type="button"
               variant="outline"
-              onClick={() => setOpen(false)}
+              onClick={() => handleOpenChange(false)}
               disabled={isLoading}
               className="border-slate-600 text-slate-300"
             >

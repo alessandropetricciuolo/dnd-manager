@@ -76,7 +76,7 @@ export function CharacterBuildFormFields({
 
   useEffect(() => {
     setSubclassPick(deriveSubclassPick(effectiveClassLabel ?? null, classSubclass));
-  }, [effectiveClassLabel]);
+  }, [effectiveClassLabel, classSubclass]);
 
   const subOptions = useMemo(() => raceBySlug(race === "__none__" ? null : race)?.subraces ?? [], [race]);
 
