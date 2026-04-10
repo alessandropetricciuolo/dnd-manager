@@ -22,16 +22,7 @@ const TAB_LABELS: Record<TabValue, string> = {
 };
 
 type CampaignTabsClientProps = {
-  campaignId: string;
-  campaign: {
-    id: string;
-    name: string;
-    description: string | null;
-    type: string | null;
-    image_url: string | null;
-  };
   hasPlayedCampaign: boolean;
-  campaignTypeLabel: string | null;
   /** Tab iniziale quando l'URL non ha ?tab= (es. player con PG → "pg", player senza PG → "sessioni") */
   defaultTab?: TabValue;
   /** Contenuti passati dalla pagina server (Server Components) */
@@ -47,10 +38,7 @@ type CampaignTabsClientProps = {
 };
 
 export function CampaignTabsClient({
-  campaignId,
-  campaign,
   hasPlayedCampaign,
-  campaignTypeLabel,
   defaultTab = "sessioni",
   sessioniContent,
   wikiContent,
@@ -227,27 +215,27 @@ export function CampaignTabsClient({
       </div>
 
       <TabsContent value="sessioni" className="mt-0">
-        {sessioniContent}
+        {effectiveTab === "sessioni" ? sessioniContent : null}
       </TabsContent>
 
       <TabsContent value="wiki" className="mt-0">
-        {wikiContent}
+        {effectiveTab === "wiki" ? wikiContent : null}
       </TabsContent>
 
       <TabsContent value="mappe" className="mt-0">
-        {mappeContent}
+        {effectiveTab === "mappe" ? mappeContent : null}
       </TabsContent>
       {showMissionsTab && (
         <TabsContent value="missioni" className="mt-0">
-          {missionsContent}
+          {effectiveTab === "missioni" ? missionsContent : null}
         </TabsContent>
       )}
       <TabsContent value="pg" className="mt-0">
-        {pgContent}
+        {effectiveTab === "pg" ? pgContent : null}
       </TabsContent>
       {showGmTab && (
         <TabsContent value="gm" className="mt-0">
-          {gmAreaContent}
+          {effectiveTab === "gm" ? gmAreaContent : null}
         </TabsContent>
       )}
     </Tabs>

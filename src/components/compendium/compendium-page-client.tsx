@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, RefreshCcw } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import {
@@ -71,6 +71,7 @@ export function CompendiumPageClient() {
   const searchParams = useSearchParams();
   const campaignIdFromUrl = searchParams.get("campaignId");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeType, setActiveType] = useState<"Tutti" | CompendiumType>("Tutti");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"description" | "details" | "tags">("description");
@@ -81,6 +82,7 @@ export function CompendiumPageClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const deferredSearch = useDeferredValue(debouncedSearch);
 
   const loadCompendium = useCallback(async (campaignId?: string | null, silent?: boolean) => {
     if (silent) {
@@ -113,10 +115,16 @@ export function CompendiumPageClient() {
   }, [campaignIdFromUrl, loadCompendium]);
 
   useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(search), 180);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
     if (!selectedCampaignId) return;
     const timer = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
       void loadCompendium(selectedCampaignId, true);
-    }, 5000);
+    }, 15000);
     return () => clearInterval(timer);
   }, [selectedCampaignId, loadCompendium]);
 
@@ -145,18 +153,15 @@ export function CompendiumPageClient() {
   }, [selectedCampaignId, loadCompendium]);
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = deferredSearch.trim().toLowerCase();
     return elements.filter((el) => {
       const typeMatch = activeType === "Tutti" || el.type === activeType;
       if (!typeMatch) return false;
       if (!q) return true;
 
-      const haystack = [el.name, el.shortDesc, el.content, el.tags.join(" ")]
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(q);
+      return el.searchText.includes(q);
     });
-  }, [search, activeType, elements]);
+  }, [deferredSearch, activeType, elements]);
 
   const selectedIndex = useMemo(
     () => (selectedId ? filtered.findIndex((el) => el.id === selectedId) : -1),

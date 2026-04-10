@@ -55,6 +55,7 @@ function TocList({ entries, onNavigate }: { entries: TocEntry[]; onNavigate?: ()
 export function PrimerView({ campaignId, campaignName, markdown, typography }: PrimerViewProps) {
   const tocEntries = useMemo(() => getHeadingsFromMarkdown(markdown), [markdown]);
   const [tocSheetOpen, setTocSheetOpen] = useState(false);
+  const markdownWithSpacing = useMemo(() => preserveMarkdownBlankLines(markdown), [markdown]);
 
   const fontSizeClass =
     typography?.fontSize === "small"
@@ -170,7 +171,7 @@ export function PrimerView({ campaignId, campaignName, markdown, typography }: P
               )}
             >
               <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeSlug]}>
-                {preserveMarkdownBlankLines(markdown)}
+                {markdownWithSpacing}
               </ReactMarkdown>
             </div>
           </div>

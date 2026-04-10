@@ -65,6 +65,9 @@ type EditMapDialogProps = {
   eligiblePlayers?: { id: string; label: string }[];
   eligibleParties?: { id: string; label: string; memberIds: string[] }[];
   onSuccess?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
 };
 
 export function EditMapDialog({
@@ -80,9 +83,12 @@ export function EditMapDialog({
   eligiblePlayers = [],
   eligibleParties = [],
   onSuccess,
+  open,
+  onOpenChange,
+  hideTrigger = false,
 }: EditMapDialogProps) {
   const isLongCampaign = campaignType === "long";
-  const [open, setOpen] = useState(false);
+  const [localOpen, setLocalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [name, setName] = useState(initialName);
   const [mapType, setMapType] = useState(() => {
@@ -118,8 +124,11 @@ export function EditMapDialog({
     return parentCandidates;
   }, [mapType, parentCandidates]);
 
+  const isControlled = typeof open === "boolean";
+  const dialogOpen = isControlled ? open : localOpen;
+
   useEffect(() => {
-    if (!open || !isLongCampaign) return;
+    if (!dialogOpen || !isLongCampaign) return;
     let cancelled = false;
     setLoadingParents(true);
     void listMapsForParentPickerAction(campaignId).then((res) => {
@@ -131,7 +140,7 @@ export function EditMapDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, isLongCampaign, campaignId]);
+  }, [dialogOpen, isLongCampaign, campaignId]);
 
   useEffect(() => {
     if (mapType === "world") setParentMapId("");
@@ -150,7 +159,8 @@ export function EditMapDialog({
       setSelectedPlayerIds(initialAllowedUserIds);
       setSelectedPartyIds(initialAllowedPartyIds);
     }
-    setOpen(next);
+    if (!isControlled) setLocalOpen(next);
+    onOpenChange?.(next);
   }
 
   function togglePlayer(id: string) {
@@ -199,7 +209,7 @@ export function EditMapDialog({
       });
       if (result.success) {
         toast.success(result.message);
-        setOpen(false);
+        handleOpenChange(false);
         onSuccess?.();
       } else {
         toast.error(result.message);
@@ -212,18 +222,20 @@ export function EditMapDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="absolute top-2 right-10 z-10 h-8 w-8 rounded-md bg-slate-600/80 text-slate-200 opacity-0 group-hover:opacity-100 hover:bg-slate-500/80 hover:text-slate-50"
-          title="Modifica info"
-        >
-          <Pencil className="h-4 w-4" />
-        </Button>
-      </DialogTrigger>
+    <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
+      {!hideTrigger && (
+        <DialogTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="absolute top-2 right-10 z-10 h-8 w-8 rounded-md bg-slate-600/80 text-slate-200 opacity-0 group-hover:opacity-100 hover:bg-slate-500/80 hover:text-slate-50"
+            title="Modifica info"
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="border-emerald-700/50 bg-slate-950 text-slate-50">
         <DialogHeader>
           <DialogTitle>Modifica mappa</DialogTitle>

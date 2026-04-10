@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Search, Loader2, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -153,6 +153,10 @@ export function ManualSemanticSearch() {
     txt: ManualSearchCompareSide | null;
   } | null>(null);
   const [isPending, startTransition] = useTransition();
+  const renderedPrimaryText = useMemo(
+    () => (primaryText ? renderRichManualText(primaryText) : null),
+    [primaryText]
+  );
 
   function runSearch() {
     const q = query.trim();
@@ -315,7 +319,7 @@ export function ManualSemanticSearch() {
               "bg-barber-dark/90 p-4 text-sm leading-relaxed text-barber-paper/95 break-words"
             )}
           >
-            {renderRichManualText(primaryText)}
+            {renderedPrimaryText}
           </div>
         </div>
       )}

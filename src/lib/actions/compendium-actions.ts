@@ -17,6 +17,7 @@ export type CompendiumElement = {
   tags: string[];
   shortDesc: string;
   content: string;
+  searchText: string;
   imageUrl: string;
   details: Record<string, string>;
 };
@@ -162,6 +163,9 @@ export async function getCompendiumDataAction(
         tags,
         shortDesc: firstSentence(rawContent) || "Nessuna descrizione breve disponibile.",
         content: rawContent || "Nessun contenuto disponibile.",
+        searchText: [String(row.name ?? ""), firstSentence(rawContent), rawContent, tags.join(" ")]
+          .join(" ")
+          .toLowerCase(),
         imageUrl:
           typeof row.image_url === "string" && row.image_url.trim()
             ? row.image_url

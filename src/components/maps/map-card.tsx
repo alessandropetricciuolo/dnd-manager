@@ -2,9 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 import { useRouter } from "nextjs-toploader/app";
 import { toast } from "sonner";
-import { ImageIcon, Trash2, ExternalLink, MapPin } from "lucide-react";
+import { ImageIcon, Trash2, ExternalLink, MapPin, Pencil } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { deleteMap } from "@/app/campaigns/map-actions";
@@ -43,6 +44,7 @@ export function MapCard({
   selectiveAudienceLabel = null,
 }: MapCardProps) {
   const router = useRouter();
+  const [editOpen, setEditOpen] = useState(false);
   const inferredPartyIds = eligibleParties
     .filter((party) => party.memberIds.length > 0 && party.memberIds.every((id) => permittedUserIds.includes(id)))
     .map((party) => party.id);
@@ -71,20 +73,39 @@ export function MapCard({
     <Card className="relative group overflow-hidden border-barber-gold/40 bg-barber-dark/90 transition-colors hover:border-barber-gold/50">
       {isGmOrAdmin && (
         <>
-          <EditMapDialog
-            campaignId={campaignId}
-            campaignType={campaignType}
-            mapId={map.id}
-            initialName={map.name}
-            initialMapType={map.map_type ?? "city"}
-            initialParentMapId={map.parent_map_id ?? null}
-            initialVisibility={map.visibility ?? "public"}
-            initialAllowedUserIds={permittedUserIds}
-            initialAllowedPartyIds={inferredPartyIds}
-            eligiblePlayers={eligiblePlayers}
-            eligibleParties={eligibleParties}
-            onSuccess={() => router.refresh()}
-          />
+          {editOpen && (
+            <EditMapDialog
+              campaignId={campaignId}
+              campaignType={campaignType}
+              mapId={map.id}
+              initialName={map.name}
+              initialMapType={map.map_type ?? "city"}
+              initialParentMapId={map.parent_map_id ?? null}
+              initialVisibility={map.visibility ?? "public"}
+              initialAllowedUserIds={permittedUserIds}
+              initialAllowedPartyIds={inferredPartyIds}
+              eligiblePlayers={eligiblePlayers}
+              eligibleParties={eligibleParties}
+              onSuccess={() => router.refresh()}
+              open={editOpen}
+              onOpenChange={setEditOpen}
+              hideTrigger
+            />
+          )}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="absolute top-2 right-10 z-10 h-8 w-8 rounded-md bg-slate-600/80 text-slate-200 opacity-0 group-hover:opacity-100 hover:bg-slate-500/80 hover:text-slate-50"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setEditOpen(true);
+            }}
+            title="Modifica info"
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
           <Button
             type="button"
             variant="ghost"

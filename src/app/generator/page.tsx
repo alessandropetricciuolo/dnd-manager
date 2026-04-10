@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { generateSheetAction } from "@/lib/actions/generator-actions";
@@ -44,6 +44,7 @@ export default function GeneratorPage() {
   const [sheet, setSheet] = useState<GeneratedCharacterSheet | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [isSavingSheet, setIsSavingSheet] = useState(false);
+  const autogenKeyRef = useRef<string | null>(null);
 
   const race = RACE_OPTIONS.find((r) => r.slug === selectedRaceSlug) ?? null;
   const classSubclasses = supplementSubclassesForClass(selectedClass);
@@ -160,6 +161,22 @@ export default function GeneratorPage() {
   useEffect(() => {
     if (!initial.autogen) return;
     if (!initial.characterName || !initial.raceSlug || !initial.classLabel || !initial.backgroundSlug) return;
+    const autogenKey = JSON.stringify({
+      characterName: initial.characterName,
+      raceSlug: initial.raceSlug,
+      subraceSlug: initial.subraceSlug,
+      classLabel: initial.classLabel,
+      classSubclass: initial.classSubclass,
+      backgroundSlug: initial.backgroundSlug,
+      level: initial.level,
+      alignment: initial.alignment,
+      age: initial.age,
+      height: initial.height,
+      weight: initial.weight,
+      sex: initial.sex,
+    });
+    if (autogenKeyRef.current === autogenKey) return;
+    autogenKeyRef.current = autogenKey;
     const fd = new FormData();
     fd.set("characterName", initial.characterName);
     fd.set("raceSlug", initial.raceSlug);

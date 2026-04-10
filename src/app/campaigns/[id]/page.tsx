@@ -483,16 +483,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
                 </section>
               ) : (
               <CampaignTabsClient
-          campaignId={campaign.id}
-          campaign={{
-            id: campaign.id,
-            name: campaign.name,
-            description: campaign.description ?? null,
-            type: campaign.type ?? null,
-            image_url: campaign.image_url ?? null,
-          }}
           hasPlayedCampaign={hasPlayedCampaign}
-          campaignTypeLabel={campaignTypeLabel}
           defaultTab={defaultTab}
           sessioniContent={
             <>

@@ -53,6 +53,7 @@ type CharacterCardGmProps = {
 export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, autoOpenEdit = false }: CharacterCardGmProps) {
   const router = useRouter();
   const [assigning, setAssigning] = useState(false);
+  const [assignedTo, setAssignedTo] = useState<string | null>(character.assigned_to);
   const [deleting, setDeleting] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -67,8 +68,8 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
     ? PLACEHOLDER_AVATAR
     : character.image_url ?? PLACEHOLDER_AVATAR;
 
-  const currentLabel = character.assigned_to
-    ? eligiblePlayers.find((p) => p.id === character.assigned_to)?.label ?? "Assegnato"
+  const currentLabel = assignedTo
+    ? eligiblePlayers.find((p) => p.id === assignedTo)?.label ?? "Assegnato"
     : "Non assegnato";
 
   const xp = character.current_xp ?? 0;
@@ -98,8 +99,8 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
     try {
       const result = await assignCharacter(character.id, value);
       if (result.success) {
+        setAssignedTo(value);
         toast.success(value ? "Personaggio assegnato." : "Assegnazione rimossa.");
-        router.refresh();
       } else {
         toast.error(result.error);
       }
@@ -311,7 +312,7 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
               Assegna a
             </label>
             <Select
-              value={character.assigned_to ?? "__none__"}
+              value={assignedTo ?? "__none__"}
               onValueChange={onAssign}
               disabled={assigning}
             >
@@ -378,11 +379,12 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
         </CardContent>
       </Card>
 
-      <Sheet open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <SheetContent
-          side="right"
-          className="flex h-full max-h-[100dvh] w-full max-w-lg flex-col overflow-hidden border-barber-gold/40 bg-barber-dark text-barber-paper sm:max-w-lg"
-        >
+      {detailsOpen && (
+        <Sheet open={detailsOpen} onOpenChange={setDetailsOpen}>
+          <SheetContent
+            side="right"
+            className="flex h-full max-h-[100dvh] w-full max-w-lg flex-col overflow-hidden border-barber-gold/40 bg-barber-dark text-barber-paper sm:max-w-lg"
+          >
           <SheetHeader className="shrink-0 space-y-1 text-left">
             <SheetTitle className="text-barber-paper">Scheda di lettura — {character.name}</SheetTitle>
             <SheetDescription className="text-barber-paper/65">
@@ -450,15 +452,18 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
               )}
             </div>
           </div>
-        </SheetContent>
-      </Sheet>
+          </SheetContent>
+        </Sheet>
+      )}
 
-      <EditCharacterDialog
-        character={character}
-        open={editOpen}
-        onOpenChange={setEditOpen}
-        isLongCampaign={Boolean(isLongCampaign)}
-      />
+      {editOpen && (
+        <EditCharacterDialog
+          character={character}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          isLongCampaign={Boolean(isLongCampaign)}
+        />
+      )}
     </>
   );
 }
