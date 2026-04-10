@@ -332,7 +332,7 @@ export function EditCharacterDialog({
               name="sheet_url"
               type="url"
               placeholder="https://..."
-              defaultValue={character.sheet_url?.startsWith("http") ? character.sheet_url : ""}
+              defaultValue=""
               className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper placeholder:text-barber-paper/40"
               disabled={isLoading}
             />

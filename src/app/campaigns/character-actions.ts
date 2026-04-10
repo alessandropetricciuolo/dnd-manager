@@ -269,7 +269,7 @@ export async function createCharacter(
     return { success: false, error: "URL scheda non valido o non consentito." };
   }
   if (sheetUrlFromForm) {
-    sheet_file_path = sheetUrlFromForm;
+    sheet_file_path = normalizeCharacterSheetStoragePath(sheetUrlFromForm) ?? sheetUrlFromForm;
   } else if (sheetFile && sheetFile instanceof File && sheetFile.size > 0) {
     if (sheetFile.type !== "application/pdf") {
       return { success: false, error: "La scheda tecnica deve essere un file PDF." };
@@ -441,23 +441,26 @@ export async function updateCharacter(
 
   let sheet_file_path: string | null = (existing as { sheet_file_path: string | null }).sheet_file_path;
   if (removeSheet) {
-    if (sheet_file_path && !sheet_file_path.startsWith("http")) {
-      await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([sheet_file_path]);
+    const normalizedPrevPath = normalizeCharacterSheetStoragePath(sheet_file_path);
+    if (normalizedPrevPath) {
+      await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([normalizedPrevPath]);
     }
     sheet_file_path = null;
   } else if (sheetUrlFromFormRaw && !sheetUrlFromForm) {
     return { success: false, error: "URL scheda non valido o non consentito." };
   } else if (sheetUrlFromForm) {
-    if (sheet_file_path && !sheet_file_path.startsWith("http")) {
-      await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([sheet_file_path]);
+    const normalizedPrevPath = normalizeCharacterSheetStoragePath(sheet_file_path);
+    if (normalizedPrevPath) {
+      await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([normalizedPrevPath]);
     }
-    sheet_file_path = sheetUrlFromForm;
+    sheet_file_path = normalizeCharacterSheetStoragePath(sheetUrlFromForm) ?? sheetUrlFromForm;
   } else if (sheetFile && sheetFile instanceof File && sheetFile.size > 0) {
     if (sheetFile.type !== "application/pdf") {
       return { success: false, error: "La scheda tecnica deve essere un file PDF." };
     }
-    if (sheet_file_path && !sheet_file_path.startsWith("http")) {
-      await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([sheet_file_path]);
+    const normalizedPrevPath = normalizeCharacterSheetStoragePath(sheet_file_path);
+    if (normalizedPrevPath) {
+      await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([normalizedPrevPath]);
     }
     const safeName = sheetFile.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80);
     const path = `${campaignId}/${randomUUID()}-${safeName}`;
@@ -586,8 +589,9 @@ export async function deleteCharacter(characterId: string): Promise<CharResult<{
 
   if (fetchErr || !row) return { success: false, error: "Personaggio non trovato." };
 
-  if (row.sheet_file_path && !row.sheet_file_path.startsWith("http")) {
-    await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([row.sheet_file_path]);
+  const normalizedSheetPath = normalizeCharacterSheetStoragePath(row.sheet_file_path);
+  if (normalizedSheetPath) {
+    await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([normalizedSheetPath]);
   }
 
   const { error: delErr } = await supabase.from("campaign_characters").delete().eq("id", characterId);
@@ -905,8 +909,9 @@ export async function saveGeneratedSheetToCharacter(
     await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([path]);
     return { success: false, error: updateErr.message ?? "Errore salvataggio scheda." };
   }
-  if (prevPath && !prevPath.startsWith("http")) {
-    await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([prevPath]);
+  const normalizedPrevPath = normalizeCharacterSheetStoragePath(prevPath);
+  if (normalizedPrevPath) {
+    await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([normalizedPrevPath]);
   }
 
   revalidatePath(`/campaigns/${cid}`);
