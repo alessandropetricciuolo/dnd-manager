@@ -88,3 +88,26 @@ test("golden: Ranger 7 Cacciatore", async () => {
   assert.ok(/tattiche difensive/i.test(sub));
   assert.ok(!sub.toLowerCase().includes("signore delle bestie"), "fine blocco prima dell'altro archetipo");
 });
+
+test("golden: Paladino 7 Giuramento di Vendetta — sottoclasse senza spillover sul manuale", async () => {
+  const res = await buildGeneratedCharacterSheet({
+    characterName: "Test Paladin",
+    raceSlug: "mezzorco",
+    subraceSlug: null,
+    classLabel: "Paladino",
+    classSubclass: "Giuramento di Vendetta",
+    backgroundSlug: "soldato",
+    level: 7,
+    alignment: "Legale Neutrale",
+    age: "32",
+    height: null,
+    weight: null,
+    sex: "M",
+  });
+  assert.equal(res.sheet.classLabel, "Paladino");
+  const sub = res.sheet.subclassFeaturesMd ?? "";
+  assert.ok(sub.length > 200, "blocco sottoclasse presente");
+  assert.ok(sub.length < 20_000, "non deve includere capitoli successivi (# Ranger, …)");
+  assert.ok(/giuramento di vendetta|dettami di vendetta|vendicatore implacabile/i.test(sub));
+  assert.ok(!/cacciatori letali|nemico prescelto/i.test(sub), "non deve spillare sulla sezione Ranger");
+});

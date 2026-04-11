@@ -1,5 +1,6 @@
 import {
   backgroundBySlug,
+  CLASS_OPTIONS,
   classByLabel,
   maxSpellLevelOnSheet,
   PHB_MD_FILE,
@@ -75,16 +76,30 @@ function extractSectionByHeadingsMarkdown(raw: string, headings: string[]): stri
  * Evita il troncamento che si ha con {@link extractSectionByHeadingsMarkdown} quando un ### è
  * seguito da ## (livello “più alto” nel markdown) come sotto il Cacciatore.
  */
+/** H1 dei capitoli classe nel PHB IT: serve quando gli heading “fratelli” sono tutti prima nel file (es. ultimo giuramento del paladino). */
+function phbClassChapterH1StopNorms(excludeParentClassLabel: string | null | undefined): Set<string> {
+  const set = new Set<string>();
+  for (const c of CLASS_OPTIONS) {
+    set.add(normalizeHeadingForMatch(c.label));
+  }
+  if (excludeParentClassLabel?.trim()) {
+    set.delete(normalizeHeadingForMatch(excludeParentClassLabel));
+  }
+  return set;
+}
+
 function extractSubclassSectionMarkdown(
   raw: string,
   sectionHeadings: string[],
-  stopHeadingNorms: string[]
+  stopHeadingNorms: string[],
+  parentClassLabel?: string | null
 ): string {
   const txt = raw.replace(/\r/g, "");
   if (!txt.trim()) return "";
   const targets = sectionHeadings.map(normalizeHeadingForMatch).filter(Boolean);
   if (!targets.length) return "";
   const stops = new Set(stopHeadingNorms.map(normalizeHeadingForMatch).filter(Boolean));
+  const classChapterStops = phbClassChapterH1StopNorms(parentClassLabel);
   const lines = txt.split("\n");
   let startIdx = -1;
   for (let i = 0; i < lines.length; i++) {
@@ -102,6 +117,10 @@ function extractSubclassSectionMarkdown(
     if (!lv || !ht) continue;
     const n = normalizeHeadingForMatch(ht);
     if (stops.has(n)) {
+      endIdx = i;
+      break;
+    }
+    if (lv === 1 && classChapterStops.has(n)) {
       endIdx = i;
       break;
     }
@@ -695,7 +714,7 @@ export async function resolveGeneratorRules(
       await preloadManualMarkdownFile(matched.supplementRulesSource.markdownFile, requestOrigin);
       const md = getManualMarkdownByFileName(matched.supplementRulesSource.markdownFile);
       subclassFeaturesMd =
-        extractSubclassSectionMarkdown(md, matched.sectionHeadings, subclassStops) ||
+        extractSubclassSectionMarkdown(md, matched.sectionHeadings, subclassStops, input.classLabel) ||
         extractSectionByHeadingsMarkdown(md, matched.sectionHeadings) ||
         null;
       if (!subclassFeaturesMd?.trim() && matched.contentIlikeFallback) {
@@ -708,7 +727,7 @@ export async function resolveGeneratorRules(
       await preloadPhbMarkdown(requestOrigin);
       const md = getManualMarkdownByFileName(PHB_MD_FILE);
       subclassFeaturesMd =
-        extractSubclassSectionMarkdown(md, [input.classSubclass.trim().toUpperCase()], subclassStops) ||
+        extractSubclassSectionMarkdown(md, [input.classSubclass.trim().toUpperCase()], subclassStops, input.classLabel) ||
         extractSectionByHeadingsMarkdown(md, [input.classSubclass.toUpperCase()]) ||
         null;
     }
