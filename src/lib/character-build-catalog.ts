@@ -188,7 +188,8 @@ export const CLASS_OPTIONS: ClassCatalogEntry[] = [
     slug: "bardo",
     label: "Bardo",
     privilegesAnchor: "Un bardo ottiene i seguenti privilegi di classe",
-    privilegesExcerptStopPattern: "^#\\s+BARDO\\s*$",
+    /** Il manuale ripete `# BARDO` prima della tabella livelli: fermarsi lì tronca Factotum, Ispirazione, ecc. Si ferma prima dei collegi (sottoclassi). */
+    privilegesExcerptStopPattern: "^#\\s+COLLEGI BARDICI\\s*$",
     spellcastingAnchor: `La tabella "Bardo" indica quanti slot incantesimo`,
     spellProgression: "full",
     spellList: { style: "h2", sectionHeading: "INCANTESIMI DA BARDO" },

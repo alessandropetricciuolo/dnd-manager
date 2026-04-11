@@ -43,6 +43,28 @@ test("golden: Bardo 5 Sussurri", async () => {
   assert.ok(res.sheet.spells.length > 0);
 });
 
+test("golden: Bardo 7 tiefling — privilegi di classe completi (non solo tabella)", async () => {
+  const res = await buildGeneratedCharacterSheet({
+    characterName: "Test Bard",
+    raceSlug: "tiefling",
+    subraceSlug: null,
+    classLabel: "Bardo",
+    classSubclass: "Collegio della Sapienza",
+    backgroundSlug: "intrattenitore",
+    level: 7,
+    alignment: "Caotico Buono",
+    age: "30",
+    height: null,
+    weight: null,
+    sex: "F",
+  });
+  assert.equal(res.sheet.classLabel, "Bardo");
+  const cls = res.sheet.classFeaturesMd.toLowerCase();
+  assert.ok(cls.length > 2000, "privilegi non devono fermarsi al # BARDO duplicato");
+  assert.ok(/factotum|ispirazione bardica|canto di riposo|controfascino/i.test(cls));
+  assert.ok(!/parole taglienti/i.test(cls), "il collegio resta nei privilegi sottoclasse");
+});
+
 test("golden: Artefice 3", async () => {
   const res = await buildGeneratedCharacterSheet({
     characterName: "Test Artificer",
