@@ -62,6 +62,8 @@ test("golden: Bardo 7 tiefling — privilegi di classe completi (non solo tabell
   const cls = res.sheet.classFeaturesMd.toLowerCase();
   assert.ok(cls.length > 2000, "privilegi non devono fermarsi al # BARDO duplicato");
   assert.ok(/factotum|ispirazione bardica|canto di riposo|controfascino/i.test(cls));
+  assert.ok(!/\|\s*1°\s*\|\s*\+2\s*\|/i.test(res.sheet.classFeaturesMd), "niente tabella slot/livelli nei privilegi");
+  assert.ok(!/\btrucchetti conosciuti\b/i.test(cls), "no blocco trucchetti in privilegi classe");
   assert.ok(!/parole taglienti/i.test(cls), "il collegio resta nei privilegi sottoclasse");
 });
 

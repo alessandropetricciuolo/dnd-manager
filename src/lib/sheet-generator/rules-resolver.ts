@@ -191,10 +191,20 @@ function filterClassFeaturesByLevel(md: string, level: number): string {
     .trim();
   if (!txt) return "";
 
+  /** Blocchi ripetitivi / meccaniche incantesimi: non sono «privilegi» da lista in scheda (come PF/competenze). */
   const omittedStaticSections = new Set([
     "PUNTI FERITA",
     "COMPETENZE",
     "EQUIPAGGIAMENTO",
+    "INCANTESIMI",
+    "TRUCCHETTI",
+    /** Tabella livelli bardo convertita da `# BARDO` + HTML. */
+    "BARDO",
+    "SLOT INCANTESIMO",
+    "INCANTESIMI CONOSCIUTI DI 1 LIVELLO E DI LIVELLO SUPERIORE",
+    "CARATTERISTICA DA INCANTATORE",
+    "CELEBRARE RITUALI",
+    "FOCUS DA INCANTATORE",
   ]);
   /** Titolo dell’H1/H2 d’introduzione: non è un privilegio numerato. */
   const skippedIntroHeadings = new Set(["PRIVILEGI DI CLASSE"]);
