@@ -103,7 +103,8 @@ export default function GeneratorPage() {
         initial.campaignId,
         initial.characterId,
         base64,
-        `${sheet.characterName || "scheda"}-compilata.pdf`
+        `${sheet.characterName || "scheda"}-compilata.pdf`,
+        { armorClass: sheet.armorClass, hitPoints: sheet.hpMax }
       );
       if (saved.success) {
         const msg = "Scheda PDF salvata nella scheda tecnica del personaggio.";

@@ -860,12 +860,13 @@ export async function updateCharactersGridPositionAction(
   return { success: true };
 }
 
-/** Solo GM/Admin. Salva un PDF generato come scheda tecnica del PG. */
+/** Solo GM/Admin. Salva un PDF generato come scheda tecnica del PG. Opzionalmente aggiorna CA/PF con i valori dell’anteprima generata. */
 export async function saveGeneratedSheetToCharacter(
   campaignId: string,
   characterId: string,
   pdfBase64: string,
-  fileName: string
+  fileName: string,
+  combatFromSheet?: { armorClass: number; hitPoints: number } | null
 ): Promise<CharResult<void>> {
   const ctx = await getCurrentUserAndRole();
   if (!ctx) return { success: false, error: "Non autenticato." };
@@ -901,10 +902,19 @@ export async function saveGeneratedSheetToCharacter(
   if (uploadErr) return { success: false, error: uploadErr.message ?? "Errore upload PDF." };
 
   const prevPath = row.sheet_file_path;
-  const { error: updateErr } = await supabase
-    .from("campaign_characters")
-    .update({ sheet_file_path: path })
-    .eq("id", chid);
+  const ac = combatFromSheet?.armorClass;
+  const hp = combatFromSheet?.hitPoints;
+  const updateRow: { sheet_file_path: string; armor_class?: number; hit_points?: number; updated_at: string } = {
+    sheet_file_path: path,
+    updated_at: new Date().toISOString(),
+  };
+  if (typeof ac === "number" && Number.isFinite(ac) && ac >= 0) {
+    updateRow.armor_class = Math.trunc(ac);
+  }
+  if (typeof hp === "number" && Number.isFinite(hp) && hp >= 0) {
+    updateRow.hit_points = Math.trunc(hp);
+  }
+  const { error: updateErr } = await supabase.from("campaign_characters").update(updateRow).eq("id", chid);
   if (updateErr) {
     await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([path]);
     return { success: false, error: updateErr.message ?? "Errore salvataggio scheda." };
