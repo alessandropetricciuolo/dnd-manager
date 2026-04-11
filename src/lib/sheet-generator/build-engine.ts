@@ -310,11 +310,15 @@ export function buildPointBuy(primaryOrder: AbilityKey[]): Record<AbilityKey, nu
   return scores;
 }
 
+/**
+ * PF totali: al 1° livello massimo del dado vita + mod CON; a ogni livello successivo
+ * si aggiunge un tiro del dado vita + mod CON. Per la scheda generata si assume il
+ * massimo su ogni dado (equivalente a 1° livello PHB al max e tiri massimi ai livelli successivi).
+ * Totale = livello × (dimensione dado + mod CON).
+ */
 function computeHpMax(level: number, hitDie: number, conMod: number): number {
-  const avg = Math.floor(hitDie / 2) + 1;
-  const first = hitDie + conMod;
-  const others = Math.max(0, level - 1) * (avg + conMod);
-  return Math.max(level, first + others);
+  const lvl = Math.max(1, Math.min(20, level));
+  return lvl * hitDie + lvl * conMod;
 }
 
 function computeCoreFromAbilities(

@@ -19,3 +19,9 @@ test("compute core sheet includes coherent derived stats", () => {
   assert.ok(core.skills.athletics.proficient);
   assert.equal(core.hitDiceTotal, 3);
 });
+
+test("PF = livello × (dado vita + mod CON) con dado al massimo ogni livello", () => {
+  const core = computeCoreSheet("Ranger", 7);
+  const conMod = core.abilityMods.con;
+  assert.equal(core.hpMax, 7 * (10 + conMod));
+});
