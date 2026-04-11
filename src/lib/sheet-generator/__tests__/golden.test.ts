@@ -62,3 +62,29 @@ test("golden: Artefice 3", async () => {
   assert.equal(res.sheet.level, 3);
   assert.ok(res.sheet.classFeaturesMd.length > 0);
 });
+
+test("golden: Ranger 7 Cacciatore", async () => {
+  const res = await buildGeneratedCharacterSheet({
+    characterName: "Test Ranger",
+    raceSlug: "umano",
+    subraceSlug: null,
+    classLabel: "Ranger",
+    classSubclass: "Cacciatore",
+    backgroundSlug: "forestiero",
+    level: 7,
+    alignment: "Neutrale Buono",
+    age: "28",
+    height: null,
+    weight: null,
+    sex: "M",
+  });
+  assert.equal(res.sheet.classLabel, "Ranger");
+  const cls = res.sheet.classFeaturesMd.toLowerCase();
+  assert.ok(cls.includes("nemico") || cls.includes("esploratore"), "privilegi core ranger");
+  assert.ok(cls.includes("stile") || cls.includes("incantesim"), "privilegi classe fino al 7");
+  const sub = res.sheet.subclassFeaturesMd ?? "";
+  assert.ok(sub.length > 400, "blocco sottoclasse non troncato");
+  assert.ok(/preda del cacciatore/i.test(sub));
+  assert.ok(/tattiche difensive/i.test(sub));
+  assert.ok(!sub.toLowerCase().includes("signore delle bestie"), "fine blocco prima dell'altro archetipo");
+});

@@ -68,46 +68,63 @@ function extractSectionByHeadingsMarkdown(raw: string, headings: string[]): stri
   return lines.slice(startIdx, endIdx).join("\n").trim();
 }
 
-function extractSectionByHeadingsUntilAnyHeadingMarkdown(
+/**
+ * Estrae il blocco di una sottoclasse dal manuale: inizia dal primo heading tra `sectionHeadings`
+ * che compare nel testo (ordine nel file) e termina prima del primo heading che appartiene a un
+ * altro archetipo (`stopHeadingNorms`, es. ## SIGNORE DELLE BESTIE dopo ### CACCIATORE).
+ * Evita il troncamento che si ha con {@link extractSectionByHeadingsMarkdown} quando un ### è
+ * seguito da ## (livello “più alto” nel markdown) come sotto il Cacciatore.
+ */
+function extractSubclassSectionMarkdown(
   raw: string,
-  headings: string[],
-  stopHeadings: string[]
+  sectionHeadings: string[],
+  stopHeadingNorms: string[]
 ): string {
   const txt = raw.replace(/\r/g, "");
   if (!txt.trim()) return "";
-  const targets = headings.map(normalizeHeadingForMatch).filter(Boolean);
-  const stops = stopHeadings.map(normalizeHeadingForMatch).filter(Boolean);
+  const targets = sectionHeadings.map(normalizeHeadingForMatch).filter(Boolean);
   if (!targets.length) return "";
+  const stops = new Set(stopHeadingNorms.map(normalizeHeadingForMatch).filter(Boolean));
   const lines = txt.split("\n");
   let startIdx = -1;
-  let startLevel = 7;
-  for (let i = 0; i < lines.length; i += 1) {
+  for (let i = 0; i < lines.length; i++) {
     const ht = headingTextRaw(lines[i]);
     if (!ht) continue;
     if (!targets.includes(normalizeHeadingForMatch(ht))) continue;
-    const lv = headingLevel(lines[i]);
-    if (!lv) continue;
-    startIdx = i;
-    startLevel = lv;
-    break;
+    if (startIdx < 0 || i < startIdx) startIdx = i;
   }
   if (startIdx < 0) return "";
+
   let endIdx = lines.length;
-  for (let i = startIdx + 1; i < lines.length; i += 1) {
+  for (let i = startIdx + 1; i < lines.length; i++) {
     const ht = headingTextRaw(lines[i]);
     const lv = headingLevel(lines[i]);
     if (!lv || !ht) continue;
     const n = normalizeHeadingForMatch(ht);
-    if (stops.includes(n)) {
-      endIdx = i;
-      break;
-    }
-    if (lv <= startLevel && targets.includes(n) && i > startIdx) {
+    if (stops.has(n)) {
       endIdx = i;
       break;
     }
   }
   return lines.slice(startIdx, endIdx).join("\n").trim();
+}
+
+function siblingSubclassStopHeadings(parentClassLabel: string, currentSubclassLabel: string): string[] {
+  const cur = currentSubclassLabel
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  return supplementSubclassesForClass(parentClassLabel)
+    .filter((e) => {
+      const lab = e.label
+        .trim()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+      return lab !== cur;
+    })
+    .flatMap((e) => e.sectionHeadings);
 }
 
 function cleanRulesExcerpt(md: string): string {
@@ -160,6 +177,8 @@ function filterClassFeaturesByLevel(md: string, level: number): string {
     "COMPETENZE",
     "EQUIPAGGIAMENTO",
   ]);
+  /** Titolo dell’H1/H2 d’introduzione: non è un privilegio numerato. */
+  const skippedIntroHeadings = new Set(["PRIVILEGI DI CLASSE"]);
   const lines = txt.split("\n");
   const kept: string[] = [];
   let currentHeading: string | null = null;
@@ -172,7 +191,7 @@ function filterClassFeaturesByLevel(md: string, level: number): string {
       return;
     }
     const headingNorm = normalizeTitleForMatch(currentHeading);
-    if (omittedStaticSections.has(headingNorm)) {
+    if (omittedStaticSections.has(headingNorm) || skippedIntroHeadings.has(headingNorm)) {
       currentHeading = null;
       currentLines = [];
       return;
@@ -201,10 +220,10 @@ function filterClassFeaturesByLevel(md: string, level: number): string {
   }
 
   for (const line of lines) {
-    const h = line.match(/^###\s+(.+?)\s*$/);
+    const h = line.match(/^(#{1,3})\s+(.+?)\s*$/);
     if (h) {
       flushSection();
-      currentHeading = h[1].trim();
+      currentHeading = h[2].trim();
       continue;
     }
     if (!currentHeading) continue;
@@ -670,11 +689,15 @@ export async function resolveGeneratorRules(
 
   let subclassFeaturesMd: string | null = null;
   if (input.classSubclass?.trim()) {
+    const subclassStops = siblingSubclassStopHeadings(input.classLabel, input.classSubclass);
     const matched = matchSupplementSubclass(input.classLabel, input.classSubclass);
     if (matched) {
       await preloadManualMarkdownFile(matched.supplementRulesSource.markdownFile, requestOrigin);
       const md = getManualMarkdownByFileName(matched.supplementRulesSource.markdownFile);
-      subclassFeaturesMd = extractSectionByHeadingsMarkdown(md, matched.sectionHeadings) || null;
+      subclassFeaturesMd =
+        extractSubclassSectionMarkdown(md, matched.sectionHeadings, subclassStops) ||
+        extractSectionByHeadingsMarkdown(md, matched.sectionHeadings) ||
+        null;
       if (!subclassFeaturesMd?.trim() && matched.contentIlikeFallback) {
         subclassFeaturesMd = extractSectionByContentAnchorMarkdown(
           md,
@@ -683,9 +706,11 @@ export async function resolveGeneratorRules(
       }
     } else {
       await preloadPhbMarkdown(requestOrigin);
-      subclassFeaturesMd = extractSectionByHeadingsMarkdown(getManualMarkdownByFileName(PHB_MD_FILE), [
-        input.classSubclass.toUpperCase(),
-      ]) || null;
+      const md = getManualMarkdownByFileName(PHB_MD_FILE);
+      subclassFeaturesMd =
+        extractSubclassSectionMarkdown(md, [input.classSubclass.trim().toUpperCase()], subclassStops) ||
+        extractSectionByHeadingsMarkdown(md, [input.classSubclass.toUpperCase()]) ||
+        null;
     }
   }
 
@@ -740,17 +765,7 @@ export async function resolveGeneratorRules(
     subraceTraitsMd: subraceTraitsMd ? normalizeMarkdownTables(cleanRulesExcerpt(subraceTraitsMd)) : null,
     classFeaturesMd: normalizeMarkdownTables(filterClassFeaturesByLevel(classFeaturesMd, input.level)),
     subclassFeaturesMd: subclassFeaturesMd
-      ? normalizeMarkdownTables(
-          cleanRulesExcerpt(
-          extractSectionByHeadingsUntilAnyHeadingMarkdown(
-            subclassFeaturesMd,
-            [input.classSubclass ?? ""],
-            supplementSubclassesForClass(input.classLabel)
-              .map((s) => s.label)
-              .filter((h) => h.toLowerCase() !== (input.classSubclass ?? "").toLowerCase())
-            ) || subclassFeaturesMd
-          )
-        )
+      ? normalizeMarkdownTables(cleanRulesExcerpt(filterClassFeaturesByLevel(subclassFeaturesMd, input.level)))
       : null,
     backgroundMd: backgroundMd ? normalizeMarkdownTables(cleanRulesExcerpt(backgroundMd)) : null,
     spellcastingAbility,

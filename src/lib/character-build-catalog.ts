@@ -258,7 +258,8 @@ export const CLASS_OPTIONS: ClassCatalogEntry[] = [
     slug: "ranger",
     label: "Ranger",
     privilegesAnchor: "Un ranger ottiene i seguenti privilegi di classe",
-    privilegesExcerptStopPattern: "^#\\s+STILE DI COMBATTIMENTO\\s*$",
+    /** Ferma prima degli archetipi (Cacciatore / Signore delle Bestie), non a metà dei privilegi core. */
+    privilegesExcerptStopPattern: "^##\\s+ARCHETIPI RANGER\\s*$",
     spellcastingAnchor: "Quando arriva al 2° livello, un ranger impara",
     spellProgression: "half",
     spellList: { style: "h1", chapter: "INCANTESIMI DA RANGER" },
