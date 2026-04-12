@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { BookOpen, Mail, Map, Palette, Sparkles } from "lucide-react";
+import { BookOpen, Layers, Mail, Map, Palette, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -66,6 +66,17 @@ export function GmHomepage({
             campaignId={campaignId}
             className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
           />
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
+          >
+            <Link href={`/campaigns/${campaignId}/gm-only/vista-dall-alto`}>
+              <Layers className="mr-2 h-4 w-4" />
+              Vista dall&apos;alto (FoW)
+            </Link>
+          </Button>
           <Button
             asChild
             variant="outline"

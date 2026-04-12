@@ -428,6 +428,50 @@ export interface Database {
         };
         Update: Partial<Database["public"]["Tables"]["session_feedback"]["Insert"]>;
       };
+      campaign_exploration_maps: {
+        Row: {
+          id: string;
+          campaign_id: string;
+          floor_label: string;
+          sort_order: number;
+          image_path: string;
+          grid_cell_meters: number | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          campaign_id: string;
+          floor_label?: string;
+          sort_order?: number;
+          image_path: string;
+          grid_cell_meters?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["campaign_exploration_maps"]["Insert"]>;
+      };
+      campaign_exploration_fow_regions: {
+        Row: {
+          id: string;
+          map_id: string;
+          polygon: Json;
+          is_revealed: boolean;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          map_id: string;
+          polygon: Json;
+          is_revealed?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["campaign_exploration_fow_regions"]["Insert"]>;
+      };
     };
   };
 }
