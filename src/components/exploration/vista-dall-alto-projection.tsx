@@ -67,19 +67,21 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
   }, [mapRow.id]);
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-black">
-      <header className="shrink-0 border-b border-barber-gold/20 px-4 py-2 text-center text-sm text-barber-paper/80">
-        {mapRow.floor_label?.trim() || "Vista dall'alto"} · solo proiezione
-      </header>
-      <div className="min-h-0 flex-1 overflow-hidden p-2">
+    <div className="fixed inset-0 flex min-h-0 flex-col overflow-hidden bg-black">
+      <div className="min-h-0 flex-1">
         <ExplorationMapStage
           imageUrl={imageUrl}
-          imageAlt=""
+          imageAlt={
+            mapRow.floor_label?.trim()
+              ? `Mappa: ${mapRow.floor_label}`
+              : "Mappa vista dall'alto"
+          }
           regions={vm}
           mode="explore"
           draftPoints={[]}
           selectedRegionId={null}
           readOnly
+          fillViewport
         />
       </div>
     </div>

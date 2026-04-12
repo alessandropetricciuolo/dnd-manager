@@ -88,8 +88,9 @@ export function DashboardShell({ children, isAdmin, isGmOrAdmin }: DashboardShel
   const pathname = usePathname();
   const isCampaignPage = pathname?.startsWith("/campaigns");
   const isGmScreen = pathname?.includes("/gm-screen");
+  const isVistaProiezione = pathname?.includes("/vista-dall-alto/proiezione");
 
-  if (isGmScreen) {
+  if (isGmScreen || isVistaProiezione) {
     return <div className="min-h-screen w-full">{children}</div>;
   }
 

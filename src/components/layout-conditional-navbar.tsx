@@ -7,12 +7,13 @@ type Props = {
   children: React.ReactNode;
 };
 
-/** Nasconde la Navbar sulla route GM Screen (pagina pulita a tutto schermo). */
+/** Nasconde la Navbar su route a tutto schermo (GM Screen, proiezione vista dall'alto). */
 export function LayoutConditionalNavbar({ navbar, children }: Props) {
   const pathname = usePathname();
   const isGmScreen = pathname?.includes("/gm-screen");
+  const isVistaProiezione = pathname?.includes("/vista-dall-alto/proiezione");
 
-  if (isGmScreen) {
+  if (isGmScreen || isVistaProiezione) {
     return <>{children}</>;
   }
   return (

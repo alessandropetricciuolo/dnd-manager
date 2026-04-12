@@ -24,15 +24,20 @@ type ExplorationMapStageProps = {
   onVertexDragEnd?: (regionId: string, vertexIndex: number, norm: NormPoint) => void;
   onRevealClick?: (norm: NormPoint) => void;
   readOnly?: boolean;
+  /** Proiezione: mappa a tutto lo spazio disponibile (senza max-height GM). */
+  fillViewport?: boolean;
 };
 
 const FOG_RGBA = "rgba(8, 6, 4, 0.82)";
+/** In proiezione la nebbia deve coprire del tutto (niente map visibile sotto). */
+const FOG_RGBA_OPAQUE = "rgba(0, 0, 0, 1)";
 
 function drawFog(
   canvas: HTMLCanvasElement,
   w: number,
   h: number,
-  revealed: NormPoint[][]
+  revealed: NormPoint[][],
+  fogFill: string
 ) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
@@ -42,7 +47,7 @@ function drawFog(
   canvas.style.width = `${w}px`;
   canvas.style.height = `${h}px`;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.fillStyle = FOG_RGBA;
+  ctx.fillStyle = fogFill;
   ctx.fillRect(0, 0, w, h);
   ctx.globalCompositeOperation = "destination-out";
   for (const poly of revealed) {
@@ -70,6 +75,7 @@ export function ExplorationMapStage({
   onVertexDragEnd,
   onRevealClick,
   readOnly = false,
+  fillViewport = false,
 }: ExplorationMapStageProps) {
   const imgRef = useRef<HTMLImageElement>(null);
   const fogRef = useRef<HTMLCanvasElement>(null);
@@ -83,6 +89,8 @@ export function ExplorationMapStage({
     [regions]
   );
 
+  const fogFill = readOnly ? FOG_RGBA_OPAQUE : FOG_RGBA;
+
   const syncFog = useCallback(() => {
     const img = imgRef.current;
     const cv = fogRef.current;
@@ -90,8 +98,8 @@ export function ExplorationMapStage({
     const w = img.offsetWidth;
     const h = img.offsetHeight;
     if (w < 2 || h < 2) return;
-    drawFog(cv, w, h, mode === "explore" || readOnly ? revealedPolys : []);
-  }, [revealedPolys, mode, readOnly]);
+    drawFog(cv, w, h, mode === "explore" || readOnly ? revealedPolys : [], fogFill);
+  }, [revealedPolys, mode, readOnly, fogFill]);
 
   useEffect(() => {
     syncFog();
@@ -177,8 +185,107 @@ export function ExplorationMapStage({
     return r.polygon.map((p, i) => (i === drag.vi ? dragPreview : p));
   };
 
+  const mapLayers = (
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        ref={imgRef}
+        src={imageUrl}
+        alt={imageAlt}
+        className={cn(
+          "pointer-events-none block select-none",
+          fillViewport ? "max-h-full max-w-full object-contain" : "h-auto w-full"
+        )}
+        draggable={false}
+        onLoad={onImgLoad}
+      />
+      {(mode === "explore" || readOnly) && (
+        <canvas
+          ref={fogRef}
+          className="pointer-events-none absolute left-0 top-0 h-full w-full"
+          aria-hidden
+        />
+      )}
+      <svg
+        className="pointer-events-none absolute left-0 top-0 h-full w-full"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        aria-hidden
+      >
+        {regions.map((r) => {
+          const poly = vertexPreview(r);
+          return (
+            <polygon
+              key={r.id}
+              points={poly.map((p) => `${p.x * 100},${p.y * 100}`).join(" ")}
+              fill="none"
+              stroke={
+                r.id === selectedRegionId ? "rgba(251, 191, 36, 0.95)" : "rgba(251, 191, 36, 0.5)"
+              }
+              strokeWidth={0.35}
+            />
+          );
+        })}
+        {draftPoints.length > 1 && (
+          <polyline
+            points={draftPoints.map((p) => `${p.x * 100},${p.y * 100}`).join(" ")}
+            fill="none"
+            stroke="rgba(34, 211, 238, 0.9)"
+            strokeWidth={0.35}
+          />
+        )}
+        {draftPoints.map((p, i) => (
+          <circle
+            key={`d-${i}`}
+            cx={p.x * 100}
+            cy={p.y * 100}
+            r={0.85}
+            fill="rgba(34, 211, 238, 0.95)"
+          />
+        ))}
+      </svg>
+      {mode === "prepare" && !readOnly && (
+        <button
+          type="button"
+          className="absolute inset-0 z-[1] cursor-crosshair bg-transparent"
+          onClick={handlePrepareClick}
+          aria-label="Aggiungi vertice al poligono"
+        />
+      )}
+      {mode === "prepare" &&
+        selectedRegionId &&
+        regions
+          .filter((r) => r.id === selectedRegionId)
+          .map((r) => {
+            const poly = vertexPreview(r);
+            return poly.map((p, vi) => (
+              <button
+                key={`${r.id}-${vi}`}
+                type="button"
+                className="absolute z-[2] h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border border-amber-400 bg-amber-500/90 shadow"
+                style={{
+                  left: `${p.x * 100}%`,
+                  top: `${p.y * 100}%`,
+                }}
+                onMouseDown={(ev) => {
+                  ev.stopPropagation();
+                  ev.preventDefault();
+                  const n = normFromEvent(ev.clientX, ev.clientY);
+                  if (n) {
+                    dragPreviewRef.current = n;
+                    setDragPreview(n);
+                  }
+                  setDrag({ regionId: r.id, vi });
+                }}
+                aria-label={`Vertice ${vi + 1}`}
+              />
+            ));
+          })}
+    </>
+  );
+
   return (
-    <div className="w-full bg-black/50">
+    <div className={cn("w-full", fillViewport ? "h-full min-h-0 bg-black" : "bg-black/50")}>
       <TransformWrapper initialScale={1} minScale={0.2} maxScale={6} centerOnInit limitToBounds={false}>
         <TransformComponent
           wrapperStyle={{ width: "100%", height: "100%" }}
@@ -186,103 +293,23 @@ export function ExplorationMapStage({
         >
           <div
             className={cn(
-              "relative mx-auto w-full max-w-[min(100%,96vw)]",
-              mode === "explore" && onRevealClick && "cursor-pointer"
+              fillViewport
+                ? "relative flex h-full min-h-0 w-full items-center justify-center"
+                : "relative mx-auto w-full max-w-[min(100%,96vw)]",
+              !fillViewport && mode === "explore" && onRevealClick && "cursor-pointer"
             )}
-            style={{ aspectRatio: String(aspect), maxHeight: "min(78vh, 1200px)" }}
+            style={
+              fillViewport
+                ? undefined
+                : { aspectRatio: String(aspect), maxHeight: "min(78vh, 1200px)" }
+            }
             onClick={mode === "explore" && onRevealClick ? handleExploreClick : undefined}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              ref={imgRef}
-              src={imageUrl}
-              alt={imageAlt}
-              className="pointer-events-none block h-auto w-full select-none"
-              draggable={false}
-              onLoad={onImgLoad}
-            />
-            {(mode === "explore" || readOnly) && (
-              <canvas
-                ref={fogRef}
-                className="pointer-events-none absolute left-0 top-0 h-full w-full"
-                aria-hidden
-              />
+            {fillViewport ? (
+              <div className="relative inline-block max-h-full max-w-full">{mapLayers}</div>
+            ) : (
+              mapLayers
             )}
-            <svg
-              className="pointer-events-none absolute left-0 top-0 h-full w-full"
-              viewBox="0 0 100 100"
-              preserveAspectRatio="none"
-              aria-hidden
-            >
-              {regions.map((r) => {
-                const poly = vertexPreview(r);
-                return (
-                  <polygon
-                    key={r.id}
-                    points={poly.map((p) => `${p.x * 100},${p.y * 100}`).join(" ")}
-                    fill="none"
-                    stroke={
-                      r.id === selectedRegionId ? "rgba(251, 191, 36, 0.95)" : "rgba(251, 191, 36, 0.5)"
-                    }
-                    strokeWidth={0.35}
-                  />
-                );
-              })}
-              {draftPoints.length > 1 && (
-                <polyline
-                  points={draftPoints.map((p) => `${p.x * 100},${p.y * 100}`).join(" ")}
-                  fill="none"
-                  stroke="rgba(34, 211, 238, 0.9)"
-                  strokeWidth={0.35}
-                />
-              )}
-              {draftPoints.map((p, i) => (
-                <circle
-                  key={`d-${i}`}
-                  cx={p.x * 100}
-                  cy={p.y * 100}
-                  r={0.85}
-                  fill="rgba(34, 211, 238, 0.95)"
-                />
-              ))}
-            </svg>
-            {mode === "prepare" && !readOnly && (
-              <button
-                type="button"
-                className="absolute inset-0 z-[1] cursor-crosshair bg-transparent"
-                onClick={handlePrepareClick}
-                aria-label="Aggiungi vertice al poligono"
-              />
-            )}
-            {mode === "prepare" &&
-              selectedRegionId &&
-              regions
-                .filter((r) => r.id === selectedRegionId)
-                .map((r) => {
-                  const poly = vertexPreview(r);
-                  return poly.map((p, vi) => (
-                    <button
-                      key={`${r.id}-${vi}`}
-                      type="button"
-                      className="absolute z-[2] h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border border-amber-400 bg-amber-500/90 shadow"
-                      style={{
-                        left: `${p.x * 100}%`,
-                        top: `${p.y * 100}%`,
-                      }}
-                      onMouseDown={(ev) => {
-                        ev.stopPropagation();
-                        ev.preventDefault();
-                        const n = normFromEvent(ev.clientX, ev.clientY);
-                        if (n) {
-                          dragPreviewRef.current = n;
-                          setDragPreview(n);
-                        }
-                        setDrag({ regionId: r.id, vi });
-                      }}
-                      aria-label={`Vertice ${vi + 1}`}
-                    />
-                  ));
-                })}
           </div>
         </TransformComponent>
       </TransformWrapper>

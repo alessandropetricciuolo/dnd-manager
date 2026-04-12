@@ -92,6 +92,29 @@ button[class*="iubenda-cs-preference-button"] {
   transform: none !important;
 }
 
+/* Proiezione vista dall'alto: solo mappa, niente widget cookie */
+html.vista-proiezione-fullscreen {
+  overflow: hidden !important;
+  height: 100%;
+}
+
+html.vista-proiezione-fullscreen body {
+  overflow: hidden !important;
+}
+
+html.vista-proiezione-fullscreen #iubenda-cs-floating-button,
+html.vista-proiezione-fullscreen #iub-cs-floating-button,
+html.vista-proiezione-fullscreen #iubenda-cs-preference-button,
+html.vista-proiezione-fullscreen button#iubenda-cs-preference-button,
+html.vista-proiezione-fullscreen button[class*="iubenda-cs-preference-button"],
+html.vista-proiezione-fullscreen #iubenda-cs-banner,
+html.vista-proiezione-fullscreen [id^="iubenda_cs"],
+html.vista-proiezione-fullscreen iframe[src*="iubenda"] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 /* Stampa Guida del Giocatore: solo contenuto, tema chiaro (ink-saver) */
 @media print {
   .no-print {
