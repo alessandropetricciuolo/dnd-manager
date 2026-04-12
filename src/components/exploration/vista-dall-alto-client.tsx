@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { createSupabaseBrowserClient } from "@/utils/supabase/client";
 import {
-  createExplorationMap,
   createFowRegion,
   deleteExplorationMap,
   deleteFowRegion,
@@ -134,12 +133,29 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
     const formData = new FormData(form);
     setMapUploading(true);
     try {
-      const res = await createExplorationMap(campaignId, formData);
-      if (!res?.success) {
+      // Upload via Route Handler: multipart Server Actions can yield undefined payloads on the client in Next 14.
+      const httpRes = await fetch(
+        `/api/campaigns/${encodeURIComponent(campaignId)}/exploration-maps`,
+        { method: "POST", body: formData }
+      );
+      type CreateMapJson = { success: boolean; error?: string; data?: { id: string } };
+      let res: CreateMapJson;
+      try {
+        res = (await httpRes.json()) as CreateMapJson;
+      } catch {
         toast.error(
-          res?.error ??
-            "Risposta dal server non valida. Ricarica la pagina o verifica la connessione."
+          httpRes.status === 413
+            ? "File troppo grande (max ~4 MB). Comprimi l’immagine e riprova."
+            : `Errore dal server (${httpRes.status}). Riprova.`
         );
+        return;
+      }
+      if (!res || typeof res.success !== "boolean") {
+        toast.error("Risposta dal server non valida. Ricarica la pagina.");
+        return;
+      }
+      if (!res.success) {
+        toast.error(res.error ?? "Caricamento non riuscito.");
         return;
       }
       toast.success("Mappa caricata.");
