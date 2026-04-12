@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import imageCompression from "browser-image-compression";
 import { toast } from "sonner";
 import { createSupabaseBrowserClient } from "@/utils/supabase/client";
 import {
@@ -33,6 +34,14 @@ import {
 } from "@/components/ui/select";
 import { ExternalLink, Trash2, Undo2 } from "lucide-react";
 
+/** Mappe grandi: limite sotto 4 MB per la route API; output WebP come CompressedImageUpload. */
+const MAP_UPLOAD_COMPRESSION = {
+  maxSizeMB: 3.5,
+  maxWidthOrHeight: 8192,
+  useWebWorker: true,
+  fileType: "image/webp" as const,
+};
+
 type Props = {
   campaignId: string;
   initialMaps: ExplorationMapRow[];
@@ -56,6 +65,7 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [undoReveal, setUndoReveal] = useState<{ id: string; was: boolean }[]>([]);
   const [mapUploading, setMapUploading] = useState(false);
+  const [mapCompressing, setMapCompressing] = useState(false);
 
   const selectedMap = maps.find((m) => m.id === selectedMapId) ?? null;
   const regionsForMap = useMemo(
@@ -130,10 +140,51 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
   async function handleAddMap(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
-    const formData = new FormData(form);
+    const fileInput = form.querySelector<HTMLInputElement>('input[name="image"]');
+    const rawFile = fileInput?.files?.[0];
+    if (!rawFile) {
+      toast.error("Seleziona un'immagine.");
+      return;
+    }
+    if (!rawFile.type.startsWith("image/")) {
+      toast.error("Seleziona un file immagine (JPG, PNG, WebP, GIF).");
+      return;
+    }
+
+    setMapCompressing(true);
+    let fileToSend: File;
+    try {
+      const compressed = await imageCompression(rawFile, MAP_UPLOAD_COMPRESSION);
+      fileToSend = new File(
+        [compressed],
+        rawFile.name.replace(/\.[^.]+$/i, ".webp"),
+        { type: "image/webp" }
+      );
+    } catch (err) {
+      console.error(err);
+      toast.error("Compressione fallita. Prova con un'immagine più piccola o un altro formato.");
+      return;
+    } finally {
+      setMapCompressing(false);
+    }
+
+    const formData = new FormData();
+    formData.append(
+      "floor_label",
+      (form.elements.namedItem("floor_label") as HTMLInputElement | null)?.value ?? ""
+    );
+    formData.append(
+      "sort_order",
+      (form.elements.namedItem("sort_order") as HTMLInputElement | null)?.value ?? "0"
+    );
+    formData.append(
+      "grid_cell_meters",
+      (form.elements.namedItem("grid_cell_meters") as HTMLInputElement | null)?.value ?? ""
+    );
+    formData.append("image", fileToSend);
+
     setMapUploading(true);
     try {
-      // Upload via Route Handler: multipart Server Actions can yield undefined payloads on the client in Next 14.
       const httpRes = await fetch(
         `/api/campaigns/${encodeURIComponent(campaignId)}/exploration-maps`,
         { method: "POST", body: formData }
@@ -145,7 +196,7 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
       } catch {
         toast.error(
           httpRes.status === 413
-            ? "File troppo grande (max ~4 MB). Comprimi l’immagine e riprova."
+            ? "Richiesta ancora troppo grande (max ~4 MB). Prova un’immagine a risoluzione minore."
             : `Errore dal server (${httpRes.status}). Riprova.`
         );
         return;
@@ -362,15 +413,19 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
               type="file"
               accept="image/jpeg,image/png,image/webp,image/gif"
               required
+              disabled={mapCompressing || mapUploading}
               className="max-w-xs text-sm text-barber-paper"
             />
+            <p className="max-w-md text-xs text-barber-paper/60">
+              Verrà compressa in WebP e caricata su Telegram, come le altre immagini dell&apos;app.
+            </p>
           </div>
           <Button
             type="submit"
-            disabled={mapUploading}
+            disabled={mapCompressing || mapUploading}
             className="bg-barber-red hover:bg-barber-red/90"
           >
-            {mapUploading ? "Caricamento…" : "Carica"}
+            {mapCompressing ? "Compressione…" : mapUploading ? "Caricamento…" : "Carica"}
           </Button>
         </form>
       </section>

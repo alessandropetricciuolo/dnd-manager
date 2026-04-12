@@ -1,7 +1,5 @@
-import { randomUUID } from "crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
-
-const BUCKET = "exploration_maps";
+import { uploadToTelegram } from "@/lib/telegram-storage";
 
 export type MapUploadResult =
   | { success: true; data: { id: string } }
@@ -52,9 +50,11 @@ async function requireGm(supabase: SupabaseClient) {
   return { user, ok };
 }
 
+const MAX_BYTES = 4 * 1024 * 1024; // allineato al limite body route / API
+
 /**
- * Upload exploration map image + insert row. Used by Server Action and POST API route
- * so multipart uploads always get a normal JSON response on the client.
+ * Carica l'immagine su Telegram (come mappe wiki e campagne) e inserisce la riga con
+ * `image_path` = `/api/tg-image/<file_id>`.
  */
 export async function createExplorationMapFromFormData(
   supabase: SupabaseClient,
@@ -73,22 +73,32 @@ export async function createExplorationMapFromFormData(
   }
   const { blob, contentType } = imageRead;
 
-  const ext =
-    contentType === "image/png"
-      ? "png"
-      : contentType === "image/webp"
-        ? "webp"
-        : contentType === "image/gif"
-          ? "gif"
-          : "jpg";
-  const path = `${campaignId}/${randomUUID()}.${ext}`;
+  if (blob.size > MAX_BYTES) {
+    return {
+      success: false,
+      error: "File ancora troppo grande dopo la compressione. Riduci risoluzione o qualità.",
+    };
+  }
 
-  const buf = Buffer.from(await blob.arrayBuffer());
-  const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, buf, {
-    contentType,
-    upsert: false,
-  });
-  if (upErr) return { success: false, error: upErr.message ?? "Upload fallito." };
+  const uploadName =
+    contentType === "image/png"
+      ? "map.png"
+      : contentType === "image/gif"
+        ? "map.gif"
+        : contentType === "image/webp"
+          ? "map.webp"
+          : "map.jpg";
+  const file = new File([blob], uploadName, { type: contentType });
+
+  let fileId: string;
+  try {
+    fileId = await uploadToTelegram(file, undefined, "photo");
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Upload Telegram fallito.";
+    return { success: false, error: msg };
+  }
+
+  const imagePath = `/api/tg-image/${fileId}`;
 
   const sortOrder = Number.parseInt(sortOrderRaw, 10);
   const grid_cell_meters =
@@ -104,14 +114,13 @@ export async function createExplorationMapFromFormData(
       campaign_id: campaignId,
       floor_label: floorLabel,
       sort_order: Number.isFinite(sortOrder) ? sortOrder : 0,
-      image_path: path,
+      image_path: imagePath,
       grid_cell_meters: gridOk,
     })
     .select("id")
     .single();
 
   if (insErr || !row) {
-    await supabase.storage.from(BUCKET).remove([path]);
     return { success: false, error: insErr?.message ?? "Salvataggio fallito." };
   }
 

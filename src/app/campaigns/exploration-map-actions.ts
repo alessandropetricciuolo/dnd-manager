@@ -117,7 +117,10 @@ export async function deleteExplorationMap(campaignId: string, mapId: string): P
 
   const { error } = await supabase.from("campaign_exploration_maps").delete().eq("id", mapId).eq("campaign_id", campaignId);
   if (error) return { success: false, error: error.message };
-  if (row.image_path) await supabase.storage.from(BUCKET).remove([row.image_path]);
+  const legacyPath = row.image_path?.trim() ?? "";
+  if (legacyPath && !legacyPath.startsWith("/api/tg-image/") && !legacyPath.startsWith("/api/tg-file/")) {
+    await supabase.storage.from(BUCKET).remove([legacyPath]);
+  }
   revalidatePath(`/campaigns/${campaignId}`);
   return { success: true };
 }
