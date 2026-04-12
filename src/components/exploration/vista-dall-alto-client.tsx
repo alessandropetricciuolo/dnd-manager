@@ -56,6 +56,7 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
   const [draftPoints, setDraftPoints] = useState<NormPoint[]>([]);
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [undoReveal, setUndoReveal] = useState<{ id: string; was: boolean }[]>([]);
+  const [mapUploading, setMapUploading] = useState(false);
 
   const selectedMap = maps.find((m) => m.id === selectedMapId) ?? null;
   const regionsForMap = useMemo(
@@ -129,17 +130,26 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
 
   async function handleAddMap(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const res = await createExplorationMap(campaignId, formData);
-    if (!res.success) {
-      toast.error(res.error);
-      return;
-    }
-    if (res.data) {
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    setMapUploading(true);
+    try {
+      const res = await createExplorationMap(campaignId, formData);
+      if (!res.success) {
+        toast.error(res.error);
+        return;
+      }
       toast.success("Mappa caricata.");
-      e.currentTarget.reset();
+      form.reset();
       await refreshFromServer();
-      setSelectedMapId(res.data.id);
+      if (res.data?.id) setSelectedMapId(res.data.id);
+    } catch (err) {
+      console.error(err);
+      toast.error(
+        err instanceof Error ? err.message : "Errore durante il caricamento. Riprova."
+      );
+    } finally {
+      setMapUploading(false);
     }
   }
 
@@ -291,7 +301,11 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
 
       <section className="rounded-xl border border-barber-gold/25 bg-barber-dark/50 p-4">
         <h3 className="mb-3 text-sm font-semibold text-barber-gold">Nuova mappa</h3>
-        <form onSubmit={(e) => void handleAddMap(e)} className="flex flex-wrap items-end gap-3">
+        <form
+          encType="multipart/form-data"
+          onSubmit={(e) => void handleAddMap(e)}
+          className="flex flex-wrap items-end gap-3"
+        >
           <div className="space-y-1">
             <Label htmlFor="f-floor">Nome piano</Label>
             <Input
@@ -332,8 +346,12 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
               className="max-w-xs text-sm text-barber-paper"
             />
           </div>
-          <Button type="submit" className="bg-barber-red hover:bg-barber-red/90">
-            Carica
+          <Button
+            type="submit"
+            disabled={mapUploading}
+            className="bg-barber-red hover:bg-barber-red/90"
+          >
+            {mapUploading ? "Caricamento…" : "Carica"}
           </Button>
         </form>
       </section>
