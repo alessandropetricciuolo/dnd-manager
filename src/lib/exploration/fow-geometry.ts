@@ -35,3 +35,40 @@ export function clampNormPoint(p: NormPoint): NormPoint {
     y: Math.min(1, Math.max(0, p.y)),
   };
 }
+
+/**
+ * Vertici salvati come frazioni del bitmap (0–1). Con CSS object-fit: contain il bitmap
+ * è centrato e ridimensionato dentro il box dell'<img>; questa funzione mappa quei punti
+ * in pixel CSS rispetto al box dell'elemento (stesso sistema di coordinate del canvas/SVG sopra l'img).
+ */
+export function intrinsicNormToElementPx(
+  nx: number,
+  ny: number,
+  elW: number,
+  elH: number,
+  naturalW: number,
+  naturalH: number
+): [number, number] {
+  if (naturalW < 1 || naturalH < 1 || elW < 1 || elH < 1) {
+    return [nx * elW, ny * elH];
+  }
+  const scale = Math.min(elW / naturalW, elH / naturalH);
+  const dw = naturalW * scale;
+  const dh = naturalH * scale;
+  const ox = (elW - dw) / 2;
+  const oy = (elH - dh) / 2;
+  return [ox + nx * dw, oy + ny * dh];
+}
+
+/** Coordinate SVG in viewBox 0–100 (percentuali del box elemento). */
+export function intrinsicNormToSvgUserUnits(
+  nx: number,
+  ny: number,
+  elW: number,
+  elH: number,
+  naturalW: number,
+  naturalH: number
+): [number, number] {
+  const [px, py] = intrinsicNormToElementPx(nx, ny, elW, elH, naturalW, naturalH);
+  return [(px / elW) * 100, (py / elH) * 100];
+}

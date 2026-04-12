@@ -4,7 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import { cn } from "@/lib/utils";
 import type { NormPoint } from "@/lib/exploration/fow-geometry";
-import { pointInPolygon } from "@/lib/exploration/fow-geometry";
+import {
+  intrinsicNormToElementPx,
+  intrinsicNormToSvgUserUnits,
+  pointInPolygon,
+} from "@/lib/exploration/fow-geometry";
 
 export type FowRegionVm = {
   id: string;
@@ -37,7 +41,9 @@ function drawFog(
   w: number,
   h: number,
   revealed: NormPoint[][],
-  fogFill: string
+  fogFill: string,
+  naturalW: number,
+  naturalH: number
 ) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
@@ -53,9 +59,11 @@ function drawFog(
   for (const poly of revealed) {
     if (poly.length < 3) continue;
     ctx.beginPath();
-    ctx.moveTo(poly[0].x * w, poly[0].y * h);
+    const [x0, y0] = intrinsicNormToElementPx(poly[0].x, poly[0].y, w, h, naturalW, naturalH);
+    ctx.moveTo(x0, y0);
     for (let i = 1; i < poly.length; i++) {
-      ctx.lineTo(poly[i].x * w, poly[i].y * h);
+      const [xi, yi] = intrinsicNormToElementPx(poly[i].x, poly[i].y, w, h, naturalW, naturalH);
+      ctx.lineTo(xi, yi);
     }
     ctx.closePath();
     ctx.fill();
@@ -80,6 +88,8 @@ export function ExplorationMapStage({
   const imgRef = useRef<HTMLImageElement>(null);
   const fogRef = useRef<HTMLCanvasElement>(null);
   const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
+  /** Dimensioni layout dell'img (per SVG allineato al bitmap con object-contain). */
+  const [layoutSize, setLayoutSize] = useState<{ w: number; h: number } | null>(null);
   const [drag, setDrag] = useState<{ regionId: string; vi: number } | null>(null);
   const [dragPreview, setDragPreview] = useState<NormPoint | null>(null);
   const dragPreviewRef = useRef<NormPoint | null>(null);
@@ -93,12 +103,22 @@ export function ExplorationMapStage({
 
   const syncFog = useCallback(() => {
     const img = imgRef.current;
-    const cv = fogRef.current;
-    if (!img || !cv || !img.naturalWidth) return;
+    if (!img || !img.naturalWidth) return;
     const w = img.offsetWidth;
     const h = img.offsetHeight;
     if (w < 2 || h < 2) return;
-    drawFog(cv, w, h, mode === "explore" || readOnly ? revealedPolys : [], fogFill);
+    setLayoutSize((prev) => (prev?.w === w && prev?.h === h ? prev : { w, h }));
+    const cv = fogRef.current;
+    if (!cv) return;
+    drawFog(
+      cv,
+      w,
+      h,
+      mode === "explore" || readOnly ? revealedPolys : [],
+      fogFill,
+      img.naturalWidth,
+      img.naturalHeight
+    );
   }, [revealedPolys, mode, readOnly, fogFill]);
 
   useEffect(() => {
@@ -185,6 +205,25 @@ export function ExplorationMapStage({
     return r.polygon.map((p, i) => (i === drag.vi ? dragPreview : p));
   };
 
+  const nw = natural?.w ?? 0;
+  const nh = natural?.h ?? 0;
+  const elW = layoutSize?.w ?? 0;
+  const elH = layoutSize?.h ?? 0;
+  const hasLayout = nw > 0 && nh > 0 && elW > 0 && elH > 0;
+
+  const normToSvg = (p: NormPoint): [number, number] =>
+    hasLayout
+      ? intrinsicNormToSvgUserUnits(p.x, p.y, elW, elH, nw, nh)
+      : [p.x * 100, p.y * 100];
+
+  const normToCssPercentStyle = (p: NormPoint) => {
+    if (hasLayout) {
+      const [px, py] = intrinsicNormToElementPx(p.x, p.y, elW, elH, nw, nh);
+      return { left: `${(px / elW) * 100}%`, top: `${(py / elH) * 100}%` } as const;
+    }
+    return { left: `${p.x * 100}%`, top: `${p.y * 100}%` } as const;
+  };
+
   const mapLayers = (
     <>
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -217,7 +256,12 @@ export function ExplorationMapStage({
           return (
             <polygon
               key={r.id}
-              points={poly.map((p) => `${p.x * 100},${p.y * 100}`).join(" ")}
+              points={poly
+                .map((p) => {
+                  const [sx, sy] = normToSvg(p);
+                  return `${sx},${sy}`;
+                })
+                .join(" ")}
               fill="none"
               stroke={
                 r.id === selectedRegionId ? "rgba(251, 191, 36, 0.95)" : "rgba(251, 191, 36, 0.5)"
@@ -228,21 +272,29 @@ export function ExplorationMapStage({
         })}
         {draftPoints.length > 1 && (
           <polyline
-            points={draftPoints.map((p) => `${p.x * 100},${p.y * 100}`).join(" ")}
+            points={draftPoints
+              .map((p) => {
+                const [sx, sy] = normToSvg(p);
+                return `${sx},${sy}`;
+              })
+              .join(" ")}
             fill="none"
             stroke="rgba(34, 211, 238, 0.9)"
             strokeWidth={0.35}
           />
         )}
-        {draftPoints.map((p, i) => (
-          <circle
-            key={`d-${i}`}
-            cx={p.x * 100}
-            cy={p.y * 100}
-            r={0.85}
-            fill="rgba(34, 211, 238, 0.95)"
-          />
-        ))}
+        {draftPoints.map((p, i) => {
+          const [cx, cy] = normToSvg(p);
+          return (
+            <circle
+              key={`d-${i}`}
+              cx={cx}
+              cy={cy}
+              r={0.85}
+              fill="rgba(34, 211, 238, 0.95)"
+            />
+          );
+        })}
       </svg>
       {mode === "prepare" && !readOnly && (
         <button
@@ -263,10 +315,7 @@ export function ExplorationMapStage({
                 key={`${r.id}-${vi}`}
                 type="button"
                 className="absolute z-[2] h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border border-amber-400 bg-amber-500/90 shadow"
-                style={{
-                  left: `${p.x * 100}%`,
-                  top: `${p.y * 100}%`,
-                }}
+                style={normToCssPercentStyle(p)}
                 onMouseDown={(ev) => {
                   ev.stopPropagation();
                   ev.preventDefault();
