@@ -116,10 +116,10 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
   const refreshFromServer = useCallback(async () => {
     const { listExplorationMaps, listFowRegions } = await import("@/app/campaigns/exploration-map-actions");
     const m = await listExplorationMaps(campaignId);
-    if (m.success && m.data) setMaps(m.data);
+    if (m?.success && m.data) setMaps(m.data);
     if (selectedMapId) {
       const r = await listFowRegions(selectedMapId);
-      if (r.success && r.data) {
+      if (r?.success && r.data) {
         setRegions((prev) => {
           const other = prev.filter((x) => x.map_id !== selectedMapId);
           return [...other, ...r.data!];
@@ -135,8 +135,11 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
     setMapUploading(true);
     try {
       const res = await createExplorationMap(campaignId, formData);
-      if (!res.success) {
-        toast.error(res.error);
+      if (!res?.success) {
+        toast.error(
+          res?.error ??
+            "Risposta dal server non valida. Ricarica la pagina o verifica la connessione."
+        );
         return;
       }
       toast.success("Mappa caricata.");
@@ -156,14 +159,14 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
   async function handleDeleteMap() {
     if (!selectedMapId || !confirm("Eliminare questa mappa e tutti i poligoni?")) return;
     const res = await deleteExplorationMap(campaignId, selectedMapId);
-    if (res.success) {
+    if (res?.success) {
       toast.success("Mappa eliminata.");
       const deleted = selectedMapId;
       const nextMaps = maps.filter((x) => x.id !== deleted);
       setRegions((p) => p.filter((r) => r.map_id !== deleted));
       setMaps(nextMaps);
       setSelectedMapId(nextMaps[0]?.id ?? null);
-    } else toast.error(res.error ?? "Errore");
+    } else toast.error(res?.error ?? "Errore");
   }
 
   const onCanvasClick = useCallback(
@@ -180,11 +183,11 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
     }
     if (!selectedMapId) return;
     const res = await createFowRegion(campaignId, selectedMapId, draftPoints);
-    if (res.success) {
+    if (res?.success) {
       toast.success("Poligono salvato.");
       setDraftPoints([]);
       await refreshFromServer();
-    } else toast.error(res.error ?? "Errore");
+    } else toast.error(res?.error ?? "Errore");
   }
 
   async function handleVertexDragEnd(regionId: string, vi: number, n: NormPoint) {
@@ -195,13 +198,13 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
     const next = [...poly];
     next[vi] = { x: Math.min(1, Math.max(0, n.x)), y: Math.min(1, Math.max(0, n.y)) };
     const res = await updateFowRegionPolygon(campaignId, regionId, next);
-    if (res.success) {
+    if (res?.success) {
       setRegions((prev) =>
         prev.map((r) =>
           r.id === regionId ? { ...r, polygon: next as unknown as FowRegionRow["polygon"] } : r
         )
       );
-    } else toast.error(res.error ?? "Errore");
+    } else toast.error(res?.error ?? "Errore");
   }
 
   const onRevealClick = useCallback(
@@ -213,8 +216,8 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
       const next = !row.is_revealed;
       setUndoReveal((u) => [...u, { id, was: row.is_revealed }]);
       const res = await setFowRegionRevealed(campaignId, id, next);
-      if (!res.success) {
-        toast.error(res.error ?? "Errore");
+      if (!res?.success) {
+        toast.error(res?.error ?? "Errore");
         setUndoReveal((u) => u.slice(0, -1));
         return;
       }
@@ -228,35 +231,35 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
     if (!last) return;
     void (async () => {
       const res = await setFowRegionRevealed(campaignId, last.id, last.was);
-      if (res.success) {
+      if (res?.success) {
         setUndoReveal((u) => u.slice(0, -1));
         setRegions((prev) =>
           prev.map((r) => (r.id === last.id ? { ...r, is_revealed: last.was } : r))
         );
-      } else toast.error(res.error ?? "Errore");
+      } else toast.error(res?.error ?? "Errore");
     })();
   }
 
   async function handleDeleteRegion() {
     if (!selectedRegionId) return;
     const res = await deleteFowRegion(campaignId, selectedRegionId);
-    if (res.success) {
+    if (res?.success) {
       toast.success("Poligono eliminato.");
       setRegions((p) => p.filter((r) => r.id !== selectedRegionId));
       setSelectedRegionId(null);
-    } else toast.error(res.error ?? "Errore");
+    } else toast.error(res?.error ?? "Errore");
   }
 
   async function handleResetFog() {
     if (!selectedMapId || !confirm("Oscurare di nuovo tutta la mappa (rivelazioni annullate)?")) return;
     const res = await resetMapFog(campaignId, selectedMapId);
-    if (res.success) {
+    if (res?.success) {
       toast.success("Nebbie ripristinate.");
       setUndoReveal([]);
       setRegions((prev) =>
         prev.map((r) => (r.map_id === selectedMapId ? { ...r, is_revealed: false } : r))
       );
-    } else toast.error(res.error ?? "Errore");
+    } else toast.error(res?.error ?? "Errore");
   }
 
   return (
