@@ -10,6 +10,7 @@ import {
   deleteFowRegion,
   resetMapFog,
   setFowRegionRevealed,
+  updateExplorationMapMeta,
   updateFowRegionPolygon,
   type ExplorationMapRow,
   type FowRegionRow,
@@ -42,6 +43,10 @@ const MAP_UPLOAD_COMPRESSION = {
   fileType: "image/webp" as const,
 };
 
+const GRID_CM = 2.5;
+const DEFAULT_PX_PER_CM = 37.7952755906;
+const GRID_STORAGE_KEY = "exploration-grid-device-v1";
+
 type Props = {
   campaignId: string;
   initialMaps: ExplorationMapRow[];
@@ -66,6 +71,13 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
   const [undoReveal, setUndoReveal] = useState<{ id: string; was: boolean }[]>([]);
   const [mapUploading, setMapUploading] = useState(false);
   const [mapCompressing, setMapCompressing] = useState(false);
+  const [showGrid, setShowGrid] = useState(true);
+  const [gridOpacity, setGridOpacity] = useState(0.45);
+  const [pxPerCm, setPxPerCm] = useState(DEFAULT_PX_PER_CM);
+  const [measuredCm, setMeasuredCm] = useState("2.5");
+  const [offsetXCells, setOffsetXCells] = useState(0);
+  const [offsetYCells, setOffsetYCells] = useState(0);
+  const [savingGridAlign, setSavingGridAlign] = useState(false);
 
   const selectedMap = maps.find((m) => m.id === selectedMapId) ?? null;
   const regionsForMap = useMemo(
@@ -75,6 +87,7 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
   const vm = useMemo(() => rowsToVm(regionsForMap), [regionsForMap]);
 
   const imageUrl = selectedMap ? getExplorationMapPublicUrl(selectedMap.image_path) : "";
+  const gridCellPx = pxPerCm * GRID_CM;
 
   useEffect(() => {
     setMaps(initialMaps);
@@ -83,6 +96,39 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
   useEffect(() => {
     setRegions(initialRegions);
   }, [initialRegions]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(GRID_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { showGrid?: boolean; gridOpacity?: number; pxPerCm?: number };
+      if (typeof parsed.showGrid === "boolean") setShowGrid(parsed.showGrid);
+      if (typeof parsed.gridOpacity === "number") setGridOpacity(Math.min(1, Math.max(0, parsed.gridOpacity)));
+      if (typeof parsed.pxPerCm === "number" && Number.isFinite(parsed.pxPerCm) && parsed.pxPerCm > 2) {
+        setPxPerCm(parsed.pxPerCm);
+      }
+    } catch {
+      // ignore corrupted local settings
+    }
+  }, []);
+
+  useEffect(() => {
+    const x = Number(selectedMap?.grid_offset_x_cells ?? 0);
+    const y = Number(selectedMap?.grid_offset_y_cells ?? 0);
+    setOffsetXCells(Number.isFinite(x) ? x : 0);
+    setOffsetYCells(Number.isFinite(y) ? y : 0);
+  }, [selectedMap?.id, selectedMap?.grid_offset_x_cells, selectedMap?.grid_offset_y_cells]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        GRID_STORAGE_KEY,
+        JSON.stringify({ showGrid, gridOpacity, pxPerCm })
+      );
+    } catch {
+      // ignore storage failures
+    }
+  }, [showGrid, gridOpacity, pxPerCm]);
 
   useEffect(() => {
     if (!selectedMapId) return;
@@ -329,6 +375,48 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
     } else toast.error(res?.error ?? "Errore");
   }
 
+  function applyCalibrationFromMeasuredCm() {
+    const measured = Number.parseFloat(measuredCm.replace(",", "."));
+    if (!Number.isFinite(measured) || measured <= 0) {
+      toast.error("Inserisci una misura valida in cm.");
+      return;
+    }
+    const samplePx = 100;
+    const nextPxPerCm = samplePx / measured;
+    if (!Number.isFinite(nextPxPerCm) || nextPxPerCm < 5) {
+      toast.error("Calibrazione non valida.");
+      return;
+    }
+    setPxPerCm(nextPxPerCm);
+    toast.success("Calibrazione dispositivo salvata in questo browser.");
+  }
+
+  async function saveGridOffset() {
+    if (!selectedMapId) return;
+    setSavingGridAlign(true);
+    const res = await updateExplorationMapMeta(campaignId, selectedMapId, {
+      grid_offset_x_cells: Number(offsetXCells.toFixed(4)),
+      grid_offset_y_cells: Number(offsetYCells.toFixed(4)),
+    });
+    setSavingGridAlign(false);
+    if (!res.success) {
+      toast.error(res.error ?? "Errore salvataggio offset.");
+      return;
+    }
+    setMaps((prev) =>
+      prev.map((m) =>
+        m.id === selectedMapId
+          ? {
+              ...m,
+              grid_offset_x_cells: Number(offsetXCells.toFixed(4)),
+              grid_offset_y_cells: Number(offsetYCells.toFixed(4)),
+            }
+          : m
+      )
+    );
+    toast.success("Offset griglia salvato.");
+  }
+
   return (
     <div className="flex min-h-[70vh] flex-col gap-6">
       <div className="flex flex-wrap items-end gap-4">
@@ -499,7 +587,101 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
             {selectedMap.grid_cell_meters != null && (
               <span>Scala: 1 quadretto ≈ {String(selectedMap.grid_cell_meters)} m</span>
             )}
+            <span>Display: 1 quadretto fisico = {GRID_CM} cm</span>
           </div>
+
+          <section className="mb-3 rounded-lg border border-barber-gold/20 bg-barber-dark/40 p-3">
+            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-barber-gold">
+              Griglia overlay
+            </h4>
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="flex items-center gap-2 text-xs">
+                <input
+                  type="checkbox"
+                  checked={showGrid}
+                  onChange={(e) => setShowGrid(e.target.checked)}
+                />
+                Mostra griglia
+              </label>
+              <div className="space-y-1">
+                <Label className="text-xs">Opacità</Label>
+                <Input
+                  type="range"
+                  min={0.1}
+                  max={1}
+                  step={0.05}
+                  value={gridOpacity}
+                  onChange={(e) => setGridOpacity(Number.parseFloat(e.target.value))}
+                  className="w-36"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Offset X (celle)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={offsetXCells}
+                  onChange={(e) => {
+                    const n = Number.parseFloat(e.target.value || "0");
+                    setOffsetXCells(Number.isFinite(n) ? n : 0);
+                  }}
+                  className="h-8 w-28 border-barber-gold/30 bg-barber-dark text-xs"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Offset Y (celle)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={offsetYCells}
+                  onChange={(e) => {
+                    const n = Number.parseFloat(e.target.value || "0");
+                    setOffsetYCells(Number.isFinite(n) ? n : 0);
+                  }}
+                  className="h-8 w-28 border-barber-gold/30 bg-barber-dark text-xs"
+                />
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={savingGridAlign}
+                onClick={() => void saveGridOffset()}
+              >
+                {savingGridAlign ? "Salvataggio…" : "Salva offset mappa"}
+              </Button>
+            </div>
+            <div className="mt-3 border-t border-barber-gold/10 pt-3">
+              <p className="mb-2 text-xs text-barber-paper/70">
+                Calibrazione dispositivo/browser: misura con un righello la linea da 100 px e inserisci i cm reali.
+              </p>
+              <div className="mb-2 h-2 w-[100px] rounded bg-white/90" />
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Lunghezza misurata (cm)</Label>
+                  <Input
+                    value={measuredCm}
+                    onChange={(e) => setMeasuredCm(e.target.value)}
+                    className="h-8 w-28 border-barber-gold/30 bg-barber-dark text-xs"
+                  />
+                </div>
+                <Button type="button" size="sm" variant="outline" onClick={applyCalibrationFromMeasuredCm}>
+                  Calibra 2,5 cm
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setPxPerCm(DEFAULT_PX_PER_CM)}
+                >
+                  Reset calibrazione
+                </Button>
+                <span className="text-xs text-barber-paper/65">
+                  cella attuale: {gridCellPx.toFixed(1)} px
+                </span>
+              </div>
+            </div>
+          </section>
 
           {mode === "prepare" && (
             <div className="mb-2 flex flex-wrap gap-2">
@@ -533,6 +715,11 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
             onCanvasClick={onCanvasClick}
             onVertexDragEnd={handleVertexDragEnd}
             onRevealClick={mode === "explore" ? onRevealClick : undefined}
+            showGrid={showGrid}
+            gridOpacity={gridOpacity}
+            gridCellPx={gridCellPx}
+            gridOffsetXCells={offsetXCells}
+            gridOffsetYCells={offsetYCells}
           />
 
           <p className="text-xs text-barber-paper/55">

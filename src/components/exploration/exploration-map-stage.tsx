@@ -30,6 +30,11 @@ type ExplorationMapStageProps = {
   readOnly?: boolean;
   /** Proiezione: mappa a tutto lo spazio disponibile (senza max-height GM). */
   fillViewport?: boolean;
+  showGrid?: boolean;
+  gridOpacity?: number;
+  gridCellPx?: number | null;
+  gridOffsetXCells?: number;
+  gridOffsetYCells?: number;
 };
 
 const FOG_RGBA = "rgba(8, 6, 4, 0.82)";
@@ -84,6 +89,11 @@ export function ExplorationMapStage({
   onRevealClick,
   readOnly = false,
   fillViewport = false,
+  showGrid = false,
+  gridOpacity = 0.45,
+  gridCellPx = null,
+  gridOffsetXCells = 0,
+  gridOffsetYCells = 0,
 }: ExplorationMapStageProps) {
   const imgRef = useRef<HTMLImageElement>(null);
   const fogRef = useRef<HTMLCanvasElement>(null);
@@ -224,6 +234,38 @@ export function ExplorationMapStage({
     return { left: `${p.x * 100}%`, top: `${p.y * 100}%` } as const;
   };
 
+  const gridData = useMemo(() => {
+    if (!showGrid || !hasLayout || !gridCellPx || gridCellPx <= 2) return null;
+    const [leftPx, topPx] = intrinsicNormToElementPx(0, 0, elW, elH, nw, nh);
+    const [rightPx, bottomPx] = intrinsicNormToElementPx(1, 1, elW, elH, nw, nh);
+    const wPx = Math.max(0, rightPx - leftPx);
+    const hPx = Math.max(0, bottomPx - topPx);
+    if (wPx < 4 || hPx < 4) return null;
+
+    const mod = (n: number, m: number) => ((n % m) + m) % m;
+    const xStep = gridCellPx;
+    const yStep = gridCellPx;
+    const xStart = leftPx + mod(gridOffsetXCells * xStep, xStep);
+    const yStart = topPx + mod(gridOffsetYCells * yStep, yStep);
+
+    const vertical: number[] = [];
+    for (let x = xStart; x <= leftPx + wPx + 0.5; x += xStep) vertical.push(x);
+    for (let x = xStart - xStep; x >= leftPx - 0.5; x -= xStep) vertical.push(x);
+
+    const horizontal: number[] = [];
+    for (let y = yStart; y <= topPx + hPx + 0.5; y += yStep) horizontal.push(y);
+    for (let y = yStart - yStep; y >= topPx - 0.5; y -= yStep) horizontal.push(y);
+
+    return {
+      leftPct: (leftPx / elW) * 100,
+      topPct: (topPx / elH) * 100,
+      wPct: (wPx / elW) * 100,
+      hPct: (hPx / elH) * 100,
+      vPct: vertical.map((x) => (x / elW) * 100),
+      hLinesPct: horizontal.map((y) => (y / elH) * 100),
+    };
+  }, [showGrid, hasLayout, gridCellPx, gridOffsetXCells, gridOffsetYCells, elW, elH, nw, nh]);
+
   const mapLayers = (
     <>
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -244,6 +286,49 @@ export function ExplorationMapStage({
           className="pointer-events-none absolute left-0 top-0 h-full w-full"
           aria-hidden
         />
+      )}
+      {gridData && (
+        <svg
+          className="pointer-events-none absolute left-0 top-0 h-full w-full"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          aria-hidden
+        >
+          <defs>
+            <clipPath id="grid-clip">
+              <rect
+                x={gridData.leftPct}
+                y={gridData.topPct}
+                width={gridData.wPct}
+                height={gridData.hPct}
+              />
+            </clipPath>
+          </defs>
+          <g clipPath="url(#grid-clip)" style={{ opacity: Math.min(1, Math.max(0, gridOpacity)) }}>
+            {gridData.vPct.map((x, i) => (
+              <line
+                key={`gv-${i}`}
+                x1={x}
+                y1={gridData.topPct}
+                x2={x}
+                y2={gridData.topPct + gridData.hPct}
+                stroke="rgba(255,255,255,0.95)"
+                strokeWidth={0.06}
+              />
+            ))}
+            {gridData.hLinesPct.map((y, i) => (
+              <line
+                key={`gh-${i}`}
+                x1={gridData.leftPct}
+                y1={y}
+                x2={gridData.leftPct + gridData.wPct}
+                y2={y}
+                stroke="rgba(255,255,255,0.95)"
+                strokeWidth={0.06}
+              />
+            ))}
+          </g>
+        </svg>
       )}
       <svg
         className="pointer-events-none absolute left-0 top-0 h-full w-full"

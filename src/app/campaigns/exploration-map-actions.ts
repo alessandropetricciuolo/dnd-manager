@@ -15,6 +15,9 @@ export type ExplorationMapRow = {
   sort_order: number;
   image_path: string;
   grid_cell_meters: number | null;
+  grid_offset_x_cells: number;
+  grid_offset_y_cells: number;
+  grid_kind: "square" | "hex";
   created_at: string;
   updated_at: string;
 };
@@ -83,7 +86,14 @@ export async function createExplorationMap(
 export async function updateExplorationMapMeta(
   campaignId: string,
   mapId: string,
-  input: { floor_label?: string; sort_order?: number; grid_cell_meters?: number | null }
+  input: {
+    floor_label?: string;
+    sort_order?: number;
+    grid_cell_meters?: number | null;
+    grid_offset_x_cells?: number;
+    grid_offset_y_cells?: number;
+    grid_kind?: "square" | "hex";
+  }
 ): Promise<Result> {
   const supabase = await createSupabaseServerClient();
   const ctx = await requireGm(supabase);

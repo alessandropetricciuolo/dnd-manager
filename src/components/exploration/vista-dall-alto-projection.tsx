@@ -7,6 +7,10 @@ import type { ExplorationMapRow, FowRegionRow } from "@/app/campaigns/exploratio
 import { parsePolygonJson } from "@/lib/exploration/fow-geometry";
 import { ExplorationMapStage, type FowRegionVm } from "@/components/exploration/exploration-map-stage";
 
+const GRID_CM = 2.5;
+const DEFAULT_PX_PER_CM = 37.7952755906;
+const GRID_STORAGE_KEY = "exploration-grid-device-v1";
+
 type Props = {
   mapRow: ExplorationMapRow;
   initialRegions: FowRegionRow[];
@@ -22,12 +26,31 @@ function rowsToVm(rows: FowRegionRow[]): FowRegionVm[] {
 
 export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
   const [regions, setRegions] = useState<FowRegionRow[]>(initialRegions);
+  const [showGrid, setShowGrid] = useState(true);
+  const [gridOpacity, setGridOpacity] = useState(0.45);
+  const [pxPerCm, setPxPerCm] = useState(DEFAULT_PX_PER_CM);
   const imageUrl = getExplorationMapPublicUrl(mapRow.image_path);
   const vm = useMemo(() => rowsToVm(regions), [regions]);
+  const gridCellPx = pxPerCm * GRID_CM;
 
   useEffect(() => {
     setRegions(initialRegions);
   }, [initialRegions]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(GRID_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { showGrid?: boolean; gridOpacity?: number; pxPerCm?: number };
+      if (typeof parsed.showGrid === "boolean") setShowGrid(parsed.showGrid);
+      if (typeof parsed.gridOpacity === "number") setGridOpacity(Math.min(1, Math.max(0, parsed.gridOpacity)));
+      if (typeof parsed.pxPerCm === "number" && Number.isFinite(parsed.pxPerCm) && parsed.pxPerCm > 2) {
+        setPxPerCm(parsed.pxPerCm);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -82,6 +105,11 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
           selectedRegionId={null}
           readOnly
           fillViewport
+          showGrid={showGrid}
+          gridOpacity={gridOpacity}
+          gridCellPx={gridCellPx}
+          gridOffsetXCells={Number(mapRow.grid_offset_x_cells ?? 0)}
+          gridOffsetYCells={Number(mapRow.grid_offset_y_cells ?? 0)}
         />
       </div>
     </div>
