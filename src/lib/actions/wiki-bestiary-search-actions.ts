@@ -21,7 +21,7 @@ export type BestiarySearchHit = {
 };
 
 type Row = {
-  id: string;
+  id: string | number;
   content: string | null;
   metadata: Record<string, unknown> | null;
   similarity?: number | null;
@@ -67,14 +67,15 @@ function rowsToBestiaryHits(rows: Row[]): BestiarySearchHit[] {
   const seen = new Set<string>();
   const hits: BestiarySearchHit[] = [];
   for (const r of rows) {
+    const rowId = String(r.id ?? "").trim();
     const content = typeof r.content === "string" ? r.content.trim() : "";
-    if (!content || !r.id) continue;
-    if (seen.has(r.id)) continue;
-    seen.add(r.id);
+    if (!content || !rowId) continue;
+    if (seen.has(rowId)) continue;
+    seen.add(rowId);
     const m = r.metadata;
     const mbk = metaStr(m, "manual_book_key");
     hits.push({
-      id: r.id,
+      id: rowId,
       similarity: typeof r.similarity === "number" ? r.similarity : null,
       excerpt: excerptFromContent(content),
       manual_book_key: mbk,

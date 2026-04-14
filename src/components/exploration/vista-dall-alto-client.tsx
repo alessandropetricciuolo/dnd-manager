@@ -827,6 +827,13 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
                   offset Y {mapCalib.offsetY.toFixed(3)} · differenza assi {mapCalib.axisMismatchPct.toFixed(1)}%
                 </p>
               )}
+              {calibMode && (
+                <p className="mb-2 text-xs text-barber-paper/65">
+                  Marker sulla mappa: <span className="text-emerald-300">O origine</span>,{" "}
+                  <span className="text-blue-300">X asse X</span>,{" "}
+                  <span className="text-amber-300">Y asse Y</span>.
+                </p>
+              )}
             </div>
             <div className="mt-3 border-t border-barber-gold/10 pt-3">
               <p className="mb-2 text-xs text-barber-paper/70">
@@ -900,6 +907,16 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
             gridCellSourcePxX={selectedMap.grid_source_cell_px}
             gridOffsetXCells={offsetXCells}
             gridOffsetYCells={offsetYCells}
+            calibrationMarkers={
+              calibMode
+                ? {
+                    anchor: calibAnchor,
+                    x: calibXPoint,
+                    y: calibYPoint,
+                    activeTarget: calibTarget,
+                  }
+                : undefined
+            }
           />
 
           <p className="text-xs text-barber-paper/55">

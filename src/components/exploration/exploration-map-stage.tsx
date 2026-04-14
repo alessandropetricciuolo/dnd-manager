@@ -37,6 +37,12 @@ type ExplorationMapStageProps = {
   gridCellSourcePxX?: number | null;
   gridOffsetXCells?: number;
   gridOffsetYCells?: number;
+  calibrationMarkers?: {
+    anchor?: NormPoint | null;
+    x?: NormPoint | null;
+    y?: NormPoint | null;
+    activeTarget?: "anchor" | "x" | "y";
+  };
 };
 
 const FOG_RGBA = "rgba(8, 6, 4, 0.82)";
@@ -98,6 +104,7 @@ export function ExplorationMapStage({
   gridCellSourcePxX = null,
   gridOffsetXCells = 0,
   gridOffsetYCells = 0,
+  calibrationMarkers,
 }: ExplorationMapStageProps) {
   const imgRef = useRef<HTMLImageElement>(null);
   const fogRef = useRef<HTMLCanvasElement>(null);
@@ -404,6 +411,69 @@ export function ExplorationMapStage({
             />
           );
         })}
+        {calibrationMarkers?.anchor && (
+          <>
+            {(() => {
+              const [cx, cy] = normToSvg(calibrationMarkers.anchor!);
+              const isActive = calibrationMarkers.activeTarget === "anchor";
+              return (
+                <g>
+                  <circle cx={cx} cy={cy} r={1.1} fill={isActive ? "#34d399" : "#10b981"} />
+                  <text
+                    x={cx + 1.4}
+                    y={cy - 1.2}
+                    fontSize="2.2"
+                    fill="#34d399"
+                    stroke="rgba(0,0,0,0.7)"
+                    strokeWidth="0.25"
+                  >
+                    O
+                  </text>
+                </g>
+              );
+            })()}
+          </>
+        )}
+        {calibrationMarkers?.x &&
+          (() => {
+            const [cx, cy] = normToSvg(calibrationMarkers.x!);
+            const isActive = calibrationMarkers.activeTarget === "x";
+            return (
+              <g>
+                <circle cx={cx} cy={cy} r={1.1} fill={isActive ? "#60a5fa" : "#3b82f6"} />
+                <text
+                  x={cx + 1.4}
+                  y={cy - 1.2}
+                  fontSize="2.2"
+                  fill="#60a5fa"
+                  stroke="rgba(0,0,0,0.7)"
+                  strokeWidth="0.25"
+                >
+                  X
+                </text>
+              </g>
+            );
+          })()}
+        {calibrationMarkers?.y &&
+          (() => {
+            const [cx, cy] = normToSvg(calibrationMarkers.y!);
+            const isActive = calibrationMarkers.activeTarget === "y";
+            return (
+              <g>
+                <circle cx={cx} cy={cy} r={1.1} fill={isActive ? "#fbbf24" : "#f59e0b"} />
+                <text
+                  x={cx + 1.4}
+                  y={cy - 1.2}
+                  fontSize="2.2"
+                  fill="#fbbf24"
+                  stroke="rgba(0,0,0,0.7)"
+                  strokeWidth="0.25"
+                >
+                  Y
+                </text>
+              </g>
+            );
+          })()}
       </svg>
       {mode === "prepare" && !readOnly && (
         <button
