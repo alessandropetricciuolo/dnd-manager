@@ -35,7 +35,6 @@ type ExplorationMapStageProps = {
   gridOpacity?: number;
   gridCellPx?: number | null;
   gridCellSourcePxX?: number | null;
-  gridCellSourcePxY?: number | null;
   gridOffsetXCells?: number;
   gridOffsetYCells?: number;
 };
@@ -97,7 +96,6 @@ export function ExplorationMapStage({
   gridOpacity = 0.45,
   gridCellPx = null,
   gridCellSourcePxX = null,
-  gridCellSourcePxY = null,
   gridOffsetXCells = 0,
   gridOffsetYCells = 0,
 }: ExplorationMapStageProps) {
@@ -253,12 +251,10 @@ export function ExplorationMapStage({
     const wPx = Math.max(0, rightPx - leftPx);
     const hPx = Math.max(0, bottomPx - topPx);
     if (wPx < 4 || hPx < 4) return null;
-    const stepFromSourceX =
+    const stepFromSource =
       gridCellSourcePxX && gridCellSourcePxX > 1 && nw > 0 ? (wPx / nw) * gridCellSourcePxX : null;
-    const stepFromSourceY =
-      gridCellSourcePxY && gridCellSourcePxY > 1 && nh > 0 ? (hPx / nh) * gridCellSourcePxY : null;
-    const xStep = stepFromSourceX ?? gridCellPx ?? 0;
-    const yStep = stepFromSourceY ?? gridCellPx ?? 0;
+    const xStep = stepFromSource ?? gridCellPx ?? 0;
+    const yStep = xStep; // Griglia volutamente quadrata
     if (!xStep || xStep <= 2 || !yStep || yStep <= 2) return null;
 
     const mod = (n: number, m: number) => ((n % m) + m) % m;
@@ -286,7 +282,6 @@ export function ExplorationMapStage({
     hasLayout,
     gridCellPx,
     gridCellSourcePxX,
-    gridCellSourcePxY,
     gridOffsetXCells,
     gridOffsetYCells,
     elW,

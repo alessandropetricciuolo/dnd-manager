@@ -98,7 +98,6 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
   const imageUrl = selectedMap ? getExplorationMapPublicUrl(selectedMap.image_path) : "";
   const gridCellPx = pxPerCm * GRID_CM;
   const sourceGridCellPxX = selectedMap?.grid_source_cell_px ?? null;
-  const sourceGridCellPxY = selectedMap?.grid_source_cell_px_y ?? null;
 
   const mapCalib = useMemo(() => {
     if (!imageNatural || !calibAnchor || !calibXPoint || !calibYPoint) return null;
@@ -111,13 +110,16 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
     const sourceCellPxX = dx / cellsX;
     const sourceCellPxY = dy / cellsY;
     if (!Number.isFinite(sourceCellPxX) || !Number.isFinite(sourceCellPxY)) return null;
+    const sourceCellPx = (sourceCellPxX + sourceCellPxY) / 2;
 
     const anchorPxX = calibAnchor.x * imageNatural.w;
     const anchorPxY = calibAnchor.y * imageNatural.h;
     const frac = (v: number) => ((v % 1) + 1) % 1;
-    const offsetX = frac(anchorPxX / sourceCellPxX);
-    const offsetY = frac(anchorPxY / sourceCellPxY);
-    return { sourceCellPxX, sourceCellPxY, offsetX, offsetY };
+    const offsetX = frac(anchorPxX / sourceCellPx);
+    const offsetY = frac(anchorPxY / sourceCellPx);
+    const axisMismatchPct =
+      sourceCellPx > 0 ? (Math.abs(sourceCellPxX - sourceCellPxY) / sourceCellPx) * 100 : 0;
+    return { sourceCellPx, sourceCellPxX, sourceCellPxY, offsetX, offsetY, axisMismatchPct };
   }, [imageNatural, calibAnchor, calibXPoint, calibYPoint, calibCellsX, calibCellsY]);
 
   useEffect(() => {
@@ -482,8 +484,7 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
     setOffsetYCells(mapCalib.offsetY);
     setSavingMapScale(true);
     const res = await updateExplorationMapMeta(campaignId, selectedMapId, {
-      grid_source_cell_px: Number(mapCalib.sourceCellPxX.toFixed(4)),
-      grid_source_cell_px_y: Number(mapCalib.sourceCellPxY.toFixed(4)),
+      grid_source_cell_px: Number(mapCalib.sourceCellPx.toFixed(4)),
       grid_offset_x_cells: Number(mapCalib.offsetX.toFixed(4)),
       grid_offset_y_cells: Number(mapCalib.offsetY.toFixed(4)),
     });
@@ -497,8 +498,7 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
         m.id === selectedMapId
           ? {
               ...m,
-              grid_source_cell_px: Number(mapCalib.sourceCellPxX.toFixed(4)),
-              grid_source_cell_px_y: Number(mapCalib.sourceCellPxY.toFixed(4)),
+              grid_source_cell_px: Number(mapCalib.sourceCellPx.toFixed(4)),
               grid_offset_x_cells: Number(mapCalib.offsetX.toFixed(4)),
               grid_offset_y_cells: Number(mapCalib.offsetY.toFixed(4)),
             }
@@ -758,7 +758,7 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
             </div>
             <div className="mt-3 border-t border-barber-gold/10 pt-3">
               <p className="mb-2 text-xs text-barber-paper/70">
-                Calibrazione mappa precisa: seleziona origine, un punto sulla stessa riga (asse X) e un punto sulla stessa colonna (asse Y).
+                Flusso calibrazione: 1) scegli &quot;Origine&quot; e clicca un incrocio, 2) scegli &quot;Asse X&quot; e clicca un incrocio sulla stessa riga, 3) scegli &quot;Asse Y&quot; e clicca un incrocio sulla stessa colonna, 4) salva.
               </p>
               <div className="mb-2 flex flex-wrap items-end gap-3">
                 <Button
@@ -816,17 +816,15 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
                   origine: {calibAnchor ? "ok" : "—"} · X: {calibXPoint ? "ok" : "—"} · Y: {calibYPoint ? "ok" : "—"}
                 </span>
               </div>
-              {(sourceGridCellPxX || sourceGridCellPxY) && (
+              {sourceGridCellPxX && (
                 <p className="mb-2 text-xs text-barber-paper/60">
-                  Scala mappa salvata: X {Number(sourceGridCellPxX ?? 0).toFixed(2)} px/cella · Y{" "}
-                  {Number(sourceGridCellPxY ?? sourceGridCellPxX ?? 0).toFixed(2)} px/cella
+                  Scala mappa salvata (quadrata): {Number(sourceGridCellPxX).toFixed(2)} px/cella
                 </p>
               )}
               {mapCalib && (
                 <p className="mb-2 text-xs text-barber-paper/60">
-                  Preview calibrazione: X {mapCalib.sourceCellPxX.toFixed(2)} px/cella · Y{" "}
-                  {mapCalib.sourceCellPxY.toFixed(2)} px/cella · offset X {mapCalib.offsetX.toFixed(3)} ·
-                  offset Y {mapCalib.offsetY.toFixed(3)}
+                  Preview: cella {mapCalib.sourceCellPx.toFixed(2)} px · offset X {mapCalib.offsetX.toFixed(3)} ·
+                  offset Y {mapCalib.offsetY.toFixed(3)} · differenza assi {mapCalib.axisMismatchPct.toFixed(1)}%
                 </p>
               )}
             </div>
@@ -900,7 +898,6 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
             gridOpacity={gridOpacity}
             gridCellPx={gridCellPx}
             gridCellSourcePxX={selectedMap.grid_source_cell_px}
-            gridCellSourcePxY={selectedMap.grid_source_cell_px_y}
             gridOffsetXCells={offsetXCells}
             gridOffsetYCells={offsetYCells}
           />

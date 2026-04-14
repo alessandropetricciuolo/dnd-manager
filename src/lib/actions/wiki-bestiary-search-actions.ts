@@ -28,7 +28,7 @@ type Row = {
 };
 
 function metaStr(m: Record<string, unknown> | null | undefined, k: string): string | null {
-  if (!m || !(k in m)) return null;
+  if (!m || typeof m !== "object" || Array.isArray(m) || !(k in m)) return null;
   const v = m[k];
   if (typeof v === "string") return v;
   if (typeof v === "number") return String(v);
@@ -248,75 +248,81 @@ export async function fetchExpandedBestiaryChunkAction(
   campaignId: string,
   chunkId: string
 ): Promise<{ success: true; text: string } | { success: false; message: string }> {
-  const id = chunkId.trim();
+  const id = String(chunkId ?? "").trim();
   if (!id) return { success: false, message: "Chunk non valido." };
-  if (!(await assertGmOrAdmin())) {
-    return { success: false, message: "Solo GM e admin." };
-  }
-
-  const supabaseUser = await createSupabaseServerClient();
-  const { data: canRow } = await supabaseUser
-    .from("campaigns")
-    .select("id")
-    .eq("id", campaignId)
-    .maybeSingle();
-  if (!canRow) return { success: false, message: "Campagna non accessibile." };
-
-  const admin = createSupabaseAdminClient();
-  const { data: chunkRow, error } = await admin
-    .from("manuals_knowledge")
-    .select("content, metadata")
-    .eq("id", id)
-    .maybeSingle();
-  if (error || !chunkRow) {
-    return { success: false, message: error?.message ?? "Chunk non trovato." };
-  }
-
-  const chunkMeta = chunkRow as { content: string | null; metadata: Record<string, unknown> | null };
-
-  const { data: campaignRow } = await admin.from("campaigns").select("ai_context").eq("id", campaignId).single();
-  const excluded = readExcludedManualBookKeysFromAiContextJson(
-    ((campaignRow as { ai_context?: Json | null } | null)?.ai_context ?? null) as Json | null
-  );
-  const mbk = metaStr(chunkMeta.metadata, "manual_book_key");
-  if (!mbk || !BESTIARY_ALLOWED_BOOK_KEY_SET.has(mbk)) {
-    return { success: false, message: "Questo statblock non appartiene ai manuali bestiario consentiti." };
-  }
-  if (mbk && excluded.includes(mbk)) {
-    return { success: false, message: "Questo manuale è escluso dai paletti della campagna." };
-  }
-
-  const meta = (chunkMeta.metadata ?? {}) as Record<string, unknown>;
-  const fileName = metaStr(meta, "file_name");
-  const idxRaw = meta["chunk_index"];
-  const centerIdx =
-    typeof idxRaw === "number"
-      ? idxRaw
-      : typeof idxRaw === "string"
-        ? Number.parseInt(idxRaw, 10)
-        : NaN;
-
-  let text = typeof chunkMeta.content === "string" ? chunkMeta.content.trim() : "";
-  if (fileName && Number.isFinite(centerIdx)) {
-    const rpcNeighbors = admin.rpc as unknown as (
-      fn: string,
-      args: Record<string, unknown>
-    ) => Promise<{ data: unknown; error: { message: string } | null }>;
-    const { data: neighbors, error: nErr } = await rpcNeighbors("manuals_knowledge_neighbors", {
-      p_file_name: fileName,
-      p_center_index: centerIdx,
-      p_radius: 4,
-    });
-    if (!nErr && Array.isArray(neighbors) && neighbors.length > 0) {
-      const pieces = (neighbors as Array<{ content?: string | null }>)
-        .map((n) => (typeof n.content === "string" ? n.content.trim() : ""))
-        .filter(Boolean);
-      if (pieces.length) text = pieces.join("\n\n");
+  try {
+    if (!(await assertGmOrAdmin())) {
+      return { success: false, message: "Solo GM e admin." };
     }
-  }
 
-  if (!text) {
-    return { success: false, message: "Contenuto chunk vuoto." };
+    const supabaseUser = await createSupabaseServerClient();
+    const { data: canRow } = await supabaseUser
+      .from("campaigns")
+      .select("id")
+      .eq("id", campaignId)
+      .maybeSingle();
+    if (!canRow) return { success: false, message: "Campagna non accessibile." };
+
+    const admin = createSupabaseAdminClient();
+    const { data: chunkRow, error } = await admin
+      .from("manuals_knowledge")
+      .select("content, metadata")
+      .eq("id", id)
+      .maybeSingle();
+    if (error || !chunkRow) {
+      return { success: false, message: error?.message ?? "Chunk non trovato." };
+    }
+
+    const chunkMeta = chunkRow as { content: string | null; metadata: Record<string, unknown> | null };
+
+    const { data: campaignRow } = await admin.from("campaigns").select("ai_context").eq("id", campaignId).single();
+    const excluded = readExcludedManualBookKeysFromAiContextJson(
+      ((campaignRow as { ai_context?: Json | null } | null)?.ai_context ?? null) as Json | null
+    );
+    const mbk = metaStr(chunkMeta.metadata, "manual_book_key");
+    if (!mbk || !BESTIARY_ALLOWED_BOOK_KEY_SET.has(mbk)) {
+      return { success: false, message: "Questo statblock non appartiene ai manuali bestiario consentiti." };
+    }
+    if (mbk && excluded.includes(mbk)) {
+      return { success: false, message: "Questo manuale è escluso dai paletti della campagna." };
+    }
+
+    const meta = (chunkMeta.metadata ?? {}) as Record<string, unknown>;
+    const fileName = metaStr(meta, "file_name");
+    const idxRaw = meta["chunk_index"];
+    const centerIdx =
+      typeof idxRaw === "number"
+        ? idxRaw
+        : typeof idxRaw === "string"
+          ? Number.parseInt(idxRaw, 10)
+          : NaN;
+
+    let text = typeof chunkMeta.content === "string" ? chunkMeta.content.trim() : "";
+    if (fileName && Number.isFinite(centerIdx)) {
+      const rpcNeighbors = admin.rpc as unknown as (
+        fn: string,
+        args: Record<string, unknown>
+      ) => Promise<{ data: unknown; error: { message: string } | null }>;
+      const { data: neighbors, error: nErr } = await rpcNeighbors("manuals_knowledge_neighbors", {
+        p_file_name: fileName,
+        p_center_index: centerIdx,
+        p_radius: 4,
+      });
+      if (!nErr && Array.isArray(neighbors) && neighbors.length > 0) {
+        const pieces = (neighbors as Array<{ content?: string | null }>)
+          .map((n) => (typeof n.content === "string" ? n.content.trim() : ""))
+          .filter(Boolean);
+        if (pieces.length) text = pieces.join("\n\n");
+      }
+    }
+
+    if (!text) {
+      return { success: false, message: "Contenuto chunk vuoto." };
+    }
+    return { success: true, text };
+  } catch (e) {
+    console.error("[fetchExpandedBestiaryChunkAction]", e);
+    const message = e instanceof Error ? e.message : "Errore sconosciuto nel caricamento statblock.";
+    return { success: false, message };
   }
-  return { success: true, text };
 }
