@@ -108,7 +108,8 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
           showGrid={showGrid}
           gridOpacity={gridOpacity}
           gridCellPx={gridCellPx}
-          gridCellSourcePx={mapRow.grid_source_cell_px}
+          gridCellSourcePxX={mapRow.grid_source_cell_px}
+          gridCellSourcePxY={mapRow.grid_source_cell_px_y}
           gridOffsetXCells={Number(mapRow.grid_offset_x_cells ?? 0)}
           gridOffsetYCells={Number(mapRow.grid_offset_y_cells ?? 0)}
         />

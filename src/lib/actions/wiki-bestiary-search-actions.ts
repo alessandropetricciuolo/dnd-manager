@@ -87,6 +87,52 @@ function rowsToBestiaryHits(rows: Row[]): BestiarySearchHit[] {
   return hits;
 }
 
+function rankBestiaryRows(rows: Row[], query: string): Row[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return rows;
+
+  const headingH2 = `## ${q}`;
+  const headingH1 = `# ${q}`;
+  const statblockHints = ["**classe armatura**", "**punti ferita**", "**sfida**", "### azioni"];
+
+  const scored = rows.map((r, idx) => {
+    const content = typeof r.content === "string" ? r.content.toLowerCase() : "";
+    const sectionHeading = (metaStr(r.metadata, "section_heading") ?? metaStr(r.metadata, "section_title") ?? "")
+      .trim()
+      .toLowerCase();
+    const chapter = (metaStr(r.metadata, "chapter") ?? "").trim().toLowerCase();
+
+    let score = 0;
+    const sim = typeof r.similarity === "number" ? r.similarity : 0;
+    score += sim * 100;
+
+    if (sectionHeading === q) score += 1200;
+    if (sectionHeading.includes(q)) score += 500;
+    if (chapter === q) score += 500;
+
+    if (content.includes(headingH2)) score += 1600;
+    if (content.includes(headingH1)) score += 1200;
+
+    const qIdx = content.indexOf(q);
+    if (qIdx >= 0) {
+      score += 280;
+      score += Math.max(0, 200 - Math.floor(qIdx / 8));
+    }
+
+    for (const hint of statblockHints) {
+      if (content.includes(hint)) score += 180;
+    }
+
+    return { r, idx, score };
+  });
+
+  scored.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return a.idx - b.idx;
+  });
+  return scored.map((x) => x.r);
+}
+
 async function assertGmOrAdmin(): Promise<boolean> {
   const supabase = await createSupabaseServerClient();
   const {
@@ -152,15 +198,7 @@ export async function searchBestiaryChunksAction(
       filterAllowedBestiaryRows((rows ?? []) as Row[]),
       excluded
     );
-    const ranked = filtered.sort((a, b) => {
-      const ac = typeof a.content === "string" ? a.content.toLowerCase() : "";
-      const bc = typeof b.content === "string" ? b.content.toLowerCase() : "";
-      const aq = ac.indexOf(q.toLowerCase());
-      const bq = bc.indexOf(q.toLowerCase());
-      const aScore = aq === -1 ? Number.POSITIVE_INFINITY : aq;
-      const bScore = bq === -1 ? Number.POSITIVE_INFINITY : bq;
-      return aScore - bScore;
-    });
+    const ranked = rankBestiaryRows(filtered, q);
     return rowsToBestiaryHits(ranked);
   }
 
@@ -187,7 +225,7 @@ export async function searchBestiaryChunksAction(
       return { success: false, message: `Errore ricerca: ${rpcError.message}` };
     }
 
-    const hits = rowsToBestiaryHits(merged);
+    const hits = rowsToBestiaryHits(rankBestiaryRows(merged, q));
     return { success: true, hits };
   } catch (e) {
     console.error("[searchBestiaryChunksAction]", e);

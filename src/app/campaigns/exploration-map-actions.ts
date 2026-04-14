@@ -16,6 +16,7 @@ export type ExplorationMapRow = {
   image_path: string;
   grid_cell_meters: number | null;
   grid_source_cell_px: number | null;
+  grid_source_cell_px_y: number | null;
   grid_offset_x_cells: number;
   grid_offset_y_cells: number;
   grid_kind: "square" | "hex";
@@ -92,6 +93,7 @@ export async function updateExplorationMapMeta(
     sort_order?: number;
     grid_cell_meters?: number | null;
     grid_source_cell_px?: number | null;
+    grid_source_cell_px_y?: number | null;
     grid_offset_x_cells?: number;
     grid_offset_y_cells?: number;
     grid_kind?: "square" | "hex";
