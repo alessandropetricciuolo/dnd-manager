@@ -424,7 +424,11 @@ export function CreateEntityDialog({
         if (npcTraits.age) setAttr("age", npcTraits.age);
       }
       if (type === "monster" && stats) {
-        applyMonsterSheetStats(stats);
+        applyMonsterSheetStats({
+          hp: stats.hp ?? undefined,
+          ac: stats.ac ?? undefined,
+          cr: stats.cr ?? undefined,
+        });
       }
       if (type === "monster" && statblock) {
         const parsedFromGenerated = parseStatsFromLoadedStatblock(statblock);
