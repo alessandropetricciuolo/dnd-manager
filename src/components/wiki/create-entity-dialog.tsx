@@ -435,7 +435,7 @@ export function CreateEntityDialog({
         applyMonsterSheetStats({
           hp: parsedFromGenerated.hp,
           ac: parsedFromGenerated.ac,
-          cr: parsedFromGenerated.cr || aiCr.trim() || stats?.cr,
+          cr: parsedFromGenerated.cr || aiCr.trim() || stats?.cr || undefined,
         });
       }
       success = true;
