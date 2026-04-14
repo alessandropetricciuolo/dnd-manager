@@ -155,6 +155,68 @@ function isExactMonsterHeadingRow(row: Row, query: string): boolean {
   return content.includes(`## ${q}`) || content.includes(`# ${q}`);
 }
 
+function convertFirstHtmlTableToMarkdown(input: string): string {
+  const tableMatch = input.match(/<table[\s\S]*?<\/table>/i);
+  if (!tableMatch) return input;
+  const tableHtml = tableMatch[0];
+  const rowMatches = Array.from(tableHtml.matchAll(/<tr>([\s\S]*?)<\/tr>/gi));
+  if (rowMatches.length === 0) return input;
+
+  const rows: string[][] = [];
+  for (const row of rowMatches) {
+    const cells = Array.from(row[1].matchAll(/<t[hd]>([\s\S]*?)<\/t[hd]>/gi)).map((m) =>
+      m[1].replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim()
+    );
+    if (cells.length > 0) rows.push(cells);
+  }
+  if (rows.length < 2) return input;
+
+  const header = rows[0];
+  const body = rows.slice(1).filter((r) => r.length === header.length);
+  if (body.length === 0) return input;
+
+  const mdLines = [
+    `| ${header.join(" | ")} |`,
+    `| ${header.map(() => "---").join(" | ")} |`,
+    ...body.map((r) => `| ${r.join(" | ")} |`),
+  ];
+  return input.replace(tableHtml, mdLines.join("\n"));
+}
+
+function sanitizeBestiaryStatblock(raw: string): string {
+  let text = raw.replace(/\r\n/g, "\n").trim();
+  if (!text) return text;
+
+  text = convertFirstHtmlTableToMarkdown(text);
+
+  const lines = text.split("\n");
+  const classArmorIdx = lines.findIndex((l) => /\*\*Classe Armatura\*\*/i.test(l));
+  if (classArmorIdx > 0) {
+    let start = 0;
+    for (let i = classArmorIdx; i >= 0; i--) {
+      if (/^\s{0,3}#{1,3}\s+/.test(lines[i])) {
+        start = i;
+        break;
+      }
+    }
+    lines.splice(0, start);
+  }
+
+  const cleaned = lines
+    .filter((line) => {
+      const t = line.trim();
+      if (!t) return true;
+      if (/^\d+\s+[A-ZÀ-ÖØ-Ý][A-ZÀ-ÖØ-Ý'’ .-]*$/.test(t)) return false;
+      if (/^!\[.*\]\(.*\)$/.test(t)) return false;
+      return true;
+    })
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  return cleaned;
+}
+
 async function assertGmOrAdmin(): Promise<boolean> {
   const supabase = await createSupabaseServerClient();
   const {
@@ -390,6 +452,7 @@ export async function fetchExpandedBestiaryChunkAction(
       }
     }
 
+    text = sanitizeBestiaryStatblock(text);
     if (!text) {
       return { success: false, message: "Contenuto chunk vuoto." };
     }

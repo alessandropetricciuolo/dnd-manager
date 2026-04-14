@@ -213,6 +213,18 @@ export function CreateEntityDialog({
     return String(v ?? "");
   }
 
+  function parseStatsFromLoadedStatblock(source: string): { hp?: string; ac?: string; cr?: string } {
+    const text = source.replace(/\r\n/g, "\n");
+    const acMatch = text.match(/\*\*Classe Armatura\*\*\s*([^\n]+)/i);
+    const hpMatch = text.match(/\*\*Punti Ferita\*\*\s*([^\n]+)/i);
+    const crMatch = text.match(/\*\*Sfida\*\*\s*([0-9]+(?:\/[0-9]+)?(?:\.[0-9]+)?)/i);
+    return {
+      ac: acMatch?.[1]?.trim(),
+      hp: hpMatch?.[1]?.trim(),
+      cr: crMatch?.[1]?.trim(),
+    };
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (isLoading) return;
@@ -314,6 +326,15 @@ export function CreateEntityDialog({
       }
       setMonsterVerbatimStatblock(res.text);
       setAttr("statblock", res.text);
+      const stats = parseStatsFromLoadedStatblock(res.text);
+      if (stats.hp) setAttr("combat_stats.hp", stats.hp);
+      if (stats.ac) setAttr("combat_stats.ac", stats.ac);
+      const crToUse = stats.cr || aiCr.trim();
+      if (crToUse) {
+        setAttr("combat_stats.cr", crToUse);
+        const xp = CHALLENGE_RATING_OPTIONS.find((o) => o.value === crToUse)?.xp;
+        if (xp != null) setMonsterXp(xp);
+      }
       toast.success("Statblock caricato dai manuali (chunk espansi).");
     } catch (error) {
       console.error("[handleUseBestiaryHit]", error);
@@ -946,7 +967,13 @@ export function CreateEntityDialog({
                       <Input
                         id="assist-cr"
                         value={aiCr}
-                        onChange={(e) => setAiCr(e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value.trim();
+                          setAiCr(val);
+                          setAttr("combat_stats.cr", val);
+                          const xp = CHALLENGE_RATING_OPTIONS.find((o) => o.value === val)?.xp;
+                          setMonsterXp(xp ?? 0);
+                        }}
                         placeholder="Es. 5"
                         disabled={isLoading || aiTextLoading}
                         className="bg-barber-dark border-violet-500/35 text-barber-paper"
