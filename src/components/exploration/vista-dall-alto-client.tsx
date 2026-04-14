@@ -188,30 +188,34 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
     const form = e.currentTarget;
     const fileInput = form.querySelector<HTMLInputElement>('input[name="image"]');
     const rawFile = fileInput?.files?.[0];
-    if (!rawFile) {
-      toast.error("Seleziona un'immagine.");
-      return;
-    }
-    if (!rawFile.type.startsWith("image/")) {
-      toast.error("Seleziona un file immagine (JPG, PNG, WebP, GIF).");
+    const imageUrlRaw =
+      (form.elements.namedItem("image_url") as HTMLInputElement | null)?.value?.trim() ?? "";
+    if (!rawFile && !imageUrlRaw) {
+      toast.error("Seleziona un'immagine oppure incolla un link Google Drive.");
       return;
     }
 
-    setMapCompressing(true);
-    let fileToSend: File;
-    try {
-      const compressed = await imageCompression(rawFile, MAP_UPLOAD_COMPRESSION);
-      fileToSend = new File(
-        [compressed],
-        rawFile.name.replace(/\.[^.]+$/i, ".webp"),
-        { type: "image/webp" }
-      );
-    } catch (err) {
-      console.error(err);
-      toast.error("Compressione fallita. Prova con un'immagine più piccola o un altro formato.");
-      return;
-    } finally {
-      setMapCompressing(false);
+    let fileToSend: File | null = null;
+    if (rawFile) {
+      if (!rawFile.type.startsWith("image/")) {
+        toast.error("Seleziona un file immagine (JPG, PNG, WebP, GIF).");
+        return;
+      }
+      setMapCompressing(true);
+      try {
+        const compressed = await imageCompression(rawFile, MAP_UPLOAD_COMPRESSION);
+        fileToSend = new File(
+          [compressed],
+          rawFile.name.replace(/\.[^.]+$/i, ".webp"),
+          { type: "image/webp" }
+        );
+      } catch (err) {
+        console.error(err);
+        toast.error("Compressione fallita. Prova con un'immagine più piccola o un altro formato.");
+        return;
+      } finally {
+        setMapCompressing(false);
+      }
     }
 
     const formData = new FormData();
@@ -227,7 +231,12 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
       "grid_cell_meters",
       (form.elements.namedItem("grid_cell_meters") as HTMLInputElement | null)?.value ?? ""
     );
-    formData.append("image", fileToSend);
+    if (fileToSend) {
+      formData.append("image", fileToSend);
+    }
+    if (imageUrlRaw) {
+      formData.append("image_url", imageUrlRaw);
+    }
 
     setMapUploading(true);
     try {
@@ -500,12 +509,25 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
               name="image"
               type="file"
               accept="image/jpeg,image/png,image/webp,image/gif"
-              required
               disabled={mapCompressing || mapUploading}
               className="max-w-xs text-sm text-barber-paper"
             />
             <p className="max-w-md text-xs text-barber-paper/60">
-              Verrà compressa in WebP e caricata su Telegram, come le altre immagini dell&apos;app.
+              Facoltativo: se scegli un file verrà compresso in WebP e caricato su Telegram.
+            </p>
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="f-img-url">Oppure link Google Drive</Label>
+            <Input
+              id="f-img-url"
+              name="image_url"
+              type="url"
+              placeholder="https://drive.google.com/..."
+              disabled={mapCompressing || mapUploading}
+              className="w-80 border-barber-gold/30 bg-barber-dark text-sm"
+            />
+            <p className="max-w-md text-xs text-barber-paper/60">
+              Accetta link Google Drive/Googleusercontent; l&apos;immagine viene importata su Telegram.
             </p>
           </div>
           <Button

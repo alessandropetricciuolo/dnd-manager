@@ -48,6 +48,34 @@ function excerptFromContent(s: string, max = 220): string {
   return `${t.slice(0, max - 1)}…`;
 }
 
+function escapeLikePattern(value: string): string {
+  return value.replace(/[\\%_]/g, "\\$&");
+}
+
+function rowsToBestiaryHits(rows: Row[]): BestiarySearchHit[] {
+  const seen = new Set<string>();
+  const hits: BestiarySearchHit[] = [];
+  for (const r of rows) {
+    const content = typeof r.content === "string" ? r.content.trim() : "";
+    if (!content || !r.id) continue;
+    if (seen.has(r.id)) continue;
+    seen.add(r.id);
+    const m = r.metadata;
+    const mbk = metaStr(m, "manual_book_key");
+    hits.push({
+      id: r.id,
+      similarity: typeof r.similarity === "number" ? r.similarity : null,
+      excerpt: excerptFromContent(content),
+      manual_book_key: mbk,
+      manual_label: mbk ? wikiManualBookLabel(mbk) : "Manuale (non classificato)",
+      chapter: metaStr(m, "chapter"),
+      section_heading: metaStr(m, "section_heading") ?? metaStr(m, "section_title"),
+    });
+    if (hits.length >= 16) break;
+  }
+  return hits;
+}
+
 async function assertGmOrAdmin(): Promise<boolean> {
   const supabase = await createSupabaseServerClient();
   const {
@@ -97,6 +125,31 @@ export async function searchBestiaryChunksAction(
     args: Record<string, unknown>
   ) => Promise<{ data: unknown; error: { message: string } | null }>;
 
+  async function textFallbackSearch(): Promise<BestiarySearchHit[]> {
+    const safe = escapeLikePattern(q);
+    const pattern = `%${safe}%`;
+    const { data: rows, error } = await admin
+      .from("manuals_knowledge")
+      .select("id, content, metadata")
+      .ilike("content", pattern)
+      .limit(80);
+    if (error) {
+      console.error("[searchBestiaryChunksAction] text fallback error", error);
+      return [];
+    }
+    const filtered = filterExcludedRows((rows ?? []) as Row[], excluded);
+    const ranked = filtered.sort((a, b) => {
+      const ac = typeof a.content === "string" ? a.content.toLowerCase() : "";
+      const bc = typeof b.content === "string" ? b.content.toLowerCase() : "";
+      const aq = ac.indexOf(q.toLowerCase());
+      const bq = bc.indexOf(q.toLowerCase());
+      const aScore = aq === -1 ? Number.POSITIVE_INFINITY : aq;
+      const bScore = bq === -1 ? Number.POSITIVE_INFINITY : bq;
+      return aScore - bScore;
+    });
+    return rowsToBestiaryHits(ranked);
+  }
+
   try {
     const embedding = await generateRagEmbedding(q);
     let merged: Row[] = [];
@@ -120,31 +173,19 @@ export async function searchBestiaryChunksAction(
       return { success: false, message: `Errore ricerca: ${rpcError.message}` };
     }
 
-    const seen = new Set<string>();
-    const hits: BestiarySearchHit[] = [];
-    for (const r of merged) {
-      const content = typeof r.content === "string" ? r.content.trim() : "";
-      if (!content || !r.id) continue;
-      if (seen.has(r.id)) continue;
-      seen.add(r.id);
-      const m = r.metadata;
-      const mbk = metaStr(m, "manual_book_key");
-      hits.push({
-        id: r.id,
-        similarity: typeof r.similarity === "number" ? r.similarity : null,
-        excerpt: excerptFromContent(content),
-        manual_book_key: mbk,
-        manual_label: mbk ? wikiManualBookLabel(mbk) : "Manuale (non classificato)",
-        chapter: metaStr(m, "chapter"),
-        section_heading: metaStr(m, "section_heading") ?? metaStr(m, "section_title"),
-      });
-      if (hits.length >= 16) break;
-    }
-
+    const hits = rowsToBestiaryHits(merged);
     return { success: true, hits };
   } catch (e) {
     console.error("[searchBestiaryChunksAction]", e);
-    return { success: false, message: "Errore durante la ricerca nel bestiario." };
+    const hits = await textFallbackSearch();
+    if (hits.length > 0) {
+      return { success: true, hits };
+    }
+    return {
+      success: false,
+      message:
+        "Ricerca semantica non disponibile al momento e nessun risultato testuale trovato nel bestiario.",
+    };
   }
 }
 

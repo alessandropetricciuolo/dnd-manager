@@ -1,5 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { uploadToTelegram } from "@/lib/telegram-storage";
+import { uploadToTelegram as uploadUrlToTelegramCdn } from "@/lib/telegram-cdn";
+import { parseSafeExternalUrl } from "@/lib/security/url";
+import { normalizeImageUrl } from "@/lib/image-url";
 
 export type MapUploadResult =
   | { success: true; data: { id: string } }
@@ -67,35 +70,52 @@ export async function createExplorationMapFromFormData(
   const floorLabel = (formData.get("floor_label") as string | null)?.trim() ?? "";
   const sortOrderRaw = (formData.get("sort_order") as string | null)?.trim() ?? "0";
   const gridRaw = (formData.get("grid_cell_meters") as string | null)?.trim() ?? "";
-  const imageRead = readImageBlobFromFormData(formData);
-  if (!imageRead.ok) {
-    return { success: false, error: imageRead.error };
-  }
-  const { blob, contentType } = imageRead;
-
-  if (blob.size > MAX_BYTES) {
-    return {
-      success: false,
-      error: "File ancora troppo grande dopo la compressione. Riduci risoluzione o qualità.",
-    };
-  }
-
-  const uploadName =
-    contentType === "image/png"
-      ? "map.png"
-      : contentType === "image/gif"
-        ? "map.gif"
-        : contentType === "image/webp"
-          ? "map.webp"
-          : "map.jpg";
-  const file = new File([blob], uploadName, { type: contentType });
-
   let fileId: string;
-  try {
-    fileId = await uploadToTelegram(file, undefined, "photo");
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : "Upload Telegram fallito.";
-    return { success: false, error: msg };
+  const imageRead = readImageBlobFromFormData(formData);
+  const imageUrlRaw = (formData.get("image_url") as string | null)?.trim() ?? "";
+  if (imageRead.ok) {
+    const { blob, contentType } = imageRead;
+    if (blob.size > MAX_BYTES) {
+      return {
+        success: false,
+        error: "File ancora troppo grande dopo la compressione. Riduci risoluzione o qualità.",
+      };
+    }
+    const uploadName =
+      contentType === "image/png"
+        ? "map.png"
+        : contentType === "image/gif"
+          ? "map.gif"
+          : contentType === "image/webp"
+            ? "map.webp"
+            : "map.jpg";
+    const file = new File([blob], uploadName, { type: contentType });
+    try {
+      fileId = await uploadToTelegram(file, floorLabel || undefined, "photo");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Upload Telegram fallito.";
+      return { success: false, error: msg };
+    }
+  } else {
+    const normalized = imageUrlRaw ? normalizeImageUrl(imageUrlRaw) : "";
+    const safeUrl = normalized
+      ? parseSafeExternalUrl(normalized, {
+          allowedProtocols: ["https:"],
+          allowedHosts: ["drive.google.com", "googleusercontent.com"],
+        })
+      : null;
+    if (!safeUrl) {
+      return {
+        success: false,
+        error: "Carica un'immagine o inserisci un link Google Drive valido.",
+      };
+    }
+    try {
+      fileId = await uploadUrlToTelegramCdn(safeUrl, floorLabel || undefined);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Trasferimento link verso Telegram fallito.";
+      return { success: false, error: msg };
+    }
   }
 
   const imagePath = `/api/tg-image/${fileId}`;
