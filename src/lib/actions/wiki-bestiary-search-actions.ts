@@ -306,8 +306,10 @@ export async function fetchExpandedBestiaryChunkAction(
   campaignId: string,
   chunkId: string
 ): Promise<{ success: true; text: string } | { success: false; message: string }> {
+  const safeCampaignId = String(campaignId ?? "").trim();
   const id = String(chunkId ?? "").trim();
   if (!id) return { success: false, message: "Chunk non valido." };
+  if (!safeCampaignId) return { success: false, message: "Campagna non valida." };
   try {
     if (!(await assertGmOrAdmin())) {
       return { success: false, message: "Solo GM e admin." };
@@ -317,7 +319,7 @@ export async function fetchExpandedBestiaryChunkAction(
     const { data: canRow } = await supabaseUser
       .from("campaigns")
       .select("id")
-      .eq("id", campaignId)
+      .eq("id", safeCampaignId)
       .maybeSingle();
     if (!canRow) return { success: false, message: "Campagna non accessibile." };
 
@@ -333,10 +335,19 @@ export async function fetchExpandedBestiaryChunkAction(
 
     const chunkMeta = chunkRow as { content: string | null; metadata: Record<string, unknown> | null };
 
-    const { data: campaignRow } = await admin.from("campaigns").select("ai_context").eq("id", campaignId).single();
-    const excluded = readExcludedManualBookKeysFromAiContextJson(
-      ((campaignRow as { ai_context?: Json | null } | null)?.ai_context ?? null) as Json | null
-    );
+    let excluded: string[] = [];
+    try {
+      const { data: campaignRow } = await admin
+        .from("campaigns")
+        .select("ai_context")
+        .eq("id", safeCampaignId)
+        .single();
+      excluded = readExcludedManualBookKeysFromAiContextJson(
+        ((campaignRow as { ai_context?: Json | null } | null)?.ai_context ?? null) as Json | null
+      );
+    } catch (ctxErr) {
+      console.error("[fetchExpandedBestiaryChunkAction] ai_context read failed", ctxErr);
+    }
     const mbk = metaStr(chunkMeta.metadata, "manual_book_key");
     if (!mbk || !BESTIARY_ALLOWED_BOOK_KEY_SET.has(mbk)) {
       return { success: false, message: "Questo statblock non appartiene ai manuali bestiario consentiti." };
@@ -357,20 +368,25 @@ export async function fetchExpandedBestiaryChunkAction(
 
     let text = typeof chunkMeta.content === "string" ? chunkMeta.content.trim() : "";
     if (fileName && Number.isFinite(centerIdx)) {
-      const rpcNeighbors = admin.rpc as unknown as (
-        fn: string,
-        args: Record<string, unknown>
-      ) => Promise<{ data: unknown; error: { message: string } | null }>;
-      const { data: neighbors, error: nErr } = await rpcNeighbors("manuals_knowledge_neighbors", {
-        p_file_name: fileName,
-        p_center_index: centerIdx,
-        p_radius: 4,
-      });
-      if (!nErr && Array.isArray(neighbors) && neighbors.length > 0) {
-        const pieces = (neighbors as Array<{ content?: string | null }>)
-          .map((n) => (typeof n.content === "string" ? n.content.trim() : ""))
-          .filter(Boolean);
-        if (pieces.length) text = pieces.join("\n\n");
+      try {
+        const rpcNeighbors = admin.rpc as unknown as (
+          fn: string,
+          args: Record<string, unknown>
+        ) => Promise<{ data: unknown; error: { message: string } | null }>;
+        const { data: neighbors, error: nErr } = await rpcNeighbors("manuals_knowledge_neighbors", {
+          p_file_name: fileName,
+          p_center_index: centerIdx,
+          p_radius: 4,
+        });
+        if (!nErr && Array.isArray(neighbors) && neighbors.length > 0) {
+          const pieces = (neighbors as Array<{ content?: string | null }>)
+            .map((n) => (typeof n.content === "string" ? n.content.trim() : ""))
+            .filter(Boolean);
+          if (pieces.length) text = pieces.join("\n\n");
+        }
+      } catch (neighborErr) {
+        // Fallback: usa almeno il chunk selezionato invece di fallire il click "Usa questo statblock".
+        console.error("[fetchExpandedBestiaryChunkAction] neighbors expansion failed", neighborErr);
       }
     }
 
