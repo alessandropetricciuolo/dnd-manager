@@ -134,6 +134,27 @@ function rankBestiaryRows(rows: Row[], query: string): Row[] {
   return scored.map((x) => x.r);
 }
 
+function normalizeLoose(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function isExactMonsterHeadingRow(row: Row, query: string): boolean {
+  const q = normalizeLoose(query);
+  if (!q) return false;
+  const sectionHeading = normalizeLoose(
+    metaStr(row.metadata, "section_heading") ?? metaStr(row.metadata, "section_title") ?? ""
+  );
+  const chapter = normalizeLoose(metaStr(row.metadata, "chapter") ?? "");
+  if (sectionHeading === q || chapter === q) return true;
+  const content = typeof row.content === "string" ? normalizeLoose(row.content) : "";
+  return content.includes(`## ${q}`) || content.includes(`# ${q}`);
+}
+
 async function assertGmOrAdmin(): Promise<boolean> {
   const supabase = await createSupabaseServerClient();
   const {
@@ -183,6 +204,31 @@ export async function searchBestiaryChunksAction(
     args: Record<string, unknown>
   ) => Promise<{ data: unknown; error: { message: string } | null }>;
 
+  async function findExactHeadingRows(): Promise<Row[]> {
+    const byHeading = await admin
+      .from("manuals_knowledge")
+      .select("id, content, metadata")
+      .ilike("metadata->>section_heading", q)
+      .limit(24);
+    const bySectionTitle = await admin
+      .from("manuals_knowledge")
+      .select("id, content, metadata")
+      .ilike("metadata->>section_title", q)
+      .limit(24);
+    const byChapter = await admin
+      .from("manuals_knowledge")
+      .select("id, content, metadata")
+      .ilike("metadata->>chapter", q)
+      .limit(24);
+    const merged = [
+      ...((byHeading.data ?? []) as Row[]),
+      ...((bySectionTitle.data ?? []) as Row[]),
+      ...((byChapter.data ?? []) as Row[]),
+    ];
+    const filtered = filterExcludedRows(filterAllowedBestiaryRows(merged), excluded);
+    return filtered.filter((r) => isExactMonsterHeadingRow(r, q));
+  }
+
   async function textFallbackSearch(): Promise<BestiarySearchHit[]> {
     const safe = escapeLikePattern(q);
     const pattern = `%${safe}%`;
@@ -200,10 +246,16 @@ export async function searchBestiaryChunksAction(
       excluded
     );
     const ranked = rankBestiaryRows(filtered, q);
-    return rowsToBestiaryHits(ranked);
+    const exact = ranked.filter((r) => isExactMonsterHeadingRow(r, q));
+    return rowsToBestiaryHits(exact.length > 0 ? exact : ranked);
   }
 
   try {
+    const exactRows = await findExactHeadingRows();
+    if (exactRows.length > 0) {
+      return { success: true, hits: rowsToBestiaryHits(rankBestiaryRows(exactRows, q)) };
+    }
+
     const embedding = await generateRagEmbedding(q);
     let merged: Row[] = [];
     let rpcError: { message: string } | null = null;
