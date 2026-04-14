@@ -205,25 +205,30 @@ export async function searchBestiaryChunksAction(
   ) => Promise<{ data: unknown; error: { message: string } | null }>;
 
   async function findExactHeadingRows(): Promise<Row[]> {
-    const byHeading = await admin
+    const safe = escapeLikePattern(q);
+    const headingH2Pattern = `%## ${safe}%`;
+    const headingH1Pattern = `%# ${safe}%`;
+    const genericPattern = `%${safe}%`;
+
+    const byH2 = await admin
       .from("manuals_knowledge")
       .select("id, content, metadata")
-      .ilike("metadata->>section_heading", q)
+      .ilike("content", headingH2Pattern)
       .limit(24);
-    const bySectionTitle = await admin
+    const byH1 = await admin
       .from("manuals_knowledge")
       .select("id, content, metadata")
-      .ilike("metadata->>section_title", q)
+      .ilike("content", headingH1Pattern)
       .limit(24);
-    const byChapter = await admin
+    const byGeneric = await admin
       .from("manuals_knowledge")
       .select("id, content, metadata")
-      .ilike("metadata->>chapter", q)
-      .limit(24);
+      .ilike("content", genericPattern)
+      .limit(32);
     const merged = [
-      ...((byHeading.data ?? []) as Row[]),
-      ...((bySectionTitle.data ?? []) as Row[]),
-      ...((byChapter.data ?? []) as Row[]),
+      ...((byH2.data ?? []) as Row[]),
+      ...((byH1.data ?? []) as Row[]),
+      ...((byGeneric.data ?? []) as Row[]),
     ];
     const filtered = filterExcludedRows(filterAllowedBestiaryRows(merged), excluded);
     return filtered.filter((r) => isExactMonsterHeadingRow(r, q));
