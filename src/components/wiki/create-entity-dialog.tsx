@@ -215,14 +215,31 @@ export function CreateEntityDialog({
 
   function parseStatsFromLoadedStatblock(source: string): { hp?: string; ac?: string; cr?: string } {
     const text = source.replace(/\r\n/g, "\n");
-    const acMatch = text.match(/\*\*Classe Armatura\*\*\s*([^\n]+)/i);
-    const hpMatch = text.match(/\*\*Punti Ferita\*\*\s*([^\n]+)/i);
-    const crMatch = text.match(/\*\*Sfida\*\*\s*([0-9]+(?:\/[0-9]+)?(?:\.[0-9]+)?)/i);
+    const acMatch =
+      text.match(/\*\*Classe Armatura\*\*\s*([^\n]+)/i) ??
+      text.match(/\bClasse Armatura\b\s*[:\-]?\s*([^\n]+)/i);
+    const hpMatch =
+      text.match(/\*\*Punti Ferita\*\*\s*([^\n]+)/i) ??
+      text.match(/\bPunti Ferita\b\s*[:\-]?\s*([^\n]+)/i);
+    const crMatch =
+      text.match(/\*\*Sfida\*\*\s*([0-9]+(?:\/[0-9]+)?(?:\.[0-9]+)?)/i) ??
+      text.match(/\b(?:Sfida|GS|CR)\b\s*[:\-]?\s*([0-9]+(?:\/[0-9]+)?(?:\.[0-9]+)?)/i);
     return {
       ac: acMatch?.[1]?.trim(),
       hp: hpMatch?.[1]?.trim(),
       cr: crMatch?.[1]?.trim(),
     };
+  }
+
+  function applyMonsterSheetStats(stats: { hp?: string; ac?: string; cr?: string }) {
+    if (stats.hp) setAttr("combat_stats.hp", stats.hp);
+    if (stats.ac) setAttr("combat_stats.ac", stats.ac);
+    if (stats.cr) {
+      setAttr("combat_stats.cr", stats.cr);
+      setAiCr(stats.cr);
+      const xp = CHALLENGE_RATING_OPTIONS.find((o) => o.value === stats.cr)?.xp;
+      setMonsterXp(xp ?? 0);
+    }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -326,15 +343,13 @@ export function CreateEntityDialog({
       }
       setMonsterVerbatimStatblock(res.text);
       setAttr("statblock", res.text);
-      const stats = parseStatsFromLoadedStatblock(res.text);
-      if (stats.hp) setAttr("combat_stats.hp", stats.hp);
-      if (stats.ac) setAttr("combat_stats.ac", stats.ac);
-      const crToUse = stats.cr || aiCr.trim();
-      if (crToUse) {
-        setAttr("combat_stats.cr", crToUse);
-        const xp = CHALLENGE_RATING_OPTIONS.find((o) => o.value === crToUse)?.xp;
-        if (xp != null) setMonsterXp(xp);
-      }
+      const parsedStats = parseStatsFromLoadedStatblock(res.text);
+      const mergedStats = {
+        hp: parsedStats.hp,
+        ac: parsedStats.ac,
+        cr: parsedStats.cr || aiCr.trim() || undefined,
+      };
+      applyMonsterSheetStats(mergedStats);
       toast.success("Statblock caricato dai manuali (chunk espansi).");
     } catch (error) {
       console.error("[handleUseBestiaryHit]", error);
@@ -409,19 +424,15 @@ export function CreateEntityDialog({
         if (npcTraits.age) setAttr("age", npcTraits.age);
       }
       if (type === "monster" && stats) {
-        if (stats.hp) {
-          setAttr("combat_stats.hp", stats.hp);
-        }
-        if (stats.ac) {
-          setAttr("combat_stats.ac", stats.ac);
-        }
-        if (stats.cr) {
-          setAttr("combat_stats.cr", stats.cr);
-          const xp = CHALLENGE_RATING_OPTIONS.find((o) => o.value === stats.cr)?.xp;
-          if (xp != null) {
-            setMonsterXp(xp);
-          }
-        }
+        applyMonsterSheetStats(stats);
+      }
+      if (type === "monster" && statblock) {
+        const parsedFromGenerated = parseStatsFromLoadedStatblock(statblock);
+        applyMonsterSheetStats({
+          hp: parsedFromGenerated.hp,
+          ac: parsedFromGenerated.ac,
+          cr: parsedFromGenerated.cr || aiCr.trim() || stats?.cr,
+        });
       }
       success = true;
       toast.success("Contenuto AI generato: narrativa e statblock separati.");
