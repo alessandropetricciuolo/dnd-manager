@@ -78,6 +78,11 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
   const [offsetXCells, setOffsetXCells] = useState(0);
   const [offsetYCells, setOffsetYCells] = useState(0);
   const [savingGridAlign, setSavingGridAlign] = useState(false);
+  const [imageNatural, setImageNatural] = useState<{ w: number; h: number } | null>(null);
+  const [calibMode, setCalibMode] = useState(false);
+  const [calibPoints, setCalibPoints] = useState<NormPoint[]>([]);
+  const [calibCellsBetween, setCalibCellsBetween] = useState("1");
+  const [savingMapScale, setSavingMapScale] = useState(false);
 
   const selectedMap = maps.find((m) => m.id === selectedMapId) ?? null;
   const regionsForMap = useMemo(
@@ -88,6 +93,18 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
 
   const imageUrl = selectedMap ? getExplorationMapPublicUrl(selectedMap.image_path) : "";
   const gridCellPx = pxPerCm * GRID_CM;
+  const sourceGridCellPx = selectedMap?.grid_source_cell_px ?? null;
+  const mapCalibCellPx = useMemo(() => {
+    if (!imageNatural || calibPoints.length !== 2) return null;
+    const cells = Number.parseFloat(calibCellsBetween.replace(",", "."));
+    if (!Number.isFinite(cells) || cells <= 0) return null;
+    const [a, b] = calibPoints;
+    const dx = (b.x - a.x) * imageNatural.w;
+    const dy = (b.y - a.y) * imageNatural.h;
+    const dist = Math.hypot(dx, dy);
+    if (!Number.isFinite(dist) || dist <= 0) return null;
+    return dist / cells;
+  }, [imageNatural, calibPoints, calibCellsBetween]);
 
   useEffect(() => {
     setMaps(initialMaps);
@@ -117,6 +134,8 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
     const y = Number(selectedMap?.grid_offset_y_cells ?? 0);
     setOffsetXCells(Number.isFinite(x) ? x : 0);
     setOffsetYCells(Number.isFinite(y) ? y : 0);
+    setCalibMode(false);
+    setCalibPoints([]);
   }, [selectedMap?.id, selectedMap?.grid_offset_x_cells, selectedMap?.grid_offset_y_cells]);
 
   useEffect(() => {
@@ -293,9 +312,10 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
 
   const onCanvasClick = useCallback(
     (n: NormPoint) => {
+      if (calibMode) return;
       setDraftPoints((d) => [...d, n]);
     },
-    []
+    [calibMode]
   );
 
   async function closeDraftPolygon() {
@@ -424,6 +444,37 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
       )
     );
     toast.success("Offset griglia salvato.");
+  }
+
+  const onMapCalibrationClick = useCallback(
+    (n: NormPoint) => {
+      if (!calibMode) return;
+      setCalibPoints((prev) => (prev.length >= 2 ? [prev[1], n] : [...prev, n]));
+    },
+    [calibMode]
+  );
+
+  async function saveMapGridScaleFromCalibration() {
+    if (!selectedMapId || !mapCalibCellPx || !Number.isFinite(mapCalibCellPx)) {
+      toast.error("Calibrazione mappa incompleta.");
+      return;
+    }
+    setSavingMapScale(true);
+    const res = await updateExplorationMapMeta(campaignId, selectedMapId, {
+      grid_source_cell_px: Number(mapCalibCellPx.toFixed(4)),
+    });
+    setSavingMapScale(false);
+    if (!res.success) {
+      toast.error(res.error ?? "Errore salvataggio scala mappa.");
+      return;
+    }
+    setMaps((prev) =>
+      prev.map((m) =>
+        m.id === selectedMapId ? { ...m, grid_source_cell_px: Number(mapCalibCellPx.toFixed(4)) } : m
+      )
+    );
+    setCalibMode(false);
+    toast.success("Scala griglia mappa salvata.");
   }
 
   return (
@@ -675,6 +726,50 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
             </div>
             <div className="mt-3 border-t border-barber-gold/10 pt-3">
               <p className="mb-2 text-xs text-barber-paper/70">
+                Calibrazione mappa (2 punti): attiva la modalità, clicca due incroci della quadrettatura e indica quante celle ci sono tra i punti.
+              </p>
+              <div className="mb-2 flex flex-wrap items-end gap-3">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={calibMode ? "secondary" : "outline"}
+                  onClick={() => {
+                    setCalibMode((v) => !v);
+                    setCalibPoints([]);
+                  }}
+                >
+                  {calibMode ? "Disattiva calibrazione mappa" : "Attiva calibrazione mappa"}
+                </Button>
+                <div className="space-y-1">
+                  <Label className="text-xs">Celle tra i 2 punti</Label>
+                  <Input
+                    value={calibCellsBetween}
+                    onChange={(e) => setCalibCellsBetween(e.target.value)}
+                    className="h-8 w-24 border-barber-gold/30 bg-barber-dark text-xs"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={!mapCalibCellPx || savingMapScale}
+                  onClick={() => void saveMapGridScaleFromCalibration()}
+                >
+                  {savingMapScale ? "Salvataggio…" : "Salva scala mappa"}
+                </Button>
+                <span className="text-xs text-barber-paper/65">
+                  punti: {calibPoints.length}/2 · scala mappa:{" "}
+                  {mapCalibCellPx ? `${mapCalibCellPx.toFixed(2)} px sorgente/cella` : "—"}
+                </span>
+              </div>
+              {sourceGridCellPx && (
+                <p className="mb-2 text-xs text-barber-paper/60">
+                  Scala mappa salvata: {Number(sourceGridCellPx).toFixed(2)} px sorgente/cella
+                </p>
+              )}
+            </div>
+            <div className="mt-3 border-t border-barber-gold/10 pt-3">
+              <p className="mb-2 text-xs text-barber-paper/70">
                 Calibrazione dispositivo/browser: misura con un righello la linea da 100 px e inserisci i cm reali.
               </p>
               <div className="mb-2 h-2 w-[100px] rounded bg-white/90" />
@@ -734,12 +829,15 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
             mode={mode}
             draftPoints={draftPoints}
             selectedRegionId={selectedRegionId}
+            onImageSized={(w, h) => setImageNatural({ w, h })}
             onCanvasClick={onCanvasClick}
+            onMapClick={onMapCalibrationClick}
             onVertexDragEnd={handleVertexDragEnd}
             onRevealClick={mode === "explore" ? onRevealClick : undefined}
             showGrid={showGrid}
             gridOpacity={gridOpacity}
             gridCellPx={gridCellPx}
+            gridCellSourcePx={selectedMap.grid_source_cell_px}
             gridOffsetXCells={offsetXCells}
             gridOffsetYCells={offsetYCells}
           />

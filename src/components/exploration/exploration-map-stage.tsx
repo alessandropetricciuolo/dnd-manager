@@ -25,6 +25,7 @@ type ExplorationMapStageProps = {
   selectedRegionId: string | null;
   onImageSized?: (width: number, height: number) => void;
   onCanvasClick?: (norm: NormPoint) => void;
+  onMapClick?: (norm: NormPoint) => void;
   onVertexDragEnd?: (regionId: string, vertexIndex: number, norm: NormPoint) => void;
   onRevealClick?: (norm: NormPoint) => void;
   readOnly?: boolean;
@@ -33,6 +34,7 @@ type ExplorationMapStageProps = {
   showGrid?: boolean;
   gridOpacity?: number;
   gridCellPx?: number | null;
+  gridCellSourcePx?: number | null;
   gridOffsetXCells?: number;
   gridOffsetYCells?: number;
 };
@@ -85,6 +87,7 @@ export function ExplorationMapStage({
   selectedRegionId,
   onImageSized,
   onCanvasClick,
+  onMapClick,
   onVertexDragEnd,
   onRevealClick,
   readOnly = false,
@@ -92,6 +95,7 @@ export function ExplorationMapStage({
   showGrid = false,
   gridOpacity = 0.45,
   gridCellPx = null,
+  gridCellSourcePx = null,
   gridOffsetXCells = 0,
   gridOffsetYCells = 0,
 }: ExplorationMapStageProps) {
@@ -120,15 +124,7 @@ export function ExplorationMapStage({
     setLayoutSize((prev) => (prev?.w === w && prev?.h === h ? prev : { w, h }));
     const cv = fogRef.current;
     if (!cv) return;
-    drawFog(
-      cv,
-      w,
-      h,
-      mode === "explore" || readOnly ? revealedPolys : [],
-      fogFill,
-      img.naturalWidth,
-      img.naturalHeight
-    );
+    drawFog(cv, w, h, mode === "explore" || readOnly ? revealedPolys : [], fogFill, img.naturalWidth, img.naturalHeight);
   }, [revealedPolys, mode, readOnly, fogFill]);
 
   useEffect(() => {
@@ -146,8 +142,18 @@ export function ExplorationMapStage({
     const img = imgRef.current;
     if (!img) return null;
     const r = img.getBoundingClientRect();
-    const x = (clientX - r.left) / r.width;
-    const y = (clientY - r.top) / r.height;
+    const lx = clientX - r.left;
+    const ly = clientY - r.top;
+    const naturalW = img.naturalWidth || 0;
+    const naturalH = img.naturalHeight || 0;
+    if (naturalW <= 0 || naturalH <= 0 || r.width <= 0 || r.height <= 0) return null;
+    const scale = Math.min(r.width / naturalW, r.height / naturalH);
+    const drawW = naturalW * scale;
+    const drawH = naturalH * scale;
+    const ox = (r.width - drawW) / 2;
+    const oy = (r.height - drawH) / 2;
+    const x = (lx - ox) / drawW;
+    const y = (ly - oy) / drawH;
     if (x < 0 || x > 1 || y < 0 || y > 1) return null;
     return { x, y };
   };
@@ -156,6 +162,7 @@ export function ExplorationMapStage({
     if (mode !== "prepare" || readOnly || !onCanvasClick) return;
     const n = normFromEvent(e.clientX, e.clientY);
     if (!n) return;
+    onMapClick?.(n);
     onCanvasClick(n);
   };
 
@@ -164,6 +171,7 @@ export function ExplorationMapStage({
     e.stopPropagation();
     const n = normFromEvent(e.clientX, e.clientY);
     if (!n) return;
+    onMapClick?.(n);
     onRevealClick(n);
   };
 
@@ -215,19 +223,19 @@ export function ExplorationMapStage({
     return r.polygon.map((p, i) => (i === drag.vi ? dragPreview : p));
   };
 
-  const nw = natural?.w ?? 0;
-  const nh = natural?.h ?? 0;
   const elW = layoutSize?.w ?? 0;
   const elH = layoutSize?.h ?? 0;
-  const hasLayout = nw > 0 && nh > 0 && elW > 0 && elH > 0;
+  const nw = natural?.w ?? 0;
+  const nh = natural?.h ?? 0;
+  const hasLayout = elW > 0 && elH > 0;
 
   const normToSvg = (p: NormPoint): [number, number] =>
-    hasLayout
+    nw > 0 && nh > 0 && elW > 0 && elH > 0
       ? intrinsicNormToSvgUserUnits(p.x, p.y, elW, elH, nw, nh)
       : [p.x * 100, p.y * 100];
 
   const normToCssPercentStyle = (p: NormPoint) => {
-    if (hasLayout) {
+    if (nw > 0 && nh > 0 && elW > 0 && elH > 0) {
       const [px, py] = intrinsicNormToElementPx(p.x, p.y, elW, elH, nw, nh);
       return { left: `${(px / elW) * 100}%`, top: `${(py / elH) * 100}%` } as const;
     }
@@ -235,16 +243,22 @@ export function ExplorationMapStage({
   };
 
   const gridData = useMemo(() => {
-    if (!showGrid || !hasLayout || !gridCellPx || gridCellPx <= 2) return null;
-    const [leftPx, topPx] = intrinsicNormToElementPx(0, 0, elW, elH, nw, nh);
-    const [rightPx, bottomPx] = intrinsicNormToElementPx(1, 1, elW, elH, nw, nh);
+    if (!showGrid || !hasLayout) return null;
+    const [leftPx, topPx] =
+      nw > 0 && nh > 0 ? intrinsicNormToElementPx(0, 0, elW, elH, nw, nh) : [0, 0];
+    const [rightPx, bottomPx] =
+      nw > 0 && nh > 0 ? intrinsicNormToElementPx(1, 1, elW, elH, nw, nh) : [elW, elH];
     const wPx = Math.max(0, rightPx - leftPx);
     const hPx = Math.max(0, bottomPx - topPx);
     if (wPx < 4 || hPx < 4) return null;
+    const stepFromSource =
+      gridCellSourcePx && gridCellSourcePx > 1 && nw > 0 ? (wPx / nw) * gridCellSourcePx : null;
+    const step = stepFromSource ?? gridCellPx ?? 0;
+    if (!step || step <= 2) return null;
 
     const mod = (n: number, m: number) => ((n % m) + m) % m;
-    const xStep = gridCellPx;
-    const yStep = gridCellPx;
+    const xStep = step;
+    const yStep = step;
     const xStart = leftPx + mod(gridOffsetXCells * xStep, xStep);
     const yStart = topPx + mod(gridOffsetYCells * yStep, yStep);
 
@@ -264,7 +278,7 @@ export function ExplorationMapStage({
       vPct: vertical.map((x) => (x / elW) * 100),
       hLinesPct: horizontal.map((y) => (y / elH) * 100),
     };
-  }, [showGrid, hasLayout, gridCellPx, gridOffsetXCells, gridOffsetYCells, elW, elH, nw, nh]);
+  }, [showGrid, hasLayout, gridCellPx, gridCellSourcePx, gridOffsetXCells, gridOffsetYCells, elW, elH, nw, nh]);
 
   const mapLayers = (
     <>

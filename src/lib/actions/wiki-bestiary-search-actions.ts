@@ -7,6 +7,9 @@ import { generateRagEmbedding } from "@/lib/ai/huggingface-client";
 import { readExcludedManualBookKeysFromAiContextJson } from "@/lib/campaign-ai-context";
 import { wikiManualBookLabel } from "@/lib/manual-book-catalog";
 
+const BESTIARY_ALLOWED_BOOK_KEYS = ["monster_manual", "mordenkainen_multiverse"] as const;
+const BESTIARY_ALLOWED_BOOK_KEY_SET = new Set<string>(BESTIARY_ALLOWED_BOOK_KEYS);
+
 export type BestiarySearchHit = {
   id: string;
   similarity: number | null;
@@ -39,6 +42,14 @@ function filterExcludedRows(rows: Row[], excluded: string[]): Row[] {
     const k = metaStr(r.metadata, "manual_book_key");
     if (k == null) return true;
     return !ex.has(k);
+  });
+}
+
+function filterAllowedBestiaryRows(rows: Row[]): Row[] {
+  return rows.filter((r) => {
+    const k = metaStr(r.metadata, "manual_book_key");
+    if (!k) return false;
+    return BESTIARY_ALLOWED_BOOK_KEY_SET.has(k);
   });
 }
 
@@ -137,7 +148,10 @@ export async function searchBestiaryChunksAction(
       console.error("[searchBestiaryChunksAction] text fallback error", error);
       return [];
     }
-    const filtered = filterExcludedRows((rows ?? []) as Row[], excluded);
+    const filtered = filterExcludedRows(
+      filterAllowedBestiaryRows((rows ?? []) as Row[]),
+      excluded
+    );
     const ranked = filtered.sort((a, b) => {
       const ac = typeof a.content === "string" ? a.content.toLowerCase() : "";
       const bc = typeof b.content === "string" ? b.content.toLowerCase() : "";
@@ -163,7 +177,7 @@ export async function searchBestiaryChunksAction(
       rpcError = res.error;
       if (rpcError) break;
       const list = (res.data ?? []) as Row[];
-      const filtered = filterExcludedRows(list, excluded);
+      const filtered = filterExcludedRows(filterAllowedBestiaryRows(list), excluded);
       if (filtered.some((c) => (c.content ?? "").trim().length > 0)) {
         merged = filtered;
         break;
@@ -227,6 +241,9 @@ export async function fetchExpandedBestiaryChunkAction(
     ((campaignRow as { ai_context?: Json | null } | null)?.ai_context ?? null) as Json | null
   );
   const mbk = metaStr(chunkMeta.metadata, "manual_book_key");
+  if (!mbk || !BESTIARY_ALLOWED_BOOK_KEY_SET.has(mbk)) {
+    return { success: false, message: "Questo statblock non appartiene ai manuali bestiario consentiti." };
+  }
   if (mbk && excluded.includes(mbk)) {
     return { success: false, message: "Questo manuale è escluso dai paletti della campagna." };
   }
