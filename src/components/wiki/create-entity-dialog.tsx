@@ -315,6 +315,9 @@ export function CreateEntityDialog({
       setMonsterVerbatimStatblock(res.text);
       setAttr("statblock", res.text);
       toast.success("Statblock caricato dai manuali (chunk espansi).");
+    } catch (error) {
+      console.error("[handleUseBestiaryHit]", error);
+      toast.error("Errore durante il caricamento dello statblock. Riprova.");
     } finally {
       setLoadingChunkId(null);
     }
