@@ -251,7 +251,33 @@ export function CreateEntityDialog({
     formData.set("campaign_id", campaignId);
     formData.set("title", titleValue.trim());
     formData.set("content", contentValue);
-    formData.set("attributes", JSON.stringify(attributes));
+    const normalizedAttributes: Record<string, unknown> = { ...attributes };
+    if (type === "monster") {
+      const currentStatblock =
+        (typeof normalizedAttributes.statblock === "string" ? normalizedAttributes.statblock : "").trim() ||
+        monsterVerbatimStatblock.trim();
+      if (currentStatblock) {
+        normalizedAttributes.statblock = currentStatblock;
+        const parsed = parseStatsFromLoadedStatblock(currentStatblock);
+        const existingCombat =
+          normalizedAttributes.combat_stats &&
+          typeof normalizedAttributes.combat_stats === "object" &&
+          !Array.isArray(normalizedAttributes.combat_stats)
+            ? (normalizedAttributes.combat_stats as Record<string, unknown>)
+            : {};
+        const fallbackCr =
+          parsed.cr ||
+          (typeof existingCombat.cr === "string" ? existingCombat.cr.trim() : "") ||
+          aiCr.trim();
+        normalizedAttributes.combat_stats = {
+          ...existingCombat,
+          hp: parsed.hp || (typeof existingCombat.hp === "string" ? existingCombat.hp.trim() : ""),
+          ac: parsed.ac || (typeof existingCombat.ac === "string" ? existingCombat.ac.trim() : ""),
+          cr: fallbackCr || "",
+        };
+      }
+    }
+    formData.set("attributes", JSON.stringify(normalizedAttributes));
     formData.set("visibility", visibility);
     formData.set("allowed_user_ids", JSON.stringify(visibility === "selective" ? selectedPlayerIds : []));
     formData.set("allowed_party_ids", JSON.stringify(visibility === "selective" ? selectedPartyIds : []));

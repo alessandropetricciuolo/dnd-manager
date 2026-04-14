@@ -10,7 +10,7 @@ import { DualSourceImage } from "@/components/dual-source-image";
 const PLACEHOLDER = "https://placehold.co/400x500/1e293b/8b5a2b/png?text=Mostro";
 
 type CombatStats = { hp?: string; ac?: string; cr?: string; attacks?: string };
-type MonsterAttributes = { combat_stats?: CombatStats; loot?: string };
+type MonsterAttributes = { combat_stats?: CombatStats; loot?: string; statblock?: string };
 
 type MonsterViewProps = {
   name: string;
@@ -34,7 +34,9 @@ export function MonsterView({
   const hasStats = !!(stats.hp?.trim() || stats.ac?.trim() || stats.cr?.trim());
   const attacks = stats.attacks?.trim();
   const loot = attrs.loot?.trim();
+  const statblock = attrs.statblock?.trim();
   const bodyMd = body ? preserveMarkdownBlankLines(body) : "";
+  const statblockMd = statblock ? preserveMarkdownBlankLines(statblock) : "";
 
   return (
     <div className="space-y-8">
@@ -120,6 +122,26 @@ export function MonsterView({
       )}
         </div>
       </div>
+
+      {statblock && (
+        <div className="rounded-xl border-2 border-barber-gold/50 bg-barber-dark px-6 py-5 text-barber-paper shadow-lg">
+          <h3 className="border-b border-barber-gold/40 pb-2 text-lg font-semibold text-barber-gold">Statblock</h3>
+          <div className="prose prose-sm mt-4 max-w-none prose-headings:text-barber-gold prose-p:text-barber-paper/90">
+            <ReactMarkdown
+              remarkPlugins={[remarkBreaks]}
+              components={{
+                h1: ({ children }) => <h1 className="text-xl font-bold text-barber-gold">{children}</h1>,
+                h2: ({ children }) => <h2 className="text-lg font-bold text-barber-gold">{children}</h2>,
+                h3: ({ children }) => <h3 className="text-base font-bold text-barber-gold">{children}</h3>,
+                strong: ({ children }) => <strong className="font-bold text-barber-paper">{children}</strong>,
+                em: ({ children }) => <em className="font-bold not-italic text-barber-paper">{children}</em>,
+              }}
+            >
+              {statblockMd}
+            </ReactMarkdown>
+          </div>
+        </div>
+      )}
 
       {loot && (
         <GmOnlySection isGmOrAdmin={isGmOrAdmin}>
