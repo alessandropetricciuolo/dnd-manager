@@ -25,8 +25,7 @@ const HF_CHARACTER_JSON_BASE = "https://router.huggingface.co/hf-inference/model
 
 /** Modelli di default (testo / immagine). Sostituibili passando un `modelId` esplicito. */
 export const MODELS = {
-  // fallback: 'mistralai/Mistral-Nemo-Instruct-2407'
-  text: "Qwen/Qwen2.5-72B-Instruct",
+  text: "mistralai/Mistral-Nemo-Instruct-2407",
   image: "black-forest-labs/FLUX.1-schnell",
   embedding: "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
 } as const;
@@ -110,6 +109,14 @@ export async function generateAiText(
   }
 
   const model = normalizeModelId(modelId);
+  const modelCandidates = Array.from(
+    new Set([
+      model,
+      "mistralai/Mistral-Nemo-Instruct-2407",
+      "Qwen/Qwen2.5-72B-Instruct",
+      "meta-llama/Llama-3.1-70B-Instruct",
+    ])
+  );
   const trimmedPrompt = prompt.trim();
 
   if (!trimmedPrompt) {
@@ -119,23 +126,38 @@ export async function generateAiText(
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 120_000);
 
-  let response: Response;
+  let response: Response | null = null;
+  let lastApiError = "";
   try {
-    response = await fetch(HF_CHAT_COMPLETIONS_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: "user", content: trimmedPrompt }],
-        max_tokens: 1500,
-        temperature: 0.7,
-      }),
-      signal: controller.signal,
-    });
+    for (const candidate of modelCandidates) {
+      response = await fetch(HF_CHAT_COMPLETIONS_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          model: candidate,
+          messages: [{ role: "user", content: trimmedPrompt }],
+          max_tokens: 1500,
+          temperature: 0.7,
+        }),
+        signal: controller.signal,
+      });
+      if (response.ok) break;
+      const errorText = await response.text();
+      lastApiError = `model=${candidate} status=${response.status} body=${errorText}`;
+      const lower = errorText.toLowerCase();
+      const isUnsupported =
+        lower.includes("model_not_supported") ||
+        lower.includes("not supported by any provider") ||
+        lower.includes("unsupported model");
+      if (!isUnsupported) {
+        console.error("API Error:", errorText);
+        throw new Error(`Errore API Hugging Face: ${response.status} - ${errorText}`);
+      }
+    }
   } catch (e) {
     clearTimeout(timeoutId);
     if (e instanceof Error && e.name === "AbortError") {
@@ -151,10 +173,10 @@ export async function generateAiText(
     clearTimeout(timeoutId);
   }
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("API Error:", errorText);
-    throw new Error(`Errore API Hugging Face: ${response.status} - ${errorText}`);
+  if (!response || !response.ok) {
+    throw new Error(
+      `Errore API Hugging Face: nessun modello testo supportato dai provider abilitati. ${lastApiError}`
+    );
   }
 
   let data: unknown;
