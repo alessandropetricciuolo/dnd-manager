@@ -270,7 +270,12 @@ export async function generateAiImage(
       const isRecoverable =
         lower.includes("cuda out of memory") ||
         lower.includes("out of memory") ||
-        lower.includes("oom");
+        lower.includes("oom") ||
+        lower.includes("model is deprecated") ||
+        lower.includes("no longer supported") ||
+        lower.includes("model_not_supported") ||
+        lower.includes("not supported by provider") ||
+        lower.includes("not supported by any provider");
       if (isRecoverable) {
         continue;
       }
