@@ -11,6 +11,9 @@ import type { GeneratedCharacterSheet } from "@/lib/sheet-generator/types";
 import { useSearchParams } from "next/navigation";
 import { saveGeneratedSheetToCharacter } from "@/app/campaigns/character-actions";
 
+const CREATE_CHARACTER_DRAFT_KEY_PREFIX = "create-character-draft";
+const CREATE_CHARACTER_GENERATED_SHEET_KEY_PREFIX = "create-character-generated-sheet";
+
 export default function GeneratorPage() {
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
@@ -45,6 +48,7 @@ export default function GeneratorPage() {
   const [warnings, setWarnings] = useState<string[]>([]);
   const [isSavingSheet, setIsSavingSheet] = useState(false);
   const autogenKeyRef = useRef<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const race = RACE_OPTIONS.find((r) => r.slug === selectedRaceSlug) ?? null;
   const classSubclasses = supplementSubclassesForClass(selectedClass);
@@ -67,17 +71,25 @@ export default function GeneratorPage() {
     return btoa(binary);
   }
 
+  function persistCreateDraftFromGeneratorForm() {
+    if (!formRef.current || !initial.campaignId) return;
+    try {
+      const fd = new FormData(formRef.current);
+      const payload: Record<string, string> = {};
+      for (const [k, v] of fd.entries()) {
+        if (typeof v === "string") payload[k] = v;
+      }
+      localStorage.setItem(`${CREATE_CHARACTER_DRAFT_KEY_PREFIX}:${initial.campaignId}`, JSON.stringify(payload));
+    } catch {
+      // ignore
+    }
+  }
+
   async function handleSaveToCharacterSheet() {
     if (isSavingSheet) return;
     if (!sheetDataObj || !sheet) {
       setResultMessage("Genera prima una scheda.");
       toast.error("Genera prima una scheda.");
-      return;
-    }
-    if (!initial.campaignId || !initial.characterId) {
-      const msg = "Per salvare nella scheda tecnica PG apri il generatore dal personaggio (campagna/characterId mancanti).";
-      setResultMessage(msg);
-      toast.error(msg);
       return;
     }
     setIsSavingSheet(true);
@@ -99,28 +111,53 @@ export default function GeneratorPage() {
       }
       const ab = await pdfRes.arrayBuffer();
       const base64 = arrayBufferToBase64(ab);
-      const saved = await saveGeneratedSheetToCharacter(
-        initial.campaignId,
-        initial.characterId,
-        base64,
-        `${sheet.characterName || "scheda"}-compilata.pdf`,
-        { armorClass: sheet.armorClass, hitPoints: sheet.hpMax }
-      );
-      if (saved.success) {
-        const msg = "Scheda PDF salvata nella scheda tecnica del personaggio.";
+      if (initial.campaignId && initial.characterId) {
+        const saved = await saveGeneratedSheetToCharacter(
+          initial.campaignId,
+          initial.characterId,
+          base64,
+          `${sheet.characterName || "scheda"}-compilata.pdf`,
+          { armorClass: sheet.armorClass, hitPoints: sheet.hpMax }
+        );
+        if (saved.success) {
+          const msg = "Scheda PDF salvata nella scheda tecnica del personaggio.";
+          setResultMessage(msg);
+          toast.success(msg);
+          if (initial.returnTo) {
+            const next = new URL(initial.returnTo, window.location.origin);
+            if (!next.searchParams.get("tab")) next.searchParams.set("tab", "pg");
+            if (initial.characterId) next.searchParams.set("openEditCharacter", initial.characterId);
+            window.location.href = `${next.pathname}?${next.searchParams.toString()}`;
+            return;
+          }
+        } else {
+          setResultMessage(saved.error);
+          toast.error(saved.error);
+        }
+        return;
+      }
+
+      if (initial.campaignId && initial.returnTo) {
+        persistCreateDraftFromGeneratorForm();
+        localStorage.setItem(
+          `${CREATE_CHARACTER_GENERATED_SHEET_KEY_PREFIX}:${initial.campaignId}`,
+          JSON.stringify({
+            pdfBase64: base64,
+            fileName: `${sheet.characterName || "scheda"}-compilata.pdf`,
+            armorClass: sheet.armorClass,
+            hitPoints: sheet.hpMax,
+          })
+        );
+        const msg = "Scheda PDF pronta: torna alla creazione PG e salva il personaggio.";
         setResultMessage(msg);
         toast.success(msg);
-        if (initial.returnTo) {
-          const next = new URL(initial.returnTo, window.location.origin);
-          if (!next.searchParams.get("tab")) next.searchParams.set("tab", "pg");
-          if (initial.characterId) next.searchParams.set("openEditCharacter", initial.characterId);
-          window.location.href = `${next.pathname}?${next.searchParams.toString()}`;
-          return;
-        }
-      } else {
-        setResultMessage(saved.error);
-        toast.error(saved.error);
+        window.location.href = initial.returnTo;
+        return;
       }
+
+      const msg = "Per salvare la scheda apri il generatore dalla creazione/modifica PG.";
+      setResultMessage(msg);
+      toast.error(msg);
     } catch {
       const msg = "Errore imprevisto durante il salvataggio della scheda PDF.";
       setResultMessage(msg);
@@ -212,7 +249,10 @@ export default function GeneratorPage() {
             <button
               type="button"
               onClick={() => {
-                if (initial.returnTo) window.location.href = initial.returnTo;
+                if (initial.returnTo) {
+                  persistCreateDraftFromGeneratorForm();
+                  window.location.href = initial.returnTo;
+                }
                 else window.history.back();
               }}
               className="rounded border border-barber-gold/40 px-3 py-1.5 text-xs text-barber-gold hover:bg-barber-gold/10"
@@ -222,10 +262,10 @@ export default function GeneratorPage() {
             <button
               type="button"
               onClick={handleSaveToCharacterSheet}
-              disabled={isSavingSheet || !sheetDataObj || !sheet || !initial.campaignId || !initial.characterId}
+              disabled={isSavingSheet || !sheetDataObj || !sheet}
               className="rounded border border-barber-gold/40 px-3 py-1.5 text-xs text-barber-gold hover:bg-barber-gold/10"
             >
-              {isSavingSheet ? "Salvataggio PDF..." : "Salva scheda PDF (scheda tecnica PG)"}
+              {isSavingSheet ? "Salvataggio PDF..." : "Salva scheda PDF"}
             </button>
           </div>
           <h1 className="flex items-center gap-2 text-2xl font-semibold text-barber-gold">
@@ -237,7 +277,7 @@ export default function GeneratorPage() {
           </p>
         </header>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
             <label htmlFor="characterName" className="text-sm font-medium text-barber-paper">
               Nome Personaggio

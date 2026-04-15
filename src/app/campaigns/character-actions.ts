@@ -233,6 +233,11 @@ export async function createCharacter(
   const sheetFile = formData.get("sheet") as File | null;
   const sheetUrlFromFormRaw = (formData.get("sheet_url") as string | null)?.trim() || null;
   const sheetUrlFromForm = sheetUrlFromFormRaw ? parseSafeExternalUrl(sheetUrlFromFormRaw) : null;
+  const generatedSheetPdfBase64 = (formData.get("generated_sheet_pdf_base64") as string | null)?.trim() || "";
+  const generatedSheetFileName =
+    (formData.get("generated_sheet_file_name") as string | null)?.trim() || "scheda-generata.pdf";
+  const generatedArmorClassRaw = (formData.get("generated_sheet_armor_class") as string | null)?.trim() || "";
+  const generatedHitPointsRaw = (formData.get("generated_sheet_hit_points") as string | null)?.trim() || "";
 
   if (!name) return { success: false, error: "Il nome del personaggio è obbligatorio." };
   const armorClass = armorClassRaw !== "" ? Number.parseInt(armorClassRaw, 10) : null;
@@ -284,6 +289,37 @@ export async function createCharacter(
       return { success: false, error: uploadErr.message ?? "Errore caricamento PDF." };
     }
     sheet_file_path = path;
+  } else if (generatedSheetPdfBase64) {
+    let bytes: Buffer;
+    try {
+      bytes = Buffer.from(generatedSheetPdfBase64, "base64");
+    } catch {
+      return { success: false, error: "PDF generato non valido." };
+    }
+    if (!bytes.length) {
+      return { success: false, error: "PDF generato vuoto." };
+    }
+    const safeName = generatedSheetFileName.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80);
+    const path = `${campaignId}/${randomUUID()}-${safeName}`;
+    const { error: uploadErr } = await supabase.storage
+      .from(CHARACTER_SHEETS_BUCKET)
+      .upload(path, bytes, { contentType: "application/pdf", upsert: false });
+    if (uploadErr) {
+      console.error("[createCharacter] generated sheet upload", uploadErr);
+      return { success: false, error: uploadErr.message ?? "Errore caricamento PDF generato." };
+    }
+    sheet_file_path = path;
+  }
+
+  let finalArmorClass = armorClass;
+  let finalHitPoints = hitPoints;
+  if (finalArmorClass == null && generatedArmorClassRaw) {
+    const parsed = Number.parseInt(generatedArmorClassRaw, 10);
+    if (Number.isFinite(parsed) && parsed >= 0) finalArmorClass = parsed;
+  }
+  if (finalHitPoints == null && generatedHitPointsRaw) {
+    const parsed = Number.parseInt(generatedHitPointsRaw, 10);
+    if (Number.isFinite(parsed) && parsed >= 0) finalHitPoints = parsed;
   }
 
   const rules_snapshot = await recomputeCharacterRulesSnapshot({
@@ -304,8 +340,8 @@ export async function createCharacter(
       image_url,
       character_class: characterClass,
       class_subclass: classSubclass,
-      armor_class: armorClass,
-      hit_points: hitPoints,
+      armor_class: finalArmorClass,
+      hit_points: finalHitPoints,
       sheet_file_path,
       background,
       race_slug,

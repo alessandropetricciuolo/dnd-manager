@@ -24,6 +24,8 @@ import { CharacterBuildFormFields } from "@/components/characters/character-buil
 
 const MAX_TOTAL_MB = 4;
 const MAX_TOTAL_BYTES = MAX_TOTAL_MB * 1024 * 1024;
+const CREATE_CHARACTER_DRAFT_KEY_PREFIX = "create-character-draft";
+const CREATE_CHARACTER_GENERATED_SHEET_KEY_PREFIX = "create-character-generated-sheet";
 
 type CreateCharacterDialogProps = {
   campaignId: string;
@@ -36,10 +38,84 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
   const [isLoading, setIsLoading] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const sheetInputRef = useRef<HTMLInputElement>(null);
+  const [generatedSheetDraft, setGeneratedSheetDraft] = useState<{
+    pdfBase64: string;
+    fileName: string;
+    armorClass: number;
+    hitPoints: number;
+  } | null>(null);
+  const draftStorageKey = `${CREATE_CHARACTER_DRAFT_KEY_PREFIX}:${campaignId}`;
+  const generatedSheetStorageKey = `${CREATE_CHARACTER_GENERATED_SHEET_KEY_PREFIX}:${campaignId}`;
 
   useEffect(() => {
     if (initialOpen) setOpen(true);
   }, [initialOpen]);
+
+  function persistDraftFromForm(form: HTMLFormElement) {
+    try {
+      const fd = new FormData(form);
+      const payload: Record<string, string> = {};
+      for (const [k, v] of fd.entries()) {
+        if (typeof v === "string") payload[k] = v;
+      }
+      localStorage.setItem(draftStorageKey, JSON.stringify(payload));
+    } catch {
+      // ignore draft persistence failures
+    }
+  }
+
+  function restoreDraftIntoForm(form: HTMLFormElement) {
+    try {
+      const raw = localStorage.getItem(draftStorageKey);
+      if (!raw) return;
+      const payload = JSON.parse(raw) as Record<string, string>;
+      for (const [name, value] of Object.entries(payload)) {
+        const el = form.elements.namedItem(name);
+        if (!el) continue;
+        if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) {
+          el.value = value;
+          el.dispatchEvent(new Event("input", { bubbles: true }));
+          el.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      }
+    } catch {
+      // ignore restore failures
+    }
+  }
+
+  useEffect(() => {
+    if (!open || !formRef.current) return;
+    restoreDraftIntoForm(formRef.current);
+    try {
+      const raw = localStorage.getItem(generatedSheetStorageKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as {
+        pdfBase64?: string;
+        fileName?: string;
+        armorClass?: number;
+        hitPoints?: number;
+      };
+      if (
+        typeof parsed.pdfBase64 === "string" &&
+        typeof parsed.fileName === "string" &&
+        typeof parsed.armorClass === "number" &&
+        typeof parsed.hitPoints === "number"
+      ) {
+        setGeneratedSheetDraft({
+          pdfBase64: parsed.pdfBase64,
+          fileName: parsed.fileName,
+          armorClass: parsed.armorClass,
+          hitPoints: parsed.hitPoints,
+        });
+        const acInput = formRef.current.elements.namedItem("armor_class");
+        const hpInput = formRef.current.elements.namedItem("hit_points");
+        if (acInput instanceof HTMLInputElement && !acInput.value.trim()) acInput.value = String(parsed.armorClass);
+        if (hpInput instanceof HTMLInputElement && !hpInput.value.trim()) hpInput.value = String(parsed.hitPoints);
+      }
+    } catch {
+      // ignore sheet draft restore failures
+    }
+  }, [open, draftStorageKey, generatedSheetStorageKey]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -70,12 +146,26 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
 
     setIsLoading(true);
     try {
+      const sheetUrl = (formData.get("sheet_url") as string | null)?.trim() || "";
+      if (generatedSheetDraft && (!sheetFile || sheetFile.size === 0) && !sheetUrl) {
+        formData.set("generated_sheet_pdf_base64", generatedSheetDraft.pdfBase64);
+        formData.set("generated_sheet_file_name", generatedSheetDraft.fileName);
+        formData.set("generated_sheet_armor_class", String(generatedSheetDraft.armorClass));
+        formData.set("generated_sheet_hit_points", String(generatedSheetDraft.hitPoints));
+      }
       const result = await createCharacter(campaignId, formData);
       if (result.success) {
         toast.success("Personaggio creato.");
         setOpen(false);
         form.reset();
         if (sheetInputRef.current) sheetInputRef.current.value = "";
+        setGeneratedSheetDraft(null);
+        try {
+          localStorage.removeItem(draftStorageKey);
+          localStorage.removeItem(generatedSheetStorageKey);
+        } catch {
+          // ignore cleanup failures
+        }
         router.refresh();
       } else {
         toast.error(result.error);
@@ -89,6 +179,7 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
 
   function openSheetGeneratorPreview() {
     if (!formRef.current) return;
+    persistDraftFromForm(formRef.current);
     const fd = new FormData(formRef.current);
     const characterName = (fd.get("name") as string | null)?.trim() ?? "";
     const raceSlug = (fd.get("race_slug") as string | null)?.trim() ?? "";
@@ -211,6 +302,11 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
               className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper placeholder:text-barber-paper/40"
               disabled={isLoading}
             />
+            {generatedSheetDraft && (
+              <p className="text-xs text-emerald-300/90">
+                Scheda PDF generata pronta: verra salvata con il personaggio se non carichi un altro PDF.
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
