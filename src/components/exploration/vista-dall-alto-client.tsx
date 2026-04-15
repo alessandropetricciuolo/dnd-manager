@@ -16,6 +16,7 @@ import {
   type FowRegionRow,
 } from "@/app/campaigns/exploration-map-actions";
 import { getExplorationMapPublicUrl } from "@/lib/exploration/exploration-storage";
+import { resolveGridSourceCellPx } from "@/lib/exploration/grid-alignment";
 import type { NormPoint } from "@/lib/exploration/fow-geometry";
 import { parsePolygonJson } from "@/lib/exploration/fow-geometry";
 import {
@@ -78,15 +79,10 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
   const [offsetXCells, setOffsetXCells] = useState(0);
   const [offsetYCells, setOffsetYCells] = useState(0);
   const [savingGridAlign, setSavingGridAlign] = useState(false);
+  const [savingGridDims, setSavingGridDims] = useState(false);
+  const [gridCellsW, setGridCellsW] = useState("");
+  const [gridCellsH, setGridCellsH] = useState("");
   const [imageNatural, setImageNatural] = useState<{ w: number; h: number } | null>(null);
-  const [calibMode, setCalibMode] = useState(false);
-  const [calibTarget, setCalibTarget] = useState<"anchor" | "x" | "y">("anchor");
-  const [calibAnchor, setCalibAnchor] = useState<NormPoint | null>(null);
-  const [calibXPoint, setCalibXPoint] = useState<NormPoint | null>(null);
-  const [calibYPoint, setCalibYPoint] = useState<NormPoint | null>(null);
-  const [calibCellsX, setCalibCellsX] = useState("5");
-  const [calibCellsY, setCalibCellsY] = useState("5");
-  const [savingMapScale, setSavingMapScale] = useState(false);
 
   const selectedMap = maps.find((m) => m.id === selectedMapId) ?? null;
   const regionsForMap = useMemo(
@@ -97,30 +93,48 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
 
   const imageUrl = selectedMap ? getExplorationMapPublicUrl(selectedMap.image_path) : "";
   const gridCellPx = pxPerCm * GRID_CM;
-  const sourceGridCellPxX = selectedMap?.grid_source_cell_px ?? null;
 
-  const mapCalib = useMemo(() => {
-    if (!imageNatural || !calibAnchor || !calibXPoint || !calibYPoint) return null;
-    const cellsX = Number.parseFloat(calibCellsX.replace(",", "."));
-    const cellsY = Number.parseFloat(calibCellsY.replace(",", "."));
-    if (!Number.isFinite(cellsX) || cellsX <= 0 || !Number.isFinite(cellsY) || cellsY <= 0) return null;
-    const dx = Math.abs((calibXPoint.x - calibAnchor.x) * imageNatural.w);
-    const dy = Math.abs((calibYPoint.y - calibAnchor.y) * imageNatural.h);
-    if (dx <= 0 || dy <= 0) return null;
-    const sourceCellPxX = dx / cellsX;
-    const sourceCellPxY = dy / cellsY;
-    if (!Number.isFinite(sourceCellPxX) || !Number.isFinite(sourceCellPxY)) return null;
-    const sourceCellPx = (sourceCellPxX + sourceCellPxY) / 2;
+  const resolvedGridSourceCellPx = useMemo(() => {
+    if (!imageNatural || !selectedMap) return null;
+    const dw = Number.parseFloat(gridCellsW.replace(",", "."));
+    const dh = Number.parseFloat(gridCellsH.replace(",", "."));
+    if (Number.isFinite(dw) && dw > 0 && Number.isFinite(dh) && dh > 0) {
+      return resolveGridSourceCellPx({
+        naturalW: imageNatural.w,
+        naturalH: imageNatural.h,
+        gridCellsW: dw,
+        gridCellsH: dh,
+        legacyGridSourceCellPx: null,
+      });
+    }
+    return resolveGridSourceCellPx({
+      naturalW: imageNatural.w,
+      naturalH: imageNatural.h,
+      gridCellsW: selectedMap.grid_cells_w,
+      gridCellsH: selectedMap.grid_cells_h,
+      legacyGridSourceCellPx: selectedMap.grid_source_cell_px,
+    });
+  }, [
+    imageNatural,
+    selectedMap,
+    gridCellsW,
+    gridCellsH,
+  ]);
 
-    const anchorPxX = calibAnchor.x * imageNatural.w;
-    const anchorPxY = calibAnchor.y * imageNatural.h;
-    const frac = (v: number) => ((v % 1) + 1) % 1;
-    const offsetX = frac(anchorPxX / sourceCellPx);
-    const offsetY = frac(anchorPxY / sourceCellPx);
-    const axisMismatchPct =
-      sourceCellPx > 0 ? (Math.abs(sourceCellPxX - sourceCellPxY) / sourceCellPx) * 100 : 0;
-    return { sourceCellPx, sourceCellPxX, sourceCellPxY, offsetX, offsetY, axisMismatchPct };
-  }, [imageNatural, calibAnchor, calibXPoint, calibYPoint, calibCellsX, calibCellsY]);
+  const axisMismatchPct = useMemo(() => {
+    if (!imageNatural || !selectedMap) return null;
+    const dw = Number.parseFloat(gridCellsW.replace(",", "."));
+    const dh = Number.parseFloat(gridCellsH.replace(",", "."));
+    const cw =
+      Number.isFinite(dw) && dw > 0 ? dw : selectedMap.grid_cells_w != null ? Number(selectedMap.grid_cells_w) : NaN;
+    const ch =
+      Number.isFinite(dh) && dh > 0 ? dh : selectedMap.grid_cells_h != null ? Number(selectedMap.grid_cells_h) : NaN;
+    if (!Number.isFinite(cw) || cw <= 0 || !Number.isFinite(ch) || ch <= 0) return null;
+    const sx = imageNatural.w / cw;
+    const sy = imageNatural.h / ch;
+    if (sx <= 0 || sy <= 0) return null;
+    return (Math.abs(sx - sy) / ((sx + sy) / 2)) * 100;
+  }, [imageNatural, selectedMap, gridCellsW, gridCellsH]);
 
   useEffect(() => {
     setMaps(initialMaps);
@@ -146,16 +160,14 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
   }, []);
 
   useEffect(() => {
-    const x = Number(selectedMap?.grid_offset_x_cells ?? 0);
-    const y = Number(selectedMap?.grid_offset_y_cells ?? 0);
+    if (!selectedMap) return;
+    const x = Number(selectedMap.grid_offset_x_cells ?? 0);
+    const y = Number(selectedMap.grid_offset_y_cells ?? 0);
     setOffsetXCells(Number.isFinite(x) ? x : 0);
     setOffsetYCells(Number.isFinite(y) ? y : 0);
-    setCalibMode(false);
-    setCalibTarget("anchor");
-    setCalibAnchor(null);
-    setCalibXPoint(null);
-    setCalibYPoint(null);
-  }, [selectedMap?.id, selectedMap?.grid_offset_x_cells, selectedMap?.grid_offset_y_cells]);
+    setGridCellsW(selectedMap.grid_cells_w != null ? String(selectedMap.grid_cells_w) : "");
+    setGridCellsH(selectedMap.grid_cells_h != null ? String(selectedMap.grid_cells_h) : "");
+  }, [selectedMap]);
 
   useEffect(() => {
     try {
@@ -329,13 +341,9 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
     } else toast.error(res?.error ?? "Errore");
   }
 
-  const onCanvasClick = useCallback(
-    (n: NormPoint) => {
-      if (calibMode) return;
-      setDraftPoints((d) => [...d, n]);
-    },
-    [calibMode]
-  );
+  const onCanvasClick = useCallback((n: NormPoint) => {
+    setDraftPoints((d) => [...d, n]);
+  }, []);
 
   async function closeDraftPolygon() {
     if (draftPoints.length < 3) {
@@ -465,32 +473,23 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
     toast.success("Offset griglia salvato.");
   }
 
-  const onMapCalibrationClick = useCallback(
-    (n: NormPoint) => {
-      if (!calibMode) return;
-      if (calibTarget === "anchor") setCalibAnchor(n);
-      else if (calibTarget === "x") setCalibXPoint(n);
-      else setCalibYPoint(n);
-    },
-    [calibMode, calibTarget]
-  );
-
-  async function saveMapGridScaleFromCalibration() {
-    if (!selectedMapId || !mapCalib) {
-      toast.error("Calibrazione mappa incompleta.");
+  async function saveGridDimensions() {
+    if (!selectedMapId) return;
+    const w = Number.parseFloat(gridCellsW.replace(",", "."));
+    const h = Number.parseFloat(gridCellsH.replace(",", "."));
+    if (!Number.isFinite(w) || w <= 0 || !Number.isFinite(h) || h <= 0) {
+      toast.error("Inserisci larghezza e altezza in celle (numeri positivi), come su Roll20.");
       return;
     }
-    setOffsetXCells(mapCalib.offsetX);
-    setOffsetYCells(mapCalib.offsetY);
-    setSavingMapScale(true);
+    setSavingGridDims(true);
     const res = await updateExplorationMapMeta(campaignId, selectedMapId, {
-      grid_source_cell_px: Number(mapCalib.sourceCellPx.toFixed(4)),
-      grid_offset_x_cells: Number(mapCalib.offsetX.toFixed(4)),
-      grid_offset_y_cells: Number(mapCalib.offsetY.toFixed(4)),
+      grid_cells_w: Number(w.toFixed(4)),
+      grid_cells_h: Number(h.toFixed(4)),
+      grid_source_cell_px: null,
     });
-    setSavingMapScale(false);
+    setSavingGridDims(false);
     if (!res.success) {
-      toast.error(res.error ?? "Errore salvataggio scala mappa.");
+      toast.error(res.error ?? "Errore salvataggio dimensioni griglia.");
       return;
     }
     setMaps((prev) =>
@@ -498,15 +497,14 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
         m.id === selectedMapId
           ? {
               ...m,
-              grid_source_cell_px: Number(mapCalib.sourceCellPx.toFixed(4)),
-              grid_offset_x_cells: Number(mapCalib.offsetX.toFixed(4)),
-              grid_offset_y_cells: Number(mapCalib.offsetY.toFixed(4)),
+              grid_cells_w: Number(w.toFixed(4)),
+              grid_cells_h: Number(h.toFixed(4)),
+              grid_source_cell_px: null,
             }
           : m
       )
     );
-    setCalibMode(false);
-    toast.success("Scala griglia mappa salvata.");
+    toast.success("Dimensioni griglia salvate.");
   }
 
   return (
@@ -699,6 +697,60 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
             <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-barber-gold">
               Griglia overlay
             </h4>
+            <p className="mb-3 max-w-3xl text-xs text-barber-paper/70">
+              Come su Roll20: indica quanti quadretti della mappa stampata ci sono in larghezza e in altezza
+              sull&apos;immagine (es. 34×22). La griglia dell&apos;app userà la calibrazione schermo (2,5 cm) e
+              allineerà i passi a quella dell&apos;immagine. Poi regola gli offset se serve.
+            </p>
+            <div className="mb-3 flex flex-wrap items-end gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Larghezza mappa (celle)</Label>
+                <Input
+                  value={gridCellsW}
+                  onChange={(e) => setGridCellsW(e.target.value)}
+                  placeholder="es. 34"
+                  className="h-8 w-28 border-barber-gold/30 bg-barber-dark text-xs"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Altezza mappa (celle)</Label>
+                <Input
+                  value={gridCellsH}
+                  onChange={(e) => setGridCellsH(e.target.value)}
+                  placeholder="es. 22"
+                  className="h-8 w-28 border-barber-gold/30 bg-barber-dark text-xs"
+                />
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                disabled={savingGridDims || !imageNatural}
+                onClick={() => void saveGridDimensions()}
+              >
+                {savingGridDims ? "Salvataggio…" : "Salva dimensioni griglia"}
+              </Button>
+            </div>
+            {resolvedGridSourceCellPx != null && imageNatural && (
+              <p className="mb-3 text-xs text-barber-paper/60">
+                Scala immagine (preview): ~{resolvedGridSourceCellPx.toFixed(2)} px per quadretto nel file ·
+                immagine {imageNatural.w}×{imageNatural.h} px
+                {axisMismatchPct != null && axisMismatchPct > 0.5 && (
+                  <span className="text-amber-200/90">
+                    {" "}
+                    · attenzione: differenza larghezza/altezza ~{axisMismatchPct.toFixed(1)}% (controlla i
+                    numeri di celle o il rapporto della mappa)
+                  </span>
+                )}
+              </p>
+            )}
+            {selectedMap?.grid_source_cell_px != null &&
+              (selectedMap.grid_cells_w == null || selectedMap.grid_cells_h == null) && (
+                <p className="mb-3 text-xs text-barber-paper/55">
+                  Questa mappa usa ancora la vecchia scala salvata ({Number(selectedMap.grid_source_cell_px).toFixed(2)}{" "}
+                  px/cella). Inserisci le celle sopra e salva per passare al nuovo metodo.
+                </p>
+              )}
             <div className="flex flex-wrap items-end gap-3">
               <label className="flex items-center gap-2 text-xs">
                 <input
@@ -753,87 +805,8 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
                 disabled={savingGridAlign}
                 onClick={() => void saveGridOffset()}
               >
-                {savingGridAlign ? "Salvataggio…" : "Salva offset mappa"}
+                {savingGridAlign ? "Salvataggio…" : "Salva offset griglia"}
               </Button>
-            </div>
-            <div className="mt-3 border-t border-barber-gold/10 pt-3">
-              <p className="mb-2 text-xs text-barber-paper/70">
-                Flusso calibrazione: 1) scegli &quot;Origine&quot; e clicca un incrocio, 2) scegli &quot;Asse X&quot; e clicca un incrocio sulla stessa riga, 3) scegli &quot;Asse Y&quot; e clicca un incrocio sulla stessa colonna, 4) salva.
-              </p>
-              <div className="mb-2 flex flex-wrap items-end gap-3">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={calibMode ? "secondary" : "outline"}
-                  onClick={() => {
-                    setCalibMode((v) => !v);
-                    setCalibTarget("anchor");
-                    setCalibAnchor(null);
-                    setCalibXPoint(null);
-                    setCalibYPoint(null);
-                  }}
-                >
-                  {calibMode ? "Disattiva calibrazione mappa" : "Attiva calibrazione mappa"}
-                </Button>
-                {calibMode && (
-                  <Select value={calibTarget} onValueChange={(v) => setCalibTarget(v as "anchor" | "x" | "y")}>
-                    <SelectTrigger className="h-8 w-[210px] border-barber-gold/30 bg-barber-dark text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="anchor">Punto origine (incrocio)</SelectItem>
-                      <SelectItem value="x">Punto asse X (stessa riga)</SelectItem>
-                      <SelectItem value="y">Punto asse Y (stessa colonna)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-                <div className="space-y-1">
-                  <Label className="text-xs">Celle asse X</Label>
-                  <Input
-                    value={calibCellsX}
-                    onChange={(e) => setCalibCellsX(e.target.value)}
-                    className="h-8 w-24 border-barber-gold/30 bg-barber-dark text-xs"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Celle asse Y</Label>
-                  <Input
-                    value={calibCellsY}
-                    onChange={(e) => setCalibCellsY(e.target.value)}
-                    className="h-8 w-24 border-barber-gold/30 bg-barber-dark text-xs"
-                  />
-                </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={!mapCalib || savingMapScale}
-                  onClick={() => void saveMapGridScaleFromCalibration()}
-                >
-                  {savingMapScale ? "Salvataggio…" : "Salva scala mappa"}
-                </Button>
-                <span className="text-xs text-barber-paper/65">
-                  origine: {calibAnchor ? "ok" : "—"} · X: {calibXPoint ? "ok" : "—"} · Y: {calibYPoint ? "ok" : "—"}
-                </span>
-              </div>
-              {sourceGridCellPxX && (
-                <p className="mb-2 text-xs text-barber-paper/60">
-                  Scala mappa salvata (quadrata): {Number(sourceGridCellPxX).toFixed(2)} px/cella
-                </p>
-              )}
-              {mapCalib && (
-                <p className="mb-2 text-xs text-barber-paper/60">
-                  Preview: cella {mapCalib.sourceCellPx.toFixed(2)} px · offset X {mapCalib.offsetX.toFixed(3)} ·
-                  offset Y {mapCalib.offsetY.toFixed(3)} · differenza assi {mapCalib.axisMismatchPct.toFixed(1)}%
-                </p>
-              )}
-              {calibMode && (
-                <p className="mb-2 text-xs text-barber-paper/65">
-                  Marker sulla mappa: <span className="text-emerald-300">O origine</span>,{" "}
-                  <span className="text-blue-300">X asse X</span>,{" "}
-                  <span className="text-amber-300">Y asse Y</span>.
-                </p>
-              )}
             </div>
             <div className="mt-3 border-t border-barber-gold/10 pt-3">
               <p className="mb-2 text-xs text-barber-paper/70">
@@ -898,25 +871,14 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
             selectedRegionId={selectedRegionId}
             onImageSized={(w, h) => setImageNatural({ w, h })}
             onCanvasClick={onCanvasClick}
-            onMapClick={onMapCalibrationClick}
             onVertexDragEnd={handleVertexDragEnd}
             onRevealClick={mode === "explore" ? onRevealClick : undefined}
             showGrid={showGrid}
             gridOpacity={gridOpacity}
             gridCellPx={gridCellPx}
-            gridCellSourcePxX={selectedMap.grid_source_cell_px}
+            gridCellSourcePxX={resolvedGridSourceCellPx}
             gridOffsetXCells={offsetXCells}
             gridOffsetYCells={offsetYCells}
-            calibrationMarkers={
-              calibMode
-                ? {
-                    anchor: calibAnchor,
-                    x: calibXPoint,
-                    y: calibYPoint,
-                    activeTarget: calibTarget,
-                  }
-                : undefined
-            }
           />
 
           <p className="text-xs text-barber-paper/55">

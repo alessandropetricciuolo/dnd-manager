@@ -15,8 +15,11 @@ export type ExplorationMapRow = {
   sort_order: number;
   image_path: string;
   grid_cell_meters: number | null;
+  /** Legacy: px per cell on the image file; used if grid_cells_w/h are not set. */
   grid_source_cell_px: number | null;
-  grid_source_cell_px_y: number | null;
+  /** Roll20-style: printed grid width/height in cells on the map image. */
+  grid_cells_w: number | null;
+  grid_cells_h: number | null;
   grid_offset_x_cells: number;
   grid_offset_y_cells: number;
   grid_kind: "square" | "hex";
@@ -93,7 +96,8 @@ export async function updateExplorationMapMeta(
     sort_order?: number;
     grid_cell_meters?: number | null;
     grid_source_cell_px?: number | null;
-    grid_source_cell_px_y?: number | null;
+    grid_cells_w?: number | null;
+    grid_cells_h?: number | null;
     grid_offset_x_cells?: number;
     grid_offset_y_cells?: number;
     grid_kind?: "square" | "hex";

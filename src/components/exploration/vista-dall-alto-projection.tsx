@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createSupabaseBrowserClient } from "@/utils/supabase/client";
 import { getExplorationMapPublicUrl } from "@/lib/exploration/exploration-storage";
+import { resolveGridSourceCellPx } from "@/lib/exploration/grid-alignment";
 import type { ExplorationMapRow, FowRegionRow } from "@/app/campaigns/exploration-map-actions";
 import { parsePolygonJson } from "@/lib/exploration/fow-geometry";
 import { ExplorationMapStage, type FowRegionVm } from "@/components/exploration/exploration-map-stage";
@@ -29,9 +30,21 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
   const [showGrid, setShowGrid] = useState(true);
   const [gridOpacity, setGridOpacity] = useState(0.45);
   const [pxPerCm, setPxPerCm] = useState(DEFAULT_PX_PER_CM);
+  const [imageNatural, setImageNatural] = useState<{ w: number; h: number } | null>(null);
   const imageUrl = getExplorationMapPublicUrl(mapRow.image_path);
   const vm = useMemo(() => rowsToVm(regions), [regions]);
   const gridCellPx = pxPerCm * GRID_CM;
+
+  const resolvedGridSourceCellPx = useMemo(() => {
+    if (!imageNatural) return null;
+    return resolveGridSourceCellPx({
+      naturalW: imageNatural.w,
+      naturalH: imageNatural.h,
+      gridCellsW: mapRow.grid_cells_w,
+      gridCellsH: mapRow.grid_cells_h,
+      legacyGridSourceCellPx: mapRow.grid_source_cell_px,
+    });
+  }, [imageNatural, mapRow.grid_cells_w, mapRow.grid_cells_h, mapRow.grid_source_cell_px]);
 
   useEffect(() => {
     setRegions(initialRegions);
@@ -105,10 +118,11 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
           selectedRegionId={null}
           readOnly
           fillViewport
+          onImageSized={(w, h) => setImageNatural({ w, h })}
           showGrid={showGrid}
           gridOpacity={gridOpacity}
           gridCellPx={gridCellPx}
-          gridCellSourcePxX={mapRow.grid_source_cell_px}
+          gridCellSourcePxX={resolvedGridSourceCellPx}
           gridOffsetXCells={Number(mapRow.grid_offset_x_cells ?? 0)}
           gridOffsetYCells={Number(mapRow.grid_offset_y_cells ?? 0)}
         />
