@@ -2,9 +2,10 @@
  * Client Hugging Face via **router OpenAI-compatible** (Inference Providers).
  * Usare da Server Actions / Route Handlers (mai esporre la API key al client).
  *
- * Variabili (in `generateAiText` si usano **solo** queste due):
- * - HUGGINGFACE_API_KEY (consigliata)
- * - HF_TOKEN (come nella CLI Hugging Face)
+ * Variabili:
+ * - HUGGINGFACE_API_KEY (consigliata) oppure HF_TOKEN / HUGGINGFACE_TOKEN
+ * - Opzionale, solo se il principale ha crediti esauriti (402): HUGGINGFACE_API_KEY_FALLBACK o HF_TOKEN_FALLBACK
+ *   (stesso router: i crediti sono per account, non “per modello”; il fallback è un secondo token/account).
  *
  * La chiave va letta **solo** dentro `generateAiText` (runtime server), mai a top-level del modulo.
  *
@@ -35,6 +36,49 @@ const IMAGE_MODEL_FALLBACKS: readonly string[] = [
   "stabilityai/stable-diffusion-xl-base-1.0",
   "runwayml/stable-diffusion-v1-5",
 ];
+
+function trimHfKey(raw: unknown): string {
+  return typeof raw === "string" ? raw.trim() : "";
+}
+
+/**
+ * Catena di token: stesso ordine “primario” di prima, poi fallback espliciti (deduplicati).
+ * Usata per ritentare con un secondo account quando HF risponde 402 (crediti Inference esauriti).
+ */
+function getHuggingFaceApiKeyChain(): string[] {
+  const primary =
+    trimHfKey(process.env.HUGGINGFACE_API_KEY) ||
+    trimHfKey(process.env.HF_TOKEN) ||
+    trimHfKey(process.env.HUGGINGFACE_TOKEN);
+  const fallbacks = [
+    trimHfKey(process.env.HUGGINGFACE_API_KEY_FALLBACK),
+    trimHfKey(process.env.HF_TOKEN_FALLBACK),
+    trimHfKey(process.env.HUGGINGFACE_TOKEN_FALLBACK),
+  ].filter((k) => k.length > 0);
+
+  const chain: string[] = [];
+  if (primary) chain.push(primary);
+  for (const f of fallbacks) {
+    if (!chain.includes(f)) chain.push(f);
+  }
+  return chain;
+}
+
+function isHuggingFaceInsufficientCreditsError(status: number, errorText: string): boolean {
+  if (status === 402) return true;
+  const lower = errorText.toLowerCase();
+  return (
+    lower.includes("depleted your monthly") ||
+    lower.includes("monthly included credits") ||
+    lower.includes("pre-paid credits to continue") ||
+    (lower.includes("not enough") && lower.includes("credit"))
+  );
+}
+
+const HF_INSUFFICIENT_CREDITS_USER_MESSAGE_IT =
+  "Crediti Hugging Face esauriti per questo account (Inference Providers). " +
+  "Con la stessa API key i modelli condividono lo stesso saldo: cambiare solo il modello non risolve. " +
+  "Aggiungi crediti o abbonati su huggingface.co, oppure imposta HUGGINGFACE_API_KEY_FALLBACK (o HF_TOKEN_FALLBACK) con un token di un altro account.";
 
 export type HuggingFaceModelKey = keyof typeof MODELS;
 
@@ -107,10 +151,8 @@ export async function generateAiText(
   prompt: string,
   modelId: string = MODELS.text
 ): Promise<string> {
-  const rawKey = process.env.HUGGINGFACE_API_KEY || process.env.HF_TOKEN;
-  const apiKey = typeof rawKey === "string" ? rawKey.trim() : "";
-
-  if (!apiKey) {
+  const keyChain = getHuggingFaceApiKeyChain();
+  if (keyChain.length === 0) {
     throw new Error("Errore Critico Server: HUGGINGFACE_API_KEY non trovata a runtime.");
   }
 
@@ -134,34 +176,42 @@ export async function generateAiText(
 
   let response: Response | null = null;
   let lastApiError = "";
+  let sawInsufficientCredits = false;
   try {
-    for (const candidate of modelCandidates) {
-      response = await fetch(HF_CHAT_COMPLETIONS_URL, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          model: candidate,
-          messages: [{ role: "user", content: trimmedPrompt }],
-          max_tokens: 1500,
-          temperature: 0.7,
-        }),
-        signal: controller.signal,
-      });
-      if (response.ok) break;
-      const errorText = await response.text();
-      lastApiError = `model=${candidate} status=${response.status} body=${errorText}`;
-      const lower = errorText.toLowerCase();
-      const isUnsupported =
-        lower.includes("model_not_supported") ||
-        lower.includes("not supported by any provider") ||
-        lower.includes("unsupported model");
-      if (!isUnsupported) {
-        console.error("API Error:", errorText);
-        throw new Error(`Errore API Hugging Face: ${response.status} - ${errorText}`);
+    keyLoop: for (const apiKey of keyChain) {
+      for (const candidate of modelCandidates) {
+        response = await fetch(HF_CHAT_COMPLETIONS_URL, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            model: candidate,
+            messages: [{ role: "user", content: trimmedPrompt }],
+            max_tokens: 1500,
+            temperature: 0.7,
+          }),
+          signal: controller.signal,
+        });
+        if (response.ok) break keyLoop;
+        const errorText = await response.text();
+        lastApiError = `model=${candidate} status=${response.status} body=${errorText}`;
+        if (isHuggingFaceInsufficientCreditsError(response.status, errorText)) {
+          sawInsufficientCredits = true;
+          console.warn("[generateAiText] HF credits insufficient for this token; trying next if any.");
+          continue keyLoop;
+        }
+        const lower = errorText.toLowerCase();
+        const isUnsupported =
+          lower.includes("model_not_supported") ||
+          lower.includes("not supported by any provider") ||
+          lower.includes("unsupported model");
+        if (!isUnsupported) {
+          console.error("API Error:", errorText);
+          throw new Error(`Errore API Hugging Face: ${response.status} - ${errorText}`);
+        }
       }
     }
   } catch (e) {
@@ -180,6 +230,10 @@ export async function generateAiText(
   }
 
   if (!response || !response.ok) {
+    if (sawInsufficientCredits) {
+      console.error("[generateAiText] All tokens exhausted HF credits. Last:", lastApiError);
+      throw new Error(HF_INSUFFICIENT_CREDITS_USER_MESSAGE_IT);
+    }
     throw new Error(
       `Errore API Hugging Face: nessun modello testo supportato dai provider abilitati. ${lastApiError}`
     );
@@ -211,10 +265,8 @@ export async function generateAiImage(
   negativePrompt: string,
   modelId: string = MODELS.image
 ): Promise<Buffer> {
-  const rawKey = process.env.HUGGINGFACE_API_KEY || process.env.HF_TOKEN;
-  const apiKey = typeof rawKey === "string" ? rawKey.trim() : "";
-
-  if (!apiKey) {
+  const keyChain = getHuggingFaceApiKeyChain();
+  if (keyChain.length === 0) {
     throw new Error("Errore Critico Server: HUGGINGFACE_API_KEY non trovata a runtime.");
   }
 
@@ -231,64 +283,76 @@ export async function generateAiImage(
   let lastApiError = "";
   let buf: Buffer | null = null;
   let finalContentType = "";
+  let sawInsufficientCredits = false;
 
-  for (const candidate of modelCandidates) {
-    const url = `${HF_IMAGE_INFERENCE_BASE}/${encodeURIComponent(candidate)}`;
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 180_000);
-    let response: Response;
-    try {
-      response = await fetch(url, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          Accept: "image/png",
-        },
-        body: JSON.stringify({ inputs }),
-        signal: controller.signal,
-      });
-    } catch (e) {
-      clearTimeout(timeoutId);
-      if (e instanceof Error && e.name === "AbortError") {
-        throw new HuggingFaceInferenceError(
-          "Timeout della richiesta di generazione immagine (oltre 180s).",
-          { status: 504, cause: e }
-        );
+  keyLoop: for (const apiKey of keyChain) {
+    for (const candidate of modelCandidates) {
+      const url = `${HF_IMAGE_INFERENCE_BASE}/${encodeURIComponent(candidate)}`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 180_000);
+      let response: Response;
+      try {
+        response = await fetch(url, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+            Accept: "image/png",
+          },
+          body: JSON.stringify({ inputs }),
+          signal: controller.signal,
+        });
+      } catch (e) {
+        clearTimeout(timeoutId);
+        if (e instanceof Error && e.name === "AbortError") {
+          throw new HuggingFaceInferenceError(
+            "Timeout della richiesta di generazione immagine (oltre 180s).",
+            { status: 504, cause: e }
+          );
+        }
+        throw new HuggingFaceInferenceError("Errore di rete durante la generazione immagine.", {
+          cause: e,
+        });
+      } finally {
+        clearTimeout(timeoutId);
       }
-      throw new HuggingFaceInferenceError("Errore di rete durante la generazione immagine.", {
-        cause: e,
-      });
-    } finally {
-      clearTimeout(timeoutId);
-    }
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      lastApiError = `model=${candidate} status=${response.status} body=${errorText}`;
-      const lower = errorText.toLowerCase();
-      const isRecoverable =
-        lower.includes("cuda out of memory") ||
-        lower.includes("out of memory") ||
-        lower.includes("oom") ||
-        lower.includes("model is deprecated") ||
-        lower.includes("no longer supported") ||
-        lower.includes("model_not_supported") ||
-        lower.includes("not supported by provider") ||
-        lower.includes("not supported by any provider");
-      if (isRecoverable) {
-        continue;
+      if (!response.ok) {
+        const errorText = await response.text();
+        lastApiError = `model=${candidate} status=${response.status} body=${errorText}`;
+        if (isHuggingFaceInsufficientCreditsError(response.status, errorText)) {
+          sawInsufficientCredits = true;
+          console.warn("[generateAiImage] HF credits insufficient for this token; trying next if any.");
+          continue keyLoop;
+        }
+        const lower = errorText.toLowerCase();
+        const isRecoverable =
+          lower.includes("cuda out of memory") ||
+          lower.includes("out of memory") ||
+          lower.includes("oom") ||
+          lower.includes("model is deprecated") ||
+          lower.includes("no longer supported") ||
+          lower.includes("model_not_supported") ||
+          lower.includes("not supported by provider") ||
+          lower.includes("not supported by any provider");
+        if (isRecoverable) {
+          continue;
+        }
+        console.error("[generateAiImage] API Error:", errorText);
+        throw new Error(`Errore API Hugging Face (immagine): ${response.status} - ${errorText}`);
       }
-      console.error("[generateAiImage] API Error:", errorText);
-      throw new Error(`Errore API Hugging Face (immagine): ${response.status} - ${errorText}`);
-    }
 
-    finalContentType = response.headers.get("content-type") || "";
-    buf = Buffer.from(await response.arrayBuffer());
-    break;
+      finalContentType = response.headers.get("content-type") || "";
+      buf = Buffer.from(await response.arrayBuffer());
+      break keyLoop;
+    }
   }
 
   if (!buf) {
+    if (sawInsufficientCredits) {
+      console.error("[generateAiImage] All tokens exhausted HF credits. Last:", lastApiError);
+      throw new Error(HF_INSUFFICIENT_CREDITS_USER_MESSAGE_IT);
+    }
     throw new Error(
       `Errore API Hugging Face (immagine): nessun modello disponibile per generazione. ${lastApiError}`
     );
