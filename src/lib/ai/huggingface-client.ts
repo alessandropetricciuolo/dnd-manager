@@ -30,6 +30,12 @@ export const MODELS = {
   embedding: "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
 } as const;
 
+const IMAGE_MODEL_FALLBACKS: readonly string[] = [
+  MODELS.image,
+  "stabilityai/stable-diffusion-xl-base-1.0",
+  "runwayml/stable-diffusion-v1-5",
+];
+
 export type HuggingFaceModelKey = keyof typeof MODELS;
 
 export class HuggingFaceInferenceError extends Error {
@@ -213,6 +219,7 @@ export async function generateAiImage(
   }
 
   const model = normalizeModelId(modelId);
+  const modelCandidates = Array.from(new Set([model, ...IMAGE_MODEL_FALLBACKS]));
   const pos = positivePrompt.trim();
   if (!pos) {
     throw new HuggingFaceInferenceError("Il prompt positivo non può essere vuoto.", { status: 400 });
@@ -221,44 +228,67 @@ export async function generateAiImage(
   const neg = negativePrompt.trim();
   const inputs = neg ? `${pos}. Do not show or include: ${neg}` : pos;
 
-  const url = `${HF_IMAGE_INFERENCE_BASE}/${encodeURIComponent(model)}`;
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 180_000);
+  let lastApiError = "";
+  let buf: Buffer | null = null;
+  let finalContentType = "";
 
-  let response: Response;
-  try {
-    response = await fetch(url, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        Accept: "image/png",
-      },
-      body: JSON.stringify({ inputs }),
-      signal: controller.signal,
-    });
-  } catch (e) {
-    clearTimeout(timeoutId);
-    if (e instanceof Error && e.name === "AbortError") {
-      throw new HuggingFaceInferenceError(
-        "Timeout della richiesta di generazione immagine (oltre 180s).",
-        { status: 504, cause: e }
-      );
+  for (const candidate of modelCandidates) {
+    const url = `${HF_IMAGE_INFERENCE_BASE}/${encodeURIComponent(candidate)}`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 180_000);
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          Accept: "image/png",
+        },
+        body: JSON.stringify({ inputs }),
+        signal: controller.signal,
+      });
+    } catch (e) {
+      clearTimeout(timeoutId);
+      if (e instanceof Error && e.name === "AbortError") {
+        throw new HuggingFaceInferenceError(
+          "Timeout della richiesta di generazione immagine (oltre 180s).",
+          { status: 504, cause: e }
+        );
+      }
+      throw new HuggingFaceInferenceError("Errore di rete durante la generazione immagine.", {
+        cause: e,
+      });
+    } finally {
+      clearTimeout(timeoutId);
     }
-    throw new HuggingFaceInferenceError("Errore di rete durante la generazione immagine.", {
-      cause: e,
-    });
-  } finally {
-    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      lastApiError = `model=${candidate} status=${response.status} body=${errorText}`;
+      const lower = errorText.toLowerCase();
+      const isRecoverable =
+        lower.includes("cuda out of memory") ||
+        lower.includes("out of memory") ||
+        lower.includes("oom");
+      if (isRecoverable) {
+        continue;
+      }
+      console.error("[generateAiImage] API Error:", errorText);
+      throw new Error(`Errore API Hugging Face (immagine): ${response.status} - ${errorText}`);
+    }
+
+    finalContentType = response.headers.get("content-type") || "";
+    buf = Buffer.from(await response.arrayBuffer());
+    break;
   }
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("[generateAiImage] API Error:", errorText);
-    throw new Error(`Errore API Hugging Face (immagine): ${response.status} - ${errorText}`);
+  if (!buf) {
+    throw new Error(
+      `Errore API Hugging Face (immagine): nessun modello disponibile per generazione. ${lastApiError}`
+    );
   }
 
-  const buf = Buffer.from(await response.arrayBuffer());
   if (buf.length < 16) {
     throw new HuggingFaceInferenceError("Risposta immagine vuota o troppo piccola.", { status: 502 });
   }
@@ -269,7 +299,7 @@ export async function generateAiImage(
     );
   }
 
-  const contentType = response.headers.get("content-type") || "";
+  const contentType = finalContentType;
   const magicPng = buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47;
   const magicJpeg = buf[0] === 0xff && buf[1] === 0xd8;
   const magicGif = buf.toString("ascii", 0, 4) === "GIF8";
