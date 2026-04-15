@@ -10,7 +10,7 @@ import { generateAiImage, HuggingFaceInferenceError } from "@/lib/ai/huggingface
 const CAMPAIGNS_BUCKET = "campaigns";
 
 const STANDARD_VISUAL_NEGATIVES =
-  "NO modern clothing, NO jeans, NO wristwatches, NO cars, NO text, NO watermarks, NO bad anatomy, NO deformed hands, NO cartoon style";
+  "NO modern clothing, NO jeans, NO wristwatches, NO cars, NO text, NO watermarks, NO bad anatomy, NO deformed hands, NO cartoon style, NO anime style, NO manga style, NO cel shading, NO chibi";
 
 export type GenerateContextualPortraitResult =
   | { success: true; publicUrl: string }
@@ -119,7 +119,8 @@ export async function generateContextualPortraitAction(
       return fail("Campagna non trovata o non leggibile.", campError);
     }
 
-    const ctx = parseCampaignAiContextFromDb((campaign.ai_context as Json | null) ?? null);
+    const rawAiContext = (campaign.ai_context as Json | null) ?? null;
+    const ctx = parseCampaignAiContextFromDb(rawAiContext);
     const legacyStyleTemplate =
       typeof campaign.image_style_prompt === "string" ? campaign.image_style_prompt.trim() : "";
     const styleKey =
@@ -148,8 +149,18 @@ export async function generateContextualPortraitAction(
       styleTemplate = legacyStyleTemplate;
     }
 
-    const visualPositive = ctx?.visual_positive?.trim() || "cinematic fantasy, cohesive party tone";
-    const visualNegative = ctx?.visual_negative?.trim() || "";
+    const rawAiObject =
+      rawAiContext && typeof rawAiContext === "object" && !Array.isArray(rawAiContext)
+        ? (rawAiContext as Record<string, unknown>)
+        : null;
+    const visualPositive =
+      ctx?.visual_positive?.trim() ||
+      (typeof rawAiObject?.visual_positive === "string" ? rawAiObject.visual_positive.trim() : "") ||
+      "cinematic fantasy, cohesive party tone";
+    const visualNegative =
+      ctx?.visual_negative?.trim() ||
+      (typeof rawAiObject?.visual_negative === "string" ? rawAiObject.visual_negative.trim() : "") ||
+      "";
 
     const technicalForced =
       entityType === "npc"
@@ -157,17 +168,23 @@ export async function generateContextualPortraitAction(
         : "environmental wide shot, high detail, photorealistic, cinematic lighting, 8k, masterpiece, professional fantasy location art, architectural and atmosphere focus";
 
     const positivePrompt = styleTemplate
-      ? `${trimmed}. ${styleTemplate}. Campaign constraints: ${visualPositive}`
-      : [`Subject: ${trimmed}`, technicalForced, `Campaign visual style: ${visualPositive}`].join(". ");
+      ? `${trimmed}. ${styleTemplate}. Campaign constraints: ${visualPositive}. Strictly realistic fantasy illustration, non-anime, non-cartoon.`
+      : [
+          `Subject: ${trimmed}`,
+          technicalForced,
+          `Campaign visual style: ${visualPositive}`,
+          "Strictly realistic fantasy illustration, non-anime, non-cartoon",
+        ].join(". ");
 
     const negativeCombined = [styleNegativeTemplate, visualNegative, STANDARD_VISUAL_NEGATIVES]
       .filter(Boolean)
       .join(", ");
+    const strictNegativePrompt = `STRICTLY FORBIDDEN: ${negativeCombined}`;
 
     let buffer: Buffer;
     step = "hf-image-generation";
     try {
-      buffer = await generateAiImage(positivePrompt, negativeCombined);
+      buffer = await generateAiImage(positivePrompt, strictNegativePrompt);
     } catch (e) {
       const msg =
         e instanceof HuggingFaceInferenceError
