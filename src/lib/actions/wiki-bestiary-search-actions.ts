@@ -20,11 +20,35 @@ export type BestiarySearchHit = {
   section_heading: string | null;
 };
 
+export type BestiaryListItem = {
+  id: string;
+  monster_name: string;
+  cr_value: string;
+  cr_label: string;
+  cr_sort: number;
+  manual_book_key: string;
+  manual_label: string;
+};
+
+export type BestiaryListGroup = {
+  cr_value: string;
+  cr_label: string;
+  cr_sort: number;
+  items: BestiaryListItem[];
+};
+
 type Row = {
   id: string | number;
   content: string | null;
   metadata: Record<string, unknown> | null;
   similarity?: number | null;
+};
+
+const CR_FRACTION_MAP: Record<string, number> = {
+  "0": 0,
+  "1/8": 0.125,
+  "1/4": 0.25,
+  "1/2": 0.5,
 };
 
 function metaStr(m: Record<string, unknown> | null | undefined, k: string): string | null {
@@ -215,6 +239,35 @@ function sanitizeBestiaryStatblock(raw: string): string {
     .trim();
 
   return cleaned;
+}
+
+function normalizeMonsterName(raw: string): string {
+  return raw
+    .replace(/^#+\s*/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function extractCrFromText(raw: string): string | null {
+  const text = raw.replace(/\r\n/g, "\n");
+  const direct =
+    text.match(/\*\*Sfida\*\*\s*([0-9]+(?:\/[0-9]+)?(?:\.[0-9]+)?)/i) ??
+    text.match(/\b(?:Sfida|GS|CR)\b\s*[:\-]?\s*([0-9]+(?:\/[0-9]+)?(?:\.[0-9]+)?)/i);
+  if (!direct?.[1]) return null;
+  return direct[1].trim();
+}
+
+function crToSort(crValue: string): number {
+  const v = crValue.trim();
+  if (v in CR_FRACTION_MAP) return CR_FRACTION_MAP[v];
+  if (v.includes("/")) {
+    const [a, b] = v.split("/");
+    const num = Number(a);
+    const den = Number(b);
+    if (Number.isFinite(num) && Number.isFinite(den) && den > 0) return num / den;
+  }
+  const n = Number(v);
+  return Number.isFinite(n) ? n : Number.POSITIVE_INFINITY;
 }
 
 async function assertGmOrAdmin(): Promise<boolean> {
@@ -461,5 +514,102 @@ export async function fetchExpandedBestiaryChunkAction(
     console.error("[fetchExpandedBestiaryChunkAction]", e);
     const message = e instanceof Error ? e.message : "Errore sconosciuto nel caricamento statblock.";
     return { success: false, message };
+  }
+}
+
+/**
+ * Lista mostri da Manuale dei Mostri + Mostri del Multiverso, raggruppati e ordinati per GS.
+ */
+export async function listBestiaryMonstersByCrAction(
+  campaignId: string
+): Promise<{ success: true; groups: BestiaryListGroup[] } | { success: false; message: string }> {
+  const safeCampaignId = String(campaignId ?? "").trim();
+  if (!safeCampaignId) return { success: false, message: "Campagna non valida." };
+  if (!(await assertGmOrAdmin())) {
+    return { success: false, message: "Solo GM e admin possono usare la lista bestiario." };
+  }
+
+  try {
+    const supabaseUser = await createSupabaseServerClient();
+    const { data: canRow } = await supabaseUser
+      .from("campaigns")
+      .select("id")
+      .eq("id", safeCampaignId)
+      .maybeSingle();
+    if (!canRow) return { success: false, message: "Campagna non trovata o non accessibile." };
+
+    const admin = createSupabaseAdminClient();
+    const { data: camp } = await admin.from("campaigns").select("ai_context").eq("id", safeCampaignId).single();
+    const excluded = readExcludedManualBookKeysFromAiContextJson(
+      ((camp as { ai_context?: Json | null } | null)?.ai_context ?? null) as Json | null
+    );
+
+    const { data: rows, error } = await admin
+      .from("manuals_knowledge")
+      .select("id, content, metadata")
+      .in("metadata->>manual_book_key", [...BESTIARY_ALLOWED_BOOK_KEYS])
+      .limit(8000);
+    if (error) return { success: false, message: `Errore caricamento lista bestiario: ${error.message}` };
+
+    const filtered = filterExcludedRows((rows ?? []) as Row[], excluded);
+    const dedup = new Map<string, BestiaryListItem>();
+
+    for (const row of filtered) {
+      const meta = row.metadata;
+      const mbk = metaStr(meta, "manual_book_key");
+      if (!mbk || !BESTIARY_ALLOWED_BOOK_KEY_SET.has(mbk)) continue;
+
+      const sectionHeading = metaStr(meta, "section_heading") ?? metaStr(meta, "section_title");
+      const monsterName = normalizeMonsterName(sectionHeading ?? "");
+      if (!monsterName) continue;
+
+      const content = typeof row.content === "string" ? row.content : "";
+      const crValue = extractCrFromText(content);
+      if (!crValue) continue;
+
+      const key = `${mbk}::${monsterName.toLowerCase()}`;
+      if (dedup.has(key)) continue;
+
+      dedup.set(key, {
+        id: String(row.id),
+        monster_name: monsterName,
+        cr_value: crValue,
+        cr_label: `GS ${crValue}`,
+        cr_sort: crToSort(crValue),
+        manual_book_key: mbk,
+        manual_label: wikiManualBookLabel(mbk),
+      });
+    }
+
+    const groupsMap = new Map<string, BestiaryListGroup>();
+    for (const item of dedup.values()) {
+      const gKey = item.cr_value;
+      const existing = groupsMap.get(gKey);
+      if (existing) {
+        existing.items.push(item);
+      } else {
+        groupsMap.set(gKey, {
+          cr_value: item.cr_value,
+          cr_label: item.cr_label,
+          cr_sort: item.cr_sort,
+          items: [item],
+        });
+      }
+    }
+
+    const groups = [...groupsMap.values()]
+      .sort((a, b) => a.cr_sort - b.cr_sort || a.cr_value.localeCompare(b.cr_value, "it"))
+      .map((g) => ({
+        ...g,
+        items: [...g.items].sort((a, b) => a.monster_name.localeCompare(b.monster_name, "it")),
+      }));
+
+    return { success: true, groups };
+  } catch (e) {
+    console.error("[listBestiaryMonstersByCrAction]", e);
+    return {
+      success: false,
+      message: e instanceof Error ? e.message : "Errore nel caricamento lista bestiario.",
+    };
   }
 }

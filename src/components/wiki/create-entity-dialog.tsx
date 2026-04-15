@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, type FormEvent } from "react";
+import { useState, useEffect, useRef, useCallback, type FormEvent } from "react";
 import { useRouter } from "nextjs-toploader/app";
 import { toast } from "sonner";
 import { BookOpen, Plus, Trash2, Sparkles, Loader2, ImageIcon } from "lucide-react";
@@ -33,8 +33,10 @@ import { generateContextualPortraitAction } from "@/lib/actions/ai-generator";
 import { generateWikiMarkdownAction } from "@/lib/ai/wiki-text-generator";
 import {
   searchBestiaryChunksAction,
+  listBestiaryMonstersByCrAction,
   fetchExpandedBestiaryChunkAction,
   type BestiarySearchHit,
+  type BestiaryListGroup,
 } from "@/lib/actions/wiki-bestiary-search-actions";
 import { getWikiEntitiesForCampaign, getMapsForCampaign } from "@/app/campaigns/entity-graph-actions";
 import { getEmptyAttributes } from "@/types/wiki";
@@ -122,6 +124,9 @@ export function CreateEntityDialog({
   const [aiPrompt, setAiPrompt] = useState("");
   const [bestiaryQuery, setBestiaryQuery] = useState("");
   const [bestiaryHits, setBestiaryHits] = useState<BestiarySearchHit[]>([]);
+  const [bestiaryGroups, setBestiaryGroups] = useState<BestiaryListGroup[]>([]);
+  const [bestiaryListLoading, setBestiaryListLoading] = useState(false);
+  const [selectedBestiaryListId, setSelectedBestiaryListId] = useState("");
   const [bestiarySearchLoading, setBestiarySearchLoading] = useState(false);
   const [monsterVerbatimStatblock, setMonsterVerbatimStatblock] = useState("");
   const [loadingChunkId, setLoadingChunkId] = useState<string | null>(null);
@@ -184,6 +189,7 @@ export function CreateEntityDialog({
       setMonsterVerbatimStatblock("");
       setBestiaryHits([]);
       setBestiaryQuery("");
+      setSelectedBestiaryListId("");
     }
     if (t === "npc") {
       setNpcAiRace("");
@@ -385,6 +391,29 @@ export function CreateEntityDialog({
     }
   }
 
+  const loadBestiaryList = useCallback(async () => {
+    if (bestiaryListLoading) return;
+    setBestiaryListLoading(true);
+    try {
+      const res = await listBestiaryMonstersByCrAction(campaignId);
+      if (!res.success) {
+        toast.error(res.message);
+        return;
+      }
+      setBestiaryGroups(res.groups);
+    } finally {
+      setBestiaryListLoading(false);
+    }
+  }, [bestiaryListLoading, campaignId]);
+
+  async function handleUseBestiaryFromList() {
+    if (!selectedBestiaryListId) {
+      toast.error("Seleziona prima un mostro dalla lista.");
+      return;
+    }
+    await handleUseBestiaryHit(selectedBestiaryListId);
+  }
+
   async function handleAssistGenerateText() {
     if (aiTextLoading || isLoading) return;
     const safeName = titleValue.trim();
@@ -535,6 +564,12 @@ export function CreateEntityDialog({
   useEffect(() => {
     return () => clearAiProgressTimer();
   }, []);
+
+  useEffect(() => {
+    if (!open || type !== "monster") return;
+    if (bestiaryGroups.length > 0) return;
+    void loadBestiaryList();
+  }, [open, type, bestiaryGroups.length, loadBestiaryList]);
 
   function handleMagicDialogOpenChange(next: boolean) {
     setMagicOpen(next);
@@ -873,6 +908,58 @@ export function CreateEntityDialog({
                       importato dai PDF; i chunk vicini vengono uniti per ricostruire blocchi lunghi). L&apos;IA genera
                       solo la parte narrativa, coerente con la cronaca di campagna.
                     </p>
+                    <div className="space-y-2 rounded border border-sky-700/30 bg-barber-dark/35 p-2">
+                      <p className="text-[11px] text-sky-200/85">
+                        Selezione rapida per GS (Manuale dei Mostri + Mostri del Multiverso)
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <select
+                          value={selectedBestiaryListId}
+                          onChange={(e) => setSelectedBestiaryListId(e.target.value)}
+                          disabled={isLoading || aiTextLoading || bestiaryListLoading}
+                          className="flex h-10 min-w-[220px] flex-1 rounded-md border border-sky-600/35 bg-barber-dark px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-sky-500"
+                        >
+                          <option value="">
+                            {bestiaryListLoading
+                              ? "Caricamento lista mostri..."
+                              : "— Seleziona mostro per GS —"}
+                          </option>
+                          {bestiaryGroups.map((g) => (
+                            <optgroup key={g.cr_value} label={g.cr_label}>
+                              {g.items.map((item) => (
+                                <option key={item.id} value={item.id}>
+                                  {item.monster_name} · {item.manual_label}
+                                </option>
+                              ))}
+                            </optgroup>
+                          ))}
+                        </select>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          disabled={
+                            isLoading ||
+                            aiTextLoading ||
+                            bestiaryListLoading ||
+                            !selectedBestiaryListId ||
+                            loadingChunkId != null
+                          }
+                          onClick={() => void handleUseBestiaryFromList()}
+                          className="border-sky-500/40 text-sky-100"
+                        >
+                          Usa dalla lista
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          disabled={isLoading || aiTextLoading || bestiaryListLoading}
+                          onClick={() => void loadBestiaryList()}
+                          className="text-sky-200/85 hover:text-sky-100"
+                        >
+                          Aggiorna lista
+                        </Button>
+                      </div>
+                    </div>
                     <div className="flex flex-wrap gap-2">
                       <Input
                         value={bestiaryQuery}
