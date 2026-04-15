@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect, useRef, type FormEvent } from "react";
 import { useRouter } from "nextjs-toploader/app";
 import { toast } from "sonner";
 
@@ -24,8 +24,9 @@ import { getWikiEntitiesForCampaign, getMapsForCampaign, getWikiRelationshipsFor
 import { getEmptyAttributes } from "@/types/wiki";
 import type { WikiEntity } from "@/app/campaigns/wiki-actions";
 import { CHALLENGE_RATING_OPTIONS } from "@/lib/dnd-constants";
-import { Plus, Trash2 } from "lucide-react";
+import { Loader2, Plus, Trash2 } from "lucide-react";
 import { type WikiEntityType, WIKI_ENTITY_OPTIONS } from "@/lib/wiki/entity-types";
+import { generateContextualPortraitAction } from "@/lib/actions/ai-generator";
 
 type EntityType = WikiEntityType;
 
@@ -85,7 +86,9 @@ export function EditEntityDialog({
   initialAllowedPartyIds = [],
 }: EditEntityDialogProps) {
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [aiImageLoading, setAiImageLoading] = useState(false);
   const [type, setType] = useState<EntityType>((entity.type as EntityType) || "npc");
   const [attributes, setAttributes] = useState<Record<string, unknown>>(() =>
     mergeAttributes((entity.type as EntityType) || "npc", entity.attributes)
@@ -216,6 +219,60 @@ export function EditEntityDialog({
     onOpenChange(next);
   }
 
+  async function injectGeneratedImageAsFile(imageUrl: string) {
+    const formEl = formRef.current;
+    if (!formEl) throw new Error("Form non disponibile.");
+
+    const targetInput = formEl.querySelector<HTMLInputElement>('input[type="file"][name="image"]');
+    if (!targetInput) throw new Error("Input file immagine non trovato.");
+
+    const response = await fetch(imageUrl);
+    if (!response.ok) throw new Error("Immagine AI non scaricabile.");
+    const blob = await response.blob();
+    const file = new File([blob], `ai-generated-${Date.now()}.png`, {
+      type: blob.type || "image/png",
+    });
+
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    targetInput.files = dataTransfer.files;
+    targetInput.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  async function handleAssistGenerateImage() {
+    if (aiImageLoading || isLoading) return;
+    if (type !== "npc") {
+      toast.error("La generazione immagine in modifica è disponibile per le voci NPC.");
+      return;
+    }
+    const formEl = formRef.current;
+    if (!formEl) {
+      toast.error("Form non disponibile.");
+      return;
+    }
+    const contentField = formEl.elements.namedItem("content");
+    const narrativeDescription = contentField instanceof HTMLTextAreaElement ? contentField.value.trim() : "";
+    if (!narrativeDescription) {
+      toast.error("Compila la descrizione narrativa prima di generare l'immagine.");
+      return;
+    }
+    setAiImageLoading(true);
+    try {
+      const result = await generateContextualPortraitAction(campaignId, narrativeDescription, "npc");
+      if (!result.success) {
+        toast.error(result.message);
+        return;
+      }
+      await injectGeneratedImageAsFile(result.publicUrl);
+      setRemoveImage(false);
+      toast.success("Immagine AI generata e caricata. Premi Salva per applicarla all'NPC.");
+    } catch {
+      toast.error("Errore durante la generazione/iniezione immagine AI.");
+    } finally {
+      setAiImageLoading(false);
+    }
+  }
+
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -226,7 +283,7 @@ export function EditEntityDialog({
             Modifica titolo, contenuto, immagine e attributi della voce.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col gap-0">
+        <form ref={formRef} onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col gap-0">
           <div className="min-h-0 flex-1 space-y-4 overflow-y-scroll overflow-x-hidden py-1 pr-1">
           <div className="space-y-2">
             <Label htmlFor="edit-entity-title">Titolo</Label>
@@ -366,6 +423,24 @@ export function EditEntityDialog({
                   Rimuovi immagine
                 </Label>
               </div>
+            )}
+            {type === "npc" && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void handleAssistGenerateImage()}
+                disabled={isLoading || aiImageLoading}
+                className="border-barber-gold/40 text-barber-gold"
+              >
+                {aiImageLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generazione immagine...
+                  </>
+                ) : (
+                  "Genera immagine IA (NPC)"
+                )}
+              </Button>
             )}
           </div>
 
