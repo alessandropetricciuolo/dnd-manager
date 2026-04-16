@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { upsertAvatar } from "@/lib/actions/gamification";
 
 const AVATARS_GALLERY_BUCKET = "avatars_gallery";
+const MAX_AVATAR_UPLOAD_BYTES = 3 * 1024 * 1024;
 
 export type CreateAvatarResult = { success: boolean; message: string };
 
@@ -19,6 +20,13 @@ export async function createAvatarFromUpload(formData: FormData): Promise<Create
   }
   if (!imageFile || imageFile.size === 0) {
     return { success: false, message: "Seleziona un file immagine." };
+  }
+  if (imageFile.size > MAX_AVATAR_UPLOAD_BYTES) {
+    const sizeMb = (imageFile.size / (1024 * 1024)).toFixed(2);
+    return {
+      success: false,
+      message: `Immagine troppo grande (${sizeMb}MB). Limite upload: 3MB.`,
+    };
   }
 
   try {

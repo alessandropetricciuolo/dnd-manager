@@ -8,6 +8,10 @@ export {
   generateRagEmbedding,
 } from "./huggingface-client";
 
+export { shouldUseOllamaForAiText, getOllamaModelForAiText } from "./ollama-client";
+
+export { shouldUseOpenRouterForAiText, getOpenRouterModelForAiText } from "./openrouter-client";
+
 export { ARCHITECT_SYSTEM_PROMPT } from "./prompts";
 
 export {

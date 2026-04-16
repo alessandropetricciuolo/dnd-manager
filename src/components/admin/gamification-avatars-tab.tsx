@@ -29,15 +29,27 @@ type Props = {
 };
 
 export function GamificationAvatarsTab({ avatars, achievements }: Props) {
+  const MAX_AVATAR_UPLOAD_BYTES = 3 * 1024 * 1024; // 3MB: margine sotto il body limit delle Server Actions
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isDefault, setIsDefault] = useState(false);
   const [selectedAchievementId, setSelectedAchievementId] = useState<string | undefined>(undefined);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
     const formData = new FormData(form);
+    const selectedFile = formData.get("image");
+
+    if (selectedFile instanceof File && selectedFile.size > MAX_AVATAR_UPLOAD_BYTES) {
+      const sizeMb = (selectedFile.size / (1024 * 1024)).toFixed(2);
+      const maxMb = (MAX_AVATAR_UPLOAD_BYTES / (1024 * 1024)).toFixed(0);
+      const message = `Immagine troppo grande (${sizeMb}MB). Limite: ${maxMb}MB.`;
+      setUploadError(message);
+      toast.error(message);
+      return;
+    }
 
     if (!isDefault && selectedAchievementId) {
       formData.set("required_achievement_id", selectedAchievementId);
@@ -52,6 +64,7 @@ export function GamificationAvatarsTab({ avatars, achievements }: Props) {
         toast.success(res.message);
         setDialogOpen(false);
         form.reset();
+        setUploadError(null);
         setIsDefault(false);
         setSelectedAchievementId(undefined);
       } else {
@@ -118,8 +131,24 @@ export function GamificationAvatarsTab({ avatars, achievements }: Props) {
                   accept="image/jpeg,image/png,image/webp"
                   className="border-barber-gold/30 bg-barber-dark/80 text-barber-paper file:mr-2 file:rounded file:border-0 file:bg-barber-gold/20 file:px-3 file:py-1.5 file:text-barber-gold file:text-sm"
                   disabled={isPending}
+                  onChange={(event) => {
+                    const file = event.currentTarget.files?.[0] ?? null;
+                    if (!file) {
+                      setUploadError(null);
+                      return;
+                    }
+                    if (file.size <= MAX_AVATAR_UPLOAD_BYTES) {
+                      setUploadError(null);
+                      return;
+                    }
+                    const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
+                    const maxMb = (MAX_AVATAR_UPLOAD_BYTES / (1024 * 1024)).toFixed(0);
+                    setUploadError(`File troppo grande (${sizeMb}MB). Limite upload: ${maxMb}MB.`);
+                  }}
                   required
                 />
+                <p className="text-xs text-barber-paper/60">Consigliato massimo 3MB.</p>
+                {uploadError ? <p className="text-xs text-red-400">{uploadError}</p> : null}
               </div>
               <div className="space-y-3 rounded-lg border border-barber-gold/30 bg-barber-dark/60 p-3">
                 <div className="flex items-center justify-between gap-3">

@@ -12,12 +12,22 @@
  * Su Vercel: Settings → Environment Variables → nome esatto, ambienti (Production/Preview)
  * selezionati, poi **Redeploy** del progetto.
  *
+ * **OpenRouter (testo):** `AI_TEXT_PROVIDER=openrouter`, `OPENROUTER_API_KEY`, opzionale `OPENROUTER_MODEL`
+ * (default `openai/gpt-4o-mini`). Vedi `src/lib/ai/openrouter-client.ts`.
+ *
+ * **Testo in locale (Ollama):** imposta `AI_TEXT_PROVIDER=ollama`, avvia Ollama sul Mac e opzionalmente
+ * `OLLAMA_BASE_URL` (default `http://127.0.0.1:11434`) e `OLLAMA_MODEL` (default `llama3`).
+ * Gli embedding per RAG restano su Hugging Face (`generateRagEmbedding`).
+ *
  * Endpoint testo: `POST https://router.huggingface.co/v1/chat/completions` (OpenAI-compatible).
  *
  * Immagini (text-to-image): `POST https://router.huggingface.co/hf-inference/models/{modelId}` con body
  * JSON `{ inputs: string }` (risposta binaria). Per Flux conviene un unico prompt descrittivo; eventuali
  * divieti si integrano nel testo passato a `inputs`.
  */
+
+import { generateOpenRouterChat, shouldUseOpenRouterForAiText } from "@/lib/ai/openrouter-client";
+import { generateOllamaChat, shouldUseOllamaForAiText } from "@/lib/ai/ollama-client";
 
 const HF_CHAT_COMPLETIONS_URL = "https://router.huggingface.co/v1/chat/completions";
 const HF_IMAGE_INFERENCE_BASE = "https://router.huggingface.co/hf-inference/models";
@@ -151,6 +161,22 @@ export async function generateAiText(
   prompt: string,
   modelId: string = MODELS.text
 ): Promise<string> {
+  const trimmedPrompt = prompt.trim();
+
+  if (!trimmedPrompt) {
+    throw new HuggingFaceInferenceError("Il prompt non può essere vuoto.", { status: 400 });
+  }
+
+  if (shouldUseOpenRouterForAiText()) {
+    void modelId;
+    return generateOpenRouterChat(trimmedPrompt, { temperature: 0.7, maxTokens: 1500 });
+  }
+
+  if (shouldUseOllamaForAiText()) {
+    void modelId;
+    return generateOllamaChat(trimmedPrompt, { temperature: 0.7, numPredict: 1500 });
+  }
+
   const keyChain = getHuggingFaceApiKeyChain();
   if (keyChain.length === 0) {
     throw new Error("Errore Critico Server: HUGGINGFACE_API_KEY non trovata a runtime.");
@@ -165,11 +191,6 @@ export async function generateAiText(
       "meta-llama/Llama-3.1-70B-Instruct",
     ])
   );
-  const trimmedPrompt = prompt.trim();
-
-  if (!trimmedPrompt) {
-    throw new HuggingFaceInferenceError("Il prompt non può essere vuoto.", { status: 400 });
-  }
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 120_000);
@@ -630,6 +651,77 @@ export async function generateEmbedding(text: string): Promise<number[]> {
   return embedWithOpenAiCompatibleRouter(apiKey, input, candidateModels);
 }
 
+function normalizeCharacterSheetJsonOutput(generatedText: string, lastErrForLog: string): string {
+  if (!generatedText.trim()) {
+    throw new HuggingFaceInferenceError(
+      `Risposta vuota durante generazione JSON scheda. Ultimo errore: ${lastErrForLog || "n/a"}`,
+      { status: 502 }
+    );
+  }
+
+  const noFences = generatedText
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
+    .trim();
+
+  function extractFirstJsonObject(source: string): string | null {
+    const start = source.indexOf("{");
+    if (start < 0) return null;
+
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+    for (let i = start; i < source.length; i++) {
+      const ch = source[i];
+      if (inString) {
+        if (escaped) {
+          escaped = false;
+        } else if (ch === "\\") {
+          escaped = true;
+        } else if (ch === "\"") {
+          inString = false;
+        }
+        continue;
+      }
+
+      if (ch === "\"") {
+        inString = true;
+        continue;
+      }
+      if (ch === "{") depth++;
+      if (ch === "}") {
+        depth--;
+        if (depth === 0) {
+          return source.slice(start, i + 1).trim();
+        }
+      }
+    }
+    return null;
+  }
+
+  let jsonCandidate =
+    extractFirstJsonObject(noFences) ||
+    extractFirstJsonObject(noFences.replace(/\\"/g, "\"").replace(/\\n/g, "\n"));
+
+  if (!jsonCandidate) {
+    try {
+      const unwrapped = JSON.parse(noFences) as unknown;
+      if (unwrapped && typeof unwrapped === "object" && !Array.isArray(unwrapped)) {
+        jsonCandidate = JSON.stringify(unwrapped);
+      }
+    } catch {
+      // no-op
+    }
+  }
+
+  if (!jsonCandidate) {
+    console.error("[generateCharacterSheetJSON] raw output", generatedText);
+    return "{}";
+  }
+
+  return jsonCandidate;
+}
+
 /**
  * Genera una scheda personaggio in formato JSON puro (nessun testo extra).
  * Usa modello Instruct con prompt [INST] e pulizia output.
@@ -638,18 +730,28 @@ export async function generateCharacterSheetJSON(
   promptText: string,
   contextText: string
 ): Promise<string> {
-  const rawKey = process.env.HUGGINGFACE_API_KEY || process.env.HF_TOKEN;
-  const apiKey = typeof rawKey === "string" ? rawKey.trim() : "";
-  if (!apiKey) {
-    throw new Error("Errore Critico Server: HUGGINGFACE_API_KEY non trovata a runtime.");
-  }
-
   const prompt = `[INST] Sei un parser dati. Genera SOLO un oggetto JSON valido. NESSUNA PAROLA PRIMA O DOPO IL JSON.
 CONTESTO DAI MANUALI:
 ${contextText}
 
 RICHIESTA: ${promptText}
 [/INST]`;
+
+  if (shouldUseOpenRouterForAiText()) {
+    const generatedText = await generateOpenRouterChat(prompt, { temperature: 0.2, maxTokens: 2000 });
+    return normalizeCharacterSheetJsonOutput(generatedText, "");
+  }
+
+  if (shouldUseOllamaForAiText()) {
+    const generatedText = await generateOllamaChat(prompt, { temperature: 0.2, numPredict: 2000 });
+    return normalizeCharacterSheetJsonOutput(generatedText, "");
+  }
+
+  const rawKey = process.env.HUGGINGFACE_API_KEY || process.env.HF_TOKEN;
+  const apiKey = typeof rawKey === "string" ? rawKey.trim() : "";
+  if (!apiKey) {
+    throw new Error("Errore Critico Server: HUGGINGFACE_API_KEY non trovata a runtime.");
+  }
 
   const headers = {
     Authorization: `Bearer ${apiKey}`,
@@ -727,74 +829,5 @@ RICHIESTA: ${promptText}
     generatedText = chat.choices?.[0]?.message?.content ?? "";
   }
 
-  if (!generatedText.trim()) {
-    throw new HuggingFaceInferenceError(
-      `Risposta vuota durante generazione JSON scheda. Ultimo errore: ${lastErr || "n/a"}`,
-      { status: 502 }
-    );
-  }
-
-  const noFences = generatedText
-    .replace(/```json/gi, "")
-    .replace(/```/g, "")
-    .trim();
-
-  function extractFirstJsonObject(source: string): string | null {
-    const start = source.indexOf("{");
-    if (start < 0) return null;
-
-    let depth = 0;
-    let inString = false;
-    let escaped = false;
-    for (let i = start; i < source.length; i++) {
-      const ch = source[i];
-      if (inString) {
-        if (escaped) {
-          escaped = false;
-        } else if (ch === "\\") {
-          escaped = true;
-        } else if (ch === "\"") {
-          inString = false;
-        }
-        continue;
-      }
-
-      if (ch === "\"") {
-        inString = true;
-        continue;
-      }
-      if (ch === "{") depth++;
-      if (ch === "}") {
-        depth--;
-        if (depth === 0) {
-          return source.slice(start, i + 1).trim();
-        }
-      }
-    }
-    return null;
-  }
-
-  let jsonCandidate =
-    extractFirstJsonObject(noFences) ||
-    extractFirstJsonObject(noFences.replace(/\\"/g, "\"").replace(/\\n/g, "\n"));
-
-  // Ultimo fallback: se e' una stringa JSON pura, prova a decodificarla.
-  if (!jsonCandidate) {
-    try {
-      const unwrapped = JSON.parse(noFences) as unknown;
-      if (unwrapped && typeof unwrapped === "object" && !Array.isArray(unwrapped)) {
-        jsonCandidate = JSON.stringify(unwrapped);
-      }
-    } catch {
-      // no-op
-    }
-  }
-
-  if (!jsonCandidate) {
-    console.error("[generateCharacterSheetJSON] raw output", generatedText);
-    // Fallback resiliente: lasciamo che la Server Action faccia merge col template completo.
-    return "{}";
-  }
-
-  return jsonCandidate;
+  return normalizeCharacterSheetJsonOutput(generatedText, lastErr);
 }
