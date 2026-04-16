@@ -43,6 +43,7 @@ export type GeneratedSpell = {
   concentration: boolean;
   verbal: boolean;
   somatic: boolean;
+  material: boolean;
 };
 
 export type GeneratedCharacterSheet = {

@@ -202,9 +202,21 @@ function filterClassFeaturesByLevel(md: string, level: number): string {
     "BARDO",
     "SLOT INCANTESIMO",
     "INCANTESIMI CONOSCIUTI DI 1 LIVELLO E DI LIVELLO SUPERIORE",
+    "PREPARARE E LANCIARE INCANTESIMI",
+    "PREPARARE GLI INCANTESIMI",
+    "LANCIARE INCANTESIMI",
+    "INCANTESIMI PREPARATI",
     "CARATTERISTICA DA INCANTATORE",
+    "CARATTERISTICA DA LANCIO DEGLI INCANTESIMI",
+    "CD TIRO SALVEZZA INCANTESIMI",
+    "MODIFICATORE DI ATTACCO INCANTESIMI",
     "CELEBRARE RITUALI",
+    "LANCIO RITUALE",
+    "LANCIARE COME RITUALE",
     "FOCUS DA INCANTATORE",
+    "FOCUS ARCANO",
+    "FOCUS DRUIDICO",
+    "FOCUS SACRO",
   ]);
   /** Titolo dell’H1/H2 d’introduzione: non è un privilegio numerato. */
   const skippedIntroHeadings = new Set(["PRIVILEGI DI CLASSE"]);
@@ -433,13 +445,53 @@ function parseSpellsWithLevelFromList(md: string): Array<{ name: string; level: 
 }
 
 function compactSpellSummary(md: string): string {
-  const lines = md
-    .replace(/\r/g, "")
+  const source = md.replace(/\r/g, "");
+  const lines = source
     .split("\n")
     .map((x) => x.trim())
     .filter(Boolean)
-    .filter((x) => !/^#{1,6}\s+/.test(x));
-  return lines.slice(0, 3).join(" ").slice(0, 260);
+    .filter((x) => !/^#{1,6}\s+/.test(x))
+    .filter(
+      (x) =>
+        !/^(?:\*\*)?\s*(?:livello|scuola|tempo di lancio|gittata|componenti|durata)\b/i.test(x)
+    );
+  const body = lines.join(" ").replace(/\s+/g, " ").trim();
+  if (!body) return "";
+  const sentences = body
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const summary = sentences.slice(0, 2).join(" ").trim() || body;
+  const maxLen = 120;
+  if (summary.length <= maxLen) return summary;
+  const cut = summary.slice(0, maxLen);
+  const lastSpace = cut.lastIndexOf(" ");
+  const clean = (lastSpace > 70 ? cut.slice(0, lastSpace) : cut).replace(/[;,:.\-–—\s]+$/g, "");
+  return `${clean}…`;
+}
+
+function extractSpellFlags(mdSpell: string): {
+  ritual: boolean;
+  concentration: boolean;
+  verbal: boolean;
+  somatic: boolean;
+  material: boolean;
+} {
+  const body = mdSpell.replace(/\r/g, "");
+  const compact = body.replace(/\s+/g, " ");
+  const componentsLine =
+    compact.match(/(?:\*\*|__)?\s*componenti(?:\*\*|__)?\s*:\s*([^.\n]+)/i)?.[1] ?? "";
+  const components = componentsLine.toUpperCase();
+
+  const verbal = /\bV\b/.test(components) || /\bverbale\b/i.test(body);
+  const somatic = /\bS\b/.test(components) || /\bsomatica\b/i.test(body);
+  const material = /\bM\b/.test(components) || /\bmateriale\b/i.test(body);
+  const ritual = /\brituale\b/i.test(body);
+  const concentration =
+    /\bconcentrazione\b/i.test(body) ||
+    /durata[^.\n]{0,80}\bconcentrazione\b/i.test(compact);
+
+  return { ritual, concentration, verbal, somatic, material };
 }
 
 function pickLeveledSpellsBalanced(
@@ -776,15 +828,16 @@ export async function resolveGeneratorRules(
     for (const pickedSpell of picked) {
       const mdSpell = extractPhbSpellMarkdown(pickedSpell.name);
       const summary = mdSpell ? compactSpellSummary(mdSpell) : "";
-      const body = (mdSpell ?? "").replace(/\r/g, "");
+      const flags = extractSpellFlags(mdSpell ?? "");
       spells.push({
         level: pickedSpell.level,
         name: pickedSpell.name,
         summary,
-        ritual: /\brituale\b/i.test(body),
-        concentration: /\bconcentrazione\b/i.test(body),
-        verbal: /\bverbale\b|\bV\b/i.test(body),
-        somatic: /\bsomatica\b|\bS\b/i.test(body),
+        ritual: flags.ritual,
+        concentration: flags.concentration,
+        verbal: flags.verbal,
+        somatic: flags.somatic,
+        material: flags.material,
       });
     }
   }

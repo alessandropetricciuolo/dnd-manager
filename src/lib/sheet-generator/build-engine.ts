@@ -45,6 +45,68 @@ type ClassCombatConfig = {
   skillPicks: SkillKey[];
 };
 
+const BACKGROUND_SKILLS: Record<string, SkillKey[]> = {
+  accolito: ["insight", "religion"],
+  artigiano_gilda: ["insight", "persuasion"],
+  ciarlatano: ["deception", "sleight_of_hand"],
+  criminale: ["deception", "stealth"],
+  eroe_popolare: ["animal_handling", "survival"],
+  forestiero: ["athletics", "survival"],
+  intrattenitore: ["acrobatics", "performance"],
+  nobile: ["history", "persuasion"],
+  sapiente: ["arcana", "history"],
+  soldato: ["athletics", "intimidation"],
+};
+
+const RACE_EXTRA_LANGUAGES: Record<string, string[]> = {
+  umano: ["Elfico"], // scelta: prendiamo un linguaggio bonus stabile
+  elfo: ["Elfico"],
+  elfo_mare: ["Elfico", "Acquatico"],
+  eladrin: ["Elfico"],
+  shadar_kai: ["Elfico"],
+  mezzelfo: ["Elfico", "Nanico"], // scelta bonus: Nanico
+  halfling: ["Halfling"],
+  nano: ["Nanico"],
+  duergar: ["Nanico"],
+  gnomo: ["Gnomesco"],
+  gnomo_profondita: ["Gnomesco"],
+  dragonide: ["Draconico"],
+  coboldo: ["Draconico"],
+  tiefling: ["Infernale"],
+  mezzorco: ["Orchesco"],
+  orco: ["Orchesco"],
+  aasimar: ["Celestiale"],
+  aarakocra: ["Aarakocra"],
+  tritone: ["Primordiale"],
+  genasi: ["Primordiale"],
+  yuan_ti: ["Abissale"],
+  githyanki: ["Gith"],
+  githzerai: ["Gith"],
+  goblin: ["Goblin"],
+  hobgoblin: ["Goblin"],
+  urgoblin: ["Goblin"],
+  tabaxi: ["Felino"],
+  kenku: ["Auran"],
+  lucertoloide: ["Draconico"],
+  tortuga: ["Acquatico"],
+  centauro: ["Silvano"],
+  satiro: ["Silvano"],
+  firbolg: ["Silvano"],
+  goliath: ["Gigante"],
+  minotauro: ["Abissale"],
+  leporidion: ["Silvano"],
+  morfico: ["Silvano"],
+  cangiante: ["Elfico", "Nanico"], // doppia scelta bonus
+  fata: ["Silvano"],
+};
+
+function resolveRaceLanguages(raceSlug: string | null | undefined): string[] {
+  const slug = (raceSlug ?? "").trim();
+  const extras = RACE_EXTRA_LANGUAGES[slug] ?? [];
+  const out = ["Comune", ...extras].filter(Boolean);
+  return [...new Set(out)];
+}
+
 const CLASS_CONFIG: Record<string, ClassCombatConfig> = {
   Barbaro: {
     hitDie: 12,
@@ -324,7 +386,8 @@ function computeHpMax(level: number, hitDie: number, conMod: number): number {
 function computeCoreFromAbilities(
   classLabel: string,
   level: number,
-  abilities: Record<AbilityKey, number>
+  abilities: Record<AbilityKey, number>,
+  backgroundSlug?: string | null
 ): Pick<
   GeneratedCharacterSheet,
   | "abilities"
@@ -361,7 +424,25 @@ function computeCoreFromAbilities(
     return acc;
   }, {} as Record<AbilityKey, { value: number; proficient: boolean }>);
 
-  const skillSet = new Set(cfg.skillPicks);
+  const backgroundSkills = new Set<SkillKey>(BACKGROUND_SKILLS[backgroundSlug?.trim() ?? ""] ?? []);
+  const selectable = [...cfg.skillPicks];
+  selectable.sort((a, b) => {
+    const ad = abilityMods[SKILL_ABILITY[a]];
+    const bd = abilityMods[SKILL_ABILITY[b]];
+    if (bd !== ad) return bd - ad;
+    return a.localeCompare(b);
+  });
+  const classChosen: SkillKey[] = [];
+  for (const s of selectable) {
+    if (classChosen.length >= 2) break;
+    if (backgroundSkills.has(s)) continue;
+    classChosen.push(s);
+  }
+  for (const s of selectable) {
+    if (classChosen.length >= 2) break;
+    if (!classChosen.includes(s)) classChosen.push(s);
+  }
+  const skillSet = new Set<SkillKey>([...classChosen, ...backgroundSkills]);
   const skills = (Object.keys(SKILL_ABILITY) as SkillKey[]).reduce((acc, k) => {
     const proficient = skillSet.has(k);
     const ability = SKILL_ABILITY[k];
@@ -495,7 +576,8 @@ function applyLevelAbilityIncreases(
 
 export function computeCoreSheet(
   classLabel: string,
-  level: number
+  level: number,
+  backgroundSlug?: string | null
 ): Pick<
   GeneratedCharacterSheet,
   | "abilities"
@@ -520,14 +602,14 @@ export function computeCoreSheet(
 > {
   const cfg = CLASS_CONFIG[classLabel] ?? CLASS_CONFIG.Guerriero;
   const abilities = buildPointBuy(cfg.primary);
-  return computeCoreFromAbilities(classLabel, level, abilities);
+  return computeCoreFromAbilities(classLabel, level, abilities, backgroundSlug);
 }
 
 export async function buildGeneratedCharacterSheet(
   input: CharacterGeneratorInput,
   requestOrigin?: string | null
 ): Promise<GeneratorBuildResult> {
-  const baseCore = computeCoreSheet(input.classLabel, input.level);
+  const baseCore = computeCoreSheet(input.classLabel, input.level, input.backgroundSlug);
   const initialRules = await resolveGeneratorRules(
     {
       raceSlug: input.raceSlug,
@@ -550,7 +632,12 @@ export async function buildGeneratedCharacterSheet(
   }, {} as Partial<Record<AbilityKey, number>>);
   const raceBoosted = applyAbilityBonuses(baseCore.abilities, raceBonuses);
   const boostedAbilities = applyLevelAbilityIncreases(raceBoosted, input.level, cfg.primary);
-  const core = computeCoreFromAbilities(input.classLabel, input.level, boostedAbilities);
+  const core = computeCoreFromAbilities(
+    input.classLabel,
+    input.level,
+    boostedAbilities,
+    input.backgroundSlug
+  );
   const rules = await resolveGeneratorRules(
     {
       raceSlug: input.raceSlug,
@@ -605,6 +692,8 @@ export async function buildGeneratedCharacterSheet(
     spellsPrepared: rules.spellsPrepared,
     spells: rules.spells,
   };
+
+  sheet.languages = resolveRaceLanguages(input.raceSlug);
 
   return { sheet, warnings: rules.warnings };
 }

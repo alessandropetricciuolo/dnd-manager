@@ -111,6 +111,7 @@ export function mapGeneratedSheetToPdfFields(sheet: GeneratedCharacterSheet): Re
     fields[`Row_${row}_Lvl`] = s ? String(s.level) : "";
     fields[`Row_${row}_V`] = s?.verbal ? "x" : "";
     fields[`Row_${row}_S`] = s?.somatic ? "x" : "";
+    fields[`Row_${row}_M`] = s?.material ? "x" : "";
     fields[`Row_${row}_Rit`] = s?.ritual ? "x" : "";
     fields[`Row_${row}_Conc`] = s?.concentration ? "x" : "";
   }
@@ -120,6 +121,7 @@ export function mapGeneratedSheetToPdfFields(sheet: GeneratedCharacterSheet): Re
     desc: s.summary,
     v: s.verbal ? "x" : "",
     s: s.somatic ? "x" : "",
+    m: s.material ? "x" : "",
     conc: s.concentration ? "x" : "",
     rit: s.ritual ? "x" : "",
   }));
