@@ -6,8 +6,7 @@ import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import type { Json } from "@/types/database.types";
 import { parseCampaignAiContextFromDb } from "@/lib/campaign-ai-context";
 import { generateAiImage, HuggingFaceInferenceError } from "@/lib/ai/huggingface-client";
-
-const CAMPAIGNS_BUCKET = "campaigns";
+import { uploadToTelegram } from "@/lib/telegram-storage";
 
 const STANDARD_VISUAL_NEGATIVES =
   "NO modern clothing, NO jeans, NO wristwatches, NO cars, NO text, NO watermarks, NO bad anatomy, NO deformed hands, NO cartoon style, NO anime style, NO manga style, NO cel shading, NO chibi";
@@ -195,26 +194,10 @@ export async function generateContextualPortraitAction(
       return fail(msg, e);
     }
 
-    step = "storage-upload";
-    const fileName = `${campaignId}/portraits/${Date.now()}-${entityType}.png`;
-    const { error: uploadError } = await supabase.storage
-      .from(CAMPAIGNS_BUCKET)
-      .upload(fileName, buffer, {
-        contentType: "image/png",
-        upsert: true,
-      });
-
-    if (uploadError) {
-      throw new Error(`Errore Supabase Upload: ${uploadError.message}`);
-    }
-
-    step = "public-url";
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from(CAMPAIGNS_BUCKET).getPublicUrl(fileName);
-    if (!publicUrl) {
-      return fail("Impossibile ottenere l’URL pubblico dell’immagine.");
-    }
+    step = "telegram-upload";
+    const file = new File([buffer], `${entityType}.png`, { type: "image/png" });
+    const fileId = await uploadToTelegram(file, `${campaignId}:${entityType}`, "photo");
+    const publicUrl = `/api/tg-image/${encodeURIComponent(fileId)}`;
 
     step = "revalidate";
     revalidatePath(`/campaigns/${campaignId}`);

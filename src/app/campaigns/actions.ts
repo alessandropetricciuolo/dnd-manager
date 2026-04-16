@@ -75,24 +75,70 @@ export async function createSession(
     const party_id = isLongCampaign && partyIdRaw ? partyIdRaw : null;
     const chapter_title = isLongCampaign && chapterTitle ? chapterTitle : null;
 
-    const { error } = await supabase.from("sessions").insert({
-      campaign_id: campaignId,
-      title: null,
-      scheduled_at: scheduledAt,
-      status: "scheduled",
-      max_players: Math.max(1, Math.min(20, maxPlayers)),
-      notes: location || null,
-      ...(dmId && { dm_id: dmId }),
-      ...(party_id && { party_id: party_id }),
-      ...(chapter_title != null && { chapter_title }),
-    });
+    const { data: createdSession, error } = await supabase
+      .from("sessions")
+      .insert({
+        campaign_id: campaignId,
+        title: null,
+        scheduled_at: scheduledAt,
+        status: "scheduled",
+        max_players: Math.max(1, Math.min(20, maxPlayers)),
+        notes: location || null,
+        ...(dmId && { dm_id: dmId }),
+        ...(party_id && { party_id: party_id }),
+        ...(chapter_title != null && { chapter_title }),
+      })
+      .select("id")
+      .single();
 
-    if (error) {
+    if (error || !createdSession?.id) {
       console.error("[createSession]", error);
       return {
         success: false,
-        message: error.message ?? "Errore durante la creazione della sessione.",
+        message: error?.message ?? "Errore durante la creazione della sessione.",
       };
+    }
+
+    let participantsAutoAdded = 0;
+    if (isLongCampaign && party_id) {
+      try {
+        const admin = createSupabaseAdminClient();
+        const { data: membersRaw, error: membersError } = await admin
+          .from("campaign_members")
+          .select("player_id")
+          .eq("campaign_id", campaignId)
+          .eq("party_id", party_id);
+
+        if (membersError) {
+          console.error("[createSession] load party members", membersError);
+        } else {
+          const playerIds = Array.from(
+            new Set(
+              ((membersRaw ?? []) as Array<{ player_id: string | null }>)
+                .map((m) => m.player_id)
+                .filter((pid): pid is string => typeof pid === "string" && pid.trim().length > 0)
+            )
+          );
+
+          if (playerIds.length > 0) {
+            const signupRows = playerIds.map((playerId) => ({
+              session_id: createdSession.id,
+              player_id: playerId,
+              status: "approved" as const,
+            }));
+            const { error: signupError } = await admin
+              .from("session_signups")
+              .insert(signupRows as never);
+            if (signupError) {
+              console.error("[createSession] auto-add session participants", signupError);
+            } else {
+              participantsAutoAdded = signupRows.length;
+            }
+          }
+        }
+      } catch (autoAddErr) {
+        console.error("[createSession] auto-add party participants unexpected error", autoAddErr);
+      }
     }
 
     try {
@@ -113,7 +159,13 @@ export async function createSession(
     }
 
     revalidatePath(`/campaigns/${campaignId}`);
-    return { success: true, message: "Sessione creata!" };
+    return {
+      success: true,
+      message:
+        participantsAutoAdded > 0
+          ? `Sessione creata! Partecipanti del gruppo aggiunti automaticamente (${participantsAutoAdded}).`
+          : "Sessione creata!",
+    };
   } catch (err) {
     console.error("[createSession]", err);
     return {

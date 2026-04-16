@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { uploadToTelegram } from "@/lib/telegram-storage";
 
 const PORTRAITS_BUCKET = "portraits";
 const AVATARS_BUCKET = "avatars";
@@ -11,6 +12,24 @@ export type UpdateGmProfileResult = { success: boolean; message: string };
 
 function clampStat(v: number): number {
   return Math.max(0, Math.min(100, Math.round(v)));
+}
+
+function extractLegacyPortraitStoragePath(url: string, userId: string): string | null {
+  const marker = `/storage/v1/object/public/${PORTRAITS_BUCKET}/`;
+  const markerIndex = url.indexOf(marker);
+  if (markerIndex === -1) return null;
+  const rawPath = url.slice(markerIndex + marker.length).trim();
+  const decodedPath = rawPath
+    .split("/")
+    .map((segment) => {
+      try {
+        return decodeURIComponent(segment);
+      } catch {
+        return segment;
+      }
+    })
+    .join("/");
+  return decodedPath.startsWith(`${userId}/`) ? decodedPath : null;
 }
 
 export async function updateGmPublicProfile(formData: FormData): Promise<UpdateGmProfileResult> {
@@ -88,8 +107,8 @@ export async function updateGmPublicProfile(formData: FormData): Promise<UpdateG
     if (removePortrait) {
       if (currentPortraitUrl) {
         try {
-          const path = currentPortraitUrl.split("/").slice(-2).join("/");
-          if (path.startsWith(user.id)) {
+          const path = extractLegacyPortraitStoragePath(currentPortraitUrl, user.id);
+          if (path) {
             await supabase.storage.from(PORTRAITS_BUCKET).remove([path]);
           }
         } catch {
@@ -103,26 +122,25 @@ export async function updateGmPublicProfile(formData: FormData): Promise<UpdateG
       if (!allowed.includes(ext)) {
         return { success: false, message: "Formato immagine non supportato. Usa JPG, PNG o WebP." };
       }
-      const path = `${user.id}/portrait.${ext}`;
-      const { error: uploadError } = await supabase.storage
-        .from(PORTRAITS_BUCKET)
-        .upload(path, portraitFile, { contentType: portraitFile.type, upsert: true });
 
-      if (uploadError) {
-        console.error("[updateGmPublicProfile] upload", uploadError);
+      try {
+        const fileId = await uploadToTelegram(portraitFile, username ?? user.id, "photo");
+        portraitUrl = `/api/tg-image/${encodeURIComponent(fileId)}`;
+      } catch (uploadError) {
+        console.error("[updateGmPublicProfile] Telegram upload", uploadError);
         return {
           success: false,
-          message: uploadError.message ?? "Errore nel caricamento del ritratto.",
+          message:
+            uploadError instanceof Error
+              ? uploadError.message
+              : "Errore nel caricamento del ritratto.",
         };
       }
 
-      const { data: urlData } = supabase.storage.from(PORTRAITS_BUCKET).getPublicUrl(path);
-      portraitUrl = urlData.publicUrl;
-
       if (currentPortraitUrl && currentPortraitUrl !== portraitUrl) {
         try {
-          const oldPath = currentPortraitUrl.split("/").slice(-2).join("/");
-          if (oldPath.startsWith(user.id)) {
+          const oldPath = extractLegacyPortraitStoragePath(currentPortraitUrl, user.id);
+          if (oldPath) {
             await supabase.storage.from(PORTRAITS_BUCKET).remove([oldPath]);
           }
         } catch {

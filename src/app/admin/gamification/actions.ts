@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { upsertAvatar } from "@/lib/actions/gamification";
+import { uploadToTelegram } from "@/lib/telegram-storage";
 
-const AVATARS_GALLERY_BUCKET = "avatars_gallery";
 const MAX_AVATAR_UPLOAD_BYTES = 3 * 1024 * 1024;
 
 export type CreateAvatarResult = { success: boolean; message: string };
@@ -50,24 +50,25 @@ export async function createAvatarFromUpload(formData: FormData): Promise<Create
       return { success: false, message: "Solo admin." };
     }
 
-    const ext = imageFile.name.split(".").pop()?.toLowerCase() || "png";
-    const allowed = ["jpg", "jpeg", "png", "webp"];
-    if (!allowed.includes(ext)) {
-      return { success: false, message: "Formato non supportato. Usa JPG, PNG o WebP." };
+    const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowedMimeTypes.includes(imageFile.type)) {
+      return { success: false, message: "Formato non supportato. Usa JPG, PNG, WebP o GIF." };
     }
 
-    const path = `avatars/${user.id}/${Date.now()}.${ext}`;
-    const { error: uploadError } = await supabase.storage
-      .from(AVATARS_GALLERY_BUCKET)
-      .upload(path, imageFile, { contentType: imageFile.type, upsert: false });
-
-    if (uploadError) {
-      console.error("[createAvatarFromUpload] upload", uploadError);
-      return { success: false, message: uploadError.message ?? "Errore upload immagine." };
+    let imageUrl = "";
+    try {
+      const fileId = await uploadToTelegram(imageFile);
+      imageUrl = `/api/tg-image/${encodeURIComponent(fileId)}`;
+    } catch (uploadErr) {
+      console.error("[createAvatarFromUpload] telegram upload", uploadErr);
+      return {
+        success: false,
+        message:
+          uploadErr instanceof Error
+            ? uploadErr.message
+            : "Errore durante il caricamento immagine su Telegram.",
+      };
     }
-
-    const { data: urlData } = supabase.storage.from(AVATARS_GALLERY_BUCKET).getPublicUrl(path);
-    const imageUrl = urlData.publicUrl;
 
     const upsertRes = await upsertAvatar({
       name,

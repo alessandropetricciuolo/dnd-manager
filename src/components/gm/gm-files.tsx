@@ -13,6 +13,7 @@ import {
   deleteGmAttachment,
   type GmAttachmentRow,
 } from "@/app/campaigns/gm-actions";
+import { uploadFileToTelegram } from "@/app/actions/upload-telegram";
 import { createSupabaseBrowserClient } from "@/utils/supabase/client";
 
 const GM_FILES_BUCKET = "gm_files";
@@ -65,24 +66,39 @@ export function GmFiles({ campaignId }: GmFilesProps) {
     setUploading(true);
     const safeName = sanitizeFileName(file.name);
     const path = `${campaignId}/${crypto.randomUUID()}-${safeName}`;
-    const supabase = createSupabaseBrowserClient();
+    const isImage = file.type.startsWith("image/");
+    let storedPath = path;
 
-    const { error: uploadError } = await supabase.storage
-      .from(GM_FILES_BUCKET)
-      .upload(path, file, {
-        contentType: file.type || "application/octet-stream",
-        upsert: false,
-      });
+    if (isImage && file.size <= 4 * 1024 * 1024) {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", "document");
+      const telegramResult = await uploadFileToTelegram(formData);
+      if (!telegramResult.success) {
+        setUploading(false);
+        toast.error(telegramResult.error);
+        return;
+      }
+      storedPath = `tg:${telegramResult.fileId}`;
+    } else {
+      const supabase = createSupabaseBrowserClient();
+      const { error: uploadError } = await supabase.storage
+        .from(GM_FILES_BUCKET)
+        .upload(path, file, {
+          contentType: file.type || "application/octet-stream",
+          upsert: false,
+        });
 
-    if (uploadError) {
-      setUploading(false);
-      toast.error(uploadError.message ?? "Errore nel caricamento su Storage.");
-      return;
+      if (uploadError) {
+        setUploading(false);
+        toast.error(uploadError.message ?? "Errore nel caricamento su Storage.");
+        return;
+      }
     }
 
     const result = await registerGmFileAfterUpload(
       campaignId,
-      path,
+      storedPath,
       file.name,
       file.type || null,
       file.size
@@ -139,7 +155,7 @@ export function GmFiles({ campaignId }: GmFilesProps) {
         </form>
       </div>
       <p className="text-xs text-slate-500">
-        I file vengono caricati direttamente su Supabase Storage (nessun limite da 4 MB).
+        Le immagini fino a 4 MB vengono salvate su Telegram. Gli altri file restano su Supabase Storage.
       </p>
 
       {loading ? (

@@ -168,6 +168,33 @@ function splitNarrativeAndMechanics(raw: string): { description: string; statblo
   return { description, statblock };
 }
 
+function sanitizeMarkdownResponse(raw: string): string {
+  return raw
+    .replace(/^```markdown\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+}
+
+function looksLikePromptLeakage(text: string): boolean {
+  const t = text.toLowerCase();
+  return (
+    t.includes("as per format standard") ||
+    t.includes("they said") ||
+    t.includes("actually they said") ||
+    t.includes("means we should") ||
+    t.includes("possibly they want")
+  );
+}
+
+function hasStrictNarrativeMechanicsSections(text: string): boolean {
+  const narrative = text.match(/\[NARRATIVA\]([\s\S]*?)\[MECCANICA\]/i);
+  const mechanics = text.match(/\[MECCANICA\]([\s\S]*)/i);
+  const narrativeBody = narrative?.[1]?.trim() ?? "";
+  const mechanicsBody = mechanics?.[1]?.trim() ?? "";
+  return narrativeBody.length > 12 && mechanicsBody.length > 12;
+}
+
 function filterRowsByExcludedManuals<T extends { metadata?: unknown }>(rows: T[], excluded: string[]): T[] {
   if (!excluded.length) return rows;
   const ex = new Set(excluded);
@@ -581,7 +608,28 @@ export async function generateWikiMarkdownAction(
 
     let markdown = "";
     try {
-      markdown = prebuiltMarkdown ?? (await generateAiText(prompt)).trim();
+      if (prebuiltMarkdown) {
+        markdown = prebuiltMarkdown;
+      } else {
+        const first = sanitizeMarkdownResponse((await generateAiText(prompt)).trim());
+        const firstBad = looksLikePromptLeakage(first) || !hasStrictNarrativeMechanicsSections(first);
+        if (!firstBad || first === "NO_TECHNICAL_DATA") {
+          markdown = first;
+        } else {
+          const repairPrompt = [
+            "Correggi l'output precedente: era fuori formato o includeva meta-ragionamento.",
+            "Regole NON negoziabili:",
+            "1) Inizia ESATTAMENTE con [NARRATIVA] come prima riga.",
+            "2) Poi inserisci [MECCANICA] e solo contenuto meccanico pertinente.",
+            "3) Nessun commento sul prompt, nessun 'they said', nessun testo meta.",
+            "4) Mantieni lo stesso contenuto utile, ripulito e ben formattato.",
+            "",
+            "OUTPUT DA CORREGGERE:",
+            first,
+          ].join("\n");
+          markdown = sanitizeMarkdownResponse((await generateAiText(repairPrompt)).trim());
+        }
+      }
     } catch (err) {
       const msg =
         err instanceof HuggingFaceInferenceError
@@ -592,11 +640,7 @@ export async function generateWikiMarkdownAction(
       return { success: false, message: msg };
     }
 
-    const normalized = markdown
-      .replace(/^```markdown\s*/i, "")
-      .replace(/^```\s*/i, "")
-      .replace(/\s*```$/i, "")
-      .trim();
+    const normalized = sanitizeMarkdownResponse(markdown);
 
     if (normalized === "NO_TECHNICAL_DATA") {
       return {
@@ -607,6 +651,14 @@ export async function generateWikiMarkdownAction(
 
     if (!normalized) {
       return { success: false, message: "Il modello non ha restituito contenuto markdown." };
+    }
+
+    if (looksLikePromptLeakage(normalized)) {
+      return {
+        success: false,
+        message:
+          "Il modello ha restituito un output fuori formato (meta-ragionamento). Riprova: il sistema ha bloccato la risposta non valida.",
+      };
     }
 
     const { description, statblock } = splitNarrativeAndMechanics(normalized);

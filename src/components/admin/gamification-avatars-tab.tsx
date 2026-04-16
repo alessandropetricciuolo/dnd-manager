@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { CompressedImageUpload } from "@/components/ui/compressed-image-upload";
 import { createAvatarFromUpload } from "@/app/admin/gamification/actions";
 import { deleteAvatar } from "@/lib/actions/gamification";
 import Image from "next/image";
@@ -50,6 +51,7 @@ export function GamificationAvatarsTab({ avatars, achievements }: Props) {
       toast.error(message);
       return;
     }
+    setUploadError(null);
 
     if (!isDefault && selectedAchievementId) {
       formData.set("required_achievement_id", selectedAchievementId);
@@ -121,33 +123,15 @@ export function GamificationAvatarsTab({ avatars, achievements }: Props) {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="avatar-image" className="text-barber-paper/90">
-                  Immagine
-                </Label>
-                <Input
-                  id="avatar-image"
+                <CompressedImageUpload
                   name="image"
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  className="border-barber-gold/30 bg-barber-dark/80 text-barber-paper file:mr-2 file:rounded file:border-0 file:bg-barber-gold/20 file:px-3 file:py-1.5 file:text-barber-gold file:text-sm"
+                  label="Immagine"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
                   disabled={isPending}
-                  onChange={(event) => {
-                    const file = event.currentTarget.files?.[0] ?? null;
-                    if (!file) {
-                      setUploadError(null);
-                      return;
-                    }
-                    if (file.size <= MAX_AVATAR_UPLOAD_BYTES) {
-                      setUploadError(null);
-                      return;
-                    }
-                    const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
-                    const maxMb = (MAX_AVATAR_UPLOAD_BYTES / (1024 * 1024)).toFixed(0);
-                    setUploadError(`File troppo grande (${sizeMb}MB). Limite upload: ${maxMb}MB.`);
-                  }}
                   required
+                  hint="L'immagine viene compressa automaticamente prima del caricamento."
                 />
-                <p className="text-xs text-barber-paper/60">Consigliato massimo 3MB.</p>
+                <p className="text-xs text-barber-paper/60">Consigliato massimo 3MB (post-compressione).</p>
                 {uploadError ? <p className="text-xs text-red-400">{uploadError}</p> : null}
               </div>
               <div className="space-y-3 rounded-lg border border-barber-gold/30 bg-barber-dark/60 p-3">
