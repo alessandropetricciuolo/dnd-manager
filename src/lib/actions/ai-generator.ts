@@ -195,7 +195,8 @@ export async function generateContextualPortraitAction(
     }
 
     step = "telegram-upload";
-    const file = new File([buffer], `${entityType}.png`, { type: "image/png" });
+    const bytes = new Uint8Array(buffer);
+    const file = new File([bytes], `${entityType}.png`, { type: "image/png" });
     const fileId = await uploadToTelegram(file, `${campaignId}:${entityType}`, "photo");
     const publicUrl = `/api/tg-image/${encodeURIComponent(fileId)}`;
 
