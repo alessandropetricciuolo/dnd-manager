@@ -40,6 +40,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { forceCharacterTimeSync } from "@/app/campaigns/character-actions";
+import { parseRulesSnapshot } from "@/lib/character-rules-snapshot";
+import { backgroundBySlug, raceBySlug } from "@/lib/character-build-catalog";
 
 const PLACEHOLDER_AVATAR = "https://placehold.co/200x280/1c1917/fbbf24/png?text=PG";
 
@@ -49,6 +51,30 @@ type CharacterCardGmProps = {
   isLongCampaign?: boolean;
   autoOpenEdit?: boolean;
 };
+
+function RulesTip({ label, body }: { label: string; body: string }) {
+  const t = body.trim();
+  if (!t) return <span className="text-barber-paper/80">{label}</span>;
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <span
+          role="button"
+          tabIndex={0}
+          className="cursor-help border-b border-dotted border-barber-gold/50 text-barber-paper/90 hover:text-barber-gold"
+        >
+          {label}
+        </span>
+      </PopoverTrigger>
+      <PopoverContent
+        side="bottom"
+        className="max-h-72 w-[min(92vw,34rem)] overflow-y-auto whitespace-pre-wrap border-barber-gold/30 bg-barber-dark px-3 py-2 text-xs leading-relaxed text-barber-paper"
+      >
+        {t}
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, autoOpenEdit = false }: CharacterCardGmProps) {
   const router = useRouter();
@@ -88,6 +114,11 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
   const backgroundForSheet = character.background?.trim()
     ? character.background
     : null;
+  const snap = parseRulesSnapshot(character.rules_snapshot ?? null);
+  const raceDef = raceBySlug(character.race_slug ?? null);
+  const raceLabel = raceDef?.label ?? null;
+  const subraceLabel = raceDef?.subraces?.find((s) => s.slug === character.subclass_slug)?.label ?? null;
+  const bgRulesLabel = backgroundBySlug(character.background_slug ?? null)?.label ?? null;
 
   useEffect(() => {
     if (autoOpenEdit) setEditOpen(true);
@@ -407,6 +438,33 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
             <div>
               <h2 className="text-xl font-semibold text-barber-paper">{character.name}</h2>
               <p className="text-sm text-muted-foreground">Assegnato: {currentLabel}</p>
+              <div className="mt-1 text-xs text-barber-paper/80">
+                {raceLabel ? (
+                  <>
+                    <RulesTip label={subraceLabel ?? raceLabel} body={subraceLabel ? (snap?.subraceTraitsMd ?? "") : (snap?.raceTraitsMd ?? "")} />
+                    {" · "}
+                  </>
+                ) : null}
+                <RulesTip label={classLabel} body={snap?.classPrivilegesMd ?? ""} />
+                {character.class_subclass?.trim() ? (
+                  <>
+                    {" · "}
+                    <RulesTip label={character.class_subclass.trim()} body={snap?.classSubclassMd ?? ""} />
+                  </>
+                ) : null}
+                {snap?.spellcastingMd || snap?.spellsListMd ? (
+                  <>
+                    {" · "}
+                    <RulesTip label="Incantesimi" body={[snap?.spellcastingMd, snap?.spellsListMd].filter(Boolean).join("\n\n")} />
+                  </>
+                ) : null}
+                {bgRulesLabel ? (
+                  <>
+                    {" · "}
+                    <RulesTip label={`PHB: ${bgRulesLabel}`} body={snap?.backgroundRulesMd ?? ""} />
+                  </>
+                ) : null}
+              </div>
             </div>
             <dl className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
               <div className="rounded-md border border-barber-gold/25 bg-barber-dark/80 px-2 py-1.5">
