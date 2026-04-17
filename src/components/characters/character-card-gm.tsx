@@ -287,6 +287,42 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
             </div>
             <div className="min-w-0 flex-1 pr-10">
               <h3 className="truncate font-semibold text-barber-paper">{character.name}</h3>
+              <div className="mt-0.5 min-h-4 truncate text-[10px] text-barber-paper/75 sm:text-[11px]">
+                {raceLabel ? (
+                  <>
+                    <RulesTip
+                      label={subraceLabel ?? raceLabel}
+                      body={subraceLabel ? (snap?.subraceTraitsMd ?? "") : (snap?.raceTraitsMd ?? "")}
+                    />
+                    {" · "}
+                  </>
+                ) : null}
+                <RulesTip label={classLabel} body={snap?.classPrivilegesMd ?? ""} />
+                {character.class_subclass?.trim() ? (
+                  <>
+                    {" · "}
+                    <RulesTip
+                      label={character.class_subclass.trim()}
+                      body={snap?.classSubclassMd ?? ""}
+                    />
+                  </>
+                ) : null}
+                {snap?.spellcastingMd || snap?.spellsListMd ? (
+                  <>
+                    {" · "}
+                    <RulesTip
+                      label="Incantesimi"
+                      body={[snap?.spellcastingMd, snap?.spellsListMd].filter(Boolean).join("\n\n")}
+                    />
+                  </>
+                ) : null}
+                {bgRulesLabel ? (
+                  <>
+                    {" · "}
+                    <RulesTip label={`PHB: ${bgRulesLabel}`} body={snap?.backgroundRulesMd ?? ""} />
+                  </>
+                ) : null}
+              </div>
               <dl className="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px] text-barber-paper/75 sm:text-xs">
                 <div className="flex justify-between gap-1">
                   <dt className="text-muted-foreground">Classe</dt>
