@@ -3,6 +3,7 @@ import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { readExcludedManualBookKeysFromAiContextJson } from "@/lib/campaign-ai-context";
 import type { Json } from "@/types/database.types";
 import {
+  CLASS_OPTIONS,
   PHB_BOOK_KEY,
   PHB_MD_FILE,
   backgroundBySlug,
@@ -12,7 +13,7 @@ import {
 } from "@/lib/character-build-catalog";
 import type { CharacterRulesSnapshotV1 } from "@/lib/character-rules-snapshot";
 import { wikiManualBookLabel } from "@/lib/manual-book-catalog";
-import { matchSupplementSubclass } from "@/lib/character-subclass-catalog";
+import { matchSupplementSubclass, supplementSubclassesForClass } from "@/lib/character-subclass-catalog";
 import {
   extractClassPrivilegesMarkdown,
 } from "@/lib/server/phb-class-privileges-excerpt";
@@ -264,12 +265,21 @@ function sanitizeRulesExcerpt(md: string): string {
     if (/^!\[[^\]]*\]\([^)]+\)\s*$/i.test(s)) continue;
     if (/^scansionato con camscanner\b/i.test(s)) continue;
     if (/^CAPITOLO\s+\d+\s*\|/i.test(s)) continue;
+    if (/^TASHA$/i.test(s)) continue;
     if (/^\d{1,4}$/.test(s)) continue;
     cleaned.push(line);
   }
   t = cleaned.join("\n");
   t = t.replace(/\n{3,}/g, "\n\n").trim();
   return t;
+}
+
+function stripOptionalHumanTraits(md: string): string {
+  const txt = md.replace(/\r/g, "");
+  const marker = /^(?:\s*>\s*)+#{1,6}\s*TRATTI UMANI ALTERNATIVI\b.*$/im;
+  const m = marker.exec(txt);
+  if (!m || m.index < 0) return txt.trim();
+  return txt.slice(0, m.index).trim();
 }
 
 /** Il primo titolo ATX del testo deve essere l’incantesimo richiesto (evita chunk «BENEDIZIONE DELL'OSCURO» per «Benedizione»). */
@@ -547,7 +557,8 @@ function clipBackgroundRules(md: string): string {
 function inferUnlockLevel(text: string): number {
   const t = text.replace(/\r/g, " ");
   const m =
-    t.match(/\b(?:a partire dal|al|all['’])\s+(\d+)\s*°\s*livello\b/i) ??
+    t.match(/\b(?:a partire dal|al)\s+(\d+)\s*[°º]?\s*livello\b/i) ??
+    t.match(/\b(?:dall['’]|all['’])\s*(\d+)\s*[°º]?\s*livello\b/i) ??
     t.match(/\b(?:quando arriva al)\s+(\d+)\s*°\s*livello\b/i) ??
     t.match(/\b(?:poi di nuovo all['’])\s+(\d+)\s*°\s*livello\b/i);
   const n = m?.[1] ? Number.parseInt(m[1], 10) : 1;
@@ -555,49 +566,152 @@ function inferUnlockLevel(text: string): number {
   return n;
 }
 
+function phbClassChapterH1StopNorms(excludeParentClassLabel: string | null | undefined): Set<string> {
+  const set = new Set<string>();
+  for (const c of CLASS_OPTIONS) set.add(normalizeHeadingForMatch(c.label));
+  if (excludeParentClassLabel?.trim()) set.delete(normalizeHeadingForMatch(excludeParentClassLabel));
+  return set;
+}
+
+function siblingSubclassStopHeadings(parentClassLabel: string, currentSubclassLabel: string): string[] {
+  const cur = currentSubclassLabel
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  return supplementSubclassesForClass(parentClassLabel)
+    .filter((e) => {
+      const lab = e.label
+        .trim()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+      return lab !== cur;
+    })
+    .flatMap((e) => e.sectionHeadings);
+}
+
+function extractSubclassSectionMarkdown(
+  raw: string,
+  sectionHeadings: string[],
+  stopHeadingNorms: string[],
+  parentClassLabel?: string | null
+): string {
+  const txt = raw.replace(/\r/g, "");
+  if (!txt.trim()) return "";
+  const targets = sectionHeadings.map(normalizeHeadingForMatch).filter(Boolean);
+  if (!targets.length) return "";
+  const stops = new Set(stopHeadingNorms.map(normalizeHeadingForMatch).filter(Boolean));
+  const classChapterStops = phbClassChapterH1StopNorms(parentClassLabel);
+  const lines = txt.split("\n");
+  let startIdx = -1;
+  for (let i = 0; i < lines.length; i += 1) {
+    const ht = headingTextRaw(lines[i]);
+    if (!ht) continue;
+    if (!targets.includes(normalizeHeadingForMatch(ht))) continue;
+    if (startIdx < 0 || i < startIdx) startIdx = i;
+  }
+  if (startIdx < 0) return "";
+
+  let endIdx = lines.length;
+  for (let i = startIdx + 1; i < lines.length; i += 1) {
+    const ht = headingTextRaw(lines[i]);
+    const lv = headingLevel(lines[i]);
+    if (!lv || !ht) continue;
+    const n = normalizeHeadingForMatch(ht);
+    if (stops.has(n)) {
+      endIdx = i;
+      break;
+    }
+    if (lv === 1 && classChapterStops.has(n)) {
+      endIdx = i;
+      break;
+    }
+  }
+  return lines.slice(startIdx, endIdx).join("\n").trim();
+}
+
 function filterClassRulesByLevel(md: string, level: number): string {
   const src = md.replace(/\r/g, "").trim();
   if (!src) return "";
+  const omittedStaticSections = new Set([
+    "PUNTI FERITA",
+    "COMPETENZE",
+    "EQUIPAGGIAMENTO",
+    "INCANTESIMI",
+    "TRUCCHETTI",
+    "SLOT INCANTESIMO",
+    "INCANTESIMI CONOSCIUTI DI 1 LIVELLO E DI LIVELLO SUPERIORE",
+    "PREPARARE E LANCIARE INCANTESIMI",
+    "PREPARARE GLI INCANTESIMI",
+    "LANCIARE INCANTESIMI",
+    "INCANTESIMI PREPARATI",
+    "CARATTERISTICA DA INCANTATORE",
+    "CARATTERISTICA DA LANCIO DEGLI INCANTESIMI",
+    "CD TIRO SALVEZZA INCANTESIMI",
+    "MODIFICATORE DI ATTACCO INCANTESIMI",
+    "CELEBRARE RITUALI",
+    "LANCIO RITUALE",
+    "LANCIARE COME RITUALE",
+    "FOCUS DA INCANTATORE",
+    "FOCUS ARCANO",
+    "FOCUS DRUIDICO",
+    "FOCUS SACRO",
+  ]);
+  const skippedIntroHeadings = new Set(["PRIVILEGI DI CLASSE"]);
   const lines = src.split("\n");
-  const out: string[] = [];
-  let i = 0;
+  const kept: string[] = [];
+  let currentHeading: string | null = null;
+  let currentLines: string[] = [];
+  const seenHeadings = new Set<string>();
 
-  while (i < lines.length && !/^#{1,6}\s+/.test(lines[i].trim())) {
-    out.push(lines[i]);
-    i += 1;
+  function flushSection() {
+    if (!currentHeading) {
+      currentLines = [];
+      return;
+    }
+    const headingNorm = normalizeHeadingForMatch(currentHeading);
+    if (omittedStaticSections.has(headingNorm) || skippedIntroHeadings.has(headingNorm)) {
+      currentHeading = null;
+      currentLines = [];
+      return;
+    }
+    if (seenHeadings.has(headingNorm)) {
+      currentHeading = null;
+      currentLines = [];
+      return;
+    }
+    const body = currentLines.join("\n").trim();
+    if (!body) {
+      currentHeading = null;
+      currentLines = [];
+      return;
+    }
+    const unlock = inferUnlockLevel(body);
+    if (unlock > level) {
+      currentHeading = null;
+      currentLines = [];
+      return;
+    }
+    seenHeadings.add(headingNorm);
+    kept.push(`### ${currentHeading}\n\n${body}`);
+    currentHeading = null;
+    currentLines = [];
   }
 
-  type Section = { heading: string; body: string[] };
-  const sections: Section[] = [];
-  while (i < lines.length) {
-    if (!/^#{1,6}\s+/.test(lines[i].trim())) {
-      if (sections.length === 0) {
-        out.push(lines[i]);
-      } else {
-        sections[sections.length - 1].body.push(lines[i]);
-      }
-      i += 1;
+  for (const line of lines) {
+    const h = line.match(/^(#{1,3})\s+(.+?)\s*$/);
+    if (h) {
+      flushSection();
+      currentHeading = h[2].trim();
       continue;
     }
-    const heading = lines[i];
-    i += 1;
-    const body: string[] = [];
-    while (i < lines.length && !/^#{1,6}\s+/.test(lines[i].trim())) {
-      body.push(lines[i]);
-      i += 1;
-    }
-    sections.push({ heading, body });
+    if (!currentHeading) continue;
+    currentLines.push(line);
   }
+  flushSection();
 
-  for (const sec of sections) {
-    const unlock = inferUnlockLevel([sec.heading, ...sec.body].join("\n"));
-    if (unlock <= level) {
-      if (out.length > 0 && out[out.length - 1].trim() !== "") out.push("");
-      out.push(sec.heading, ...sec.body);
-    }
-  }
-
-  return out.join("\n").trim();
+  return kept.join("\n\n").trim();
 }
 
 function parseSpellNamesFromList(md: string): string[] {
@@ -842,7 +956,7 @@ export async function recomputeCharacterRulesSnapshot(input: {
       const narrowed = extractSectionByHeadingsMarkdown(raceTraitsMd, [raceDef.traitsSectionHeading]);
       if (narrowed.trim()) raceTraitsMd = narrowed;
     }
-    raceTraitsMd = sanitizeRulesExcerpt(raceTraitsMd);
+    raceTraitsMd = sanitizeRulesExcerpt(stripOptionalHumanTraits(raceTraitsMd));
     if (!raceTraitsMd.trim()) warnings.push(`Tratti razza non trovati in manuals_knowledge per «${raceDef.label}».`);
   }
 
@@ -914,6 +1028,7 @@ export async function recomputeCharacterRulesSnapshot(input: {
   let classSubclassMd: string | null = null;
   if (classDef && input.classSubclass?.trim()) {
     const sub = input.classSubclass.trim();
+    const subclassStops = siblingSubclassStopHeadings(classDef.label, sub);
     const matched = matchSupplementSubclass(classDef.label, sub);
     if (matched?.supplementRulesSource && excluded.includes(matched.supplementRulesSource.manualBookKey)) {
       warnings.push(
@@ -931,7 +1046,16 @@ export async function recomputeCharacterRulesSnapshot(input: {
     if (matched) {
       await preloadManualMarkdownFile(matched.supplementRulesSource.markdownFile, await resolveRequestOriginForPhb());
       const md = getManualMarkdownByFileName(matched.supplementRulesSource.markdownFile);
-      const fromMd = extractSectionByHeadingsMarkdown(md, matched.sectionHeadings);
+      const fromMd =
+        extractSubclassSectionMarkdown(md, matched.sectionHeadings, subclassStops, classDef.label) ||
+        extractSectionByHeadingsMarkdown(md, matched.sectionHeadings);
+      if (fromMd.trim()) rawSubclass = fromMd;
+    } else {
+      await preloadManualMarkdownFile(PHB_MD_FILE, await resolveRequestOriginForPhb());
+      const md = getManualMarkdownByFileName(PHB_MD_FILE);
+      const fromMd =
+        extractSubclassSectionMarkdown(md, [sub.toUpperCase()], subclassStops, classDef.label) ||
+        extractSectionByHeadingsMarkdown(md, [sub.toUpperCase()]);
       if (fromMd.trim()) rawSubclass = fromMd;
     }
     for (const h of headings) {
@@ -953,10 +1077,6 @@ export async function recomputeCharacterRulesSnapshot(input: {
     }
     if (!rawSubclass.trim()) {
       rawSubclass = mergeMdChunks(await fetchRowsContentIlike(admin, `%${sub}%`, excluded, null));
-    }
-    if (rawSubclass.trim() && headings.length > 0) {
-      const narrowed = extractSectionByHeadingsMarkdown(rawSubclass, headings);
-      if (narrowed.trim()) rawSubclass = narrowed;
     }
     classSubclassMd = rawSubclass.trim() ? sanitizeRulesExcerpt(filterClassRulesByLevel(rawSubclass, level)) : null;
     if (!classSubclassMd?.trim()) {

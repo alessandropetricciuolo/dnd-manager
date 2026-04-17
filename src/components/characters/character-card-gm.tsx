@@ -52,6 +52,126 @@ type CharacterCardGmProps = {
   autoOpenEdit?: boolean;
 };
 
+function renderRichTooltipText(text: string) {
+  const cleanInline = (s: string): string =>
+    s
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
+      .replace(/\*([^*]+)\*/g, "$1")
+      .replace(/\*\*/g, "")
+      .replace(/^[-*]\s+/, "")
+      .trimEnd();
+  const stripTags = (s: string): string =>
+    cleanInline(
+      s
+        .replace(/<br\s*\/?>/gi, " ")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+    );
+  const lines = text.replace(/\r/g, "").split("\n");
+  const nodes: JSX.Element[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i]?.trimEnd() ?? "";
+    if (/^\s*<table[\s>]/i.test(line)) {
+      const tableLines: string[] = [line];
+      i += 1;
+      while (i < lines.length) {
+        tableLines.push(lines[i] ?? "");
+        if (/<\/table>\s*$/i.test(lines[i] ?? "")) {
+          i += 1;
+          break;
+        }
+        i += 1;
+      }
+      const tableHtml = tableLines.join("\n");
+      const rowMatches = Array.from(tableHtml.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi));
+      const rows = rowMatches.map((m) => {
+        const cells = Array.from(m[1].matchAll(/<(th|td)[^>]*>([\s\S]*?)<\/\1>/gi));
+        return cells.map((c) => stripTags(c[2] ?? ""));
+      });
+      const header = rows.find((r) => r.length > 0) ?? [];
+      const body = rows.slice(header.length ? 1 : 0).filter((r) => r.length > 0);
+      if (header.length || body.length) {
+        nodes.push(
+          <div key={`tbl-${i}`} className="overflow-x-auto rounded border border-barber-gold/20">
+            <table className="min-w-full border-collapse text-[11px]">
+              {header.length ? (
+                <thead className="bg-barber-gold/10 text-barber-gold">
+                  <tr>
+                    {header.map((h, hIdx) => (
+                      <th key={`h-${hIdx}`} className="border-b border-barber-gold/20 px-2 py-1 text-left font-semibold">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+              ) : null}
+              {body.length ? (
+                <tbody>
+                  {body.map((row, rIdx) => (
+                    <tr key={`r-${rIdx}`} className="border-t border-barber-gold/10">
+                      {row.map((cell, cIdx) => (
+                        <td key={`c-${rIdx}-${cIdx}`} className="px-2 py-1 text-barber-paper/95">
+                          {cell}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              ) : null}
+            </table>
+          </div>
+        );
+      }
+      continue;
+    }
+
+    const heading = line.match(/^\s*#+\s*(.+)$/);
+    if (heading) {
+      nodes.push(
+        <p key={`ln-${i}`} className="font-semibold text-barber-gold">
+          {cleanInline(heading[1] ?? "")}
+        </p>
+      );
+      i += 1;
+      continue;
+    }
+    const listItem = line.match(/^\s*\*\s+(\S.*)$/);
+    if (listItem) {
+      nodes.push(
+        <p key={`ln-${i}`} className="flex gap-2 text-barber-paper">
+          <span className="shrink-0 text-barber-gold/85" aria-hidden>
+            •
+          </span>
+          <span className="min-w-0">{cleanInline(listItem[1] ?? "")}</span>
+        </p>
+      );
+      i += 1;
+      continue;
+    }
+    const leadBold = line.match(/^\s*\*\*([^*]+)\*\*\s*(.*)$/);
+    if (leadBold) {
+      const rest = [leadBold[1], leadBold[2]].filter(Boolean).join(" ").trim();
+      nodes.push(
+        <p key={`ln-${i}`} className="font-semibold text-barber-paper">
+          {cleanInline(rest)}
+        </p>
+      );
+      i += 1;
+      continue;
+    }
+    nodes.push(
+      <p key={`ln-${i}`} className="text-barber-paper">
+        {cleanInline(line)}
+      </p>
+    );
+    i += 1;
+  }
+
+  return <div className="space-y-1">{nodes}</div>;
+}
+
 function RulesTip({ label, body }: { label: string; body: string }) {
   const t = body.trim();
   if (!t) return <span className="text-barber-paper/80">{label}</span>;
@@ -70,7 +190,70 @@ function RulesTip({ label, body }: { label: string; body: string }) {
         side="bottom"
         className="max-h-72 w-[min(92vw,34rem)] overflow-y-auto whitespace-pre-wrap border-barber-gold/30 bg-barber-dark px-3 py-2 text-xs leading-relaxed text-barber-paper"
       >
-        {t}
+        {renderRichTooltipText(t)}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function SpellsTip({
+  listText,
+  details,
+}: {
+  listText: string;
+  details: Record<string, string> | null | undefined;
+}) {
+  const txt = listText.trim();
+  if (!txt) return null;
+  const detailMap = details ?? {};
+  const parseLines = txt.replace(/\r/g, "").split("\n");
+  const normalize = (s: string) => s.trim().toLocaleLowerCase("it");
+  const detailByNorm = new Map<string, { label: string; body: string }>(
+    Object.entries(detailMap).map(([k, v]) => [normalize(k), { label: k, body: v }])
+  );
+
+  const renderedRows = parseLines.map((raw, idx) => {
+    const line = raw.trim();
+    if (!line) return <div key={`sp-empty-${idx}`} className="h-1" />;
+    if (/^#{1,6}\s+/.test(line)) {
+      return (
+        <p key={`sp-h-${idx}`} className="font-semibold text-barber-gold">
+          {line.replace(/^#{1,6}\s+/, "")}
+        </p>
+      );
+    }
+    const hit = detailByNorm.get(normalize(line));
+    if (!hit) {
+      return (
+        <p key={`sp-t-${idx}`} className="text-barber-paper">
+          {line}
+        </p>
+      );
+    }
+    return (
+      <details key={`sp-d-${idx}`} className="rounded border border-barber-gold/20 bg-black/20 p-1.5">
+        <summary className="cursor-pointer text-barber-gold/90">{hit.label}</summary>
+        <div className="mt-2 text-barber-paper/90">{renderRichTooltipText(hit.body)}</div>
+      </details>
+    );
+  });
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <span
+          role="button"
+          tabIndex={0}
+          className="cursor-help border-b border-dotted border-barber-gold/50 text-barber-paper/90 hover:text-barber-gold"
+        >
+          Incantesimi
+        </span>
+      </PopoverTrigger>
+      <PopoverContent
+        side="bottom"
+        className="max-h-[75vh] w-[min(95vw,40rem)] overflow-y-auto border-barber-gold/30 bg-barber-dark px-3 py-2 text-left text-xs leading-relaxed text-barber-paper"
+      >
+        <div className="space-y-1">{renderedRows}</div>
       </PopoverContent>
     </Popover>
   );
@@ -287,7 +470,7 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
             </div>
             <div className="min-w-0 flex-1 pr-10">
               <h3 className="truncate font-semibold text-barber-paper">{character.name}</h3>
-              <div className="mt-0.5 min-h-4 truncate text-[10px] text-barber-paper/75 sm:text-[11px]">
+              <div className="mt-0.5 min-h-4 text-[10px] leading-tight text-barber-paper/75 sm:text-[11px]">
                 {raceLabel ? (
                   <>
                     <RulesTip
@@ -310,9 +493,9 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
                 {snap?.spellcastingMd || snap?.spellsListMd ? (
                   <>
                     {" · "}
-                    <RulesTip
-                      label="Incantesimi"
-                      body={[snap?.spellcastingMd, snap?.spellsListMd].filter(Boolean).join("\n\n")}
+                    <SpellsTip
+                      listText={[snap?.spellcastingMd, snap?.spellsListMd].filter(Boolean).join("\n\n")}
+                      details={snap?.spellsDetailsMd}
                     />
                   </>
                 ) : null}
@@ -491,7 +674,10 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
                 {snap?.spellcastingMd || snap?.spellsListMd ? (
                   <>
                     {" · "}
-                    <RulesTip label="Incantesimi" body={[snap?.spellcastingMd, snap?.spellsListMd].filter(Boolean).join("\n\n")} />
+                    <SpellsTip
+                      listText={[snap?.spellcastingMd, snap?.spellsListMd].filter(Boolean).join("\n\n")}
+                      details={snap?.spellsDetailsMd}
+                    />
                   </>
                 ) : null}
                 {bgRulesLabel ? (
