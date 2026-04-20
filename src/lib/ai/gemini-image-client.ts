@@ -128,6 +128,24 @@ function isGeminiUnsupportedModelError(status: number, bodyText: string): boolea
   );
 }
 
+/**
+ * I modelli image-generation di Gemini non sono inclusi nel free tier: Google li
+ * espone con `limit: 0` finché sul progetto non è attivo il billing. In questo
+ * caso la risposta è un 429 "quota exceeded / free_tier… limit: 0" e non ha
+ * senso retryare: il piano dell'account non lo consente proprio.
+ */
+function isGeminiFreeTierNoAccess(status: number, bodyText: string): boolean {
+  if (status !== 429) return false;
+  const lower = bodyText.toLowerCase();
+  return lower.includes("free_tier") && /limit[:\s]+0/.test(lower);
+}
+
+const GEMINI_BILLING_REQUIRED_MESSAGE_IT =
+  "Gemini: i modelli di generazione immagini (Nano Banana / gemini-2.5-flash-image, Imagen) " +
+  "non sono inclusi nel free tier. Per usarli devi abilitare il billing sul progetto Google Cloud " +
+  "collegato alla tua API key (console.cloud.google.com → Billing). " +
+  "In alternativa, seleziona \"Hugging Face\" dal menu Provider immagine.";
+
 async function callGeminiGenerateContent(
   apiKey: string,
   model: string,
@@ -239,7 +257,11 @@ export async function generateGeminiImage(
         console.warn(`[generateGeminiImage] modello "${model}" non disponibile, provo il successivo.`);
         continue;
       }
-      /** Errori non recuperabili (auth, quota, safety): fail immediato. */
+      if (isGeminiFreeTierNoAccess(res.status, bodyText)) {
+        console.error("[generateGeminiImage] billing non attivo per image-gen:", bodyText.slice(0, 400));
+        throw new GeminiImageError(GEMINI_BILLING_REQUIRED_MESSAGE_IT, { status: 402 });
+      }
+      /** Errori non recuperabili (auth, quota diversa da free-tier, safety): fail immediato. */
       const msg = data?.error?.message ?? bodyText.slice(0, 500);
       throw new GeminiImageError(`Gemini HTTP ${res.status}: ${msg}`, { status: res.status });
     }
