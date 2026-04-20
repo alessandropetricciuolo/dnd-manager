@@ -70,10 +70,17 @@ export const PHB_MD_FILE = "manuale_giocatore.md";
 export const PHB_BOOK_KEY = "player_handbook" as const;
 export const MPMM_MD_FILE = "Mostri del multiverso.md";
 export const MPMM_BOOK_KEY = "mordenkainen_multiverse" as const;
+export const EBERRON_MD_FILE = "eberron.md";
+export const EBERRON_BOOK_KEY = "eberron" as const;
 
 const MPMM_SOURCE: ClassSupplementRulesSource = {
   markdownFile: MPMM_MD_FILE,
   manualBookKey: MPMM_BOOK_KEY,
+};
+
+const EBERRON_SOURCE: ClassSupplementRulesSource = {
+  markdownFile: EBERRON_MD_FILE,
+  manualBookKey: EBERRON_BOOK_KEY,
 };
 
 export const RACE_OPTIONS: RaceCatalogEntry[] = [
@@ -173,6 +180,13 @@ export const RACE_OPTIONS: RaceCatalogEntry[] = [
   { slug: "tritone", label: "Tritone", traitsSectionHeading: "TRATTI DEL TRITONE", supplementRulesSource: MPMM_SOURCE },
   { slug: "urgoblin", label: "Urgoblin", traitsSectionHeading: "TRATTI DELL'URGOBLIN", supplementRulesSource: MPMM_SOURCE },
   { slug: "yuan_ti", label: "Yuan-ti", traitsSectionHeading: "TRATTI DELLO YUAN-TI", supplementRulesSource: MPMM_SOURCE },
+  {
+    slug: "forgiato",
+    label: "Forgiato",
+    traitsSectionHeading: "__CONTENT__",
+    traitsContentAnchor: "**Forgiato.**",
+    supplementRulesSource: EBERRON_SOURCE,
+  },
 ];
 
 export const CLASS_OPTIONS: ClassCatalogEntry[] = [

@@ -74,12 +74,28 @@ export default function GeneratorPage() {
   function persistCreateDraftFromGeneratorForm() {
     if (!formRef.current || !initial.campaignId) return;
     try {
+      const draftKey = `${CREATE_CHARACTER_DRAFT_KEY_PREFIX}:${initial.campaignId}`;
       const fd = new FormData(formRef.current);
-      const payload: Record<string, string> = {};
-      for (const [k, v] of fd.entries()) {
-        if (typeof v === "string") payload[k] = v;
+      const existingRaw = localStorage.getItem(draftKey);
+      const existing = existingRaw ? (JSON.parse(existingRaw) as Record<string, string>) : {};
+
+      // Il form del generatore usa chiavi diverse dal dialog "Nuovo personaggio":
+      // mappiamo solo i campi comuni e facciamo merge per non perdere i dati già inseriti nel dialog.
+      const mapped: Record<string, string> = {
+        name: (fd.get("characterName") as string | null)?.trim() ?? "",
+        race_slug: (fd.get("raceSlug") as string | null)?.trim() ?? "",
+        subclass_slug: (fd.get("subraceSlug") as string | null)?.trim() ?? "",
+        character_class: (fd.get("classLabel") as string | null)?.trim() ?? "",
+        class_subclass: (fd.get("classSubclass") as string | null)?.trim() ?? "",
+        background_slug: (fd.get("backgroundSlug") as string | null)?.trim() ?? "",
+      };
+
+      const merged: Record<string, string> = { ...existing };
+      for (const [k, v] of Object.entries(mapped)) {
+        if (v) merged[k] = v;
       }
-      localStorage.setItem(`${CREATE_CHARACTER_DRAFT_KEY_PREFIX}:${initial.campaignId}`, JSON.stringify(payload));
+
+      localStorage.setItem(draftKey, JSON.stringify(merged));
     } catch {
       // ignore
     }

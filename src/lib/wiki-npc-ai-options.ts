@@ -38,5 +38,6 @@ export const WIKI_NPC_RACE_OPTIONS: string[] = [
   "Dragonide",
   "Genasi",
   "Aasimar",
+  "Forgiato",
   "Mezzeling",
 ];
