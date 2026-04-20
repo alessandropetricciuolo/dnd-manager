@@ -20,9 +20,10 @@ export async function GET() {
   const hfKey = !!(process.env.HUGGINGFACE_API_KEY || process.env.HF_TOKEN);
   const openrouterKey = !!process.env.OPENROUTER_API_KEY?.trim();
   const openrouterModel = process.env.OPENROUTER_MODEL?.trim() || "openai/gpt-4o-mini (default)";
-  const geminiKey = !!process.env.GEMINI_API_KEY?.trim();
-  const geminiModel =
-    process.env.GEMINI_IMAGE_MODEL?.trim() || "gemini-2.5-flash-image (default, con fallback automatico)";
+  const siliconflowKey = !!process.env.SILICONFLOW_API_KEY?.trim();
+  const siliconflowModel =
+    process.env.SILICONFLOW_IMAGE_MODEL?.trim() ||
+    "Kwai-Kolors/Kolors (default, con fallback automatico)";
 
   return NextResponse.json({
     NEXT_PUBLIC_SUPABASE_URL: url ? "impostata" : "MANCANTE",
@@ -35,7 +36,7 @@ export async function GET() {
     OLLAMA_BASE_URL: ollamaUrl,
     OLLAMA_MODEL: ollamaModel,
     HUGGINGFACE_API_KEY_o_HF_TOKEN: hfKey ? "impostata (serve per embedding RAG / immagini HF)" : "MANCANTE",
-    GEMINI_API_KEY: geminiKey ? "impostata" : "MANCANTE",
-    GEMINI_IMAGE_MODEL: geminiModel,
+    SILICONFLOW_API_KEY: siliconflowKey ? "impostata" : "MANCANTE",
+    SILICONFLOW_IMAGE_MODEL: siliconflowModel,
   });
 }

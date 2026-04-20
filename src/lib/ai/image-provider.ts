@@ -1,20 +1,26 @@
 /**
  * Router di generazione immagini: consente di scegliere a runtime quale provider
- * utilizzare (Hugging Face/Flux o Google Gemini). Il default viene dalla env
- * `AI_IMAGE_PROVIDER`, ma la UI può passare un override per singola richiesta.
+ * utilizzare. Il default viene dalla env `AI_IMAGE_PROVIDER`, ma la UI può
+ * passare un override per singola richiesta.
  *
- * Mantiene `generateAiImage` (HF) come fallback di retrocompatibilità.
+ * Provider supportati:
+ * - `huggingface` — HF Inference Providers (Flux), cfr. `huggingface-client.ts`
+ * - `siliconflow` — SiliconFlow OpenAI-compatible, cfr. `siliconflow-image-client.ts`
+ *
+ * Gemini è stato dismesso perché i suoi modelli image-out sono usciti dal free
+ * tier di Google (richiedono billing attivo). Se in futuro si riabilita, va
+ * ripristinato un client dedicato e aggiunto di nuovo a {@link IMAGE_PROVIDER_IDS}.
  */
 
 import { generateAiImage, HuggingFaceInferenceError } from "@/lib/ai/huggingface-client";
 import {
-  generateGeminiImage,
-  isGeminiImageConfigured,
-  getGeminiImageModel,
-  GeminiImageError,
-} from "@/lib/ai/gemini-image-client";
+  generateSiliconFlowImage,
+  isSiliconFlowImageConfigured,
+  getSiliconFlowImageModel,
+  SiliconFlowImageError,
+} from "@/lib/ai/siliconflow-image-client";
 
-export const IMAGE_PROVIDER_IDS = ["huggingface", "gemini"] as const;
+export const IMAGE_PROVIDER_IDS = ["huggingface", "siliconflow"] as const;
 export type ImageProviderId = (typeof IMAGE_PROVIDER_IDS)[number];
 
 export type ImageProviderDescriptor = {
@@ -57,10 +63,10 @@ export function listImageProviders(): ImageProviderDescriptor[] {
       model: "black-forest-labs/FLUX.1-schnell",
     },
     {
-      id: "gemini",
-      label: "Google Gemini",
-      available: isGeminiImageConfigured(),
-      model: getGeminiImageModel(),
+      id: "siliconflow",
+      label: "SiliconFlow",
+      available: isSiliconFlowImageConfigured(),
+      model: getSiliconFlowImageModel(),
     },
   ];
 }
@@ -83,11 +89,11 @@ export async function generateAiImageWithProvider(
   positivePrompt: string,
   negativePrompt: string
 ): Promise<Buffer> {
-  if (provider === "gemini") {
+  if (provider === "siliconflow") {
     try {
-      return await generateGeminiImage(positivePrompt, negativePrompt);
+      return await generateSiliconFlowImage(positivePrompt, negativePrompt);
     } catch (e) {
-      if (e instanceof GeminiImageError) throw new Error(e.message);
+      if (e instanceof SiliconFlowImageError) throw new Error(e.message);
       throw e;
     }
   }

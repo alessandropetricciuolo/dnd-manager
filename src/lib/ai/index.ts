@@ -13,12 +13,12 @@ export { shouldUseOllamaForAiText, getOllamaModelForAiText } from "./ollama-clie
 export { shouldUseOpenRouterForAiText, getOpenRouterModelForAiText } from "./openrouter-client";
 
 export {
-  generateGeminiImage,
-  shouldUseGeminiForAiImage,
-  isGeminiImageConfigured,
-  getGeminiImageModel,
-  GeminiImageError,
-} from "./gemini-image-client";
+  generateSiliconFlowImage,
+  shouldUseSiliconFlowForAiImage,
+  isSiliconFlowImageConfigured,
+  getSiliconFlowImageModel,
+  SiliconFlowImageError,
+} from "./siliconflow-image-client";
 
 export {
   IMAGE_PROVIDER_IDS,

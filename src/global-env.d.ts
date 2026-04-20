@@ -33,19 +33,18 @@ declare namespace NodeJS {
     OLLAMA_MODEL?: string;
     /**
      * Provider per generazione immagini server-side: `huggingface` (default, Flux via HF)
-     * oppure `gemini` (Google Generative Language API). La UI può passare un override
-     * per singola richiesta; questa variabile definisce solo il default server.
+     * oppure `siliconflow` (API OpenAI-compatible di SiliconFlow). La UI può passare un
+     * override per singola richiesta; questa variabile definisce solo il default server.
      */
     AI_IMAGE_PROVIDER?: string;
-    /** Chiave API Google Gemini (https://aistudio.google.com/apikey). */
-    GEMINI_API_KEY?: string;
+    /** Chiave API SiliconFlow (https://cloud.siliconflow.cn/account/ak). */
+    SILICONFLOW_API_KEY?: string;
     /**
-     * Modello Gemini image-out (default `gemini-2.5-flash-image`, con fallback automatico
-     * su `gemini-2.5-flash-image-preview` e varianti 2.0 se il primo non è abilitato
-     * sull'account). Altri candidati manuali: `imagen-4.0-generate-001`.
+     * Modello SiliconFlow image-out (default `Kwai-Kolors/Kolors`, con fallback automatico
+     * su `black-forest-labs/FLUX.1-schnell` e `stabilityai/stable-diffusion-3-5-large`).
      */
-    GEMINI_IMAGE_MODEL?: string;
-    /** Override base URL API Gemini (default `https://generativelanguage.googleapis.com`). */
-    GEMINI_BASE_URL?: string;
+    SILICONFLOW_IMAGE_MODEL?: string;
+    /** Override base URL API SiliconFlow (default `https://api.siliconflow.cn`). */
+    SILICONFLOW_BASE_URL?: string;
   }
 }

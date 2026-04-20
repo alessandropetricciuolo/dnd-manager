@@ -64,7 +64,7 @@ export function AiImageProviderSelect(props: AiImageProviderSelectProps) {
         <p className="mt-1 text-xs text-amber-300/90">
           Nessun provider immagine configurato sul server. Imposta{" "}
           <code className="rounded bg-black/40 px-1">HUGGINGFACE_API_KEY</code> o{" "}
-          <code className="rounded bg-black/40 px-1">GEMINI_API_KEY</code>.
+          <code className="rounded bg-black/40 px-1">SILICONFLOW_API_KEY</code>.
         </p>
       )}
     </div>

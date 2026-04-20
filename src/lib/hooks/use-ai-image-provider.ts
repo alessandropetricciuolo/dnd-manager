@@ -11,7 +11,7 @@ import { useCallback, useEffect, useState } from "react";
  * cozzare con altre preferenze future.
  */
 
-export type ImageProviderId = "huggingface" | "gemini";
+export type ImageProviderId = "huggingface" | "siliconflow";
 
 export type ImageProviderDescriptor = {
   id: ImageProviderId;
@@ -26,7 +26,7 @@ type ProvidersResponse = {
 };
 
 const STORAGE_KEY = "bd.aiImageProvider";
-const VALID_IDS: readonly ImageProviderId[] = ["huggingface", "gemini"];
+const VALID_IDS: readonly ImageProviderId[] = ["huggingface", "siliconflow"];
 
 function isValidProvider(v: unknown): v is ImageProviderId {
   return typeof v === "string" && (VALID_IDS as readonly string[]).includes(v);
