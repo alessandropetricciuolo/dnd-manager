@@ -119,7 +119,7 @@ export function CreateEntityDialog({
   const [magicPrompt, setMagicPrompt] = useState("");
   const [magicEntityType, setMagicEntityType] = useState<WikiGeneratorEntityType>("npc");
   const [magicLoading, setMagicLoading] = useState(false);
-  const { provider: aiImageProvider } = useAiImageProvider();
+  const { provider: aiImageProvider, setProvider: setAiImageProvider } = useAiImageProvider();
   const [aiTextLoading, setAiTextLoading] = useState(false);
   const [aiImageLoading, setAiImageLoading] = useState(false);
   const [aiCr, setAiCr] = useState("");
@@ -764,6 +764,8 @@ export function CreateEntityDialog({
                 <AiImageProviderSelect
                   id="create-entity-image-provider"
                   disabled={isLoading || aiImageLoading}
+                  value={aiImageProvider}
+                  onChange={setAiImageProvider}
                 />
                 <Button
                   type="button"
@@ -1553,6 +1555,8 @@ export function CreateEntityDialog({
               id="magic-image-provider"
               label="Provider immagine (per la foto)"
               disabled={magicLoading}
+              value={aiImageProvider}
+              onChange={setAiImageProvider}
             />
           )}
 

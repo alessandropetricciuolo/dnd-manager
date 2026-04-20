@@ -91,7 +91,7 @@ export function EditEntityDialog({
   const formRef = useRef<HTMLFormElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [aiImageLoading, setAiImageLoading] = useState(false);
-  const { provider: aiImageProvider } = useAiImageProvider();
+  const { provider: aiImageProvider, setProvider: setAiImageProvider } = useAiImageProvider();
   const [type, setType] = useState<EntityType>((entity.type as EntityType) || "npc");
   const [attributes, setAttributes] = useState<Record<string, unknown>>(() =>
     mergeAttributes((entity.type as EntityType) || "npc", entity.attributes)
@@ -437,6 +437,8 @@ export function EditEntityDialog({
                 <AiImageProviderSelect
                   id="edit-entity-image-provider"
                   disabled={isLoading || aiImageLoading}
+                  value={aiImageProvider}
+                  onChange={setAiImageProvider}
                 />
                 <Button
                   type="button"
