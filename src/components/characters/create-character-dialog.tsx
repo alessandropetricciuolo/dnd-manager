@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "nextjs-toploader/app";
 import { toast } from "sonner";
 import { FileText, User } from "lucide-react";
@@ -64,7 +64,7 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
     }
   }
 
-  function restoreDraftIntoForm(form: HTMLFormElement) {
+  const restoreDraftIntoForm = useCallback((form: HTMLFormElement) => {
     try {
       const raw = localStorage.getItem(draftStorageKey);
       if (!raw) return;
@@ -81,7 +81,7 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
     } catch {
       // ignore restore failures
     }
-  }
+  }, [draftStorageKey]);
 
   useEffect(() => {
     if (!open || !formRef.current) return;
@@ -115,7 +115,7 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
     } catch {
       // ignore sheet draft restore failures
     }
-  }, [open, draftStorageKey, generatedSheetStorageKey]);
+  }, [open, restoreDraftIntoForm, generatedSheetStorageKey]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

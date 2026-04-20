@@ -2,19 +2,26 @@
  * SiliconFlow — generazione immagini tramite endpoint OpenAI-compatible
  * (`POST {base}/v1/images/generations`). Accetta una semplice Bearer API key.
  *
+ * ⚠️ SiliconFlow ha due piattaforme separate con chiavi NON intercambiabili:
+ * - internazionale: account su https://cloud.siliconflow.com, API https://api.siliconflow.com
+ * - cinese:         account su https://cloud.siliconflow.cn,  API https://api.siliconflow.cn
+ * Una chiave della piattaforma sbagliata risponde sempre `401 "Api key is invalid"`.
+ *
  * Variabili (solo server-side):
- * - `SILICONFLOW_API_KEY` — chiave da https://cloud.siliconflow.cn/account/ak
+ * - `SILICONFLOW_API_KEY` — chiave (vedi note sopra).
  * - `SILICONFLOW_IMAGE_MODEL` — opzionale, default `Kwai-Kolors/Kolors`
  *   (altri candidati: `black-forest-labs/FLUX.1-schnell`,
  *    `stabilityai/stable-diffusion-3-5-large`)
- * - `SILICONFLOW_BASE_URL` — opzionale, default `https://api.siliconflow.cn`
+ * - `SILICONFLOW_BASE_URL` — opzionale. Default: `https://api.siliconflow.com`
+ *   (piattaforma internazionale). Se il tuo account è su `cloud.siliconflow.cn`
+ *   imposta `SILICONFLOW_BASE_URL=https://api.siliconflow.cn`.
  *
  * Formato risposta: `{ images: [{ url }], seed, timings }` con URL temporaneo.
  * Il client scarica l'URL e ritorna un `Buffer` PNG/JPEG, coerente con gli altri
  * provider del router.
  */
 
-const DEFAULT_SILICONFLOW_BASE = "https://api.siliconflow.cn";
+const DEFAULT_SILICONFLOW_BASE = "https://api.siliconflow.com";
 const DEFAULT_SILICONFLOW_MODEL = "Kwai-Kolors/Kolors";
 
 /**
@@ -85,6 +92,31 @@ function isSiliconFlowUnsupportedModelError(status: number, bodyText: string): b
     lower.includes("not available") ||
     lower.includes("unsupported model") ||
     lower.includes("invalid model")
+  );
+}
+
+function isSiliconFlowInvalidKeyError(status: number, bodyText: string): boolean {
+  if (status !== 401 && status !== 403) return false;
+  const lower = bodyText.toLowerCase();
+  return (
+    lower.includes("api key is invalid") ||
+    lower.includes("invalid api key") ||
+    lower.includes("unauthorized") ||
+    lower.includes("authentication")
+  );
+}
+
+function buildInvalidKeyMessage(): string {
+  const base = getSiliconFlowBaseUrl();
+  const usingCn = /siliconflow\.cn/i.test(base);
+  const otherPlatform = usingCn
+    ? "se l'hai generata su https://cloud.siliconflow.com imposta SILICONFLOW_BASE_URL=https://api.siliconflow.com"
+    : "se l'hai generata su https://cloud.siliconflow.cn imposta SILICONFLOW_BASE_URL=https://api.siliconflow.cn";
+  return (
+    `SiliconFlow: la chiave API è stata rifiutata (401 "Api key is invalid"). ` +
+    `Stai chiamando ${base}. ` +
+    `SiliconFlow ha due piattaforme separate (.com internazionale e .cn cinese) e le chiavi NON sono intercambiabili: ${otherPlatform}. ` +
+    `Verifica anche di non avere spazi o virgolette extra attorno a SILICONFLOW_API_KEY e di aver riavviato il server dopo averla impostata.`
   );
 }
 
@@ -234,7 +266,14 @@ export async function generateSiliconFlowImage(
         );
         continue;
       }
-      /** Errori non recuperabili (auth, quota, validation): fail immediato. */
+      if (isSiliconFlowInvalidKeyError(res.status, bodyText)) {
+        console.error(
+          "[generateSiliconFlowImage] chiave rifiutata:",
+          bodyText.slice(0, 300)
+        );
+        throw new SiliconFlowImageError(buildInvalidKeyMessage(), { status: 401 });
+      }
+      /** Errori non recuperabili (quota, validation, ecc.): fail immediato. */
       const msg = data?.error?.message ?? data?.message ?? bodyText.slice(0, 500);
       throw new SiliconFlowImageError(`SiliconFlow HTTP ${res.status}: ${msg}`, {
         status: res.status,

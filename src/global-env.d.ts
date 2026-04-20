@@ -37,14 +37,21 @@ declare namespace NodeJS {
      * override per singola richiesta; questa variabile definisce solo il default server.
      */
     AI_IMAGE_PROVIDER?: string;
-    /** Chiave API SiliconFlow (https://cloud.siliconflow.cn/account/ak). */
+    /**
+     * Chiave API SiliconFlow. ⚠️ SiliconFlow ha due piattaforme separate con chiavi NON
+     * intercambiabili: internazionale (`cloud.siliconflow.com`) e cinese
+     * (`cloud.siliconflow.cn`). Usa `SILICONFLOW_BASE_URL` per selezionare quella giusta.
+     */
     SILICONFLOW_API_KEY?: string;
     /**
      * Modello SiliconFlow image-out (default `Kwai-Kolors/Kolors`, con fallback automatico
      * su `black-forest-labs/FLUX.1-schnell` e `stabilityai/stable-diffusion-3-5-large`).
      */
     SILICONFLOW_IMAGE_MODEL?: string;
-    /** Override base URL API SiliconFlow (default `https://api.siliconflow.cn`). */
+    /**
+     * Override base URL API SiliconFlow. Default: `https://api.siliconflow.com`
+     * (piattaforma internazionale). Per la piattaforma cinese usa `https://api.siliconflow.cn`.
+     */
     SILICONFLOW_BASE_URL?: string;
   }
 }
