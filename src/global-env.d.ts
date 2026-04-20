@@ -40,8 +40,9 @@ declare namespace NodeJS {
     /** Chiave API Google Gemini (https://aistudio.google.com/apikey). */
     GEMINI_API_KEY?: string;
     /**
-     * Modello Gemini image-out (default `gemini-2.5-flash-image-preview`).
-     * Altri candidati: `gemini-2.5-flash-image`, `imagen-4.0-generate-001`.
+     * Modello Gemini image-out (default `gemini-2.5-flash-image`, con fallback automatico
+     * su `gemini-2.5-flash-image-preview` e varianti 2.0 se il primo non è abilitato
+     * sull'account). Altri candidati manuali: `imagen-4.0-generate-001`.
      */
     GEMINI_IMAGE_MODEL?: string;
     /** Override base URL API Gemini (default `https://generativelanguage.googleapis.com`). */

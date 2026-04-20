@@ -22,7 +22,7 @@ export async function GET() {
   const openrouterModel = process.env.OPENROUTER_MODEL?.trim() || "openai/gpt-4o-mini (default)";
   const geminiKey = !!process.env.GEMINI_API_KEY?.trim();
   const geminiModel =
-    process.env.GEMINI_IMAGE_MODEL?.trim() || "gemini-2.5-flash-image-preview (default)";
+    process.env.GEMINI_IMAGE_MODEL?.trim() || "gemini-2.5-flash-image (default, con fallback automatico)";
 
   return NextResponse.json({
     NEXT_PUBLIC_SUPABASE_URL: url ? "impostata" : "MANCANTE",
