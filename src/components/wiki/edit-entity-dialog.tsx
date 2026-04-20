@@ -27,6 +27,8 @@ import { CHALLENGE_RATING_OPTIONS } from "@/lib/dnd-constants";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { type WikiEntityType, WIKI_ENTITY_OPTIONS } from "@/lib/wiki/entity-types";
 import { generateContextualPortraitAction } from "@/lib/actions/ai-generator";
+import { AiImageProviderSelect } from "@/components/ai/ai-image-provider-select";
+import { useAiImageProvider } from "@/lib/hooks/use-ai-image-provider";
 
 type EntityType = WikiEntityType;
 
@@ -89,6 +91,7 @@ export function EditEntityDialog({
   const formRef = useRef<HTMLFormElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [aiImageLoading, setAiImageLoading] = useState(false);
+  const { provider: aiImageProvider } = useAiImageProvider();
   const [type, setType] = useState<EntityType>((entity.type as EntityType) || "npc");
   const [attributes, setAttributes] = useState<Record<string, unknown>>(() =>
     mergeAttributes((entity.type as EntityType) || "npc", entity.attributes)
@@ -258,7 +261,12 @@ export function EditEntityDialog({
     }
     setAiImageLoading(true);
     try {
-      const result = await generateContextualPortraitAction(campaignId, narrativeDescription, "npc");
+      const result = await generateContextualPortraitAction(
+        campaignId,
+        narrativeDescription,
+        "npc",
+        { provider: aiImageProvider }
+      );
       if (!result.success) {
         toast.error(result.message);
         return;
@@ -425,22 +433,28 @@ export function EditEntityDialog({
               </div>
             )}
             {type === "npc" && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => void handleAssistGenerateImage()}
-                disabled={isLoading || aiImageLoading}
-                className="border-barber-gold/40 text-barber-gold"
-              >
-                {aiImageLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generazione immagine...
-                  </>
-                ) : (
-                  "Genera immagine IA (NPC)"
-                )}
-              </Button>
+              <div className="flex flex-col gap-2 sm:max-w-xs">
+                <AiImageProviderSelect
+                  id="edit-entity-image-provider"
+                  disabled={isLoading || aiImageLoading}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => void handleAssistGenerateImage()}
+                  disabled={isLoading || aiImageLoading}
+                  className="border-barber-gold/40 text-barber-gold"
+                >
+                  {aiImageLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generazione immagine...
+                    </>
+                  ) : (
+                    "Genera immagine IA (NPC)"
+                  )}
+                </Button>
+              </div>
             )}
           </div>
 

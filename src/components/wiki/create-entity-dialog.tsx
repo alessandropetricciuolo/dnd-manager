@@ -31,6 +31,8 @@ import {
 import { generateFullAiWikiEntity } from "@/lib/actions/ai-wiki-chain";
 import { generateContextualPortraitAction } from "@/lib/actions/ai-generator";
 import { generateWikiMarkdownAction } from "@/lib/ai/wiki-text-generator";
+import { AiImageProviderSelect } from "@/components/ai/ai-image-provider-select";
+import { useAiImageProvider } from "@/lib/hooks/use-ai-image-provider";
 import {
   searchBestiaryChunksAction,
   listBestiaryMonstersByCrAction,
@@ -117,6 +119,7 @@ export function CreateEntityDialog({
   const [magicPrompt, setMagicPrompt] = useState("");
   const [magicEntityType, setMagicEntityType] = useState<WikiGeneratorEntityType>("npc");
   const [magicLoading, setMagicLoading] = useState(false);
+  const { provider: aiImageProvider } = useAiImageProvider();
   const [aiTextLoading, setAiTextLoading] = useState(false);
   const [aiImageLoading, setAiImageLoading] = useState(false);
   const [aiCr, setAiCr] = useState("");
@@ -515,7 +518,12 @@ export function CreateEntityDialog({
     let success = false;
     try {
       const imageEntityType: "npc" | "location" = type === "location" ? "location" : "npc";
-      const result = await generateContextualPortraitAction(campaignId, narrativeDescription, imageEntityType);
+      const result = await generateContextualPortraitAction(
+        campaignId,
+        narrativeDescription,
+        imageEntityType,
+        { provider: aiImageProvider }
+      );
       if (!result.success) {
         toast.error(result.message);
         return;
@@ -604,7 +612,9 @@ export function CreateEntityDialog({
       const fullChain = magicEntityType === "npc" || magicEntityType === "location";
 
       if (fullChain) {
-        const res = await generateFullAiWikiEntity(campaignId, p, magicEntityType);
+        const res = await generateFullAiWikiEntity(campaignId, p, magicEntityType, {
+          imageProvider: aiImageProvider,
+        });
         if (!res.success) {
           toast.error(res.message);
           return;
@@ -750,22 +760,28 @@ export function CreateEntityDialog({
             disabled={isLoading}
             presetUrl={wikiImageUrlPreset}
             fileExtraAction={
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => void handleAssistGenerateImage()}
-                disabled={isLoading || aiImageLoading}
-                className="border-violet-500/50 text-violet-200 hover:bg-violet-500/15 hover:text-violet-100"
-              >
-                {aiImageLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generazione...
-                  </>
-                ) : (
-                  <>✨ Genera Immagine Coerente (Opzionale)</>
-                )}
-              </Button>
+              <div className="flex w-full flex-col gap-2 sm:max-w-xs">
+                <AiImageProviderSelect
+                  id="create-entity-image-provider"
+                  disabled={isLoading || aiImageLoading}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => void handleAssistGenerateImage()}
+                  disabled={isLoading || aiImageLoading}
+                  className="border-violet-500/50 text-violet-200 hover:bg-violet-500/15 hover:text-violet-100"
+                >
+                  {aiImageLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generazione...
+                    </>
+                  ) : (
+                    <>✨ Genera Immagine Coerente (Opzionale)</>
+                  )}
+                </Button>
+              </div>
             }
           />
           {aiImagePreview && (
@@ -1531,6 +1547,14 @@ export function CreateEntityDialog({
               ))}
             </select>
           </div>
+
+          {(magicEntityType === "npc" || magicEntityType === "location") && (
+            <AiImageProviderSelect
+              id="magic-image-provider"
+              label="Provider immagine (per la foto)"
+              disabled={magicLoading}
+            />
+          )}
 
           {magicLoading && (
             <div

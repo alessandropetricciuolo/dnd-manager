@@ -5,15 +5,27 @@ import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import type { Json } from "@/types/database.types";
 import { parseCampaignAiContextFromDb } from "@/lib/campaign-ai-context";
-import { generateAiImage, HuggingFaceInferenceError } from "@/lib/ai/huggingface-client";
+import {
+  generateAiImageWithProvider,
+  resolveImageProvider,
+  type ImageProviderId,
+} from "@/lib/ai/image-provider";
 import { uploadToTelegram } from "@/lib/telegram-storage";
 
 const STANDARD_VISUAL_NEGATIVES =
   "NO modern clothing, NO jeans, NO wristwatches, NO cars, NO text, NO watermarks, NO bad anatomy, NO deformed hands, NO cartoon style, NO anime style, NO manga style, NO cel shading, NO chibi";
 
 export type GenerateContextualPortraitResult =
-  | { success: true; publicUrl: string }
+  | { success: true; publicUrl: string; provider: ImageProviderId }
   | { success: false; message: string };
+
+export type GenerateContextualPortraitOptions = {
+  /**
+   * Provider immagine da usare per questa singola richiesta. Se omesso o non valido,
+   * viene applicato il default configurato via env `AI_IMAGE_PROVIDER`.
+   */
+  provider?: ImageProviderId | string | null;
+};
 
 /**
  * Ritratto / illustrazione coerente con i paletti visivi della campagna (Fase 3).
@@ -22,7 +34,8 @@ export type GenerateContextualPortraitResult =
 export async function generateContextualPortraitAction(
   campaignId: string,
   charDescription: string,
-  entityType: "npc" | "location"
+  entityType: "npc" | "location",
+  options: GenerateContextualPortraitOptions = {}
 ): Promise<GenerateContextualPortraitResult> {
   let step = "input-validation";
   const fail = (message: string, details?: unknown): GenerateContextualPortraitResult => {
@@ -180,17 +193,14 @@ export async function generateContextualPortraitAction(
       .join(", ");
     const strictNegativePrompt = `STRICTLY FORBIDDEN: ${negativeCombined}`;
 
+    const provider = resolveImageProvider(options.provider ?? null);
     let buffer: Buffer;
-    step = "hf-image-generation";
+    step = `image-generation:${provider}`;
     try {
-      buffer = await generateAiImage(positivePrompt, strictNegativePrompt);
+      buffer = await generateAiImageWithProvider(provider, positivePrompt, strictNegativePrompt);
     } catch (e) {
       const msg =
-        e instanceof HuggingFaceInferenceError
-          ? e.message
-          : e instanceof Error
-            ? e.message
-            : "Errore durante la generazione dell’immagine.";
+        e instanceof Error ? e.message : "Errore durante la generazione dell’immagine.";
       return fail(msg, e);
     }
 
@@ -202,7 +212,7 @@ export async function generateContextualPortraitAction(
 
     step = "revalidate";
     revalidatePath(`/campaigns/${campaignId}`);
-    return { success: true, publicUrl };
+    return { success: true, publicUrl, provider };
   } catch (err) {
     return fail(err instanceof Error ? err.message : "Si è verificato un errore imprevisto. Riprova.", err);
   }

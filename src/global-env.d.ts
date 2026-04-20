@@ -31,5 +31,20 @@ declare namespace NodeJS {
     OLLAMA_BASE_URL?: string;
     /** Nome modello Ollama (default `llama3`). */
     OLLAMA_MODEL?: string;
+    /**
+     * Provider per generazione immagini server-side: `huggingface` (default, Flux via HF)
+     * oppure `gemini` (Google Generative Language API). La UI può passare un override
+     * per singola richiesta; questa variabile definisce solo il default server.
+     */
+    AI_IMAGE_PROVIDER?: string;
+    /** Chiave API Google Gemini (https://aistudio.google.com/apikey). */
+    GEMINI_API_KEY?: string;
+    /**
+     * Modello Gemini image-out (default `gemini-2.5-flash-image-preview`).
+     * Altri candidati: `gemini-2.5-flash-image`, `imagen-4.0-generate-001`.
+     */
+    GEMINI_IMAGE_MODEL?: string;
+    /** Override base URL API Gemini (default `https://generativelanguage.googleapis.com`). */
+    GEMINI_BASE_URL?: string;
   }
 }
