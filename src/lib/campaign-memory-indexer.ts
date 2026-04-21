@@ -1,4 +1,4 @@
-import { generateRagEmbedding } from "@/lib/ai/huggingface-client";
+import { generateOpenRouterEmbedding } from "@/lib/ai/openrouter-client";
 import { extractWikiContentBody } from "@/lib/campaign-wiki-ai-memory";
 import type { Json } from "@/types/database.types";
 
@@ -213,7 +213,7 @@ async function upsertCampaignMemoryChunks(
 
   const prepared: CampaignMemoryChunkInsert[] = [];
   for (const chunk of chunks) {
-    const embedding = await generateRagEmbedding(chunk.content);
+    const embedding = await generateOpenRouterEmbedding(chunk.content, { dimensions: 384 });
     prepared.push({ ...chunk, embedding });
   }
 

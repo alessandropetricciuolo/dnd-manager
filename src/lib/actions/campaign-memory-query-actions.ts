@@ -2,7 +2,8 @@
 
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
-import { generateAiText, generateRagEmbedding, HuggingFaceInferenceError } from "@/lib/ai/huggingface-client";
+import { generateAiText } from "@/lib/ai/huggingface-client";
+import { generateOpenRouterEmbedding } from "@/lib/ai/openrouter-client";
 import {
   countCampaignMemoryChunks,
   reindexCampaignMemory,
@@ -240,7 +241,7 @@ async function semanticMatches(
   ) => Promise<{ data: unknown; error: { message: string } | null }>;
 
   try {
-    const embedding = await generateRagEmbedding(question);
+    const embedding = await generateOpenRouterEmbedding(question, { dimensions: 384 });
     let lastRows: CampaignMemoryChunkRow[] = [];
     for (const threshold of [0.34, 0.28, 0.22, 0.16, 0.1]) {
       const res = await runRpc("match_campaign_memory", {
@@ -375,11 +376,7 @@ export async function queryCampaignMemoryAction(
     answer = await groundedAnswer(trimmed, ranked);
   } catch (error) {
     const msg =
-      error instanceof HuggingFaceInferenceError
-        ? error.message
-        : error instanceof Error
-          ? error.message
-          : "Errore durante la sintesi AI.";
+      error instanceof Error ? error.message : "Errore durante la sintesi AI.";
     console.error("[queryCampaignMemoryAction] answer generation failed", msg);
     answer = fallbackAnswer(trimmed, ranked);
   }

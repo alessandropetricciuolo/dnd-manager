@@ -9,11 +9,13 @@
  * - `OPENROUTER_HTTP_REFERER` — opzionale, URL del sito (best practice OpenRouter)
  * - `OPENROUTER_APP_TITLE` — opzionale, nome app per header `X-Title`
  *
- * Gli embedding RAG restano su Hugging Face nel progetto attuale.
+ * Per la memoria campagna interrogabile usiamo anche `/v1/embeddings` di OpenRouter
+ * con output forzato a 384 dimensioni, così resta compatibile con pgvector.
  */
 
 const DEFAULT_OPENROUTER_BASE = "https://openrouter.ai/api/v1";
 const OPENROUTER_CHAT_PATH = "/chat/completions";
+const OPENROUTER_EMBEDDINGS_PATH = "/embeddings";
 
 export function shouldUseOpenRouterForAiText(): boolean {
   return process.env.AI_TEXT_PROVIDER?.trim().toLowerCase() === "openrouter";
@@ -28,6 +30,11 @@ function getOpenRouterBaseUrl(): string {
 export function getOpenRouterModelForAiText(): string {
   const m = process.env.OPENROUTER_MODEL?.trim();
   return m && m.length > 0 ? m : "openai/gpt-4o-mini";
+}
+
+export function getOpenRouterModelForEmbeddings(): string {
+  const m = process.env.OPENROUTER_EMBEDDING_MODEL?.trim();
+  return m && m.length > 0 ? m : "openai/text-embedding-3-small";
 }
 
 function extractOpenRouterChatContent(data: unknown): string {
@@ -65,12 +72,33 @@ type OpenRouterChatOptions = {
   maxTokens?: number;
 };
 
+type OpenRouterEmbeddingOptions = {
+  model?: string;
+  dimensions?: number;
+};
+
 function isTransientOpenRouterStatus(status: number): boolean {
   return status === 408 || status === 409 || status === 425 || status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
 }
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getOpenRouterHeaders(apiKey: string): Record<string, string> {
+  const referer =
+    process.env.OPENROUTER_HTTP_REFERER?.trim() ||
+    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+    "https://localhost";
+  const title = process.env.OPENROUTER_APP_TITLE?.trim() || "Barber And Dragons";
+
+  return {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+    Accept: "application/json",
+    "HTTP-Referer": referer,
+    "X-Title": title,
+  };
 }
 
 /**
@@ -96,12 +124,6 @@ export async function generateOpenRouterChat(
   const url = `${base}${OPENROUTER_CHAT_PATH}`;
   const model = getOpenRouterModelForAiText();
 
-  const referer =
-    process.env.OPENROUTER_HTTP_REFERER?.trim() ||
-    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-    "https://localhost";
-  const title = process.env.OPENROUTER_APP_TITLE?.trim() || "Barber And Dragons";
-
   let lastErr: Error | null = null;
   const maxAttempts = 3;
 
@@ -111,13 +133,7 @@ export async function generateOpenRouterChat(
     try {
       const res = await fetch(url, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          "HTTP-Referer": referer,
-          "X-Title": title,
-        },
+        headers: getOpenRouterHeaders(apiKey),
         body: JSON.stringify({
           model,
           messages: [{ role: "user", content: trimmed }],
@@ -177,4 +193,92 @@ export async function generateOpenRouterChat(
   }
 
   throw lastErr ?? new Error("OpenRouter: errore sconosciuto.");
+}
+
+/**
+ * POST /v1/embeddings
+ * Default: `openai/text-embedding-3-small` con `dimensions=384` per compatibilità con
+ * gli indici pgvector del progetto dedicati alla memoria campagna.
+ */
+export async function generateOpenRouterEmbedding(
+  text: string,
+  options: OpenRouterEmbeddingOptions = {}
+): Promise<number[]> {
+  const apiKey = process.env.OPENROUTER_API_KEY?.trim();
+  if (!apiKey) {
+    throw new Error("OPENROUTER_API_KEY non configurata. Impossibile generare embedding con OpenRouter.");
+  }
+
+  const input = text.trim();
+  if (!input) {
+    throw new Error("Il testo per embedding non può essere vuoto.");
+  }
+
+  const base = getOpenRouterBaseUrl();
+  const url = `${base}${OPENROUTER_EMBEDDINGS_PATH}`;
+  const model = options.model?.trim() || getOpenRouterModelForEmbeddings();
+  const dimensions = Number.isFinite(options.dimensions) ? Math.max(1, Math.floor(options.dimensions!)) : 384;
+
+  let lastErr: Error | null = null;
+  const maxAttempts = 3;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 90_000);
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: getOpenRouterHeaders(apiKey),
+        body: JSON.stringify({
+          model,
+          input,
+          dimensions,
+          encoding_format: "float",
+        }),
+        signal: controller.signal,
+      });
+
+      const bodyText = await res.text();
+      let data: unknown;
+      try {
+        data = JSON.parse(bodyText) as unknown;
+      } catch {
+        if (isTransientOpenRouterStatus(res.status) && attempt < maxAttempts) {
+          await sleep(500 * attempt);
+          continue;
+        }
+        throw new Error(`OpenRouter embeddings: risposta non JSON (HTTP ${res.status}). ${bodyText.slice(0, 400)}`);
+      }
+
+      if (!res.ok) {
+        const errObj = data && typeof data === "object" ? (data as { error?: { message?: string } }).error : null;
+        const msg = errObj?.message ?? bodyText.slice(0, 500);
+        if (isTransientOpenRouterStatus(res.status) && attempt < maxAttempts) {
+          await sleep(500 * attempt);
+          continue;
+        }
+        throw new Error(`OpenRouter embeddings HTTP ${res.status}: ${msg}`);
+      }
+
+      const embedding = (data as { data?: Array<{ embedding?: unknown }> } | null)?.data?.[0]?.embedding;
+      if (!Array.isArray(embedding) || embedding.length === 0) {
+        throw new Error("OpenRouter embeddings: risposta senza data[0].embedding.");
+      }
+      if (!embedding.every((value) => typeof value === "number" && Number.isFinite(value))) {
+        throw new Error("OpenRouter embeddings: il vettore contiene valori non numerici.");
+      }
+      return embedding as number[];
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        lastErr = new Error("Timeout della richiesta embeddings a OpenRouter (oltre 90s).");
+      } else {
+        lastErr = error instanceof Error ? error : new Error(String(error));
+      }
+      if (attempt < maxAttempts) continue;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  throw lastErr ?? new Error("OpenRouter embeddings: errore sconosciuto.");
 }

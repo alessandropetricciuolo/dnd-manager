@@ -21,6 +21,8 @@ declare namespace NodeJS {
     OPENROUTER_API_KEY?: string;
     /** Modello OpenRouter (es. `openai/gpt-4o-mini`). */
     OPENROUTER_MODEL?: string;
+    /** Modello OpenRouter per embedding della memoria campagna (default `openai/text-embedding-3-small`). */
+    OPENROUTER_EMBEDDING_MODEL?: string;
     /** Override base URL API (default `https://openrouter.ai/api/v1`). */
     OPENROUTER_BASE_URL?: string;
     /** Header opzionale `HTTP-Referer` per OpenRouter. */

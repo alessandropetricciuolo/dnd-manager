@@ -20,6 +20,8 @@ export async function GET() {
   const hfKey = !!(process.env.HUGGINGFACE_API_KEY || process.env.HF_TOKEN);
   const openrouterKey = !!process.env.OPENROUTER_API_KEY?.trim();
   const openrouterModel = process.env.OPENROUTER_MODEL?.trim() || "openai/gpt-4o-mini (default)";
+  const openrouterEmbeddingModel =
+    process.env.OPENROUTER_EMBEDDING_MODEL?.trim() || "openai/text-embedding-3-small (default, 384d)";
   const siliconflowKey = !!process.env.SILICONFLOW_API_KEY?.trim();
   const siliconflowModel =
     process.env.SILICONFLOW_IMAGE_MODEL?.trim() ||
@@ -33,6 +35,7 @@ export async function GET() {
     AI_IMAGE_PROVIDER: aiImage,
     OPENROUTER_API_KEY: openrouterKey ? "impostata" : "MANCANTE",
     OPENROUTER_MODEL: openrouterModel,
+    OPENROUTER_EMBEDDING_MODEL: openrouterEmbeddingModel,
     OLLAMA_BASE_URL: ollamaUrl,
     OLLAMA_MODEL: ollamaModel,
     HUGGINGFACE_API_KEY_o_HF_TOKEN: hfKey ? "impostata (serve per embedding RAG / immagini HF)" : "MANCANTE",
