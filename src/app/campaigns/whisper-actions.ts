@@ -1,7 +1,9 @@
 "use server";
 
+import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { isSafeTelegramProxyPath } from "@/lib/security/url";
+import { syncSecretWhisperToCampaignMemory } from "@/lib/campaign-memory-indexer";
 
 type WhisperResult<T = void> =
   | { success: true; data?: T }
@@ -156,6 +158,12 @@ export async function insertSecretWhisper(
   if (error) {
     console.error("[insertSecretWhisper]", error);
     return { success: false, error: error.message ?? "Errore nell'invio." };
+  }
+  try {
+    const admin = createSupabaseAdminClient();
+    await syncSecretWhisperToCampaignMemory(admin, data.id, { campaignId });
+  } catch (memoryErr) {
+    console.error("[insertSecretWhisper] campaign memory sync", memoryErr);
   }
   return { success: true, data: data as SecretWhisperRow };
 }

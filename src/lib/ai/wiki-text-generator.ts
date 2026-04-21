@@ -223,6 +223,13 @@ function hasLikelyMechanicalContent(text: string): boolean {
   return hits >= 3;
 }
 
+function hasLikelyNarrativeContent(text: string): boolean {
+  const t = text.trim();
+  if (t.length < 40) return false;
+  if (/^(and|e|ok|va bene)\.?$/i.test(t)) return false;
+  return /[a-zàèéìòóù]/i.test(t);
+}
+
 async function generateAiTextWithRepair(prompt: string, maxAttempts = 2): Promise<string> {
   let lastError: unknown = null;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -725,6 +732,34 @@ export async function generateWikiMarkdownAction(
         }
       } catch (repairErr) {
         console.warn("[generateWikiMarkdownAction] mechanics recovery failed", repairErr);
+      }
+    }
+    if ((normalizedType === "monster" || normalizedType === "npc") && !hasLikelyNarrativeContent(description)) {
+      const narrativeRecoveryPrompt = [
+        "Ricostruisci SOLO la sezione [NARRATIVA] in Markdown valido.",
+        "Requisiti: niente meccanica, niente JSON, niente meta-commenti.",
+        "Inizia con [NARRATIVA] come prima riga.",
+        "Mantieni coerenza con il testo sorgente, col nome e con la richiesta utente.",
+        normalizedType === "npc"
+          ? "Per NPC descrivi in modo concreto: aspetto, carattere, ruolo e modo di parlare/comportarsi."
+          : "Per Mostro descrivi aspetto, comportamento e ruolo nel mondo/campagna.",
+        "",
+        `NOME: ${safeName}`,
+        `RICHIESTA UTENTE: ${safeNarrativePrompt || "Nessuna istruzione aggiuntiva."}`,
+        "",
+        "TESTO SORGENTE:",
+        normalized,
+      ].join("\n");
+      try {
+        const repaired = sanitizeMarkdownResponse((await generateAiTextWithRepair(narrativeRecoveryPrompt, 2)).trim());
+        const reSplit = splitNarrativeAndMechanics(repaired);
+        if (hasLikelyNarrativeContent(reSplit.description)) {
+          description = reSplit.description.trim();
+        } else if (hasLikelyNarrativeContent(repaired)) {
+          description = repaired.replace(/^\[NARRATIVA\]\s*/i, "").trim();
+        }
+      } catch (repairErr) {
+        console.warn("[generateWikiMarkdownAction] narrative recovery failed", repairErr);
       }
     }
     const extractedStats = normalizedType === "monster"

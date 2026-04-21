@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { uploadToTelegram as uploadFileToTelegram } from "@/lib/telegram-storage";
 import { uploadToTelegram as uploadUrlToTelegramCdn } from "@/lib/telegram-cdn";
 import {
@@ -17,6 +18,10 @@ import {
   type WikiAiTextGeneration,
 } from "@/lib/ai/generator";
 import { parseSafeExternalUrl } from "@/lib/security/url";
+import {
+  deleteCampaignMemorySource,
+  syncWikiEntityToCampaignMemory,
+} from "@/lib/campaign-memory-indexer";
 
 export type { WikiGeneratorEntityType, WikiAiTextGeneration } from "@/lib/ai/generator";
 
@@ -294,6 +299,13 @@ export async function createEntity(
       }
     }
 
+    try {
+      const admin = createSupabaseAdminClient();
+      await syncWikiEntityToCampaignMemory(admin, inserted.id, { campaignId });
+    } catch (memoryErr) {
+      console.error("[createEntity] campaign memory sync", memoryErr);
+    }
+
     revalidatePath(`/campaigns/${campaignId}`);
     return { success: true, message: "Entità creata!" };
   } catch (err) {
@@ -523,6 +535,13 @@ export async function updateEntity(
       }
     }
 
+    try {
+      const admin = createSupabaseAdminClient();
+      await syncWikiEntityToCampaignMemory(admin, entityId, { campaignId });
+    } catch (memoryErr) {
+      console.error("[updateEntity] campaign memory sync", memoryErr);
+    }
+
     revalidatePath(`/campaigns/${campaignId}`);
     revalidatePath(`/campaigns/${campaignId}/wiki/${entityId}`);
     return { success: true, message: "Voce aggiornata!" };
@@ -591,6 +610,13 @@ export async function deleteEntity(
       };
     }
 
+    try {
+      const admin = createSupabaseAdminClient();
+      await deleteCampaignMemorySource(admin, campaignId, "wiki", entityId);
+    } catch (memoryErr) {
+      console.error("[deleteEntity] campaign memory delete", memoryErr);
+    }
+
     revalidatePath(`/campaigns/${campaignId}`);
     revalidatePath(`/campaigns/${campaignId}/wiki/${entityId}`);
     return { success: true, message: "Voce eliminata." };
@@ -654,6 +680,12 @@ export async function setWikiEntityGlobalStatus(
     if (error) {
       console.error("[setWikiEntityGlobalStatus]", error);
       return { success: false, message: error.message ?? "Errore nell'aggiornamento." };
+    }
+    try {
+      const admin = createSupabaseAdminClient();
+      await syncWikiEntityToCampaignMemory(admin, entityId, { campaignId });
+    } catch (memoryErr) {
+      console.error("[setWikiEntityGlobalStatus] campaign memory sync", memoryErr);
     }
     revalidatePath(`/campaigns/${campaignId}`);
     revalidatePath(`/campaigns/${campaignId}/wiki/${entityId}`);

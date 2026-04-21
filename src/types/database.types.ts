@@ -334,6 +334,34 @@ export interface Database {
         };
         Update: Partial<Database["public"]["Tables"]["campaign_bulk_email_templates"]["Insert"]>;
       };
+      campaign_memory_chunks: {
+        Row: {
+          id: string;
+          campaign_id: string;
+          source_type:
+            | "wiki"
+            | "character_background"
+            | "session_summary"
+            | "session_note"
+            | "gm_note"
+            | "secret_whisper";
+          source_id: string;
+          chunk_index: number;
+          title: string;
+          content: string;
+          summary: string | null;
+          metadata: Json;
+          embedding: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database["public"]["Tables"]["campaign_memory_chunks"]["Row"], "id" | "created_at" | "updated_at"> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["campaign_memory_chunks"]["Insert"]>;
+      };
       campaign_characters: {
         Row: {
           id: string;

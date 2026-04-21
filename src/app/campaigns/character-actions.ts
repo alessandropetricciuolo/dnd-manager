@@ -11,6 +11,10 @@ import { parseSafeExternalUrl } from "@/lib/security/url";
 import type { Json } from "@/types/database.types";
 import { backgroundBySlug, raceBySlug } from "@/lib/character-build-catalog";
 import { recomputeCharacterRulesSnapshot } from "@/lib/character-rules-snapshot.server";
+import {
+  deleteCampaignMemorySource,
+  syncCharacterBackgroundToCampaignMemory,
+} from "@/lib/campaign-memory-indexer";
 
 const CHARACTER_SHEETS_BUCKET = "character_sheets";
 const SIGNED_URL_EXPIRY_SEC = 3600;
@@ -361,6 +365,13 @@ export async function createCharacter(
     return { success: false, error: error.message ?? "Errore nella creazione." };
   }
 
+  try {
+    const admin = createSupabaseAdminClient();
+    await syncCharacterBackgroundToCampaignMemory(admin, row.id, { campaignId });
+  } catch (memoryErr) {
+    console.error("[createCharacter] campaign memory sync", memoryErr);
+  }
+
   revalidatePath(`/campaigns/${campaignId}`);
   return { success: true, data: { ...row, sheet_url: null } as CampaignCharacterRow };
 }
@@ -549,6 +560,13 @@ export async function updateCharacter(
     return { success: false, error: error.message ?? "Errore nell'aggiornamento." };
   }
 
+  try {
+    const admin = createSupabaseAdminClient();
+    await syncCharacterBackgroundToCampaignMemory(admin, characterId, { campaignId });
+  } catch (memoryErr) {
+    console.error("[updateCharacter] campaign memory sync", memoryErr);
+  }
+
   revalidatePath(`/campaigns/${campaignId}`);
   return { success: true, data: { ...row, sheet_url: null } as CampaignCharacterRow };
 }
@@ -636,6 +654,13 @@ export async function deleteCharacter(characterId: string): Promise<CharResult<{
     return { success: false, error: delErr.message ?? "Errore nell'eliminazione." };
   }
 
+  try {
+    const admin = createSupabaseAdminClient();
+    await deleteCampaignMemorySource(admin, row.campaign_id, "character_background", characterId);
+  } catch (memoryErr) {
+    console.error("[deleteCharacter] campaign memory delete", memoryErr);
+  }
+
   revalidatePath(`/campaigns/${row.campaign_id}`);
   return { success: true, data: { campaignId: row.campaign_id } };
 }
@@ -693,6 +718,13 @@ export async function levelUpCharacter(
   if (updateError) {
     console.error("[levelUpCharacter]", updateError);
     return { success: false, error: updateError.message ?? "Errore durante il passaggio di livello." };
+  }
+
+  try {
+    const admin = createSupabaseAdminClient();
+    await syncCharacterBackgroundToCampaignMemory(admin, characterId, { campaignId: row.campaign_id });
+  } catch (memoryErr) {
+    console.error("[levelUpCharacter] campaign memory sync", memoryErr);
   }
 
   revalidatePath(`/campaigns/${row.campaign_id}`);

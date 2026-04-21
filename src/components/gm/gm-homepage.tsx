@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { GmScreenLauncher } from "@/components/gm/gm-screen-launcher";
 import { GmNotes } from "@/components/gm/gm-notes";
 import { GmFiles } from "@/components/gm/gm-files";
+import { CampaignMemoryQueryPanel } from "@/components/gm/campaign-memory-query-panel";
 import { CampaignAiArchitectPanel } from "@/components/campaigns/campaign-ai-architect-panel";
 import { CampaignEmailPanel } from "@/components/campaigns/campaign-email-panel";
 import { CampaignPrimerEditor } from "@/components/gm/campaign-primer-editor";
@@ -145,6 +146,12 @@ export function GmHomepage({
       <div className="mb-8">
         <ManualSemanticSearch />
       </div>
+
+      {isLongCampaign ? (
+        <div className="mb-8">
+          <CampaignMemoryQueryPanel campaignId={campaignId} />
+        </div>
+      ) : null}
 
       {/* Card AI (un solo pulsante → una card) */}
       {aiOpen ? (

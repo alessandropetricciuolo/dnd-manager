@@ -2,8 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { uploadToTelegram } from "@/lib/telegram-storage";
 import { parseSafeExternalUrl } from "@/lib/security/url";
+import {
+  deleteCampaignMemorySource,
+  syncGmNoteToCampaignMemory,
+} from "@/lib/campaign-memory-indexer";
 
 const GM_FILES_BUCKET = "gm_files";
 const GM_FILES_TELEGRAM_PREFIX = "tg:";
@@ -260,6 +265,12 @@ export async function createGmNote(
     console.error("[createGmNote]", error);
     return { success: false, error: error.message ?? "Errore nella creazione della nota." };
   }
+  try {
+    const admin = createSupabaseAdminClient();
+    await syncGmNoteToCampaignMemory(admin, data.id, { campaignId });
+  } catch (memoryErr) {
+    console.error("[createGmNote] campaign memory sync", memoryErr);
+  }
   revalidatePath(`/campaigns/${campaignId}`);
   return { success: true, data: data as GmNoteRow };
 }
@@ -340,6 +351,12 @@ export async function updateGmNote(noteId: string, formData: FormData): Promise<
     return { success: false, error: error.message ?? "Errore nell'aggiornamento della nota." };
   }
   const campaignId = (data as GmNoteRow).campaign_id;
+  try {
+    const admin = createSupabaseAdminClient();
+    await syncGmNoteToCampaignMemory(admin, noteId, { campaignId });
+  } catch (memoryErr) {
+    console.error("[updateGmNote] campaign memory sync", memoryErr);
+  }
   revalidatePath(`/campaigns/${campaignId}`);
   return { success: true, data: data as GmNoteRow };
 }
@@ -363,6 +380,12 @@ export async function deleteGmNote(noteId: string): Promise<GmResult<{ campaignI
   if (deleteError) {
     console.error("[deleteGmNote]", deleteError);
     return { success: false, error: deleteError.message ?? "Errore nell'eliminazione." };
+  }
+  try {
+    const admin = createSupabaseAdminClient();
+    await deleteCampaignMemorySource(admin, note.campaign_id, "gm_note", noteId);
+  } catch (memoryErr) {
+    console.error("[deleteGmNote] campaign memory delete", memoryErr);
   }
   revalidatePath(`/campaigns/${note.campaign_id}`);
   return { success: true, data: { campaignId: note.campaign_id } };

@@ -16,6 +16,11 @@ import {
   applyCloseSessionEconomy,
   type SessionEconomyPayload,
 } from "@/lib/actions/campaign-economy-actions";
+import {
+  deleteCampaignMemorySource,
+  syncWikiEntityToCampaignMemory,
+  syncSessionToCampaignMemory,
+} from "@/lib/campaign-memory-indexer";
 
 export type CreateSessionResult = {
   success: boolean;
@@ -1022,6 +1027,15 @@ export async function deleteSession(sessionId: string): Promise<DeleteSessionRes
       return { success: false, message: deleteError.message ?? "Errore durante l'eliminazione." };
     }
 
+    try {
+      await Promise.all([
+        deleteCampaignMemorySource(admin, session.campaign_id, "session_summary", sessionId),
+        deleteCampaignMemorySource(admin, session.campaign_id, "session_note", sessionId),
+      ]);
+    } catch (memoryErr) {
+      console.error("[deleteSession] campaign memory delete", memoryErr);
+    }
+
     revalidatePath(`/campaigns/${session.campaign_id}`);
     revalidatePath("/dashboard");
     return { success: true, message: "Sessione eliminata.", campaignId: session.campaign_id };
@@ -1084,6 +1098,13 @@ export async function updateSession(
     if (updateError) {
       console.error("[updateSession]", updateError);
       return { success: false, message: updateError.message ?? "Errore durante il salvataggio." };
+    }
+
+    try {
+      const admin = createSupabaseAdminClient();
+      await syncSessionToCampaignMemory(admin, sessionId, { campaignId: session.campaign_id });
+    } catch (memoryErr) {
+      console.error("[updateSession] campaign memory sync", memoryErr);
     }
 
     revalidatePath(`/campaigns/${session.campaign_id}`);
@@ -1464,6 +1485,11 @@ export async function closeSessionAction(
           .eq("id", entityId)
           .eq("campaign_id", session.campaign_id)
           .eq("is_core", true);
+        try {
+          await syncWikiEntityToCampaignMemory(admin, entityId, { campaignId: session.campaign_id });
+        } catch (memoryErr) {
+          console.error("[closeSessionAction] wiki memory sync", entityId, memoryErr);
+        }
       }
     }
 
@@ -1539,6 +1565,12 @@ export async function closeSessionAction(
           };
         }
       }
+    }
+
+    try {
+      await syncSessionToCampaignMemory(admin, sessionId, { campaignId: session.campaign_id });
+    } catch (memoryErr) {
+      console.error("[closeSessionAction] campaign memory sync", memoryErr);
     }
 
     revalidatePath(`/campaigns/${session.campaign_id}`);
