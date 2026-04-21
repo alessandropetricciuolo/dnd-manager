@@ -121,6 +121,8 @@ function extractStatsFromMarkdown(markdown: string): ExtractedWikiStats {
 
   const crMatch =
     source.match(/(?:Grado\s+di\s+Sfida|Challenge\s+Rating|CR|GS)\*{0,2}\s*[:\-]\s*([0-9]+(?:\/[0-9]+)?(?:\.[0-9]+)?)/i) ??
+    source.match(/(?:Grado\s+di\s+Sfida|Challenge\s+Rating|CR|GS)\*{0,2}\s+([0-9]+(?:\/[0-9]+)?(?:\.[0-9]+)?)/i) ??
+    source.match(/\b(?:Grado\s+di\s+Sfida|Challenge\s+Rating)\b[^\n]*?\(([0-9]+(?:\/[0-9]+)?(?:\.[0-9]+)?)\)/i) ??
     source.match(/\bCR\*{0,2}\s*[:\-]\s*([0-9]+(?:\/[0-9]+)?(?:\.[0-9]+)?)/i) ??
     source.match(/\|\s*(?:Grado\s+di\s+Sfida|Challenge\s+Rating|CR|GS)\s*\|\s*([0-9]+(?:\/[0-9]+)?(?:\.[0-9]+)?)\s*\|/i);
 
@@ -134,7 +136,9 @@ function extractStatsFromMarkdown(markdown: string): ExtractedWikiStats {
 function splitNarrativeAndMechanics(raw: string): { description: string; statblock: string } {
   const source = raw.replace(/\r/g, "").trim();
   const narrativeMatch = source.match(/\[NARRATIVA\]([\s\S]*?)\[MECCANICA\]/i);
-  const mechanicMatch = source.match(/\[MECCANICA\]([\s\S]*)/i);
+  const mechanicMatch =
+    source.match(/\[MECCANICA\]([\s\S]*)/i) ??
+    source.match(/\[(?:STATBLOCK|STAT BLOCK)\]([\s\S]*)/i);
 
   if (narrativeMatch || mechanicMatch) {
     const description = narrativeMatch ? narrativeMatch[1].trim() : source;
@@ -189,10 +193,47 @@ function looksLikePromptLeakage(text: string): boolean {
 
 function hasStrictNarrativeMechanicsSections(text: string): boolean {
   const narrative = text.match(/\[NARRATIVA\]([\s\S]*?)\[MECCANICA\]/i);
-  const mechanics = text.match(/\[MECCANICA\]([\s\S]*)/i);
+  const mechanics =
+    text.match(/\[MECCANICA\]([\s\S]*)/i) ??
+    text.match(/\[(?:STATBLOCK|STAT BLOCK)\]([\s\S]*)/i);
   const narrativeBody = narrative?.[1]?.trim() ?? "";
   const mechanicsBody = mechanics?.[1]?.trim() ?? "";
   return narrativeBody.length > 12 && mechanicsBody.length > 12;
+}
+
+function hasLikelyMechanicalContent(text: string): boolean {
+  const t = text.toLowerCase();
+  const markers = [
+    "classe armatura",
+    "armor class",
+    "punti ferita",
+    "hit points",
+    "grado di sfida",
+    "challenge rating",
+    "for",
+    "des",
+    "cos",
+    "int",
+    "sag",
+    "car",
+    "azioni",
+    "traits",
+  ];
+  const hits = markers.filter((m) => t.includes(m)).length;
+  return hits >= 3;
+}
+
+async function generateAiTextWithRepair(prompt: string, maxAttempts = 2): Promise<string> {
+  let lastError: unknown = null;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await generateAiText(prompt);
+    } catch (e) {
+      lastError = e;
+      if (attempt >= maxAttempts) break;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("Errore generazione testo AI.");
 }
 
 function filterRowsByExcludedManuals<T extends { metadata?: unknown }>(rows: T[], excluded: string[]): T[] {
@@ -395,7 +436,7 @@ export async function generateWikiMarkdownAction(
         .join("\n");
       let narrativeRaw = "";
       try {
-        narrativeRaw = (await generateAiText(narrativePrompt)).trim();
+        narrativeRaw = (await generateAiTextWithRepair(narrativePrompt, 2)).trim();
       } catch (e) {
         const msg =
           e instanceof HuggingFaceInferenceError
@@ -611,7 +652,7 @@ export async function generateWikiMarkdownAction(
       if (prebuiltMarkdown) {
         markdown = prebuiltMarkdown;
       } else {
-        const first = sanitizeMarkdownResponse((await generateAiText(prompt)).trim());
+        const first = sanitizeMarkdownResponse((await generateAiTextWithRepair(prompt, 2)).trim());
         const firstBad = looksLikePromptLeakage(first) || !hasStrictNarrativeMechanicsSections(first);
         if (!firstBad || first === "NO_TECHNICAL_DATA") {
           markdown = first;
@@ -627,7 +668,7 @@ export async function generateWikiMarkdownAction(
             "OUTPUT DA CORREGGERE:",
             first,
           ].join("\n");
-          markdown = sanitizeMarkdownResponse((await generateAiText(repairPrompt)).trim());
+          markdown = sanitizeMarkdownResponse((await generateAiTextWithRepair(repairPrompt, 2)).trim());
         }
       }
     } catch (err) {
@@ -661,7 +702,31 @@ export async function generateWikiMarkdownAction(
       };
     }
 
-    const { description, statblock } = splitNarrativeAndMechanics(normalized);
+    let { description, statblock } = splitNarrativeAndMechanics(normalized);
+    if ((normalizedType === "monster" || normalizedType === "npc") && !hasLikelyMechanicalContent(statblock)) {
+      const mechanicsRecoveryPrompt = [
+        "Ricostruisci SOLO la sezione [MECCANICA] in Markdown valido.",
+        "Requisiti: niente narrativa, niente meta-commenti, niente JSON.",
+        "Inizia con [MECCANICA] come prima riga.",
+        normalizedType === "monster"
+          ? "Includi obbligatoriamente: CA/AC, PF/HP, CR/GS, almeno FOR/DES/COS/INT/SAG/CAR, Tratti, Azioni."
+          : "Includi obbligatoriamente: almeno AC/CA o HP/PF e una sezione Capacita/Azioni.",
+        "Usa solo i dati pertinenti presenti nel testo sotto; se manca qualcosa usa valori plausibili D&D 5e coerenti con il livello/CR richiesto.",
+        "",
+        "TESTO DA RIPARARE:",
+        normalized,
+      ].join("\n");
+      try {
+        const repaired = sanitizeMarkdownResponse((await generateAiTextWithRepair(mechanicsRecoveryPrompt, 2)).trim());
+        const reSplit = splitNarrativeAndMechanics(repaired);
+        if (hasLikelyMechanicalContent(reSplit.statblock)) {
+          statblock = reSplit.statblock.trim();
+          if (!description.trim()) description = reSplit.description.trim();
+        }
+      } catch (repairErr) {
+        console.warn("[generateWikiMarkdownAction] mechanics recovery failed", repairErr);
+      }
+    }
     const extractedStats = normalizedType === "monster"
       ? (() => {
           const fromStatblock = extractStatsFromMarkdown(statblock || "");

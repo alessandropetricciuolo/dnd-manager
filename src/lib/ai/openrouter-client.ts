@@ -65,6 +65,14 @@ type OpenRouterChatOptions = {
   maxTokens?: number;
 };
 
+function isTransientOpenRouterStatus(status: number): boolean {
+  return status === 408 || status === 409 || status === 425 || status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /**
  * POST /v1/chat/completions
  */
@@ -94,55 +102,79 @@ export async function generateOpenRouterChat(
     "https://localhost";
   const title = process.env.OPENROUTER_APP_TITLE?.trim() || "Barber And Dragons";
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 120_000);
+  let lastErr: Error | null = null;
+  const maxAttempts = 3;
 
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        "HTTP-Referer": referer,
-        "X-Title": title,
-      },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: "user", content: trimmed }],
-        max_tokens: options.maxTokens ?? 1500,
-        temperature: options.temperature ?? 0.7,
-      }),
-      signal: controller.signal,
-    });
-
-    const bodyText = await res.text();
-    let data: unknown;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120_000);
     try {
-      data = JSON.parse(bodyText) as unknown;
-    } catch {
-      throw new Error(
-        `OpenRouter: risposta non JSON (HTTP ${res.status}). ${bodyText.slice(0, 400)}`
-      );
-    }
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "HTTP-Referer": referer,
+          "X-Title": title,
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: "user", content: trimmed }],
+          max_tokens: options.maxTokens ?? 1500,
+          temperature: options.temperature ?? 0.7,
+        }),
+        signal: controller.signal,
+      });
 
-    if (!res.ok) {
-      const errObj = data && typeof data === "object" ? (data as { error?: { message?: string } }).error : null;
-      const msg = errObj?.message ?? bodyText.slice(0, 500);
-      throw new Error(`OpenRouter HTTP ${res.status}: ${msg}`);
-    }
+      const bodyText = await res.text();
+      let data: unknown;
+      try {
+        data = JSON.parse(bodyText) as unknown;
+      } catch {
+        if (isTransientOpenRouterStatus(res.status) && attempt < maxAttempts) {
+          await sleep(500 * attempt);
+          continue;
+        }
+        throw new Error(
+          `OpenRouter: risposta non JSON (HTTP ${res.status}). ${bodyText.slice(0, 400)}`
+        );
+      }
 
-    const out = extractOpenRouterChatContent(data);
-    if (!out) {
-      throw new Error("OpenRouter ha restituito contenuto vuoto.");
+      if (!res.ok) {
+        const errObj = data && typeof data === "object" ? (data as { error?: { message?: string } }).error : null;
+        const msg = errObj?.message ?? bodyText.slice(0, 500);
+        if (isTransientOpenRouterStatus(res.status) && attempt < maxAttempts) {
+          await sleep(500 * attempt);
+          continue;
+        }
+        throw new Error(`OpenRouter HTTP ${res.status}: ${msg}`);
+      }
+
+      const out = extractOpenRouterChatContent(data);
+      if (!out) {
+        if (attempt < maxAttempts) {
+          await sleep(350 * attempt);
+          continue;
+        }
+        throw new Error("OpenRouter ha restituito contenuto vuoto.");
+      }
+      return out;
+    } catch (e) {
+      if (e instanceof Error && e.name === "AbortError") {
+        if (attempt < maxAttempts) {
+          await sleep(600 * attempt);
+          continue;
+        }
+        lastErr = new Error("Timeout della richiesta a OpenRouter (oltre 120s).");
+      } else {
+        lastErr = e instanceof Error ? e : new Error(String(e));
+      }
+      if (attempt < maxAttempts) continue;
+    } finally {
+      clearTimeout(timeoutId);
     }
-    return out;
-  } catch (e) {
-    if (e instanceof Error && e.name === "AbortError") {
-      throw new Error("Timeout della richiesta a OpenRouter (oltre 120s).");
-    }
-    throw e;
-  } finally {
-    clearTimeout(timeoutId);
   }
+
+  throw lastErr ?? new Error("OpenRouter: errore sconosciuto.");
 }
