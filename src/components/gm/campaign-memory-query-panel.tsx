@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Brain, Database, Loader2, Search } from "lucide-react";
+import { Brain, Database, Download, FileText, Loader2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +13,7 @@ import {
   reindexCampaignMemoryAction,
   type CampaignMemoryQuerySource,
 } from "@/lib/actions/campaign-memory-query-actions";
+import { exportCampaignMemoryMarkdownAction } from "@/lib/actions/campaign-memory-export-actions";
 
 type CampaignMemoryQueryPanelProps = {
   campaignId: string;
@@ -42,6 +43,21 @@ export function CampaignMemoryQueryPanel({ campaignId }: CampaignMemoryQueryPane
   const [usedFallback, setUsedFallback] = useState(false);
   const [queryPending, startQuery] = useTransition();
   const [reindexPending, startReindex] = useTransition();
+  const [exportPending, startExport] = useTransition();
+  const [exportMode, setExportMode] = useState<"full" | "compact" | null>(null);
+
+  function downloadMarkdownFile(fileName: string, markdown: string) {
+    const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", fileName);
+    link.style.display = "none";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
 
   function handleAsk() {
     const q = question.trim();
@@ -78,6 +94,27 @@ export function CampaignMemoryQueryPanel({ campaignId }: CampaignMemoryQueryPane
     });
   }
 
+  function handleExport(mode: "full" | "compact") {
+    setExportMode(mode);
+    startExport(async () => {
+      const res = await exportCampaignMemoryMarkdownAction(campaignId, mode);
+      setExportMode(null);
+      if (!res.success) {
+        if (typeof res.chunkCount === "number") setChunkCount(res.chunkCount);
+        toast.error(res.message);
+        return;
+      }
+      setChunkCount(res.chunkCount);
+      downloadMarkdownFile(res.fileName, res.markdown);
+      toast.success(
+        mode === "full"
+          ? `Export completo scaricato (${res.sourceCount} fonti, ${res.chunkCount} chunk).`
+          : `Export compatto scaricato (${Math.round(res.estimatedBytes / 1024)} KB circa).`,
+        { duration: 5000 }
+      );
+    });
+  }
+
   return (
     <Card className="border-violet-600/40 bg-violet-950/20 text-barber-paper">
       <CardHeader className="pb-2">
@@ -94,7 +131,7 @@ export function CampaignMemoryQueryPanel({ campaignId }: CampaignMemoryQueryPane
         <div className="rounded-lg border border-violet-700/35 bg-violet-950/30 p-3">
           <p className="text-xs text-violet-100/85">
             Fonti incluse nel primo rilascio: wiki canonica, background PG, session summary, note private GM e
-            secret whispers. Tutto resta visibile solo nel tab <strong>Solo GM</strong>.
+            secret whispers. Query ed export restano visibili solo nel tab <strong>Solo GM</strong>.
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-violet-200/75">
             <Badge variant="outline" className="border-violet-500/35 bg-transparent text-violet-200">
@@ -118,7 +155,7 @@ export function CampaignMemoryQueryPanel({ campaignId }: CampaignMemoryQueryPane
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             placeholder="Es. Cosa è successo recentemente nel continente? Quali PG provengono da questa città?"
-            disabled={queryPending || reindexPending}
+            disabled={queryPending || reindexPending || exportPending}
             className="min-h-[120px] resize-y border-violet-500/40 bg-barber-dark/90 text-barber-paper placeholder:text-barber-paper/40"
           />
         </div>
@@ -127,7 +164,7 @@ export function CampaignMemoryQueryPanel({ campaignId }: CampaignMemoryQueryPane
           <Button
             type="button"
             onClick={handleAsk}
-            disabled={queryPending || reindexPending}
+            disabled={queryPending || reindexPending || exportPending}
             className="bg-violet-600 text-white hover:bg-violet-500"
           >
             {queryPending ? (
@@ -146,7 +183,7 @@ export function CampaignMemoryQueryPanel({ campaignId }: CampaignMemoryQueryPane
             type="button"
             variant="outline"
             onClick={handleReindex}
-            disabled={queryPending || reindexPending}
+            disabled={queryPending || reindexPending || exportPending}
             className="border-violet-500/45 text-violet-100 hover:bg-violet-900/30"
           >
             {reindexPending ? (
@@ -161,6 +198,62 @@ export function CampaignMemoryQueryPanel({ campaignId }: CampaignMemoryQueryPane
               </>
             )}
           </Button>
+        </div>
+
+        <div className="rounded-lg border border-violet-700/35 bg-violet-950/25 p-3 space-y-3">
+          <div className="flex items-start gap-2">
+            <FileText className="mt-0.5 h-4 w-4 text-violet-300" />
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-violet-100">Esporta memoria in Markdown</p>
+              <p className="mt-1 text-xs leading-relaxed text-violet-200/75">
+                Genera un file `.md` aggiornato da dare in pasto a un&apos;altra IA. Il dump completo conserva
+                tutta la memoria indicizzata; il compatto è più sintetico ma mantiene i marker sensibili
+                <strong> GM-only</strong>.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleExport("full")}
+              disabled={queryPending || reindexPending || exportPending}
+              className="border-violet-500/45 text-violet-100 hover:bg-violet-900/30"
+            >
+              {exportPending && exportMode === "full" ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Export completo…
+                </>
+              ) : (
+                <>
+                  <Download className="mr-2 h-4 w-4" />
+                  Esporta .md completo
+                </>
+              )}
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleExport("compact")}
+              disabled={queryPending || reindexPending || exportPending}
+              className="border-violet-500/45 text-violet-100 hover:bg-violet-900/30"
+            >
+              {exportPending && exportMode === "compact" ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Export compatto…
+                </>
+              ) : (
+                <>
+                  <Download className="mr-2 h-4 w-4" />
+                  Esporta .md compatto
+                </>
+              )}
+            </Button>
+          </div>
         </div>
 
         {answer ? (

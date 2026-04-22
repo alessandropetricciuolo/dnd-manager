@@ -310,6 +310,14 @@ export function ManualSemanticSearch() {
           </p>
         )}
 
+      {primaryText &&
+        (primaryText.includes("Origine — **Van Richten**") || primaryText.includes("Tag — Van Richten")) && (
+          <p className="rounded-md border border-fuchsia-500/35 bg-fuchsia-950/20 px-3 py-2 text-[11px] text-fuchsia-100/90">
+            Questo risultato proviene dalla <strong className="font-medium">Guida di Van Richten a Ravenloft</strong>:{" "}
+            supplemento opzionale di ambientazione/horror; applicare solo se la campagna usa questo modulo.
+          </p>
+        )}
+
       {primaryText && (
         <div className="space-y-2">
           <Label className="text-barber-paper/80">Risultato principale</Label>
@@ -406,6 +414,11 @@ export function ManualSemanticSearch() {
                   {h.originTag === "xanathar" && (
                     <span className="mr-1.5 inline-block rounded bg-sky-600/30 px-1 py-px text-[10px] font-semibold uppercase tracking-wide text-sky-100/95">
                       Xanathar
+                    </span>
+                  )}
+                  {h.originTag === "van_richten_ravenloft" && (
+                    <span className="mr-1.5 inline-block rounded bg-fuchsia-600/30 px-1 py-px text-[10px] font-semibold uppercase tracking-wide text-fuchsia-100/95">
+                      Van Richten
                     </span>
                   )}
                   {h.chapter ? `${h.chapter} › ` : ""}

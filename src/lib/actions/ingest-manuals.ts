@@ -552,6 +552,8 @@ const SUPPLEMENT_CONTENT_BANNERS: Record<string, string> = {
     "> **Tag — Tasha** (*Calderone omnicomprensivo di Tasha*). Regole e opzioni di espansione (classi, incantesimi, oggetti, consigli al DM…) che **integrano o sostituiscono** il Manuale del Giocatore solo ove indicato come opzionale.",
   xanathar:
     "> **Tag — Xanathar** (*Guida omnicomprensiva di Xanathar*). Supplemento con regole **facoltative** per giocatori e Dungeon Master (sottoclassi, incantesimi, strumenti al DM…); applicare solo se il gruppo le adotta.",
+  van_richten_ravenloft:
+    "> **Tag — Van Richten** (*Guida di Van Richten a Ravenloft*). Supplemento di ambientazione/horror con opzioni e strumenti aggiuntivi (lignaggi, oscuri doni, consigli al DM…); usare solo se la campagna adotta questo modulo.",
 };
 
 function applySupplementContentBanner(meta: Record<string, unknown>, rawContent: string): string {

@@ -54,8 +54,10 @@ function metaOriginTag(m: Record<string, unknown> | null | undefined): string | 
   if (key === "eberron") return "eberron";
   if (key === "tasha") return "tasha";
   if (key === "xanathar") return "xanathar";
+  if (key === "van_richten_ravenloft") return "van_richten_ravenloft";
   const ro = metaString(m, "rules_origin");
-  if (ro === "eberron" || ro === "tasha" || ro === "xanathar") return ro;
+  if (ro === "eberron" || ro === "tasha" || ro === "xanathar" || ro === "van_richten_ravenloft")
+    return ro;
   return ro;
 }
 
@@ -75,6 +77,10 @@ function appendManualOriginPreamble(
   } else if (tag === "xanathar") {
     lines.push(
       "Origine — **Xanathar** (*Guida omnicomprensiva di Xanathar*): supplemento con opzioni per PG e DM; confrontare con il Manuale del Giocatore di base ove serve."
+    );
+  } else if (tag === "van_richten_ravenloft") {
+    lines.push(
+      "Origine — **Van Richten** (*Guida di Van Richten a Ravenloft*): supplemento horror/ambientazione con opzioni aggiuntive; applicare solo se la campagna lo adotta."
     );
   }
 }

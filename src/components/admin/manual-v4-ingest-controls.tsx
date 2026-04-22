@@ -15,6 +15,7 @@ const MOSTRI_MULTIVERSO_MD = "Mostri del multiverso.md";
 const EBERRON_MD = "eberron.md";
 const TASHA_MD = "Tasha.md";
 const XANATHAR_MD = "xanathar.md";
+const VAN_RICHTEN_MD = "Guida di Van Richten a Ravenloft (1).md";
 const CHUNK_BATCH = 16;
 
 function combinedPercent(fileIdx0: number, totalFiles: number, doneInFile: number, chunksInFile: number) {
@@ -30,6 +31,7 @@ export function ManualV4IngestControls() {
   const [eberronRunning, setEberronRunning] = useState(false);
   const [tashaRunning, setTashaRunning] = useState(false);
   const [xanatharRunning, setXanatharRunning] = useState(false);
+  const [vanRichtenRunning, setVanRichtenRunning] = useState(false);
   const [progressPct, setProgressPct] = useState(0);
   const [chunkDone, setChunkDone] = useState(0);
   const [chunkTotal, setChunkTotal] = useState(0);
@@ -41,7 +43,8 @@ export function ManualV4IngestControls() {
     multiverseRunning ||
     eberronRunning ||
     tashaRunning ||
-    xanatharRunning;
+    xanatharRunning ||
+    vanRichtenRunning;
 
   async function ingestOneMdFileBatched(
     name: string,
@@ -196,6 +199,36 @@ export function ManualV4IngestControls() {
     }
   }
 
+  async function runVanRichtenV4() {
+    setVanRichtenRunning(true);
+    setProgressPct(0);
+    setChunkDone(0);
+    setChunkTotal(0);
+    setCurrentFile(VAN_RICHTEN_MD);
+    try {
+      const result = await ingestOneMdFileBatched(VAN_RICHTEN_MD, {
+        source: "Guida di Van Richten a Ravenloft",
+        source_type: "md-manual",
+        manual_book_key: "van_richten_ravenloft",
+        rules_origin: "van_richten_ravenloft",
+        campaign_setting: "ravenloft",
+        ingest_profile: "v4-section",
+        macro_category: "Espansione — Ravenloft, orrori, lignaggi e strumenti per il DM",
+      });
+      toast.success(
+        `Van Richten (v4): ${result.inserted} chunk, ${result.skipped} saltati, ${result.chunks} sezioni (##). Tag nel testo e in metadata.`
+      );
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Errore ingest Van Richten.");
+    } finally {
+      setVanRichtenRunning(false);
+      setCurrentFile(null);
+      setProgressPct(0);
+      setChunkDone(0);
+      setChunkTotal(0);
+    }
+  }
+
   async function runMultiverseV4() {
     setMultiverseRunning(true);
     setProgressPct(0);
@@ -262,7 +295,8 @@ export function ManualV4IngestControls() {
           <code className="text-violet-200/80">v4-mordenkainen-multiverse</code> (MPM),{" "}
           <code className="text-emerald-200/80">tag Eberron</code> ({EBERRON_MD}),{" "}
           <code className="text-rose-200/80">tag Tasha</code> ({TASHA_MD}),{" "}
-          <code className="text-sky-200/80">tag Xanathar</code> ({XANATHAR_MD}).
+          <code className="text-sky-200/80">tag Xanathar</code> ({XANATHAR_MD}),{" "}
+          <code className="text-fuchsia-200/80">tag Van Richten</code> ({VAN_RICHTEN_MD}).
         </p>
 
         <div className="flex flex-wrap gap-2">
@@ -374,6 +408,24 @@ export function ManualV4IngestControls() {
               </>
             )}
           </Button>
+          <Button
+            type="button"
+            disabled={busy}
+            className="border border-fuchsia-500/45 bg-fuchsia-950/35 text-fuchsia-50 hover:bg-fuchsia-900/40"
+            onClick={() => void runVanRichtenV4()}
+          >
+            {vanRichtenRunning ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {VAN_RICHTEN_MD}…
+              </>
+            ) : (
+              <>
+                <BookOpen className="mr-2 h-4 w-4 text-fuchsia-300" />
+                Ingest v4 — {VAN_RICHTEN_MD} (tag Van Richten)
+              </>
+            )}
+          </Button>
         </div>
 
         {busy && (
@@ -388,6 +440,8 @@ export function ManualV4IngestControls() {
                     ? "border-rose-500/25"
                     : xanatharRunning
                       ? "border-sky-500/25"
+                      : vanRichtenRunning
+                        ? "border-fuchsia-500/25"
                       : multiverseRunning
                         ? "border-violet-500/25"
                         : "border-amber-500/25"
@@ -405,6 +459,8 @@ export function ManualV4IngestControls() {
                         ? "text-rose-400"
                         : xanatharRunning
                           ? "text-sky-400"
+                          : vanRichtenRunning
+                            ? "text-fuchsia-400"
                           : multiverseRunning
                             ? "text-violet-400"
                             : "text-amber-400"

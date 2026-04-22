@@ -7,6 +7,7 @@ export const WIKI_MANUAL_BOOK_OPTIONS = [
   { key: "eberron", label: "Eberron — Rinascita dopo l'Ultima Guerra" },
   { key: "tasha", label: "Calderone di Tasha" },
   { key: "xanathar", label: "Guida di Xanathar" },
+  { key: "van_richten_ravenloft", label: "Guida di Van Richten a Ravenloft" },
 ] as const;
 
 export type WikiManualBookKey = (typeof WIKI_MANUAL_BOOK_OPTIONS)[number]["key"];
