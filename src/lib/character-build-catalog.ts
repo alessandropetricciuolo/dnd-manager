@@ -1,6 +1,7 @@
 /**
  * Liste chiuse per PG campagna lunga. Classi PHB: `manuale_giocatore.md` + ingest v4.
  * Classe Artefice: `Tasha.md` (stesso testo in ingest con `manual_book_key` tasha).
+ * Lignaggi Van Richten: `Guida di Van Richten a Ravenloft (1).md` (`manual_book_key` van_richten_ravenloft).
  */
 
 import type { WikiManualBookKey } from "@/lib/manual-book-catalog";
@@ -72,6 +73,8 @@ export const MPMM_MD_FILE = "Mostri del multiverso.md";
 export const MPMM_BOOK_KEY = "mordenkainen_multiverse" as const;
 export const EBERRON_MD_FILE = "eberron.md";
 export const EBERRON_BOOK_KEY = "eberron" as const;
+export const VAN_RICHTEN_MD_FILE = "Guida di Van Richten a Ravenloft (1).md";
+export const VAN_RICHTEN_BOOK_KEY = "van_richten_ravenloft" as const;
 
 const MPMM_SOURCE: ClassSupplementRulesSource = {
   markdownFile: MPMM_MD_FILE,
@@ -81,6 +84,11 @@ const MPMM_SOURCE: ClassSupplementRulesSource = {
 const EBERRON_SOURCE: ClassSupplementRulesSource = {
   markdownFile: EBERRON_MD_FILE,
   manualBookKey: EBERRON_BOOK_KEY,
+};
+
+const VAN_RICHTEN_SOURCE: ClassSupplementRulesSource = {
+  markdownFile: VAN_RICHTEN_MD_FILE,
+  manualBookKey: VAN_RICHTEN_BOOK_KEY,
 };
 
 export const RACE_OPTIONS: RaceCatalogEntry[] = [
@@ -186,6 +194,27 @@ export const RACE_OPTIONS: RaceCatalogEntry[] = [
     traitsSectionHeading: "__CONTENT__",
     traitsContentAnchor: "**Forgiato.**",
     supplementRulesSource: EBERRON_SOURCE,
+  },
+  {
+    slug: "dhampir",
+    label: "Dhampir",
+    traitsSectionHeading: "__CONTENT__",
+    traitsContentAnchor: "TRATTI DEL DHAMPIR",
+    supplementRulesSource: VAN_RICHTEN_SOURCE,
+  },
+  {
+    slug: "rinato",
+    label: "Rinato",
+    traitsSectionHeading: "__CONTENT__",
+    traitsContentAnchor: "TRATTI DEL RINATO",
+    supplementRulesSource: VAN_RICHTEN_SOURCE,
+  },
+  {
+    slug: "sangue_strigo",
+    label: "Sangue Strigo",
+    traitsSectionHeading: "__CONTENT__",
+    traitsContentAnchor: "Pegno inquietante",
+    supplementRulesSource: VAN_RICHTEN_SOURCE,
   },
 ];
 
