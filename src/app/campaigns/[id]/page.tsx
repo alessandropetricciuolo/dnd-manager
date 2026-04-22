@@ -190,6 +190,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
 
   let eligiblePlayers: { id: string; label: string }[] = [];
   let eligibleParties: { id: string; label: string; memberIds: string[] }[] = [];
+  let playerPartyById: Record<string, string> = {};
   if (isGmOrAdmin) {
     const playersResult = await getCampaignEligiblePlayers(id);
     if (playersResult.success && playersResult.data) eligiblePlayers = playersResult.data;
@@ -209,6 +210,15 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
       label: party.name,
       memberIds: memberIdsByPartyId.get(party.id) ?? [],
     }));
+    const partyNameById = new Map(
+      ((partiesRaw ?? []) as Array<{ id: string; name: string }>).map((party) => [party.id, party.name])
+    );
+    playerPartyById = {};
+    for (const row of (membersRaw ?? []) as Array<{ player_id: string; party_id: string | null }>) {
+      if (!row.party_id) continue;
+      const partyName = partyNameById.get(row.party_id);
+      if (partyName) playerPartyById[row.player_id] = partyName;
+    }
   }
   const isViewerLockedOut = !isGmOrAdmin && campaign.type === "long" && !isCampaignMember;
   const isLongCampaign = campaign.type === "long";
@@ -665,6 +675,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
               campaignType={campaign.type ?? null}
               characters={characters}
               eligiblePlayers={eligiblePlayers}
+              playerPartyById={playerPartyById}
               isGm={isGmOrAdmin}
               openCreateDialogOnLoad={openCreateDialogOnLoad}
               openEditCharacterId={openEditCharacterId}
