@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { uploadToTelegram } from "@/lib/telegram-storage";
 import { parseSafeExternalUrl } from "@/lib/security/url";
@@ -10,6 +11,10 @@ import {
   parseAllowedPartyIds,
   resolveAllowedUserIdsFromParties,
 } from "@/lib/entity-permissions";
+import {
+  deleteCampaignMemorySource,
+  syncMapDescriptionToCampaignMemory,
+} from "@/lib/campaign-memory-indexer";
 
 const VISIBILITY_VALUES = ["public", "secret", "selective"] as const;
 type Visibility = (typeof VISIBILITY_VALUES)[number];
@@ -221,6 +226,13 @@ export async function uploadMap(
       }
     }
 
+    try {
+      const admin = createSupabaseAdminClient();
+      await syncMapDescriptionToCampaignMemory(admin, inserted.id, { campaignId });
+    } catch (memoryErr) {
+      console.error("[uploadMap] campaign memory sync", memoryErr);
+    }
+
     revalidatePath(`/campaigns/${campaignId}`);
     return { success: true, message: "Mappa caricata!" };
   } catch (err) {
@@ -241,6 +253,7 @@ export async function updateMap(
   campaignId: string,
   payload: {
     name?: string;
+    description?: string | null;
     map_type?: string;
     visibility?: Visibility;
     parent_map_id?: string | null;
@@ -252,6 +265,8 @@ export async function updateMap(
     return { success: false, message: "Mappa non valida." };
   }
   const name = payload.name?.trim();
+  const description =
+    payload.description === undefined ? undefined : payload.description?.trim() ? payload.description.trim() : null;
   const mapType = payload.map_type?.trim();
   const visibility = payload.visibility && VISIBILITY_VALUES.includes(payload.visibility) ? payload.visibility : undefined;
   const parentMapId =
@@ -263,8 +278,8 @@ export async function updateMap(
   const allowedUserIds = payload.allowed_user_ids ?? [];
   const allowedPartyIds = payload.allowed_party_ids ?? [];
 
-  if (!name && !mapType && visibility === undefined && parentMapId === undefined) {
-    return { success: false, message: "Inserisci nome, categoria, genitore o visibilità da aggiornare." };
+  if (!name && description === undefined && !mapType && visibility === undefined && parentMapId === undefined) {
+    return { success: false, message: "Inserisci nome, descrizione, categoria, genitore o visibilità da aggiornare." };
   }
   try {
     const supabase = await createSupabaseServerClient();
@@ -285,11 +300,13 @@ export async function updateMap(
     }
     const updates: {
       name?: string;
+      description?: string | null;
       map_type?: string;
       visibility?: Visibility;
       parent_map_id?: string | null;
     } = {};
     if (name) updates.name = name;
+    if (description !== undefined) updates.description = description;
     if (mapType && MAP_TYPES.includes(mapType as (typeof MAP_TYPES)[number])) {
       updates.map_type = mapType;
     }
@@ -325,6 +342,12 @@ export async function updateMap(
         visibility === "selective" ? mergedUserIds : []
       );
       if (permError) console.error("[updateMap] entity_permissions", permError);
+    }
+    try {
+      const admin = createSupabaseAdminClient();
+      await syncMapDescriptionToCampaignMemory(admin, mapId, { campaignId });
+    } catch (memoryErr) {
+      console.error("[updateMap] campaign memory sync", memoryErr);
     }
     revalidatePath(`/campaigns/${campaignId}`);
     revalidatePath(`/campaigns/${campaignId}/maps/${mapId}`);
@@ -366,6 +389,13 @@ export async function deleteMap(mapId: string, campaignId: string): Promise<Dele
     if (error) {
       console.error("[deleteMap]", error);
       return { success: false, message: error.message ?? "Errore durante l'eliminazione." };
+    }
+
+    try {
+      const admin = createSupabaseAdminClient();
+      await deleteCampaignMemorySource(admin, campaignId, "map_description", mapId);
+    } catch (memoryErr) {
+      console.error("[deleteMap] campaign memory delete", memoryErr);
     }
 
     revalidatePath(`/campaigns/${campaignId}`);

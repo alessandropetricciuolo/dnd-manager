@@ -16,6 +16,7 @@ const EBERRON_MD = "eberron.md";
 const TASHA_MD = "Tasha.md";
 const XANATHAR_MD = "xanathar.md";
 const VAN_RICHTEN_MD = "Guida di Van Richten a Ravenloft (1).md";
+const DM_MASTER_MD = "DM_5th_master.md";
 const CHUNK_BATCH = 16;
 
 function combinedPercent(fileIdx0: number, totalFiles: number, doneInFile: number, chunksInFile: number) {
@@ -32,6 +33,7 @@ export function ManualV4IngestControls() {
   const [tashaRunning, setTashaRunning] = useState(false);
   const [xanatharRunning, setXanatharRunning] = useState(false);
   const [vanRichtenRunning, setVanRichtenRunning] = useState(false);
+  const [dmMasterRunning, setDmMasterRunning] = useState(false);
   const [progressPct, setProgressPct] = useState(0);
   const [chunkDone, setChunkDone] = useState(0);
   const [chunkTotal, setChunkTotal] = useState(0);
@@ -44,7 +46,8 @@ export function ManualV4IngestControls() {
     eberronRunning ||
     tashaRunning ||
     xanatharRunning ||
-    vanRichtenRunning;
+    vanRichtenRunning ||
+    dmMasterRunning;
 
   async function ingestOneMdFileBatched(
     name: string,
@@ -229,6 +232,35 @@ export function ManualV4IngestControls() {
     }
   }
 
+  async function runDmMasterV5() {
+    setDmMasterRunning(true);
+    setProgressPct(0);
+    setChunkDone(0);
+    setChunkTotal(0);
+    setCurrentFile(DM_MASTER_MD);
+    try {
+      const result = await ingestOneMdFileBatched(DM_MASTER_MD, {
+        source: "Dungeon Master's Guide",
+        source_type: "md-manual",
+        manual_book_key: "dungeon_master_guide",
+        rules_origin: "dungeon_master_guide",
+        ingest_profile: "v5-dm-master",
+        macro_category: "Manuale tecnico DM — worldbuilding, avventure, regole avanzate",
+      });
+      toast.success(
+        `DM Master (v5): ${result.inserted} chunk, ${result.skipped} saltati, ${result.chunks} sezioni indicizzate con path gerarchico.`
+      );
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Errore ingest DM Master.");
+    } finally {
+      setDmMasterRunning(false);
+      setCurrentFile(null);
+      setProgressPct(0);
+      setChunkDone(0);
+      setChunkTotal(0);
+    }
+  }
+
   async function runMultiverseV4() {
     setMultiverseRunning(true);
     setProgressPct(0);
@@ -296,7 +328,8 @@ export function ManualV4IngestControls() {
           <code className="text-emerald-200/80">tag Eberron</code> ({EBERRON_MD}),{" "}
           <code className="text-rose-200/80">tag Tasha</code> ({TASHA_MD}),{" "}
           <code className="text-sky-200/80">tag Xanathar</code> ({XANATHAR_MD}),{" "}
-          <code className="text-fuchsia-200/80">tag Van Richten</code> ({VAN_RICHTEN_MD}).
+          <code className="text-fuchsia-200/80">tag Van Richten</code> ({VAN_RICHTEN_MD}),{" "}
+          <code className="text-orange-200/80">v5 DM Master</code> ({DM_MASTER_MD}).
         </p>
 
         <div className="flex flex-wrap gap-2">
@@ -426,6 +459,24 @@ export function ManualV4IngestControls() {
               </>
             )}
           </Button>
+          <Button
+            type="button"
+            disabled={busy}
+            className="border border-orange-500/45 bg-orange-950/35 text-orange-50 hover:bg-orange-900/40"
+            onClick={() => void runDmMasterV5()}
+          >
+            {dmMasterRunning ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {DM_MASTER_MD}…
+              </>
+            ) : (
+              <>
+                <BookOpen className="mr-2 h-4 w-4 text-orange-300" />
+                Ingest v5 — {DM_MASTER_MD}
+              </>
+            )}
+          </Button>
         </div>
 
         {busy && (
@@ -442,6 +493,8 @@ export function ManualV4IngestControls() {
                       ? "border-sky-500/25"
                       : vanRichtenRunning
                         ? "border-fuchsia-500/25"
+                        : dmMasterRunning
+                          ? "border-orange-500/25"
                       : multiverseRunning
                         ? "border-violet-500/25"
                         : "border-amber-500/25"
@@ -461,6 +514,8 @@ export function ManualV4IngestControls() {
                           ? "text-sky-400"
                           : vanRichtenRunning
                             ? "text-fuchsia-400"
+                            : dmMasterRunning
+                              ? "text-orange-400"
                           : multiverseRunning
                             ? "text-violet-400"
                             : "text-amber-400"

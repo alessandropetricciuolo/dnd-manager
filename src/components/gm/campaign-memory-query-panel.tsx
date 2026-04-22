@@ -23,6 +23,8 @@ function sourceBadgeClass(sourceType: CampaignMemoryQuerySource["sourceType"]): 
   switch (sourceType) {
     case "wiki":
       return "border-emerald-600/40 bg-emerald-950/40 text-emerald-100";
+    case "map_description":
+      return "border-cyan-600/40 bg-cyan-950/40 text-cyan-100";
     case "character_background":
       return "border-sky-600/40 bg-sky-950/40 text-sky-100";
     case "session_summary":
@@ -130,8 +132,8 @@ export function CampaignMemoryQueryPanel({ campaignId }: CampaignMemoryQueryPane
       <CardContent className="space-y-4">
         <div className="rounded-lg border border-violet-700/35 bg-violet-950/30 p-3">
           <p className="text-xs text-violet-100/85">
-            Fonti incluse nel primo rilascio: wiki canonica, background PG, session summary, note private GM e
-            secret whispers. Query ed export restano visibili solo nel tab <strong>Solo GM</strong>.
+            Fonti incluse nel primo rilascio: wiki canonica, descrizioni mappe, background PG, session summary,
+            note private GM e secret whispers. Query ed export restano visibili solo nel tab <strong>Solo GM</strong>.
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-violet-200/75">
             <Badge variant="outline" className="border-violet-500/35 bg-transparent text-violet-200">

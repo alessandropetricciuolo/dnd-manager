@@ -79,6 +79,7 @@ export function MapCard({
               campaignType={campaignType}
               mapId={map.id}
               initialName={map.name}
+              initialDescription={map.description ?? null}
               initialMapType={map.map_type ?? "city"}
               initialParentMapId={map.parent_map_id ?? null}
               initialVisibility={map.visibility ?? "public"}

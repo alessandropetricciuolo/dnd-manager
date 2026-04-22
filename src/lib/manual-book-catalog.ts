@@ -8,6 +8,7 @@ export const WIKI_MANUAL_BOOK_OPTIONS = [
   { key: "tasha", label: "Calderone di Tasha" },
   { key: "xanathar", label: "Guida di Xanathar" },
   { key: "van_richten_ravenloft", label: "Guida di Van Richten a Ravenloft" },
+  { key: "dungeon_master_guide", label: "Dungeon Master's Guide" },
 ] as const;
 
 export type WikiManualBookKey = (typeof WIKI_MANUAL_BOOK_OPTIONS)[number]["key"];

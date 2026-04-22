@@ -69,6 +69,8 @@ function sourceLabel(sourceType: CampaignMemorySourceType): string {
   switch (sourceType) {
     case "wiki":
       return "Wiki";
+    case "map_description":
+      return "Mappa";
     case "character_background":
       return "PG";
     case "session_summary":
@@ -86,6 +88,8 @@ function sourceHref(campaignId: string, row: CampaignMemoryChunkRow): string {
   switch (row.source_type) {
     case "wiki":
       return `/campaigns/${campaignId}/wiki/${row.source_id}`;
+    case "map_description":
+      return `/campaigns/${campaignId}/maps/${row.source_id}`;
     case "character_background":
       return `/campaigns/${campaignId}?tab=pg&openEditCharacter=${row.source_id}`;
     case "session_summary":
@@ -150,7 +154,7 @@ function rerankMatches(question: string, rows: CampaignMemoryChunkRow[]): Campai
     .map((row) => {
       let score = typeof row.similarity === "number" ? row.similarity : 0;
       if (wantsCharacters && row.source_type === "character_background") score += 0.18;
-      if (wantsRecent && (row.source_type === "session_summary" || row.source_type === "wiki")) {
+      if (wantsRecent && (row.source_type === "session_summary" || row.source_type === "wiki" || row.source_type === "map_description")) {
         const ageMs = Math.max(0, now - metadataDate(row));
         const ageDays = ageMs / 86_400_000;
         score += Math.max(0, 0.2 - Math.min(ageDays, 30) * 0.005);
@@ -158,6 +162,9 @@ function rerankMatches(question: string, rows: CampaignMemoryChunkRow[]): Campai
       if (!wantsSecrets && row.source_type === "secret_whisper") score -= 0.1;
       if (wantsSecrets && row.source_type === "secret_whisper") score += 0.15;
       if (row.source_type === "gm_note" && !wantsSecrets && !wantsRecent) score += 0.04;
+      if (/\b(mappa|mappe|continente|citta|città|regione|dungeon|luogo|dove)\b/i.test(question) && row.source_type === "map_description") {
+        score += 0.12;
+      }
       return { row, score };
     })
     .sort((a, b) => b.score - a.score)

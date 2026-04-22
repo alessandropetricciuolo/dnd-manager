@@ -344,7 +344,8 @@ export interface Database {
             | "session_summary"
             | "session_note"
             | "gm_note"
-            | "secret_whisper";
+            | "secret_whisper"
+            | "map_description";
           source_id: string;
           chunk_index: number;
           title: string;

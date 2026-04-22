@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -57,6 +58,7 @@ type EditMapDialogProps = {
   campaignType?: "oneshot" | "quest" | "long" | null;
   mapId: string;
   initialName: string;
+  initialDescription?: string | null;
   initialMapType: string;
   initialParentMapId?: string | null;
   initialVisibility?: string;
@@ -75,6 +77,7 @@ export function EditMapDialog({
   campaignType = null,
   mapId,
   initialName,
+  initialDescription = null,
   initialMapType,
   initialParentMapId = null,
   initialVisibility = "public",
@@ -91,6 +94,7 @@ export function EditMapDialog({
   const [localOpen, setLocalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [name, setName] = useState(initialName);
+  const [description, setDescription] = useState(initialDescription ?? "");
   const [mapType, setMapType] = useState(() => {
     const n = coerceMapTypeFromDb(initialMapType);
     const opts = isLongCampaign ? LONG_MAP_TYPE_OPTIONS : MAP_TYPE_OPTIONS;
@@ -149,6 +153,7 @@ export function EditMapDialog({
   function handleOpenChange(next: boolean) {
     if (!next) {
       setName(initialName);
+      setDescription(initialDescription ?? "");
       setMapType(() => {
         const n = coerceMapTypeFromDb(initialMapType);
         const opts = isLongCampaign ? LONG_MAP_TYPE_OPTIONS : MAP_TYPE_OPTIONS;
@@ -197,6 +202,7 @@ export function EditMapDialog({
     try {
       const result = await updateMap(mapId, campaignId, {
         name: trimmedName,
+        description,
         map_type: mapType,
         visibility: visibility as "public" | "secret" | "selective",
         ...(isLongCampaign
@@ -254,6 +260,17 @@ export function EditMapDialog({
               className="bg-slate-900/70 border-slate-700 text-slate-50"
               disabled={isLoading}
               required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-map-description">Descrizione</Label>
+            <Textarea
+              id="edit-map-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Descrivi cosa rappresenta questa mappa, i luoghi chiave e il contesto narrativo."
+              className="min-h-[110px] bg-slate-900/70 border-slate-700 text-slate-50"
+              disabled={isLoading}
             />
           </div>
           <div className="space-y-2">

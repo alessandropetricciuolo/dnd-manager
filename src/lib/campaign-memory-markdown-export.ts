@@ -34,6 +34,7 @@ type BuildMarkdownOptions = {
 
 const SOURCE_TYPE_ORDER: CampaignMemorySourceType[] = [
   "wiki",
+  "map_description",
   "character_background",
   "session_summary",
   "session_note",
@@ -43,6 +44,7 @@ const SOURCE_TYPE_ORDER: CampaignMemorySourceType[] = [
 
 const SOURCE_TYPE_LABEL: Record<CampaignMemorySourceType, string> = {
   wiki: "Wiki canonica",
+  map_description: "Descrizioni mappe",
   character_background: "Background PG",
   session_summary: "Session summary",
   session_note: "Note private sessione",
@@ -148,6 +150,15 @@ function buildMetaLines(source: CampaignMemoryExportSource): string[] {
       if (globalStatus) lines.push(`Stato globale: ${globalStatus}`);
       break;
     }
+    case "map_description": {
+      const mapType = metaString(meta, "map_type");
+      const visibility = metaString(meta, "visibility");
+      const parentMapId = metaString(meta, "parent_map_id");
+      if (mapType) lines.push(`Tipo mappa: ${mapType}`);
+      if (visibility) lines.push(`Visibilità mappa: ${visibility}`);
+      if (parentMapId) lines.push(`Mappa genitore: ${parentMapId}`);
+      break;
+    }
     case "character_background": {
       const level = metaString(meta, "level");
       const characterClass = metaString(meta, "character_class");
@@ -227,6 +238,7 @@ function groupSources(chunks: CampaignMemoryExportChunk[]): CampaignMemoryExport
 function buildSourceCounts(sources: CampaignMemoryExportSource[]): Record<CampaignMemorySourceType, number> {
   return {
     wiki: sources.filter((source) => source.sourceType === "wiki").length,
+    map_description: sources.filter((source) => source.sourceType === "map_description").length,
     character_background: sources.filter((source) => source.sourceType === "character_background").length,
     session_summary: sources.filter((source) => source.sourceType === "session_summary").length,
     session_note: sources.filter((source) => source.sourceType === "session_note").length,

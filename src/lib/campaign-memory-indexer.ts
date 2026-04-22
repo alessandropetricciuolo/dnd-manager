@@ -11,6 +11,7 @@ export const CAMPAIGN_MEMORY_SOURCE_TYPES = [
   "session_note",
   "gm_note",
   "secret_whisper",
+  "map_description",
 ] as const;
 
 export type CampaignMemorySourceType = (typeof CAMPAIGN_MEMORY_SOURCE_TYPES)[number];
@@ -83,6 +84,17 @@ type WhisperMemoryRow = {
   message: string | null;
   image_url: string | null;
   created_at: string;
+};
+
+type MapMemoryRow = {
+  id: string;
+  campaign_id: string;
+  name: string;
+  description: string | null;
+  map_type: string;
+  visibility: string;
+  parent_map_id: string | null;
+  updated_at: string;
 };
 
 const TARGET_CHUNK_CHARS = 900;
@@ -442,6 +454,42 @@ function buildWhisperChunks(
   }));
 }
 
+function buildMapChunks(row: MapMemoryRow): CampaignMemoryChunkInsert[] {
+  const description = normalizeWhitespace(row.description ?? "");
+  if (!description) return [];
+
+  const title = `Mappa: ${row.name}`;
+  return chunkText(
+    withHeader(
+      title,
+      [
+        `Tipo mappa: ${row.map_type}`,
+        `Visibilità: ${row.visibility}`,
+        row.parent_map_id ? `Mappa genitore: ${row.parent_map_id}` : null,
+        `Ultimo aggiornamento: ${row.updated_at}`,
+        "Fonte: descrizione della mappa della campagna.",
+      ],
+      description
+    )
+  ).map((content, index) => ({
+    campaign_id: row.campaign_id,
+    source_type: "map_description",
+    source_id: row.id,
+    chunk_index: index,
+    title: row.name,
+    content,
+    summary: excerpt(description),
+    metadata: {
+      map_name: row.name,
+      map_type: row.map_type,
+      visibility: row.visibility,
+      parent_map_id: row.parent_map_id,
+      updated_at: row.updated_at,
+      is_private: row.visibility !== "public",
+    },
+  }));
+}
+
 export async function syncWikiEntityToCampaignMemory(
   admin: AdminClient,
   entityId: string,
@@ -617,6 +665,33 @@ export async function syncSecretWhisperToCampaignMemory(
   );
 }
 
+export async function syncMapDescriptionToCampaignMemory(
+  admin: AdminClient,
+  mapId: string,
+  options?: { campaignId?: string }
+): Promise<void> {
+  const { data } = await admin
+    .from("maps")
+    .select("id, campaign_id, name, description, map_type, visibility, parent_map_id, updated_at")
+    .eq("id", mapId)
+    .maybeSingle();
+
+  if (!data) {
+    if (options?.campaignId) {
+      await deleteCampaignMemorySource(admin, options.campaignId, "map_description", mapId);
+    }
+    return;
+  }
+
+  const row = data as MapMemoryRow;
+  if (!(await isLongCampaign(admin, row.campaign_id))) {
+    await deleteCampaignMemorySource(admin, row.campaign_id, "map_description", row.id);
+    return;
+  }
+
+  await upsertCampaignMemoryChunks(admin, row.campaign_id, "map_description", row.id, buildMapChunks(row));
+}
+
 export async function countCampaignMemoryChunks(admin: AdminClient, campaignId: string): Promise<number> {
   const { count, error } = await admin
     .from("campaign_memory_chunks")
@@ -646,6 +721,7 @@ export async function reindexCampaignMemory(admin: AdminClient, campaignId: stri
     sessionRes,
     noteRes,
     whisperRes,
+    mapRes,
   ] = await Promise.all([
     admin
       .from("wiki_entities")
@@ -672,6 +748,11 @@ export async function reindexCampaignMemory(admin: AdminClient, campaignId: stri
       .select("id")
       .eq("campaign_id", campaignId)
       .order("created_at", { ascending: false }),
+    admin
+      .from("maps")
+      .select("id, campaign_id, name, description, map_type, visibility, parent_map_id, updated_at")
+      .eq("campaign_id", campaignId)
+      .order("updated_at", { ascending: false }),
   ]);
 
   if (wikiRes.error) throw new Error(wikiRes.error.message);
@@ -679,6 +760,7 @@ export async function reindexCampaignMemory(admin: AdminClient, campaignId: stri
   if (sessionRes.error) throw new Error(sessionRes.error.message);
   if (noteRes.error) throw new Error(noteRes.error.message);
   if (whisperRes.error) throw new Error(whisperRes.error.message);
+  if (mapRes.error) throw new Error(mapRes.error.message);
 
   for (const row of (wikiRes.data ?? []) as WikiMemoryRow[]) {
     await upsertCampaignMemoryChunks(admin, campaignId, "wiki", row.id, buildWikiChunks(row));
@@ -714,5 +796,8 @@ export async function reindexCampaignMemory(admin: AdminClient, campaignId: stri
   }
   for (const row of (whisperRes.data ?? []) as Array<{ id: string }>) {
     await syncSecretWhisperToCampaignMemory(admin, row.id, { campaignId });
+  }
+  for (const row of (mapRes.data ?? []) as MapMemoryRow[]) {
+    await upsertCampaignMemoryChunks(admin, campaignId, "map_description", row.id, buildMapChunks(row));
   }
 }

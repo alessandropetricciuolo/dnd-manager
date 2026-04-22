@@ -35,6 +35,18 @@ type MarkdownSectionUnitChunk = {
   sectionPartTotal: number;
 };
 
+type DmMasterUnitChunk = {
+  content: string;
+  chapter: string;
+  sectionHeading: string;
+  sectionKey: string;
+  chunkType: "prose" | "table";
+  sectionPart: number;
+  sectionPartTotal: number;
+  headingLevel: number;
+  headingPath: string;
+};
+
 function countTableLikeLines(text: string, maxLines = 40): number {
   const lines = text.split("\n").slice(0, maxLines);
   let n = 0;
@@ -353,6 +365,100 @@ function chunkMarkdownSectionUnits(raw: string): MarkdownSectionUnitChunk[] {
   return out;
 }
 
+const DM_MASTER_SECTION_MIN_CHARS = 80;
+const DM_MASTER_SECTION_HARD_MAX = 4_800;
+const DM_MASTER_SECTION_SPLIT_TARGET = 3_600;
+
+function stripDmMasterNoiseLine(line: string): string {
+  const t = line.trim();
+  if (!t) return "";
+  if (/^scansionato con camscanner$/i.test(t)) return "";
+  if (/^offrimi un (?:caff[eè]|birra)/i.test(t)) return "";
+  if (/^https?:\/\/paypal\.me\//i.test(t)) return "";
+  if (/^paypal\.me\//i.test(t)) return "";
+  if (/^\d{1,3}$/.test(t)) return "";
+  return line;
+}
+
+/**
+ * Profilo speciale DM Master: chunk molto precisi per sezione heading (##/###/####),
+ * con path gerarchico per retrieval puntuale su regole.
+ */
+function chunkMarkdownDmMasterUnits(raw: string): DmMasterUnitChunk[] {
+  const lines = raw.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+  const out: DmMasterUnitChunk[] = [];
+  const stack: { level: number; title: string }[] = [];
+
+  let i = 0;
+  while (i < lines.length) {
+    const h = parseAtxHeadingLine(lines[i]);
+    if (!h || h.level < 2 || h.level > 4) {
+      i += 1;
+      continue;
+    }
+
+    while (stack.length > 0 && stack[stack.length - 1].level >= h.level) {
+      stack.pop();
+    }
+    stack.push({ level: h.level, title: h.title });
+
+    let j = i + 1;
+    while (j < lines.length) {
+      const hj = parseAtxHeadingLine(lines[j]);
+      if (hj && hj.level <= h.level) break;
+      j += 1;
+    }
+
+    const bodyLines = lines.slice(i + 1, j);
+    const cleanedBody = bodyLines
+      .map(stripDmMasterNoiseLine)
+      .map(stripMdLineArtifacts)
+      .filter((line) => line.trim().length > 0)
+      .join("\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+
+    const headingPath = stack.map((s) => s.title).join(" > ").trim();
+    const chapter =
+      stack.find((s) => s.level === 2)?.title ??
+      stack[0]?.title ??
+      "Dungeon Master's Guide";
+    const sectionHeading = h.title;
+    const sectionKey = normalizeManualSectionKey(`${headingPath}::L${h.level}`);
+    const fullBlock = `## ${sectionHeading}\n\n${cleanedBody}`.trim();
+
+    if (fullBlock.length >= DM_MASTER_SECTION_MIN_CHARS) {
+      const pieces =
+        fullBlock.length <= DM_MASTER_SECTION_HARD_MAX
+          ? [fullBlock]
+          : splitLongBody(
+              fullBlock,
+              Math.min(DM_MASTER_SECTION_MIN_CHARS, 200),
+              DM_MASTER_SECTION_SPLIT_TARGET,
+              DM_MASTER_SECTION_HARD_MAX
+            );
+      const total = Math.max(1, pieces.length);
+      pieces.forEach((piece, idx) => {
+        out.push({
+          content: piece.trim(),
+          chapter,
+          sectionHeading,
+          sectionKey,
+          chunkType: isLikelyTableBlock(piece) ? "table" : "prose",
+          sectionPart: idx + 1,
+          sectionPartTotal: total,
+          headingLevel: h.level,
+          headingPath,
+        });
+      });
+    }
+
+    i = j;
+  }
+
+  return out;
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -464,6 +570,27 @@ function getCachedMpmCreatureChunks(filePath: string): MarkdownSectionUnitChunk[
   }
 }
 
+const structuredDmMasterChunkCache = new Map<string, DmMasterUnitChunk[]>();
+
+function getCachedDmMasterChunks(filePath: string): DmMasterUnitChunk[] | null {
+  try {
+    const st = fs.statSync(filePath);
+    const key = `md-dm-master:${filePath}:${st.mtimeMs}:${st.size}`;
+    const hit = structuredDmMasterChunkCache.get(key);
+    if (hit) return hit;
+    const raw = fs.readFileSync(filePath, "utf-8");
+    const chunks = chunkMarkdownDmMasterUnits(raw);
+    structuredDmMasterChunkCache.set(key, chunks);
+    if (structuredDmMasterChunkCache.size > 6) {
+      const first = structuredDmMasterChunkCache.keys().next().value;
+      if (first) structuredDmMasterChunkCache.delete(first);
+    }
+    return chunks;
+  } catch {
+    return null;
+  }
+}
+
 function getManualsTxtDir(): string | null {
   const cwd = process.cwd();
   const manualDirs = [
@@ -554,6 +681,8 @@ const SUPPLEMENT_CONTENT_BANNERS: Record<string, string> = {
     "> **Tag — Xanathar** (*Guida omnicomprensiva di Xanathar*). Supplemento con regole **facoltative** per giocatori e Dungeon Master (sottoclassi, incantesimi, strumenti al DM…); applicare solo se il gruppo le adotta.",
   van_richten_ravenloft:
     "> **Tag — Van Richten** (*Guida di Van Richten a Ravenloft*). Supplemento di ambientazione/horror con opzioni e strumenti aggiuntivi (lignaggi, oscuri doni, consigli al DM…); usare solo se la campagna adotta questo modulo.",
+  dungeon_master_guide:
+    "> **Tag — Dungeon Master's Guide**. Manuale tecnico di riferimento per worldbuilding, avventure, regole avanzate e gestione del tavolo: trattare ogni passaggio come fonte normativa per la conduzione della campagna.",
 };
 
 function applySupplementContentBanner(meta: Record<string, unknown>, rawContent: string): string {
@@ -728,6 +857,8 @@ async function ingestMdManualBatchActionImpl(
         ? "v4-monster-manual"
         : ingestProfileRaw === "v4-mordenkainen-multiverse"
           ? "v4-mordenkainen-multiverse"
+          : ingestProfileRaw === "v5-dm-master"
+            ? "v5-dm-master"
           : "v3-markdown";
   delete baseMeta.ingest_profile;
 
@@ -750,10 +881,13 @@ async function ingestMdManualBatchActionImpl(
       ingestProfile === "v4-mordenkainen-multiverse"
         ? getCachedMpmCreatureChunks(filePath)
         : null;
+    const chunksDmMaster =
+      ingestProfile === "v5-dm-master" ? getCachedDmMasterChunks(filePath) : null;
 
-    const chunks = (chunksV4Section ?? chunksMm ?? chunksMpm ?? chunksV3) as
+    const chunks = (chunksDmMaster ?? chunksV4Section ?? chunksMm ?? chunksMpm ?? chunksV3) as
       | StructuredChunk[]
       | MarkdownSectionUnitChunk[]
+      | DmMasterUnitChunk[]
       | null;
 
     if (!chunks || !chunks.length) {
@@ -766,6 +900,8 @@ async function ingestMdManualBatchActionImpl(
               ? "Manuale Mostri: indice non trovato o file non valido per v4-monster-manual."
               : ingestProfile === "v4-mordenkainen-multiverse"
                 ? "Mostri del Multiverso: indice non trovato o file non valido per v4-mordenkainen-multiverse."
+                : ingestProfile === "v5-dm-master"
+                  ? "DM Master: nessuna sezione heading valida trovata per il profilo v5-dm-master."
                 : "Il file .md è vuoto o non contiene chunk validi.",
       };
     }
@@ -810,6 +946,24 @@ async function ingestMdManualBatchActionImpl(
               section_part: (item as MarkdownSectionUnitChunk).sectionPart,
               section_part_total: (item as MarkdownSectionUnitChunk).sectionPartTotal,
             }
+          : ingestProfile === "v5-dm-master"
+            ? {
+                ...baseMeta,
+                file_name: normalized,
+                chapter: (item as DmMasterUnitChunk).chapter,
+                section_heading: (item as DmMasterUnitChunk).sectionHeading,
+                section_title: (item as DmMasterUnitChunk).sectionHeading,
+                section_key: (item as DmMasterUnitChunk).sectionKey,
+                chunk_type: (item as DmMasterUnitChunk).chunkType,
+                chunk_index: i,
+                chunk_count: chunks.length,
+                ingestion_version: "v5-dm-master",
+                source_format: "markdown",
+                leaf_level: (item as DmMasterUnitChunk).headingLevel,
+                heading_path: (item as DmMasterUnitChunk).headingPath,
+                section_part: (item as DmMasterUnitChunk).sectionPart,
+                section_part_total: (item as DmMasterUnitChunk).sectionPartTotal,
+              }
           : ingestProfile === "v4-monster-manual"
             ? {
                 ...baseMeta,
