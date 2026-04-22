@@ -26,7 +26,11 @@
  * divieti si integrano nel testo passato a `inputs`.
  */
 
-import { generateOpenRouterChat, shouldUseOpenRouterForAiText } from "@/lib/ai/openrouter-client";
+import {
+  generateOpenRouterChat,
+  generateOpenRouterEmbedding,
+  shouldUseOpenRouterForAiText,
+} from "@/lib/ai/openrouter-client";
 import { generateOllamaChat, shouldUseOllamaForAiText } from "@/lib/ai/ollama-client";
 
 const HF_CHAT_COMPLETIONS_URL = "https://router.huggingface.co/v1/chat/completions";
@@ -603,52 +607,24 @@ async function embedWithOpenAiCompatibleRouter(
  * Non usa fallback su altri modelli, per evitare retrieval incoerente.
  */
 export async function generateRagEmbedding(text: string): Promise<number[]> {
-  const rawKey = process.env.HUGGINGFACE_API_KEY || process.env.HF_TOKEN;
-  const apiKey = typeof rawKey === "string" ? rawKey.trim() : "";
-  if (!apiKey) {
-    throw new Error("Errore Critico Server: HUGGINGFACE_API_KEY non trovata a runtime.");
-  }
-
   const input = text.trim();
   if (!input) {
     throw new HuggingFaceInferenceError("Il testo per embedding non può essere vuoto.", { status: 400 });
   }
 
-  try {
-    return await embedWithOpenAiCompatibleRouter(apiKey, input, RAG_EMBEDDING_MODEL_CANDIDATES);
-  } catch (routerErr) {
-    const routerMsg = routerErr instanceof Error ? routerErr.message : String(routerErr);
-    try {
-      return await embedWithHfInferenceModel(apiKey, MODELS.embedding, input);
-    } catch (hfErr) {
-      const hfMsg = hfErr instanceof Error ? hfErr.message : String(hfErr);
-      throw new Error(
-        `Errore API Hugging Face (embedding): router OpenAI-compat: ${routerMsg}; hf-inference feature-extraction: ${hfMsg}`
-      );
-    }
-  }
+  const ragModel = process.env.OPENROUTER_RAG_EMBEDDING_MODEL?.trim() || undefined;
+  return generateOpenRouterEmbedding(input, { model: ragModel, dimensions: 384 });
 }
 
 /** Genera embedding vettoriale via router OpenAI-compatible (/v1/embeddings), con fallback multilingue. */
 export async function generateEmbedding(text: string): Promise<number[]> {
-  const rawKey = process.env.HUGGINGFACE_API_KEY || process.env.HF_TOKEN;
-  const apiKey = typeof rawKey === "string" ? rawKey.trim() : "";
-  if (!apiKey) {
-    throw new Error("Errore Critico Server: HUGGINGFACE_API_KEY non trovata a runtime.");
-  }
-
   const input = text.trim();
   if (!input) {
     throw new HuggingFaceInferenceError("Il testo per embedding non può essere vuoto.", { status: 400 });
   }
 
-  const candidateModels = [
-    ...RAG_EMBEDDING_MODEL_CANDIDATES,
-    "intfloat/multilingual-e5-small:hf-inference",
-    "intfloat/multilingual-e5-small",
-  ] as const;
-
-  return embedWithOpenAiCompatibleRouter(apiKey, input, candidateModels);
+  const model = process.env.OPENROUTER_EMBEDDING_MODEL?.trim() || undefined;
+  return generateOpenRouterEmbedding(input, { model, dimensions: 384 });
 }
 
 function normalizeCharacterSheetJsonOutput(generatedText: string, lastErrForLog: string): string {
