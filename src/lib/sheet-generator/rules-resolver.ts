@@ -444,6 +444,16 @@ function parseSpellsWithLevelFromList(md: string): Array<{ name: string; level: 
   return out;
 }
 
+function pickRandomUnique<T>(items: T[], count: number): T[] {
+  if (count <= 0 || items.length === 0) return [];
+  const pool = [...items];
+  for (let i = pool.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, Math.min(count, pool.length));
+}
+
 function compactSpellSummary(md: string): string {
   const source = md.replace(/\r/g, "");
   const lines = source
@@ -509,6 +519,10 @@ function pickLeveledSpellsBalanced(
     list.push(e);
     byLevel.set(e.level, list);
   }
+  // Evita bias alfabetico: mescola il pool di ogni livello prima della selezione.
+  for (const [lvl, list] of byLevel.entries()) {
+    byLevel.set(lvl, pickRandomUnique(list, list.length));
+  }
 
   const picked: Array<{ name: string; level: number }> = [];
   // 1) Garantisci almeno un incantesimo per ogni livello disponibile (partendo dal più alto).
@@ -518,13 +532,22 @@ function pickLeveledSpellsBalanced(
     const next = list.shift();
     if (next) picked.push(next);
   }
-  // 2) Riempi i restanti slot privilegiando ancora i livelli più alti.
-  for (let lvl = maxLevel; lvl >= 1 && picked.length < count; lvl -= 1) {
-    const list = byLevel.get(lvl) ?? [];
-    while (list.length && picked.length < count) {
-      const next = list.shift();
-      if (next) picked.push(next);
+  // 2) Riempi i restanti slot: scelta random su tutto il rimanente, pesata verso livelli alti.
+  const remaining = Array.from(byLevel.entries())
+    .flatMap(([lvl, list]) => list.map((e) => ({ ...e, __weight: Math.max(1, lvl) })));
+  while (remaining.length > 0 && picked.length < count) {
+    const totalWeight = remaining.reduce((acc, x) => acc + x.__weight, 0);
+    let roll = Math.random() * totalWeight;
+    let idx = 0;
+    for (let i = 0; i < remaining.length; i += 1) {
+      roll -= remaining[i].__weight;
+      if (roll <= 0) {
+        idx = i;
+        break;
+      }
     }
+    const [chosen] = remaining.splice(idx, 1);
+    picked.push({ name: chosen.name, level: chosen.level });
   }
   return picked;
 }
@@ -820,7 +843,7 @@ export async function resolveGeneratorRules(
         : extractSectionByHeadingsMarkdown(md, [classDef.spellList.sectionHeading]);
     const listByLevel = extractSpellListByMaxLevel(listRaw, maxSpellLevelOnSheet(classDef, input.level));
     const entries = parseSpellsWithLevelFromList(listByLevel);
-    const cantripEntries = entries.filter((e) => e.level === 0).slice(0, cantripsKnown);
+    const cantripEntries = pickRandomUnique(entries.filter((e) => e.level === 0), cantripsKnown);
     const maxOnSheet = maxSpellLevelOnSheet(classDef, input.level);
     const leveledEntries = pickLeveledSpellsBalanced(entries, spellsPrepared, maxOnSheet);
     const picked = [...cantripEntries, ...leveledEntries];
