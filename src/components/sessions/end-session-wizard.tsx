@@ -100,6 +100,11 @@ type EndSessionWizardProps = {
   sessionLabel?: string;
   /** Se passato, non viene fatto fetch degli iscritti (es. da pagina Sessioni). */
   initialApprovedSignups?: ApprovedSignupForWizard[];
+  initialAttendance?: Record<string, "attended" | "absent">;
+  initialXpGained?: number;
+  initialElapsedHours?: number;
+  perPlayerXpAwards?: { playerId: string; xp: number }[];
+  economyManagedInGmScreen?: boolean;
   onSuccess?: () => void;
 };
 
@@ -113,6 +118,11 @@ export function EndSessionWizard({
   campaignType,
   sessionLabel,
   initialApprovedSignups,
+  initialAttendance,
+  initialXpGained,
+  initialElapsedHours,
+  perPlayerXpAwards,
+  economyManagedInGmScreen = false,
   onSuccess,
 }: EndSessionWizardProps) {
   const router = useRouter();
@@ -211,12 +221,13 @@ export function EndSessionWizard({
     setStatusByEntityId({});
     setAwardedAchievements([]);
     setAchievementSearchByPlayer({});
-    setElapsedHours(0);
+    setElapsedHours(Math.max(0, Math.floor(initialElapsedHours ?? 0)));
     setPayoutMissionId("");
     setPayoutAlloc({});
     setCoinDeltaAlloc({});
     setEconomyMissions([]);
     setEconomyCharacters([]);
+    setXpGained(Math.max(0, Math.floor(initialXpGained ?? 0)));
     (async () => {
       // Metadati sessione: se è in pre-chiusura, salta direttamente allo step 2
       const meta = await getSessionWizardMeta(sessionId);
@@ -229,11 +240,15 @@ export function EndSessionWizard({
         setSignups(initialApprovedSignups);
         // Se abbiamo status, usiamolo per precompilare le presenze; altrimenti tutti presenti.
         setAttendance(
-          initialApprovedSignups.reduce((acc, s) => {
-            const st = (s.status ?? "").toLowerCase();
-            const value: "attended" | "absent" = st === "absent" ? "absent" : "attended";
-            return { ...acc, [s.player_id]: value };
-          }, {} as Record<string, "attended" | "absent">)
+          initialApprovedSignups.reduce(
+            (acc, s) => {
+              const st = (s.status ?? "").toLowerCase();
+              const value: "attended" | "absent" = st === "absent" ? "absent" : "attended";
+              acc[s.player_id] = initialAttendance?.[s.player_id] ?? value;
+              return acc;
+            },
+            {} as Record<string, "attended" | "absent">
+          )
         );
       } else {
         setLoadingSignups(true);
@@ -242,18 +257,22 @@ export function EndSessionWizard({
         if (res.success && res.data) {
           setSignups(res.data);
           setAttendance(
-            res.data.reduce((acc, s) => {
-              const st = (s.status ?? "").toLowerCase();
-              const value: "attended" | "absent" = st === "absent" ? "absent" : "attended";
-              return { ...acc, [s.player_id]: value };
-            }, {} as Record<string, "attended" | "absent">)
+            res.data.reduce(
+              (acc, s) => {
+                const st = (s.status ?? "").toLowerCase();
+                const value: "attended" | "absent" = st === "absent" ? "absent" : "attended";
+                acc[s.player_id] = initialAttendance?.[s.player_id] ?? value;
+                return acc;
+              },
+              {} as Record<string, "attended" | "absent">
+            )
           );
         } else {
           setSignups([]);
         }
       }
     })();
-  }, [open, sessionId, initialApprovedSignups]);
+  }, [open, sessionId, initialApprovedSignups, initialAttendance, initialElapsedHours, initialXpGained]);
 
   useEffect(() => {
     if (!open || step !== 1 || !unlockContent || !campaignId) return;
@@ -459,6 +478,7 @@ export function EndSessionWizard({
     const payload: CloseSessionActionPayload = {
       attendance,
       xpGained: Math.max(0, Math.floor(xpGained)),
+      perPlayerXpAwards: perPlayerXpAwards?.filter((award) => attendance[award.playerId] === "attended"),
       unlockContent: unlockContent && selectedContentKeys.size > 0,
       unlockContentIds: unlockContent
         ? [...selectedContentKeys].map((key) => {
@@ -780,16 +800,25 @@ export function EndSessionWizard({
           {/* Step Economia (solo campagne long) */}
           {step === 3 && isLongCampaign && (
             <div className="space-y-4">
-              <p className="text-sm text-barber-paper/80">
-                Opzionale: distribuisci monete dal tesoretto di una missione completata e applica aggiustamenti liberi ai
-                personaggi. Le operazioni si applicano alla chiusura definitiva della sessione (dopo conferma).
-              </p>
+              {economyManagedInGmScreen ? (
+                <div className="rounded-lg border border-barber-gold/20 bg-barber-dark/60 px-4 py-4 text-sm text-barber-paper/80">
+                  L&apos;economia di questa sessione e&apos; stata gia&apos; gestita nel GM Screen long. Qui puoi solo
+                  controllare il riepilogo finale e procedere con la chiusura.
+                </div>
+              ) : (
+                <p className="text-sm text-barber-paper/80">
+                  Opzionale: distribuisci monete dal tesoretto di una missione completata e applica aggiustamenti liberi ai
+                  personaggi. Le operazioni si applicano alla chiusura definitiva della sessione (dopo conferma).
+                </p>
+              )}
               {economyLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin text-barber-gold" />
                 </div>
               ) : (
                 <>
+                  {economyManagedInGmScreen ? null : (
+                    <>
                   <div className="space-y-2">
                     <Label className="text-barber-paper/90">Tesoretto missione</Label>
                     <Select value={payoutMissionId || "none"} onValueChange={(v) => setPayoutMissionId(v === "none" ? "" : v)}>
@@ -910,6 +939,8 @@ export function EndSessionWizard({
                       })}
                     </div>
                   </div>
+                    </>
+                  )}
                 </>
               )}
             </div>
@@ -1129,7 +1160,11 @@ export function EndSessionWizard({
             <div className="space-y-3 text-sm">
               <p className="text-barber-paper/80">
                 <strong>Presenze:</strong> {presentCount} presenti su {signups.length} iscritti.
-                {xpGained > 0 && ` • XP assegnati: ${xpGained} a ciascun presente.`}
+                {perPlayerXpAwards?.length
+                  ? ` • XP personalizzati su ${perPlayerXpAwards.length} assegnazioni.`
+                  : xpGained > 0
+                    ? ` • XP assegnati: ${xpGained} a ciascun presente.`
+                    : ""}
               </p>
               {unlockContent && selectedContentKeys.size > 0 && (
                 <p className="text-barber-paper/80">

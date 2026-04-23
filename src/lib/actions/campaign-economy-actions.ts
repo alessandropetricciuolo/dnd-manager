@@ -428,3 +428,77 @@ export async function distributeMissionTreasureAction(
     missionTreasurePayout: { missionId, allocations },
   });
 }
+
+export async function adjustCharacterCoinsBatchAction(
+  campaignId: string,
+  deltas: { characterId: string; coins_gp: number; coins_sp: number; coins_cp: number }[]
+): Promise<
+  | {
+      success: true;
+      balances: Record<string, { coins_gp: number; coins_sp: number; coins_cp: number }>;
+    }
+  | { success: false; message: string }
+> {
+  const normalized = deltas
+    .map((delta) => ({
+      characterId: delta.characterId,
+      coins_gp: intDelta(delta.coins_gp),
+      coins_sp: intDelta(delta.coins_sp),
+      coins_cp: intDelta(delta.coins_cp),
+    }))
+    .filter((delta) => delta.coins_gp !== 0 || delta.coins_sp !== 0 || delta.coins_cp !== 0);
+
+  if (normalized.length === 0) {
+    return { success: false, message: "Nessuna variazione valida da applicare." };
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    if (!(await isGmOrAdminByRole(supabase))) {
+      return { success: false, message: "Non autorizzato." };
+    }
+
+    const { data: campaign } = await supabase.from("campaigns").select("type").eq("id", campaignId).single();
+    if (campaign?.type !== "long") {
+      return { success: false, message: "Monete PG solo per campagne lunghe." };
+    }
+
+    const admin = createSupabaseAdminClient();
+    const result = await applyCloseSessionEconomy(admin, campaignId, {
+      characterCoinDeltas: normalized,
+    });
+    if (!result.success) {
+      return result;
+    }
+
+    const characterIds = normalized.map((delta) => delta.characterId);
+    const { data: rows, error } = await supabase
+      .from("campaign_characters")
+      .select("id, coins_gp, coins_sp, coins_cp")
+      .eq("campaign_id", campaignId)
+      .in("id", characterIds);
+
+    if (error) {
+      return { success: false, message: error.message ?? "Errore nel recupero dei nuovi saldi." };
+    }
+
+    const balances = (rows ?? []).reduce(
+      (acc, row) => {
+        const current = row as { id: string; coins_gp: number | null; coins_sp: number | null; coins_cp: number | null };
+        acc[current.id] = {
+          coins_gp: nonNegInt(current.coins_gp),
+          coins_sp: nonNegInt(current.coins_sp),
+          coins_cp: nonNegInt(current.coins_cp),
+        };
+        return acc;
+      },
+      {} as Record<string, { coins_gp: number; coins_sp: number; coins_cp: number }>
+    );
+
+    revalidatePath(`/campaigns/${campaignId}`);
+    revalidatePath(`/campaigns/${campaignId}/gm-screen`);
+    return { success: true, balances };
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : "Errore." };
+  }
+}

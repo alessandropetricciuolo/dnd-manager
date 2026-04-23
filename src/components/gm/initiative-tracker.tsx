@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/select";
 import { getCampaignCharacters } from "@/app/campaigns/character-actions";
 import { getMonstersForInitiative, getMonstersXpForIds, setWikiEntityGlobalStatus } from "@/app/campaigns/wiki-actions";
-import { UserPlus, Swords, Edit3, Trash2, ArrowDownUp, SkipForward, Copy, RotateCcw } from "lucide-react";
+import { UserPlus, Swords, Edit3, Trash2, ArrowDownUp, SkipForward, Copy, RotateCcw, Skull } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { CHALLENGE_RATING_OPTIONS } from "@/lib/dnd-constants";
@@ -48,6 +48,8 @@ export type InitiativeEntry = {
   gs?: string;
   /** Punti esperienza singoli per la creatura (se valorizzati). */
   exp?: number;
+  /** Stato esplicito di morte per mostri/custom. */
+  isDead?: boolean;
 };
 
 const STORAGE_KEY_PREFIX = "gm-screen-initiative-";
@@ -68,11 +70,30 @@ type MonsterForInitiative = {
 type InitiativeTrackerProps = {
   campaignId: string;
   campaignType?: "oneshot" | "quest" | "long" | null;
+  availableCharacters?: Array<{
+    id: string;
+    name: string;
+    character_class: string | null;
+    armor_class?: number | null;
+    hit_points?: number | null;
+  }>;
+  value?: {
+    entries: InitiativeEntry[];
+    currentTurnIndex: number;
+  };
+  onChange?: (state: { entries: InitiativeEntry[]; currentTurnIndex: number }) => void;
 };
 
-export function InitiativeTracker({ campaignId, campaignType }: InitiativeTrackerProps) {
+export function InitiativeTracker({
+  campaignId,
+  campaignType,
+  availableCharacters,
+  value,
+  onChange,
+}: InitiativeTrackerProps) {
   const storageKey = `${STORAGE_KEY_PREFIX}${campaignId}`;
   const isLongCampaign = campaignType === "long";
+  const isControlled = typeof onChange === "function" && value != null;
 
   const [entries, setEntries] = useState<InitiativeEntry[]>([]);
   const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
@@ -97,8 +118,19 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
     at: number;
   } | null>(null);
 
+  useEffect(() => {
+    if (!isControlled) return;
+    setEntries(Array.isArray(value?.entries) ? value.entries : []);
+    setCurrentTurnIndex(
+      Array.isArray(value?.entries) && value.entries.length > 0
+        ? Math.max(0, Math.min(value.currentTurnIndex ?? 0, value.entries.length - 1))
+        : 0
+    );
+  }, [isControlled, value]);
+
   // Restore from localStorage on mount
   useEffect(() => {
+    if (isControlled) return;
     try {
       const raw = localStorage.getItem(storageKey);
       if (raw) {
@@ -111,10 +143,14 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
     } catch {
       // ignore
     }
-  }, [storageKey]);
+  }, [isControlled, storageKey]);
 
   // Persist to localStorage when entries or currentTurnIndex change
   useEffect(() => {
+    if (isControlled) {
+      onChange?.({ entries, currentTurnIndex });
+      return;
+    }
     if (entries.length === 0) return;
     try {
       localStorage.setItem(
@@ -124,7 +160,7 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
     } catch {
       // ignore
     }
-  }, [entries, currentTurnIndex, storageKey]);
+  }, [currentTurnIndex, entries, isControlled, onChange, storageKey]);
 
   const updateEntry = useCallback(
     (id: string, updates: Partial<InitiativeEntry>) => {
@@ -223,6 +259,18 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
   const openAddPc = useCallback(async () => {
     setAddPcOpen(true);
     setSelectedPcIds(new Set());
+    if (availableCharacters) {
+      setPcList(
+        availableCharacters.map((character) => ({
+          id: character.id,
+          name: character.name,
+          characterClass: character.character_class ?? null,
+          armorClass: character.armor_class ?? null,
+          hitPoints: character.hit_points ?? null,
+        }))
+      );
+      return;
+    }
     const res = await getCampaignCharacters(campaignId);
     if (res.success && res.data) {
       setPcList(
@@ -237,7 +285,7 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
     } else {
       setPcList([]);
     }
-  }, [campaignId]);
+  }, [availableCharacters, campaignId]);
 
   const addPcEntry = useCallback(
     (characterId: string, name: string, characterClass: string | null, armorClass: number | null, hitPoints: number | null) => {
@@ -314,6 +362,7 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
           hp: monster.hp,
           maxHp: monster.hp,
           initiative: 0,
+          isDead: false,
           ...(typeof monster.xp_value === "number" && monster.xp_value > 0
             ? { exp: monster.xp_value }
             : {}),
@@ -351,11 +400,17 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
         prev.map((e) => {
           if (e.id !== entryId) return e;
           const maxHp = e.maxHp > 0 ? e.maxHp : Math.max(e.maxHp, clamped);
-          return { ...e, hp: clamped, maxHp };
+          const nextDead =
+            e.type === "monster" || e.type === "custom" ? clamped === 0 : e.isDead;
+          return { ...e, hp: clamped, maxHp, isDead: nextDead };
         })
       );
-      if (isLongCampaign && entry.entityId && entry.isCore && clamped === 0) {
-        const res = await setWikiEntityGlobalStatus(entry.entityId, campaignId, "dead");
+      if (isLongCampaign && entry.entityId && entry.isCore) {
+        const res = await setWikiEntityGlobalStatus(
+          entry.entityId,
+          campaignId,
+          clamped === 0 ? "dead" : "alive"
+        );
         if (res.success) toast.success(res.message);
       }
     },
@@ -369,6 +424,37 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
       await applyHpChange(entryId, entry.hp + delta);
     },
     [entries, applyHpChange]
+  );
+
+  const toggleDead = useCallback(
+    async (entryId: string) => {
+      const entry = entries.find((item) => item.id === entryId);
+      if (!entry || (entry.type !== "monster" && entry.type !== "custom")) return;
+
+      const nextDead = !entry.isDead;
+      const revivedHp = entry.maxHp > 0 ? 1 : Math.max(1, entry.hp);
+      setEntries((prev) =>
+        prev.map((item) =>
+          item.id === entryId
+            ? {
+                ...item,
+                isDead: nextDead,
+                hp: nextDead ? 0 : revivedHp,
+              }
+            : item
+        )
+      );
+
+      if (isLongCampaign && entry.entityId && entry.isCore) {
+        const res = await setWikiEntityGlobalStatus(
+          entry.entityId,
+          campaignId,
+          nextDead ? "dead" : "alive"
+        );
+        if (res.success) toast.success(res.message);
+      }
+    },
+    [campaignId, entries, isLongCampaign]
   );
 
   const openAddCustom = useCallback(() => {
@@ -399,6 +485,7 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
         hp,
         maxHp: hp,
         initiative,
+        isDead: false,
         ...(customGs && { gs: customGs }),
         ...(customExp > 0 && { exp: customExp }),
       },
@@ -427,6 +514,7 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
   );
 
   const hpColor = (entry: InitiativeEntry) => {
+    if (entry.isDead) return "text-red-300 line-through";
     if (entry.maxHp <= 0) return "text-zinc-400";
     const pct = entry.hp / entry.maxHp;
     if (pct > 0.5) return "text-emerald-400";
@@ -555,6 +643,7 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
                   key={entry.id}
                   className={cn(
                     "border-amber-600/20 text-sm",
+                    entry.isDead && "bg-red-950/25 text-zinc-500",
                     index === currentTurnIndex &&
                       "bg-amber-600/25 ring-1 ring-amber-500/50"
                   )}
@@ -583,7 +672,10 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
                     ) : (
                       <button
                         type="button"
-                        className="min-w-0 max-w-[140px] truncate rounded px-1.5 py-0.5 text-left text-xs font-medium text-zinc-100 transition-colors hover:bg-zinc-700/80 hover:text-amber-200"
+                        className={cn(
+                          "min-w-0 max-w-[140px] truncate rounded px-1.5 py-0.5 text-left text-xs font-medium transition-colors hover:bg-zinc-700/80 hover:text-amber-200",
+                          entry.isDead ? "text-zinc-500 line-through" : "text-zinc-100"
+                        )}
                         onClick={() =>
                           setEditingCell({ id: entry.id, field: "name" })
                         }
@@ -591,6 +683,11 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
                       >
                         {entry.name}
                       </button>
+                    )}
+                    {entry.isDead && (
+                      <span className="mt-1 inline-flex rounded bg-red-500/20 px-1.5 py-0.5 text-[10px] font-medium text-red-300">
+                        Morto
+                      </span>
                     )}
                   </TableCell>
                   <TableCell className="px-2 py-1.5">
@@ -661,6 +758,21 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
                             EXP: {entry.exp}
                           </span>
                         )}
+                        {(entry.type === "monster" || entry.type === "custom") && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className={cn(
+                              "h-7 justify-start px-0 text-[10px]",
+                              entry.isDead ? "text-red-300 hover:bg-red-500/10" : "text-zinc-400 hover:bg-zinc-700/30"
+                            )}
+                            onClick={() => void toggleDead(entry.id)}
+                          >
+                            <Skull className="mr-1 h-3 w-3" />
+                            {entry.isDead ? "Ripristina vivo" : "Segna morto"}
+                          </Button>
+                        )}
                       </div>
                     )}
                   </TableCell>
@@ -730,6 +842,21 @@ export function InitiativeTracker({ campaignId, campaignType }: InitiativeTracke
                   </TableCell>
                   <TableCell className="px-1 py-1.5">
                     <div className="flex items-center gap-0.5">
+                      {(entry.type === "monster" || entry.type === "custom") && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className={cn(
+                            "h-7 w-7 hover:text-red-200",
+                            entry.isDead ? "text-red-300 hover:bg-red-500/20" : "text-zinc-500 hover:bg-zinc-700/40"
+                          )}
+                          onClick={() => void toggleDead(entry.id)}
+                          aria-label={entry.isDead ? "Ripristina vivo" : "Segna morto"}
+                          title={entry.isDead ? "Ripristina vivo" : "Segna morto"}
+                        >
+                          <Skull className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="icon"

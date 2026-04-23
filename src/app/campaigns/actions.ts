@@ -1350,6 +1350,8 @@ export type CloseSessionActionPayload = {
   attendance: Record<string, "attended" | "absent">;
   /** XP da assegnare a tutti i presenti (numero >= 0). */
   xpGained: number;
+  /** Override opzionale con XP specifici per player_id. */
+  perPlayerXpAwards?: { playerId: string; xp: number }[];
   /** Se true, sblocca i contenuti in unlockContentIds per i presenti. */
   unlockContent: boolean;
   /** Id e tipo dei contenuti da sbloccare (solo se unlockContent true). */
@@ -1443,6 +1445,11 @@ export async function closeSessionAction(
     }[];
 
     const xpToAdd = Math.max(0, Math.floor(payload.xpGained));
+    const perPlayerXp = new Map(
+      (payload.perPlayerXpAwards ?? [])
+        .filter((award) => award.playerId && Number.isFinite(award.xp) && award.xp > 0)
+        .map((award) => [award.playerId, Math.max(0, Math.floor(award.xp))])
+    );
     if (!isPreClosed) {
 
       for (const signup of signupsList) {
@@ -1458,7 +1465,12 @@ export async function closeSessionAction(
             } catch (gamErr) {
               console.error("[closeSessionAction] gamification increment", gamErr);
             }
-            await ensureCampaignMemberWithAdmin(admin, session.campaign_id, signup.player_id, xpToAdd);
+            await ensureCampaignMemberWithAdmin(
+              admin,
+              session.campaign_id,
+              signup.player_id,
+              perPlayerXp.get(signup.player_id) ?? xpToAdd
+            );
           }
         }
       }
