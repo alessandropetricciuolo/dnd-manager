@@ -51,6 +51,8 @@ export function LongEconomyPanel({
   onRefreshCharacters,
 }: LongEconomyPanelProps) {
   const router = useRouter();
+  const playerIdsKey = useMemo(() => (playerIds ?? []).join(","), [playerIds]);
+  const economyDraftRef = useRef(economyDraft);
   const [loading, setLoading] = useState(true);
   const [missions, setMissions] = useState<EconomyMissionSnapshot[]>([]);
   const [characters, setCharacters] = useState<EconomyCharacterSnapshot[]>([]);
@@ -60,6 +62,10 @@ export function LongEconomyPanel({
   const [payoutAlloc, setPayoutAlloc] = useState<Record<string, { gp: string; sp: string; cp: string }>>({});
   const [liveDeltaDraft, setLiveDeltaDraft] = useState<Record<string, { gp: string; sp: string; cp: string }>>({});
   const saveTimersRef = useRef<Record<string, number>>({});
+
+  useEffect(() => {
+    economyDraftRef.current = economyDraft;
+  }, [economyDraft]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -84,18 +90,18 @@ export function LongEconomyPanel({
       init[c.id] = { gp: "", sp: "", cp: "" };
     }
     setPayoutAlloc(
-      economyDraft?.payoutAlloc
+      economyDraftRef.current?.payoutAlloc
         ? {
             ...init,
             ...Object.fromEntries(
-              Object.entries(economyDraft.payoutAlloc).filter(([characterId]) =>
+              Object.entries(economyDraftRef.current.payoutAlloc).filter(([characterId]) =>
                 filteredCharacters.some((character) => character.id === characterId)
               )
             ),
           }
         : init
     );
-    setPayoutMissionId(economyDraft?.payoutMissionId ?? "");
+    setPayoutMissionId(economyDraftRef.current?.payoutMissionId ?? "");
     setLiveDeltaDraft(
       filteredCharacters.reduce(
         (acc, character) => {
@@ -105,19 +111,11 @@ export function LongEconomyPanel({
         {} as Record<string, { gp: string; sp: string; cp: string }>
       )
     );
-  }, [attendance, campaignId, economyDraft?.payoutAlloc, economyDraft?.payoutMissionId, playerIds]);
+  }, [campaignId, playerIdsKey, playerIds]);
 
   useEffect(() => {
     void load();
   }, [load]);
-
-  useEffect(() => {
-    if (!economyDraft || !onDraftChange) return;
-    onDraftChange({
-      payoutMissionId,
-      payoutAlloc,
-    });
-  }, [economyDraft, onDraftChange, payoutAlloc, payoutMissionId]);
 
   const missionsWithTreasure = useMemo(
     () => missions.filter((m) => m.status === "completed" && (m.treasure_gp > 0 || m.treasure_sp > 0 || m.treasure_cp > 0)),
