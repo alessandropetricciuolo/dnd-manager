@@ -5,7 +5,7 @@ import { useRouter } from "nextjs-toploader/app";
 import { it } from "date-fns/locale";
 import { formatSessionInRome } from "@/lib/session-datetime";
 import { toast } from "sonner";
-import { CalendarIcon, MapPinIcon, Check, X, UserCheck, User, UserPlus, Trash2, UserX, ClipboardCheck } from "lucide-react";
+import { CalendarIcon, MapPinIcon, Check, X, UserCheck, User, UserPlus, Trash2, UserX, ClipboardCheck, Loader2 } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -15,7 +15,16 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { updateSignupStatus, deleteSignup, joinSession, deleteSession, closeSessionQuestOrOneshot } from "@/app/campaigns/actions";
+import {
+  updateSignupStatus,
+  deleteSignup,
+  joinSession,
+  deleteSession,
+  closeSessionQuestOrOneshot,
+  addSessionSignupForGm,
+  listAssignablePlayersForSession,
+  type AssignablePlayerForCampaignRow,
+} from "@/app/campaigns/actions";
 import { UnlockContentDialog } from "@/components/sessions/unlock-content-dialog";
 import { EndSessionWizard } from "@/components/sessions/end-session-wizard";
 import type { ApprovedSignupForWizard } from "@/components/sessions/end-session-wizard";
@@ -69,6 +78,11 @@ export function SessionListClient({
   const [deleteSessionLoadingId, setDeleteSessionLoadingId] = useState<string | null>(null);
   const [closeSimpleLoadingId, setCloseSimpleLoadingId] = useState<string | null>(null);
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [manualAddOpenSessionId, setManualAddOpenSessionId] = useState<string | null>(null);
+  const [manualAddLoadingSessionId, setManualAddLoadingSessionId] = useState<string | null>(null);
+  const [manualAddSubmittingSessionId, setManualAddSubmittingSessionId] = useState<string | null>(null);
+  const [manualAddPlayerId, setManualAddPlayerId] = useState("");
+  const [manualAddOptions, setManualAddOptions] = useState<AssignablePlayerForCampaignRow[]>([]);
   const [sessionForClose, setSessionForClose] = useState<{
     sessionId: string;
     approvedSignups: ApprovedSignupForWizard[];
@@ -139,6 +153,43 @@ export function SessionListClient({
     } else {
       toast.error(res.message);
     }
+  }
+
+  async function handleOpenManualAdd(sessionId: string) {
+    if (manualAddOpenSessionId === sessionId) {
+      setManualAddOpenSessionId(null);
+      setManualAddPlayerId("");
+      setManualAddOptions([]);
+      return;
+    }
+    setManualAddOpenSessionId(sessionId);
+    setManualAddPlayerId("");
+    setManualAddOptions([]);
+    setManualAddLoadingSessionId(sessionId);
+    const res = await listAssignablePlayersForSession(sessionId);
+    setManualAddLoadingSessionId(null);
+    if (!res.success) {
+      toast.error(res.message ?? "Errore nel caricamento dei giocatori disponibili.");
+      setManualAddOpenSessionId(null);
+      return;
+    }
+    setManualAddOptions(res.data ?? []);
+  }
+
+  async function handleManualAdd(sessionId: string) {
+    if (!manualAddPlayerId) return;
+    setManualAddSubmittingSessionId(sessionId);
+    const res = await addSessionSignupForGm(sessionId, manualAddPlayerId);
+    setManualAddSubmittingSessionId(null);
+    if (!res.success) {
+      toast.error(res.message);
+      return;
+    }
+    toast.success(res.message);
+    setManualAddOpenSessionId(null);
+    setManualAddPlayerId("");
+    setManualAddOptions([]);
+    router.refresh();
   }
 
   return (
@@ -272,7 +323,82 @@ export function SessionListClient({
                 {/* GM/Admin: lista iscritti con Approva, Rifiuta, Conferma presenza, Elimina */}
                 {isGmOrAdmin && (
                   <div className="space-y-2 border-t border-slate-700/60 pt-3">
-                    <p className="text-xs font-medium text-slate-400">Iscritti</p>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-xs font-medium text-slate-400">Iscritti</p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 border-barber-gold/40 text-barber-paper hover:bg-barber-gold/10 text-[11px]"
+                        disabled={manualAddLoadingSessionId === session.id || manualAddSubmittingSessionId === session.id}
+                        onClick={() => void handleOpenManualAdd(session.id)}
+                      >
+                        {manualAddLoadingSessionId === session.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <UserPlus className="h-3.5 w-3.5 mr-1" />
+                        )}
+                        {manualAddOpenSessionId === session.id ? "Chiudi" : "Aggiungi iscritto"}
+                      </Button>
+                    </div>
+                    {manualAddOpenSessionId === session.id && (
+                      <div className="rounded-lg border border-barber-gold/20 bg-slate-900/60 p-2.5 space-y-2">
+                        {manualAddLoadingSessionId === session.id ? (
+                          <div className="flex items-center gap-2 text-xs text-slate-400">
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            Caricamento giocatori disponibili...
+                          </div>
+                        ) : (
+                          <>
+                            <select
+                              className="flex h-9 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-2 text-sm text-barber-paper"
+                              value={manualAddPlayerId}
+                              onChange={(event) => setManualAddPlayerId(event.target.value)}
+                              disabled={manualAddSubmittingSessionId === session.id}
+                            >
+                              <option value="">Seleziona giocatore</option>
+                              {manualAddOptions.map((player) => (
+                                <option key={player.id} value={player.id}>
+                                  {player.label}
+                                </option>
+                              ))}
+                            </select>
+                            <p className="text-[11px] text-slate-500">
+                              L&apos;aggiunta manuale inserisce il giocatore come iscritto gi&agrave; approvato.
+                            </p>
+                            {manualAddOptions.length === 0 ? (
+                              <p className="text-xs text-slate-500">
+                                {campaignType === "long"
+                                  ? "Nessun membro campagna disponibile da aggiungere a questa sessione."
+                                  : "Nessun giocatore disponibile da aggiungere a questa sessione."}
+                              </p>
+                            ) : null}
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 text-xs text-slate-300 hover:bg-slate-800"
+                                disabled={manualAddSubmittingSessionId === session.id}
+                                onClick={() => {
+                                  setManualAddOpenSessionId(null);
+                                  setManualAddPlayerId("");
+                                  setManualAddOptions([]);
+                                }}
+                              >
+                                Annulla
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="h-8 bg-barber-red hover:bg-barber-red/90 text-xs"
+                                disabled={!manualAddPlayerId || manualAddSubmittingSessionId === session.id}
+                                onClick={() => void handleManualAdd(session.id)}
+                              >
+                                {manualAddSubmittingSessionId === session.id ? "Aggiungo..." : "Aggiungi"}
+                              </Button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
                     {session.signups.length === 0 ? (
                       <p className="text-xs text-slate-500 py-1">Nessun iscritto ancora</p>
                     ) : (

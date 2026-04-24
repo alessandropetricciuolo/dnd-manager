@@ -832,6 +832,195 @@ export async function joinSession(sessionId: string): Promise<JoinSessionResult>
   }
 }
 
+export async function listAssignablePlayersForSession(
+  sessionId: string
+): Promise<{ success: boolean; data?: AssignablePlayerForCampaignRow[]; message?: string }> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { success: false, message: "Devi essere autenticato." };
+    }
+
+    const { data: session, error: sessionError } = await supabase
+      .from("sessions")
+      .select("id, campaign_id")
+      .eq("id", sessionId)
+      .single();
+    if (sessionError || !session) {
+      return { success: false, message: "Sessione non trovata." };
+    }
+
+    const allowed = await isGmOrAdmin(supabase, session.campaign_id);
+    if (!allowed) {
+      return { success: false, message: "Solo GM o Admin possono aggiungere iscritti." };
+    }
+
+    const admin = createSupabaseAdminClient();
+    const [{ data: campaign }, { data: existingSignupsRaw, error: signupsError }] = await Promise.all([
+      admin.from("campaigns").select("id, type").eq("id", session.campaign_id).maybeSingle(),
+      admin.from("session_signups").select("player_id").eq("session_id", sessionId),
+    ]);
+
+    if (signupsError) {
+      console.error("[listAssignablePlayersForSession] signups", signupsError);
+      return { success: false, message: signupsError.message ?? "Errore nel caricamento iscritti." };
+    }
+
+    const signedIds = new Set(
+      ((existingSignupsRaw ?? []) as Array<{ player_id: string | null }>)
+        .map((row) => row.player_id)
+        .filter((playerId): playerId is string => typeof playerId === "string" && playerId.length > 0)
+    );
+
+    let allowedPlayerIds: Set<string> | null = null;
+    if (campaign?.type === "long") {
+      const { data: membersRaw, error: membersError } = await admin
+        .from("campaign_members")
+        .select("player_id")
+        .eq("campaign_id", session.campaign_id);
+      if (membersError) {
+        console.error("[listAssignablePlayersForSession] members", membersError);
+        return { success: false, message: membersError.message ?? "Errore nel caricamento membri campagna." };
+      }
+      allowedPlayerIds = new Set(
+        ((membersRaw ?? []) as Array<{ player_id: string | null }>)
+          .map((row) => row.player_id)
+          .filter((playerId): playerId is string => typeof playerId === "string" && playerId.length > 0)
+      );
+    }
+
+    const { data: profilesRaw, error: profilesError } = await admin
+      .from("profiles")
+      .select("id, first_name, last_name, display_name, role");
+    if (profilesError) {
+      console.error("[listAssignablePlayersForSession] profiles", profilesError);
+      return { success: false, message: profilesError.message ?? "Errore nel caricamento giocatori." };
+    }
+
+    const data: AssignablePlayerForCampaignRow[] = ((profilesRaw ?? []) as Array<{
+      id: string;
+      first_name: string | null;
+      last_name: string | null;
+      display_name: string | null;
+      role: string | null;
+    }>)
+      .filter((profile) => {
+        if (profile.role === "gm" || profile.role === "admin") return false;
+        if (signedIds.has(profile.id)) return false;
+        if (allowedPlayerIds && !allowedPlayerIds.has(profile.id)) return false;
+        return true;
+      })
+      .map((profile) => {
+        const full = [profile.first_name, profile.last_name].filter(Boolean).join(" ").trim();
+        return {
+          id: profile.id,
+          label: full || profile.display_name?.trim() || `Utente ${profile.id.slice(0, 8)}`,
+        };
+      })
+      .sort((a, b) => a.label.localeCompare(b.label, "it"));
+
+    return { success: true, data };
+  } catch (err) {
+    console.error("[listAssignablePlayersForSession]", err);
+    return { success: false, message: "Errore imprevisto. Riprova." };
+  }
+}
+
+export async function addSessionSignupForGm(
+  sessionId: string,
+  playerId: string
+): Promise<{ success: boolean; message: string; campaignId?: string }> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { success: false, message: "Devi essere autenticato." };
+    }
+
+    const { data: session, error: sessionError } = await supabase
+      .from("sessions")
+      .select("id, campaign_id")
+      .eq("id", sessionId)
+      .single();
+    if (sessionError || !session) {
+      return { success: false, message: "Sessione non trovata." };
+    }
+
+    const allowed = await isGmOrAdmin(supabase, session.campaign_id);
+    if (!allowed) {
+      return { success: false, message: "Solo GM o Admin possono aggiungere iscritti." };
+    }
+
+    const admin = createSupabaseAdminClient();
+    const [{ data: campaign }, { data: profile }, { data: existingSignup }] = await Promise.all([
+      admin.from("campaigns").select("id, type").eq("id", session.campaign_id).maybeSingle(),
+      admin.from("profiles").select("id, role").eq("id", playerId).maybeSingle(),
+      admin
+        .from("session_signups")
+        .select("id")
+        .eq("session_id", sessionId)
+        .eq("player_id", playerId)
+        .maybeSingle(),
+    ]);
+
+    if (!profile) {
+      return { success: false, message: "Giocatore non trovato." };
+    }
+    if ((profile as { role?: string | null }).role === "gm" || (profile as { role?: string | null }).role === "admin") {
+      return { success: false, message: "Non puoi iscrivere un GM/Admin come giocatore." };
+    }
+    if (existingSignup) {
+      return { success: false, message: "Il giocatore è già iscritto a questa sessione." };
+    }
+
+    if (campaign?.type === "long") {
+      const { data: member } = await admin
+        .from("campaign_members")
+        .select("id")
+        .eq("campaign_id", session.campaign_id)
+        .eq("player_id", playerId)
+        .maybeSingle();
+      if (!member) {
+        return {
+          success: false,
+          message: "Nelle campagne Long puoi aggiungere alla sessione solo membri già iscritti alla campagna.",
+        };
+      }
+    }
+
+    const { error: insertError } = await admin.from("session_signups").insert({
+      session_id: sessionId,
+      player_id: playerId,
+      status: "approved",
+    } as never);
+    if (insertError) {
+      if (insertError.code === "23505") {
+        return { success: false, message: "Il giocatore è già iscritto a questa sessione." };
+      }
+      console.error("[addSessionSignupForGm]", insertError);
+      return { success: false, message: insertError.message ?? "Errore durante l'aggiunta dell'iscritto." };
+    }
+
+    revalidatePath(`/campaigns/${session.campaign_id}`);
+    revalidatePath("/dashboard");
+    return {
+      success: true,
+      message: "Giocatore aggiunto alla sessione e segnato come approvato.",
+      campaignId: session.campaign_id,
+    };
+  } catch (err) {
+    console.error("[addSessionSignupForGm]", err);
+    return { success: false, message: "Errore imprevisto. Riprova." };
+  }
+}
+
 export type UpdateSignupStatusResult = { success: boolean; message: string };
 
 export async function updateSignupStatus(
