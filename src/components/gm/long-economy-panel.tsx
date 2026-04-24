@@ -44,7 +44,6 @@ function parseNonNeg(s: string): number {
 export function LongEconomyPanel({
   campaignId,
   playerIds,
-  attendance,
   economyDraft,
   onDraftChange,
   onCoinsCommitted,
@@ -80,7 +79,6 @@ export function LongEconomyPanel({
       ? res.data.characters.filter((character) => {
           const belongsToSession = character.assigned_to ? playerIds.includes(character.assigned_to) : false;
           if (!belongsToSession) return false;
-          if (!attendance || !character.assigned_to) return true;
           return true;
         })
       : res.data.characters;
@@ -224,8 +222,9 @@ export function LongEconomyPanel({
   );
 
   useEffect(() => {
+    const timers = saveTimersRef.current;
     return () => {
-      Object.values(saveTimersRef.current).forEach((timerId) => window.clearTimeout(timerId));
+      Object.values(timers).forEach((timerId) => window.clearTimeout(timerId));
     };
   }, []);
 

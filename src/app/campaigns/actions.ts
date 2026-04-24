@@ -860,10 +860,11 @@ export async function listAssignablePlayersForSession(
     }
 
     const admin = createSupabaseAdminClient();
-    const [{ data: campaign }, { data: existingSignupsRaw, error: signupsError }] = await Promise.all([
+    const [{ data: campaignRaw }, { data: existingSignupsRaw, error: signupsError }] = await Promise.all([
       admin.from("campaigns").select("id, type").eq("id", session.campaign_id).maybeSingle(),
       admin.from("session_signups").select("player_id").eq("session_id", sessionId),
     ]);
+    const campaign = (campaignRaw as { id: string; type: string | null } | null) ?? null;
 
     if (signupsError) {
       console.error("[listAssignablePlayersForSession] signups", signupsError);
@@ -959,7 +960,7 @@ export async function addSessionSignupForGm(
     }
 
     const admin = createSupabaseAdminClient();
-    const [{ data: campaign }, { data: profile }, { data: existingSignup }] = await Promise.all([
+    const [{ data: campaignRaw }, { data: profile }, { data: existingSignup }] = await Promise.all([
       admin.from("campaigns").select("id, type").eq("id", session.campaign_id).maybeSingle(),
       admin.from("profiles").select("id, role").eq("id", playerId).maybeSingle(),
       admin
@@ -969,6 +970,7 @@ export async function addSessionSignupForGm(
         .eq("player_id", playerId)
         .maybeSingle(),
     ]);
+    const campaign = (campaignRaw as { id: string; type: string | null } | null) ?? null;
 
     if (!profile) {
       return { success: false, message: "Giocatore non trovato." };
