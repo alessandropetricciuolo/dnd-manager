@@ -76,6 +76,27 @@ function sanitizeState(input: StoredXpState | null | undefined, validCharacterId
   };
 }
 
+function arePerCharacterStatesEqual(a: PerCharacterState | undefined, b: PerCharacterState | undefined) {
+  return (
+    (a?.present ?? true) === (b?.present ?? true) &&
+    (a?.plus ?? 0) === (b?.plus ?? 0) &&
+    (a?.minus ?? 0) === (b?.minus ?? 0) &&
+    (a?.customXp ?? null) === (b?.customXp ?? null)
+  );
+}
+
+function areXpStatesEqual(a: StoredXpState, b: StoredXpState) {
+  if (a.version !== b.version || a.extraXpManual !== b.extraXpManual) return false;
+  const aKeys = Object.keys(a.perCharacter);
+  const bKeys = Object.keys(b.perCharacter);
+  if (aKeys.length !== bKeys.length) return false;
+  for (const key of aKeys) {
+    if (!b.perCharacter[key]) return false;
+    if (!arePerCharacterStatesEqual(a.perCharacter[key], b.perCharacter[key])) return false;
+  }
+  return true;
+}
+
 function isMonsterDead(entry: InitiativeStorageEntry | InitiativeEntry) {
   if (entry.type !== "monster" && entry.type !== "custom") return false;
   return entry.isDead === true || entry.hp === 0;
@@ -157,8 +178,14 @@ export function PlayerSessionTracker({
   const [deadMonsterXp, setDeadMonsterXp] = useState(0);
   const [loadingMonstersXp, setLoadingMonstersXp] = useState(false);
   const lastLegacyKeyRef = useRef("");
+  const xpStateRef = useRef(xpState);
+  const skipControlledEchoRef = useRef(false);
   const storageKey = `${XP_STORAGE_PREFIX}${campaignId}`;
   const initiativeStorageKey = `${INITIATIVE_STORAGE_PREFIX}${campaignId}`;
+
+  useEffect(() => {
+    xpStateRef.current = xpState;
+  }, [xpState]);
 
   useEffect(() => {
     if (!sessionMode) return;
@@ -168,7 +195,10 @@ export function PlayerSessionTracker({
   useEffect(() => {
     const validCharacterIds = (providedCharacters ?? characters).map((character) => character.id);
     if (isControlled) {
-      setXpState(sanitizeState(value, validCharacterIds));
+      const nextState = sanitizeState(value, validCharacterIds);
+      if (areXpStatesEqual(xpStateRef.current, nextState)) return;
+      skipControlledEchoRef.current = true;
+      setXpState(nextState);
     }
   }, [characters, isControlled, providedCharacters, value]);
 
@@ -210,7 +240,7 @@ export function PlayerSessionTracker({
               },
               characters.map((character) => character.id)
             );
-      setXpState(normalized);
+      setXpState((current) => (areXpStatesEqual(current, normalized) ? current : normalized));
     } catch {
       // ignore
     }
@@ -218,11 +248,18 @@ export function PlayerSessionTracker({
 
   useEffect(() => {
     const validCharacterIds = characters.map((character) => character.id);
-    setXpState((current) => sanitizeState(current, validCharacterIds));
+    setXpState((current) => {
+      const nextState = sanitizeState(current, validCharacterIds);
+      return areXpStatesEqual(current, nextState) ? current : nextState;
+    });
   }, [characters]);
 
   useEffect(() => {
     if (isControlled) {
+      if (skipControlledEchoRef.current) {
+        skipControlledEchoRef.current = false;
+        return;
+      }
       onChange?.(xpState);
       return;
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Table,
   TableBody,
@@ -53,6 +53,33 @@ export type InitiativeEntry = {
 };
 
 const STORAGE_KEY_PREFIX = "gm-screen-initiative-";
+
+function areInitiativeEntriesEqual(a: InitiativeEntry[], b: InitiativeEntry[]) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    const left = a[i];
+    const right = b[i];
+    if (
+      left.id !== right.id ||
+      left.name !== right.name ||
+      left.type !== right.type ||
+      left.characterClass !== right.characterClass ||
+      left.armorClass !== right.armorClass ||
+      left.hp !== right.hp ||
+      left.maxHp !== right.maxHp ||
+      left.initiative !== right.initiative ||
+      left.playerId !== right.playerId ||
+      left.entityId !== right.entityId ||
+      left.isCore !== right.isCore ||
+      left.gs !== right.gs ||
+      left.exp !== right.exp ||
+      left.isDead !== right.isDead
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
 
 function generateId(): string {
   return `init-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -117,15 +144,30 @@ export function InitiativeTracker({
     currentTurnIndex: number;
     at: number;
   } | null>(null);
+  const entriesRef = useRef(entries);
+  const currentTurnIndexRef = useRef(currentTurnIndex);
+  const skipControlledEchoRef = useRef(false);
+
+  useEffect(() => {
+    entriesRef.current = entries;
+    currentTurnIndexRef.current = currentTurnIndex;
+  }, [currentTurnIndex, entries]);
 
   useEffect(() => {
     if (!isControlled) return;
-    setEntries(Array.isArray(value?.entries) ? value.entries : []);
-    setCurrentTurnIndex(
-      Array.isArray(value?.entries) && value.entries.length > 0
-        ? Math.max(0, Math.min(value.currentTurnIndex ?? 0, value.entries.length - 1))
-        : 0
-    );
+    const nextEntries = Array.isArray(value?.entries) ? value.entries : [];
+    const nextTurnIndex =
+      nextEntries.length > 0 ? Math.max(0, Math.min(value.currentTurnIndex ?? 0, nextEntries.length - 1)) : 0;
+    const entriesChanged = !areInitiativeEntriesEqual(entriesRef.current, nextEntries);
+    const turnChanged = currentTurnIndexRef.current !== nextTurnIndex;
+    if (!entriesChanged && !turnChanged) return;
+    skipControlledEchoRef.current = true;
+    if (entriesChanged) {
+      setEntries(nextEntries);
+    }
+    if (turnChanged) {
+      setCurrentTurnIndex(nextTurnIndex);
+    }
   }, [isControlled, value]);
 
   // Restore from localStorage on mount
@@ -148,6 +190,10 @@ export function InitiativeTracker({
   // Persist to localStorage when entries or currentTurnIndex change
   useEffect(() => {
     if (isControlled) {
+      if (skipControlledEchoRef.current) {
+        skipControlledEchoRef.current = false;
+        return;
+      }
       onChange?.({ entries, currentTurnIndex });
       return;
     }
