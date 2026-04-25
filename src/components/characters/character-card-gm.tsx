@@ -39,7 +39,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { forceCharacterTimeSync } from "@/app/campaigns/character-actions";
+import { forceCharacterTimeSync, setCharacterCalendarOverride } from "@/app/campaigns/character-actions";
 import { parseRulesSnapshot } from "@/lib/character-rules-snapshot";
 import { backgroundBySlug, raceBySlug } from "@/lib/character-build-catalog";
 
@@ -272,6 +272,9 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
   const [epochOpen, setEpochOpen] = useState(false);
   const [epochDraft, setEpochDraft] = useState(String(character.time_offset_hours ?? 0));
   const [epochSaving, setEpochSaving] = useState(false);
+  const [calendarYearDraft, setCalendarYearDraft] = useState(String(character.calendar_current_date?.year ?? 1));
+  const [calendarMonthDraft, setCalendarMonthDraft] = useState(String(character.calendar_current_date?.month ?? 1));
+  const [calendarDayDraft, setCalendarDayDraft] = useState(String(character.calendar_current_date?.day ?? 1));
   const imageSrc = imgError ? PLACEHOLDER_AVATAR : character.image_url ?? PLACEHOLDER_AVATAR;
   const sheetImageSrc = sheetImgError
     ? PLACEHOLDER_AVATAR
@@ -292,6 +295,7 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
   const hpLabel = character.hit_points != null ? String(character.hit_points) : "—";
   const acLabel = character.armor_class != null ? String(character.armor_class) : "—";
   const epochHours = character.time_offset_hours ?? 0;
+  const calendarLabel = character.calendar_date_label ?? "Data non impostata";
 
   const backgroundPreview = character.background?.trim() ?? "";
   const backgroundForSheet = character.background?.trim()
@@ -361,6 +365,28 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
     }
   }
 
+  async function onCalendarOverride() {
+    const year = Number.parseInt(calendarYearDraft, 10);
+    const month = Number.parseInt(calendarMonthDraft, 10);
+    const day = Number.parseInt(calendarDayDraft, 10);
+    if ([year, month, day].some((value) => Number.isNaN(value) || value < 1)) {
+      toast.error("Inserisci una data valida (giorno, mese, anno >= 1).");
+      return;
+    }
+    setEpochSaving(true);
+    try {
+      const result = await setCharacterCalendarOverride(character.id, { year, month, day });
+      if (result.success) {
+        toast.success(result.message);
+        router.refresh();
+      } else {
+        toast.error(result.error);
+      }
+    } finally {
+      setEpochSaving(false);
+    }
+  }
+
   return (
     <>
       <Card className="relative overflow-hidden border-barber-gold/40 bg-barber-dark/80">
@@ -412,7 +438,12 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
             open={epochOpen}
             onOpenChange={(o) => {
               setEpochOpen(o);
-              if (o) setEpochDraft(String(character.time_offset_hours ?? 0));
+              if (o) {
+                setEpochDraft(String(character.time_offset_hours ?? 0));
+                setCalendarYearDraft(String(character.calendar_current_date?.year ?? 1));
+                setCalendarMonthDraft(String(character.calendar_current_date?.month ?? 1));
+                setCalendarDayDraft(String(character.calendar_current_date?.day ?? 1));
+              }
             }}
           >
             <PopoverTrigger asChild>
@@ -434,6 +465,9 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
               <p className="mb-3 text-sm text-barber-paper/80">
                 Ore attuali: <span className="font-semibold tabular-nums text-barber-paper">{epochHours}</span>
               </p>
+              <p className="mb-3 text-xs text-barber-paper/70">
+                Data fantasy attuale: <span className="font-semibold text-amber-200">{calendarLabel}</span>
+              </p>
               <label className="mb-1 block text-xs text-barber-paper/70">Nuovo valore (sovrascrive)</label>
               <Input
                 type="number"
@@ -450,6 +484,42 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
                 onClick={() => void onEpochSync()}
               >
                 {epochSaving ? "Salvataggio…" : "Sincronizza tempo"}
+              </Button>
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                <Input
+                  type="number"
+                  min={1}
+                  value={calendarDayDraft}
+                  onChange={(e) => setCalendarDayDraft(e.target.value)}
+                  className="border-barber-gold/30 bg-barber-dark/80 text-barber-paper"
+                  placeholder="Giorno"
+                />
+                <Input
+                  type="number"
+                  min={1}
+                  value={calendarMonthDraft}
+                  onChange={(e) => setCalendarMonthDraft(e.target.value)}
+                  className="border-barber-gold/30 bg-barber-dark/80 text-barber-paper"
+                  placeholder="Mese"
+                />
+                <Input
+                  type="number"
+                  min={1}
+                  value={calendarYearDraft}
+                  onChange={(e) => setCalendarYearDraft(e.target.value)}
+                  className="border-barber-gold/30 bg-barber-dark/80 text-barber-paper"
+                  placeholder="Anno"
+                />
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="mt-2 w-full border-barber-gold/40 text-barber-gold hover:bg-barber-gold/10"
+                disabled={epochSaving}
+                onClick={() => void onCalendarOverride()}
+              >
+                Imposta override data
               </Button>
             </PopoverContent>
           </Popover>
@@ -526,6 +596,10 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
                 <div className="col-span-2 flex justify-between gap-1 border-t border-barber-gold/10 pt-0.5">
                   <dt className="text-muted-foreground">Ore (epoch)</dt>
                   <dd className="font-medium tabular-nums text-amber-200/90">{epochHours}</dd>
+                </div>
+                <div className="col-span-2 flex justify-between gap-1">
+                  <dt className="text-muted-foreground">Data fantasy</dt>
+                  <dd className="font-medium text-amber-200/90">{calendarLabel}</dd>
                 </div>
                 {isLongCampaign && (
                   <div className="col-span-2 flex flex-col gap-0.5 border-t border-barber-gold/10 pt-1">

@@ -43,6 +43,14 @@ import {
 import { getCoreEntitiesForDebrief, type CoreEntityForDebrief } from "@/app/campaigns/gm-actions";
 import { cn } from "@/lib/utils";
 import {
+  addHoursToFantasyDate,
+  formatFantasyDate,
+  normalizeFantasyCalendarConfig,
+  normalizeFantasyCalendarDate,
+  type FantasyCalendarConfig,
+  type FantasyCalendarDate,
+} from "@/lib/long-calendar";
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -103,6 +111,8 @@ type EndSessionWizardProps = {
   initialAttendance?: Record<string, "attended" | "absent">;
   initialXpGained?: number;
   initialElapsedHours?: number;
+  initialCalendarBaseDate?: FantasyCalendarDate;
+  initialCalendarConfig?: FantasyCalendarConfig;
   perPlayerXpAwards?: { playerId: string; xp: number }[];
   economyManagedInGmScreen?: boolean;
   onSuccess?: () => void;
@@ -121,6 +131,8 @@ export function EndSessionWizard({
   initialAttendance,
   initialXpGained,
   initialElapsedHours,
+  initialCalendarBaseDate,
+  initialCalendarConfig,
   perPlayerXpAwards,
   economyManagedInGmScreen = false,
   onSuccess,
@@ -193,6 +205,18 @@ export function EndSessionWizard({
   const [payoutMissionId, setPayoutMissionId] = useState<string>("");
   const [payoutAlloc, setPayoutAlloc] = useState<Record<string, { gp: string; sp: string; cp: string }>>({});
   const [coinDeltaAlloc, setCoinDeltaAlloc] = useState<Record<string, { gp: string; sp: string; cp: string }>>({});
+  const effectiveCalendarConfig = useMemo(
+    () => normalizeFantasyCalendarConfig(initialCalendarConfig as never),
+    [initialCalendarConfig]
+  );
+  const effectiveBaseDate = useMemo(
+    () => normalizeFantasyCalendarDate(initialCalendarBaseDate as never, effectiveCalendarConfig),
+    [effectiveCalendarConfig, initialCalendarBaseDate]
+  );
+  const projectedDate = useMemo(
+    () => addHoursToFantasyDate(effectiveBaseDate, Math.max(0, Math.floor(elapsedHours)), effectiveCalendarConfig),
+    [effectiveBaseDate, effectiveCalendarConfig, elapsedHours]
+  );
 
   const loadTrackerEntityIds = useCallback(() => {
     try {
@@ -678,6 +702,12 @@ export function EndSessionWizard({
                     <p className="text-xs text-barber-paper/55">
                       Sommate al tempo dei personaggi assegnati ai giocatori segnati come presenti (Epoch / West
                       Marches).
+                    </p>
+                    <p className="text-xs text-barber-paper/65">
+                      Calendario: {formatFantasyDate(effectiveBaseDate, effectiveCalendarConfig)} →{" "}
+                      <span className="text-barber-gold">
+                        {formatFantasyDate(projectedDate, effectiveCalendarConfig)}
+                      </span>
                     </p>
                   </div>
                   {isLongCampaign && (

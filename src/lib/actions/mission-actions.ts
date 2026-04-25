@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { parseGuildRank, rankFromPoints } from "@/lib/missions/guild-ranks";
 import type { BulkMissionImportItem } from "@/lib/missions/mission-bulk-import";
+import type { Json } from "@/types/database.types";
 
 export type MissionBoardResult =
   | { success: true }
@@ -744,6 +745,423 @@ export async function deleteMissionAction(
     }
 
     revalidatePath(`/campaigns/${campaignId}`);
+    return { success: true };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Errore sconosciuto.";
+    return { success: false, message: msg };
+  }
+}
+
+export type MissionEncounterMonsterConfig = {
+  id: string;
+  wiki_entity_id: string;
+  quantity: number;
+  sort_order: number;
+  monster_name: string;
+  monster_hp: number;
+  monster_xp: number;
+  is_core?: boolean;
+  global_status?: "alive" | "dead";
+};
+
+export type MissionEncounterConfig = {
+  id: string;
+  campaign_id: string;
+  mission_id: string;
+  mission_title: string;
+  name: string;
+  notes: string | null;
+  sort_order: number;
+  monsters: MissionEncounterMonsterConfig[];
+};
+
+type MissionEncounterMonsterInput = {
+  wikiEntityId: string;
+  quantity: number;
+};
+
+function extractMonsterHp(attributes: unknown): number {
+  const hpRaw = (attributes as { combat_stats?: { hp?: string | number | null } } | null)?.combat_stats?.hp;
+  if (typeof hpRaw === "number" && Number.isFinite(hpRaw)) return Math.max(0, Math.trunc(hpRaw));
+  const parsed = Number.parseInt(String(hpRaw ?? "").trim(), 10);
+  return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+}
+
+async function ensureMissionBelongsToCampaign(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  campaignId: string,
+  missionId: string
+) {
+  const { data: mission, error } = await supabase
+    .from("campaign_missions")
+    .select("id, title")
+    .eq("id", missionId)
+    .eq("campaign_id", campaignId)
+    .maybeSingle();
+  if (error || !mission) {
+    return null;
+  }
+  return mission as { id: string; title: string | null };
+}
+
+async function ensureEncounterBelongsToCampaign(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  campaignId: string,
+  encounterId: string
+) {
+  const { data: encounter, error } = await supabase
+    .from("mission_encounters")
+    .select("id, campaign_id, mission_id")
+    .eq("id", encounterId)
+    .eq("campaign_id", campaignId)
+    .maybeSingle();
+  if (error || !encounter) {
+    return null;
+  }
+  return encounter as { id: string; campaign_id: string; mission_id: string };
+}
+
+async function loadMissionEncounterConfigs(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  campaignId: string,
+  missionId?: string
+): Promise<MissionEncounterConfig[]> {
+  const encountersQuery = supabase
+    .from("mission_encounters")
+    .select("id, campaign_id, mission_id, name, notes, sort_order")
+    .eq("campaign_id", campaignId)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+  if (missionId) {
+    encountersQuery.eq("mission_id", missionId);
+  }
+
+  const { data: encounterRows, error: encountersError } = await encountersQuery;
+  if (encountersError || !encounterRows) {
+    throw new Error(encountersError?.message ?? "Errore nel caricamento degli incontri.");
+  }
+
+  if (encounterRows.length === 0) return [];
+
+  const encounterIds = encounterRows.map((row) => row.id);
+  const missionIds = [...new Set(encounterRows.map((row) => row.mission_id))];
+
+  const [{ data: missionRows, error: missionsError }, { data: monsterRows, error: monstersError }] = await Promise.all([
+    supabase.from("campaign_missions").select("id, title").in("id", missionIds),
+    supabase
+      .from("mission_encounter_monsters")
+      .select("id, encounter_id, wiki_entity_id, quantity, sort_order")
+      .in("encounter_id", encounterIds)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true }),
+  ]);
+
+  if (missionsError) {
+    throw new Error(missionsError.message ?? "Errore nel caricamento missioni degli incontri.");
+  }
+  if (monstersError) {
+    throw new Error(monstersError.message ?? "Errore nel caricamento mostri degli incontri.");
+  }
+
+  const wikiEntityIds = [...new Set((monsterRows ?? []).map((row) => row.wiki_entity_id))];
+  let wikiRows:
+    | Array<{
+        id: string;
+        name: string;
+        attributes: Json | null;
+        xp_value: number | null;
+        is_core?: boolean | null;
+        global_status?: string | null;
+      }>
+    | null = [];
+  if (wikiEntityIds.length > 0) {
+    const { data, error } = await supabase
+      .from("wiki_entities")
+      .select("id, name, attributes, xp_value, is_core, global_status")
+      .in("id", wikiEntityIds);
+    if (error) {
+      throw new Error(error.message ?? "Errore nel caricamento dettagli mostri.");
+    }
+    wikiRows = (data ?? []) as typeof wikiRows;
+  }
+
+  const missionTitleById = new Map(
+    ((missionRows ?? []) as Array<{ id: string; title: string | null }>).map((row) => [row.id, row.title?.trim() || "Missione"])
+  );
+  const wikiById = new Map(
+    (wikiRows ?? []).map((row) => [
+      row.id,
+      {
+        name: row.name,
+        hp: extractMonsterHp(row.attributes),
+        xp: typeof row.xp_value === "number" && Number.isFinite(row.xp_value) ? Math.max(0, Math.trunc(row.xp_value)) : 0,
+        is_core: row.is_core === true,
+        global_status:
+          row.global_status === "alive" || row.global_status === "dead"
+            ? (row.global_status as "alive" | "dead")
+            : undefined,
+      },
+    ])
+  );
+
+  const monstersByEncounterId = new Map<string, MissionEncounterMonsterConfig[]>();
+  for (const row of (monsterRows ?? []) as Array<{
+    id: string;
+    encounter_id: string;
+    wiki_entity_id: string;
+    quantity: number;
+    sort_order: number;
+  }>) {
+    const wiki = wikiById.get(row.wiki_entity_id);
+    if (!wiki) continue;
+    const list = monstersByEncounterId.get(row.encounter_id) ?? [];
+    list.push({
+      id: row.id,
+      wiki_entity_id: row.wiki_entity_id,
+      quantity: Math.max(1, Math.trunc(row.quantity)),
+      sort_order: Math.max(0, Math.trunc(row.sort_order)),
+      monster_name: wiki.name,
+      monster_hp: wiki.hp,
+      monster_xp: wiki.xp,
+      ...(wiki.is_core ? { is_core: true } : {}),
+      ...(wiki.global_status ? { global_status: wiki.global_status } : {}),
+    });
+    monstersByEncounterId.set(row.encounter_id, list);
+  }
+
+  return encounterRows.map((row) => ({
+    id: row.id,
+    campaign_id: row.campaign_id,
+    mission_id: row.mission_id,
+    mission_title: missionTitleById.get(row.mission_id) ?? "Missione",
+    name: row.name,
+    notes: row.notes ?? null,
+    sort_order: row.sort_order,
+    monsters: monstersByEncounterId.get(row.id) ?? [],
+  }));
+}
+
+export async function listMissionEncountersAction(
+  campaignId: string,
+  missionId?: string
+): Promise<{ success: true; data: MissionEncounterConfig[] } | { success: false; message: string }> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const allowed = await isGmOrAdminByRole(supabase);
+    if (!allowed) return { success: false, message: "Non autorizzato." };
+
+    if (missionId) {
+      const mission = await ensureMissionBelongsToCampaign(supabase, campaignId, missionId);
+      if (!mission) return { success: false, message: "Missione non trovata." };
+    }
+
+    const data = await loadMissionEncounterConfigs(supabase, campaignId, missionId);
+    return { success: true, data };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Errore sconosciuto.";
+    return { success: false, message: msg };
+  }
+}
+
+export async function createMissionEncounterAction(
+  campaignId: string,
+  missionId: string,
+  payload: { name: string; notes?: string | null }
+): Promise<{ success: true; data: MissionEncounterConfig } | { success: false; message: string }> {
+  const name = payload.name.trim();
+  const notes = payload.notes?.trim() || null;
+  if (!campaignId || !missionId || !name) {
+    return { success: false, message: "Nome incontro non valido." };
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    const allowed = await isGmOrAdminByRole(supabase);
+    if (!allowed) return { success: false, message: "Non autorizzato." };
+
+    const mission = await ensureMissionBelongsToCampaign(supabase, campaignId, missionId);
+    if (!mission) return { success: false, message: "Missione non trovata." };
+
+    const { data: lastEncounter } = await supabase
+      .from("mission_encounters")
+      .select("sort_order")
+      .eq("campaign_id", campaignId)
+      .eq("mission_id", missionId)
+      .order("sort_order", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const nextSortOrder =
+      typeof lastEncounter?.sort_order === "number" && Number.isFinite(lastEncounter.sort_order)
+        ? Math.max(0, Math.trunc(lastEncounter.sort_order)) + 1
+        : 0;
+
+    const { data: created, error } = await supabase
+      .from("mission_encounters")
+      .insert({
+        campaign_id: campaignId,
+        mission_id: missionId,
+        name,
+        notes,
+        sort_order: nextSortOrder,
+        updated_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
+
+    if (error || !created) {
+      return { success: false, message: error?.message ?? "Errore nella creazione dell'incontro." };
+    }
+
+    const loaded = await loadMissionEncounterConfigs(supabase, campaignId, missionId);
+    const encounter = loaded.find((row) => row.id === created.id);
+    if (!encounter) {
+      return { success: false, message: "Incontro creato ma non recuperato correttamente." };
+    }
+
+    revalidatePath(`/campaigns/${campaignId}`);
+    revalidatePath(`/campaigns/${campaignId}/gm-screen`);
+    return { success: true, data: encounter };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Errore sconosciuto.";
+    return { success: false, message: msg };
+  }
+}
+
+export async function updateMissionEncounterAction(
+  campaignId: string,
+  encounterId: string,
+  payload: { name: string; notes?: string | null }
+): Promise<MissionBoardResult> {
+  const name = payload.name.trim();
+  const notes = payload.notes?.trim() || null;
+  if (!campaignId || !encounterId || !name) {
+    return { success: false, message: "Dati incontro non validi." };
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    const allowed = await isGmOrAdminByRole(supabase);
+    if (!allowed) return { success: false, message: "Non autorizzato." };
+
+    const encounter = await ensureEncounterBelongsToCampaign(supabase, campaignId, encounterId);
+    if (!encounter) return { success: false, message: "Incontro non trovato." };
+
+    const { error } = await supabase
+      .from("mission_encounters")
+      .update({
+        name,
+        notes,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", encounterId)
+      .eq("campaign_id", campaignId);
+
+    if (error) return { success: false, message: error.message ?? "Errore nel salvataggio dell'incontro." };
+
+    revalidatePath(`/campaigns/${campaignId}`);
+    revalidatePath(`/campaigns/${campaignId}/gm-screen`);
+    return { success: true };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Errore sconosciuto.";
+    return { success: false, message: msg };
+  }
+}
+
+export async function deleteMissionEncounterAction(
+  campaignId: string,
+  encounterId: string
+): Promise<MissionBoardResult> {
+  if (!campaignId || !encounterId) {
+    return { success: false, message: "Dati incontro non validi." };
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    const allowed = await isGmOrAdminByRole(supabase);
+    if (!allowed) return { success: false, message: "Non autorizzato." };
+
+    const encounter = await ensureEncounterBelongsToCampaign(supabase, campaignId, encounterId);
+    if (!encounter) return { success: false, message: "Incontro non trovato." };
+
+    const { error } = await supabase
+      .from("mission_encounters")
+      .delete()
+      .eq("id", encounterId)
+      .eq("campaign_id", campaignId);
+    if (error) return { success: false, message: error.message ?? "Errore durante l'eliminazione dell'incontro." };
+
+    revalidatePath(`/campaigns/${campaignId}`);
+    revalidatePath(`/campaigns/${campaignId}/gm-screen`);
+    return { success: true };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Errore sconosciuto.";
+    return { success: false, message: msg };
+  }
+}
+
+export async function replaceMissionEncounterMonstersAction(
+  campaignId: string,
+  encounterId: string,
+  monsters: MissionEncounterMonsterInput[]
+): Promise<MissionBoardResult> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const allowed = await isGmOrAdminByRole(supabase);
+    if (!allowed) return { success: false, message: "Non autorizzato." };
+
+    const encounter = await ensureEncounterBelongsToCampaign(supabase, campaignId, encounterId);
+    if (!encounter) return { success: false, message: "Incontro non trovato." };
+
+    const sanitized = monsters
+      .map((monster, index) => ({
+        wikiEntityId: monster.wikiEntityId,
+        quantity: Number.isFinite(monster.quantity) ? Math.max(1, Math.trunc(monster.quantity)) : 1,
+        sortOrder: index,
+      }))
+      .filter((monster) => Boolean(monster.wikiEntityId));
+
+    if (sanitized.length > 0) {
+      const ids = [...new Set(sanitized.map((monster) => monster.wikiEntityId))];
+      const { data: wikiRows, error: wikiError } = await supabase
+        .from("wiki_entities")
+        .select("id")
+        .eq("campaign_id", campaignId)
+        .eq("type", "monster")
+        .in("id", ids);
+      if (wikiError) {
+        return { success: false, message: wikiError.message ?? "Errore nella validazione dei mostri." };
+      }
+      const validIds = new Set((wikiRows ?? []).map((row) => row.id));
+      if (validIds.size !== ids.length) {
+        return { success: false, message: "Uno o più mostri selezionati non appartengono alla campagna." };
+      }
+    }
+
+    const { error: deleteError } = await supabase
+      .from("mission_encounter_monsters")
+      .delete()
+      .eq("encounter_id", encounterId);
+    if (deleteError) {
+      return { success: false, message: deleteError.message ?? "Errore nella pulizia dei mostri incontro." };
+    }
+
+    if (sanitized.length > 0) {
+      const payload = sanitized.map((monster) => ({
+        encounter_id: encounterId,
+        wiki_entity_id: monster.wikiEntityId,
+        quantity: monster.quantity,
+        sort_order: monster.sortOrder,
+        updated_at: new Date().toISOString(),
+      }));
+      const { error: insertError } = await supabase.from("mission_encounter_monsters").insert(payload);
+      if (insertError) {
+        return { success: false, message: insertError.message ?? "Errore nel salvataggio dei mostri incontro." };
+      }
+    }
+
+    revalidatePath(`/campaigns/${campaignId}`);
+    revalidatePath(`/campaigns/${campaignId}/gm-screen`);
     return { success: true };
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Errore sconosciuto.";

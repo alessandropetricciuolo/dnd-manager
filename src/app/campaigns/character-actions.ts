@@ -12,6 +12,16 @@ import type { Json } from "@/types/database.types";
 import { backgroundBySlug, raceBySlug } from "@/lib/character-build-catalog";
 import { recomputeCharacterRulesSnapshot } from "@/lib/character-rules-snapshot.server";
 import {
+  DEFAULT_FANTASY_BASE_DATE,
+  DEFAULT_FANTASY_CALENDAR_CONFIG,
+  deriveCharacterCalendarDate,
+  formatFantasyDate,
+  normalizeFantasyCalendarConfig,
+  normalizeFantasyCalendarDate,
+  toCalendarDateJson,
+  type FantasyCalendarDate,
+} from "@/lib/long-calendar";
+import {
   deleteCampaignMemorySource,
   syncCharacterBackgroundToCampaignMemory,
 } from "@/lib/campaign-memory-indexer";
@@ -76,6 +86,10 @@ export type CampaignCharacterRow = {
   assigned_to: string | null;
   /** Ore vissute (Epoch / West Marches). */
   time_offset_hours?: number;
+  /** Data fantasy corrente del personaggio. */
+  calendar_current_date?: FantasyCalendarDate | null;
+  /** Etichetta data fantasy già formattata per UI. */
+  calendar_date_label?: string | null;
   /** Monete (campagne lunghe): oro, argento, rame. */
   coins_gp?: number;
   coins_sp?: number;
@@ -87,6 +101,49 @@ export type CampaignCharacterRow = {
   created_at: string;
   updated_at: string;
 };
+
+type CampaignCalendarContext = {
+  config: ReturnType<typeof normalizeFantasyCalendarConfig>;
+  baseDate: FantasyCalendarDate;
+};
+
+function resolveCharacterCalendar(
+  calendar: CampaignCalendarContext,
+  raw: {
+    time_offset_hours?: number | null;
+    calendar_anchor_date?: Json | null;
+    calendar_anchor_hours?: number | null;
+    calendar_current_date?: Json | null;
+  }
+): { date: FantasyCalendarDate; label: string; json: Json } {
+  const safeHours =
+    typeof raw.time_offset_hours === "number" && Number.isFinite(raw.time_offset_hours)
+      ? Math.max(0, Math.trunc(raw.time_offset_hours))
+      : 0;
+  const anchorDate = raw.calendar_anchor_date
+    ? normalizeFantasyCalendarDate(raw.calendar_anchor_date, calendar.config)
+    : null;
+  const anchorHours =
+    typeof raw.calendar_anchor_hours === "number" && Number.isFinite(raw.calendar_anchor_hours)
+      ? raw.calendar_anchor_hours
+      : null;
+  const derived = deriveCharacterCalendarDate({
+    campaignBaseDate: calendar.baseDate,
+    characterHours: safeHours,
+    config: calendar.config,
+    anchorDate,
+    anchorHours,
+  });
+  const fallbackFromDb = raw.calendar_current_date
+    ? normalizeFantasyCalendarDate(raw.calendar_current_date, calendar.config)
+    : derived;
+  const date = derived ?? fallbackFromDb;
+  return {
+    date,
+    label: formatFantasyDate(date, calendar.config),
+    json: toCalendarDateJson(date),
+  };
+}
 
 function formSlug(formData: FormData, key: string): string | null {
   const v = (formData.get(key) as string | null)?.trim();
@@ -130,12 +187,30 @@ export async function getCampaignCharacters(
   if (!ctx) return { success: false, error: "Non autenticato." };
 
   const { userId, isGmOrAdmin, supabase } = ctx;
+  const { data: campaignCalendarRow } = await supabase
+    .from("campaigns")
+    .select("long_calendar_config, long_calendar_base_date")
+    .eq("id", campaignId)
+    .maybeSingle();
+  const calendarConfig = normalizeFantasyCalendarConfig(
+    (campaignCalendarRow as { long_calendar_config?: Json | null } | null)?.long_calendar_config ??
+      DEFAULT_FANTASY_CALENDAR_CONFIG
+  );
+  const calendarBaseDate = normalizeFantasyCalendarDate(
+    (campaignCalendarRow as { long_calendar_base_date?: Json | null } | null)?.long_calendar_base_date ??
+      DEFAULT_FANTASY_BASE_DATE,
+    calendarConfig
+  );
+  const calendarCtx: CampaignCalendarContext = {
+    config: calendarConfig,
+    baseDate: calendarBaseDate,
+  };
 
   if (isGmOrAdmin) {
     const { data: rows, error } = await supabase
       .from("campaign_characters")
       .select(
-        "id, campaign_id, name, image_url, character_class, class_subclass, armor_class, hit_points, current_xp, level, sheet_file_path, background, race_slug, subclass_slug, background_slug, rules_snapshot, assigned_to, time_offset_hours, coins_gp, coins_sp, coins_cp, created_at, updated_at"
+        "id, campaign_id, name, image_url, character_class, class_subclass, armor_class, hit_points, current_xp, level, sheet_file_path, background, race_slug, subclass_slug, background_slug, rules_snapshot, assigned_to, time_offset_hours, calendar_anchor_date, calendar_anchor_hours, calendar_current_date, coins_gp, coins_sp, coins_cp, created_at, updated_at"
       )
       .eq("campaign_id", campaignId)
       .order("created_at", { ascending: false });
@@ -162,10 +237,13 @@ export async function getCampaignCharacters(
         }
       }
       const { sheet_file_path: _, ...rest } = row;
+      const calendarResolved = resolveCharacterCalendar(calendarCtx, rest);
       withUrls.push({
         ...rest,
         sheet_url,
         time_offset_hours: typeof rest.time_offset_hours === "number" ? rest.time_offset_hours : 0,
+        calendar_current_date: calendarResolved.date,
+        calendar_date_label: calendarResolved.label,
         coins_gp: typeof (rest as { coins_gp?: number }).coins_gp === "number" ? (rest as { coins_gp: number }).coins_gp : 0,
         coins_sp: typeof (rest as { coins_sp?: number }).coins_sp === "number" ? (rest as { coins_sp: number }).coins_sp : 0,
         coins_cp: typeof (rest as { coins_cp?: number }).coins_cp === "number" ? (rest as { coins_cp: number }).coins_cp : 0,
@@ -179,7 +257,7 @@ export async function getCampaignCharacters(
   const { data: rows, error } = await supabase
     .from("campaign_characters")
     .select(
-      "id, campaign_id, name, image_url, character_class, class_subclass, current_xp, level, background, race_slug, subclass_slug, background_slug, rules_snapshot, assigned_to, time_offset_hours, coins_gp, coins_sp, coins_cp, created_at, updated_at"
+      "id, campaign_id, name, image_url, character_class, class_subclass, current_xp, level, background, race_slug, subclass_slug, background_slug, rules_snapshot, assigned_to, time_offset_hours, calendar_anchor_date, calendar_anchor_hours, calendar_current_date, coins_gp, coins_sp, coins_cp, created_at, updated_at"
     )
     .eq("campaign_id", campaignId)
     .eq("assigned_to", userId)
@@ -191,19 +269,30 @@ export async function getCampaignCharacters(
     return { success: false, error: error.message ?? "Errore nel caricamento." };
   }
 
-  const list: CampaignCharacterRow[] = (rows ?? []).map((r) => ({
-    ...r,
-    armor_class: null,
-    hit_points: null,
-    sheet_url: null,
-    time_offset_hours:
-      typeof (r as { time_offset_hours?: number }).time_offset_hours === "number"
-        ? (r as { time_offset_hours: number }).time_offset_hours
-        : 0,
-    coins_gp: typeof (r as { coins_gp?: number }).coins_gp === "number" ? (r as { coins_gp: number }).coins_gp : 0,
-    coins_sp: typeof (r as { coins_sp?: number }).coins_sp === "number" ? (r as { coins_sp: number }).coins_sp : 0,
-    coins_cp: typeof (r as { coins_cp?: number }).coins_cp === "number" ? (r as { coins_cp: number }).coins_cp : 0,
-  }));
+  const list: CampaignCharacterRow[] = (rows ?? []).map((r) => {
+    const row = r as CampaignCharacterRow & {
+      calendar_anchor_date?: Json | null;
+      calendar_anchor_hours?: number | null;
+      calendar_current_date?: Json | null;
+      time_offset_hours?: number;
+    };
+    const calendarResolved = resolveCharacterCalendar(calendarCtx, row);
+    return {
+      ...r,
+      armor_class: null,
+      hit_points: null,
+      sheet_url: null,
+      time_offset_hours:
+        typeof (r as { time_offset_hours?: number }).time_offset_hours === "number"
+          ? (r as { time_offset_hours: number }).time_offset_hours
+          : 0,
+      calendar_current_date: calendarResolved.date,
+      calendar_date_label: calendarResolved.label,
+      coins_gp: typeof (r as { coins_gp?: number }).coins_gp === "number" ? (r as { coins_gp: number }).coins_gp : 0,
+      coins_sp: typeof (r as { coins_sp?: number }).coins_sp === "number" ? (r as { coins_sp: number }).coins_sp : 0,
+      coins_cp: typeof (r as { coins_cp?: number }).coins_cp === "number" ? (r as { coins_cp: number }).coins_cp : 0,
+    };
+  });
   return { success: true, data: list };
 }
 
@@ -791,6 +880,10 @@ export type ForceCharacterTimeSyncResult =
   | { success: true; message: string }
   | { success: false; error: string };
 
+export type CharacterCalendarOverrideResult =
+  | { success: true; message: string }
+  | { success: false; error: string };
+
 /**
  * GM/Admin: sovrascrive le ore Epoch del personaggio (sincronizzazione forzata).
  */
@@ -814,11 +907,16 @@ export async function forceCharacterTimeSync(
 
   const { data: rowRaw, error: fetchErr } = await admin
     .from("campaign_characters")
-    .select("id, campaign_id")
+    .select("id, campaign_id, calendar_anchor_date, calendar_anchor_hours")
     .eq("id", id)
     .maybeSingle();
 
-  const row = rowRaw as { id: string; campaign_id: string } | null;
+  const row = rowRaw as {
+    id: string;
+    campaign_id: string;
+    calendar_anchor_date: Json | null;
+    calendar_anchor_hours: number | null;
+  } | null;
   if (fetchErr || !row) {
     return { success: false, error: fetchErr?.message ?? "Personaggio non trovato." };
   }
@@ -833,9 +931,30 @@ export async function forceCharacterTimeSync(
     return { success: false, error: "Non sei il Master di questa campagna." };
   }
 
+  const { data: calendarRow } = await admin
+    .from("campaigns")
+    .select("long_calendar_config, long_calendar_base_date")
+    .eq("id", row.campaign_id)
+    .maybeSingle();
+  const config = normalizeFantasyCalendarConfig(
+    (calendarRow as { long_calendar_config?: Json | null } | null)?.long_calendar_config ?? DEFAULT_FANTASY_CALENDAR_CONFIG
+  );
+  const baseDate = normalizeFantasyCalendarDate(
+    (calendarRow as { long_calendar_base_date?: Json | null } | null)?.long_calendar_base_date ?? DEFAULT_FANTASY_BASE_DATE,
+    config
+  );
+  const anchorDate = row.calendar_anchor_date ? normalizeFantasyCalendarDate(row.calendar_anchor_date, config) : null;
+  const nextDate = deriveCharacterCalendarDate({
+    campaignBaseDate: baseDate,
+    characterHours: hours,
+    config,
+    anchorDate,
+    anchorHours: row.calendar_anchor_hours,
+  });
+
   const { error: updErr } = await admin
     .from("campaign_characters")
-    .update({ time_offset_hours: hours } as never)
+    .update({ time_offset_hours: hours, calendar_current_date: toCalendarDateJson(nextDate) } as never)
     .eq("id", id);
 
   if (updErr) {
@@ -846,6 +965,77 @@ export async function forceCharacterTimeSync(
   revalidatePath(`/campaigns/${row.campaign_id}`);
   revalidatePath("/dashboard");
   return { success: true, message: "Timeline del personaggio aggiornata." };
+}
+
+/**
+ * GM/Admin: imposta (o resetta) la data fantasy corrente del personaggio.
+ * Se impostata, diventa la nuova ancora locale del PG.
+ */
+export async function setCharacterCalendarOverride(
+  characterId: string,
+  date: { year: number; month: number; day: number } | null
+): Promise<CharacterCalendarOverrideResult> {
+  const ctx = await getCurrentUserAndRole();
+  if (!ctx) return { success: false, error: "Non autenticato." };
+  if (!ctx.isGmOrAdmin) return { success: false, error: "Solo GM o Admin." };
+  const id = characterId?.trim();
+  if (!id) return { success: false, error: "Personaggio non valido." };
+
+  const supabase = ctx.supabase;
+  const admin = createSupabaseAdminClient();
+
+  const { data: me } = await supabase.from("profiles").select("role").eq("id", ctx.userId).single();
+  const isAdmin = me?.role === "admin";
+
+  const { data: rowRaw, error: fetchErr } = await admin
+    .from("campaign_characters")
+    .select("id, campaign_id, time_offset_hours")
+    .eq("id", id)
+    .maybeSingle();
+  const row = rowRaw as { id: string; campaign_id: string; time_offset_hours: number | null } | null;
+  if (fetchErr || !row) {
+    return { success: false, error: fetchErr?.message ?? "Personaggio non trovato." };
+  }
+
+  const { data: camp } = await supabase
+    .from("campaigns")
+    .select("gm_id, long_calendar_config")
+    .eq("id", row.campaign_id)
+    .single();
+  if (!isAdmin && camp?.gm_id !== ctx.userId) {
+    return { success: false, error: "Non sei il Master di questa campagna." };
+  }
+
+  const config = normalizeFantasyCalendarConfig(
+    (camp as { long_calendar_config?: Json | null } | null)?.long_calendar_config ?? DEFAULT_FANTASY_CALENDAR_CONFIG
+  );
+  const currentHours =
+    typeof row.time_offset_hours === "number" && Number.isFinite(row.time_offset_hours)
+      ? Math.max(0, Math.trunc(row.time_offset_hours))
+      : 0;
+  const overrideDate = date ? normalizeFantasyCalendarDate(date as unknown as Json, config) : null;
+
+  const payload = overrideDate
+    ? {
+        calendar_anchor_date: toCalendarDateJson(overrideDate),
+        calendar_anchor_hours: currentHours,
+        calendar_current_date: toCalendarDateJson(overrideDate),
+      }
+    : {
+        calendar_anchor_date: null,
+        calendar_anchor_hours: null,
+        calendar_current_date: null,
+      };
+
+  const { error: updErr } = await admin.from("campaign_characters").update(payload as never).eq("id", id);
+  if (updErr) {
+    console.error("[setCharacterCalendarOverride]", updErr);
+    return { success: false, error: updErr.message ?? "Errore durante l'aggiornamento." };
+  }
+
+  revalidatePath(`/campaigns/${row.campaign_id}`);
+  revalidatePath("/dashboard");
+  return { success: true, message: overrideDate ? "Data del personaggio aggiornata." : "Override data rimosso." };
 }
 
 /**

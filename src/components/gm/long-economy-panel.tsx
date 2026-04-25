@@ -50,7 +50,6 @@ export function LongEconomyPanel({
   onRefreshCharacters,
 }: LongEconomyPanelProps) {
   const router = useRouter();
-  const playerIdsKey = useMemo(() => (playerIds ?? []).join(","), [playerIds]);
   const economyDraftRef = useRef(economyDraft);
   const [loading, setLoading] = useState(true);
   const [missions, setMissions] = useState<EconomyMissionSnapshot[]>([]);
@@ -109,7 +108,7 @@ export function LongEconomyPanel({
         {} as Record<string, { gp: string; sp: string; cp: string }>
       )
     );
-  }, [campaignId, playerIdsKey, playerIds]);
+  }, [campaignId, playerIds]);
 
   useEffect(() => {
     void load();

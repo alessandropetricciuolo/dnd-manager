@@ -11,9 +11,21 @@ import {
   type ReactNode,
 } from "react";
 import { getCampaignCharacters, type CampaignCharacterRow } from "@/app/campaigns/character-actions";
-import { getApprovedSignupsForSession } from "@/app/campaigns/actions";
+import {
+  getApprovedSignupsForSession,
+  getLongCampaignCalendarState,
+  saveLongCampaignCalendarBaseDate,
+} from "@/app/campaigns/actions";
 import { getCampaignSessionsForGm, type CampaignSessionOption } from "@/app/campaigns/gm-actions";
 import type { InitiativeEntry } from "@/components/gm/initiative-tracker";
+import {
+  DEFAULT_FANTASY_BASE_DATE,
+  DEFAULT_FANTASY_CALENDAR_CONFIG,
+  normalizeFantasyCalendarConfig,
+  normalizeFantasyCalendarDate,
+  type FantasyCalendarConfig,
+  type FantasyCalendarDate,
+} from "@/lib/long-calendar";
 
 export type LongSessionAttendanceStatus = "attended" | "absent";
 
@@ -41,18 +53,24 @@ export type LongSessionEconomyDraft = {
   payoutAlloc: Record<string, { gp: string; sp: string; cp: string }>;
 };
 
+export type LongSessionMissionSelection = {
+  missionId: string;
+  encounterId: string;
+};
+
 type InitiativeState = {
   entries: InitiativeEntry[];
   currentTurnIndex: number;
 };
 
 type StoredLongSessionState = {
-  version: 1;
+  version: 2;
   attendance: Record<string, LongSessionAttendanceStatus>;
   initiative: InitiativeState;
   xp: LongSessionXpState;
   elapsedHours: number;
   economyDraft: LongSessionEconomyDraft;
+  missionSelection: LongSessionMissionSelection;
 };
 
 type LongSessionContextValue = {
@@ -74,8 +92,15 @@ type LongSessionContextValue = {
   setXpState: (state: LongSessionXpState) => void;
   elapsedHours: number;
   setElapsedHours: (hours: number) => void;
+  calendarBaseDate: FantasyCalendarDate;
+  setCalendarBaseDate: (date: FantasyCalendarDate) => void;
+  calendarConfig: FantasyCalendarConfig;
+  setCalendarConfig: (config: FantasyCalendarConfig) => void;
+  saveCalendarSettings: () => Promise<{ success: boolean; error?: string; message?: string }>;
   economyDraft: LongSessionEconomyDraft;
   setEconomyDraft: (draft: LongSessionEconomyDraft) => void;
+  missionSelection: LongSessionMissionSelection;
+  setMissionSelection: (selection: LongSessionMissionSelection) => void;
   refreshSessions: () => Promise<void>;
   refreshCharacters: () => Promise<void>;
   updateCharacterCoinsLocally: (characterId: string, next: { coins_gp: number; coins_sp: number; coins_cp: number }) => void;
@@ -104,6 +129,11 @@ const emptyEconomyDraft: LongSessionEconomyDraft = {
   payoutAlloc: {},
 };
 
+const emptyMissionSelection: LongSessionMissionSelection = {
+  missionId: "",
+  encounterId: "",
+};
+
 const LongSessionContext = createContext<LongSessionContextValue | null>(null);
 
 function sessionStateKey(campaignId: string, sessionId: string) {
@@ -130,9 +160,41 @@ function readStoredSessionState(campaignId: string, sessionId: string): StoredLo
   try {
     const raw = localStorage.getItem(sessionStateKey(campaignId, sessionId));
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as StoredLongSessionState;
-    if (parsed?.version !== 1) return null;
-    return parsed;
+    const parsed = JSON.parse(raw) as {
+      version?: number;
+      attendance?: Record<string, LongSessionAttendanceStatus>;
+      initiative?: InitiativeState;
+      xp?: Partial<LongSessionXpState> & { perCharacter?: Record<string, LongSessionXpCharacterState> };
+      elapsedHours?: number;
+      economyDraft?: Partial<LongSessionEconomyDraft>;
+      missionSelection?: Partial<LongSessionMissionSelection> | null;
+    };
+    if (parsed?.version !== 1 && parsed?.version !== 2) return null;
+    return {
+      version: 2,
+      attendance: parsed.attendance ?? {},
+      initiative: sanitizeInitiativeState(parsed.initiative),
+      xp:
+        parsed.xp && typeof parsed.xp === "object"
+          ? {
+              version: 2,
+              extraXpManual:
+                parsed.xp.extraXpManual != null && Number.isFinite(parsed.xp.extraXpManual)
+                  ? Math.max(0, Math.trunc(parsed.xp.extraXpManual))
+                  : 0,
+              perCharacter: parsed.xp.perCharacter ?? {},
+            }
+          : emptyXpState,
+      elapsedHours:
+        parsed.elapsedHours != null && Number.isFinite(parsed.elapsedHours)
+          ? Math.max(0, Math.trunc(parsed.elapsedHours))
+          : 0,
+      economyDraft: {
+        payoutMissionId: parsed.economyDraft?.payoutMissionId ?? "",
+        payoutAlloc: parsed.economyDraft?.payoutAlloc ?? {},
+      },
+      missionSelection: sanitizeMissionSelection(parsed.missionSelection),
+    };
   } catch {
     return null;
   }
@@ -197,6 +259,15 @@ function sanitizeEconomyDraft(
   };
 }
 
+function sanitizeMissionSelection(
+  input: Partial<LongSessionMissionSelection> | null | undefined
+): LongSessionMissionSelection {
+  return {
+    missionId: typeof input?.missionId === "string" ? input.missionId : "",
+    encounterId: typeof input?.encounterId === "string" ? input.encounterId : "",
+  };
+}
+
 function buildDefaultAttendance(signups: LongSessionSignup[]) {
   return signups.reduce(
     (acc, signup) => {
@@ -227,7 +298,10 @@ export function GmScreenLongStateProvider({
   const [initiativeState, setInitiativeState] = useState<InitiativeState>(emptyInitiativeState);
   const [xpState, setXpState] = useState<LongSessionXpState>(emptyXpState);
   const [elapsedHours, setElapsedHoursState] = useState(0);
+  const [calendarBaseDate, setCalendarBaseDateState] = useState<FantasyCalendarDate>(DEFAULT_FANTASY_BASE_DATE);
+  const [calendarConfig, setCalendarConfigState] = useState<FantasyCalendarConfig>(DEFAULT_FANTASY_CALENDAR_CONFIG);
   const [economyDraft, setEconomyDraftState] = useState<LongSessionEconomyDraft>(emptyEconomyDraft);
+  const [missionSelection, setMissionSelectionState] = useState<LongSessionMissionSelection>(emptyMissionSelection);
   const restoreRef = useRef(false);
 
   const refreshSessions = useCallback(async () => {
@@ -256,6 +330,19 @@ export function GmScreenLongStateProvider({
     void refreshSessions();
     void refreshCharacters();
   }, [refreshSessions, refreshCharacters]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getLongCampaignCalendarState(campaignId).then((result) => {
+      if (cancelled || !result.success || !result.data) return;
+      const normalizedConfig = normalizeFantasyCalendarConfig(result.data.config as never);
+      setCalendarConfigState(normalizedConfig);
+      setCalendarBaseDateState(normalizeFantasyCalendarDate(result.data.baseDate as never, normalizedConfig));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [campaignId]);
 
   useEffect(() => {
     if (typeof window === "undefined" || restoreRef.current) return;
@@ -295,6 +382,7 @@ export function GmScreenLongStateProvider({
       setXpState(emptyXpState);
       setElapsedHoursState(0);
       setEconomyDraftState(emptyEconomyDraft);
+      setMissionSelectionState(emptyMissionSelection);
       return;
     }
 
@@ -325,6 +413,7 @@ export function GmScreenLongStateProvider({
           : 0
       );
       setEconomyDraftState(sanitizeEconomyDraft(stored?.economyDraft, validCharacterIds));
+      setMissionSelectionState(sanitizeMissionSelection(stored?.missionSelection));
     };
 
     void loadSignups();
@@ -368,18 +457,19 @@ export function GmScreenLongStateProvider({
     if (!selectedSessionId || typeof window === "undefined") return;
     try {
       const payload: StoredLongSessionState = {
-        version: 1,
+        version: 2,
         attendance,
         initiative: initiativeState,
         xp: xpState,
         elapsedHours,
         economyDraft,
+        missionSelection,
       };
       localStorage.setItem(sessionStateKey(campaignId, selectedSessionId), JSON.stringify(payload));
     } catch {
       // ignore
     }
-  }, [attendance, campaignId, economyDraft, elapsedHours, initiativeState, selectedSessionId, xpState]);
+  }, [attendance, campaignId, economyDraft, elapsedHours, initiativeState, missionSelection, selectedSessionId, xpState]);
 
   const setSelectedSessionId = useCallback((sessionId: string | null) => {
     setSelectedSessionIdState(sessionId);
@@ -393,8 +483,32 @@ export function GmScreenLongStateProvider({
     setElapsedHoursState(Math.max(0, Math.trunc(hours)));
   }, []);
 
+  const setCalendarBaseDate = useCallback(
+    (date: FantasyCalendarDate) => {
+      setCalendarBaseDateState(normalizeFantasyCalendarDate(date as never, calendarConfig));
+    },
+    [calendarConfig]
+  );
+
+  const setCalendarConfig = useCallback((config: FantasyCalendarConfig) => {
+    const normalized = normalizeFantasyCalendarConfig(config as never);
+    setCalendarConfigState(normalized);
+    setCalendarBaseDateState((current) => normalizeFantasyCalendarDate(current as never, normalized));
+  }, []);
+
+  const saveCalendarSettings = useCallback(async () => {
+    return saveLongCampaignCalendarBaseDate(campaignId, {
+      baseDate: calendarBaseDate,
+      months: calendarConfig.months,
+    });
+  }, [calendarBaseDate, calendarConfig.months, campaignId]);
+
   const setEconomyDraft = useCallback((draft: LongSessionEconomyDraft) => {
     setEconomyDraftState(draft);
+  }, []);
+
+  const setMissionSelection = useCallback((selection: LongSessionMissionSelection) => {
+    setMissionSelectionState(sanitizeMissionSelection(selection));
   }, []);
 
   const clearSelectedSessionState = useCallback(() => {
@@ -409,6 +523,7 @@ export function GmScreenLongStateProvider({
     setXpState(emptyXpState);
     setElapsedHoursState(0);
     setEconomyDraftState(emptyEconomyDraft);
+    setMissionSelectionState(emptyMissionSelection);
   }, [campaignId, selectedSessionId, signups]);
 
   const updateCharacterCoinsLocally = useCallback(
@@ -454,12 +569,14 @@ export function GmScreenLongStateProvider({
       Object.values(economyDraft.payoutAlloc).some(
         (value) => value.gp.trim() || value.sp.trim() || value.cp.trim()
       );
+    const hasMissionSelection = missionSelection.missionId.length > 0 || missionSelection.encounterId.length > 0;
     return (
       attendanceChanged ||
       initiativeState.entries.length > 0 ||
       xpChanged ||
       elapsedHours > 0 ||
-      hasEconomyDraft
+      hasEconomyDraft ||
+      hasMissionSelection
     );
   }, [
     attendance,
@@ -468,6 +585,8 @@ export function GmScreenLongStateProvider({
     economyDraft.payoutMissionId,
     elapsedHours,
     initiativeState.entries.length,
+    missionSelection.encounterId,
+    missionSelection.missionId,
     selectedSessionId,
     signups,
     xpState.extraXpManual,
@@ -494,8 +613,15 @@ export function GmScreenLongStateProvider({
       setXpState,
       elapsedHours,
       setElapsedHours,
+      calendarBaseDate,
+      setCalendarBaseDate,
+      calendarConfig,
+      setCalendarConfig,
+      saveCalendarSettings,
       economyDraft,
       setEconomyDraft,
+      missionSelection,
+      setMissionSelection,
       refreshSessions,
       refreshCharacters,
       updateCharacterCoinsLocally,
@@ -510,11 +636,17 @@ export function GmScreenLongStateProvider({
       clearSelectedSessionState,
       economyDraft,
       elapsedHours,
+      calendarBaseDate,
+      setCalendarBaseDate,
+      calendarConfig,
+      setCalendarConfig,
+      saveCalendarSettings,
       hasUnsavedLocalState,
       initiativeState,
       loadingCharacters,
       loadingSessions,
       loadingSignups,
+      missionSelection,
       refreshCharacters,
       refreshSessions,
       selectedSessionId,
@@ -526,6 +658,7 @@ export function GmScreenLongStateProvider({
       setEconomyDraft,
       setElapsedHours,
       setInitiativeState,
+      setMissionSelection,
       setSelectedSessionId,
       signups,
       updateCharacterCoinsLocally,

@@ -324,6 +324,9 @@ export function CharacterCardPlayer({ character, isLongCampaign }: CharacterCard
                 <span className="mt-0.5 block text-xs text-barber-paper/65 tabular-nums">
                   Tempo vissuto: {character.time_offset_hours ?? 0} h
                 </span>
+                <span className="mt-0.5 block text-xs text-barber-paper/65">
+                  Data fantasy: {character.calendar_date_label ?? "Non impostata"}
+                </span>
                 {isLongCampaign && (
                   <span className="mt-0.5 block text-xs text-barber-gold/90 tabular-nums">
                     {character.coins_gp ?? 0} oro · {character.coins_sp ?? 0} arg · {character.coins_cp ?? 0} ram

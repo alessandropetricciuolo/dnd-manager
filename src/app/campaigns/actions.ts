@@ -21,6 +21,17 @@ import {
   syncWikiEntityToCampaignMemory,
   syncSessionToCampaignMemory,
 } from "@/lib/campaign-memory-indexer";
+import type { Json } from "@/types/database.types";
+import {
+  DEFAULT_FANTASY_BASE_DATE,
+  DEFAULT_FANTASY_CALENDAR_CONFIG,
+  deriveCharacterCalendarDate,
+  normalizeFantasyCalendarConfig,
+  normalizeFantasyCalendarDate,
+  toCalendarDateJson,
+  type FantasyCalendarDate,
+  type FantasyCalendarConfig,
+} from "@/lib/long-calendar";
 
 export type CreateSessionResult = {
   success: boolean;
@@ -1502,6 +1513,112 @@ export async function getAchievementsForWizard(): Promise<
 
 export type CloseSessionResult = { success: boolean; message: string };
 
+export type LongCampaignCalendarState = {
+  config: FantasyCalendarConfig;
+  baseDate: FantasyCalendarDate;
+};
+
+type LongCampaignCalendarResult =
+  | { success: true; data: LongCampaignCalendarState }
+  | { success: false; error: string };
+
+function buildLongCampaignCalendarState(row: {
+  long_calendar_config?: Json | null;
+  long_calendar_base_date?: Json | null;
+} | null): LongCampaignCalendarState {
+  const config = normalizeFantasyCalendarConfig(row?.long_calendar_config ?? DEFAULT_FANTASY_CALENDAR_CONFIG);
+  const baseDate = normalizeFantasyCalendarDate(
+    row?.long_calendar_base_date ?? DEFAULT_FANTASY_BASE_DATE,
+    config
+  );
+  return { config, baseDate };
+}
+
+export async function getLongCampaignCalendarState(campaignId: string): Promise<LongCampaignCalendarResult> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userErr,
+    } = await supabase.auth.getUser();
+    if (userErr || !user) return { success: false, error: "Non autenticato." };
+
+    const allowed = await isGmOrAdminByRole(supabase);
+    if (!allowed) return { success: false, error: "Solo GM o Admin." };
+
+    const { data, error } = await supabase
+      .from("campaigns")
+      .select("id, type, gm_id, long_calendar_config, long_calendar_base_date")
+      .eq("id", campaignId)
+      .single();
+    if (error || !data) return { success: false, error: error?.message ?? "Campagna non trovata." };
+    if (data.type !== "long") return { success: false, error: "Calendario disponibile solo per campagne long." };
+
+    const profileRes = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    const isAdmin = profileRes.data?.role === "admin";
+    if (!isAdmin && data.gm_id !== user.id) return { success: false, error: "Non sei il Master di questa campagna." };
+
+    return { success: true, data: buildLongCampaignCalendarState(data) };
+  } catch (err) {
+    console.error("[getLongCampaignCalendarState]", err);
+    return { success: false, error: "Errore nel caricamento calendario." };
+  }
+}
+
+export async function saveLongCampaignCalendarBaseDate(
+  campaignId: string,
+  payload: {
+    baseDate: FantasyCalendarDate;
+    months?: { name: string; days: number }[] | null;
+  }
+): Promise<{ success: boolean; error?: string; message?: string }> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userErr,
+    } = await supabase.auth.getUser();
+    if (userErr || !user) return { success: false, error: "Non autenticato." };
+
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    const isAdmin = profile?.role === "admin";
+
+    const admin = createSupabaseAdminClient();
+    const { data: campaignRaw, error: campErr } = await admin
+      .from("campaigns")
+      .select("id, gm_id, type, long_calendar_config")
+      .eq("id", campaignId)
+      .single();
+    const campaign = (campaignRaw as { id: string; gm_id: string; type: string | null; long_calendar_config?: Json | null } | null) ?? null;
+    if (campErr || !campaign) return { success: false, error: campErr?.message ?? "Campagna non trovata." };
+    if (campaign.type !== "long") return { success: false, error: "Disponibile solo per campagne long." };
+    if (!isAdmin && campaign.gm_id !== user.id) return { success: false, error: "Non sei il Master di questa campagna." };
+
+    const normalizedConfig = normalizeFantasyCalendarConfig(
+      payload.months?.length
+        ? ({ months: payload.months } as unknown as Json)
+        : ((campaign as { long_calendar_config?: Json | null }).long_calendar_config ?? DEFAULT_FANTASY_CALENDAR_CONFIG)
+    );
+    const normalizedBaseDate = normalizeFantasyCalendarDate(payload.baseDate as unknown as Json, normalizedConfig);
+
+    const { error: updErr } = await admin
+      .from("campaigns")
+      .update({
+        long_calendar_config: normalizedConfig as unknown as Json,
+        long_calendar_base_date: toCalendarDateJson(normalizedBaseDate),
+      } as never)
+      .eq("id", campaignId);
+    if (updErr) return { success: false, error: updErr.message ?? "Errore salvataggio calendario." };
+
+    revalidatePath(`/campaigns/${campaignId}`);
+    revalidatePath("/dashboard");
+    return { success: true, message: "Calendario campagna aggiornato." };
+  } catch (err) {
+    console.error("[saveLongCampaignCalendarBaseDate]", err);
+    return { success: false, error: "Errore salvataggio calendario." };
+  }
+}
+
 async function ensureCampaignMemberWithAdmin(
   admin: ReturnType<typeof createSupabaseAdminClient>,
   campaignId: string,
@@ -1708,19 +1825,46 @@ export async function closeSessionAction(
 
     const elapsedHours = Math.max(0, Math.floor(Number(payload.elapsedHours ?? 0)));
     if (elapsedHours > 0 && presentUserIds.length > 0) {
+      const { data: calendarCampaignRow } = await admin
+        .from("campaigns")
+        .select("long_calendar_config, long_calendar_base_date")
+        .eq("id", session.campaign_id)
+        .maybeSingle();
+      const calendarState = buildLongCampaignCalendarState(
+        calendarCampaignRow as { long_calendar_config?: Json | null; long_calendar_base_date?: Json | null } | null
+      );
       const { data: epochChars, error: epochFetchErr } = await admin
         .from("campaign_characters")
-        .select("id, time_offset_hours")
+        .select("id, time_offset_hours, calendar_anchor_date, calendar_anchor_hours")
         .eq("campaign_id", session.campaign_id)
         .in("assigned_to", presentUserIds);
       if (epochFetchErr) {
         console.error("[closeSessionAction] epoch fetch campaign_characters", epochFetchErr);
       } else {
-        for (const row of (epochChars ?? []) as { id: string; time_offset_hours: number | null }[]) {
+        for (const row of (epochChars ?? []) as {
+          id: string;
+          time_offset_hours: number | null;
+          calendar_anchor_date: Json | null;
+          calendar_anchor_hours: number | null;
+        }[]) {
           const cur = typeof row.time_offset_hours === "number" ? row.time_offset_hours : 0;
+          const nextHours = cur + elapsedHours;
+          const anchorDate = row.calendar_anchor_date
+            ? normalizeFantasyCalendarDate(row.calendar_anchor_date, calendarState.config)
+            : null;
+          const nextCalendarDate = deriveCharacterCalendarDate({
+            campaignBaseDate: calendarState.baseDate,
+            characterHours: nextHours,
+            config: calendarState.config,
+            anchorDate,
+            anchorHours: row.calendar_anchor_hours,
+          });
           const { error: epochUpdErr } = await admin
             .from("campaign_characters")
-            .update({ time_offset_hours: cur + elapsedHours } as never)
+            .update({
+              time_offset_hours: nextHours,
+              calendar_current_date: toCalendarDateJson(nextCalendarDate),
+            } as never)
             .eq("id", row.id);
           if (epochUpdErr) {
             console.error("[closeSessionAction] epoch update", row.id, epochUpdErr);

@@ -32,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { Pencil, Plus, RefreshCw, Swords, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import {
@@ -49,6 +49,7 @@ import {
 import { updateMissionTreasureAction } from "@/lib/actions/campaign-economy-actions";
 import { GUILD_RANK_LETTERS, guildRankOrder } from "@/lib/missions/guild-ranks";
 import { BulkImportMissionsDialog } from "@/components/missions/bulk-import-missions-dialog";
+import { MissionEncounterEditor } from "@/components/missions/mission-encounter-editor";
 
 type MissionBoardMission = {
   id: string;
@@ -139,6 +140,8 @@ export function MissionBoard({
   const [treasureEditSp, setTreasureEditSp] = useState("0");
   const [treasureEditCp, setTreasureEditCp] = useState("0");
   const [savingTreasure, setSavingTreasure] = useState(false);
+  const [encounterEditorOpen, setEncounterEditorOpen] = useState(false);
+  const [encounterMission, setEncounterMission] = useState<MissionBoardMission | null>(null);
 
   const [editOpen, setEditOpen] = useState(false);
   const [editMode, setEditMode] = useState<"add" | "edit">("add");
@@ -175,6 +178,11 @@ export function MissionBoard({
     setCompleteTreasureSp("0");
     setCompleteTreasureCp("0");
     setDetailsOpen(true);
+  };
+
+  const openEncounterEditor = (m: MissionBoardMission) => {
+    setEncounterMission(m);
+    setEncounterEditorOpen(true);
   };
 
   useEffect(() => {
@@ -722,6 +730,28 @@ export function MissionBoard({
                 <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-100">{detailsMission.description}</p>
               </div>
 
+              {isGmOrAdmin && (
+                <div className="rounded-lg border border-sky-600/20 bg-sky-950/10 p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium text-sky-100">Preparazione incontri</p>
+                      <p className="mt-1 text-xs text-zinc-400">
+                        Crea incontri solo GM da usare poi nel GM screen per caricare automaticamente PG iscritti e mostri preparati.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="border-sky-500/40 text-sky-100 hover:bg-sky-500/15"
+                      onClick={() => openEncounterEditor(detailsMission)}
+                    >
+                      <Swords className="mr-2 h-4 w-4" />
+                      Incontri GM
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {isGmOrAdmin && detailsMission.status === "open" && guilds.length > 0 && (
                 <div className="rounded-lg border border-amber-600/30 bg-zinc-900/40 p-3 space-y-2">
                   <Label className="text-amber-100">Segna completata dalla gilda</Label>
@@ -1040,6 +1070,20 @@ export function MissionBoard({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {encounterMission ? (
+        <MissionEncounterEditor
+          campaignId={campaignId}
+          mission={{ id: encounterMission.id, title: encounterMission.title }}
+          open={encounterEditorOpen}
+          onOpenChange={(open) => {
+            setEncounterEditorOpen(open);
+            if (!open) {
+              setEncounterMission(null);
+            }
+          }}
+        />
+      ) : null}
     </div>
   );
 }

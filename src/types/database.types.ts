@@ -214,13 +214,23 @@ export interface Database {
           ai_image_style_key: string | null;
           /** Contesto strutturato dall'Agente Architetto (AI): tono, magia, meccaniche, paletti visivi. */
           ai_context: Json | null;
+          /** Configurazione calendario fantasy per campagne long. */
+          long_calendar_config: Json | null;
+          /** Data base usata per derivare la data dei PG (campagne long). */
+          long_calendar_base_date: Json | null;
           created_at: string;
           updated_at: string;
         };
         Insert: Omit<
           Database["public"]["Tables"]["campaigns"]["Row"],
-          "created_at" | "updated_at" | "ai_context" | "image_style_prompt" | "ai_image_style_key"
-        > & { ai_context?: Json | null; image_style_prompt?: string | null; ai_image_style_key?: string | null };
+          "created_at" | "updated_at" | "ai_context" | "image_style_prompt" | "ai_image_style_key" | "long_calendar_config" | "long_calendar_base_date"
+        > & {
+          ai_context?: Json | null;
+          image_style_prompt?: string | null;
+          ai_image_style_key?: string | null;
+          long_calendar_config?: Json | null;
+          long_calendar_base_date?: Json | null;
+        };
         Update: Partial<Database["public"]["Tables"]["campaigns"]["Insert"]>;
       };
       sessions: {
@@ -334,6 +344,72 @@ export interface Database {
         };
         Update: Partial<Database["public"]["Tables"]["campaign_bulk_email_templates"]["Insert"]>;
       };
+      campaign_guilds: {
+        Row: {
+          id: string;
+          campaign_id: string;
+          name: string;
+          rank: "D" | "C" | "B" | "A" | "S";
+          score: number;
+          auto_rank: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          campaign_id: string;
+          name: string;
+          rank?: "D" | "C" | "B" | "A" | "S";
+          score?: number;
+          auto_rank?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["campaign_guilds"]["Insert"]>;
+      };
+      campaign_missions: {
+        Row: {
+          id: string;
+          campaign_id: string;
+          grade: string;
+          title: string;
+          committente: string;
+          ubicazione: string;
+          paga: string;
+          urgenza: string;
+          description: string;
+          status: "open" | "completed";
+          points_reward: number;
+          completed_at: string | null;
+          completed_by_guild_id: string | null;
+          treasure_gp: number;
+          treasure_sp: number;
+          treasure_cp: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          campaign_id: string;
+          grade: string;
+          title: string;
+          committente: string;
+          ubicazione: string;
+          paga: string;
+          urgenza: string;
+          description: string;
+          status?: "open" | "completed";
+          points_reward?: number;
+          completed_at?: string | null;
+          completed_by_guild_id?: string | null;
+          treasure_gp?: number;
+          treasure_sp?: number;
+          treasure_cp?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["campaign_missions"]["Insert"]>;
+      };
       campaign_memory_chunks: {
         Row: {
           id: string;
@@ -363,6 +439,50 @@ export interface Database {
         };
         Update: Partial<Database["public"]["Tables"]["campaign_memory_chunks"]["Insert"]>;
       };
+      mission_encounters: {
+        Row: {
+          id: string;
+          campaign_id: string;
+          mission_id: string;
+          name: string;
+          notes: string | null;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          campaign_id: string;
+          mission_id: string;
+          name: string;
+          notes?: string | null;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["mission_encounters"]["Insert"]>;
+      };
+      mission_encounter_monsters: {
+        Row: {
+          id: string;
+          encounter_id: string;
+          wiki_entity_id: string;
+          quantity: number;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          encounter_id: string;
+          wiki_entity_id: string;
+          quantity?: number;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["mission_encounter_monsters"]["Insert"]>;
+      };
       campaign_characters: {
         Row: {
           id: string;
@@ -383,6 +503,9 @@ export interface Database {
           rules_snapshot: Json;
           assigned_to: string | null;
           time_offset_hours: number;
+          calendar_anchor_date: Json | null;
+          calendar_anchor_hours: number | null;
+          calendar_current_date: Json | null;
           pos_x_grid: number;
           pos_y_grid: number;
           coins_gp: number;

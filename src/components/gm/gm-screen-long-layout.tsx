@@ -9,6 +9,8 @@ import { SecretWhispersSheet } from "./secret-whispers-sheet";
 import { GmGallerySheet } from "./gm-gallery-sheet";
 import { LongEconomyPanel } from "./long-economy-panel";
 import { LongTimePanel } from "./long-time-panel";
+import { LongCalendarPanel } from "./long-calendar-panel";
+import { GmMissionEncounterLoader } from "./gm-mission-encounter-loader";
 import { GmScreenLongStateProvider, useGmScreenLongState } from "./gm-screen-long-state";
 import { EndSessionWizard } from "@/components/sessions/end-session-wizard";
 import { Button } from "@/components/ui/button";
@@ -54,6 +56,11 @@ function LongWorkspace({
     setXpState,
     elapsedHours,
     setElapsedHours,
+    calendarBaseDate,
+    setCalendarBaseDate,
+    calendarConfig,
+    setCalendarConfig,
+    saveCalendarSettings,
     economyDraft,
     setEconomyDraft,
     refreshSessions,
@@ -210,6 +217,8 @@ function LongWorkspace({
             initialAttendance={attendance}
             initialXpGained={xpAwards.basePerPlayer}
             initialElapsedHours={elapsedHours}
+            initialCalendarBaseDate={calendarBaseDate}
+            initialCalendarConfig={calendarConfig}
             perPlayerXpAwards={xpAwards.awards}
             economyManagedInGmScreen
             onSuccess={async () => {
@@ -245,6 +254,7 @@ function LongWorkspace({
 
             <div className="min-h-0 overflow-auto rounded-2xl border border-amber-600/20 bg-zinc-900/30 p-3 md:p-4">
               <div className="flex min-h-full flex-col gap-4">
+                <GmMissionEncounterLoader campaignId={campaignId} />
                 <PlayerSessionTracker
                   campaignId={campaignId}
                   characters={sessionCharacters}
@@ -264,6 +274,14 @@ function LongWorkspace({
                   onRefreshCharacters={refreshCharacters}
                 />
                 <LongTimePanel elapsedHours={elapsedHours} onChange={setElapsedHours} />
+                <LongCalendarPanel
+                  baseDate={calendarBaseDate}
+                  config={calendarConfig}
+                  elapsedHours={elapsedHours}
+                  onBaseDateChange={setCalendarBaseDate}
+                  onConfigChange={setCalendarConfig}
+                  onSave={saveCalendarSettings}
+                />
               </div>
             </div>
           </div>
