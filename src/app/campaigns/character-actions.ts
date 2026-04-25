@@ -223,6 +223,29 @@ export async function getCampaignCharacters(
     const list = (rows ?? []) as (Omit<CampaignCharacterRow, "sheet_url"> & {
       sheet_file_path: string | null;
     })[];
+    const assignedPlayerIds = Array.from(
+      new Set(
+        list
+          .map((r) => r.assigned_to)
+          .filter((id): id is string => typeof id === "string" && id.trim().length > 0)
+      )
+    );
+    const xpByPlayerId = new Map<string, number>();
+    if (assignedPlayerIds.length > 0) {
+      const { data: memberRows } = await supabase
+        .from("campaign_members")
+        .select("player_id, xp_earned")
+        .eq("campaign_id", campaignId)
+        .in("player_id", assignedPlayerIds);
+      for (const row of (memberRows ?? []) as Array<{ player_id: string; xp_earned: number | null }>) {
+        xpByPlayerId.set(
+          row.player_id,
+          typeof row.xp_earned === "number" && Number.isFinite(row.xp_earned)
+            ? Math.max(0, Math.floor(row.xp_earned))
+            : 0
+        );
+      }
+    }
     const withUrls: CampaignCharacterRow[] = [];
 
     for (const row of list) {
@@ -238,8 +261,13 @@ export async function getCampaignCharacters(
       }
       const { sheet_file_path: _, ...rest } = row;
       const calendarResolved = resolveCharacterCalendar(calendarCtx, rest);
+      const syncedXp =
+        typeof rest.assigned_to === "string" && rest.assigned_to
+          ? xpByPlayerId.get(rest.assigned_to) ?? rest.current_xp ?? 0
+          : rest.current_xp ?? 0;
       withUrls.push({
         ...rest,
+        current_xp: syncedXp,
         sheet_url,
         time_offset_hours: typeof rest.time_offset_hours === "number" ? rest.time_offset_hours : 0,
         calendar_current_date: calendarResolved.date,
@@ -293,6 +321,34 @@ export async function getCampaignCharacters(
       coins_cp: typeof (r as { coins_cp?: number }).coins_cp === "number" ? (r as { coins_cp: number }).coins_cp : 0,
     };
   });
+  const assignedPlayerIds = Array.from(
+    new Set(
+      list
+        .map((r) => r.assigned_to)
+        .filter((id): id is string => typeof id === "string" && id.trim().length > 0)
+    )
+  );
+  if (assignedPlayerIds.length > 0) {
+    const { data: memberRows } = await supabase
+      .from("campaign_members")
+      .select("player_id, xp_earned")
+      .eq("campaign_id", campaignId)
+      .in("player_id", assignedPlayerIds);
+    const xpByPlayerId = new Map<string, number>();
+    for (const row of (memberRows ?? []) as Array<{ player_id: string; xp_earned: number | null }>) {
+      xpByPlayerId.set(
+        row.player_id,
+        typeof row.xp_earned === "number" && Number.isFinite(row.xp_earned)
+          ? Math.max(0, Math.floor(row.xp_earned))
+          : 0
+      );
+    }
+    for (const row of list) {
+      if (typeof row.assigned_to === "string" && row.assigned_to) {
+        row.current_xp = xpByPlayerId.get(row.assigned_to) ?? row.current_xp ?? 0;
+      }
+    }
+  }
   return { success: true, data: list };
 }
 

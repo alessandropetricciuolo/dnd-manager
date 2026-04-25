@@ -1634,21 +1634,33 @@ async function ensureCampaignMemberWithAdmin(
 
   const existing = existingRow as { id: string; xp_earned?: number } | null;
   if (!existing) {
+    const nextXp = Math.max(0, Math.floor(xpToAdd));
     await admin.from("campaign_members").insert({
       campaign_id: campaignId,
       player_id: playerId,
-      xp_earned: Math.max(0, Math.floor(xpToAdd)),
+      xp_earned: nextXp,
     } as never);
+    await admin
+      .from("campaign_characters")
+      .update({ current_xp: nextXp } as never)
+      .eq("campaign_id", campaignId)
+      .eq("assigned_to", playerId);
     return;
   }
 
   const safeXp = Math.max(0, Math.floor(xpToAdd));
   if (safeXp > 0) {
     const currentXp = existing.xp_earned ?? 0;
+    const nextXp = currentXp + safeXp;
     await admin
       .from("campaign_members")
-      .update({ xp_earned: currentXp + safeXp } as never)
+      .update({ xp_earned: nextXp } as never)
       .eq("id", existing.id);
+    await admin
+      .from("campaign_characters")
+      .update({ current_xp: nextXp } as never)
+      .eq("campaign_id", campaignId)
+      .eq("assigned_to", playerId);
   }
 }
 

@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { GmScreenLauncher } from "@/components/gm/gm-screen-launcher";
 import { GmNotes } from "@/components/gm/gm-notes";
 import { GmFiles } from "@/components/gm/gm-files";
+import { LongCampaignCalendarSettings } from "@/components/gm/long-campaign-calendar-settings";
 import { CampaignMemoryQueryPanel } from "@/components/gm/campaign-memory-query-panel";
 import { CampaignAiArchitectPanel } from "@/components/campaigns/campaign-ai-architect-panel";
 import { CampaignEmailPanel } from "@/components/campaigns/campaign-email-panel";
@@ -57,6 +58,7 @@ export function GmHomepage({
   const [aiOpen, setAiOpen] = useState(false);
   const [commsOpen, setCommsOpen] = useState(false);
   const [primerOpen, setPrimerOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   return (
     <div className="rounded-xl border-2 border-violet-800/60 bg-slate-950/80 p-6 shadow-inner">
@@ -121,6 +123,20 @@ export function GmHomepage({
               variant="outline"
               size="sm"
               className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
+              onClick={() => setCalendarOpen((o) => !o)}
+              title="Calendario campagna long"
+            >
+              <Map className="mr-2 h-4 w-4" />
+              Calendario
+            </Button>
+          )}
+
+          {isLongCampaign && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
               onClick={() => setCommsOpen((o) => !o)}
               title="Comunicazioni automatiche e invii massivi"
             >
@@ -151,6 +167,12 @@ export function GmHomepage({
         <div className="mb-8">
           <CampaignMemoryQueryPanel campaignId={campaignId} />
         </div>
+      ) : null}
+
+      {calendarOpen && isLongCampaign ? (
+        <Card className="mb-8 border-violet-600/30 bg-violet-950/20 p-4">
+          <LongCampaignCalendarSettings campaignId={campaignId} />
+        </Card>
       ) : null}
 
       {/* Card AI (un solo pulsante → una card) */}
