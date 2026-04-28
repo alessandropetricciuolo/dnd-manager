@@ -212,6 +212,13 @@ export function CampaignTabsClient({
             </TabsTrigger>
           )}
         </TabsList>
+
+        {!hasPlayedCampaign ? (
+          <div className="mt-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+            <span className="font-medium">Wiki e Mappe bloccate.</span>{" "}
+            Partecipa ad almeno una sessione della campagna per sbloccare queste sezioni.
+          </div>
+        ) : null}
       </div>
 
       <TabsContent value="sessioni" className="mt-0">

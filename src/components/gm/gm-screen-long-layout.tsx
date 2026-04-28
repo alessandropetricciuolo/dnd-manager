@@ -76,6 +76,7 @@ function LongWorkspace({
   const [debriefOpen, setDebriefOpen] = useState(Boolean(selectedSessionId && autoOpenDebrief));
   const [whispersOpen, setWhispersOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const [workspaceMode, setWorkspaceMode] = useState<"session" | "closure">("session");
 
   useEffect(() => {
     if (autoOpenDebrief && selectedSessionId) {
@@ -170,6 +171,37 @@ function LongWorkspace({
           <Badge variant="outline" className="border-zinc-700 bg-transparent text-zinc-300">
             {signups.length} iscritti
           </Badge>
+
+          <div className="inline-flex items-center rounded-md border border-amber-600/30 bg-zinc-900 p-0.5">
+            <Button
+              type="button"
+              size="sm"
+              variant={workspaceMode === "session" ? "secondary" : "ghost"}
+              className={cn(
+                "h-8 px-2.5 text-xs",
+                workspaceMode === "session"
+                  ? "bg-amber-600/20 text-amber-100 hover:bg-amber-600/25"
+                  : "text-zinc-300 hover:text-zinc-100"
+              )}
+              onClick={() => setWorkspaceMode("session")}
+            >
+              Durante sessione
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={workspaceMode === "closure" ? "secondary" : "ghost"}
+              className={cn(
+                "h-8 px-2.5 text-xs",
+                workspaceMode === "closure"
+                  ? "bg-amber-600/20 text-amber-100 hover:bg-amber-600/25"
+                  : "text-zinc-300 hover:text-zinc-100"
+              )}
+              onClick={() => setWorkspaceMode("closure")}
+            >
+              Chiusura
+            </Button>
+          </div>
 
           {hasUnsavedLocalState ? (
             <Badge variant="outline" className="border-cyan-500/30 bg-transparent text-cyan-100">

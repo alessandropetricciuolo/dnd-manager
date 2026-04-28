@@ -36,6 +36,12 @@ type LongEconomyPanelProps = {
   onRefreshCharacters?: () => Promise<void>;
 };
 
+type RowSaveState =
+  | { status: "idle" }
+  | { status: "saving" }
+  | { status: "saved" }
+  | { status: "error"; message: string; delta: { gp: number; sp: number; cp: number } };
+
 function parseNonNeg(s: string): number {
   const n = Math.trunc(Number.parseInt(s, 10) || 0);
   return Math.max(0, n);
@@ -59,7 +65,9 @@ export function LongEconomyPanel({
   const [payoutMissionId, setPayoutMissionId] = useState<string>("");
   const [payoutAlloc, setPayoutAlloc] = useState<Record<string, { gp: string; sp: string; cp: string }>>({});
   const [liveDeltaDraft, setLiveDeltaDraft] = useState<Record<string, { gp: string; sp: string; cp: string }>>({});
+  const [rowSaveState, setRowSaveState] = useState<Record<string, RowSaveState>>({});
   const saveTimersRef = useRef<Record<string, number>>({});
+  const saveStatusTimersRef = useRef<Record<string, number>>({});
 
   useEffect(() => {
     economyDraftRef.current = economyDraft;
@@ -168,12 +176,29 @@ export function LongEconomyPanel({
 
   const commitImmediateDelta = useCallback(
     (characterId: string, gp: number, sp: number, cp: number) => {
+      setRowSaveState((current) => ({
+        ...current,
+        [characterId]: { status: "saving" },
+      }));
+      const resetTimer = saveStatusTimersRef.current[characterId];
+      if (resetTimer) {
+        window.clearTimeout(resetTimer);
+      }
       startTransition(async () => {
         const result = await adjustCharacterCoinsBatchAction(campaignId, [
           { characterId, coins_gp: gp, coins_sp: sp, coins_cp: cp },
         ]);
         if (!result.success) {
-          toast.error(result.message ?? "Errore aggiornamento monete.");
+          const errorMessage = result.message ?? "Errore aggiornamento monete.";
+          toast.error(errorMessage);
+          setRowSaveState((current) => ({
+            ...current,
+            [characterId]: {
+              status: "error",
+              message: errorMessage,
+              delta: { gp, sp, cp },
+            },
+          }));
           return;
         }
         const next = result.balances[characterId];
@@ -192,6 +217,16 @@ export function LongEconomyPanel({
           );
           onCoinsCommitted?.(characterId, next);
         }
+        setRowSaveState((current) => ({
+          ...current,
+          [characterId]: { status: "saved" },
+        }));
+        saveStatusTimersRef.current[characterId] = window.setTimeout(() => {
+          setRowSaveState((current) => ({
+            ...current,
+            [characterId]: { status: "idle" },
+          }));
+        }, 1600);
         router.refresh();
         await onRefreshCharacters?.();
       });
@@ -222,8 +257,10 @@ export function LongEconomyPanel({
 
   useEffect(() => {
     const timers = saveTimersRef.current;
+    const statusTimers = saveStatusTimersRef.current;
     return () => {
       Object.values(timers).forEach((timerId) => window.clearTimeout(timerId));
+      Object.values(statusTimers).forEach((timerId) => window.clearTimeout(timerId));
     };
   }, []);
 
@@ -362,6 +399,7 @@ export function LongEconomyPanel({
         <div className="max-h-[22rem] overflow-y-auto space-y-3 pr-1">
           {characters.map((character) => {
             const liveDraft = liveDeltaDraft[character.id] ?? { gp: "", sp: "", cp: "" };
+            const saveState = rowSaveState[character.id] ?? { status: "idle" };
             return (
               <div key={character.id} className="rounded-lg border border-amber-600/20 bg-zinc-900/60 p-3 space-y-3">
                 <div className="flex items-start justify-between gap-3">
@@ -446,6 +484,35 @@ export function LongEconomyPanel({
                       </div>
                     </div>
                   ))}
+                </div>
+                <div className="min-h-[18px] text-[11px]">
+                  {saveState.status === "saving" ? (
+                    <span className="text-amber-300">Salvataggio in corso...</span>
+                  ) : null}
+                  {saveState.status === "saved" ? (
+                    <span className="text-emerald-300">Salvato.</span>
+                  ) : null}
+                  {saveState.status === "error" ? (
+                    <div className="flex flex-wrap items-center gap-2 text-red-300">
+                      <span>{saveState.message}</span>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-6 border-red-500/40 px-2 text-[11px] text-red-200 hover:bg-red-500/15"
+                        onClick={() =>
+                          void commitImmediateDelta(
+                            character.id,
+                            saveState.delta.gp,
+                            saveState.delta.sp,
+                            saveState.delta.cp
+                          )
+                        }
+                      >
+                        Riprova
+                      </Button>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             );

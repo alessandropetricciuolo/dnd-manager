@@ -25,11 +25,10 @@ import { createSupabaseBrowserClient } from "@/utils/supabase/client";
 type Mode = "login" | "signup";
 
 const WHATSAPP_CONFIRM_MESSAGE =
-  "Stai davvero rinunciando alla community WhatsApp?\n\n" +
-  "Li organizziamo tavoli, avvisi rapidi e informazioni utili per giocare senza perderti nulla.\n\n" +
-  "Promesso: zero spam, solo info di gioco e divertimento.\n\n" +
-  "Se continui senza cellulare o senza consenso, rischi di restare fuori dal cuore della Gilda.\n\n" +
-  "Confermi di voler procedere comunque?";
+  "Vuoi continuare senza completare i dati WhatsApp?\n\n" +
+  "La community WhatsApp e utile per aggiornamenti rapidi su tavoli e sessioni.\n\n" +
+  "Puoi comunque procedere ora e aggiornare questi dati in un secondo momento.\n\n" +
+  "Confermi di voler continuare?";
 
 export default function LoginPage() {
   const router = useTopLoaderRouter();
@@ -70,14 +69,14 @@ export default function LoginPage() {
       if (!firstName || !lastName || !phone) {
         const confirmed = window.confirm(WHATSAPP_CONFIRM_MESSAGE);
         if (!confirmed) {
-          toast.error("Inserisci almeno Nome, Cognome e Cellulare per entrare davvero nella community.");
+          toast.error("Completa i campi richiesti per proseguire con la registrazione.");
           return;
         }
       }
       if (!whatsappOptIn) {
         const confirmed = window.confirm(WHATSAPP_CONFIRM_MESSAGE);
         if (!confirmed) {
-          toast.error("Ti consigliamo di attivare il consenso WhatsApp: e il canale principale per organizzare le giocate.");
+          toast.error("Puoi attivare il consenso WhatsApp ora oppure in seguito dal profilo.");
           return;
         }
       }
@@ -197,7 +196,7 @@ export default function LoginPage() {
             <div className="space-y-4 rounded-xl border border-barber-gold/30 bg-barber-dark/70 p-4">
               <h3 className="text-lg font-semibold text-barber-gold">Registrazione Completata</h3>
               <p className="text-sm text-barber-paper/85">
-                Il tuo account e pronto. Se vuoi, entra subito nella community per restare aggiornato sulle prossime
+                Il tuo account e pronto. Se vuoi, entra nella community per restare aggiornato sulle prossime
                 giocate.
               </p>
               {signupRequiresEmailConfirm && (
@@ -219,9 +218,16 @@ export default function LoginPage() {
                 type="button"
                 variant="outline"
                 className="w-full border-barber-gold/40 text-barber-paper hover:bg-barber-gold/10"
-                onClick={() => router.push("/dashboard")}
+                onClick={() => {
+                  if (signupRequiresEmailConfirm) {
+                    setMode("login");
+                    setSignupCompleted(false);
+                    return;
+                  }
+                  router.push("/dashboard");
+                }}
               >
-                Vai alla Dashboard
+                {signupRequiresEmailConfirm ? "Vai al login dopo conferma email" : "Vai alla Dashboard"}
               </Button>
             </div>
           ) : (

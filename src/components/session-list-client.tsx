@@ -5,7 +5,7 @@ import { useRouter } from "nextjs-toploader/app";
 import { it } from "date-fns/locale";
 import { formatSessionInRome } from "@/lib/session-datetime";
 import { toast } from "sonner";
-import { CalendarIcon, MapPinIcon, Check, X, UserCheck, User, UserPlus, Trash2, UserX, ClipboardCheck, Loader2 } from "lucide-react";
+import { CalendarIcon, MapPinIcon, Check, X, UserCheck, User, UserPlus, Trash2, UserX, ClipboardCheck, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -83,6 +83,7 @@ export function SessionListClient({
   const [manualAddSubmittingSessionId, setManualAddSubmittingSessionId] = useState<string | null>(null);
   const [manualAddPlayerId, setManualAddPlayerId] = useState("");
   const [manualAddOptions, setManualAddOptions] = useState<AssignablePlayerForCampaignRow[]>([]);
+  const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null);
   const [sessionForClose, setSessionForClose] = useState<{
     sessionId: string;
     approvedSignups: ApprovedSignupForWizard[];
@@ -219,10 +220,11 @@ export function SessionListClient({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 w-7 p-0 shrink-0 text-slate-400 hover:text-red-400 hover:bg-red-500/10"
+                      className="h-9 w-9 p-0 shrink-0 text-slate-400 hover:text-red-400 hover:bg-red-500/10"
                       disabled={!!deleteSessionLoadingId}
                       onClick={() => handleDeleteSession(session.id)}
                       title="Elimina sessione"
+                      aria-label="Elimina sessione"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
@@ -328,9 +330,38 @@ export function SessionListClient({
                       <Button
                         size="sm"
                         variant="outline"
+                        className="h-8 border-slate-500/40 text-slate-200 hover:bg-slate-700/20 text-[11px]"
+                        onClick={() =>
+                          setExpandedSessionId((current) => {
+                            const next = current === session.id ? null : session.id;
+                            if (next !== session.id) {
+                              setManualAddOpenSessionId(null);
+                              setManualAddPlayerId("");
+                              setManualAddOptions([]);
+                            }
+                            return next;
+                          })
+                        }
+                        aria-label={expandedSessionId === session.id ? "Comprimi gestione iscritti" : "Espandi gestione iscritti"}
+                      >
+                        {expandedSessionId === session.id ? (
+                          <ChevronUp className="h-3.5 w-3.5 mr-1" />
+                        ) : (
+                          <ChevronDown className="h-3.5 w-3.5 mr-1" />
+                        )}
+                        {expandedSessionId === session.id ? "Comprimi" : "Gestisci iscritti"}
+                      </Button>
+                    </div>
+                    {expandedSessionId === session.id && (
+                      <>
+                    <div className="flex justify-end">
+                      <Button
+                        size="sm"
+                        variant="outline"
                         className="h-7 border-barber-gold/40 text-barber-paper hover:bg-barber-gold/10 text-[11px]"
                         disabled={manualAddLoadingSessionId === session.id || manualAddSubmittingSessionId === session.id}
                         onClick={() => void handleOpenManualAdd(session.id)}
+                        aria-label={manualAddOpenSessionId === session.id ? "Chiudi aggiunta iscritto" : "Apri aggiunta iscritto"}
                       >
                         {manualAddLoadingSessionId === session.id ? (
                           <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -391,6 +422,7 @@ export function SessionListClient({
                                 className="h-8 bg-barber-red hover:bg-barber-red/90 text-xs"
                                 disabled={!manualAddPlayerId || manualAddSubmittingSessionId === session.id}
                                 onClick={() => void handleManualAdd(session.id)}
+                                aria-label="Conferma aggiunta iscritto"
                               >
                                 {manualAddSubmittingSessionId === session.id ? "Aggiungo..." : "Aggiungi"}
                               </Button>
@@ -480,10 +512,11 @@ export function SessionListClient({
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  className="h-7 w-7 p-0 text-slate-400 hover:text-red-400 hover:bg-red-500/10"
+                                  className="h-9 w-9 p-0 text-slate-400 hover:text-red-400 hover:bg-red-500/10"
                                   disabled={busy}
                                   onClick={() => handleRemove(signup.id)}
                                   title="Rimuovi dalla sessione"
+                                  aria-label={`Rimuovi ${signup.player_name} dalla sessione`}
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
@@ -492,6 +525,8 @@ export function SessionListClient({
                           );
                         })}
                       </ul>
+                    )}
+                      </>
                     )}
                   </div>
                 )}
