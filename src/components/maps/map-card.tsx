@@ -97,13 +97,14 @@ export function MapCard({
             type="button"
             variant="ghost"
             size="icon"
-            className="absolute top-2 right-10 z-10 h-8 w-8 rounded-md bg-slate-600/80 text-slate-200 opacity-0 group-hover:opacity-100 hover:bg-slate-500/80 hover:text-slate-50"
+            className="absolute top-2 right-10 z-10 h-8 w-8 rounded-md bg-slate-700/90 text-slate-100 opacity-100 hover:bg-slate-500/80 hover:text-slate-50"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               setEditOpen(true);
             }}
             title="Modifica info"
+            aria-label="Modifica info mappa"
           >
             <Pencil className="h-4 w-4" />
           </Button>
@@ -111,9 +112,10 @@ export function MapCard({
             type="button"
             variant="ghost"
             size="icon"
-            className="absolute top-2 right-2 z-10 h-8 w-8 rounded-md bg-red-500/20 text-red-300 opacity-0 group-hover:opacity-100 hover:bg-red-500/30 hover:text-red-200"
+            className="absolute top-2 right-2 z-10 h-8 w-8 rounded-md bg-red-600/30 text-red-200 opacity-100 hover:bg-red-500/40 hover:text-red-100"
             onClick={handleDelete}
             title="Elimina mappa"
+            aria-label="Elimina mappa"
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -127,7 +129,7 @@ export function MapCard({
           className="object-cover"
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
         />
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-t from-slate-950/90 via-slate-950/50 to-transparent opacity-0 transition-opacity group-hover:opacity-100">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-t from-slate-950/90 via-slate-950/50 to-transparent opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
           <Link href={`/campaigns/${campaignId}/maps/${map.id}`}>
             <Button
               type="button"
@@ -166,7 +168,7 @@ export function MapCard({
       </CardHeader>
       <CardContent className="pt-0">
         {map.description ? (
-          <div className="scrollbar-barber-y max-h-28 overflow-y-auto text-xs text-barber-paper/70">
+          <div className="scrollbar-barber-y max-h-28 overflow-y-auto text-xs text-barber-paper/85">
             <p className="whitespace-pre-wrap break-words pr-1">{map.description}</p>
           </div>
         ) : null}

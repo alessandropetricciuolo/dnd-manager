@@ -416,7 +416,7 @@ export function MissionBoard({
         "relative overflow-hidden rounded-xl border p-4 font-serif md:p-6",
         "font-[var(--font-missions)]",
         "border-amber-600/25 bg-[linear-gradient(180deg,rgba(28,25,23,0.2),rgba(0,0,0,0.35))]",
-        "shadow-[0_0_0_1px_rgba(217,119,6,0.16),0_0_40px_rgba(56,189,248,0.06)]"
+        "shadow-[0_0_0_1px_rgba(217,119,6,0.14),0_10px_24px_rgba(0,0,0,0.24)]"
       )}
     >
       <div
@@ -427,19 +427,19 @@ export function MissionBoard({
         }}
       />
 
-      <div className="pointer-events-none absolute inset-0 opacity-100">
-        <div className="absolute -left-24 -top-12 h-72 w-72 rounded-full bg-[radial-gradient(circle_at_center,rgba(56,189,248,0.35),transparent_60%)] blur-sm" />
-        <div className="absolute left-1/2 top-[-30px] h-64 w-64 -translate-x-1/2 rounded-full bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.35),transparent_60%)] blur-sm" />
-        <div className="absolute inset-0 bg-[linear-gradient(115deg,rgba(56,189,248,0.10),transparent_45%),linear-gradient(250deg,rgba(168,85,247,0.12),transparent_40%)] mix-blend-screen" />
+      <div className="pointer-events-none absolute inset-0 opacity-90">
+        <div className="absolute -left-24 -top-12 h-72 w-72 rounded-full bg-[radial-gradient(circle_at_center,rgba(56,189,248,0.18),transparent_60%)] blur-sm" />
+        <div className="absolute left-1/2 top-[-30px] h-64 w-64 -translate-x-1/2 rounded-full bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.16),transparent_60%)] blur-sm" />
+        <div className="absolute inset-0 bg-[linear-gradient(115deg,rgba(56,189,248,0.05),transparent_45%),linear-gradient(250deg,rgba(168,85,247,0.06),transparent_40%)]" />
       </div>
 
       <div className="relative">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold tracking-widest text-amber-200 drop-shadow-[0_0_18px_rgba(56,189,248,0.25)] md:text-xl">
+            <h2 className="text-lg font-semibold tracking-wide text-amber-200 md:text-xl">
               Missioni
             </h2>
-            <p className="mt-1 max-w-xl text-xs text-zinc-400">
+            <p className="mt-1 max-w-xl text-xs text-zinc-300">
               Ranghi gilda: D → C → B → A → S. I punti premio delle missioni completate aumentano il punteggio; se
               «Rango automatico» è attivo, il rango si aggiorna alle soglie (modificabili nel codice). Puoi sempre
               impostare rango e punti a mano nella gilda.

@@ -262,59 +262,87 @@ function LongWorkspace({
         )}
 
         <div className="min-h-0 flex-1 overflow-hidden p-4 md:p-6">
-          <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[minmax(300px,25vw)_minmax(0,1fr)_minmax(420px,34vw)]">
+          <div
+            className={cn(
+              "grid h-full min-h-0 gap-4",
+              workspaceMode === "session"
+                ? "xl:grid-cols-[minmax(560px,50vw)_minmax(0,1fr)]"
+                : "xl:grid-cols-[minmax(300px,25vw)_minmax(0,1fr)_minmax(420px,34vw)]"
+            )}
+          >
             <aside
               className={cn(
-                "min-h-0 overflow-hidden rounded-2xl border border-amber-600/20 bg-zinc-950/60 transition-all duration-300",
-                sidebarOpen ? "block" : "hidden xl:block xl:w-0 xl:border-transparent xl:bg-transparent"
+                "min-h-0 overflow-hidden transition-all duration-300",
+                workspaceMode === "closure"
+                  ? "hidden xl:block xl:w-0 xl:border-transparent xl:bg-transparent"
+                  : sidebarOpen
+                    ? "block"
+                    : "hidden xl:block xl:w-0 xl:border-transparent xl:bg-transparent"
               )}
             >
-              {sidebarOpen && (
-                <InitiativeTracker
-                  campaignId={campaignId}
-                  campaignType="long"
-                  availableCharacters={sessionCharacters}
-                  value={initiativeState}
-                  onChange={setInitiativeState}
-                />
+              {workspaceMode === "session" && sidebarOpen && (
+                <div className="grid h-full min-h-0 gap-4 xl:grid-rows-[minmax(360px,48vh)_minmax(220px,1fr)]">
+                  <div className="min-h-0 overflow-hidden rounded-2xl border border-amber-600/20 bg-zinc-950/60">
+                    <InitiativeTracker
+                      campaignId={campaignId}
+                      campaignType="long"
+                      availableCharacters={sessionCharacters}
+                      value={initiativeState}
+                      onChange={setInitiativeState}
+                    />
+                  </div>
+                  <div className="min-h-0 overflow-hidden rounded-2xl border border-amber-600/20 bg-zinc-900/30 p-3 md:p-4">
+                    <GmNotesGrid campaignId={campaignId} sessionId={selectedSessionId} sessionLabel={selectedSessionLabel} />
+                  </div>
+                </div>
               )}
             </aside>
 
-            <div className="min-h-0 overflow-hidden rounded-2xl border border-amber-600/20 bg-zinc-900/30 p-3 md:p-4">
-              <GmNotesGrid campaignId={campaignId} sessionId={selectedSessionId} sessionLabel={selectedSessionLabel} />
-            </div>
+            {workspaceMode === "closure" ? (
+              <div className="min-h-0 overflow-hidden rounded-2xl border border-amber-600/20 bg-zinc-900/30 p-3 md:p-4">
+                <GmNotesGrid campaignId={campaignId} sessionId={selectedSessionId} sessionLabel={selectedSessionLabel} />
+              </div>
+            ) : null}
 
             <div className="min-h-0 overflow-auto rounded-2xl border border-amber-600/20 bg-zinc-900/30 p-3 md:p-4">
-              <div className="flex min-h-full flex-col gap-4">
-                <GmMissionEncounterLoader campaignId={campaignId} />
-                <PlayerSessionTracker
-                  campaignId={campaignId}
-                  characters={sessionCharacters}
-                  attendance={attendance}
-                  onAttendanceChange={setAttendance}
-                  initiativeEntries={initiativeState.entries}
-                  value={xpState}
-                  onChange={setXpState}
-                />
-                <LongEconomyPanel
-                  campaignId={campaignId}
-                  playerIds={sessionPlayerIds}
-                  attendance={attendance}
-                  economyDraft={economyDraft}
-                  onDraftChange={setEconomyDraft}
-                  onCoinsCommitted={updateCharacterCoinsLocally}
-                  onRefreshCharacters={refreshCharacters}
-                />
-                <LongTimePanel elapsedHours={elapsedHours} onChange={setElapsedHours} />
-                <LongCalendarPanel
-                  baseDate={calendarBaseDate}
-                  config={calendarConfig}
-                  elapsedHours={elapsedHours}
-                  onBaseDateChange={setCalendarBaseDate}
-                  onConfigChange={setCalendarConfig}
-                  onSave={saveCalendarSettings}
-                />
-              </div>
+              {workspaceMode === "session" ? (
+                <div className="flex min-h-full flex-col gap-4">
+                  <GmMissionEncounterLoader campaignId={campaignId} />
+                  <PlayerSessionTracker
+                    campaignId={campaignId}
+                    characters={sessionCharacters}
+                    attendance={attendance}
+                    onAttendanceChange={setAttendance}
+                    initiativeEntries={initiativeState.entries}
+                    value={xpState}
+                    onChange={setXpState}
+                  />
+                </div>
+              ) : (
+                <div className="flex min-h-full flex-col gap-4">
+                  <div className="rounded-lg border border-amber-600/25 bg-zinc-950/40 px-3 py-2 text-xs text-zinc-300">
+                    Modalita chiusura: qui trovi economia, tempo e calendario per finalizzare la sessione.
+                  </div>
+                  <LongEconomyPanel
+                    campaignId={campaignId}
+                    playerIds={sessionPlayerIds}
+                    attendance={attendance}
+                    economyDraft={economyDraft}
+                    onDraftChange={setEconomyDraft}
+                    onCoinsCommitted={updateCharacterCoinsLocally}
+                    onRefreshCharacters={refreshCharacters}
+                  />
+                  <LongTimePanel elapsedHours={elapsedHours} onChange={setElapsedHours} />
+                  <LongCalendarPanel
+                    baseDate={calendarBaseDate}
+                    config={calendarConfig}
+                    elapsedHours={elapsedHours}
+                    onBaseDateChange={setCalendarBaseDate}
+                    onConfigChange={setCalendarConfig}
+                    onSave={saveCalendarSettings}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>

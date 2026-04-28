@@ -21,6 +21,7 @@ import { formatSessionInRome, SESSION_DISPLAY_TIMEZONE } from "@/lib/session-dat
 import { formatInTimeZone } from "date-fns-tz";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
 const WEEKDAYS = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
@@ -32,6 +33,7 @@ const CAMPAIGN_TYPE_COLORS: Record<string, string> = {
 };
 
 const PLACEHOLDER_IMAGE = "https://placehold.co/80x48/1e293b/10b981/png?text=Campagna";
+const ENABLE_DAY_DRAWER = process.env.NEXT_PUBLIC_DASHBOARD_CALENDAR_DAY_DRAWER !== "0";
 
 export type SessionForCalendar = {
   id: string;
@@ -142,6 +144,7 @@ function SessionHoverCard({
 
 export function SessionCalendar({ sessions }: SessionCalendarProps) {
   const [currentDate, setCurrentDate] = useState(() => new Date());
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
@@ -159,6 +162,9 @@ export function SessionCalendar({ sessions }: SessionCalendarProps) {
         return false;
       }
     });
+
+  const selectedDaySessions = selectedDay ? getSessionsForDay(selectedDay) : [];
+  const selectedDayLabel = selectedDay ? format(selectedDay, "EEEE d MMMM", { locale: it }) : "";
 
   return (
     <div className="w-full min-w-0 rounded-xl border border-barber-gold/40 bg-barber-dark/90 overflow-hidden">
@@ -223,11 +229,19 @@ export function SessionCalendar({ sessions }: SessionCalendarProps) {
                   hasSessions && typeColor === "bg-slate-500" && "!bg-slate-500/30 sm:!bg-transparent"
                 )}
               >
-                {hasSessions && firstSession && (
+                {!ENABLE_DAY_DRAWER && hasSessions && firstSession && (
                   <Link
                     href={`/campaigns/${firstSession.campaign_id}`}
                     className="absolute inset-0 z-0 rounded border-0"
                     aria-label={`${daySessions.length} sessione/i il ${format(day, "d MMMM", { locale: it })}: ${firstSession.campaign_name}`}
+                  />
+                )}
+                {ENABLE_DAY_DRAWER && hasSessions && (
+                  <button
+                    type="button"
+                    className="absolute inset-0 z-0 rounded border-0"
+                    onClick={() => setSelectedDay(day)}
+                    aria-label={`Apri sessioni del ${format(day, "d MMMM", { locale: it })}`}
                   />
                 )}
                 <span
@@ -272,6 +286,39 @@ export function SessionCalendar({ sessions }: SessionCalendarProps) {
           })}
         </div>
       </div>
+
+      <Sheet open={selectedDay != null} onOpenChange={(open) => !open && setSelectedDay(null)}>
+        <SheetContent side="right" className="w-full border-barber-gold/30 bg-barber-dark text-barber-paper sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle className="text-barber-paper">
+              Sessioni del giorno
+            </SheetTitle>
+            <p className="text-sm text-slate-300">{selectedDayLabel}</p>
+          </SheetHeader>
+          <div className="mt-4 space-y-3">
+            {selectedDaySessions.length === 0 ? (
+              <p className="text-sm text-slate-400">Nessuna sessione pianificata.</p>
+            ) : (
+              selectedDaySessions.map((session) => (
+                <Link
+                  key={session.id}
+                  href={`/campaigns/${session.campaign_id}`}
+                  className="block rounded-lg border border-barber-gold/20 bg-barber-dark/70 p-3 hover:bg-barber-gold/10"
+                  onClick={() => setSelectedDay(null)}
+                >
+                  <p className="text-xs text-slate-400">{session.campaign_name}</p>
+                  <p className="mt-0.5 text-sm font-semibold text-barber-paper">
+                    {session.title || "Sessione"}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    {formatSessionInRome(session.scheduled_at, "HH:mm", { locale: it })} · {session.signup_count}/{session.max_players} posti
+                  </p>
+                </Link>
+              ))
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

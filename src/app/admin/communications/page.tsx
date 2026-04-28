@@ -94,12 +94,12 @@ export default async function AdminCommunicationsPage() {
   return (
     <div className="min-w-0 p-4 py-10 md:p-8">
       <div className="mx-auto w-full max-w-6xl space-y-6">
-        <header className="space-y-2">
+        <header className="space-y-2 rounded-xl border border-barber-gold/20 bg-barber-dark/40 p-4">
           <h1 className="flex items-center gap-2 text-xl font-semibold text-barber-paper sm:text-2xl">
             <Mail className="h-6 w-6 text-barber-gold" />
             Comunicazioni Email ai Giocatori
           </h1>
-          <p className="text-sm text-barber-paper/70">
+          <p className="text-sm text-barber-paper/85">
             Crea comunicazioni HTML, inviale ai giocatori registrati, traccia chi ha ricevuto e reinoltra ai non inviati.
           </p>
         </header>

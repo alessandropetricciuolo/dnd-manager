@@ -46,13 +46,13 @@ export function LongCalendarPanel({
   }
 
   return (
-    <section className="rounded-xl border border-amber-600/20 bg-zinc-900/60 p-4 text-zinc-100">
+    <section className="rounded-xl border border-amber-600/20 bg-zinc-900/60 p-4 text-zinc-100 shadow-sm">
       <header className="mb-3 flex items-start justify-between gap-3 border-b border-amber-600/20 pb-3">
         <div className="flex items-center gap-2">
           <CalendarDays className="h-5 w-5 text-amber-300" />
           <div>
-            <h2 className="text-sm font-semibold text-amber-200">Calendario Campagna</h2>
-            <p className="text-xs text-zinc-400">Data fantasy base usata per derivare la data corrente dei personaggi.</p>
+            <h2 className="text-sm font-semibold tracking-wide text-amber-100">Calendario campagna</h2>
+            <p className="text-xs text-zinc-300">Data fantasy base usata per derivare la data corrente dei personaggi.</p>
           </div>
         </div>
         <Button
@@ -69,7 +69,7 @@ export function LongCalendarPanel({
 
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="space-y-1.5">
-          <label className="text-xs font-medium uppercase tracking-wide text-zinc-400">Giorno</label>
+          <label className="text-xs font-medium text-zinc-300">Giorno</label>
           <Input
             type="number"
             min={1}
@@ -85,7 +85,7 @@ export function LongCalendarPanel({
           />
         </div>
         <div className="space-y-1.5">
-          <label className="text-xs font-medium uppercase tracking-wide text-zinc-400">Mese</label>
+          <label className="text-xs font-medium text-zinc-300">Mese</label>
           <Input
             type="number"
             min={1}
@@ -102,7 +102,7 @@ export function LongCalendarPanel({
           />
         </div>
         <div className="space-y-1.5">
-          <label className="text-xs font-medium uppercase tracking-wide text-zinc-400">Anno</label>
+          <label className="text-xs font-medium text-zinc-300">Anno</label>
           <Input
             type="number"
             min={1}
@@ -119,7 +119,7 @@ export function LongCalendarPanel({
         </div>
       </div>
 
-      <p className="mt-3 text-xs text-zinc-400">
+      <p className="mt-3 text-xs text-zinc-300">
         Data base attuale: <span className="text-amber-200">{baseDateLabel}</span> • Ore sessione correnti:{" "}
         <span className="text-amber-200">{elapsedHours}h</span> (~{extraDays} giorni).
       </p>
