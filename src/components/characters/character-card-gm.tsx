@@ -28,6 +28,7 @@ import {
   assignCharacter,
   deleteCharacter,
   levelUpCharacter,
+  setCharacterExperience,
   type CampaignCharacterRow,
   type EligiblePlayer,
 } from "@/app/campaigns/character-actions";
@@ -269,12 +270,14 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
   const [imgError, setImgError] = useState(false);
   const [sheetImgError, setSheetImgError] = useState(false);
   const [isLeveling, startTransition] = useTransition();
+  const [isSavingXp, startXpTransition] = useTransition();
   const [epochOpen, setEpochOpen] = useState(false);
   const [epochDraft, setEpochDraft] = useState(String(character.time_offset_hours ?? 0));
   const [epochSaving, setEpochSaving] = useState(false);
   const [calendarYearDraft, setCalendarYearDraft] = useState(String(character.calendar_current_date?.year ?? 1));
   const [calendarMonthDraft, setCalendarMonthDraft] = useState(String(character.calendar_current_date?.month ?? 1));
   const [calendarDayDraft, setCalendarDayDraft] = useState(String(character.calendar_current_date?.day ?? 1));
+  const [xpDraft, setXpDraft] = useState(String(character.current_xp ?? 0));
   const imageSrc = imgError ? PLACEHOLDER_AVATAR : character.image_url ?? PLACEHOLDER_AVATAR;
   const sheetImageSrc = sheetImgError
     ? PLACEHOLDER_AVATAR
@@ -310,6 +313,10 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
   useEffect(() => {
     if (autoOpenEdit) setEditOpen(true);
   }, [autoOpenEdit]);
+
+  useEffect(() => {
+    setXpDraft(String(character.current_xp ?? 0));
+  }, [character.current_xp]);
 
   async function onAssign(playerId: string | null) {
     const value = playerId === "__none__" ? null : playerId;
@@ -678,6 +685,44 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
               <span className="tabular-nums">{xpLabel}</span>
               <span className="tabular-nums">{Math.round(progressPercent)}%</span>
             </div>
+            <div className="flex items-center gap-1.5 pt-1">
+              <Input
+                type="number"
+                min={0}
+                value={xpDraft}
+                onChange={(event) => setXpDraft(event.target.value)}
+                className="h-7 border-barber-gold/30 bg-barber-dark text-[11px] tabular-nums text-barber-paper"
+                disabled={isSavingXp}
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                className="h-7 border-barber-gold/40 bg-barber-gold/15 px-2 text-[10px] text-barber-paper hover:bg-barber-gold/25"
+                disabled={isSavingXp || !assignedTo}
+                onClick={() =>
+                  startXpTransition(async () => {
+                    const parsed = Number.parseInt(xpDraft.trim(), 10);
+                    if (!Number.isFinite(parsed) || parsed < 0) {
+                      toast.error("Inserisci PE validi (numero intero >= 0).");
+                      return;
+                    }
+                    const result = await setCharacterExperience(character.id, parsed);
+                    if (result.success) {
+                      toast.success(result.message);
+                      router.refresh();
+                    } else {
+                      toast.error(result.error);
+                    }
+                  })
+                }
+              >
+                {isSavingXp ? "Salvataggio..." : "Salva PE"}
+              </Button>
+            </div>
+            {!assignedTo ? (
+              <p className="text-[10px] text-barber-paper/55">Assegna prima il PG a un giocatore per modificare i PE.</p>
+            ) : null}
             {hasLevelUp && (
               <Button
                 type="button"

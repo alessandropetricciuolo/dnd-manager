@@ -940,6 +940,10 @@ export type CharacterCalendarOverrideResult =
   | { success: true; message: string }
   | { success: false; error: string };
 
+export type SetCharacterExperienceResult =
+  | { success: true; message: string }
+  | { success: false; error: string };
+
 /**
  * GM/Admin: sovrascrive le ore Epoch del personaggio (sincronizzazione forzata).
  */
@@ -1092,6 +1096,79 @@ export async function setCharacterCalendarOverride(
   revalidatePath(`/campaigns/${row.campaign_id}`);
   revalidatePath("/dashboard");
   return { success: true, message: overrideDate ? "Data del personaggio aggiornata." : "Override data rimosso." };
+}
+
+/**
+ * GM/Admin: imposta manualmente i PE del giocatore assegnato al personaggio.
+ * I PE restano sincronizzati tra campaign_members.xp_earned e campaign_characters.current_xp.
+ */
+export async function setCharacterExperience(
+  characterId: string,
+  nextXpRaw: number
+): Promise<SetCharacterExperienceResult> {
+  const ctx = await getCurrentUserAndRole();
+  if (!ctx) return { success: false, error: "Non autenticato." };
+  if (!ctx.isGmOrAdmin) return { success: false, error: "Solo GM o Admin." };
+
+  const id = characterId?.trim();
+  if (!id) return { success: false, error: "Personaggio non valido." };
+
+  const nextXp = Number.isFinite(nextXpRaw) ? Math.max(0, Math.floor(nextXpRaw)) : 0;
+  const supabase = ctx.supabase;
+  const admin = createSupabaseAdminClient();
+
+  const { data: me } = await supabase.from("profiles").select("role").eq("id", ctx.userId).single();
+  const isAdmin = me?.role === "admin";
+
+  const { data: rowRaw, error: fetchErr } = await admin
+    .from("campaign_characters")
+    .select("id, campaign_id, assigned_to")
+    .eq("id", id)
+    .maybeSingle();
+  const row = rowRaw as { id: string; campaign_id: string; assigned_to: string | null } | null;
+  if (fetchErr || !row) return { success: false, error: fetchErr?.message ?? "Personaggio non trovato." };
+
+  const { data: camp } = await supabase.from("campaigns").select("gm_id").eq("id", row.campaign_id).single();
+  if (!isAdmin && camp?.gm_id !== ctx.userId) {
+    return { success: false, error: "Non sei il Master di questa campagna." };
+  }
+
+  if (!row.assigned_to) {
+    return { success: false, error: "Assegna prima il personaggio a un giocatore." };
+  }
+
+  const { data: existingMember } = await admin
+    .from("campaign_members")
+    .select("id")
+    .eq("campaign_id", row.campaign_id)
+    .eq("player_id", row.assigned_to)
+    .maybeSingle();
+
+  if (existingMember) {
+    const { error: memberUpdErr } = await admin
+      .from("campaign_members")
+      .update({ xp_earned: nextXp } as never)
+      .eq("id", (existingMember as { id: string }).id);
+    if (memberUpdErr) return { success: false, error: memberUpdErr.message ?? "Errore aggiornamento PE giocatore." };
+  } else {
+    const { error: memberInsErr } = await admin.from("campaign_members").insert({
+      campaign_id: row.campaign_id,
+      player_id: row.assigned_to,
+      xp_earned: nextXp,
+    } as never);
+    if (memberInsErr) return { success: false, error: memberInsErr.message ?? "Errore creazione membro campagna." };
+  }
+
+  const { error: charsErr } = await admin
+    .from("campaign_characters")
+    .update({ current_xp: nextXp } as never)
+    .eq("campaign_id", row.campaign_id)
+    .eq("assigned_to", row.assigned_to);
+  if (charsErr) return { success: false, error: charsErr.message ?? "Errore sincronizzazione PE personaggio." };
+
+  revalidatePath(`/campaigns/${row.campaign_id}`);
+  revalidatePath("/dashboard");
+  return { success: true, message: "PE aggiornati." };
 }
 
 /**

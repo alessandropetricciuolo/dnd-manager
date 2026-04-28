@@ -1610,6 +1610,35 @@ export async function saveLongCampaignCalendarBaseDate(
       .eq("id", campaignId);
     if (updErr) return { success: false, error: updErr.message ?? "Errore salvataggio calendario." };
 
+    const { data: charsRaw, error: charsErr } = await admin
+      .from("campaign_characters")
+      .select("id, time_offset_hours")
+      .eq("campaign_id", campaignId);
+    if (charsErr) return { success: false, error: charsErr.message ?? "Errore aggiornamento date personaggi." };
+
+    for (const row of (charsRaw ?? []) as Array<{ id: string; time_offset_hours: number | null }>) {
+      const hours =
+        typeof row.time_offset_hours === "number" && Number.isFinite(row.time_offset_hours)
+          ? Math.max(0, Math.trunc(row.time_offset_hours))
+          : 0;
+      const nextDate = deriveCharacterCalendarDate({
+        campaignBaseDate: normalizedBaseDate,
+        characterHours: hours,
+        config: normalizedConfig,
+        anchorDate: null,
+        anchorHours: null,
+      });
+      const { error: syncErr } = await admin
+        .from("campaign_characters")
+        .update({
+          calendar_anchor_date: null,
+          calendar_anchor_hours: null,
+          calendar_current_date: toCalendarDateJson(nextDate),
+        } as never)
+        .eq("id", row.id);
+      if (syncErr) return { success: false, error: syncErr.message ?? "Errore sincronizzazione data personaggio." };
+    }
+
     revalidatePath(`/campaigns/${campaignId}`);
     revalidatePath("/dashboard");
     return { success: true, message: "Calendario campagna aggiornato." };
