@@ -1138,14 +1138,16 @@ export async function replaceMissionEncounterMonstersAction(
       }
     }
 
-    const { error: deleteError } = await supabase
+    const { data: existingRows, error: existingError } = await supabase
       .from("mission_encounter_monsters")
-      .delete()
+      .select("id")
       .eq("encounter_id", encounterId);
-    if (deleteError) {
-      return { success: false, message: deleteError.message ?? "Errore nella pulizia dei mostri incontro." };
+    if (existingError) {
+      return { success: false, message: existingError.message ?? "Errore nel caricamento dei mostri incontro." };
     }
+    const existingIds = ((existingRows ?? []) as Array<{ id: string }>).map((row) => row.id);
 
+    let insertedIds: string[] = [];
     if (sanitized.length > 0) {
       const payload = sanitized.map((monster) => ({
         encounter_id: encounterId,
@@ -1154,9 +1156,26 @@ export async function replaceMissionEncounterMonstersAction(
         sort_order: monster.sortOrder,
         updated_at: new Date().toISOString(),
       }));
-      const { error: insertError } = await supabase.from("mission_encounter_monsters").insert(payload);
+      const { data: insertedRows, error: insertError } = await supabase
+        .from("mission_encounter_monsters")
+        .insert(payload)
+        .select("id");
       if (insertError) {
         return { success: false, message: insertError.message ?? "Errore nel salvataggio dei mostri incontro." };
+      }
+      insertedIds = ((insertedRows ?? []) as Array<{ id: string }>).map((row) => row.id);
+    }
+
+    if (existingIds.length > 0) {
+      const { error: deleteError } = await supabase
+        .from("mission_encounter_monsters")
+        .delete()
+        .in("id", existingIds);
+      if (deleteError) {
+        if (insertedIds.length > 0) {
+          await supabase.from("mission_encounter_monsters").delete().in("id", insertedIds);
+        }
+        return { success: false, message: deleteError.message ?? "Errore nella pulizia dei mostri incontro." };
       }
     }
 
