@@ -25,6 +25,7 @@ type PerCharacterState = {
 export type StoredXpState = {
   version: 2;
   extraXpManual: number;
+  bankedMonsterXp: number;
   perCharacter: Record<string, PerCharacterState>;
 };
 
@@ -40,6 +41,7 @@ type PlayerSessionTrackerProps = {
   initiativeEntries?: InitiativeEntry[];
   value?: StoredXpState;
   onChange?: (state: StoredXpState) => void;
+  onCloseFight?: () => void;
 };
 
 function defaultPerCharacterState(): PerCharacterState {
@@ -72,6 +74,10 @@ function sanitizeState(input: StoredXpState | null | undefined, validCharacterId
       input?.extraXpManual != null && Number.isFinite(input.extraXpManual)
         ? Math.max(0, Math.trunc(input.extraXpManual))
         : 0,
+    bankedMonsterXp:
+      input?.bankedMonsterXp != null && Number.isFinite(input.bankedMonsterXp)
+        ? Math.max(0, Math.trunc(input.bankedMonsterXp))
+        : 0,
     perCharacter,
   };
 }
@@ -86,7 +92,7 @@ function arePerCharacterStatesEqual(a: PerCharacterState | undefined, b: PerChar
 }
 
 function areXpStatesEqual(a: StoredXpState, b: StoredXpState) {
-  if (a.version !== b.version || a.extraXpManual !== b.extraXpManual) return false;
+  if (a.version !== b.version || a.extraXpManual !== b.extraXpManual || a.bankedMonsterXp !== b.bankedMonsterXp) return false;
   const aKeys = Object.keys(a.perCharacter);
   const bKeys = Object.keys(b.perCharacter);
   if (aKeys.length !== bKeys.length) return false;
@@ -118,7 +124,10 @@ export function computeSessionXpAwards({
     return sum + (typeof entry.exp === "number" ? entry.exp : 0);
   }, 0);
 
-  const totalBaseXp = deadMonsterXp + Math.max(0, Math.trunc(xpState.extraXpManual || 0));
+  const totalBaseXp =
+    deadMonsterXp +
+    Math.max(0, Math.trunc(xpState.extraXpManual || 0)) +
+    Math.max(0, Math.trunc(xpState.bankedMonsterXp || 0));
   const presentCharacters = characters.filter((character) => {
     if (attendance && character.assigned_to) {
       return attendance[character.assigned_to] !== "absent";
@@ -169,6 +178,7 @@ export function PlayerSessionTracker({
   initiativeEntries,
   value,
   onChange,
+  onCloseFight,
 }: PlayerSessionTrackerProps) {
   const sessionMode = Array.isArray(providedCharacters) && attendance != null && typeof onAttendanceChange === "function";
   const isControlled = value != null && typeof onChange === "function";
@@ -236,6 +246,7 @@ export function PlayerSessionTracker({
               {
                 version: 2,
                 extraXpManual: parsed?.extraXpManual ?? 0,
+                bankedMonsterXp: (parsed as { bankedMonsterXp?: number })?.bankedMonsterXp ?? 0,
                 perCharacter: parsed?.perCharacter ?? {},
               },
               characters.map((character) => character.id)
@@ -369,13 +380,14 @@ export function PlayerSessionTracker({
         xpState: {
           version: 2,
           extraXpManual: xpState.extraXpManual,
+          bankedMonsterXp: xpState.bankedMonsterXp,
           perCharacter: xpState.perCharacter,
         },
         initiativeEntries: initiativeEntries?.length
           ? initiativeEntries
           : Array.from({ length: 0 }),
       }),
-    [attendance, characters, initiativeEntries, xpState.extraXpManual, xpState.perCharacter]
+    [attendance, characters, initiativeEntries, xpState.bankedMonsterXp, xpState.extraXpManual, xpState.perCharacter]
   );
 
   const effectiveMonsterXp = initiativeEntries ? xpSummary.deadMonsterXp : deadMonsterXp;
@@ -388,8 +400,27 @@ export function PlayerSessionTracker({
   }).length;
   const effectiveBasePerPlayer =
     presentCharactersCount > 0
-      ? Math.floor((effectiveMonsterXp + Math.max(0, Math.trunc(xpState.extraXpManual || 0))) / presentCharactersCount)
+      ? Math.floor(
+          (effectiveMonsterXp +
+            Math.max(0, Math.trunc(xpState.extraXpManual || 0)) +
+            Math.max(0, Math.trunc(xpState.bankedMonsterXp || 0))) /
+            presentCharactersCount
+        )
       : 0;
+
+  const closeCurrentFight = useCallback(() => {
+    if (effectiveMonsterXp <= 0) {
+      toast.error("Nessun PE mostro da salvare per questo fight.");
+      return;
+    }
+    setXpState((current) => ({
+      ...current,
+      bankedMonsterXp: Math.max(0, Math.trunc(current.bankedMonsterXp || 0)) + effectiveMonsterXp,
+    }));
+    onCloseFight?.();
+    setDeadMonsterXp(0);
+    toast.success(`Fight chiuso: ${effectiveMonsterXp} PE mostro salvati.`);
+  }, [effectiveMonsterXp, onCloseFight]);
 
   const computedXpByCharacterId = useMemo(() => {
     const map: Record<string, number> = {};
@@ -445,22 +476,39 @@ export function PlayerSessionTracker({
             </p>
           </div>
         </div>
-        <Button
-          type="button"
-          size="icon"
-          variant="outline"
-          className="h-8 w-8 border-amber-600/30 text-amber-100 hover:bg-amber-600/15"
-          onClick={() => void syncMonstersXp()}
-          title="Ricalcola PE da mostri morti"
-        >
-          <RefreshCw className={cn("h-4 w-4", loadingMonstersXp && "animate-spin")} />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-8 border-emerald-600/35 text-emerald-200 hover:bg-emerald-600/15"
+            onClick={closeCurrentFight}
+            disabled={effectiveMonsterXp <= 0}
+            title="Chiudi fight e salva i PE mostri nel totale sessione"
+          >
+            Chiudi fight
+          </Button>
+          <Button
+            type="button"
+            size="icon"
+            variant="outline"
+            className="h-8 w-8 border-amber-600/30 text-amber-100 hover:bg-amber-600/15"
+            onClick={() => void syncMonstersXp()}
+            title="Ricalcola PE da mostri morti"
+          >
+            <RefreshCw className={cn("h-4 w-4", loadingMonstersXp && "animate-spin")} />
+          </Button>
+        </div>
       </header>
 
       <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <div className="rounded-lg border border-amber-600/20 bg-zinc-950/40 p-3">
           <p className="text-[11px] uppercase tracking-wide text-zinc-400">PE da mostri morti</p>
           <p className="mt-1 text-lg font-semibold text-amber-200">{effectiveMonsterXp} PE</p>
+        </div>
+        <div className="rounded-lg border border-amber-600/20 bg-zinc-950/40 p-3">
+          <p className="text-[11px] uppercase tracking-wide text-zinc-400">PE fight chiusi</p>
+          <p className="mt-1 text-lg font-semibold text-amber-200">{xpState.bankedMonsterXp || 0} PE</p>
         </div>
         <div className="rounded-lg border border-amber-600/20 bg-zinc-950/40 p-3">
           <label className="text-[11px] uppercase tracking-wide text-zinc-400">PE extra manuali</label>

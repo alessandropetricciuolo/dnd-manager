@@ -45,6 +45,7 @@ export type LongSessionXpCharacterState = {
 export type LongSessionXpState = {
   version: 2;
   extraXpManual: number;
+  bankedMonsterXp: number;
   perCharacter: Record<string, LongSessionXpCharacterState>;
 };
 
@@ -121,6 +122,7 @@ const emptyInitiativeState: InitiativeState = {
 const emptyXpState: LongSessionXpState = {
   version: 2,
   extraXpManual: 0,
+  bankedMonsterXp: 0,
   perCharacter: {},
 };
 
@@ -182,6 +184,10 @@ function readStoredSessionState(campaignId: string, sessionId: string): StoredLo
                 parsed.xp.extraXpManual != null && Number.isFinite(parsed.xp.extraXpManual)
                   ? Math.max(0, Math.trunc(parsed.xp.extraXpManual))
                   : 0,
+              bankedMonsterXp:
+                parsed.xp.bankedMonsterXp != null && Number.isFinite(parsed.xp.bankedMonsterXp)
+                  ? Math.max(0, Math.trunc(parsed.xp.bankedMonsterXp))
+                  : 0,
               perCharacter: parsed.xp.perCharacter ?? {},
             }
           : emptyXpState,
@@ -223,6 +229,10 @@ function sanitizeXpState(
     extraXpManual:
       input?.extraXpManual != null && Number.isFinite(input.extraXpManual)
         ? Math.max(0, Math.trunc(input.extraXpManual))
+        : 0,
+    bankedMonsterXp:
+      input?.bankedMonsterXp != null && Number.isFinite(input.bankedMonsterXp)
+        ? Math.max(0, Math.trunc(input.bankedMonsterXp))
         : 0,
     perCharacter,
   };
@@ -561,6 +571,7 @@ export function GmScreenLongStateProvider({
     );
     const xpChanged =
       xpState.extraXpManual > 0 ||
+      xpState.bankedMonsterXp > 0 ||
       Object.values(xpState.perCharacter).some(
         (value) => value.plus > 0 || value.minus > 0 || value.customXp != null
       );
@@ -590,6 +601,7 @@ export function GmScreenLongStateProvider({
     selectedSessionId,
     signups,
     xpState.extraXpManual,
+    xpState.bankedMonsterXp,
     xpState.perCharacter,
   ]);
 

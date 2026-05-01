@@ -9,6 +9,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -59,6 +67,8 @@ export function AdminCommunicationsClient({
   const [recipients, setRecipients] = useState<RecipientView[]>([]);
   const [loadingRecipients, setLoadingRecipients] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [confirmSendOpen, setConfirmSendOpen] = useState(false);
+  const [confirmOnlyPending, setConfirmOnlyPending] = useState(false);
 
   const selectedCommunication = useMemo(
     () => initialCommunications.find((c) => c.id === selectedCommunicationId) ?? null,
@@ -111,11 +121,17 @@ export function AdminCommunicationsClient({
     });
   }
 
-  function sendCommunication(onlyPending: boolean) {
+  function requestSendCommunication(onlyPending: boolean) {
     if (!selectedCommunicationId) {
       toast.error("Seleziona una comunicazione dall'archivio.");
       return;
     }
+    setConfirmOnlyPending(onlyPending);
+    setConfirmSendOpen(true);
+  }
+
+  function sendCommunication(onlyPending: boolean) {
+    if (!selectedCommunicationId) return;
     startTransition(async () => {
       const result = await sendAdminCommunicationAction(selectedCommunicationId, onlyPending);
       if (!result.success) {
@@ -125,8 +141,16 @@ export function AdminCommunicationsClient({
       toast.success(result.message);
       await loadRecipients(selectedCommunicationId);
       router.refresh();
+      setConfirmSendOpen(false);
     });
   }
+
+  const selectedStats = selectedCommunication?.stats;
+  const estimatedTargets = selectedStats
+    ? confirmOnlyPending
+      ? selectedStats.pending + selectedStats.failed
+      : selectedStats.total
+    : 0;
 
   return (
     <div className="space-y-6">
@@ -192,14 +216,20 @@ export function AdminCommunicationsClient({
             <Mail className="mr-2 h-4 w-4" />
             Salva in archivio
           </Button>
-          <Button type="button" variant="outline" onClick={() => sendCommunication(false)} disabled={isPending}>
+          <Button type="button" variant="outline" onClick={() => requestSendCommunication(false)} disabled={isPending}>
             <Send className="mr-2 h-4 w-4" />
             Invia a tutti (selezionata)
           </Button>
-          <Button type="button" variant="outline" onClick={() => sendCommunication(true)} disabled={isPending}>
+          <Button type="button" variant="outline" onClick={() => requestSendCommunication(true)} disabled={isPending}>
             <RotateCw className="mr-2 h-4 w-4" />
             Reinoltra ai non inviati
           </Button>
+        </div>
+        <div className="rounded-md border border-amber-600/30 bg-amber-500/10 p-3 text-xs text-amber-100">
+          <p className="font-medium">Invio massivo: verifica prima di confermare.</p>
+          <p className="mt-1 text-amber-100/85">
+            Controlla oggetto, contenuto HTML e comunicazione selezionata in archivio. L&apos;invio parte verso tutti i destinatari idonei.
+          </p>
         </div>
       </section>
 
@@ -283,6 +313,45 @@ export function AdminCommunicationsClient({
           </Table>
         </div>
       </section>
+
+      <Dialog open={confirmSendOpen} onOpenChange={setConfirmSendOpen}>
+        <DialogContent className="border-barber-gold/30 bg-barber-dark text-barber-paper">
+          <DialogHeader>
+            <DialogTitle>Conferma invio comunicazione</DialogTitle>
+            <DialogDescription className="text-barber-paper/75">
+              Riepilogo destinatari prima dell&apos;invio.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 rounded-md border border-barber-gold/20 bg-black/20 p-3 text-sm">
+            <p>
+              <span className="text-barber-paper/70">Comunicazione:</span>{" "}
+              <span className="font-medium">{selectedCommunication?.subject ?? "—"}</span>
+            </p>
+            <p>
+              <span className="text-barber-paper/70">Modalità:</span>{" "}
+              {confirmOnlyPending ? "Reinoltro non inviati/falliti" : "Invio a tutti i destinatari"}
+            </p>
+            <p>
+              <span className="text-barber-paper/70">Destinatari stimati:</span>{" "}
+              <span className="font-semibold text-barber-gold">{estimatedTargets}</span>
+            </p>
+            {selectedStats ? (
+              <p className="text-xs text-barber-paper/70">
+                Totale {selectedStats.total} · Pending {selectedStats.pending} · Fallite {selectedStats.failed} · Senza email{" "}
+                {selectedStats.skipped_no_email}
+              </p>
+            ) : null}
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => setConfirmSendOpen(false)} disabled={isPending}>
+              Annulla
+            </Button>
+            <Button type="button" onClick={() => sendCommunication(confirmOnlyPending)} disabled={isPending}>
+              Conferma invio
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

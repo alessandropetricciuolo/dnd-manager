@@ -1,8 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useRouter } from "nextjs-toploader/app";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,11 +39,19 @@ type RowSaveState =
   | { status: "idle" }
   | { status: "saving" }
   | { status: "saved" }
-  | { status: "error"; message: string; delta: { gp: number; sp: number; cp: number } };
+  | { status: "error"; message: string };
 
 function parseNonNeg(s: string): number {
   const n = Math.trunc(Number.parseInt(s, 10) || 0);
   return Math.max(0, n);
+}
+
+function parseRowDelta(row: { gp: string; sp: string; cp: string }) {
+  return {
+    gp: Math.trunc(Number.parseInt(row.gp, 10) || 0),
+    sp: Math.trunc(Number.parseInt(row.sp, 10) || 0),
+    cp: Math.trunc(Number.parseInt(row.cp, 10) || 0),
+  };
 }
 
 export function LongEconomyPanel({
@@ -55,18 +62,16 @@ export function LongEconomyPanel({
   onCoinsCommitted,
   onRefreshCharacters,
 }: LongEconomyPanelProps) {
-  const router = useRouter();
   const economyDraftRef = useRef(economyDraft);
   const [loading, setLoading] = useState(true);
   const [missions, setMissions] = useState<EconomyMissionSnapshot[]>([]);
   const [characters, setCharacters] = useState<EconomyCharacterSnapshot[]>([]);
-  const [isPending, startTransition] = useTransition();
+  const [isPending, setIsPending] = useState(false);
 
   const [payoutMissionId, setPayoutMissionId] = useState<string>("");
   const [payoutAlloc, setPayoutAlloc] = useState<Record<string, { gp: string; sp: string; cp: string }>>({});
   const [liveDeltaDraft, setLiveDeltaDraft] = useState<Record<string, { gp: string; sp: string; cp: string }>>({});
   const [rowSaveState, setRowSaveState] = useState<Record<string, RowSaveState>>({});
-  const saveTimersRef = useRef<Record<string, number>>({});
   const saveStatusTimersRef = useRef<Record<string, number>>({});
 
   useEffect(() => {
@@ -132,7 +137,7 @@ export function LongEconomyPanel({
     [missions, payoutMissionId]
   );
 
-  function submitDistribute() {
+  async function submitDistribute() {
     if (!payoutMissionId || !selectedMission) {
       toast.error("Seleziona una missione con tesoretto.");
       return;
@@ -162,104 +167,184 @@ export function LongEconomyPanel({
       toast.error("Importi superiori al tesoretto disponibile.");
       return;
     }
-    startTransition(async () => {
+    setIsPending(true);
+    try {
       const res = await distributeMissionTreasureAction(campaignId, payoutMissionId, allocations);
       if (!res.success) {
         toast.error(res.message ?? "Errore distribuzione");
         return;
       }
       toast.success("Tesoretto distribuito.");
-      router.refresh();
       await load();
-    });
+    } finally {
+      setIsPending(false);
+    }
   }
 
-  const commitImmediateDelta = useCallback(
-    (characterId: string, gp: number, sp: number, cp: number) => {
+  const adjustDraft = useCallback((characterId: string, key: "gp" | "sp" | "cp", delta: number) => {
+    setLiveDeltaDraft((current) => {
+      const row = current[characterId] ?? { gp: "", sp: "", cp: "" };
+      const nextValue = String((Number.parseInt(row[key], 10) || 0) + delta);
+      return {
+        ...current,
+        [characterId]: {
+          ...row,
+          [key]: nextValue,
+        },
+      };
+    });
+  }, []);
+
+  const saveRowDraft = useCallback(
+    async (characterId: string) => {
+      const draft = liveDeltaDraft[characterId] ?? { gp: "", sp: "", cp: "" };
+      const { gp, sp, cp } = parseRowDelta(draft);
+      if (gp === 0 && sp === 0 && cp === 0) {
+        toast.error("Nessuna modifica da salvare per questa riga.");
+        return;
+      }
+
       setRowSaveState((current) => ({
         ...current,
         [characterId]: { status: "saving" },
       }));
       const resetTimer = saveStatusTimersRef.current[characterId];
-      if (resetTimer) {
-        window.clearTimeout(resetTimer);
-      }
-      startTransition(async () => {
-        const result = await adjustCharacterCoinsBatchAction(campaignId, [
-          { characterId, coins_gp: gp, coins_sp: sp, coins_cp: cp },
-        ]);
-        if (!result.success) {
-          const errorMessage = result.message ?? "Errore aggiornamento monete.";
-          toast.error(errorMessage);
-          setRowSaveState((current) => ({
-            ...current,
-            [characterId]: {
-              status: "error",
-              message: errorMessage,
-              delta: { gp, sp, cp },
-            },
-          }));
-          return;
-        }
-        const next = result.balances[characterId];
-        if (next) {
-          setCharacters((current) =>
-            current.map((character) =>
-              character.id === characterId
-                ? {
-                    ...character,
-                    coins_gp: next.coins_gp,
-                    coins_sp: next.coins_sp,
-                    coins_cp: next.coins_cp,
-                  }
-                : character
-            )
-          );
-          onCoinsCommitted?.(characterId, next);
-        }
+      if (resetTimer) window.clearTimeout(resetTimer);
+
+      const result = await adjustCharacterCoinsBatchAction(campaignId, [
+        { characterId, coins_gp: gp, coins_sp: sp, coins_cp: cp },
+      ]);
+      if (!result.success) {
+        const errorMessage = result.message ?? "Errore aggiornamento monete.";
+        toast.error(errorMessage);
         setRowSaveState((current) => ({
           ...current,
-          [characterId]: { status: "saved" },
+          [characterId]: { status: "error", message: errorMessage },
         }));
-        saveStatusTimersRef.current[characterId] = window.setTimeout(() => {
-          setRowSaveState((current) => ({
-            ...current,
-            [characterId]: { status: "idle" },
+        return;
+      }
+
+      const next = result.balances[characterId];
+      if (next) {
+        setCharacters((current) =>
+          current.map((character) =>
+            character.id === characterId
+              ? { ...character, coins_gp: next.coins_gp, coins_sp: next.coins_sp, coins_cp: next.coins_cp }
+              : character
+          )
+        );
+        onCoinsCommitted?.(characterId, next);
+      }
+      setLiveDeltaDraft((current) => ({
+        ...current,
+        [characterId]: { gp: "", sp: "", cp: "" },
+      }));
+      setRowSaveState((current) => ({
+        ...current,
+        [characterId]: { status: "saved" },
+      }));
+      saveStatusTimersRef.current[characterId] = window.setTimeout(() => {
+        setRowSaveState((current) => ({
+          ...current,
+          [characterId]: { status: "idle" },
+        }));
+      }, 1600);
+      await onRefreshCharacters?.();
+    },
+    [campaignId, liveDeltaDraft, onCoinsCommitted, onRefreshCharacters]
+  );
+
+  const saveAllDrafts = useCallback(async () => {
+    const rows = characters
+      .map((character) => {
+        const delta = parseRowDelta(liveDeltaDraft[character.id] ?? { gp: "", sp: "", cp: "" });
+        return { characterId: character.id, ...delta };
+      })
+      .filter((row) => row.gp !== 0 || row.sp !== 0 || row.cp !== 0);
+
+    if (rows.length === 0) {
+      toast.error("Non ci sono modifiche da salvare.");
+      return;
+    }
+
+    setIsPending(true);
+    setRowSaveState((current) => {
+      const next = { ...current };
+      for (const row of rows) {
+        next[row.characterId] = { status: "saving" };
+      }
+      return next;
+    });
+
+    const result = await adjustCharacterCoinsBatchAction(
+      campaignId,
+      rows.map((row) => ({
+        characterId: row.characterId,
+        coins_gp: row.gp,
+        coins_sp: row.sp,
+        coins_cp: row.cp,
+      }))
+    );
+    if (!result.success) {
+      const errorMessage = result.message ?? "Errore salvataggio modifiche.";
+      toast.error(errorMessage);
+      setRowSaveState((current) => {
+        const next = { ...current };
+        for (const row of rows) {
+          next[row.characterId] = { status: "error", message: errorMessage };
+        }
+        return next;
+      });
+      setIsPending(false);
+      return;
+    }
+
+    setCharacters((current) =>
+      current.map((character) => {
+        const nextBalance = result.balances[character.id];
+        if (!nextBalance) return character;
+        onCoinsCommitted?.(character.id, nextBalance);
+        return {
+          ...character,
+          coins_gp: nextBalance.coins_gp,
+          coins_sp: nextBalance.coins_sp,
+          coins_cp: nextBalance.coins_cp,
+        };
+      })
+    );
+
+    setLiveDeltaDraft((current) => {
+      const next = { ...current };
+      for (const row of rows) {
+        next[row.characterId] = { gp: "", sp: "", cp: "" };
+      }
+      return next;
+    });
+
+    setRowSaveState((current) => {
+      const next = { ...current };
+      for (const row of rows) {
+        next[row.characterId] = { status: "saved" };
+        const timer = saveStatusTimersRef.current[row.characterId];
+        if (timer) window.clearTimeout(timer);
+        saveStatusTimersRef.current[row.characterId] = window.setTimeout(() => {
+          setRowSaveState((now) => ({
+            ...now,
+            [row.characterId]: { status: "idle" },
           }));
         }, 1600);
-        router.refresh();
-        await onRefreshCharacters?.();
-      });
-    },
-    [campaignId, onCoinsCommitted, onRefreshCharacters, router]
-  );
-
-  const scheduleDraftCommit = useCallback(
-    (characterId: string, nextDraft: { gp: string; sp: string; cp: string }) => {
-      const existing = saveTimersRef.current[characterId];
-      if (existing) {
-        window.clearTimeout(existing);
       }
-      saveTimersRef.current[characterId] = window.setTimeout(() => {
-        const gp = Math.trunc(Number.parseInt(nextDraft.gp, 10) || 0);
-        const sp = Math.trunc(Number.parseInt(nextDraft.sp, 10) || 0);
-        const cp = Math.trunc(Number.parseInt(nextDraft.cp, 10) || 0);
-        if (gp === 0 && sp === 0 && cp === 0) return;
-        void commitImmediateDelta(characterId, gp, sp, cp);
-        setLiveDeltaDraft((current) => ({
-          ...current,
-          [characterId]: { gp: "", sp: "", cp: "" },
-        }));
-      }, 700);
-    },
-    [commitImmediateDelta]
-  );
+      return next;
+    });
+
+    toast.success(`Salvate ${rows.length} righe.`);
+    setIsPending(false);
+    await onRefreshCharacters?.();
+  }, [campaignId, characters, liveDeltaDraft, onCoinsCommitted, onRefreshCharacters]);
 
   useEffect(() => {
-    const timers = saveTimersRef.current;
     const statusTimers = saveStatusTimersRef.current;
     return () => {
-      Object.values(timers).forEach((timerId) => window.clearTimeout(timerId));
       Object.values(statusTimers).forEach((timerId) => window.clearTimeout(timerId));
     };
   }, []);
@@ -383,7 +468,7 @@ export function LongEconomyPanel({
           size="sm"
           className="w-full bg-amber-700 text-zinc-950 hover:bg-amber-600"
           disabled={isPending || !payoutMissionId}
-          onClick={submitDistribute}
+          onClick={() => void submitDistribute()}
         >
           Applica distribuzione
         </Button>
@@ -393,8 +478,20 @@ export function LongEconomyPanel({
         <div>
           <Label className="text-amber-200/80 text-xs">Saldi live dei personaggi</Label>
           <p className="mt-1 text-[11px] text-zinc-500">
-            Puoi usare i bottoni rapidi oppure digitare una variazione nei campi `Δ`: il pannello salva quasi in tempo reale.
+            Prepara le variazioni in bozza (anche oltre +/-1) e salva manualmente la riga quando hai finito.
           </p>
+        </div>
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-8 border-amber-600/35 text-amber-100 hover:bg-amber-600/15"
+            disabled={isPending}
+            onClick={() => void saveAllDrafts()}
+          >
+            Salva tutte le righe
+          </Button>
         </div>
         <div className="max-h-[22rem] overflow-y-auto space-y-3 pr-1">
           {characters.map((character) => {
@@ -424,10 +521,10 @@ export function LongEconomyPanel({
 
                 <div className="grid grid-cols-3 gap-2">
                   {([
-                    ["gp", "Oro", "coins_gp"],
-                    ["sp", "Argento", "coins_sp"],
-                    ["cp", "Rame", "coins_cp"],
-                  ] as const).map(([key, label, balanceKey]) => (
+                    ["gp", "Oro"],
+                    ["sp", "Argento"],
+                    ["cp", "Rame"],
+                  ] as const).map(([key, label]) => (
                     <div key={key} className="space-y-2">
                       <Label className="text-[10px] text-zinc-500">{label}</Label>
                       <div className="flex items-center gap-1">
@@ -436,15 +533,9 @@ export function LongEconomyPanel({
                           size="icon"
                           variant="outline"
                           className="h-8 w-8 border-amber-600/25 text-amber-100 hover:bg-amber-600/15"
-                          onClick={() =>
-                            void commitImmediateDelta(
-                              character.id,
-                              key === "gp" ? -1 : 0,
-                              key === "sp" ? -1 : 0,
-                              key === "cp" ? -1 : 0
-                            )
-                          }
-                          disabled={isPending || (character[balanceKey] ?? 0) <= 0}
+                          onClick={() => adjustDraft(character.id, key, -1)}
+                          disabled={isPending}
+                          title="-1"
                         >
                           <Minus className="h-3.5 w-3.5" />
                         </Button>
@@ -453,15 +544,31 @@ export function LongEconomyPanel({
                           size="icon"
                           variant="outline"
                           className="h-8 w-8 border-amber-600/25 text-amber-100 hover:bg-amber-600/15"
-                          onClick={() =>
-                            void commitImmediateDelta(
-                              character.id,
-                              key === "gp" ? 1 : 0,
-                              key === "sp" ? 1 : 0,
-                              key === "cp" ? 1 : 0
-                            )
-                          }
+                          onClick={() => adjustDraft(character.id, key, 1)}
                           disabled={isPending}
+                          title="+1"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="outline"
+                          className="h-8 w-8 border-amber-600/25 text-amber-100 hover:bg-amber-600/15"
+                          onClick={() => adjustDraft(character.id, key, key === "gp" ? -10 : -5)}
+                          disabled={isPending}
+                          title={key === "gp" ? "-10" : "-5"}
+                        >
+                          <Minus className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="outline"
+                          className="h-8 w-8 border-amber-600/25 text-amber-100 hover:bg-amber-600/15"
+                          onClick={() => adjustDraft(character.id, key, key === "gp" ? 10 : 5)}
+                          disabled={isPending}
+                          title={key === "gp" ? "+10" : "+5"}
                         >
                           <Plus className="h-3.5 w-3.5" />
                         </Button>
@@ -476,7 +583,6 @@ export function LongEconomyPanel({
                               ...current,
                               [character.id]: nextDraft,
                             }));
-                            scheduleDraftCommit(character.id, nextDraft);
                           }}
                           placeholder="Δ"
                           className="h-8 border-amber-600/25 bg-zinc-950 text-zinc-100 text-xs"
@@ -495,24 +601,19 @@ export function LongEconomyPanel({
                   {saveState.status === "error" ? (
                     <div className="flex flex-wrap items-center gap-2 text-red-300">
                       <span>{saveState.message}</span>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="h-6 border-red-500/40 px-2 text-[11px] text-red-200 hover:bg-red-500/15"
-                        onClick={() =>
-                          void commitImmediateDelta(
-                            character.id,
-                            saveState.delta.gp,
-                            saveState.delta.sp,
-                            saveState.delta.cp
-                          )
-                        }
-                      >
-                        Riprova
-                      </Button>
                     </div>
                   ) : null}
+                </div>
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="h-8 bg-amber-700 text-zinc-950 hover:bg-amber-600"
+                    disabled={isPending || saveState.status === "saving"}
+                    onClick={() => void saveRowDraft(character.id)}
+                  >
+                    Salva modifiche riga
+                  </Button>
                 </div>
               </div>
             );
