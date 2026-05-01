@@ -631,28 +631,22 @@ export async function updateCharacter(
     return { success: false, error: "URL immagine non valido o non consentito." };
   }
 
-  let sheet_file_path: string | null = (existing as { sheet_file_path: string | null }).sheet_file_path;
+  const previousSheetPath = (existing as { sheet_file_path: string | null }).sheet_file_path;
+  const normalizedPrevSheetPath = normalizeCharacterSheetStoragePath(previousSheetPath);
+  let sheet_file_path: string | null = previousSheetPath;
+  let uploadedReplacementSheetPath: string | null = null;
+  let shouldRemovePreviousSheet = false;
   if (removeSheet) {
-    const normalizedPrevPath = normalizeCharacterSheetStoragePath(sheet_file_path);
-    if (normalizedPrevPath) {
-      await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([normalizedPrevPath]);
-    }
     sheet_file_path = null;
+    shouldRemovePreviousSheet = Boolean(normalizedPrevSheetPath);
   } else if (sheetUrlFromFormRaw && !sheetUrlFromForm) {
     return { success: false, error: "URL scheda non valido o non consentito." };
   } else if (sheetUrlFromForm) {
-    const normalizedPrevPath = normalizeCharacterSheetStoragePath(sheet_file_path);
-    if (normalizedPrevPath) {
-      await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([normalizedPrevPath]);
-    }
     sheet_file_path = normalizeCharacterSheetStoragePath(sheetUrlFromForm) ?? sheetUrlFromForm;
+    shouldRemovePreviousSheet = Boolean(normalizedPrevSheetPath && normalizedPrevSheetPath !== sheet_file_path);
   } else if (sheetFile && sheetFile instanceof File && sheetFile.size > 0) {
     if (sheetFile.type !== "application/pdf") {
       return { success: false, error: "La scheda tecnica deve essere un file PDF." };
-    }
-    const normalizedPrevPath = normalizeCharacterSheetStoragePath(sheet_file_path);
-    if (normalizedPrevPath) {
-      await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([normalizedPrevPath]);
     }
     const safeName = sheetFile.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80);
     const path = `${campaignId}/${randomUUID()}-${safeName}`;
@@ -664,6 +658,8 @@ export async function updateCharacter(
       return { success: false, error: uploadErr.message ?? "Errore caricamento PDF." };
     }
     sheet_file_path = path;
+    uploadedReplacementSheetPath = path;
+    shouldRemovePreviousSheet = Boolean(normalizedPrevSheetPath);
   }
 
   const rules_snapshot = await recomputeCharacterRulesSnapshot({
@@ -702,7 +698,14 @@ export async function updateCharacter(
 
   if (error) {
     console.error("[updateCharacter]", error);
+    if (uploadedReplacementSheetPath) {
+      await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([uploadedReplacementSheetPath]);
+    }
     return { success: false, error: error.message ?? "Errore nell'aggiornamento." };
+  }
+
+  if (shouldRemovePreviousSheet && normalizedPrevSheetPath) {
+    await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([normalizedPrevSheetPath]);
   }
 
   try {
