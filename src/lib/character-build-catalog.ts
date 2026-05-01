@@ -311,8 +311,12 @@ export const CLASS_OPTIONS: ClassCatalogEntry[] = [
   {
     slug: "stregone",
     label: "Stregone",
-    privilegesAnchor: "Uno stregone ottiene i seguenti privilegi di classe",
-    privilegesExcerptStopPattern: "^##\\s+ORIGINE STREGONESCA\\s*$",
+    privilegesAnchor: "Un stregone ottiene i seguenti privilegi di classe",
+    privilegesAnchors: [
+      "Un stregone ottiene i seguenti privilegi di classe",
+      "Uno stregone ottiene i seguenti privilegi di classe",
+    ],
+    privilegesExcerptStopPattern: "^##\\s+ORIGINI STREGONESCHE\\s*$",
     spellcastingAnchor: "Un evento nel passato dello stregone o nella vita",
     spellProgression: "full",
     spellList: { style: "h1", chapter: "INCANTESIMI DA STREGONE" },
@@ -339,7 +343,7 @@ export const CLASS_OPTIONS: ClassCatalogEntry[] = [
     privilegesExcerptStopPattern: "^##\\s+SPECIALIZZAZIONI DA ARTEFICE\\s*$",
     privilegesMdStrips: [
       {
-        afterLine: "# LISTA DEGLI INCANESIMI DA ARTEFICE",
+        afterLine: "# LISTA DEGLI INCANTESIMI DA ARTEFICE",
         untilLine: "# INFONDERE NEGLI OGGETTI",
       },
     ],

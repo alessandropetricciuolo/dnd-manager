@@ -1,0 +1,175 @@
+{
+  "summary": {
+    "generatedAt": "2026-04-28T19:19:45.043Z",
+    "templatePath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App/dnd-manager/public/Scheda_Base.pdf",
+    "total": 5,
+    "sampleCount": 5,
+    "verdicts": {
+      "good": 5,
+      "acceptable": 0,
+      "poor": 0
+    }
+  },
+  "results": [
+    {
+      "id": "case-01",
+      "input": {
+        "characterName": "Maelis Valleombra 1",
+        "raceSlug": "umano",
+        "subraceSlug": null,
+        "classLabel": "Paladino",
+        "classSubclass": null,
+        "backgroundSlug": "ciarlatano",
+        "level": 8,
+        "alignment": null,
+        "age": null,
+        "height": null,
+        "weight": null,
+        "sex": null
+      },
+      "warnings": [],
+      "metrics": {
+        "featuresMainLen": 991,
+        "racialFeaturesLen": 521,
+        "inventoryLen": 45,
+        "spellRowsUsed": 7,
+        "longestSpellSummaryLen": 120,
+        "classFeaturesPresent": true,
+        "subclassFeaturesPresent": false,
+        "hasSpellDcWhenCaster": true,
+        "hasPositiveHp": true
+      },
+      "risks": [],
+      "verdict": "good",
+      "pdfPath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App/docs/qa-artifacts/sheet-pdf/case-001-Maelis_Valleombra_1.pdf"
+    },
+    {
+      "id": "case-02",
+      "input": {
+        "characterName": "Sylas Fiamma 2",
+        "raceSlug": "genasi",
+        "subraceSlug": null,
+        "classLabel": "Guerriero",
+        "classSubclass": null,
+        "backgroundSlug": "artigiano_gilda",
+        "level": 17,
+        "alignment": null,
+        "age": null,
+        "height": null,
+        "weight": null,
+        "sex": null
+      },
+      "warnings": [],
+      "metrics": {
+        "featuresMainLen": 1388,
+        "racialFeaturesLen": 140,
+        "inventoryLen": 45,
+        "spellRowsUsed": 0,
+        "longestSpellSummaryLen": 0,
+        "classFeaturesPresent": true,
+        "subclassFeaturesPresent": false,
+        "hasSpellDcWhenCaster": true,
+        "hasPositiveHp": true
+      },
+      "risks": [],
+      "verdict": "good",
+      "pdfPath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App/docs/qa-artifacts/sheet-pdf/case-002-Sylas_Fiamma_2.pdf"
+    },
+    {
+      "id": "case-03",
+      "input": {
+        "characterName": "Lys Cavaluce 3",
+        "raceSlug": "halfling",
+        "subraceSlug": "halfling_piedelesto",
+        "classLabel": "Ladro",
+        "classSubclass": null,
+        "backgroundSlug": "artigiano_gilda",
+        "level": 18,
+        "alignment": null,
+        "age": null,
+        "height": null,
+        "weight": null,
+        "sex": null
+      },
+      "warnings": [],
+      "metrics": {
+        "featuresMainLen": 1325,
+        "racialFeaturesLen": 875,
+        "inventoryLen": 45,
+        "spellRowsUsed": 0,
+        "longestSpellSummaryLen": 0,
+        "classFeaturesPresent": true,
+        "subclassFeaturesPresent": false,
+        "hasSpellDcWhenCaster": true,
+        "hasPositiveHp": true
+      },
+      "risks": [],
+      "verdict": "good",
+      "pdfPath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App/docs/qa-artifacts/sheet-pdf/case-003-Lys_Cavaluce_3.pdf"
+    },
+    {
+      "id": "case-04",
+      "input": {
+        "characterName": "Wren Corvo 4",
+        "raceSlug": "forgiato",
+        "subraceSlug": null,
+        "classLabel": "Mago",
+        "classSubclass": null,
+        "backgroundSlug": "soldato",
+        "level": 5,
+        "alignment": null,
+        "age": null,
+        "height": null,
+        "weight": null,
+        "sex": null
+      },
+      "warnings": [],
+      "metrics": {
+        "featuresMainLen": 372,
+        "racialFeaturesLen": 655,
+        "inventoryLen": 45,
+        "spellRowsUsed": 8,
+        "longestSpellSummaryLen": 120,
+        "classFeaturesPresent": true,
+        "subclassFeaturesPresent": false,
+        "hasSpellDcWhenCaster": true,
+        "hasPositiveHp": true
+      },
+      "risks": [],
+      "verdict": "good",
+      "pdfPath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App/docs/qa-artifacts/sheet-pdf/case-004-Wren_Corvo_4.pdf"
+    },
+    {
+      "id": "case-05",
+      "input": {
+        "characterName": "Garrick Bramafredda 5",
+        "raceSlug": "eladrin",
+        "subraceSlug": null,
+        "classLabel": "Paladino",
+        "classSubclass": null,
+        "backgroundSlug": "ciarlatano",
+        "level": 15,
+        "alignment": null,
+        "age": null,
+        "height": null,
+        "weight": null,
+        "sex": null
+      },
+      "warnings": [],
+      "metrics": {
+        "featuresMainLen": 991,
+        "racialFeaturesLen": 867,
+        "inventoryLen": 45,
+        "spellRowsUsed": 10,
+        "longestSpellSummaryLen": 118,
+        "classFeaturesPresent": true,
+        "subclassFeaturesPresent": false,
+        "hasSpellDcWhenCaster": true,
+        "hasPositiveHp": true
+      },
+      "risks": [],
+      "verdict": "good",
+      "pdfPath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App/docs/qa-artifacts/sheet-pdf/case-005-Garrick_Bramafredda_5.pdf"
+    }
+  ]
+}

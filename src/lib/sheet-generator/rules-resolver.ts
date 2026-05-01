@@ -789,6 +789,19 @@ export async function resolveGeneratorRules(
       );
     }
   }
+  if (!classFeaturesMd.trim() && input.classLabel === "Stregone") {
+    const md = getManualMarkdownByFileName(PHB_MD_FILE).replace(/\r/g, "");
+    const startMatch =
+      /(?:^|\n)##\s+PRIVILEGI DI CLASSE\s*\n\s*Uno stregone ottiene i seguenti privilegi di classe\.\s*/i.exec(md) ??
+      /(?:^|\n)##\s+PRIVILEGI DI CLASSE\s*\n\s*Un[o]?\s+stregone ottiene i seguenti privilegi di classe\.\s*/i.exec(md);
+    if (startMatch?.index != null) {
+      const fromStart = md.slice(startMatch.index);
+      const stopMatch = /(?:^|\n)##\s+ORIGINE STREGONESCA\s*$/im.exec(fromStart);
+      if (stopMatch?.index != null && stopMatch.index > 0) {
+        classFeaturesMd = fromStart.slice(0, stopMatch.index).trim();
+      }
+    }
+  }
   if (!classFeaturesMd.trim()) warnings.push("Privilegi di classe non trovati nel manuale sorgente.");
 
   let subclassFeaturesMd: string | null = null;
