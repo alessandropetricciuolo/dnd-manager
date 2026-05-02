@@ -16,15 +16,16 @@ const PROTECTED_PREFIXES = ["/dashboard", "/campaigns", "/profile", "/admin"];
 /** Percorsi sempre accessibili (tutti) */
 const PUBLIC_PATHS = ["/", "/privacy"];
 
-function isAuthRoute(pathname: string): boolean {
+/** Esportate per test di policy auth sui path (middleware). */
+export function isAuthRoute(pathname: string): boolean {
   return AUTH_ROUTES.some((route) => pathname === route || pathname.startsWith(`${route}/`));
 }
 
-function isProtectedRoute(pathname: string): boolean {
+export function isProtectedRoute(pathname: string): boolean {
   return PROTECTED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
-function isPublicPath(pathname: string): boolean {
+export function isPublicPath(pathname: string): boolean {
   const normalized = pathname.replace(/\/$/, "") || "/";
   return PUBLIC_PATHS.includes(normalized);
 }

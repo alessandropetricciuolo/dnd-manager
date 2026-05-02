@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { PDFDocument } from "pdf-lib";
+import { sanitizePdfAttachmentFileName } from "@/lib/security/pdf-filename";
 
 function resolveTemplatePath(): string | null {
   const envPath = process.env.SHEET_BASE_PDF_PATH?.trim();
@@ -119,7 +120,7 @@ export async function POST(req: Request): Promise<Response> {
 
     form.updateFieldAppearances();
     const out = await pdfDoc.save();
-    const outName = (body?.fileName?.trim() || "scheda-compilata.pdf").replace(/[^\w.\- ]+/g, "_");
+    const outName = sanitizePdfAttachmentFileName(body?.fileName);
     return new Response(Buffer.from(out), {
       status: 200,
       headers: {

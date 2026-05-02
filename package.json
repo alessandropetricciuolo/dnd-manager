@@ -9,6 +9,8 @@
     "lint": "next lint",
     "test:sheet-generator": "tsx --test src/lib/sheet-generator/__tests__/*.test.ts",
     "test:manual-search": "tsx --test src/lib/actions/__tests__/*.test.ts",
+    "test:security": "tsx --test --test-concurrency=1 src/lib/security/__tests__/*.test.ts",
+    "security:smoke-remote": "tsx scripts/security-smoke-remote.ts",
     "export:dungeonedraghi": "node scripts/export-dungeonedraghi-compendio.mjs",
     "mm:chunks": "tsx scripts/delimit-manuale-mostri.ts"
   },

@@ -6,6 +6,9 @@ import { NextRequest, NextResponse } from "next/server";
  */
 export async function GET(request: NextRequest) {
   const setupToken = process.env.TELEGRAM_SETUP_TOKEN?.trim();
+  if (process.env.NODE_ENV === "production" && !setupToken) {
+    return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
+  }
   const requestTokenFromHeader = request.headers.get("x-setup-token");
   const requestTokenFromQuery = request.nextUrl.searchParams.get("token");
   const requestToken = requestTokenFromHeader || requestTokenFromQuery;

@@ -15,6 +15,8 @@ const csp = [
 ].join("; ");
 
 const nextConfig = {
+  /** Non inviare l’intestazione `X-Powered-By: Next.js` in produzione. */
+  poweredByHeader: false,
   experimental: {
     serverActions: {
       bodySizeLimit: "4mb",

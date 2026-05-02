@@ -1,0 +1,7 @@
+# Barber & Dragons — indicazioni per i crawler (pagine pubbliche consentite).
+User-agent: *
+Allow: /
+
+# Aree riservate a staff / utenti autenticati (non indicizzare).
+Disallow: /admin/
+Disallow: /dashboard/
