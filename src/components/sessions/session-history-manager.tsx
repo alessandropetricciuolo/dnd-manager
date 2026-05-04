@@ -152,6 +152,24 @@ function SessionHistoryCard({ session, campaignId, onSaved }: SessionHistoryCard
             <p className="mt-1 text-xs text-barber-paper/60">
               {dateLabel}
             </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span className="text-xs text-barber-paper/60">Giocata da:</span>
+              {session.played_by && session.played_by.length > 0 ? (
+                session.played_by.map((p) => (
+                  <Badge
+                    key={p.player_id}
+                    variant="outline"
+                    className="border-barber-gold/30 bg-barber-dark/70 text-barber-paper/90"
+                  >
+                    {p.player_name}
+                  </Badge>
+                ))
+              ) : (
+                <span className="text-xs italic text-barber-paper/50">
+                  partecipanti non registrati
+                </span>
+              )}
+            </div>
             {party?.name && (
               <Badge
                 className="mt-2 border-barber-gold/40 bg-barber-gold/10 text-barber-gold"

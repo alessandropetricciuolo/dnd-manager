@@ -32,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Pencil, Plus, RefreshCw, Swords, Trash2 } from "lucide-react";
+import { ExternalLink, Pencil, Plus, RefreshCw, Swords, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import {
@@ -183,6 +183,11 @@ export function MissionBoard({
   const openEncounterEditor = (m: MissionBoardMission) => {
     setEncounterMission(m);
     setEncounterEditorOpen(true);
+  };
+
+  const openProjectionTab = () => {
+    const projectionUrl = `/campaigns/${campaignId}/gm-only/missioni/proiezione`;
+    window.open(projectionUrl, "_blank", "noopener,noreferrer");
   };
 
   useEffect(() => {
@@ -447,6 +452,15 @@ export function MissionBoard({
           </div>
           {isGmOrAdmin && (
             <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={openProjectionTab}
+                className="border-amber-600/40 text-amber-100 hover:bg-amber-600/15"
+              >
+                <ExternalLink className="mr-2 h-4 w-4" />
+                Apri proiezione
+              </Button>
               {isAdmin ? <BulkImportMissionsDialog campaignId={campaignId} /> : null}
               <Button onClick={openAddMission} disabled={isPending} className="bg-amber-600 text-zinc-950 hover:bg-amber-500">
                 <Plus className="mr-2 h-4 w-4" />
