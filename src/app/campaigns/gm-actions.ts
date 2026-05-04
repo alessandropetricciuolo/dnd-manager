@@ -173,6 +173,19 @@ export type DashboardCompletedSessionRow = CompletedSessionRow & {
   campaign_name: string;
 };
 
+type DashboardSessionQueryRow = {
+  id: string;
+  campaign_id: string;
+  title: string | null;
+  scheduled_at: string;
+  session_summary: string | null;
+  party_id: string | null;
+  chapter_title: string | null;
+  gm_private_notes?: string | null;
+  campaigns?: unknown;
+  campaign_parties?: { name: string; color: string | null } | { name: string; color: string | null }[] | null;
+};
+
 const DASHBOARD_COMPLETED_SESSIONS_LIMIT = 150;
 
 async function fetchPlayedByMapForSessionIds(
@@ -306,12 +319,13 @@ export async function getCompletedSessionsDashboardForGmAdmin(): Promise<GmResul
     return { success: false, error: error.message ?? "Errore nel caricamento." };
   }
 
-  const baseRows = (data ?? []).map((r) => {
-    const rawParty = (r as { campaign_parties?: { name: string; color: string | null } | { name: string; color: string | null }[] | null }).campaign_parties;
+  const sessionRows = (data ?? []) as DashboardSessionQueryRow[];
+  const baseRows = sessionRows.map((r) => {
+    const rawParty = r.campaign_parties;
     const party = Array.isArray(rawParty) ? rawParty[0] ?? null : rawParty ?? null;
-    const campaignRaw = (r as { campaigns?: unknown }).campaigns;
+    const campaignRaw = r.campaigns;
     const campaignName = normalizeCampaignNameFromJoin(campaignRaw);
-    const campaignId = (r as { campaign_id: string }).campaign_id;
+    const campaignId = r.campaign_id;
     return {
       campaign_id: campaignId,
       campaign_name: campaignName,
@@ -321,7 +335,7 @@ export async function getCompletedSessionsDashboardForGmAdmin(): Promise<GmResul
       session_summary: r.session_summary ?? null,
       party_id: r.party_id ?? null,
       chapter_title: r.chapter_title ?? null,
-      gm_private_notes: (r as { gm_private_notes?: string | null }).gm_private_notes ?? null,
+      gm_private_notes: r.gm_private_notes ?? null,
       campaign_parties: party,
     };
   });
