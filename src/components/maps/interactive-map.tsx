@@ -28,6 +28,13 @@ export type CampaignMapOption = {
   name: string;
 };
 
+type PinSubmapUploadProps = {
+  currentMapType: string;
+  campaignType: "oneshot" | "quest" | "long" | null;
+  eligiblePlayers: { id: string; label: string }[];
+  eligibleParties: { id: string; label: string; memberIds: string[] }[];
+};
+
 type InteractiveMapProps = {
   campaignId: string;
   mapId: string;
@@ -38,6 +45,8 @@ type InteractiveMapProps = {
   campaignMaps: CampaignMapOption[];
   /** Annotazioni pubblicate (campagne lunghe). */
   overlayItems?: MapOverlayItem[];
+  /** GM: consente di caricare una sottomappa dal dialog pin (mappa corrente come genitore). */
+  pinSubmapUpload?: PinSubmapUploadProps | null;
 };
 
 export function InteractiveMap({
@@ -49,6 +58,7 @@ export function InteractiveMap({
   isCreator,
   campaignMaps,
   overlayItems = [],
+  pinSubmapUpload = null,
 }: InteractiveMapProps) {
   const router = useRouter();
   const [newPinCoords, setNewPinCoords] = useState<{ x: number; y: number } | null>(null);
@@ -167,6 +177,18 @@ export function InteractiveMap({
           campaignMaps={campaignMaps}
           coords={newPinCoords}
           onSubmit={handlePinSubmit}
+          pinSubmapUpload={
+            pinSubmapUpload
+              ? {
+                  currentMapId: mapId,
+                  currentMapType: pinSubmapUpload.currentMapType,
+                  campaignType: pinSubmapUpload.campaignType,
+                  eligiblePlayers: pinSubmapUpload.eligiblePlayers,
+                  eligibleParties: pinSubmapUpload.eligibleParties,
+                }
+              : null
+          }
+          onSubmapCreated={() => router.refresh()}
         />
       )}
     </div>

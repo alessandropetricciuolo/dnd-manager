@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { CampaignList } from "@/components/campaign-list";
 import { MySessionsList } from "@/components/my-sessions-list";
 import { CalendarSessionsLoader } from "@/components/dashboard/calendar-sessions-loader";
+import { GmAdminSessionHistorySection } from "@/components/dashboard/gm-admin-session-history-section";
 
 export const dynamic = "force-dynamic";
 
@@ -75,6 +76,18 @@ export default async function DashboardPage() {
               </div>
             </Suspense>
           </section>
+
+          {isGmOrAdmin ? (
+            <section className="min-w-0">
+              <Suspense
+                fallback={
+                  <div className="h-40 animate-pulse rounded-xl border border-barber-gold/30 bg-barber-dark/80" />
+                }
+              >
+                <GmAdminSessionHistorySection />
+              </Suspense>
+            </section>
+          ) : null}
 
           <section className="min-w-0">
             <h2 className="mb-4 break-words text-lg font-semibold text-barber-paper">

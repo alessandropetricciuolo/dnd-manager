@@ -6,6 +6,7 @@ import { InteractiveMap } from "@/components/maps/interactive-map";
 import { MapDetailActions } from "@/components/maps/map-detail-actions";
 import { parseMapOverlayItems } from "@/lib/maps/overlay-parse";
 import { ArrowLeft } from "lucide-react";
+import { getCampaignEligiblePlayers } from "@/app/campaigns/character-actions";
 
 type PageProps = {
   params: Promise<{ id: string; mapId: string }>;
@@ -24,7 +25,7 @@ export default async function CampaignMapPage({ params }: PageProps) {
 
   const { data: map, error: mapError } = await supabase
     .from("maps")
-    .select("id, name, image_url, campaign_id, parent_map_id, description, overlay_items")
+    .select("id, name, image_url, campaign_id, parent_map_id, description, overlay_items, map_type")
     .eq("id", mapId)
     .eq("campaign_id", campaignId)
     .single();
@@ -111,6 +112,44 @@ export default async function CampaignMapPage({ params }: PageProps) {
     parentMapName = parentMap?.name ?? null;
   }
 
+  const currentMapType = ((map as { map_type?: string }).map_type ?? "city").trim() || "city";
+  let pinSubmapUpload: {
+    currentMapType: string;
+    campaignType: "oneshot" | "quest" | "long" | null;
+    eligiblePlayers: { id: string; label: string }[];
+    eligibleParties: { id: string; label: string; memberIds: string[] }[];
+  } | null = null;
+  if (isGmOrAdmin) {
+    const ct = campaignMeta?.type;
+    const campaignType =
+      ct === "oneshot" || ct === "quest" || ct === "long" ? ct : null;
+    let eligiblePlayers: { id: string; label: string }[] = [];
+    const playersResult = await getCampaignEligiblePlayers(campaignId);
+    if (playersResult.success && playersResult.data) eligiblePlayers = playersResult.data;
+    const [{ data: partiesRaw }, { data: membersRaw }] = await Promise.all([
+      supabase.from("campaign_parties").select("id, name").eq("campaign_id", campaignId).order("name"),
+      supabase.from("campaign_members").select("player_id, party_id").eq("campaign_id", campaignId),
+    ]);
+    const memberIdsByPartyId = new Map<string, string[]>();
+    for (const row of (membersRaw ?? []) as Array<{ player_id: string; party_id: string | null }>) {
+      if (!row.party_id) continue;
+      const list = memberIdsByPartyId.get(row.party_id) ?? [];
+      list.push(row.player_id);
+      memberIdsByPartyId.set(row.party_id, list);
+    }
+    const eligibleParties = ((partiesRaw ?? []) as Array<{ id: string; name: string }>).map((party) => ({
+      id: party.id,
+      label: party.name,
+      memberIds: memberIdsByPartyId.get(party.id) ?? [],
+    }));
+    pinSubmapUpload = {
+      currentMapType,
+      campaignType,
+      eligiblePlayers,
+      eligibleParties,
+    };
+  }
+
   return (
     <div className="flex h-screen flex-col">
       <header className="flex shrink-0 flex-wrap items-center gap-3 border-b border-barber-gold/40 bg-barber-dark px-4 py-3">
@@ -182,6 +221,7 @@ export default async function CampaignMapPage({ params }: PageProps) {
                 name: m.name,
               }))}
               overlayItems={overlayItems}
+              pinSubmapUpload={pinSubmapUpload}
             />
           </div>
 

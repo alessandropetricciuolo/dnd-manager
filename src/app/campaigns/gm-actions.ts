@@ -168,6 +168,175 @@ export type CompletedSessionRow = {
   played_by?: Array<{ player_id: string; player_name: string }>;
 };
 
+export type DashboardCompletedSessionRow = CompletedSessionRow & {
+  campaign_id: string;
+  campaign_name: string;
+};
+
+const DASHBOARD_COMPLETED_SESSIONS_LIMIT = 150;
+
+async function fetchPlayedByMapForSessionIds(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  sessionIds: string[]
+): Promise<Map<string, Array<{ player_id: string; player_name: string }>>> {
+  const empty = new Map<string, Array<{ player_id: string; player_name: string }>>();
+  if (sessionIds.length === 0) return empty;
+
+  const { data: signupsRaw, error: signupsError } = await admin
+    .from("session_signups")
+    .select("session_id, player_id, status")
+    .in("session_id", sessionIds)
+    .in("status", ["attended", "approved"]);
+
+  if (signupsError) {
+    console.error("[fetchPlayedByMapForSessionIds] signups", signupsError);
+    return empty;
+  }
+
+  const signups = (signupsRaw ?? []) as Array<{
+    session_id: string;
+    player_id: string;
+    status: string | null;
+  }>;
+
+  const playerIds = [...new Set(signups.map((s) => s.player_id).filter(Boolean))];
+  const { data: profilesRaw, error: profilesError } = playerIds.length
+    ? await admin
+        .from("profiles")
+        .select("id, first_name, last_name, display_name")
+        .in("id", playerIds)
+    : { data: [], error: null };
+
+  if (profilesError) {
+    console.error("[fetchPlayedByMapForSessionIds] profiles", profilesError);
+  }
+
+  const profileNameById = new Map(
+    ((profilesRaw ?? []) as Array<{ id: string; first_name: string | null; last_name: string | null; display_name: string | null }>).map(
+      (p) => {
+        const fullName = [p.first_name, p.last_name].filter(Boolean).join(" ").trim();
+        return [p.id, fullName || p.display_name?.trim() || `Utente ${p.id.slice(0, 8)}`] as const;
+      }
+    )
+  );
+
+  const statusRank = (status: string | null): number => (status === "attended" ? 2 : status === "approved" ? 1 : 0);
+  const playedByMap = new Map<string, Array<{ player_id: string; player_name: string }>>();
+  const playerStatusBySession = new Map<string, Map<string, string | null>>();
+
+  for (const signup of signups) {
+    const statusByPlayer = playerStatusBySession.get(signup.session_id) ?? new Map<string, string | null>();
+    const prev = statusByPlayer.get(signup.player_id) ?? null;
+    if (!prev || statusRank(signup.status) > statusRank(prev)) {
+      statusByPlayer.set(signup.player_id, signup.status);
+    }
+    playerStatusBySession.set(signup.session_id, statusByPlayer);
+  }
+
+  for (const [sessionId, statusByPlayer] of playerStatusBySession.entries()) {
+    const players = [...statusByPlayer.keys()]
+      .map((playerId) => ({
+        player_id: playerId,
+        player_name: profileNameById.get(playerId) ?? `Utente ${playerId.slice(0, 8)}`,
+      }))
+      .sort((a, b) => a.player_name.localeCompare(b.player_name, "it"));
+    playedByMap.set(sessionId, players);
+  }
+
+  return playedByMap;
+}
+
+function normalizeCampaignNameFromJoin(raw: unknown): string {
+  if (raw == null) return "Campagna";
+  if (typeof raw === "object" && raw !== null && "name" in raw && typeof (raw as { name: unknown }).name === "string") {
+    return ((raw as { name: string }).name || "").trim() || "Campagna";
+  }
+  if (Array.isArray(raw) && raw[0] && typeof raw[0] === "object" && "name" in raw[0]) {
+    return String((raw[0] as { name?: string }).name ?? "").trim() || "Campagna";
+  }
+  return "Campagna";
+}
+
+/**
+ * Storico sessioni concluse per dashboard GM/Admin: ultime N, con campagna e giocatori.
+ * Admin: tutte le campagne. GM: solo campagne di cui è titolare (`gm_id`).
+ */
+export async function getCompletedSessionsDashboardForGmAdmin(): Promise<GmResult<DashboardCompletedSessionRow[]>> {
+  const check = await ensureGmOrAdmin();
+  if (!check.success) return check;
+  const supabase = check.data!;
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: "Non autenticato." };
+  }
+
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  const isAdmin = profile?.role === "admin";
+  const admin = createSupabaseAdminClient();
+
+  let query = admin
+    .from("sessions")
+    .select(
+      "id, campaign_id, title, scheduled_at, session_summary, party_id, chapter_title, gm_private_notes, campaigns(name), campaign_parties(name, color)"
+    )
+    .eq("status", "completed")
+    .order("scheduled_at", { ascending: false })
+    .limit(DASHBOARD_COMPLETED_SESSIONS_LIMIT);
+
+  if (!isAdmin) {
+    const { data: myCampaigns, error: campErr } = await admin.from("campaigns").select("id").eq("gm_id", user.id);
+    if (campErr) {
+      console.error("[getCompletedSessionsDashboardForGmAdmin] campaigns", campErr);
+      return { success: false, error: campErr.message ?? "Errore nel caricamento." };
+    }
+    const ids = (myCampaigns ?? []).map((c) => (c as { id: string }).id).filter(Boolean);
+    if (ids.length === 0) {
+      return { success: true, data: [] };
+    }
+    query = query.in("campaign_id", ids);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("[getCompletedSessionsDashboardForGmAdmin]", error);
+    return { success: false, error: error.message ?? "Errore nel caricamento." };
+  }
+
+  const baseRows = (data ?? []).map((r) => {
+    const rawParty = (r as { campaign_parties?: { name: string; color: string | null } | { name: string; color: string | null }[] | null }).campaign_parties;
+    const party = Array.isArray(rawParty) ? rawParty[0] ?? null : rawParty ?? null;
+    const campaignRaw = (r as { campaigns?: unknown }).campaigns;
+    const campaignName = normalizeCampaignNameFromJoin(campaignRaw);
+    const campaignId = (r as { campaign_id: string }).campaign_id;
+    return {
+      campaign_id: campaignId,
+      campaign_name: campaignName,
+      id: r.id,
+      title: r.title ?? null,
+      scheduled_at: r.scheduled_at,
+      session_summary: r.session_summary ?? null,
+      party_id: r.party_id ?? null,
+      chapter_title: r.chapter_title ?? null,
+      gm_private_notes: (r as { gm_private_notes?: string | null }).gm_private_notes ?? null,
+      campaign_parties: party,
+    };
+  });
+
+  const sessionIds = baseRows.map((r) => r.id);
+  const playedByMap = await fetchPlayedByMapForSessionIds(admin, sessionIds);
+
+  const rows = baseRows.map((row) => ({
+    ...row,
+    played_by: playedByMap.get(row.id) ?? [],
+  }));
+
+  return { success: true, data: rows as DashboardCompletedSessionRow[] };
+}
+
 /** Sessioni concluse per Session History Manager (solo GM). Ordine: più recente prima. Include gm_private_notes. */
 export async function getCompletedSessionsForCampaign(
   campaignId: string
@@ -209,66 +378,7 @@ export async function getCompletedSessionsForCampaign(
   }
 
   const admin = createSupabaseAdminClient();
-  const { data: signupsRaw, error: signupsError } = await admin
-    .from("session_signups")
-    .select("session_id, player_id, status")
-    .in("session_id", sessionIds)
-    .in("status", ["attended", "approved"]);
-
-  if (signupsError) {
-    console.error("[getCompletedSessionsForCampaign] signups", signupsError);
-    return { success: true, data: baseRows as CompletedSessionRow[] };
-  }
-
-  const signups = (signupsRaw ?? []) as Array<{
-    session_id: string;
-    player_id: string;
-    status: string | null;
-  }>;
-
-  const playerIds = [...new Set(signups.map((s) => s.player_id).filter(Boolean))];
-  const { data: profilesRaw, error: profilesError } = playerIds.length
-    ? await admin
-        .from("profiles")
-        .select("id, first_name, last_name, display_name")
-        .in("id", playerIds)
-    : { data: [], error: null };
-
-  if (profilesError) {
-    console.error("[getCompletedSessionsForCampaign] profiles", profilesError);
-  }
-
-  const profileNameById = new Map(
-    ((profilesRaw ?? []) as Array<{ id: string; first_name: string | null; last_name: string | null; display_name: string | null }>).map(
-      (p) => {
-        const fullName = [p.first_name, p.last_name].filter(Boolean).join(" ").trim();
-        return [p.id, fullName || p.display_name?.trim() || `Utente ${p.id.slice(0, 8)}`] as const;
-      }
-    )
-  );
-
-  const statusRank = (status: string | null): number => (status === "attended" ? 2 : status === "approved" ? 1 : 0);
-  const playedByMap = new Map<string, Array<{ player_id: string; player_name: string }>>();
-  const playerStatusBySession = new Map<string, Map<string, string | null>>();
-
-  for (const signup of signups) {
-    const statusByPlayer = playerStatusBySession.get(signup.session_id) ?? new Map<string, string | null>();
-    const prev = statusByPlayer.get(signup.player_id) ?? null;
-    if (!prev || statusRank(signup.status) > statusRank(prev)) {
-      statusByPlayer.set(signup.player_id, signup.status);
-    }
-    playerStatusBySession.set(signup.session_id, statusByPlayer);
-  }
-
-  for (const [sessionId, statusByPlayer] of playerStatusBySession.entries()) {
-    const players = [...statusByPlayer.keys()]
-      .map((playerId) => ({
-        player_id: playerId,
-        player_name: profileNameById.get(playerId) ?? `Utente ${playerId.slice(0, 8)}`,
-      }))
-      .sort((a, b) => a.player_name.localeCompare(b.player_name, "it"));
-    playedByMap.set(sessionId, players);
-  }
+  const playedByMap = await fetchPlayedByMapForSessionIds(admin, sessionIds);
 
   const rows = baseRows.map((row) => ({
     ...row,

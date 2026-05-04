@@ -24,6 +24,8 @@ const MAP_TYPES_ALL = ["world", "continent", "city", "dungeon", "district", "bui
 export type UploadMapResult = {
   success: boolean;
   message: string;
+  /** Presente solo in caso di successo (per collegare subito un pin, ecc.). */
+  mapId?: string;
 };
 
 /** Elenco mappe per collegamento gerarchico (campagne long). */
@@ -234,7 +236,7 @@ export async function uploadMap(
     }
 
     revalidatePath(`/campaigns/${campaignId}`);
-    return { success: true, message: "Mappa caricata!" };
+    return { success: true, message: "Mappa caricata!", mapId: inserted.id };
   } catch (err) {
     console.error("[uploadMap]", err);
     return {
