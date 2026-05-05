@@ -126,7 +126,12 @@ export function MissionBoard({
       const ao = a.status === "open" ? 0 : 1;
       const bo = b.status === "open" ? 0 : 1;
       if (ao !== bo) return ao - bo;
-      return 0;
+      const gradeDelta = guildRankOrder(b.grade ?? "D") - guildRankOrder(a.grade ?? "D");
+      if (gradeDelta !== 0) return gradeDelta;
+      if ((b.points_reward ?? 0) !== (a.points_reward ?? 0)) {
+        return (b.points_reward ?? 0) - (a.points_reward ?? 0);
+      }
+      return a.title.localeCompare(b.title, "it", { sensitivity: "base" });
     });
   }, [missions]);
 
