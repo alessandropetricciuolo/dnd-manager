@@ -206,8 +206,76 @@ export function WikiListClient({
         ? `Capitolo ${entity.sortOrder}: ${entity.name}`
         : entity.name;
     const entityUrl = `/campaigns/${campaignId}/wiki/${entity.id}`;
+    const editUrl = `${entityUrl}?edit=1`;
     const showMissionBadge =
       campaignType === "long" && !!entity.linkedMissionId && !!entity.missionTitle && missionFilter !== MISSION_FILTER_ALL;
+    const tagList = (entity.tags ?? []).map((t) => t.trim()).filter(Boolean);
+
+    if (isGmOrAdmin) {
+      return (
+        <li
+          key={entity.id}
+          className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-barber-gold/15 px-2 py-1.5 transition-colors last:border-b-0 hover:bg-barber-gold/[0.06] sm:px-3 min-w-0 text-sm"
+        >
+          <div className="min-w-0 flex-1 space-y-0.5">
+            <Link
+              href={entityUrl}
+              className="block font-medium leading-tight text-barber-paper hover:text-barber-gold hover:underline truncate"
+            >
+              {displayName}
+            </Link>
+            {tagList.length > 0 ? (
+              <div className="flex flex-wrap gap-1 pt-0.5">
+                {tagList.map((tag) => (
+                  <Badge
+                    key={tag}
+                    variant="outline"
+                    className="h-5 shrink-0 border-barber-gold/25 px-1.5 py-0 text-[10px] font-normal leading-none text-barber-paper/75"
+                  >
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            ) : null}
+            {campaignType === "long" && entity.missionTitle && missionFilter === MISSION_FILTER_ALL && (
+              <p className="truncate text-[11px] leading-tight text-barber-paper/45">Missione: {entity.missionTitle}</p>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center justify-end gap-1 sm:gap-1.5 shrink-0">
+            {showMissionBadge && (
+              <span className="hidden max-w-[9rem] truncate rounded border border-barber-gold/25 bg-barber-dark px-1.5 py-0.5 text-[10px] text-barber-gold/85 sm:inline-block">
+                {entity.missionTitle}
+              </span>
+            )}
+            <Badge variant={badgeVariant(entity.type)} className="h-5 shrink-0 px-1.5 text-[10px] font-medium leading-none">
+              {typeLabels[entity.type] ?? entity.type}
+            </Badge>
+            {showLock(entity) && (
+              <Lock className="h-3.5 w-3.5 shrink-0 text-barber-gold/90" aria-label="Solo GM / visibilità limitata" />
+            )}
+            {entity.visibility === "selective" && entity.selectiveAudienceLabel && (
+              <span className="max-w-[8rem] truncate rounded border border-barber-gold/30 bg-barber-gold/10 px-1.5 py-0.5 text-[10px] leading-tight text-barber-gold/90">
+                {entity.selectiveAudienceLabel}
+              </span>
+            )}
+            <span className="flex items-center gap-1 shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 border-barber-gold/40 px-2 text-xs text-barber-paper/80 hover:bg-barber-gold/10 hover:text-barber-gold"
+                asChild
+              >
+                <Link href={editUrl}>
+                  <Pencil className="mr-1 h-3.5 w-3.5 shrink-0" />
+                  Modifica
+                </Link>
+              </Button>
+              <WikiEntityDeleteButton compact campaignId={campaignId} entityId={entity.id} entityName={entity.name} />
+            </span>
+          </div>
+        </li>
+      );
+    }
 
     return (
       <li
@@ -236,27 +304,6 @@ export function WikiListClient({
           </Badge>
           {showLock(entity) && (
             <Lock className="h-4 w-4 shrink-0 text-barber-gold/90" aria-label="Solo GM / visibilità limitata" />
-          )}
-          {isGmOrAdmin && entity.visibility === "selective" && entity.selectiveAudienceLabel && (
-            <span className="shrink-0 rounded-md border border-barber-gold/30 bg-barber-gold/10 px-2 py-0.5 text-[11px] text-barber-gold/90">
-              {entity.selectiveAudienceLabel}
-            </span>
-          )}
-          {isGmOrAdmin && (
-            <span className="flex items-center gap-1 shrink-0">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 border-barber-gold/40 text-barber-paper/80 hover:bg-barber-gold/10 hover:text-barber-gold"
-                asChild
-              >
-                <Link href={entityUrl}>
-                  <Pencil className="mr-1.5 h-4 w-4" />
-                  Modifica
-                </Link>
-              </Button>
-              <WikiEntityDeleteButton campaignId={campaignId} entityId={entity.id} entityName={entity.name} />
-            </span>
           )}
         </div>
       </li>
@@ -415,12 +462,29 @@ export function WikiListClient({
           Nessuna voce con questi filtri. Prova a cambiare missione o tipo.
         </div>
       ) : groupedSections ? (
-        <div className="space-y-6">
+        <div className={cn("space-y-6", isGmOrAdmin && "space-y-4")}>
           {groupedSections.map((section) => (
-            <section key={section.key} className="overflow-hidden rounded-xl border border-barber-gold/35 bg-barber-dark/85 shadow-[inset_0_1px_0_0_rgba(212,175,55,0.08)]">
-              <div className="sticky top-0 z-[1] flex flex-wrap items-baseline justify-between gap-2 border-b border-barber-gold/25 bg-barber-dark/95 px-4 py-3 backdrop-blur-sm">
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-barber-gold">{section.label}</h3>
-                <span className="text-xs text-barber-paper/50">{section.count} voci</span>
+            <section
+              key={section.key}
+              className="overflow-hidden rounded-xl border border-barber-gold/35 bg-barber-dark/85 shadow-[inset_0_1px_0_0_rgba(212,175,55,0.08)]"
+            >
+              <div
+                className={cn(
+                  "sticky top-0 z-[1] flex flex-wrap items-baseline justify-between gap-2 border-b border-barber-gold/25 bg-barber-dark/95 px-4 py-3 backdrop-blur-sm",
+                  isGmOrAdmin && "py-2 px-3"
+                )}
+              >
+                <h3
+                  className={cn(
+                    "font-semibold uppercase tracking-wide text-barber-gold",
+                    isGmOrAdmin ? "text-xs" : "text-sm"
+                  )}
+                >
+                  {section.label}
+                </h3>
+                <span className={cn("text-barber-paper/50", isGmOrAdmin ? "text-[10px]" : "text-xs")}>
+                  {section.count} voci
+                </span>
               </div>
               <ul className="divide-y divide-barber-gold/10">{section.items.map((e) => renderEntityRow(e))}</ul>
             </section>

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useRouter } from "nextjs-toploader/app";
 import { Button } from "@/components/ui/button";
 import { EditEntityDialog } from "./edit-entity-dialog";
 import type { WikiEntity } from "@/app/campaigns/wiki-actions";
@@ -16,6 +17,8 @@ type WikiEntityEditButtonProps = {
   initialVisibility?: string;
   initialAllowedUserIds?: string[];
   initialAllowedPartyIds?: string[];
+  /** Da lista wiki con `?edit=1`: apre il dialog al caricamento e ripulisce l'URL alla chiusura. */
+  autoOpenEditDialog?: boolean;
 };
 
 export function WikiEntityEditButton({
@@ -28,8 +31,19 @@ export function WikiEntityEditButton({
   initialVisibility = "public",
   initialAllowedUserIds = [],
   initialAllowedPartyIds = [],
+  autoOpenEditDialog = false,
 }: WikiEntityEditButtonProps) {
-  const [open, setOpen] = useState(false);
+  const router = useRouter();
+  const [open, setOpen] = useState(autoOpenEditDialog);
+  const stripEditQueryOnCloseRef = useRef(autoOpenEditDialog);
+
+  function handleOpenChange(next: boolean) {
+    setOpen(next);
+    if (!next && stripEditQueryOnCloseRef.current) {
+      stripEditQueryOnCloseRef.current = false;
+      router.replace(`/campaigns/${campaignId}/wiki/${entity.id}`, { scroll: false });
+    }
+  }
 
   return (
     <>
@@ -49,7 +63,7 @@ export function WikiEntityEditButton({
         entity={entity}
         contentBody={contentBody}
         open={open}
-        onOpenChange={setOpen}
+        onOpenChange={handleOpenChange}
         eligiblePlayers={eligiblePlayers}
         eligibleParties={eligibleParties}
         initialVisibility={initialVisibility}

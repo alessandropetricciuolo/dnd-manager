@@ -15,17 +15,21 @@ import {
 } from "@/components/ui/alert-dialog";
 import { deleteEntity } from "@/app/campaigns/wiki-actions";
 import { Trash2, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type WikiEntityDeleteButtonProps = {
   campaignId: string;
   entityId: string;
   entityName: string;
+  /** Elenco wiki compatto (GM): pulsante più piccolo allineato a Modifica. */
+  compact?: boolean;
 };
 
 export function WikiEntityDeleteButton({
   campaignId,
   entityId,
   entityName,
+  compact = false,
 }: WikiEntityDeleteButtonProps) {
   const [open, setOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -55,10 +59,13 @@ export function WikiEntityDeleteButton({
         type="button"
         variant="outline"
         size="sm"
-        className="border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+        className={cn(
+          "border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300",
+          compact && "h-7 px-2 text-xs"
+        )}
         onClick={() => setOpen(true)}
       >
-        <Trash2 className="mr-2 h-4 w-4" />
+        <Trash2 className={cn("shrink-0", compact ? "mr-1 h-3.5 w-3.5" : "mr-2 h-4 w-4")} />
         Elimina
       </Button>
       <AlertDialog open={open} onOpenChange={setOpen}>

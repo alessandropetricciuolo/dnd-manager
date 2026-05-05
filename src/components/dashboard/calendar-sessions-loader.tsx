@@ -2,7 +2,17 @@ import { startOfMonth } from "date-fns";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { SessionCalendar, type SessionForCalendar } from "./session-calendar";
 
-export async function CalendarSessionsLoader() {
+type CalendarSessionsLoaderProps = {
+  isGmOrAdmin?: boolean;
+  gmAdminUsers?: { id: string; label: string }[];
+  defaultDmId?: string | null;
+};
+
+export async function CalendarSessionsLoader({
+  isGmOrAdmin = false,
+  gmAdminUsers = [],
+  defaultDmId = null,
+}: CalendarSessionsLoaderProps = {}) {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -16,7 +26,9 @@ export async function CalendarSessionsLoader() {
 
   const { data: sessionsRaw } = await supabase
     .from("sessions")
-    .select("id, scheduled_at, title, campaign_id, dm_id, max_players, status, campaigns(name, type, image_url)")
+    .select(
+      "id, scheduled_at, title, campaign_id, dm_id, max_players, status, notes, campaigns(name, type, image_url)"
+    )
     .gte("scheduled_at", fromDate)
     .eq("status", "scheduled")
     .order("scheduled_at", { ascending: true });
@@ -25,6 +37,9 @@ export async function CalendarSessionsLoader() {
     return (
       <SessionCalendar
         sessions={[]}
+        isGmOrAdmin={isGmOrAdmin}
+        gmAdminUsers={gmAdminUsers}
+        defaultDmId={defaultDmId}
       />
     );
   }
@@ -56,24 +71,32 @@ export async function CalendarSessionsLoader() {
   const sessions: SessionForCalendar[] = sessionsRaw.map((s) => {
     const campaign = s.campaigns as unknown as { name: string; type: string | null; image_url: string | null } | null;
     const campaignId = s.campaign_id as string | null;
+    const dmId = (s as { dm_id?: string | null }).dm_id ?? null;
     return {
       id: s.id,
       campaign_id: campaignId,
       scheduled_at: s.scheduled_at,
       title: s.title ?? null,
+      notes: (s as { notes?: string | null }).notes ?? null,
+      dm_id: dmId,
       campaign_name: campaign?.name ?? (campaignId == null ? "Campagna da definire" : "—"),
       campaign_type: campaign?.type && ["oneshot", "quest", "long"].includes(campaign.type)
         ? (campaign.type as "oneshot" | "quest" | "long")
         : null,
       campaign_image_url: campaign?.image_url ?? null,
-      dm_name: (s as { dm_id?: string | null }).dm_id
-        ? dmNames.get((s as { dm_id: string }).dm_id) ?? null
-        : null,
+      dm_name: dmId ? dmNames.get(dmId) ?? null : null,
       max_players: s.max_players ?? 6,
       signup_count: signupCountBySession.get(s.id) ?? 0,
       status: s.status,
     };
   });
 
-  return <SessionCalendar sessions={sessions} />;
+  return (
+    <SessionCalendar
+      sessions={sessions}
+      isGmOrAdmin={isGmOrAdmin}
+      gmAdminUsers={gmAdminUsers}
+      defaultDmId={defaultDmId}
+    />
+  );
 }

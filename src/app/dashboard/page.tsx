@@ -105,13 +105,17 @@ export default async function DashboardPage() {
             >
               <div className="w-full overflow-x-auto">
                 <div className="min-w-[280px] max-w-full">
-                  <CalendarSessionsLoader />
+                  <CalendarSessionsLoader
+                    isGmOrAdmin={isGmOrAdmin}
+                    gmAdminUsers={gmAdminUsers}
+                    defaultDmId={user.id}
+                  />
                 </div>
               </div>
             </Suspense>
             {isGmOrAdmin ? (
               <Suspense fallback={<div className="h-24 animate-pulse rounded-xl border border-barber-gold/30 bg-barber-dark/80" />}>
-                <OpenCalendarSessionsGmPanel />
+                <OpenCalendarSessionsGmPanel gmAdminUsers={gmAdminUsers} defaultDmId={user.id} />
               </Suspense>
             ) : null}
           </section>

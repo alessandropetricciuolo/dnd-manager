@@ -23,6 +23,7 @@ import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { CalendarOpenEventQuickActions } from "@/components/dashboard/calendar-open-event-quick-actions";
 
 const WEEKDAYS = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
 
@@ -40,6 +41,8 @@ export type SessionForCalendar = {
   campaign_id: string | null;
   scheduled_at: string;
   title: string | null;
+  notes: string | null;
+  dm_id: string | null;
   campaign_name: string;
   campaign_type: "oneshot" | "quest" | "long" | null;
   campaign_image_url: string | null;
@@ -51,6 +54,9 @@ export type SessionForCalendar = {
 
 type SessionCalendarProps = {
   sessions: SessionForCalendar[];
+  isGmOrAdmin?: boolean;
+  gmAdminUsers?: { id: string; label: string }[];
+  defaultDmId?: string | null;
 };
 
 function SessionHoverCard({
@@ -148,7 +154,12 @@ function SessionHoverCard({
   );
 }
 
-export function SessionCalendar({ sessions }: SessionCalendarProps) {
+export function SessionCalendar({
+  sessions,
+  isGmOrAdmin = false,
+  gmAdminUsers = [],
+  defaultDmId = null,
+}: SessionCalendarProps) {
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
 
@@ -333,6 +344,21 @@ export function SessionCalendar({ sessions }: SessionCalendarProps) {
                       <p className="mt-2 text-xs text-slate-500">
                         Iscrizione da &quot;Sessioni disponibili&quot; sotto nel dashboard.
                       </p>
+                      {isGmOrAdmin ? (
+                        <CalendarOpenEventQuickActions
+                          session={{
+                            id: session.id,
+                            title: session.title,
+                            scheduled_at: session.scheduled_at,
+                            notes: session.notes,
+                            signup_count: session.signup_count,
+                            max_players: session.max_players,
+                            dm_id: session.dm_id,
+                          }}
+                          gmAdminUsers={gmAdminUsers}
+                          defaultDmId={defaultDmId}
+                        />
+                      ) : null}
                     </div>
                   )}
                 </div>

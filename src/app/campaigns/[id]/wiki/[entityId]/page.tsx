@@ -13,10 +13,15 @@ import { ArrowLeft } from "lucide-react";
 
 type PageProps = {
   params: Promise<{ id: string; entityId: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default async function WikiEntityPage({ params }: PageProps) {
+export default async function WikiEntityPage({ params, searchParams }: PageProps) {
   const { id: campaignId, entityId } = await params;
+  const sp = (await searchParams) ?? {};
+  const editRaw = sp.edit;
+  const editParam = typeof editRaw === "string" ? editRaw : Array.isArray(editRaw) ? editRaw[0] : undefined;
+  const autoOpenEditDialog = editParam === "1";
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -121,6 +126,7 @@ export default async function WikiEntityPage({ params }: PageProps) {
                 initialVisibility={(entity as { visibility?: string }).visibility ?? (entity.is_secret ? "secret" : "public")}
                 initialAllowedUserIds={permittedUserIds}
                 initialAllowedPartyIds={permittedPartyIds}
+                autoOpenEditDialog={autoOpenEditDialog}
               />
               <WikiEntityDeleteButton
                 campaignId={campaignId}

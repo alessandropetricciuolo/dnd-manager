@@ -245,12 +245,96 @@ export async function createOpenCalendarEvent(formData: FormData): Promise<Creat
   }
 }
 
+/** Aggiorna data/ora, titolo, luogo, posti e DM di un evento ancora senza campagna e in stato scheduled. */
+export async function updateOpenCalendarEvent(
+  sessionId: string,
+  formData: FormData
+): Promise<CreateSessionResult> {
+  const sid = sessionId?.trim();
+  if (!sid) {
+    return { success: false, message: "Sessione non valida." };
+  }
+
+  const date = (formData.get("date") as string | null)?.trim();
+  const time = (formData.get("time") as string | null)?.trim() ?? "20:00";
+  const location = (formData.get("location") as string | null)?.trim() ?? "";
+  const maxPlayersStr = (formData.get("max_players") as string | null)?.trim();
+  const maxPlayers = maxPlayersStr ? parseInt(maxPlayersStr, 10) : 6;
+  const titleRaw = (formData.get("title") as string | null)?.trim() || null;
+  const dmFromForm = formData.has("dm_id")
+    ? ((formData.get("dm_id") as string | null)?.trim() || null)
+    : undefined;
+
+  if (!date) {
+    return { success: false, message: "La data è obbligatoria." };
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    const can = await isGmOrAdminByRole(supabase);
+    if (!can) {
+      return { success: false, message: "Solo GM e Admin possono modificare eventi sul calendario." };
+    }
+
+    let scheduledAt: string;
+    try {
+      scheduledAt = sessionFormLocalToUtcIso(date, time.includes(":") ? time : `${time}:00`);
+    } catch {
+      return { success: false, message: "Data o orario non validi." };
+    }
+
+    const admin = createSupabaseAdminClient();
+    const { data: existing, error: loadErr } = await admin
+      .from("sessions")
+      .select("id, campaign_id, status")
+      .eq("id", sid)
+      .maybeSingle();
+
+    if (loadErr || !existing) {
+      return { success: false, message: "Sessione non trovata." };
+    }
+    const row = existing as { campaign_id: string | null; status: string };
+    if (row.campaign_id != null || row.status !== "scheduled") {
+      return {
+        success: false,
+        message: "Puoi modificare solo eventi aperti ancora programmati (senza campagna collegata).",
+      };
+    }
+
+    const rowUpdate: Record<string, unknown> = {
+      title: titleRaw,
+      scheduled_at: scheduledAt,
+      status: "scheduled",
+      max_players: Math.max(1, Math.min(20, maxPlayers)),
+      notes: location || null,
+    };
+    if (dmFromForm !== undefined) {
+      rowUpdate.dm_id = dmFromForm;
+    }
+
+    const { error } = await admin.from("sessions").update(rowUpdate as never).eq("id", sid);
+
+    if (error) {
+      console.error("[updateOpenCalendarEvent]", error);
+      return { success: false, message: error.message ?? "Errore durante l'aggiornamento." };
+    }
+
+    revalidatePath("/dashboard");
+    return { success: true, message: "Evento aggiornato." };
+  } catch (err) {
+    console.error("[updateOpenCalendarEvent]", err);
+    return { success: false, message: "Si è verificato un errore imprevisto. Riprova." };
+  }
+}
+
 export type OpenCalendarSessionRow = {
   id: string;
   title: string | null;
   scheduled_at: string;
   notes: string | null;
   signup_count: number;
+  max_players: number;
+  dm_id: string | null;
 };
 
 export async function listOpenCalendarSessionsForGmAdmin(): Promise<{
@@ -266,7 +350,7 @@ export async function listOpenCalendarSessionsForGmAdmin(): Promise<{
     const admin = createSupabaseAdminClient();
     const { data: rows, error } = await admin
       .from("sessions")
-      .select("id, title, scheduled_at, notes")
+      .select("id, title, scheduled_at, notes, max_players, dm_id")
       .is("campaign_id", null)
       .eq("status", "scheduled")
       .order("scheduled_at", { ascending: true });
@@ -276,7 +360,14 @@ export async function listOpenCalendarSessionsForGmAdmin(): Promise<{
       return { success: false, message: error.message ?? "Errore nel caricamento." };
     }
 
-    type SessionListRow = { id: string; title: string | null; scheduled_at: string; notes: string | null };
+    type SessionListRow = {
+      id: string;
+      title: string | null;
+      scheduled_at: string;
+      notes: string | null;
+      max_players: number | null;
+      dm_id: string | null;
+    };
     const list = (rows ?? []) as SessionListRow[];
     const ids = list.map((r) => r.id);
     const signupCounts = new Map<string, number>();
@@ -296,6 +387,8 @@ export async function listOpenCalendarSessionsForGmAdmin(): Promise<{
         scheduled_at: r.scheduled_at,
         notes: r.notes ?? null,
         signup_count: signupCounts.get(r.id) ?? 0,
+        max_players: Math.max(1, Math.min(20, r.max_players ?? 6)),
+        dm_id: r.dm_id ?? null,
       })),
     };
   } catch (err) {
@@ -1462,16 +1555,28 @@ export async function deleteSession(sessionId: string): Promise<DeleteSessionRes
       return { success: false, message: "Solo GM o Admin possono eliminare sessioni." };
     }
 
-    const { data: session, error: sessionError } = await supabase
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    const isAdmin = profile?.role === "admin";
+
+    const admin = createSupabaseAdminClient();
+    const { data: session, error: sessionError } = await admin
       .from("sessions")
       .select("id, campaign_id")
       .eq("id", sessionId)
-      .single();
+      .maybeSingle();
     if (sessionError || !session) {
       return { success: false, message: "Sessione non trovata." };
     }
 
-    const admin = createSupabaseAdminClient();
+    const sessionRow = session as { id: string; campaign_id: string | null };
+    const cid = sessionRow.campaign_id;
+    if (!isAdmin && cid) {
+      const { data: camp, error: campErr } = await admin.from("campaigns").select("gm_id").eq("id", cid).maybeSingle();
+      if (campErr || !camp || (camp as { gm_id: string }).gm_id !== user.id) {
+        return { success: false, message: "Puoi eliminare solo sessioni delle tue campagne." };
+      }
+    }
+
     const { error: deleteError } = await admin.from("sessions").delete().eq("id", sessionId);
 
     if (deleteError) {
@@ -1479,7 +1584,6 @@ export async function deleteSession(sessionId: string): Promise<DeleteSessionRes
       return { success: false, message: deleteError.message ?? "Errore durante l'eliminazione." };
     }
 
-    const cid = session.campaign_id as string | null;
     if (cid) {
       try {
         await Promise.all([
