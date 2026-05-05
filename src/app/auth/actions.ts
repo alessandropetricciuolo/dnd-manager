@@ -12,6 +12,26 @@ type AuthResult = {
 const ENV_ERROR =
   "Configurazione mancante sul server. In Vercel: Settings → Environment Variables → aggiungi NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY.";
 
+const MINIMUM_ALLOWED_AGE = 18;
+const UNDERAGE_ALERT_MESSAGE =
+  "Ci dispiace, al momento l'associazione Barber & Dragons accetta solo utenti maggiorenni (18+).";
+
+function isAdultFromIsoDate(dateIso: string): boolean {
+  const trimmed = dateIso.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return false;
+  const [yearRaw, monthRaw, dayRaw] = trimmed.split("-");
+  const year = Number.parseInt(yearRaw, 10);
+  const month = Number.parseInt(monthRaw, 10);
+  const day = Number.parseInt(dayRaw, 10);
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) return false;
+
+  const now = new Date();
+  let age = now.getFullYear() - year;
+  const monthDiff = now.getMonth() + 1 - month;
+  if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < day)) age -= 1;
+  return age >= MINIMUM_ALLOWED_AGE;
+}
+
 /** Da oggetto errore Supabase Auth ricava un messaggio leggibile (504, 429, message vuoto). */
 function authErrorMessage(
   error: { message?: string; status?: number; code?: string; msg?: string; error_description?: string },
@@ -73,6 +93,7 @@ export async function signup(
   firstName: string,
   lastName: string,
   phone: string,
+  dateOfBirth: string,
   whatsappOptIn: boolean
 ): Promise<AuthResult> {
   if (!email || !password) {
@@ -80,6 +101,12 @@ export async function signup(
   }
   if (!firstName?.trim() || !lastName?.trim() || !phone?.trim()) {
     return { error: "Nome, Cognome e Cellulare sono obbligatori." };
+  }
+  if (!dateOfBirth?.trim()) {
+    return { error: "La data di nascita è obbligatoria." };
+  }
+  if (!isAdultFromIsoDate(dateOfBirth)) {
+    return { error: UNDERAGE_ALERT_MESSAGE };
   }
 
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
@@ -96,6 +123,7 @@ export async function signup(
           first_name: firstName.trim(),
           last_name: lastName.trim(),
           phone: phone.trim(),
+          date_of_birth: dateOfBirth.trim(),
           whatsapp_opt_in: whatsappOptIn,
           role: "player",
         },
@@ -121,6 +149,7 @@ export async function signup(
           first_name: firstName.trim(),
           last_name: lastName.trim(),
           phone: phone.trim(),
+          date_of_birth: dateOfBirth.trim(),
           whatsapp_opt_in: whatsappOptIn,
         })
         .eq("id", data.user.id);
@@ -161,8 +190,15 @@ export async function updateProfileAfterSignup(
   firstName: string,
   lastName: string,
   phone: string,
+  dateOfBirth: string,
   whatsappOptIn: boolean
 ): Promise<AuthResult> {
+  if (!dateOfBirth?.trim()) {
+    return { error: "La data di nascita è obbligatoria." };
+  }
+  if (!isAdultFromIsoDate(dateOfBirth)) {
+    return { error: UNDERAGE_ALERT_MESSAGE };
+  }
   try {
     const supabase = await createSupabaseServerClient();
     const {
@@ -178,6 +214,7 @@ export async function updateProfileAfterSignup(
         first_name: firstName.trim(),
         last_name: lastName.trim(),
         phone: phone.trim(),
+        date_of_birth: dateOfBirth.trim(),
         whatsapp_opt_in: whatsappOptIn,
       })
       .eq("id", user.id);

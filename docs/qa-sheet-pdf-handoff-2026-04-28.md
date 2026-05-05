@@ -103,7 +103,7 @@ Esempio di pattern atteso nei casi problematici:
 - `docs/qa-artifacts/sheet-pdf/qa-sheet-pdf-report.json`
 
 ### PDF compilati
-- `docs/qa-artifacts/sheet-pdf/case-001-...pdf` fino a `case-090-...pdf`
+- Non versionati nel repository: rigenerare con `npx tsx scripts/qa-test-sheet-pdf.ts --count=90` quando serve una verifica visuale.
 
 ## Note per il prossimo agente
 

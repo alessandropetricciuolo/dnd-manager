@@ -43,6 +43,7 @@ import {
 import { forceCharacterTimeSync, setCharacterCalendarOverride } from "@/app/campaigns/character-actions";
 import { parseRulesSnapshot } from "@/lib/character-rules-snapshot";
 import { backgroundBySlug, raceBySlug } from "@/lib/character-build-catalog";
+import { sanitizeRaceTraitsMarkdown } from "@/lib/race-traits-sanitizer";
 
 const PLACEHOLDER_AVATAR = "https://placehold.co/200x280/1c1917/fbbf24/png?text=PG";
 
@@ -308,6 +309,7 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
   const raceDef = raceBySlug(character.race_slug ?? null);
   const raceLabel = raceDef?.label ?? null;
   const subraceLabel = raceDef?.subraces?.find((s) => s.slug === character.subclass_slug)?.label ?? null;
+  const raceTraitsBody = sanitizeRaceTraitsMarkdown(character.race_slug ?? null, snap?.raceTraitsMd ?? "");
   const bgRulesLabel = backgroundBySlug(character.background_slug ?? null)?.label ?? null;
 
   useEffect(() => {
@@ -552,7 +554,7 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
                   <>
                     <RulesTip
                       label={subraceLabel ?? raceLabel}
-                      body={subraceLabel ? (snap?.subraceTraitsMd ?? "") : (snap?.raceTraitsMd ?? "")}
+                      body={subraceLabel ? (snap?.subraceTraitsMd ?? "") : raceTraitsBody}
                     />
                     {" · "}
                   </>
@@ -779,7 +781,7 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
               <div className="mt-1 text-xs text-barber-paper/80">
                 {raceLabel ? (
                   <>
-                    <RulesTip label={subraceLabel ?? raceLabel} body={subraceLabel ? (snap?.subraceTraitsMd ?? "") : (snap?.raceTraitsMd ?? "")} />
+                    <RulesTip label={subraceLabel ?? raceLabel} body={subraceLabel ? (snap?.subraceTraitsMd ?? "") : raceTraitsBody} />
                     {" · "}
                   </>
                 ) : null}

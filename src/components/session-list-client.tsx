@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import {
   updateSignupStatus,
   deleteSignup,
@@ -208,7 +209,7 @@ export function SessionListClient({
             >
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 text-slate-400 min-w-0">
+                  <div className="flex items-center gap-2 text-barber-paper/55 min-w-0">
                     <CalendarIcon className="h-4 w-4 shrink-0" />
                     <time dateTime={session.scheduled_at}>
                       {formatSessionInRome(session.scheduled_at, "EEEE d MMMM yyyy, HH:mm", {
@@ -220,7 +221,7 @@ export function SessionListClient({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-9 w-9 p-0 shrink-0 text-slate-400 hover:text-red-400 hover:bg-red-500/10"
+                      className="h-9 w-9 p-0 shrink-0 text-barber-paper/55 hover:text-red-400 hover:bg-red-500/10"
                       disabled={!!deleteSessionLoadingId}
                       onClick={() => handleDeleteSession(session.id)}
                       title="Elimina sessione"
@@ -230,26 +231,22 @@ export function SessionListClient({
                     </Button>
                   )}
                 </div>
-                <CardTitle className="text-base text-slate-50">
+                <CardTitle className="text-base text-barber-paper">
                   {isOpen ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-2 py-0.5 text-xs font-medium text-emerald-300">
-                      Open
-                    </span>
+                    <StatusBadge tone="success">Open</StatusBadge>
                   ) : (
-                    <span className="inline-flex items-center rounded-full bg-slate-600/50 px-2 py-0.5 text-xs font-medium text-slate-400">
-                      Closed
-                    </span>
+                    <StatusBadge tone="muted">Closed</StatusBadge>
                   )}
                 </CardTitle>
                 {session.dm_name && (
-                  <p className="text-xs font-medium text-slate-400 mt-1">
+                  <p className="text-xs font-medium text-barber-paper/55 mt-1">
                     DM: {session.dm_name}
                   </p>
                 )}
               </CardHeader>
               <CardContent className="pt-0 space-y-3">
                 {session.notes && (
-                  <CardDescription className="flex items-center gap-2 text-slate-300">
+                  <CardDescription className="flex items-center gap-2 text-barber-paper/85">
                     <MapPinIcon className="h-4 w-4 shrink-0" />
                     <span>{session.notes}</span>
                   </CardDescription>
@@ -292,7 +289,7 @@ export function SessionListClient({
                 )}
                 {/* Player: bottone Iscriviti o stato iscrizione */}
                 {!isGmOrAdmin && (
-                  <div className="border-t border-slate-700/60 pt-3">
+                  <div className="border-t border-barber-gold/15 pt-3">
                     {session.currentUserSignupStatus == null ? (
                       <Button
                         size="sm"
@@ -305,18 +302,18 @@ export function SessionListClient({
                         {joinLoadingSessionId === session.id ? "Iscrizione..." : "Iscriviti"}
                       </Button>
                     ) : (
-                      <div className="rounded-lg bg-slate-800/50 px-2 py-1.5">
+                      <div className="flex items-center justify-start rounded-lg bg-barber-dark/60 px-2 py-1.5">
                         {normalizeStatus(session.currentUserSignupStatus) === "pending" && (
-                          <span className="text-xs text-amber-300">In attesa di approvazione</span>
+                          <StatusBadge tone="warning">In attesa di approvazione</StatusBadge>
                         )}
                         {normalizeStatus(session.currentUserSignupStatus) === "approved" && (
-                          <span className="text-xs text-barber-gold">Approvato</span>
+                          <StatusBadge tone="info">Approvato</StatusBadge>
                         )}
                         {normalizeStatus(session.currentUserSignupStatus) === "attended" && (
-                          <span className="text-xs text-barber-gold">Presente</span>
+                          <StatusBadge tone="success">Presente</StatusBadge>
                         )}
                         {normalizeStatus(session.currentUserSignupStatus) === "rejected" && (
-                          <span className="text-xs text-slate-500">Rifiutato</span>
+                          <StatusBadge tone="muted">Rifiutato</StatusBadge>
                         )}
                       </div>
                     )}
@@ -324,13 +321,13 @@ export function SessionListClient({
                 )}
                 {/* GM/Admin: lista iscritti con Approva, Rifiuta, Conferma presenza, Elimina */}
                 {isGmOrAdmin && (
-                  <div className="space-y-2 border-t border-slate-700/60 pt-3">
+                  <div className="space-y-2 border-t border-barber-gold/15 pt-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-xs font-medium text-slate-400">Iscritti</p>
+                      <p className="text-xs font-medium text-barber-paper/55">Iscritti</p>
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-8 border-slate-500/40 text-slate-200 hover:bg-slate-700/20 text-[11px]"
+                        className="h-8 border-barber-gold/30 text-barber-paper hover:bg-barber-gold/10 text-[11px]"
                         onClick={() =>
                           setExpandedSessionId((current) => {
                             const next = current === session.id ? null : session.id;
@@ -372,9 +369,9 @@ export function SessionListClient({
                       </Button>
                     </div>
                     {manualAddOpenSessionId === session.id && (
-                      <div className="rounded-lg border border-barber-gold/20 bg-slate-900/60 p-2.5 space-y-2">
+                      <div className="rounded-lg border border-barber-gold/20 bg-barber-dark/70 p-2.5 space-y-2">
                         {manualAddLoadingSessionId === session.id ? (
-                          <div className="flex items-center gap-2 text-xs text-slate-400">
+                          <div className="flex items-center gap-2 text-xs text-barber-paper/55">
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
                             Caricamento giocatori disponibili...
                           </div>
@@ -393,11 +390,11 @@ export function SessionListClient({
                                 </option>
                               ))}
                             </select>
-                            <p className="text-[11px] text-slate-500">
+                            <p className="text-[11px] text-barber-paper/45">
                               L&apos;aggiunta manuale inserisce il giocatore come iscritto gi&agrave; approvato.
                             </p>
                             {manualAddOptions.length === 0 ? (
-                              <p className="text-xs text-slate-500">
+                              <p className="text-xs text-barber-paper/45">
                                 {campaignType === "long"
                                   ? "Nessun membro campagna disponibile da aggiungere a questa sessione."
                                   : "Nessun giocatore disponibile da aggiungere a questa sessione."}
@@ -407,7 +404,7 @@ export function SessionListClient({
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="h-8 text-xs text-slate-300 hover:bg-slate-800"
+                                className="h-8 text-xs text-barber-paper/85 hover:bg-barber-dark/60"
                                 disabled={manualAddSubmittingSessionId === session.id}
                                 onClick={() => {
                                   setManualAddOpenSessionId(null);
@@ -432,7 +429,7 @@ export function SessionListClient({
                       </div>
                     )}
                     {session.signups.length === 0 ? (
-                      <p className="text-xs text-slate-500 py-1">Nessun iscritto ancora</p>
+                      <p className="text-xs text-barber-paper/45 py-1">Nessun iscritto ancora</p>
                     ) : (
                       <ul className="space-y-2">
                         {session.signups.map((signup) => {
@@ -441,9 +438,9 @@ export function SessionListClient({
                           return (
                             <li
                               key={signup.id}
-                              className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-800/50 px-2 py-1.5"
+                              className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-barber-dark/60 px-2 py-1.5"
                             >
-                              <span className="text-sm text-slate-200 truncate">
+                              <span className="text-sm text-barber-paper truncate">
                                 {signup.player_name}
                               </span>
                               <div className="flex items-center gap-1">
@@ -475,7 +472,7 @@ export function SessionListClient({
                                   <Button
                                     size="sm"
                                     variant="default"
-                                    className="h-7 bg-blue-600 hover:bg-blue-500 text-xs"
+                                    className="h-7 bg-emerald-600 hover:bg-emerald-500 text-xs"
                                     disabled={busy}
                                     onClick={() => handleStatus(signup.id, "attended", signup)}
                                   >
@@ -484,24 +481,24 @@ export function SessionListClient({
                                   </Button>
                                 )}
                                 {status === "attended" && (
-                                  <Badge variant="secondary" className="bg-barber-gold/20 text-barber-gold text-xs">
-                                    <User className="h-3 w-3 mr-0.5" />
+                                  <StatusBadge tone="success" icon={<User />}>
                                     Presente
-                                  </Badge>
+                                  </StatusBadge>
                                 )}
                                 {status === "absent" && (
-                                  <Badge variant="secondary" className="bg-red-500/20 text-red-300 text-xs">
-                                    <UserX className="h-3 w-3 mr-0.5" />
+                                  <StatusBadge tone="danger" icon={<UserX />}>
                                     Assente
-                                  </Badge>
+                                  </StatusBadge>
                                 )}
                                 {status === "rejected" && (
                                   <>
-                                    <span className="text-xs text-slate-500 mr-1.5">Rifiutato</span>
+                                    <StatusBadge tone="muted" className="mr-1.5">
+                                      Rifiutato
+                                    </StatusBadge>
                                     <Button
                                       size="sm"
                                       variant="outline"
-                                      className="h-7 border-amber-500/60 text-amber-300 hover:bg-amber-500/10 text-[11px]"
+                                      className="h-7 border-barber-gold/40 text-barber-gold hover:bg-barber-gold/10 text-[11px]"
                                       disabled={busy}
                                       onClick={() => handleStatus(signup.id, "approved", signup)}
                                     >
@@ -512,7 +509,7 @@ export function SessionListClient({
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  className="h-9 w-9 p-0 text-slate-400 hover:text-red-400 hover:bg-red-500/10"
+                                  className="h-9 w-9 p-0 text-barber-paper/55 hover:text-red-400 hover:bg-red-500/10"
                                   disabled={busy}
                                   onClick={() => handleRemove(signup.id)}
                                   title="Rimuovi dalla sessione"

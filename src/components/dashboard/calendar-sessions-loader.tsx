@@ -1,5 +1,6 @@
 import { startOfMonth } from "date-fns";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { listCampaignsForOpenSessionAssignment } from "@/app/campaigns/actions";
 import { SessionCalendar, type SessionForCalendar } from "./session-calendar";
 
 type CalendarSessionsLoaderProps = {
@@ -33,6 +34,11 @@ export async function CalendarSessionsLoader({
     .eq("status", "scheduled")
     .order("scheduled_at", { ascending: true });
 
+  const campaignsRes = isGmOrAdmin
+    ? await listCampaignsForOpenSessionAssignment()
+    : { success: false as const, data: [] as Array<{ id: string; name: string }> };
+  const campaigns = campaignsRes.success ? campaignsRes.data ?? [] : [];
+
   if (!sessionsRaw?.length) {
     return (
       <SessionCalendar
@@ -40,6 +46,7 @@ export async function CalendarSessionsLoader({
         isGmOrAdmin={isGmOrAdmin}
         gmAdminUsers={gmAdminUsers}
         defaultDmId={defaultDmId}
+        campaignOptions={campaigns}
       />
     );
   }
@@ -97,6 +104,7 @@ export async function CalendarSessionsLoader({
       isGmOrAdmin={isGmOrAdmin}
       gmAdminUsers={gmAdminUsers}
       defaultDmId={defaultDmId}
+      campaignOptions={campaigns}
     />
   );
 }

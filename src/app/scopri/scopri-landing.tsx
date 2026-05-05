@@ -125,7 +125,7 @@ export function ScopriLanding() {
             />
           </div>
 
-          <h1 className="mt-8 text-balance text-4xl font-bold tracking-tight text-barber-gold sm:text-5xl">
+          <h1 className="mt-8 text-balance font-serif text-4xl font-bold leading-tight tracking-tight text-barber-gold sm:text-5xl">
             Il Gioco di Ruolo. Quello Vero.
           </h1>
           <p className="mt-4 text-pretty text-base leading-relaxed text-barber-paper/80 sm:text-lg">
@@ -138,7 +138,8 @@ export function ScopriLanding() {
             <Button
               type="button"
               onClick={scrollToForm}
-              className="h-12 w-full bg-barber-gold text-barber-dark hover:bg-barber-gold/90"
+              size="lg"
+              className="h-12 w-full bg-barber-red text-barber-paper font-semibold hover:bg-barber-red/90"
             >
               Unisciti alla Gilda
             </Button>
@@ -152,7 +153,7 @@ export function ScopriLanding() {
       {/* 3 PROMESSE */}
       <section className="mx-auto w-full max-w-2xl px-4 py-10 sm:px-6 sm:py-12">
         <div className="mb-6">
-          <h2 className="text-2xl font-semibold tracking-tight text-barber-paper">
+          <h2 className="font-serif text-2xl font-semibold tracking-tight text-barber-paper sm:text-3xl">
             Perché unirti?
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-barber-paper/70">

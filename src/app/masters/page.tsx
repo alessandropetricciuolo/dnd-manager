@@ -31,7 +31,7 @@ export default async function MastersPage() {
     <div className="min-h-screen bg-barber-dark text-barber-paper">
       <div className="mx-auto max-w-6xl px-4 py-10 md:px-6 md:py-14">
         <header className="mb-10 text-center">
-          <h1 className="text-3xl font-bold text-barber-gold md:text-4xl">
+          <h1 className="font-serif text-3xl font-bold tracking-tight text-barber-gold md:text-4xl">
             Albo dei Master
           </h1>
           <p className="mt-2 text-barber-paper/70">

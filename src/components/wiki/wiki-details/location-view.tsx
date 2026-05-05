@@ -5,7 +5,7 @@ import { MapPin } from "lucide-react";
 import { GmOnlySection } from "./gm-only-section";
 import { DualSourceImage } from "@/components/dual-source-image";
 
-const PLACEHOLDER = "https://placehold.co/800x400/1e293b/10b981/png?text=Luogo";
+const PLACEHOLDER = "https://placehold.co/800x400/1c1917/fbbf24/png?text=Luogo";
 
 type LocationAttributes = { loot?: string };
 

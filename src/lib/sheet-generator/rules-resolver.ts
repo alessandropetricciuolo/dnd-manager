@@ -8,6 +8,7 @@ import {
   type ClassCatalogEntry,
 } from "@/lib/character-build-catalog";
 import { matchSupplementSubclass, supplementSubclassesForClass } from "@/lib/character-subclass-catalog";
+import { sanitizeRaceTraitsMarkdown } from "@/lib/race-traits-sanitizer";
 import { extractClassPrivilegesMarkdown } from "@/lib/server/phb-class-privileges-excerpt";
 import {
   extractPhbSpellMarkdown,
@@ -749,6 +750,7 @@ export async function resolveGeneratorRules(
     if (!raceTraitsMd.trim()) {
       raceTraitsMd = extractSectionByHeadingsMarkdown(md, [raceDef.label.toUpperCase()]);
     }
+    raceTraitsMd = sanitizeRaceTraitsMarkdown(input.raceSlug, raceTraitsMd);
   }
   if (!raceTraitsMd.trim()) warnings.push("Tratti razziali non trovati nel manuale sorgente.");
 

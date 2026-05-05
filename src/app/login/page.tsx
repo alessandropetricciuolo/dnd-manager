@@ -29,6 +29,24 @@ const WHATSAPP_CONFIRM_MESSAGE =
   "La community WhatsApp e utile per aggiornamenti rapidi su tavoli e sessioni.\n\n" +
   "Puoi comunque procedere ora e aggiornare questi dati in un secondo momento.\n\n" +
   "Confermi di voler continuare?";
+const UNDERAGE_ALERT_MESSAGE =
+  "Ci dispiace, al momento l'associazione Barber & Dragons accetta solo utenti maggiorenni (18+).";
+
+function isAdultFromIsoDate(dateIso: string): boolean {
+  const trimmed = dateIso.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return false;
+  const [yearRaw, monthRaw, dayRaw] = trimmed.split("-");
+  const year = Number.parseInt(yearRaw, 10);
+  const month = Number.parseInt(monthRaw, 10);
+  const day = Number.parseInt(dayRaw, 10);
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) return false;
+
+  const today = new Date();
+  let age = today.getFullYear() - year;
+  const monthDiff = today.getMonth() + 1 - month;
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < day)) age -= 1;
+  return age >= 18;
+}
 
 export default function LoginPage() {
   const router = useTopLoaderRouter();
@@ -65,7 +83,16 @@ export default function LoginPage() {
       const firstName = (formData.get("first_name") as string | null)?.trim() ?? "";
       const lastName = (formData.get("last_name") as string | null)?.trim() ?? "";
       const phone = (formData.get("phone") as string | null)?.trim() ?? "";
+      const dateOfBirth = (formData.get("date_of_birth") as string | null)?.trim() ?? "";
       const whatsappOptIn = formData.get("whatsapp_opt_in") === "on";
+      if (!dateOfBirth) {
+        toast.error("La data di nascita è obbligatoria.");
+        return;
+      }
+      if (!isAdultFromIsoDate(dateOfBirth)) {
+        window.alert(UNDERAGE_ALERT_MESSAGE);
+        return;
+      }
       if (!firstName || !lastName || !phone) {
         const confirmed = window.confirm(WHATSAPP_CONFIRM_MESSAGE);
         if (!confirmed) {
@@ -98,6 +125,7 @@ export default function LoginPage() {
       const firstName = (formData.get("first_name") as string | null)?.trim() ?? "";
       const lastName = (formData.get("last_name") as string | null)?.trim() ?? "";
       const phone = (formData.get("phone") as string | null)?.trim() ?? "";
+      const dateOfBirth = (formData.get("date_of_birth") as string | null)?.trim() ?? "";
       const whatsappOptIn = formData.get("whatsapp_opt_in") === "on";
       // Registrazione lato client: browser → Supabase (evita 504 del serverless Vercel)
       const supabase = createSupabaseBrowserClient();
@@ -109,6 +137,7 @@ export default function LoginPage() {
             first_name: firstName,
             last_name: lastName,
             phone,
+            date_of_birth: dateOfBirth,
             whatsapp_opt_in: whatsappOptIn,
             role: "player",
           },
@@ -128,7 +157,7 @@ export default function LoginPage() {
       }
       // Se c'è sessione (email non richiede conferma), aggiorna il profilo dal server
       if (data.session) {
-        const profileResult = await updateProfileAfterSignup(firstName, lastName, phone, whatsappOptIn);
+        const profileResult = await updateProfileAfterSignup(firstName, lastName, phone, dateOfBirth, whatsappOptIn);
         if (profileResult?.error) {
           toast.warning("Account creato, ma profilo non aggiornato. Puoi completarlo dal profilo.");
         }
@@ -268,7 +297,23 @@ export default function LoginPage() {
             )}
             {mode === "signup" && (
               <div className="space-y-2">
-                <Label htmlFor="phone" className="text-slate-200">
+                <Label htmlFor="date_of_birth" className="text-barber-paper/90">
+                  Data di nascita
+                </Label>
+                <Input
+                  id="date_of_birth"
+                  name="date_of_birth"
+                  type="date"
+                  autoComplete="bday"
+                  className="bg-barber-dark border-barber-gold/30 text-barber-paper"
+                  disabled={isLoading}
+                  required
+                />
+              </div>
+            )}
+            {mode === "signup" && (
+              <div className="space-y-2">
+                <Label htmlFor="phone" className="text-barber-paper/90">
                   Cellulare
                 </Label>
                 <Input
@@ -277,7 +322,7 @@ export default function LoginPage() {
                   type="tel"
                   autoComplete="tel"
                   placeholder="+39 333 1234567"
-                  className="bg-slate-900/70 border-slate-700/70 text-slate-50 placeholder:text-slate-500"
+                  className="bg-barber-dark border-barber-gold/30 text-barber-paper placeholder:text-barber-paper/50"
                   disabled={isLoading}
                 />
               </div>

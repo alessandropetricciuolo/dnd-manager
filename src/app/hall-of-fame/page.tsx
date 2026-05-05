@@ -36,10 +36,10 @@ export default async function HallOfFamePage() {
       <div className="mx-auto max-w-4xl px-4 py-10 md:px-6 md:py-14">
         {/* Titolo epico */}
         <header className="mb-12 text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-barber-gold drop-shadow-lg md:text-5xl">
+          <h1 className="font-serif text-4xl font-bold leading-tight tracking-tight text-barber-gold drop-shadow-lg md:text-5xl">
             Salone degli Eroi
           </h1>
-          <p className="mt-3 text-lg text-barber-paper/80 italic md:text-xl">
+          <p className="mt-3 font-serif text-lg italic text-barber-paper/80 md:text-xl">
             I nomi che riecheggiano nell&apos;eternità
           </p>
         </header>

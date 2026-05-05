@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { IMAGE_BLUR_PLACEHOLDER } from "@/lib/utils";
 
-const PLACEHOLDER_IMAGE = "https://placehold.co/600x400/1e293b/10b981/png?text=Campagna";
+const PLACEHOLDER_IMAGE = "https://placehold.co/600x400/1c1917/fbbf24/png?text=Campagna";
 
 type CampaignListVariant = "yours" | "all";
 

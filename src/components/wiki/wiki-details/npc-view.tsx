@@ -5,7 +5,7 @@ import { Users, Coins, UserCircle2 } from "lucide-react";
 import { GmOnlySection } from "./gm-only-section";
 import { DualSourceImage } from "@/components/dual-source-image";
 
-const PLACEHOLDER = "https://placehold.co/400x500/1e293b/10b981/png?text=NPC";
+const PLACEHOLDER = "https://placehold.co/400x500/1c1917/fbbf24/png?text=NPC";
 
 type NpcViewProps = {
   name: string;

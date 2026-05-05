@@ -85,8 +85,10 @@ export default async function DashboardPage() {
     <div className="min-h-full w-full bg-barber-dark p-4 md:p-8">
       <div className="mx-auto flex max-w-5xl flex-col gap-6 md:gap-8">
         <header>
-          <p className="text-sm text-barber-gold/80">Benvenuto,</p>
-          <h1 className="break-words text-xl font-semibold text-barber-paper sm:text-2xl">
+          <p className="text-xs font-medium uppercase tracking-[0.25em] text-barber-gold/70">
+            Benvenuto,
+          </p>
+          <h1 className="mt-1 break-words font-serif text-2xl font-bold leading-tight text-barber-paper sm:text-3xl">
             {displayName}
           </h1>
         </header>
@@ -133,7 +135,7 @@ export default async function DashboardPage() {
           ) : null}
 
           <section className="min-w-0">
-            <h2 className="mb-4 break-words text-lg font-semibold text-barber-paper">
+            <h2 className="mb-2 break-words font-serif text-xl font-semibold leading-tight text-barber-paper sm:text-2xl">
               Le tue campagne
             </h2>
             <p className="mb-4 text-sm text-barber-paper/70">
@@ -147,7 +149,7 @@ export default async function DashboardPage() {
           </section>
 
           <section className="min-w-0">
-            <h2 className="mb-4 break-words text-lg font-semibold text-barber-paper">
+            <h2 className="mb-2 break-words font-serif text-xl font-semibold leading-tight text-barber-paper sm:text-2xl">
               Tutte le campagne
             </h2>
             <p className="mb-4 text-sm text-barber-paper/70">
@@ -161,7 +163,7 @@ export default async function DashboardPage() {
           </section>
 
           <section className="min-w-0">
-            <h2 className="mb-4 break-words text-lg font-semibold text-barber-paper">
+            <h2 className="mb-4 break-words font-serif text-xl font-semibold leading-tight text-barber-paper sm:text-2xl">
               Le mie sessioni
             </h2>
             <Suspense fallback={<div className="h-32 animate-pulse rounded-xl border border-barber-gold/30 bg-barber-dark/80" />}>

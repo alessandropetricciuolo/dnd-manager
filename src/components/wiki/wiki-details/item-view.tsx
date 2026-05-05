@@ -3,7 +3,7 @@ import { MapPopoutButton } from "@/components/maps/map-popout-button";
 import { Package } from "lucide-react";
 import { DualSourceImage } from "@/components/dual-source-image";
 
-const PLACEHOLDER = "https://placehold.co/300x300/1e293b/10b981/png?text=Oggetto";
+const PLACEHOLDER = "https://placehold.co/300x300/1c1917/fbbf24/png?text=Oggetto";
 
 type ItemViewProps = {
   name: string;

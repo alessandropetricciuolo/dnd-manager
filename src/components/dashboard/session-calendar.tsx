@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "nextjs-toploader/app";
 import {
   format,
   startOfMonth,
@@ -22,18 +23,38 @@ import { formatInTimeZone } from "date-fns-tz";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { CalendarOpenEventQuickActions } from "@/components/dashboard/calendar-open-event-quick-actions";
+import { createOpenCalendarEvent, createSession } from "@/app/campaigns/actions";
+import { toast } from "sonner";
 
 const WEEKDAYS = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
 
+/**
+ * Mappatura "metalli" coerente col brand:
+ * - oneshot → bronzo (entry level, sessione singola)
+ * - quest   → rosso barber (mid-tier, mini-storia)
+ * - long    → oro barber (top-tier, esperienza completa con lore)
+ *
+ * Sostituisce blue/purple/orange (palette generica) con accenti che parlano
+ * la lingua del brand e veicolano una progressione narrativa.
+ */
 const CAMPAIGN_TYPE_COLORS: Record<string, string> = {
-  oneshot: "bg-blue-500",
-  quest: "bg-purple-500",
-  long: "bg-orange-500",
+  oneshot: "bg-amber-700",
+  quest: "bg-barber-red",
+  long: "bg-barber-gold",
 };
 
-const PLACEHOLDER_IMAGE = "https://placehold.co/80x48/1e293b/10b981/png?text=Campagna";
+const PLACEHOLDER_IMAGE = "https://placehold.co/80x48/1c1917/fbbf24/png?text=Campagna";
 const ENABLE_DAY_DRAWER = process.env.NEXT_PUBLIC_DASHBOARD_CALENDAR_DAY_DRAWER !== "0";
 
 export type SessionForCalendar = {
@@ -57,6 +78,7 @@ type SessionCalendarProps = {
   isGmOrAdmin?: boolean;
   gmAdminUsers?: { id: string; label: string }[];
   defaultDmId?: string | null;
+  campaignOptions?: { id: string; name: string }[];
 };
 
 function SessionHoverCard({
@@ -159,9 +181,24 @@ export function SessionCalendar({
   isGmOrAdmin = false,
   gmAdminUsers = [],
   defaultDmId = null,
+  campaignOptions = [],
 }: SessionCalendarProps) {
+  const router = useRouter();
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const [createMode, setCreateMode] = useState<"open" | "campaign" | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [createDmId, setCreateDmId] = useState<string>(defaultDmId ?? "");
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string>("");
+
+  useEffect(() => {
+    if (selectedDay) {
+      setCreateMode(null);
+      setIsCreating(false);
+      setCreateDmId(defaultDmId ?? "");
+      setSelectedCampaignId("");
+    }
+  }, [selectedDay, defaultDmId]);
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
@@ -253,7 +290,7 @@ export function SessionCalendar({
                     aria-label={`${daySessions.length} sessione/i il ${format(day, "d MMMM", { locale: it })}: ${firstSession.campaign_name}`}
                   />
                 )}
-                {ENABLE_DAY_DRAWER && hasSessions && (
+                {ENABLE_DAY_DRAWER && (hasSessions || isGmOrAdmin) && (
                   <button
                     type="button"
                     className="absolute inset-0 z-0 rounded border-0"
@@ -312,6 +349,239 @@ export function SessionCalendar({
             </SheetTitle>
             <p className="text-sm text-slate-300">{selectedDayLabel}</p>
           </SheetHeader>
+          {isGmOrAdmin && selectedDay ? (
+            <div className="mt-4 rounded-lg border border-barber-gold/20 bg-barber-dark/60 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-barber-gold/90">
+                Crea dal calendario
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={createMode === "open" ? "default" : "outline"}
+                  className={cn(
+                    createMode === "open"
+                      ? "bg-barber-gold text-barber-dark hover:bg-barber-gold/90"
+                      : "border-barber-gold/40 text-barber-paper hover:bg-barber-gold/10"
+                  )}
+                  onClick={() => setCreateMode("open")}
+                  disabled={isCreating}
+                >
+                  Evento senza campagna
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={createMode === "campaign" ? "default" : "outline"}
+                  className={cn(
+                    createMode === "campaign"
+                      ? "bg-barber-red text-barber-paper hover:bg-barber-red/90"
+                      : "border-barber-gold/40 text-barber-paper hover:bg-barber-gold/10"
+                  )}
+                  onClick={() => setCreateMode("campaign")}
+                  disabled={isCreating}
+                >
+                  Sessione di campagna
+                </Button>
+              </div>
+
+              {createMode === "open" ? (
+                <form
+                  className="mt-3 space-y-2"
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!selectedDay || isCreating) return;
+                    const fd = new FormData(e.currentTarget);
+                    fd.set("date", format(selectedDay, "yyyy-MM-dd"));
+                    if (createDmId) fd.set("dm_id", createDmId);
+                    setIsCreating(true);
+                    try {
+                      const res = await createOpenCalendarEvent(fd);
+                      if (res.success) {
+                        toast.success(res.message);
+                        setCreateMode(null);
+                        (e.currentTarget as HTMLFormElement).reset();
+                        router.refresh();
+                      } else {
+                        toast.error(res.message);
+                      }
+                    } catch {
+                      toast.error("Errore durante la creazione evento.");
+                    } finally {
+                      setIsCreating(false);
+                    }
+                  }}
+                >
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label htmlFor="day-create-open-time" className="text-xs text-barber-paper/80">Orario</Label>
+                      <Input
+                        id="day-create-open-time"
+                        name="time"
+                        type="time"
+                        defaultValue="20:00"
+                        className="h-9 border-barber-gold/30 bg-barber-dark text-barber-paper"
+                        disabled={isCreating}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="day-create-open-max" className="text-xs text-barber-paper/80">Max</Label>
+                      <Input
+                        id="day-create-open-max"
+                        name="max_players"
+                        type="number"
+                        min={1}
+                        max={20}
+                        defaultValue={6}
+                        className="h-9 border-barber-gold/30 bg-barber-dark text-barber-paper"
+                        disabled={isCreating}
+                      />
+                    </div>
+                  </div>
+                  <Input
+                    name="title"
+                    placeholder="Titolo (opzionale)"
+                    className="h-9 border-barber-gold/30 bg-barber-dark text-barber-paper"
+                    disabled={isCreating}
+                  />
+                  <Input
+                    name="location"
+                    placeholder="Luogo / note (opzionale)"
+                    className="h-9 border-barber-gold/30 bg-barber-dark text-barber-paper"
+                    disabled={isCreating}
+                  />
+                  {gmAdminUsers.length > 0 ? (
+                    <Select value={createDmId || undefined} onValueChange={setCreateDmId} disabled={isCreating}>
+                      <SelectTrigger className="h-9 border-barber-gold/30 bg-barber-dark text-barber-paper">
+                        <SelectValue placeholder="Dungeon Master" />
+                      </SelectTrigger>
+                      <SelectContent className="border-barber-gold/30 bg-barber-dark">
+                        {gmAdminUsers.map((u) => (
+                          <SelectItem key={u.id} value={u.id} className="text-barber-paper">
+                            {u.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : null}
+                  <Button
+                    type="submit"
+                    size="sm"
+                    className="w-full bg-barber-gold text-barber-dark hover:bg-barber-gold/90"
+                    disabled={isCreating}
+                  >
+                    {isCreating ? "Creazione..." : "Crea evento"}
+                  </Button>
+                </form>
+              ) : null}
+
+              {createMode === "campaign" ? (
+                <form
+                  className="mt-3 space-y-2"
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!selectedDay || isCreating) return;
+                    if (!selectedCampaignId) {
+                      toast.error("Seleziona una campagna.");
+                      return;
+                    }
+                    const fd = new FormData(e.currentTarget);
+                    fd.set("date", format(selectedDay, "yyyy-MM-dd"));
+                    if (createDmId) fd.set("dm_id", createDmId);
+                    setIsCreating(true);
+                    try {
+                      const res = await createSession(selectedCampaignId, fd);
+                      if (res.success) {
+                        toast.success(res.message);
+                        setCreateMode(null);
+                        setSelectedCampaignId("");
+                        (e.currentTarget as HTMLFormElement).reset();
+                        router.refresh();
+                      } else {
+                        toast.error(res.message);
+                      }
+                    } catch {
+                      toast.error("Errore durante la creazione sessione.");
+                    } finally {
+                      setIsCreating(false);
+                    }
+                  }}
+                >
+                  <Select value={selectedCampaignId || undefined} onValueChange={setSelectedCampaignId} disabled={isCreating}>
+                    <SelectTrigger className="h-9 border-barber-gold/30 bg-barber-dark text-barber-paper">
+                      <SelectValue placeholder="Scegli campagna" />
+                    </SelectTrigger>
+                    <SelectContent className="border-barber-gold/30 bg-barber-dark">
+                      {campaignOptions.map((c) => (
+                        <SelectItem key={c.id} value={c.id} className="text-barber-paper">
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label htmlFor="day-create-campaign-time" className="text-xs text-barber-paper/80">Orario</Label>
+                      <Input
+                        id="day-create-campaign-time"
+                        name="time"
+                        type="time"
+                        defaultValue="20:00"
+                        className="h-9 border-barber-gold/30 bg-barber-dark text-barber-paper"
+                        disabled={isCreating}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="day-create-campaign-max" className="text-xs text-barber-paper/80">Max</Label>
+                      <Input
+                        id="day-create-campaign-max"
+                        name="max_players"
+                        type="number"
+                        min={1}
+                        max={20}
+                        defaultValue={6}
+                        className="h-9 border-barber-gold/30 bg-barber-dark text-barber-paper"
+                        disabled={isCreating}
+                      />
+                    </div>
+                  </div>
+                  <Input
+                    name="location"
+                    placeholder="Luogo / note (opzionale)"
+                    className="h-9 border-barber-gold/30 bg-barber-dark text-barber-paper"
+                    disabled={isCreating}
+                  />
+                  {gmAdminUsers.length > 0 ? (
+                    <Select value={createDmId || undefined} onValueChange={setCreateDmId} disabled={isCreating}>
+                      <SelectTrigger className="h-9 border-barber-gold/30 bg-barber-dark text-barber-paper">
+                        <SelectValue placeholder="Dungeon Master" />
+                      </SelectTrigger>
+                      <SelectContent className="border-barber-gold/30 bg-barber-dark">
+                        {gmAdminUsers.map((u) => (
+                          <SelectItem key={u.id} value={u.id} className="text-barber-paper">
+                            {u.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : null}
+                  {campaignOptions.length === 0 ? (
+                    <p className="text-xs text-amber-200/80">
+                      Nessuna campagna disponibile: crea o assegna una campagna prima di pianificare sessioni.
+                    </p>
+                  ) : null}
+                  <Button
+                    type="submit"
+                    size="sm"
+                    className="w-full bg-barber-red text-barber-paper hover:bg-barber-red/90"
+                    disabled={isCreating || campaignOptions.length === 0}
+                  >
+                    {isCreating ? "Creazione..." : "Crea sessione"}
+                  </Button>
+                </form>
+              ) : null}
+            </div>
+          ) : null}
           <div className="mt-4 space-y-3">
             {selectedDaySessions.length === 0 ? (
               <p className="text-sm text-slate-400">Nessuna sessione pianificata.</p>

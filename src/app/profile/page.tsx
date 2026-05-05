@@ -76,8 +76,8 @@ export default async function ProfilePage() {
               Dashboard
             </Button>
           </Link>
-          <h1 className="flex items-center gap-2 text-xl font-semibold text-barber-paper sm:text-2xl">
-            <User className="h-6 w-6 text-barber-gold" />
+          <h1 className="flex items-center gap-2 font-serif text-2xl font-bold leading-tight text-barber-paper sm:text-3xl">
+            <User className="h-6 w-6 shrink-0 text-barber-gold" />
             Il tuo profilo
           </h1>
         </header>

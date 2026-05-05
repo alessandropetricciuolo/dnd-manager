@@ -9,6 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { parseRulesSnapshot } from "@/lib/character-rules-snapshot";
 import type { CharacterRulesSnapshotV1 } from "@/lib/character-rules-snapshot";
 import { backgroundBySlug, raceBySlug } from "@/lib/character-build-catalog";
+import { sanitizeRaceTraitsMarkdown } from "@/lib/race-traits-sanitizer";
 
 const PLACEHOLDER_AVATAR = "https://placehold.co/400x560/1c1917/fbbf24/png?text=PG";
 
@@ -265,7 +266,10 @@ export function CharacterCardPlayer({ character, isLongCampaign }: CharacterCard
   );
   const staleFallback = !snap && hasBuild ? STALE_SNAPSHOT_HINT : undefined;
 
-  const raceBody = tooltipOrWarnings(snap?.raceTraitsMd, snap, staleFallback);
+  const raceBody = sanitizeRaceTraitsMarkdown(
+    character.race_slug ?? null,
+    tooltipOrWarnings(snap?.raceTraitsMd, snap, staleFallback)
+  );
   const showSubrace =
     !!(character.subclass_slug && subraceLabel) || !!snap?.subraceTraitsMd?.trim();
   const raceDisplayLabel = showSubrace ? (subraceLabel ?? "Sottorazza") : raceLabel;

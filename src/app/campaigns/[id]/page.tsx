@@ -40,7 +40,7 @@ import {
 import type { Json } from "@/types/database.types";
 
 const PLACEHOLDER_IMAGE =
-  "https://placehold.co/1200x400/1e293b/10b981/png?text=Campagna";
+  "https://placehold.co/1200x400/1c1917/fbbf24/png?text=Campagna";
 
 type PageProps = {
   params: Promise<{ id: string }>;
