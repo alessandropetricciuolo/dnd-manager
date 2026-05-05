@@ -88,7 +88,7 @@ export async function generateFullAiWikiEntity(
       campaignId,
       imageDescription,
       entityType,
-      { provider: options.imageProvider ?? null }
+      { provider: options.imageProvider ?? null, entityTitle: title }
     );
 
     let imageUrl: string | null = null;

@@ -5,6 +5,8 @@ import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import type { Json } from "@/types/database.types";
 import { parseCampaignAiContextFromDb } from "@/lib/campaign-ai-context";
+import { fetchLongCampaignWikiMemoryPromptBlock } from "@/lib/campaign-wiki-ai-memory";
+import { buildCampaignContextBlock } from "@/lib/ai/generator";
 import {
   generateAiImageWithProvider,
   resolveImageProvider,
@@ -14,6 +16,15 @@ import { uploadToTelegram } from "@/lib/telegram-storage";
 
 const STANDARD_VISUAL_NEGATIVES =
   "NO modern clothing, NO jeans, NO wristwatches, NO cars, NO text, NO watermarks, NO bad anatomy, NO deformed hands, NO cartoon style, NO anime style, NO manga style, NO cel shading, NO chibi";
+
+/** Memoria wiki/ PG molto lunga: per immagini teniamo un estratto compatto così il soggetto resta dominante. */
+const MAX_IMAGE_CAMPAIGN_LORE_SNIPPET_CHARS = 3000;
+
+function truncateImageKnowledgeSnippet(raw: string, maxChars: number): string {
+  const collapsed = raw.replace(/\s+/g, " ").trim();
+  if (collapsed.length <= maxChars) return collapsed;
+  return `${collapsed.slice(0, maxChars)}…`;
+}
 
 export type GenerateContextualPortraitResult =
   | { success: true; publicUrl: string; provider: ImageProviderId }
@@ -25,6 +36,10 @@ export type GenerateContextualPortraitOptions = {
    * viene applicato il default configurato via env `AI_IMAGE_PROVIDER`.
    */
   provider?: ImageProviderId | string | null;
+  /** Titolo della voce wiki (nome PNG, luogo, ecc.) — ancoraggio forte sul soggetto. */
+  entityTitle?: string | null;
+  /** In campagne long, esclude questa voce dal blocco memoria (evita duplicati in modifica). */
+  excludeWikiEntityId?: string | null;
 };
 
 /**
@@ -83,6 +98,7 @@ export async function generateContextualPortraitAction(
       ai_context: Json | null;
       image_style_prompt?: string | null;
       ai_image_style_key?: string | null;
+      type?: string | null;
     };
     const campaignsQuery = admin.from("campaigns") as unknown as {
       select: (columns: string) => {
@@ -95,7 +111,7 @@ export async function generateContextualPortraitAction(
 
     step = "campaign-fetch";
     let { data: campaign, error: campError } = await campaignsQuery
-      .select("ai_context, image_style_prompt, ai_image_style_key")
+      .select("ai_context, image_style_prompt, ai_image_style_key, type")
       .eq("id", campaignId)
       .single();
 
@@ -108,7 +124,7 @@ export async function generateContextualPortraitAction(
       step = "campaign-fetch-fallback-style";
       const fallback = await admin
         .from("campaigns")
-        .select("ai_context, image_style_prompt")
+        .select("ai_context, image_style_prompt, type")
         .eq("id", campaignId)
         .single();
       campaign = fallback.data as CampaignVisualRow | null;
@@ -116,13 +132,13 @@ export async function generateContextualPortraitAction(
     }
     if (campError?.message?.toLowerCase().includes("image_style_prompt")) {
       step = "campaign-fetch-fallback-ai-context";
-      const fallback = await admin.from("campaigns").select("ai_context").eq("id", campaignId).single();
+      const fallback = await admin.from("campaigns").select("ai_context, type").eq("id", campaignId).single();
       campaign = (fallback.data as CampaignVisualRow | null) ?? null;
       campError = fallback.error as { message: string } | null;
     }
     if (campError?.message?.toLowerCase().includes("ai_image_style_key")) {
       step = "campaign-fetch-fallback-ai-context";
-      const fallback = await admin.from("campaigns").select("ai_context").eq("id", campaignId).single();
+      const fallback = await admin.from("campaigns").select("ai_context, type").eq("id", campaignId).single();
       campaign = (fallback.data as CampaignVisualRow | null) ?? null;
       campError = fallback.error as { message: string } | null;
     }
@@ -179,14 +195,56 @@ export async function generateContextualPortraitAction(
         ? "portrait, close-up, high detail, photorealistic, cinematic lighting, 8k, masterpiece, professional fantasy art style"
         : "environmental wide shot, high detail, photorealistic, cinematic lighting, 8k, masterpiece, professional fantasy location art, architectural and atmosphere focus";
 
-    const positivePrompt = styleTemplate
-      ? `${trimmed}. ${styleTemplate}. Campaign constraints: ${visualPositive}. Strictly realistic fantasy illustration, non-anime, non-cartoon.`
+    const campaignType =
+      typeof (campaign as CampaignVisualRow).type === "string"
+        ? String((campaign as CampaignVisualRow).type).trim()
+        : "";
+    let loreSnippet = "";
+    if (campaignType === "long") {
+      const excludeId = options.excludeWikiEntityId?.trim() || undefined;
+      const rawMemory = await fetchLongCampaignWikiMemoryPromptBlock(admin, campaignId, {
+        excludeEntityId: excludeId,
+      });
+      if (rawMemory.trim()) {
+        loreSnippet = truncateImageKnowledgeSnippet(rawMemory, MAX_IMAGE_CAMPAIGN_LORE_SNIPPET_CHARS);
+      }
+    }
+
+    const entityTitleLine =
+      typeof options.entityTitle === "string" && options.entityTitle.trim().length > 0
+        ? `PRIMARY SUBJECT NAME (wiki title): "${options.entityTitle.trim()}". `
+        : "";
+    const subjectKind =
+      entityType === "location"
+        ? "single fantasy location / environment"
+        : "single fantasy character (NPC or creature portrait)";
+    const subjectBlock = [
+      `${entityTitleLine}Illustrate exactly ONE ${subjectKind}.`,
+      "The following wiki description is the main visual truth — match outfit, species, age cues, scars, props and mood closely:",
+      trimmed,
+    ].join("\n");
+
+    const campaignNarrativeBlock = buildCampaignContextBlock(ctx);
+    const loreBlock =
+      loreSnippet.length > 0
+        ? [
+            "Shared campaign lore (facts, factions, places from canon wiki/PG backgrounds — use only for coherence;",
+            "do not contradict the wiki description above for how THIS entity looks):",
+            loreSnippet,
+          ].join("\n")
+        : "";
+
+    const styleTail = styleTemplate
+      ? `${styleTemplate}. Campaign visual palette: ${visualPositive}. Strictly realistic fantasy illustration, non-anime, non-cartoon.`
       : [
-          `Subject: ${trimmed}`,
           technicalForced,
-          `Campaign visual style: ${visualPositive}`,
+          `Campaign visual palette: ${visualPositive}`,
           "Strictly realistic fantasy illustration, non-anime, non-cartoon",
         ].join(". ");
+
+    const positivePrompt = [subjectBlock, campaignNarrativeBlock, loreBlock, styleTail]
+      .filter((block) => typeof block === "string" && block.trim().length > 0)
+      .join("\n\n");
 
     const negativeCombined = [styleNegativeTemplate, visualNegative, STANDARD_VISUAL_NEGATIVES]
       .filter(Boolean)

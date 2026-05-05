@@ -264,8 +264,8 @@ export function EditEntityDialog({
 
   async function handleAssistGenerateImage() {
     if (aiImageLoading || isLoading) return;
-    if (type !== "npc") {
-      toast.error("La generazione immagine in modifica è disponibile per le voci NPC.");
+    if (type !== "npc" && type !== "monster" && type !== "location") {
+      toast.error("La generazione immagine è disponibile per NPC, mostri e luoghi.");
       return;
     }
     const formEl = formRef.current;
@@ -275,17 +275,25 @@ export function EditEntityDialog({
     }
     const contentField = formEl.elements.namedItem("content");
     const narrativeDescription = contentField instanceof HTMLTextAreaElement ? contentField.value.trim() : "";
+    const titleField = formEl.elements.namedItem("title");
+    const entityTitle =
+      titleField instanceof HTMLInputElement ? titleField.value.trim() : entity.name.trim();
     if (!narrativeDescription) {
       toast.error("Compila la descrizione narrativa prima di generare l'immagine.");
       return;
     }
+    const imageEntityType: "npc" | "location" = type === "location" ? "location" : "npc";
     setAiImageLoading(true);
     try {
       const result = await generateContextualPortraitAction(
         campaignId,
         narrativeDescription,
-        "npc",
-        { provider: aiImageProvider }
+        imageEntityType,
+        {
+          provider: aiImageProvider,
+          entityTitle: entityTitle || entity.name.trim(),
+          excludeWikiEntityId: entity.id,
+        }
       );
       if (!result.success) {
         toast.error(result.message);
@@ -293,7 +301,7 @@ export function EditEntityDialog({
       }
       await injectGeneratedImageAsFile(result.publicUrl);
       setRemoveImage(false);
-      toast.success("Immagine AI generata e caricata. Premi Salva per applicarla all'NPC.");
+      toast.success("Immagine AI generata e caricata. Premi Salva per applicarla alla voce.");
     } catch {
       toast.error("Errore durante la generazione/iniezione immagine AI.");
     } finally {
@@ -475,7 +483,7 @@ export function EditEntityDialog({
                 </Label>
               </div>
             )}
-            {type === "npc" && (
+            {(type === "npc" || type === "monster" || type === "location") && (
               <div className="flex flex-col gap-2 sm:max-w-xs">
                 <AiImageProviderSelect
                   id="edit-entity-image-provider"
@@ -496,7 +504,7 @@ export function EditEntityDialog({
                       Generazione immagine...
                     </>
                   ) : (
-                    "Genera immagine IA (NPC)"
+                    "Genera immagine IA"
                   )}
                 </Button>
               </div>

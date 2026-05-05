@@ -51,7 +51,8 @@ function optionalStat(v: unknown): string | null {
   return null;
 }
 
-function buildCampaignContextBlock(ctx: CampaignAiContext | null): string {
+/** Contesto narrativo/meccanico dei paletti Architetto (testo + immagini). */
+export function buildCampaignContextBlock(ctx: CampaignAiContext | null): string {
   if (!ctx) {
     return "Il Master non ha ancora salvato i paletti AI della campagna; resta coerente con fantasy D&D 5e e con il tono epico/verosimile tipico del gioco.";
   }

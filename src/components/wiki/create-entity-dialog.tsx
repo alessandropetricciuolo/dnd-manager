@@ -638,7 +638,10 @@ export function CreateEntityDialog({
         campaignId,
         narrativeDescription,
         imageEntityType,
-        { provider: aiImageProvider }
+        {
+          provider: aiImageProvider,
+          entityTitle: titleValue.trim() || null,
+        }
       );
       if (!result.success) {
         toast.error(result.message);
