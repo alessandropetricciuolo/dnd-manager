@@ -17,6 +17,10 @@ import { uploadToTelegram } from "@/lib/telegram-storage";
 const STANDARD_VISUAL_NEGATIVES =
   "NO modern clothing, NO jeans, NO wristwatches, NO cars, NO text, NO watermarks, NO bad anatomy, NO deformed hands, NO cartoon style, NO anime style, NO manga style, NO cel shading, NO chibi";
 
+/** Per mostri wiki: evita crop tipo ritratto. */
+const MONSTER_FULL_BODY_NEGATIVE_HINT =
+  "cropped torso, bust-only shot, shoulders-up framing, face-only portrait, tight facial close-up, head-and-shoulders only composition";
+
 /** Memoria wiki/ PG molto lunga: per immagini teniamo un estratto compatto così il soggetto resta dominante. */
 const MAX_IMAGE_CAMPAIGN_LORE_SNIPPET_CHARS = 3000;
 
@@ -32,7 +36,7 @@ function truncateImageKnowledgeSnippet(raw: string, maxChars: number): string {
 /**
  * Molti modelli immagine seguono meglio l’inglese sulle specie D&D; il contesto italiano resta nella prima riga.
  */
-function augmentSpeciesAnchorsForImagePortrait(description: string): string {
+function augmentSpeciesAnchorsForCreatureImage(description: string, kind: "npc" | "monster"): string {
   const d = description.trim();
   if (!d) return d;
   const anchors: string[] = [];
@@ -51,7 +55,9 @@ function augmentSpeciesAnchorsForImagePortrait(description: string): string {
     anchors.push("GNOLL (D&D): hyena-like humanoid.");
   }
   if (!anchors.length) return d;
-  return `${d}\n\nMandatory species / silhouette for this portrait (English keywords — obey strictly; overrides unrelated faces from campaign lore text): ${anchors.join(" | ")}`;
+  const framingLabel =
+    kind === "monster" ? "full-body creature illustration" : "character portrait";
+  return `${d}\n\nMandatory species / silhouette for this ${framingLabel} (English keywords — obey strictly; overrides unrelated faces from campaign lore text): ${anchors.join(" | ")}`;
 }
 
 function maxLoreCharsForDescription(descriptionLength: number): number {
@@ -81,10 +87,12 @@ export type GenerateContextualPortraitOptions = {
  * Ritratto / illustrazione coerente con i paletti visivi della campagna (Fase 3).
  * Carica su Storage pubblico `campaigns/{campaignId}/portraits/`.
  */
+export type WikiImageEntityKind = "npc" | "location" | "monster";
+
 export async function generateContextualPortraitAction(
   campaignId: string,
   charDescription: string,
-  entityType: "npc" | "location",
+  entityType: WikiImageEntityKind,
   options: GenerateContextualPortraitOptions = {}
 ): Promise<GenerateContextualPortraitResult> {
   let step = "input-validation";
@@ -226,16 +234,19 @@ export async function generateContextualPortraitAction(
       "";
 
     const technicalForced =
-      entityType === "npc"
-        ? "portrait, close-up, high detail, photorealistic, cinematic lighting, 8k, masterpiece, professional fantasy art style"
-        : "environmental wide shot, high detail, photorealistic, cinematic lighting, 8k, masterpiece, professional fantasy location art, architectural and atmosphere focus";
+      entityType === "location"
+        ? "environmental wide shot, high detail, photorealistic, cinematic lighting, 8k, masterpiece, professional fantasy location art, architectural and atmosphere focus"
+        : entityType === "monster"
+          ? "full-body illustration of ONE fantasy monster or creature, entire figure visible from head to lowest limbs or tail tip inside the frame, wide camera framing pulled back, feet or claws touching visible ground, neutral unobtrusive fantasy backdrop, high detail, photorealistic, cinematic lighting, 8k, masterpiece, professional fantasy creature art — NOT a portrait crop, NOT bust-only, NOT face-only close-up"
+          : "portrait, close-up, high detail, photorealistic, cinematic lighting, 8k, masterpiece, professional fantasy art style";
 
     const campaignType =
       typeof (campaign as CampaignVisualRow).type === "string"
         ? String((campaign as CampaignVisualRow).type).trim()
         : "";
     const skipLoreForNpcFocus =
-      entityType === "npc" && trimmed.length <= SKIP_CAMPAIGN_LORE_NPC_MAX_CHARS;
+      (entityType === "npc" || entityType === "monster") &&
+      trimmed.length <= SKIP_CAMPAIGN_LORE_NPC_MAX_CHARS;
 
     let loreSnippet = "";
     if (campaignType === "long" && !skipLoreForNpcFocus) {
@@ -256,14 +267,25 @@ export async function generateContextualPortraitAction(
     const subjectKind =
       entityType === "location"
         ? "single fantasy location / environment"
-        : "single fantasy character (NPC or creature portrait)";
+        : entityType === "monster"
+          ? "single fantasy monster / creature (FULL BODY must appear in frame)"
+          : "single fantasy character (NPC portrait)";
     const descriptionAnchored =
-      entityType === "npc" ? augmentSpeciesAnchorsForImagePortrait(trimmed) : trimmed;
+      entityType === "npc" || entityType === "monster"
+        ? augmentSpeciesAnchorsForCreatureImage(trimmed, entityType === "monster" ? "monster" : "npc")
+        : trimmed;
+    const framingHint =
+      entityType === "monster"
+        ? "Framing rule — ALWAYS full-length shot: show the whole creature; no cropped torso or portrait framing."
+        : null;
     const subjectBlock = [
       `${entityTitleLine}Illustrate exactly ONE ${subjectKind}.`,
+      framingHint,
       "The following wiki description is the main visual truth — match species, body shape, outfit, age cues, scars, props and mood closely:",
       descriptionAnchored,
-    ].join("\n");
+    ]
+      .filter(Boolean)
+      .join("\n");
 
     const campaignNarrativeBlock = buildCampaignContextBlock(ctx);
     const loreBlock =
@@ -287,14 +309,24 @@ export async function generateContextualPortraitAction(
     const subjectLockClosing = [
       "---",
       `FINAL CHECK — Exactly one subject. Appearance MUST match this phrase (literal identity): "${trimmed}".`,
+      entityType === "monster"
+        ? "MONSTER FRAMING — Full body only: head-to-toe (or full silhouette including tail) visible; do not output bust or facial close-up."
+        : null,
       "If campaign lore mentions other named characters, IGNORE their faces/species for this image.",
-    ].join("\n");
+    ]
+      .filter(Boolean)
+      .join("\n");
 
     const positivePrompt = [subjectBlock, campaignNarrativeBlock, loreBlock, styleTail, subjectLockClosing]
       .filter((block) => typeof block === "string" && block.trim().length > 0)
       .join("\n\n");
 
-    const negativeCombined = [styleNegativeTemplate, visualNegative, STANDARD_VISUAL_NEGATIVES]
+    const negativeCombined = [
+      styleNegativeTemplate,
+      visualNegative,
+      STANDARD_VISUAL_NEGATIVES,
+      entityType === "monster" ? MONSTER_FULL_BODY_NEGATIVE_HINT : "",
+    ]
       .filter(Boolean)
       .join(", ");
     const strictNegativePrompt = `STRICTLY FORBIDDEN: ${negativeCombined}`;

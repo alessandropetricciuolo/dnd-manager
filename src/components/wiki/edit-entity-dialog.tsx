@@ -282,7 +282,8 @@ export function EditEntityDialog({
       toast.error("Compila la descrizione narrativa prima di generare l'immagine.");
       return;
     }
-    const imageEntityType: "npc" | "location" = type === "location" ? "location" : "npc";
+    const imageEntityType: "npc" | "location" | "monster" =
+      type === "location" ? "location" : type === "monster" ? "monster" : "npc";
     setAiImageLoading(true);
     try {
       const result = await generateContextualPortraitAction(

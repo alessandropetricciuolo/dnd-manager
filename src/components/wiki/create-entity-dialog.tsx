@@ -633,7 +633,8 @@ export function CreateEntityDialog({
     startAiProgress("Generazione immagine IA coerente in corso...");
     let success = false;
     try {
-      const imageEntityType: "npc" | "location" = type === "location" ? "location" : "npc";
+      const imageEntityType: "npc" | "location" | "monster" =
+        type === "location" ? "location" : type === "monster" ? "monster" : "npc";
       const result = await generateContextualPortraitAction(
         campaignId,
         narrativeDescription,
@@ -1554,6 +1555,12 @@ export function CreateEntityDialog({
                   <p className="text-xs text-barber-paper/65">
                     Genera un&apos;immagine coerente con la <strong className="font-medium text-barber-paper">descrizione</strong>{" "}
                     già scritta sopra. L&apos;immagine viene caricata automaticamente nel campo «Immagine» qui sotto.
+                    {type === "monster" ? (
+                      <span className="mt-1 block text-barber-gold/85">
+                        Per i <strong className="font-medium text-barber-paper">mostri</strong> l&apos;inquadratura è sempre{" "}
+                        <strong className="font-medium text-barber-paper">a figura intera</strong> (creatura completa nel fotogramma).
+                      </span>
+                    ) : null}
                   </p>
                   <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
                     <AiImageProviderSelect
