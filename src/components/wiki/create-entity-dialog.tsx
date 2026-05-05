@@ -1,9 +1,25 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, type FormEvent } from "react";
+import { useState, useEffect, useRef, useCallback, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "nextjs-toploader/app";
 import { toast } from "sonner";
-import { BookOpen, Plus, Trash2, Sparkles, Loader2, ImageIcon } from "lucide-react";
+import {
+  BookOpen,
+  Plus,
+  Trash2,
+  Sparkles,
+  Loader2,
+  ImageIcon,
+  ChevronDown,
+  IdCard,
+  FileText,
+  Wand2,
+  Share2,
+  Lock,
+  Notebook,
+  Search as SearchIcon,
+  Library,
+} from "lucide-react";
 import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
@@ -22,7 +38,9 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { ImageSourceField } from "@/components/ui/image-source-field";
 import { Textarea } from "@/components/ui/textarea";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { TagsInput } from "@/components/wiki/tags-input";
+import { cn } from "@/lib/utils";
 import {
   createEntity,
   generateWikiQuickAiAction,
@@ -91,6 +109,97 @@ const ITEM_RARITY_OPTIONS = [
   "Leggendario",
   "Artefatto",
 ] as const;
+
+/* -------------------------------------------------------------------------- */
+/*  FormSection — wrapper visivo coerente per le sezioni del form             */
+/* -------------------------------------------------------------------------- */
+
+type FormSectionProps = {
+  icon?: ReactNode;
+  title: string;
+  hint?: string;
+  badge?: ReactNode;
+  collapsible?: boolean;
+  defaultOpen?: boolean;
+  tone?: "default" | "private";
+  children: ReactNode;
+};
+
+function FormSection({
+  icon,
+  title,
+  hint,
+  badge,
+  collapsible = false,
+  defaultOpen = true,
+  tone = "default",
+  children,
+}: FormSectionProps) {
+  const isPrivate = tone === "private";
+
+  const wrapperBase = cn(
+    "rounded-xl border bg-barber-dark/55 transition-colors",
+    isPrivate
+      ? "border-violet-500/30 open:border-violet-500/45"
+      : "border-barber-gold/25 open:border-barber-gold/40"
+  );
+
+  const headerInner = (
+    <div className="flex min-w-0 flex-1 items-center gap-2">
+      {icon ? (
+        <span className={cn("shrink-0", isPrivate ? "text-violet-300" : "text-barber-gold")}>
+          {icon}
+        </span>
+      ) : null}
+      <h3 className="font-serif text-base font-semibold text-barber-paper sm:text-lg">{title}</h3>
+      {badge ? <span className="ml-1 shrink-0">{badge}</span> : null}
+    </div>
+  );
+
+  if (collapsible) {
+    return (
+      <details open={defaultOpen} className={cn("group", wrapperBase)}>
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-4 py-3 hover:bg-barber-gold/[0.04]">
+          {headerInner}
+          <div className="flex shrink-0 items-center gap-2">
+            {hint ? (
+              <span className="hidden text-xs text-barber-paper/55 sm:inline">{hint}</span>
+            ) : null}
+            <ChevronDown
+              className={cn(
+                "h-4 w-4 transition-transform group-open:rotate-180",
+                isPrivate ? "text-violet-300/70" : "text-barber-gold/70"
+              )}
+              aria-hidden
+            />
+          </div>
+        </summary>
+        <div
+          className={cn(
+            "space-y-4 border-t px-4 pt-4 pb-4",
+            isPrivate ? "border-violet-500/20" : "border-barber-gold/15"
+          )}
+        >
+          {children}
+        </div>
+      </details>
+    );
+  }
+
+  return (
+    <section className={cn(wrapperBase, "p-4")}>
+      <header className="mb-4 flex items-baseline justify-between gap-2">
+        {headerInner}
+        {hint ? (
+          <span className="hidden shrink-0 text-xs text-barber-paper/55 sm:inline">{hint}</span>
+        ) : null}
+      </header>
+      <div className="space-y-4">{children}</div>
+    </section>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
 
 export function CreateEntityDialog({
   campaignId,
@@ -679,304 +788,467 @@ export function CreateEntityDialog({
     }
   }
 
+  /* ------------------------------------------------------------------------ */
+  /*  RENDER                                                                  */
+  /* ------------------------------------------------------------------------ */
+
+  const typeLabel = WIKI_ENTITY_LABELS_IT[type] ?? type;
+  const monsterStatblockLoaded = type === "monster" && monsterVerbatimStatblock.trim().length > 0;
+  const aiAvailable = type !== "monster" || monsterStatblockLoaded;
+
   return (
     <>
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button
-          type="button"
-          className="bg-barber-red text-barber-paper hover:bg-barber-red/90"
-        >
-          <BookOpen className="mr-2 h-4 w-4" />
-          Nuova voce
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="flex max-h-[90vh] flex-col gap-2 border-barber-gold/40 bg-barber-dark text-barber-paper">
-        <DialogHeader className="shrink-0">
-          <DialogTitle className="text-left">Nuova voce wiki</DialogTitle>
-          <DialogDescription className="text-barber-paper/70">
-            Aggiungi un NPC, un luogo, un mostro, un oggetto o una voce di lore. Usa la bacchetta per
-            una bozza guidata dall&apos;AI (consigliato configurare prima &quot;L&apos;Anima della Campagna&quot; nel tab Solo GM).
-          </DialogDescription>
-        </DialogHeader>
-        <form ref={formRef} onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col gap-0">
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-scroll overflow-x-hidden py-1 pr-1">
-          <div className="space-y-2">
-            <Label htmlFor="entity-title">Titolo</Label>
-            <Input
-              id="entity-title"
-              name="title"
-              value={titleValue}
-              onChange={(e) => setTitleValue(e.target.value)}
-              placeholder="Es. Taverna del Drago"
-              className="bg-barber-dark border-barber-gold/30 text-barber-paper"
-              required
-              disabled={isLoading}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="entity-type">Tipo</Label>
-            <select
-              id="entity-type"
-              name="type"
-              required
-              value={type}
-              onChange={(e) => onTypeChange(e.target.value)}
-              className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
-              disabled={isLoading}
-            >
-              {WIKI_ENTITY_OPTIONS.map(({ value, label }) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {showCoreCheckbox && (
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="entity-is-core"
-                checked={isCore}
-                onChange={(e) => setIsCore(e.target.checked)}
-                className="h-4 w-4 rounded border-barber-gold/40 bg-barber-dark text-barber-gold"
-              />
-              <Label htmlFor="entity-is-core" className="text-barber-paper/90">
-                NPC/Mostro Core (stato vita/morte condiviso nella campagna)
-              </Label>
-            </div>
-          )}
-
-          {showAiMemoryCheckbox && (
-            <div className="rounded-md border border-violet-500/25 bg-barber-dark/50 p-3">
-              <div className="flex items-start gap-2">
-                <input
-                  type="checkbox"
-                  id="entity-ai-memory"
-                  checked={includeInAiMemory}
-                  onChange={(e) => setIncludeInAiMemory(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-violet-500/40 bg-barber-dark text-violet-400"
-                />
-                <div className="min-w-0 space-y-1">
-                  <Label htmlFor="entity-ai-memory" className="text-barber-paper/90 cursor-pointer">
-                    Includi nella memoria IA della campagna (cronaca canon)
-                  </Label>
-                  <p className="text-xs text-barber-paper/60">
-                    Solo campagne lunghe: testo e titolo di questa voce entrano nel contesto quando generi altre
-                    schede wiki con l’AI, per mantenere coerenza narrativa.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {campaignType === "long" && (
-            <div className="space-y-2">
-              <Label htmlFor="create-linked-mission">Missione collegata (opzionale)</Label>
-              <select
-                id="create-linked-mission"
-                value={linkedMissionId}
-                onChange={(e) => setLinkedMissionId(e.target.value)}
-                disabled={isLoading}
-                className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogTrigger asChild>
+          <Button
+            type="button"
+            className="bg-barber-red text-barber-paper hover:bg-barber-red/90"
+          >
+            <BookOpen className="mr-2 h-4 w-4" />
+            Nuova voce
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="border-barber-gold/40 bg-barber-dark text-barber-paper sm:max-w-3xl">
+          <DialogHeader className="space-y-1.5 text-left">
+            <p className="text-xs font-medium uppercase tracking-[0.25em] text-barber-gold/70">
+              Wiki di campagna
+            </p>
+            <DialogTitle className="font-serif text-xl font-semibold text-barber-paper sm:text-2xl">
+              Nuova voce wiki
+            </DialogTitle>
+            <DialogDescription className="text-sm text-barber-paper/70">
+              Aggiungi un NPC, un luogo, un mostro, un oggetto o una voce di lore. Se vuoi una bozza
+              veloce, prova la <strong className="font-medium text-barber-gold">Bacchetta IA</strong>{" "}
+              qui sotto.
+            </DialogDescription>
+            <div className="pt-1">
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setMagicOpen(true)}
+                className="bg-barber-gold text-barber-dark hover:bg-barber-gold/90"
               >
-                <option value="">Nessuna — Generale / trasversale</option>
-                {missionOptions.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.title}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-barber-paper/55">
-                Utile per ordinare il wiki e filtrare le immagini nella Regia GM per missione.
-              </p>
+                <Sparkles className="mr-2 h-4 w-4" />
+                Genera tutto con la Bacchetta IA
+              </Button>
             </div>
-          )}
+          </DialogHeader>
 
-          <ImageSourceField
-            fileInputName="image"
-            urlFieldName="image_url"
-            label="Immagine (opzionale)"
-            disabled={isLoading}
-            presetUrl={wikiImageUrlPreset}
-            fileExtraAction={
-              <div className="flex w-full flex-col gap-2 sm:max-w-xs">
-                <AiImageProviderSelect
-                  id="create-entity-image-provider"
-                  disabled={isLoading || aiImageLoading}
-                  value={aiImageProvider}
-                  onChange={setAiImageProvider}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => void handleAssistGenerateImage()}
-                  disabled={isLoading || aiImageLoading}
-                  className="border-violet-500/50 text-violet-200 hover:bg-violet-500/15 hover:text-violet-100"
-                >
-                  {aiImageLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Generazione...
-                    </>
-                  ) : (
-                    <>✨ Genera Immagine Coerente (Opzionale)</>
-                  )}
-                </Button>
-              </div>
-            }
-          />
-          {aiImagePreview && (
-            <p className="text-xs text-violet-200/85">
-              Immagine IA pronta: è stata iniettata nel file input originale.
-            </p>
-          )}
-
-          <TagsInput value={tags} onChange={setTags} disabled={isLoading} />
-
-          {/* Relazioni & Mappe */}
-          <div className="space-y-2">
-            <Label className="text-barber-paper/90">Relazioni &amp; Mappe</Label>
-            <p className="text-xs text-barber-paper/60">
-              Collega questa voce ad altre voci wiki o a mappe. Le relazioni appariranno nella Mappa Concettuale (Solo GM).
-            </p>
-            {relations.map((rel, idx) => (
-              <div key={idx} className="flex flex-wrap items-end gap-2 rounded-md border border-barber-gold/20 bg-barber-dark/80 p-2">
-                <div className="flex-1 min-w-[100px]">
-                  <Label className="text-xs">Tipo bersaglio</Label>
-                  <select
-                    value={rel.targetType}
-                    onChange={(e) =>
-                      setRelations((prev) => {
-                        const next = [...prev];
-                        next[idx] = { ...next[idx], targetType: e.target.value as "wiki" | "map", targetId: "" };
-                        return next;
-                      })
-                    }
-                    className="mt-0.5 flex h-9 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-2 text-sm text-barber-paper"
-                    disabled={isLoading}
-                  >
-                    <option value="wiki">Voce Wiki</option>
-                    <option value="map">Mappa</option>
-                  </select>
+          <form ref={formRef} onSubmit={handleSubmit} className="space-y-3">
+              {/* ============================================================ */}
+              {/*  1. IDENTITÀ                                                 */}
+              {/* ============================================================ */}
+              <FormSection
+                icon={<IdCard className="h-4 w-4" />}
+                title="Identità della voce"
+                hint="Base obbligatoria"
+              >
+                <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
+                  <div className="space-y-2">
+                    <Label htmlFor="entity-title">Titolo</Label>
+                    <Input
+                      id="entity-title"
+                      name="title"
+                      value={titleValue}
+                      onChange={(e) => setTitleValue(e.target.value)}
+                      placeholder="Es. Taverna del Drago"
+                      className="bg-barber-dark border-barber-gold/30 text-barber-paper"
+                      required
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <div className="space-y-2 sm:min-w-[180px]">
+                    <Label htmlFor="entity-type">Tipo</Label>
+                    <select
+                      id="entity-type"
+                      name="type"
+                      required
+                      value={type}
+                      onChange={(e) => onTypeChange(e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
+                      disabled={isLoading}
+                    >
+                      {WIKI_ENTITY_OPTIONS.map(({ value, label }) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-[120px]">
-                  <Label className="text-xs">Bersaglio</Label>
-                  <select
-                    value={rel.targetId}
-                    onChange={(e) =>
-                      setRelations((prev) => {
-                        const next = [...prev];
-                        next[idx] = { ...next[idx], targetId: e.target.value };
-                        return next;
-                      })
-                    }
-                    className="mt-0.5 flex h-9 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-2 text-sm text-barber-paper"
-                    disabled={isLoading}
-                  >
-                    <option value="">— Seleziona —</option>
-                    {rel.targetType === "wiki"
-                      ? wikiOptions.map((o) => (
-                          <option key={o.id} value={o.id}>
-                            {o.name}
-                          </option>
-                        ))
-                      : mapOptions.map((o) => (
-                          <option key={o.id} value={o.id}>
-                            {o.name}
-                          </option>
-                        ))}
-                  </select>
-                </div>
-                <div className="flex-1 min-w-[100px]">
-                  <Label className="text-xs">Etichetta legame</Label>
-                  <Input
-                    value={rel.label}
-                    onChange={(e) =>
-                      setRelations((prev) => {
-                        const next = [...prev];
-                        next[idx] = { ...next[idx], label: e.target.value };
-                        return next;
-                      })
-                    }
-                    placeholder="Es. Vive qui, Nascondiglio"
-                    className="mt-0.5 h-9 bg-barber-dark border-barber-gold/30 text-barber-paper text-sm"
-                    disabled={isLoading}
-                  />
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 shrink-0 text-barber-paper/60 hover:text-barber-red"
-                  onClick={() => setRelations((prev) => prev.filter((_, i) => i !== idx))}
-                  disabled={isLoading}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="border-barber-gold/40 text-barber-paper/90"
-              onClick={() => setRelations((prev) => [...prev, { targetType: "wiki", targetId: "", label: "" }])}
-              disabled={isLoading}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Aggiungi relazione
-            </Button>
-          </div>
 
-          {/* Contenuto principale (storia/descrizione) */}
-          <div className="space-y-2">
-            <Label htmlFor="entity-content">
-              {type === "lore" ? "Testo" : "Storia / Descrizione"}
-            </Label>
-            <div className="rounded-md border border-violet-500/30 bg-violet-950/20 p-3">
-              <div className="grid gap-3">
+                <TagsInput value={tags} onChange={setTags} disabled={isLoading} />
+
+                {campaignType === "long" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="create-linked-mission">Missione collegata (opzionale)</Label>
+                    <select
+                      id="create-linked-mission"
+                      value={linkedMissionId}
+                      onChange={(e) => setLinkedMissionId(e.target.value)}
+                      disabled={isLoading}
+                      className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
+                    >
+                      <option value="">Nessuna — Generale / trasversale</option>
+                      {missionOptions.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.title}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-barber-paper/55">
+                      Utile per ordinare il wiki e filtrare le immagini nella Regia GM per missione.
+                    </p>
+                  </div>
+                )}
+
+                {(showCoreCheckbox || showAiMemoryCheckbox) && (
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {showCoreCheckbox && (
+                      <label
+                        htmlFor="entity-is-core"
+                        className="flex cursor-pointer items-start gap-2 rounded-md border border-barber-gold/25 bg-barber-dark/70 p-3 hover:border-barber-gold/40"
+                      >
+                        <input
+                          type="checkbox"
+                          id="entity-is-core"
+                          checked={isCore}
+                          onChange={(e) => setIsCore(e.target.checked)}
+                          className="mt-0.5 h-4 w-4 shrink-0 rounded border-barber-gold/40 bg-barber-dark text-barber-gold"
+                        />
+                        <span className="min-w-0 space-y-0.5">
+                          <span className="block text-sm font-medium text-barber-paper">
+                            NPC/Mostro Core
+                          </span>
+                          <span className="block text-xs text-barber-paper/60">
+                            Stato vita/morte condiviso nella campagna.
+                          </span>
+                        </span>
+                      </label>
+                    )}
+                    {showAiMemoryCheckbox && (
+                      <label
+                        htmlFor="entity-ai-memory"
+                        className="flex cursor-pointer items-start gap-2 rounded-md border border-violet-500/30 bg-violet-950/15 p-3 hover:border-violet-500/45"
+                      >
+                        <input
+                          type="checkbox"
+                          id="entity-ai-memory"
+                          checked={includeInAiMemory}
+                          onChange={(e) => setIncludeInAiMemory(e.target.checked)}
+                          className="mt-0.5 h-4 w-4 shrink-0 rounded border-violet-500/40 bg-barber-dark text-violet-400"
+                        />
+                        <span className="min-w-0 space-y-0.5">
+                          <span className="block text-sm font-medium text-barber-paper">
+                            Memoria IA della campagna
+                          </span>
+                          <span className="block text-xs text-barber-paper/60">
+                            Solo campagne lunghe: la voce entra nel contesto delle generazioni IA future.
+                          </span>
+                        </span>
+                      </label>
+                    )}
+                  </div>
+                )}
+              </FormSection>
+
+              {/* ============================================================ */}
+              {/*  2. CONTENUTO                                                */}
+              {/* ============================================================ */}
+              <FormSection
+                icon={<FileText className="h-4 w-4" />}
+                title={`Contenuto · ${typeLabel}`}
+                hint="Storia + scheda tecnica"
+              >
                 <div className="space-y-2">
-                  <Label htmlFor="assist-prompt" className="text-xs text-violet-100">
-                    Istruzioni per l&apos;IA (Opzionale)
+                  <Label htmlFor="entity-content">
+                    {type === "lore" ? "Testo" : "Storia / Descrizione"}
                   </Label>
                   <Textarea
-                    id="assist-prompt"
-                    value={aiPrompt}
-                    onChange={(e) => setAiPrompt(e.target.value)}
-                    placeholder={
-                      type === "monster"
-                        ? "Prima del trattino (-): parole chiave per il contesto. Dopo il -: storia / ruolo nella campagna."
-                        : "Es. Un oste nano burbero legato alla gilda dei ladri..."
-                    }
-                    disabled={isLoading || aiTextLoading}
-                    className="min-h-[72px] resize-y bg-barber-dark border-violet-500/35 text-barber-paper"
+                    id="entity-content"
+                    name="content"
+                    value={contentValue}
+                    onChange={(e) => setContentValue(e.target.value)}
+                    placeholder="Descrizione in Markdown..."
+                    className="min-h-[140px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
+                    disabled={isLoading}
                   />
-                  <p className="text-[11px] text-violet-200/65">
-                    Puoi usare il trattino <strong className="font-medium text-violet-100/90">-</strong>: a sinistra
-                    contesto per i manuali, a destra narrazione e richieste di trama (priorità alla memoria di campagna
-                    se attiva).
+                  <p className="text-xs text-barber-paper/55">
+                    Puoi compilare a mano oppure aprire l&apos;<strong className="font-medium text-barber-gold">Assistente IA</strong> qui sotto per una bozza guidata.
                   </p>
                 </div>
 
+                {/* Campi dinamici per tipo */}
+                {type === "npc" && (
+                  <>
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="attr-race-npc">Razza</Label>
+                        <Input
+                          id="attr-race-npc"
+                          value={getAttr("race")}
+                          onChange={(e) => setAttr("race", e.target.value)}
+                          placeholder="Es. Elfo, Nano, Umano..."
+                          className="bg-barber-dark border-barber-gold/30 text-barber-paper"
+                          disabled={isLoading}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="attr-class-npc">Classe</Label>
+                        <Input
+                          id="attr-class-npc"
+                          value={getAttr("class")}
+                          onChange={(e) => setAttr("class", e.target.value)}
+                          placeholder="Es. Mago, Guerriero, Ladro..."
+                          className="bg-barber-dark border-barber-gold/30 text-barber-paper"
+                          disabled={isLoading}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="attr-age-npc">Età</Label>
+                        <Input
+                          id="attr-age-npc"
+                          value={getAttr("age")}
+                          onChange={(e) => setAttr("age", e.target.value)}
+                          placeholder="Es. 42 anni"
+                          className="bg-barber-dark border-barber-gold/30 text-barber-paper"
+                          disabled={isLoading}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="attr-statblock-npc">Statblock</Label>
+                      <Textarea
+                        id="attr-statblock-npc"
+                        value={getAttr("statblock")}
+                        onChange={(e) => setAttr("statblock", e.target.value)}
+                        placeholder="Statblock NPC (abilità, tiri salvezza, attacchi, capacità speciali)..."
+                        className="min-h-[120px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="attr-relationships">Rapporti interpersonali</Label>
+                        <Textarea
+                          id="attr-relationships"
+                          value={getAttr("relationships")}
+                          onChange={(e) => setAttr("relationships", e.target.value)}
+                          placeholder="Relazioni con altri NPC, fazioni..."
+                          className="min-h-[80px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
+                          disabled={isLoading}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="attr-loot-npc">Loot</Label>
+                        <Textarea
+                          id="attr-loot-npc"
+                          value={getAttr("loot")}
+                          onChange={(e) => setAttr("loot", e.target.value)}
+                          placeholder="Oggetti che può avere o lasciare..."
+                          className="min-h-[80px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
+                          disabled={isLoading}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {type === "location" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="attr-loot-location">Loot</Label>
+                    <Textarea
+                      id="attr-loot-location"
+                      value={getAttr("loot")}
+                      onChange={(e) => setAttr("loot", e.target.value)}
+                      placeholder="Tesori nascosti, oggetti nel luogo..."
+                      className="min-h-[80px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
+                      disabled={isLoading}
+                    />
+                  </div>
+                )}
+
                 {type === "monster" && (
-                  <div className="space-y-2 rounded-md border border-sky-600/30 bg-sky-950/25 p-3">
-                    <p className="text-xs leading-snug text-sky-100/90">
-                      Statistiche di combattimento: scegli un passaggio dal bestiario indicizzato (allineato al testo
-                      importato dai PDF; i chunk vicini vengono uniti per ricostruire blocchi lunghi). L&apos;IA genera
-                      solo la parte narrativa, coerente con la cronaca di campagna.
-                    </p>
-                    <div className="space-y-2 rounded border border-sky-700/30 bg-barber-dark/35 p-2">
-                      <p className="text-[11px] text-sky-200/85">
-                        Selezione rapida per GS (Manuale dei Mostri + Mostri del Multiverso)
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="attr-statblock-monster">Statblock</Label>
+                      <Textarea
+                        id="attr-statblock-monster"
+                        value={getAttr("statblock")}
+                        onChange={(e) => setAttr("statblock", e.target.value)}
+                        placeholder="Statblock completo del mostro (azioni, reazioni, tratti, capacità leggendarie)..."
+                        className="min-h-[140px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
+                        disabled={isLoading}
+                      />
+                      <p className="text-xs text-barber-paper/55">
+                        Suggerimento: usa l&apos;<strong className="font-medium text-barber-gold">Assistente IA</strong> per cercare lo statblock direttamente nei manuali.
                       </p>
-                      <div className="flex flex-wrap gap-2">
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="attr-hp">HP</Label>
+                        <Input
+                          id="attr-hp"
+                          value={getAttr("combat_stats.hp")}
+                          onChange={(e) => setAttr("combat_stats.hp", e.target.value)}
+                          placeholder="Es. 45"
+                          className="bg-barber-dark border-barber-gold/30 text-barber-paper"
+                          disabled={isLoading}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="attr-ac">AC</Label>
+                        <Input
+                          id="attr-ac"
+                          value={getAttr("combat_stats.ac")}
+                          onChange={(e) => setAttr("combat_stats.ac", e.target.value)}
+                          placeholder="Es. 15"
+                          className="bg-barber-dark border-barber-gold/30 text-barber-paper"
+                          disabled={isLoading}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="attr-cr">Grado di Sfida (GS)</Label>
+                        <select
+                          id="attr-cr"
+                          value={getAttr("combat_stats.cr")}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setAttr("combat_stats.cr", val);
+                            const xp = CHALLENGE_RATING_OPTIONS.find((o) => o.value === val)?.xp;
+                            if (xp != null) setMonsterXp(xp);
+                          }}
+                          className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
+                          disabled={isLoading}
+                        >
+                          <option value="">— Scegli GS —</option>
+                          {CHALLENGE_RATING_OPTIONS.map((o) => (
+                            <option key={o.value} value={o.value}>
+                              {o.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="monster-xp">PE</Label>
+                        <Input
+                          id="monster-xp"
+                          name="xp_value"
+                          type="number"
+                          min={0}
+                          value={monsterXp || ""}
+                          onChange={(e) => setMonsterXp(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                          placeholder="Auto da GS"
+                          className="bg-barber-dark border-barber-gold/30 text-barber-paper"
+                          disabled={isLoading}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="attr-attacks">Attacchi / Azioni speciali</Label>
+                        <Textarea
+                          id="attr-attacks"
+                          value={getAttr("combat_stats.attacks")}
+                          onChange={(e) => setAttr("combat_stats.attacks", e.target.value)}
+                          placeholder="Descrizione attacchi e azioni..."
+                          className="min-h-[80px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
+                          disabled={isLoading}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="attr-loot-monster">Loot</Label>
+                        <Textarea
+                          id="attr-loot-monster"
+                          value={getAttr("loot")}
+                          onChange={(e) => setAttr("loot", e.target.value)}
+                          placeholder="Tesoro che può lasciare..."
+                          className="min-h-[80px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
+                          disabled={isLoading}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {type === "lore" && (
+                  <div className="grid gap-4 sm:grid-cols-[160px_1fr]">
+                    <div className="space-y-2">
+                      <Label htmlFor="entity-sort-order">Numero capitolo</Label>
+                      <Input
+                        id="entity-sort-order"
+                        type="number"
+                        min={1}
+                        value={sortOrder}
+                        onChange={(e) => setSortOrder(e.target.value)}
+                        placeholder="Es. 1"
+                        className="bg-barber-dark border-barber-gold/30 text-barber-paper"
+                        disabled={isLoading}
+                      />
+                      <p className="text-xs text-barber-paper/55">Per indice Capitolo 1, 2, 3...</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="attr-summary">Riassunto</Label>
+                      <Textarea
+                        id="attr-summary"
+                        value={getAttr("summary")}
+                        onChange={(e) => setAttr("summary", e.target.value)}
+                        placeholder="Breve riassunto (box collassabile nella lettura)..."
+                        className="min-h-[80px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
+                        disabled={isLoading}
+                      />
+                    </div>
+                  </div>
+                )}
+              </FormSection>
+
+              {/* ============================================================ */}
+              {/*  3. ASSISTENTE IA                                            */}
+              {/* ============================================================ */}
+              <FormSection
+                icon={<Wand2 className="h-4 w-4" />}
+                title="Assistente IA"
+                hint="Genera testo e immagini"
+                badge={<StatusBadge tone="muted">Opzionale</StatusBadge>}
+                collapsible
+                defaultOpen={false}
+              >
+                <p className="text-xs leading-relaxed text-barber-paper/65">
+                  L&apos;assistente compila <strong className="font-medium text-barber-paper">Storia / Descrizione</strong>{" "}
+                  e (se applicabile) statblock e statistiche. Puoi sempre rivedere il risultato a mano prima di salvare.
+                </p>
+
+                {/* Step 1 — Per i mostri: caricare lo statblock dai manuali */}
+                {type === "monster" && (
+                  <div className="space-y-3 rounded-lg border border-barber-gold/30 bg-barber-dark/65 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Library className="h-4 w-4 shrink-0 text-barber-gold" />
+                        <h4 className="font-serif text-sm font-semibold text-barber-paper">
+                          1 · Bestiario di campagna
+                        </h4>
+                      </div>
+                      {monsterStatblockLoaded ? (
+                        <StatusBadge tone="success">Statblock caricato</StatusBadge>
+                      ) : (
+                        <StatusBadge tone="warning">Richiesto per generare</StatusBadge>
+                      )}
+                    </div>
+                    <p className="text-xs leading-snug text-barber-paper/65">
+                      Scegli un mostro dalla lista oppure cerca per nome. Lo statblock arriva direttamente
+                      dai PDF importati: l&apos;IA genera solo la parte narrativa.
+                    </p>
+
+                    <div className="space-y-2 rounded-md border border-barber-gold/20 bg-barber-dark/45 p-2.5">
+                      <p className="text-xs font-medium text-barber-paper/75">
+                        Selezione rapida per Grado di Sfida
+                      </p>
+                      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                         <select
                           value={selectedBestiaryListId}
                           onChange={(e) => setSelectedBestiaryListId(e.target.value)}
                           disabled={isLoading || aiTextLoading || bestiaryListLoading}
-                          className="flex h-10 min-w-[220px] flex-1 rounded-md border border-sky-600/35 bg-barber-dark px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-sky-500"
+                          className="flex h-10 min-w-0 flex-1 rounded-md border border-barber-gold/30 bg-barber-dark px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
                         >
                           <option value="">
                             {bestiaryListLoading
@@ -996,6 +1268,7 @@ export function CreateEntityDialog({
                         <Button
                           type="button"
                           variant="secondary"
+                          size="sm"
                           disabled={
                             isLoading ||
                             aiTextLoading ||
@@ -1004,673 +1277,722 @@ export function CreateEntityDialog({
                             loadingChunkId != null
                           }
                           onClick={() => void handleUseBestiaryFromList()}
-                          className="border-sky-500/40 text-sky-100"
                         >
                           Usa dalla lista
                         </Button>
                         <Button
                           type="button"
                           variant="ghost"
+                          size="sm"
                           disabled={isLoading || aiTextLoading || bestiaryListLoading}
                           onClick={() => void loadBestiaryList()}
-                          className="text-sky-200/85 hover:text-sky-100"
+                          className="text-barber-paper/70 hover:text-barber-gold"
                         >
                           Aggiorna lista
                         </Button>
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Input
-                        value={bestiaryQuery}
-                        onChange={(e) => setBestiaryQuery(e.target.value)}
-                        placeholder="Cerca nel bestiario (es. Drago verde)…"
-                        disabled={isLoading || aiTextLoading || bestiarySearchLoading}
-                        className="min-w-[140px] flex-1 border-sky-600/35 bg-barber-dark text-barber-paper"
-                      />
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        disabled={isLoading || aiTextLoading || bestiarySearchLoading}
-                        onClick={() => void handleBestiarySearch()}
-                        className="border-sky-500/40 text-sky-100"
-                      >
-                        {bestiarySearchLoading ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Ricerca…
-                          </>
-                        ) : (
-                          "Cerca nel bestiario"
-                        )}
-                      </Button>
-                    </div>
-                    {bestiaryHits.length > 0 && (
-                      <ul className="max-h-44 space-y-1.5 overflow-y-auto rounded border border-sky-800/35 bg-barber-dark/50 p-2 text-[11px]">
-                        {bestiaryHits.map((h) => (
-                          <li
-                            key={h.id}
-                            className="flex flex-col gap-1 rounded border border-sky-900/40 bg-barber-dark/70 p-2 sm:flex-row sm:items-center sm:justify-between"
-                          >
-                            <div className="min-w-0 flex-1 text-sky-50/95">
-                              <span className="line-clamp-2">{h.excerpt}</span>
-                              <span className="mt-0.5 block text-sky-300/70">
-                                {h.manual_label}
-                                {h.section_heading ? ` · ${h.section_heading}` : ""}
-                              </span>
-                            </div>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              disabled={loadingChunkId === h.id || aiTextLoading}
-                              className="shrink-0 border-sky-500/45 text-sky-100"
-                              onClick={() => void handleUseBestiaryHit(h.id)}
+
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-barber-paper/75">Cerca per nome</p>
+                      <div className="flex flex-col gap-2 sm:flex-row">
+                        <div className="relative flex-1">
+                          <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-barber-paper/45" />
+                          <Input
+                            value={bestiaryQuery}
+                            onChange={(e) => setBestiaryQuery(e.target.value)}
+                            placeholder="Es. Drago verde, Goblin, Lich…"
+                            disabled={isLoading || aiTextLoading || bestiarySearchLoading}
+                            className="border-barber-gold/30 bg-barber-dark pl-9 text-barber-paper"
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={isLoading || aiTextLoading || bestiarySearchLoading}
+                          onClick={() => void handleBestiarySearch()}
+                          className="border-barber-gold/40 text-barber-paper hover:bg-barber-gold/10"
+                        >
+                          {bestiarySearchLoading ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Ricerca…
+                            </>
+                          ) : (
+                            "Cerca"
+                          )}
+                        </Button>
+                      </div>
+                      {bestiaryHits.length > 0 && (
+                        <ul className="scrollbar-barber-y max-h-48 space-y-1.5 overflow-y-auto rounded border border-barber-gold/20 bg-barber-dark/55 p-2 text-xs">
+                          {bestiaryHits.map((h) => (
+                            <li
+                              key={h.id}
+                              className="flex flex-col gap-1.5 rounded border border-barber-gold/15 bg-barber-dark/80 p-2 sm:flex-row sm:items-center sm:justify-between"
                             >
-                              {loadingChunkId === h.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                "Usa questo statblock"
-                              )}
-                            </Button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    {monsterVerbatimStatblock.trim() ? (
-                      <p className="text-[11px] text-emerald-200/85">
-                        Statblock caricato ({monsterVerbatimStatblock.length} caratteri) — verrà incollato in [MECCANICA]
-                        senza riscrittura.
-                      </p>
-                    ) : (
-                      <p className="text-[11px] text-amber-200/85">Obbligatorio: carica uno statblock dal bestiario prima di generare.</p>
-                    )}
+                              <div className="min-w-0 flex-1 text-barber-paper/90">
+                                <span className="line-clamp-2">{h.excerpt}</span>
+                                <span className="mt-0.5 block text-[11px] text-barber-paper/55">
+                                  {h.manual_label}
+                                  {h.section_heading ? ` · ${h.section_heading}` : ""}
+                                </span>
+                              </div>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                disabled={loadingChunkId === h.id || aiTextLoading}
+                                className="shrink-0 border-barber-gold/40 text-barber-paper hover:bg-barber-gold/10"
+                                onClick={() => void handleUseBestiaryHit(h.id)}
+                              >
+                                {loadingChunkId === h.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  "Usa questo"
+                                )}
+                              </Button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
                   </div>
                 )}
 
+                {/* Step 2 — Tratti per NPC */}
                 {type === "npc" && (
-                  <div className="grid gap-2 rounded-md border border-emerald-800/35 bg-emerald-950/30 p-3 sm:grid-cols-3">
-                    <div className="space-y-1">
-                      <Label className="text-xs text-emerald-100">Razza (manuali)</Label>
-                      <select
-                        value={npcAiRace}
-                        onChange={(e) => setNpcAiRace(e.target.value)}
-                        disabled={isLoading || aiTextLoading}
-                        className="flex h-10 w-full rounded-md border border-emerald-700/40 bg-barber-dark px-2 text-sm text-barber-paper"
-                      >
-                        <option value="">— Come campo «Razza» sotto —</option>
-                        {WIKI_NPC_RACE_OPTIONS.map((r) => (
-                          <option key={r} value={r}>
-                            {r}
-                          </option>
-                        ))}
-                      </select>
+                  <div className="space-y-3 rounded-lg border border-barber-gold/30 bg-barber-dark/65 p-3">
+                    <div className="flex items-center gap-2">
+                      <Library className="h-4 w-4 shrink-0 text-barber-gold" />
+                      <h4 className="font-serif text-sm font-semibold text-barber-paper">
+                        Tratti per la generazione (manuali)
+                      </h4>
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs text-emerald-100">Classe</Label>
-                      <select
-                        value={npcAiClass}
-                        onChange={(e) => setNpcAiClass(e.target.value)}
-                        disabled={isLoading || aiTextLoading}
-                        className="flex h-10 w-full rounded-md border border-emerald-700/40 bg-barber-dark px-2 text-sm text-barber-paper"
-                      >
-                        <option value="">— Come campo «Classe» sotto —</option>
-                        {WIKI_NPC_CLASS_OPTIONS.map((c) => (
-                          <option key={c} value={c}>
-                            {c}
-                          </option>
-                        ))}
-                      </select>
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-barber-paper/80">Razza</Label>
+                        <select
+                          value={npcAiRace}
+                          onChange={(e) => setNpcAiRace(e.target.value)}
+                          disabled={isLoading || aiTextLoading}
+                          className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-2 text-sm text-barber-paper"
+                        >
+                          <option value="">— Come campo «Razza» sopra —</option>
+                          {WIKI_NPC_RACE_OPTIONS.map((r) => (
+                            <option key={r} value={r}>
+                              {r}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-barber-paper/80">Classe</Label>
+                        <select
+                          value={npcAiClass}
+                          onChange={(e) => setNpcAiClass(e.target.value)}
+                          disabled={isLoading || aiTextLoading}
+                          className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-2 text-sm text-barber-paper"
+                        >
+                          <option value="">— Come campo «Classe» sopra —</option>
+                          {WIKI_NPC_CLASS_OPTIONS.map((c) => (
+                            <option key={c} value={c}>
+                              {c}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-barber-paper/80">Livello</Label>
+                        <select
+                          value={npcAiLevel}
+                          onChange={(e) => setNpcAiLevel(e.target.value)}
+                          disabled={isLoading || aiTextLoading}
+                          className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-2 text-sm text-barber-paper"
+                        >
+                          <option value="">— Livello PG —</option>
+                          {WIKI_NPC_LEVEL_OPTIONS.map((lv) => (
+                            <option key={lv} value={lv}>
+                              {lv}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs text-emerald-100">Livello</Label>
-                      <select
-                        value={npcAiLevel}
-                        onChange={(e) => setNpcAiLevel(e.target.value)}
-                        disabled={isLoading || aiTextLoading}
-                        className="flex h-10 w-full rounded-md border border-emerald-700/40 bg-barber-dark px-2 text-sm text-barber-paper"
-                      >
-                        <option value="">— Livello PG —</option>
-                        {WIKI_NPC_LEVEL_OPTIONS.map((lv) => (
-                          <option key={lv} value={lv}>
-                            {lv}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <p className="sm:col-span-3 text-[11px] text-emerald-100/70">
-                      La scheda userà solo estratti dai manuali non esclusi nei paletti campagna. Razza/Classe possono
-                      essere lette dai campi della scheda se non scegli un valore qui.
+                    <p className="text-[11px] text-barber-paper/55">
+                      La scheda userà solo manuali non esclusi nei paletti campagna.
                     </p>
                   </div>
                 )}
 
-                <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-                <div className="space-y-2">
-                  {type === "monster" ? (
-                    <>
-                      <Label htmlFor="assist-cr" className="text-xs text-violet-100">
-                        Grado di Sfida (CR) opzionale
-                      </Label>
-                      <Input
-                        id="assist-cr"
-                        value={aiCr}
-                        onChange={(e) => {
-                          const val = e.target.value.trim();
-                          setAiCr(val);
-                          setAttr("combat_stats.cr", val);
-                          const xp = CHALLENGE_RATING_OPTIONS.find((o) => o.value === val)?.xp;
-                          setMonsterXp(xp ?? 0);
-                        }}
-                        placeholder="Es. 5"
-                        disabled={isLoading || aiTextLoading}
-                        className="bg-barber-dark border-violet-500/35 text-barber-paper"
-                      />
-                    </>
-                  ) : type === "item" ? (
-                    <>
-                      <Label htmlFor="assist-rarity" className="text-xs text-violet-100">
-                        Rarità oggetto opzionale
-                      </Label>
-                      <select
-                        id="assist-rarity"
-                        value={aiRarity}
-                        onChange={(e) => setAiRarity(e.target.value)}
-                        disabled={isLoading || aiTextLoading}
-                        className="flex h-10 w-full rounded-md border border-violet-500/35 bg-barber-dark px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-violet-400"
-                      >
-                        <option value="">— Scegli rarità —</option>
-                        {ITEM_RARITY_OPTIONS.map((rarity) => (
-                          <option key={rarity} value={rarity}>
-                            {rarity}
-                          </option>
-                        ))}
-                      </select>
-                    </>
-                  ) : (
-                    <p className="text-xs text-violet-100/80">
-                      Template contestuale automatico per {type === "npc" ? "NPC" : type === "location" ? "Luogo" : "Lore"}.
+                {/* Step 3 — Prompt + parametri tipo + bottone genera testo */}
+                <div className="space-y-3 rounded-lg border border-barber-gold/30 bg-barber-dark/65 p-3">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 shrink-0 text-barber-gold" />
+                    <h4 className="font-serif text-sm font-semibold text-barber-paper">
+                      {type === "monster" ? "2 · Genera testo" : "Genera testo"}
+                    </h4>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="assist-prompt" className="text-xs text-barber-paper/80">
+                      Istruzioni per l&apos;IA (opzionale)
+                    </Label>
+                    <Textarea
+                      id="assist-prompt"
+                      value={aiPrompt}
+                      onChange={(e) => setAiPrompt(e.target.value)}
+                      placeholder={
+                        type === "monster"
+                          ? "Prima del trattino (-): parole chiave per il contesto. Dopo il -: storia / ruolo nella campagna."
+                          : "Es. Un oste nano burbero legato alla gilda dei ladri..."
+                      }
+                      disabled={isLoading || aiTextLoading}
+                      className="min-h-[72px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
+                    />
+                    <p className="text-[11px] text-barber-paper/55">
+                      Puoi usare il trattino <strong className="font-medium text-barber-paper/85">-</strong>: a sinistra
+                      contesto per i manuali, a destra narrazione e richieste di trama.
                     </p>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                    <div className="space-y-2">
+                      {type === "monster" ? (
+                        <>
+                          <Label htmlFor="assist-cr" className="text-xs text-barber-paper/80">
+                            Grado di Sfida (CR) opzionale
+                          </Label>
+                          <Input
+                            id="assist-cr"
+                            value={aiCr}
+                            onChange={(e) => {
+                              const val = e.target.value.trim();
+                              setAiCr(val);
+                              setAttr("combat_stats.cr", val);
+                              const xp = CHALLENGE_RATING_OPTIONS.find((o) => o.value === val)?.xp;
+                              setMonsterXp(xp ?? 0);
+                            }}
+                            placeholder="Es. 5"
+                            disabled={isLoading || aiTextLoading}
+                            className="bg-barber-dark border-barber-gold/30 text-barber-paper"
+                          />
+                        </>
+                      ) : type === "item" ? (
+                        <>
+                          <Label htmlFor="assist-rarity" className="text-xs text-barber-paper/80">
+                            Rarità oggetto opzionale
+                          </Label>
+                          <select
+                            id="assist-rarity"
+                            value={aiRarity}
+                            onChange={(e) => setAiRarity(e.target.value)}
+                            disabled={isLoading || aiTextLoading}
+                            className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
+                          >
+                            <option value="">— Scegli rarità —</option>
+                            {ITEM_RARITY_OPTIONS.map((rarity) => (
+                              <option key={rarity} value={rarity}>
+                                {rarity}
+                              </option>
+                            ))}
+                          </select>
+                        </>
+                      ) : (
+                        <p className="text-xs text-barber-paper/65">
+                          Template contestuale automatico per{" "}
+                          <span className="font-medium text-barber-paper/90">
+                            {type === "npc" ? "NPC" : type === "location" ? "Luogo" : "Lore"}
+                          </span>
+                          .
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={() => void handleAssistGenerateText()}
+                      disabled={isLoading || aiTextLoading || !aiAvailable}
+                      className="bg-barber-gold text-barber-dark hover:bg-barber-gold/90 disabled:opacity-50"
+                    >
+                      {aiTextLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Generazione...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="mr-2 h-4 w-4" />
+                          Genera testo
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  {aiProgressLabel && (
+                    <div className="rounded-md border border-barber-gold/30 bg-barber-dark/60 p-3">
+                      <p className="mb-2 text-xs text-barber-paper/85">{aiProgressLabel}</p>
+                      <Progress value={aiProgress} className="h-2" />
+                    </div>
                   )}
                 </div>
+
+                {/* Step 4 — Generazione immagine coerente */}
+                <div className="space-y-3 rounded-lg border border-barber-gold/30 bg-barber-dark/65 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <ImageIcon className="h-4 w-4 shrink-0 text-barber-gold" />
+                      <h4 className="font-serif text-sm font-semibold text-barber-paper">
+                        Genera immagine coerente
+                      </h4>
+                    </div>
+                    {aiImagePreview ? (
+                      <StatusBadge tone="success">Pronta</StatusBadge>
+                    ) : null}
+                  </div>
+                  <p className="text-xs text-barber-paper/65">
+                    Genera un&apos;immagine coerente con la <strong className="font-medium text-barber-paper">descrizione</strong>{" "}
+                    già scritta sopra. L&apos;immagine viene caricata automaticamente nel campo «Immagine» qui sotto.
+                  </p>
+                  <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                    <AiImageProviderSelect
+                      id="create-entity-image-provider"
+                      disabled={isLoading || aiImageLoading}
+                      value={aiImageProvider}
+                      onChange={setAiImageProvider}
+                    />
+                    <Button
+                      type="button"
+                      onClick={() => void handleAssistGenerateImage()}
+                      disabled={isLoading || aiImageLoading}
+                      className="bg-barber-gold text-barber-dark hover:bg-barber-gold/90"
+                    >
+                      {aiImageLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Generazione...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="mr-2 h-4 w-4" />
+                          Genera immagine
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </FormSection>
+
+              {/* ============================================================ */}
+              {/*  4. IMMAGINE                                                 */}
+              {/* ============================================================ */}
+              <FormSection
+                icon={<ImageIcon className="h-4 w-4" />}
+                title="Immagine"
+                hint="Carica file o incolla URL"
+                collapsible
+                defaultOpen={false}
+              >
+                <ImageSourceField
+                  fileInputName="image"
+                  urlFieldName="image_url"
+                  label=""
+                  disabled={isLoading}
+                  presetUrl={wikiImageUrlPreset}
+                />
+              </FormSection>
+
+              {/* ============================================================ */}
+              {/*  5. RELAZIONI & MAPPA CONCETTUALE                            */}
+              {/* ============================================================ */}
+              <FormSection
+                icon={<Share2 className="h-4 w-4" />}
+                title="Relazioni & Mappa concettuale"
+                hint={relations.length > 0 ? `${relations.length} relazioni` : "Solo GM"}
+                collapsible
+                defaultOpen={relations.length > 0}
+              >
+                <p className="text-xs text-barber-paper/60">
+                  Collega questa voce ad altre voci wiki o a mappe. Le relazioni appariranno nella Mappa
+                  Concettuale (Solo GM).
+                </p>
+                {relations.map((rel, idx) => (
+                  <div
+                    key={idx}
+                    className="flex flex-wrap items-end gap-2 rounded-md border border-barber-gold/20 bg-barber-dark/80 p-2"
+                  >
+                    <div className="flex-1 min-w-[100px]">
+                      <Label className="text-xs">Tipo bersaglio</Label>
+                      <select
+                        value={rel.targetType}
+                        onChange={(e) =>
+                          setRelations((prev) => {
+                            const next = [...prev];
+                            next[idx] = {
+                              ...next[idx],
+                              targetType: e.target.value as "wiki" | "map",
+                              targetId: "",
+                            };
+                            return next;
+                          })
+                        }
+                        className="mt-0.5 flex h-9 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-2 text-sm text-barber-paper"
+                        disabled={isLoading}
+                      >
+                        <option value="wiki">Voce Wiki</option>
+                        <option value="map">Mappa</option>
+                      </select>
+                    </div>
+                    <div className="flex-1 min-w-[120px]">
+                      <Label className="text-xs">Bersaglio</Label>
+                      <select
+                        value={rel.targetId}
+                        onChange={(e) =>
+                          setRelations((prev) => {
+                            const next = [...prev];
+                            next[idx] = { ...next[idx], targetId: e.target.value };
+                            return next;
+                          })
+                        }
+                        className="mt-0.5 flex h-9 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-2 text-sm text-barber-paper"
+                        disabled={isLoading}
+                      >
+                        <option value="">— Seleziona —</option>
+                        {rel.targetType === "wiki"
+                          ? wikiOptions.map((o) => (
+                              <option key={o.id} value={o.id}>
+                                {o.name}
+                              </option>
+                            ))
+                          : mapOptions.map((o) => (
+                              <option key={o.id} value={o.id}>
+                                {o.name}
+                              </option>
+                            ))}
+                      </select>
+                    </div>
+                    <div className="flex-1 min-w-[100px]">
+                      <Label className="text-xs">Etichetta legame</Label>
+                      <Input
+                        value={rel.label}
+                        onChange={(e) =>
+                          setRelations((prev) => {
+                            const next = [...prev];
+                            next[idx] = { ...next[idx], label: e.target.value };
+                            return next;
+                          })
+                        }
+                        placeholder="Es. Vive qui, Nascondiglio"
+                        className="mt-0.5 h-9 bg-barber-dark border-barber-gold/30 text-barber-paper text-sm"
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 shrink-0 text-barber-paper/60 hover:text-barber-red"
+                      onClick={() => setRelations((prev) => prev.filter((_, i) => i !== idx))}
+                      disabled={isLoading}
+                      aria-label="Rimuovi relazione"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => void handleAssistGenerateText()}
-                  disabled={isLoading || aiTextLoading}
-                  className="border-violet-500/50 text-violet-200 hover:bg-violet-500/15 hover:text-violet-100"
+                  size="sm"
+                  className="border-barber-gold/40 text-barber-paper/90 hover:bg-barber-gold/10"
+                  onClick={() =>
+                    setRelations((prev) => [
+                      ...prev,
+                      { targetType: "wiki", targetId: "", label: "" },
+                    ])
+                  }
+                  disabled={isLoading}
                 >
-                  {aiTextLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Generazione...
-                    </>
-                  ) : (
-                    <>✨ Genera Scheda Testo (Opzionale)</>
-                  )}
+                  <Plus className="mr-2 h-4 w-4" />
+                  Aggiungi relazione
                 </Button>
-              </div>
-                {aiProgressLabel && (
-                  <div className="rounded-md border border-violet-500/30 bg-barber-dark/60 p-3">
-                    <p className="mb-2 text-xs text-violet-100">{aiProgressLabel}</p>
-                    <Progress value={aiProgress} className="h-2" />
-                  </div>
-                )}
-              </div>
-            </div>
-            <Textarea
-              id="entity-content"
-              name="content"
-              value={contentValue}
-              onChange={(e) => setContentValue(e.target.value)}
-              placeholder="Descrizione in Markdown..."
-              className="min-h-[120px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
-              disabled={isLoading}
-            />
-          </div>
+              </FormSection>
 
-          {/* Campi dinamici per tipo */}
-          {type === "npc" && (
-            <>
-              <div className="grid gap-4 sm:grid-cols-3">
+              {/* ============================================================ */}
+              {/*  6. VISIBILITÀ                                               */}
+              {/* ============================================================ */}
+              <FormSection
+                icon={<Lock className="h-4 w-4" />}
+                title="Visibilità"
+                hint={
+                  visibility === "public"
+                    ? "Tutti i giocatori"
+                    : visibility === "secret"
+                      ? "Solo GM"
+                      : "Selettiva"
+                }
+                collapsible
+                defaultOpen={visibility !== "public"}
+              >
                 <div className="space-y-2">
-                  <Label htmlFor="attr-race-npc">Razza</Label>
-                  <Input
-                    id="attr-race-npc"
-                    value={getAttr("race")}
-                    onChange={(e) => setAttr("race", e.target.value)}
-                    placeholder="Es. Elfo, Nano, Umano..."
-                    className="bg-barber-dark border-barber-gold/30 text-barber-paper"
-                    disabled={isLoading}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="attr-class-npc">Classe</Label>
-                  <Input
-                    id="attr-class-npc"
-                    value={getAttr("class")}
-                    onChange={(e) => setAttr("class", e.target.value)}
-                    placeholder="Es. Mago, Guerriero, Ladro..."
-                    className="bg-barber-dark border-barber-gold/30 text-barber-paper"
-                    disabled={isLoading}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="attr-age-npc">Età</Label>
-                  <Input
-                    id="attr-age-npc"
-                    value={getAttr("age")}
-                    onChange={(e) => setAttr("age", e.target.value)}
-                    placeholder="Es. 42 anni"
-                    className="bg-barber-dark border-barber-gold/30 text-barber-paper"
-                    disabled={isLoading}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="attr-statblock-npc">Statblock</Label>
-                <Textarea
-                  id="attr-statblock-npc"
-                  value={getAttr("statblock")}
-                  onChange={(e) => setAttr("statblock", e.target.value)}
-                  placeholder="Statblock NPC (abilità, tiri salvezza, attacchi, capacità speciali)..."
-                  className="min-h-[120px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
-                  disabled={isLoading}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="attr-relationships">Rapporti interpersonali</Label>
-                <Textarea
-                  id="attr-relationships"
-                  value={getAttr("relationships")}
-                  onChange={(e) => setAttr("relationships", e.target.value)}
-                  placeholder="Relazioni con altri NPC, fazioni..."
-                  className="min-h-[80px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
-                  disabled={isLoading}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="attr-loot-npc">Loot</Label>
-                <Textarea
-                  id="attr-loot-npc"
-                  value={getAttr("loot")}
-                  onChange={(e) => setAttr("loot", e.target.value)}
-                  placeholder="Oggetti che può avere o lasciare..."
-                  className="min-h-[60px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
-                  disabled={isLoading}
-                />
-              </div>
-            </>
-          )}
-
-          {type === "location" && (
-            <div className="space-y-2">
-              <Label htmlFor="attr-loot-location">Loot</Label>
-              <Textarea
-                id="attr-loot-location"
-                value={getAttr("loot")}
-                onChange={(e) => setAttr("loot", e.target.value)}
-                placeholder="Tesori nascosti, oggetti nel luogo..."
-                className="min-h-[80px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
-                disabled={isLoading}
-              />
-            </div>
-          )}
-
-          {type === "monster" && (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="attr-statblock-monster">Statblock</Label>
-                <Textarea
-                  id="attr-statblock-monster"
-                  value={getAttr("statblock")}
-                  onChange={(e) => setAttr("statblock", e.target.value)}
-                  placeholder="Statblock completo del mostro (azioni, reazioni, tratti, capacità leggendarie)..."
-                  className="min-h-[140px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
-                  disabled={isLoading}
-                />
-              </div>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div className="space-y-2">
-                  <Label htmlFor="attr-hp">HP</Label>
-                  <Input
-                    id="attr-hp"
-                    value={getAttr("combat_stats.hp")}
-                    onChange={(e) => setAttr("combat_stats.hp", e.target.value)}
-                    placeholder="Es. 45"
-                    className="bg-barber-dark border-barber-gold/30 text-barber-paper"
-                    disabled={isLoading}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="attr-ac">AC</Label>
-                  <Input
-                    id="attr-ac"
-                    value={getAttr("combat_stats.ac")}
-                    onChange={(e) => setAttr("combat_stats.ac", e.target.value)}
-                    placeholder="Es. 15"
-                    className="bg-barber-dark border-barber-gold/30 text-barber-paper"
-                    disabled={isLoading}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="attr-cr">Grado di Sfida (GS)</Label>
                   <select
-                    id="attr-cr"
-                    value={getAttr("combat_stats.cr")}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setAttr("combat_stats.cr", val);
-                      const xp = CHALLENGE_RATING_OPTIONS.find((o) => o.value === val)?.xp;
-                      if (xp != null) setMonsterXp(xp);
-                    }}
-                    className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
+                    name="visibility"
+                    value={visibility}
+                    onChange={(e) => setVisibility(e.target.value)}
                     disabled={isLoading}
+                    className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-3 py-2 text-barber-paper"
                   >
-                    <option value="">— Scegli GS —</option>
-                    {CHALLENGE_RATING_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {o.label}
+                    {VISIBILITY_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
                       </option>
                     ))}
                   </select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="monster-xp">Punti Esperienza (PE)</Label>
-                  <Input
-                    id="monster-xp"
-                    name="xp_value"
-                    type="number"
-                    min={0}
-                    value={monsterXp || ""}
-                    onChange={(e) => setMonsterXp(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                    placeholder="Da GS o manuale"
-                    className="bg-barber-dark border-barber-gold/30 text-barber-paper"
-                    disabled={isLoading}
-                  />
-                  <p className="text-xs text-barber-paper/60">Impostati dal GS sopra; modificabili a mano se serve.</p>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="attr-attacks">Attacchi / Azioni speciali</Label>
-                <Textarea
-                  id="attr-attacks"
-                  value={getAttr("combat_stats.attacks")}
-                  onChange={(e) => setAttr("combat_stats.attacks", e.target.value)}
-                  placeholder="Descrizione attacchi e azioni..."
-                  className="min-h-[80px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
-                  disabled={isLoading}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="attr-loot-monster">Loot</Label>
-                <Textarea
-                  id="attr-loot-monster"
-                  value={getAttr("loot")}
-                  onChange={(e) => setAttr("loot", e.target.value)}
-                  placeholder="Tesoro che può lasciare..."
-                  className="min-h-[60px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
-                  disabled={isLoading}
-                />
-              </div>
-            </>
-          )}
-
-          {type === "lore" && (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="entity-sort-order">Numero capitolo</Label>
-                <Input
-                  id="entity-sort-order"
-                  type="number"
-                  min={1}
-                  value={sortOrder}
-                  onChange={(e) => setSortOrder(e.target.value)}
-                  placeholder="Es. 1 (per ordinare come Capitolo 1)"
-                  className="bg-barber-dark border-barber-gold/30 text-barber-paper"
-                  disabled={isLoading}
-                />
-                <p className="text-xs text-barber-paper/60">
-                  Opzionale. Usato per mostrare le voci Lore come indice (Capitolo 1, 2, 3...).
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="attr-summary">Riassunto</Label>
-                <Textarea
-                  id="attr-summary"
-                  value={getAttr("summary")}
-                  onChange={(e) => setAttr("summary", e.target.value)}
-                  placeholder="Breve riassunto (box collassabile nella lettura)..."
-                  className="min-h-[80px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
-                  disabled={isLoading}
-                />
-              </div>
-            </>
-          )}
-
-          <div className="space-y-2">
-            <Label>Visibilità</Label>
-            <select
-              name="visibility"
-              value={visibility}
-              onChange={(e) => setVisibility(e.target.value)}
-              disabled={isLoading}
-              className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-3 py-2 text-barber-paper"
-            >
-              {VISIBILITY_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-            {visibility === "selective" && (
-              <div className="mt-2 max-h-40 overflow-y-auto rounded-md border border-barber-gold/30 bg-barber-dark/60 p-2">
-                {eligibleParties.length > 0 && (
-                  <>
-                    <p className="mb-2 text-xs font-medium text-barber-paper/80">Gruppi che possono vedere questa voce</p>
-                    <div className="mb-3 flex flex-col gap-1">
-                      {eligibleParties.map((party) => (
-                        <label key={party.id} className="flex cursor-pointer items-center gap-2 text-sm text-barber-paper">
-                          <input
-                            type="checkbox"
-                            checked={selectedPartyIds.includes(party.id)}
-                            onChange={() =>
-                              setSelectedPartyIds((prev) =>
-                                prev.includes(party.id) ? prev.filter((x) => x !== party.id) : [...prev, party.id]
-                              )
-                            }
-                            className="h-4 w-4 rounded border-barber-gold/40 bg-barber-dark text-barber-gold"
-                          />
-                          {party.label}
-                        </label>
-                      ))}
+                  {visibility === "selective" && (
+                    <div className="scrollbar-barber-y mt-2 max-h-48 overflow-y-auto rounded-md border border-barber-gold/30 bg-barber-dark/60 p-3">
+                      {eligibleParties.length > 0 && (
+                        <>
+                          <p className="mb-2 text-xs font-medium text-barber-paper/80">
+                            Gruppi che possono vedere questa voce
+                          </p>
+                          <div className="mb-3 flex flex-col gap-1">
+                            {eligibleParties.map((party) => (
+                              <label
+                                key={party.id}
+                                className="flex cursor-pointer items-center gap-2 text-sm text-barber-paper"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={selectedPartyIds.includes(party.id)}
+                                  onChange={() =>
+                                    setSelectedPartyIds((prev) =>
+                                      prev.includes(party.id)
+                                        ? prev.filter((x) => x !== party.id)
+                                        : [...prev, party.id]
+                                    )
+                                  }
+                                  className="h-4 w-4 rounded border-barber-gold/40 bg-barber-dark text-barber-gold"
+                                />
+                                {party.label}
+                              </label>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                      <p className="mb-2 text-xs font-medium text-barber-paper/80">
+                        Giocatori che possono vedere questa voce
+                      </p>
+                      {eligiblePlayers.length === 0 ? (
+                        <p className="text-xs text-barber-paper/50">
+                          Nessun giocatore iscritto alla campagna.
+                        </p>
+                      ) : (
+                        <div className="flex flex-col gap-1">
+                          {eligiblePlayers.map((p) => (
+                            <label
+                              key={p.id}
+                              className="flex cursor-pointer items-center gap-2 text-sm text-barber-paper"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedPlayerIds.includes(p.id)}
+                                onChange={() =>
+                                  setSelectedPlayerIds((prev) =>
+                                    prev.includes(p.id)
+                                      ? prev.filter((x) => x !== p.id)
+                                      : [...prev, p.id]
+                                  )
+                                }
+                                className="h-4 w-4 rounded border-barber-gold/40 bg-barber-dark text-barber-gold"
+                              />
+                              {p.label}
+                            </label>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  </>
-                )}
-                <p className="mb-2 text-xs font-medium text-barber-paper/80">Giocatori che possono vedere questa voce</p>
-                {eligiblePlayers.length === 0 ? (
-                  <p className="text-xs text-barber-paper/50">Nessun giocatore iscritto alla campagna.</p>
-                ) : (
-                  <div className="flex flex-col gap-1">
-                    {eligiblePlayers.map((p) => (
-                      <label key={p.id} className="flex cursor-pointer items-center gap-2 text-sm text-barber-paper">
-                        <input
-                          type="checkbox"
-                          checked={selectedPlayerIds.includes(p.id)}
-                          onChange={() =>
-                            setSelectedPlayerIds((prev) =>
-                              prev.includes(p.id) ? prev.filter((x) => x !== p.id) : [...prev, p.id]
-                            )
-                          }
-                          className="h-4 w-4 rounded border-barber-gold/40 bg-barber-dark text-barber-gold"
-                        />
-                        {p.label}
-                      </label>
-                    ))}
-                  </div>
-                )}
+                  )}
+                </div>
+              </FormSection>
+
+              {/* ============================================================ */}
+              {/*  7. NOTE GM (private)                                        */}
+              {/* ============================================================ */}
+              <FormSection
+                icon={<Notebook className="h-4 w-4" />}
+                title="Note GM (private)"
+                hint="Visibili solo a te e agli admin"
+                tone="private"
+                collapsible
+                defaultOpen={false}
+              >
+                <Textarea
+                  id="entity-gm-notes"
+                  value={getAttr("gm_notes")}
+                  onChange={(e) => setAttr("gm_notes", e.target.value)}
+                  placeholder="Appunti, reminder, idee per la sessione..."
+                  className="min-h-[100px] resize-y bg-barber-dark border-violet-500/30 text-barber-paper placeholder:text-barber-paper/40"
+                  disabled={isLoading}
+                />
+              </FormSection>
+
+            <DialogFooter className="sticky bottom-[-1.5rem] -mx-6 -mb-6 mt-2 gap-2 border-t border-barber-gold/30 bg-barber-dark/95 px-6 py-4 shadow-[0_-8px_16px_-12px_rgba(0,0,0,0.6)] backdrop-blur supports-[backdrop-filter]:bg-barber-dark/85 sm:gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpen(false)}
+                disabled={isLoading}
+                className="border-barber-gold/40 text-barber-paper/80 hover:bg-barber-gold/10"
+              >
+                Annulla
+              </Button>
+              <SubmitButton
+                pending={isLoading}
+                loadingText="Creazione..."
+                className="bg-barber-red text-barber-paper hover:bg-barber-red/90"
+              >
+                <BookOpen className="mr-2 h-4 w-4" />
+                Crea voce
+              </SubmitButton>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ================================================================== */}
+      {/*  MAGIC DIALOG — Generazione completa "Bacchetta IA"                */}
+      {/* ================================================================== */}
+      <Dialog open={magicOpen} onOpenChange={handleMagicDialogOpenChange}>
+        <DialogContent className="border-barber-gold/40 bg-barber-dark text-barber-paper sm:max-w-md">
+          <DialogHeader>
+            <p className="text-xs font-medium uppercase tracking-[0.25em] text-barber-gold/70">
+              Bacchetta IA
+            </p>
+            <DialogTitle className="flex items-center gap-2 font-serif text-xl text-barber-paper">
+              <Sparkles className="h-5 w-5 text-barber-gold" />
+              Generazione completa
+            </DialogTitle>
+            <DialogDescription className="text-sm text-barber-paper/70">
+              Un solo passaggio: per <strong className="font-medium text-barber-paper">NPC</strong> e{" "}
+              <strong className="font-medium text-barber-paper">Luoghi</strong> generiamo testo dettagliato e
+              immagine coerente. Per <strong className="font-medium text-barber-paper">Oggetti</strong> e{" "}
+              <strong className="font-medium text-barber-paper">Lore</strong>: solo testo.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="magic-entity-type">Tipo di entità</Label>
+              <select
+                id="magic-entity-type"
+                value={magicEntityType}
+                onChange={(e) => setMagicEntityType(e.target.value as WikiGeneratorEntityType)}
+                disabled={magicLoading}
+                className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
+              >
+                {MAGIC_ENTITY_TYPES.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="magic-prompt">Cosa vuoi creare?</Label>
+              <Textarea
+                id="magic-prompt"
+                value={magicPrompt}
+                onChange={(e) => setMagicPrompt(e.target.value)}
+                placeholder="Es: Un oste burbero con il pugnale al fianco e un debito con la mafia locale"
+                className="min-h-[88px] resize-y border-barber-gold/30 bg-barber-dark text-barber-paper"
+                disabled={magicLoading}
+              />
+              <p className="text-xs text-barber-paper/55">
+                Una frase basta. L&apos;IA usa la memoria di campagna per restare coerente.
+              </p>
+            </div>
+
+            {(magicEntityType === "npc" || magicEntityType === "location") && (
+              <AiImageProviderSelect
+                id="magic-image-provider"
+                label="Provider immagine"
+                disabled={magicLoading}
+                value={aiImageProvider}
+                onChange={setAiImageProvider}
+              />
+            )}
+
+            {magicLoading && (
+              <div
+                className="flex items-start gap-3 rounded-lg border border-barber-gold/35 bg-barber-dark/70 p-3 text-sm text-barber-paper"
+                role="status"
+                aria-live="polite"
+              >
+                <Loader2 className="mt-0.5 h-5 w-5 shrink-0 animate-spin text-barber-gold" />
+                <div>
+                  <p className="font-medium">
+                    {magicEntityType === "npc" || magicEntityType === "location"
+                      ? magicChainPhase === "text"
+                        ? "Tessendo la trama (generazione testo)…"
+                        : "Dipingendo il volto (generazione immagine coerente)…"
+                      : "Tessendo la trama (generazione testo)…"}
+                  </p>
+                  <p className="mt-1 text-xs text-barber-paper/65">
+                    Non chiudere la finestra: al termine i campi del form si compileranno da soli.
+                  </p>
+                </div>
               </div>
             )}
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="entity-gm-notes" className="text-barber-gold/90">
-              Note GM (solo visibili a te e agli admin)
-            </Label>
-            <Textarea
-              id="entity-gm-notes"
-              value={getAttr("gm_notes")}
-              onChange={(e) => setAttr("gm_notes", e.target.value)}
-              placeholder="Appunti, reminder, idee per la sessione..."
-              className="min-h-[80px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper placeholder:text-barber-paper/40"
-              disabled={isLoading}
-            />
+            {!magicLoading &&
+              magicPortraitPreview &&
+              (magicEntityType === "npc" || magicEntityType === "location") && (
+                <div className="space-y-2 rounded-lg border border-barber-gold/30 bg-barber-dark/60 p-3">
+                  <div className="flex items-center gap-2 text-sm font-medium text-barber-paper">
+                    <ImageIcon className="h-4 w-4 text-barber-gold" />
+                    Anteprima immagine (già nel form)
+                  </div>
+                  <div className="relative aspect-video w-full overflow-hidden rounded-md border border-barber-gold/30 bg-black/40">
+                    <Image
+                      src={magicPortraitPreview}
+                      alt="Anteprima generazione AI"
+                      fill
+                      className="object-contain"
+                      unoptimized
+                    />
+                  </div>
+                </div>
+              )}
           </div>
-          </div>
-
-          <DialogFooter className="shrink-0 border-t border-barber-gold/20 pt-4">
+          <DialogFooter className="gap-2 sm:gap-2">
             <Button
               type="button"
               variant="outline"
-              onClick={() => setOpen(false)}
-              disabled={isLoading}
-              className="border-barber-gold/40 text-barber-paper/80"
+              className="border-barber-gold/40 text-barber-paper hover:bg-barber-gold/10"
+              onClick={() => setMagicOpen(false)}
+              disabled={magicLoading}
             >
-              Annulla
+              Chiudi
             </Button>
-            <SubmitButton
-              pending={isLoading}
-              loadingText="Creazione..."
+            <Button
+              type="button"
               className="bg-barber-red text-barber-paper hover:bg-barber-red/90"
+              onClick={() => void handleMagicGenerate()}
+              disabled={magicLoading}
             >
-              Crea
-            </SubmitButton>
+              {magicLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Attendere…
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Genera
+                </>
+              )}
+            </Button>
           </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-
-    <Dialog open={magicOpen} onOpenChange={handleMagicDialogOpenChange}>
-      <DialogContent className="border-violet-500/40 bg-barber-dark text-barber-paper sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-violet-100">
-            <Sparkles className="h-5 w-5 text-violet-300" />
-            Generazione Magica AI
-          </DialogTitle>
-          <DialogDescription className="text-barber-paper/65">
-            Un solo passaggio: per NPC e Luoghi generiamo testo dettagliato e immagine coerente con quel testo
-            (non con la tua frase iniziale). Oggetto e Lore: solo testo. Poi controlli tutto nel form e premi
-            Crea.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 py-2">
-          <div className="space-y-2">
-            <Label htmlFor="magic-prompt">Cosa vuoi creare?</Label>
-            <Textarea
-              id="magic-prompt"
-              value={magicPrompt}
-              onChange={(e) => setMagicPrompt(e.target.value)}
-              placeholder="Es: Un oste burbero"
-              className="min-h-[80px] resize-y border-barber-gold/30 bg-barber-dark text-barber-paper"
-              disabled={magicLoading}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="magic-entity-type">Tipo di entità</Label>
-            <select
-              id="magic-entity-type"
-              value={magicEntityType}
-              onChange={(e) => setMagicEntityType(e.target.value as WikiGeneratorEntityType)}
-              disabled={magicLoading}
-              className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
-            >
-              {MAGIC_ENTITY_TYPES.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {(magicEntityType === "npc" || magicEntityType === "location") && (
-            <AiImageProviderSelect
-              id="magic-image-provider"
-              label="Provider immagine (per la foto)"
-              disabled={magicLoading}
-              value={aiImageProvider}
-              onChange={setAiImageProvider}
-            />
-          )}
-
-          {magicLoading && (
-            <div
-              className="flex items-start gap-3 rounded-lg border border-violet-500/35 bg-violet-950/30 p-3 text-sm text-violet-100"
-              role="status"
-              aria-live="polite"
-            >
-              <Loader2 className="mt-0.5 h-5 w-5 shrink-0 animate-spin text-violet-300" />
-              <div>
-                <p className="font-medium">
-                  {magicEntityType === "npc" || magicEntityType === "location"
-                    ? magicChainPhase === "text"
-                      ? "Tessendo la trama (generazione testo)…"
-                      : "Dipingendo il volto (generazione immagine coerente col testo)…"
-                    : "Tessendo la trama (generazione testo)…"}
-                </p>
-                <p className="mt-1 text-xs text-barber-paper/70">
-                  Non chiudere questa finestra: al termine i campi del form si compileranno da soli.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {!magicLoading && magicPortraitPreview && (magicEntityType === "npc" || magicEntityType === "location") && (
-            <div className="space-y-2 rounded-lg border border-barber-gold/25 bg-barber-dark/60 p-3">
-              <div className="flex items-center gap-2 text-sm font-medium text-barber-paper">
-                <ImageIcon className="h-4 w-4 text-violet-300" />
-                Anteprima immagine (già nel form)
-              </div>
-              <div className="relative aspect-video w-full overflow-hidden rounded-md border border-barber-gold/30 bg-black/40">
-                <Image
-                  src={magicPortraitPreview}
-                  alt="Anteprima generazione AI"
-                  fill
-                  className="object-contain"
-                  unoptimized
-                />
-              </div>
-            </div>
-          )}
-        </div>
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button
-            type="button"
-            variant="outline"
-            className="border-barber-gold/40 text-barber-paper"
-            onClick={() => setMagicOpen(false)}
-            disabled={magicLoading}
-          >
-            Chiudi
-          </Button>
-          <Button
-            type="button"
-            className="bg-violet-600 text-white hover:bg-violet-500"
-            onClick={() => void handleMagicGenerate()}
-            disabled={magicLoading}
-          >
-            {magicLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Attendere…
-              </>
-            ) : magicEntityType === "npc" || magicEntityType === "location" ? (
-              <>✨ GENERA ENTITÀ COMPLETA (TESTO + IMMAGINE)</>
-            ) : (
-              <>✨ GENERA BOZZA AI (SOLO TESTO)</>
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
