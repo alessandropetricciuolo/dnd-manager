@@ -46,8 +46,8 @@ declare namespace NodeJS {
      */
     SILICONFLOW_API_KEY?: string;
     /**
-     * Modello SiliconFlow image-out (default `Kwai-Kolors/Kolors`, con fallback automatico
-     * su `black-forest-labs/FLUX.1-schnell` e `stabilityai/stable-diffusion-3-5-large`).
+     * Modello SiliconFlow image-out (default `black-forest-labs/FLUX.1-schnell`, con fallback
+     * automatico su altri modelli immagine documentati se SiliconFlow risponde «model does not exist»).
      */
     SILICONFLOW_IMAGE_MODEL?: string;
     /**

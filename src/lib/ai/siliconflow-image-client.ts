@@ -9,9 +9,8 @@
  *
  * Variabili (solo server-side):
  * - `SILICONFLOW_API_KEY` — chiave (vedi note sopra).
- * - `SILICONFLOW_IMAGE_MODEL` — opzionale, default `Kwai-Kolors/Kolors`
- *   (altri candidati: `black-forest-labs/FLUX.1-schnell`,
- *    `stabilityai/stable-diffusion-3-5-large`)
+ * - `SILICONFLOW_IMAGE_MODEL` — opzionale, default `black-forest-labs/FLUX.1-schnell`
+ *   (Kolors e nomi legacy sono provati in catena se il modello non è disponibile.)
  * - `SILICONFLOW_BASE_URL` — opzionale. Default: `https://api.siliconflow.com`
  *   (piattaforma internazionale). Se il tuo account è su `cloud.siliconflow.cn`
  *   imposta `SILICONFLOW_BASE_URL=https://api.siliconflow.cn`.
@@ -22,15 +21,19 @@
  */
 
 const DEFAULT_SILICONFLOW_BASE = "https://api.siliconflow.com";
-const DEFAULT_SILICONFLOW_MODEL = "Kwai-Kolors/Kolors";
+/** Preferenza SiliconFlow aggiornata (documentazione API); Kolors può rispondere 400 «model does not exist». */
+const DEFAULT_SILICONFLOW_MODEL = "black-forest-labs/FLUX.1-schnell";
 
 /**
- * Catena di modelli image-out su SiliconFlow. `Kolors` è gratis sul tier free;
- * FLUX schnell e SD3.5 sono coerenti con ciò che l'utente già usa su HF.
+ * Catena di modelli image-out su SiliconFlow. SiliconFlow cambia periodicamente i modelli disponibili;
+ * gli HTTP 400/404 «model …» devolvono al tentativo successivo (vedi `isSiliconFlowUnsupportedModelError`).
  */
 const SILICONFLOW_IMAGE_MODEL_FALLBACKS: readonly string[] = [
-  "Kwai-Kolors/Kolors",
+  /** Ripetuto dopo `modelId` solo se diverso (dedup Set): utile se env punta a un modello rimosso. */
   "black-forest-labs/FLUX.1-schnell",
+  "black-forest-labs/FLUX.1-dev",
+  "black-forest-labs/FLUX-1.1-pro",
+  "Kwai-Kolors/Kolors",
   "stabilityai/stable-diffusion-3-5-large",
 ];
 
@@ -87,6 +90,21 @@ function pickFirstImagePayload(data: SiliconFlowImageResponse): SiliconFlowImage
 function isSiliconFlowUnsupportedModelError(status: number, bodyText: string): boolean {
   if (status === 404) return true;
   const lower = bodyText.toLowerCase();
+  /** SiliconFlow risponde spesso HTTP 400 con messaggi tipo «Model does not exist». */
+  if (status === 400) {
+    if (
+      lower.includes("model does not exist") ||
+      lower.includes("model_not_found") ||
+      lower.includes("model not exist") ||
+      lower.includes("unknown model") ||
+      lower.includes("invalid model") ||
+      lower.includes("unsupported model") ||
+      /** Alcuni messaggi inglesi lunghi: contiene sia «model» sia «does not exist» */
+      (lower.includes("does not exist") && lower.includes("model"))
+    ) {
+      return true;
+    }
+  }
   return (
     lower.includes("model not found") ||
     lower.includes("not available") ||
