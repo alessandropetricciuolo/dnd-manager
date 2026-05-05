@@ -20,10 +20,45 @@ const STANDARD_VISUAL_NEGATIVES =
 /** Memoria wiki/ PG molto lunga: per immagini teniamo un estratto compatto così il soggetto resta dominante. */
 const MAX_IMAGE_CAMPAIGN_LORE_SNIPPET_CHARS = 3000;
 
+/** Sotto questa lunghezza il lore tende a “rubare” il soggetto ai modelli diffusion — meglio non caricarlo. */
+const SKIP_CAMPAIGN_LORE_NPC_MAX_CHARS = 90;
+
 function truncateImageKnowledgeSnippet(raw: string, maxChars: number): string {
   const collapsed = raw.replace(/\s+/g, " ").trim();
   if (collapsed.length <= maxChars) return collapsed;
   return `${collapsed.slice(0, maxChars)}…`;
+}
+
+/**
+ * Molti modelli immagine seguono meglio l’inglese sulle specie D&D; il contesto italiano resta nella prima riga.
+ */
+function augmentSpeciesAnchorsForImagePortrait(description: string): string {
+  const d = description.trim();
+  if (!d) return d;
+  const anchors: string[] = [];
+  if (/\bcobold\w*|\bkobold\w*/i.test(d)) {
+    anchors.push(
+      "KOBOLD (D&D): small reptilian draconic humanoid, scaled skin, snouted reptile face, yellow or amber eyes possible — NOT an elf, NOT a human, NOT a dwarf, NOT an elderly bard unless the Italian description explicitly says so."
+    );
+  }
+  if (/\bgoblin\b|\bgoblins\b/i.test(d)) {
+    anchors.push("GOBLIN (D&D): small humanoid goblinoid — NOT an elf.");
+  }
+  if (/\borco\b|\borchi\b|\borc\b|\borcs\b/i.test(d)) {
+    anchors.push("ORC (D&D): muscular fantasy humanoid with tusks — NOT an elf.");
+  }
+  if (/\bgnoll\b|\bgnolls\b/i.test(d)) {
+    anchors.push("GNOLL (D&D): hyena-like humanoid.");
+  }
+  if (!anchors.length) return d;
+  return `${d}\n\nMandatory species / silhouette for this portrait (English keywords — obey strictly; overrides unrelated faces from campaign lore text): ${anchors.join(" | ")}`;
+}
+
+function maxLoreCharsForDescription(descriptionLength: number): number {
+  if (descriptionLength < 120) return 700;
+  if (descriptionLength < 280) return 1400;
+  if (descriptionLength < 550) return 2200;
+  return MAX_IMAGE_CAMPAIGN_LORE_SNIPPET_CHARS;
 }
 
 export type GenerateContextualPortraitResult =
@@ -199,14 +234,18 @@ export async function generateContextualPortraitAction(
       typeof (campaign as CampaignVisualRow).type === "string"
         ? String((campaign as CampaignVisualRow).type).trim()
         : "";
+    const skipLoreForNpcFocus =
+      entityType === "npc" && trimmed.length <= SKIP_CAMPAIGN_LORE_NPC_MAX_CHARS;
+
     let loreSnippet = "";
-    if (campaignType === "long") {
+    if (campaignType === "long" && !skipLoreForNpcFocus) {
       const excludeId = options.excludeWikiEntityId?.trim() || undefined;
       const rawMemory = await fetchLongCampaignWikiMemoryPromptBlock(admin, campaignId, {
         excludeEntityId: excludeId,
       });
       if (rawMemory.trim()) {
-        loreSnippet = truncateImageKnowledgeSnippet(rawMemory, MAX_IMAGE_CAMPAIGN_LORE_SNIPPET_CHARS);
+        const cap = maxLoreCharsForDescription(trimmed.length);
+        loreSnippet = truncateImageKnowledgeSnippet(rawMemory, cap);
       }
     }
 
@@ -218,18 +257,21 @@ export async function generateContextualPortraitAction(
       entityType === "location"
         ? "single fantasy location / environment"
         : "single fantasy character (NPC or creature portrait)";
+    const descriptionAnchored =
+      entityType === "npc" ? augmentSpeciesAnchorsForImagePortrait(trimmed) : trimmed;
     const subjectBlock = [
       `${entityTitleLine}Illustrate exactly ONE ${subjectKind}.`,
-      "The following wiki description is the main visual truth — match outfit, species, age cues, scars, props and mood closely:",
-      trimmed,
+      "The following wiki description is the main visual truth — match species, body shape, outfit, age cues, scars, props and mood closely:",
+      descriptionAnchored,
     ].join("\n");
 
     const campaignNarrativeBlock = buildCampaignContextBlock(ctx);
     const loreBlock =
       loreSnippet.length > 0
         ? [
-            "Shared campaign lore (facts, factions, places from canon wiki/PG backgrounds — use only for coherence;",
-            "do not contradict the wiki description above for how THIS entity looks):",
+            "Shared campaign lore (facts, factions, places — ONLY mood / era / faction flavor.",
+            "Do NOT copy faces or species from lore unless they match the wiki description above.",
+            "Never replace the subject with a different character from lore.",
             loreSnippet,
           ].join("\n")
         : "";
@@ -242,7 +284,13 @@ export async function generateContextualPortraitAction(
           "Strictly realistic fantasy illustration, non-anime, non-cartoon",
         ].join(". ");
 
-    const positivePrompt = [subjectBlock, campaignNarrativeBlock, loreBlock, styleTail]
+    const subjectLockClosing = [
+      "---",
+      `FINAL CHECK — Exactly one subject. Appearance MUST match this phrase (literal identity): "${trimmed}".`,
+      "If campaign lore mentions other named characters, IGNORE their faces/species for this image.",
+    ].join("\n");
+
+    const positivePrompt = [subjectBlock, campaignNarrativeBlock, loreBlock, styleTail, subjectLockClosing]
       .filter((block) => typeof block === "string" && block.trim().length > 0)
       .join("\n\n");
 
