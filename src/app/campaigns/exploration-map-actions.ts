@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from "@/utils/supabase/server";
 import type { Json } from "@/types/database.types";
 import type { NormPoint } from "@/lib/exploration/fow-geometry";
 import { createExplorationMapFromFormData } from "@/lib/exploration/exploration-map-upload-core";
+import { importTrainSceneToFow } from "@/lib/exploration/train-scene-import";
 
 const BUCKET = "exploration_maps";
 
@@ -298,5 +299,117 @@ export async function resetMapFog(campaignId: string, mapId: string): Promise<Re
   if (error) return { success: false, error: error.message };
   revalidatePath(`/campaigns/${campaignId}`);
   return { success: true };
+}
+
+export async function setAllMapRegionsRevealed(
+  campaignId: string,
+  mapId: string,
+  isRevealed: boolean
+): Promise<Result> {
+  const supabase = await createSupabaseServerClient();
+  const ctx = await requireGm(supabase);
+  if (!ctx.user || !ctx.ok) return { success: false, error: "Non autorizzato." };
+
+  const { data: map } = await supabase
+    .from("campaign_exploration_maps")
+    .select("id")
+    .eq("id", mapId)
+    .eq("campaign_id", campaignId)
+    .single();
+  if (!map) return { success: false, error: "Mappa non trovata." };
+
+  const { error } = await supabase
+    .from("campaign_exploration_fow_regions")
+    .update({ is_revealed: isRevealed, updated_at: new Date().toISOString() })
+    .eq("map_id", mapId);
+  if (error) return { success: false, error: error.message };
+  revalidatePath(`/campaigns/${campaignId}`);
+  return { success: true };
+}
+
+export async function importExplorationScene(
+  campaignId: string,
+  mapId: string,
+  sceneJsonText: string,
+  replaceExisting = true
+): Promise<
+  Result<{
+    importedRegions: number;
+    gridCellsW: number;
+    gridCellsH: number;
+  }>
+> {
+  const supabase = await createSupabaseServerClient();
+  const ctx = await requireGm(supabase);
+  if (!ctx.user || !ctx.ok) return { success: false, error: "Non autorizzato." };
+  if (!sceneJsonText || sceneJsonText.trim().length < 2) {
+    return { success: false, error: "JSON scena vuoto." };
+  }
+  if (sceneJsonText.length > 5_000_000) {
+    return { success: false, error: "JSON troppo grande (max ~5MB)." };
+  }
+
+  const { data: map } = await supabase
+    .from("campaign_exploration_maps")
+    .select("id")
+    .eq("id", mapId)
+    .eq("campaign_id", campaignId)
+    .single();
+  if (!map) return { success: false, error: "Mappa non trovata." };
+
+  let parsedRaw: unknown;
+  try {
+    parsedRaw = JSON.parse(sceneJsonText);
+  } catch {
+    return { success: false, error: "JSON non valido." };
+  }
+
+  let imported;
+  try {
+    imported = importTrainSceneToFow(parsedRaw);
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : "Errore import scena." };
+  }
+
+  if (replaceExisting) {
+    const { error: delErr } = await supabase
+      .from("campaign_exploration_fow_regions")
+      .delete()
+      .eq("map_id", mapId);
+    if (delErr) return { success: false, error: delErr.message };
+  }
+
+  const rows = imported.regions.map((r) => ({
+    map_id: mapId,
+    polygon: r.polygon as unknown as Json,
+    is_revealed: false,
+    sort_order: r.sortOrder,
+  }));
+  const { error: insertErr } = await supabase.from("campaign_exploration_fow_regions").insert(rows);
+  if (insertErr) return { success: false, error: insertErr.message };
+
+  const { error: mapMetaErr } = await supabase
+    .from("campaign_exploration_maps")
+    .update({
+      grid_cells_w: imported.gridCellsW,
+      grid_cells_h: imported.gridCellsH,
+      grid_offset_x_cells: imported.gridOffsetXCells,
+      grid_offset_y_cells: imported.gridOffsetYCells,
+      grid_source_cell_px: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", mapId)
+    .eq("campaign_id", campaignId);
+  if (mapMetaErr) return { success: false, error: mapMetaErr.message };
+
+  revalidatePath(`/campaigns/${campaignId}`);
+  return {
+    success: true,
+    data: {
+      importedRegions: imported.regions.length,
+      gridCellsW: imported.gridCellsW,
+      gridCellsH: imported.gridCellsH,
+    },
+  };
 }
 

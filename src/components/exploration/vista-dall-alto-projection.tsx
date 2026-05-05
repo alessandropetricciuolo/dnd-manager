@@ -3,14 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { createSupabaseBrowserClient } from "@/utils/supabase/client";
 import { getExplorationMapPublicUrl } from "@/lib/exploration/exploration-storage";
-import { resolveGridSourceCellPx } from "@/lib/exploration/grid-alignment";
 import type { ExplorationMapRow, FowRegionRow } from "@/app/campaigns/exploration-map-actions";
 import { parsePolygonJson } from "@/lib/exploration/fow-geometry";
 import { ExplorationMapStage, type FowRegionVm } from "@/components/exploration/exploration-map-stage";
-
-const GRID_CM = 2.5;
-const DEFAULT_PX_PER_CM = 37.7952755906;
-const GRID_STORAGE_KEY = "exploration-grid-device-v1";
 
 type Props = {
   mapRow: ExplorationMapRow;
@@ -27,57 +22,40 @@ function rowsToVm(rows: FowRegionRow[]): FowRegionVm[] {
 
 export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
   const [regions, setRegions] = useState<FowRegionRow[]>(initialRegions);
-  const [showGrid, setShowGrid] = useState(true);
-  const [gridOpacity, setGridOpacity] = useState(0.45);
-  const [pxPerCm, setPxPerCm] = useState(DEFAULT_PX_PER_CM);
-  const [imageNatural, setImageNatural] = useState<{ w: number; h: number } | null>(null);
-  const imageUrl = getExplorationMapPublicUrl(mapRow.image_path);
+  const [mapMeta, setMapMeta] = useState<ExplorationMapRow>(mapRow);
+  const imageUrl = getExplorationMapPublicUrl(mapMeta.image_path);
   const vm = useMemo(() => rowsToVm(regions), [regions]);
-  const gridCellPx = pxPerCm * GRID_CM;
 
-  const resolvedGridSourceCellPx = useMemo(() => {
-    if (!imageNatural) return null;
-    return resolveGridSourceCellPx({
-      naturalW: imageNatural.w,
-      naturalH: imageNatural.h,
-      gridCellsW: mapRow.grid_cells_w,
-      gridCellsH: mapRow.grid_cells_h,
-      legacyGridSourceCellPx: mapRow.grid_source_cell_px,
-    });
-  }, [imageNatural, mapRow.grid_cells_w, mapRow.grid_cells_h, mapRow.grid_source_cell_px]);
+  useEffect(() => {
+    setMapMeta(mapRow);
+  }, [mapRow]);
 
   useEffect(() => {
     setRegions(initialRegions);
   }, [initialRegions]);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(GRID_STORAGE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as { showGrid?: boolean; gridOpacity?: number; pxPerCm?: number };
-      if (typeof parsed.showGrid === "boolean") setShowGrid(parsed.showGrid);
-      if (typeof parsed.gridOpacity === "number") setGridOpacity(Math.min(1, Math.max(0, parsed.gridOpacity)));
-      if (typeof parsed.pxPerCm === "number" && Number.isFinite(parsed.pxPerCm) && parsed.pxPerCm > 2) {
-        setPxPerCm(parsed.pxPerCm);
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
-
-  useEffect(() => {
     const supabase = createSupabaseBrowserClient();
+    async function reloadRegionsFromDb() {
+      const { data } = await supabase
+        .from("campaign_exploration_fow_regions")
+        .select("*")
+        .eq("map_id", mapMeta.id)
+        .order("sort_order", { ascending: true });
+      setRegions((data ?? []) as FowRegionRow[]);
+    }
     const channel = supabase
-      .channel(`fow-proj-${mapRow.id}`)
+      .channel(`fow-proj-${mapMeta.id}`)
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "campaign_exploration_fow_regions",
-          filter: `map_id=eq.${mapRow.id}`,
+          filter: `map_id=eq.${mapMeta.id}`,
         },
         (payload) => {
+          void reloadRegionsFromDb();
           setRegions((prev) => {
             if (payload.eventType === "INSERT" && payload.new) {
               const row = payload.new as FowRegionRow;
@@ -96,11 +74,25 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
           });
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "campaign_exploration_maps",
+          filter: `id=eq.${mapMeta.id}`,
+        },
+        (payload) => {
+          if (payload.new) {
+            setMapMeta(payload.new as ExplorationMapRow);
+          }
+        }
+      )
       .subscribe();
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [mapRow.id]);
+  }, [mapMeta.id]);
 
   return (
     <div className="fixed inset-0 flex min-h-0 flex-col overflow-hidden bg-black">
@@ -108,8 +100,8 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
         <ExplorationMapStage
           imageUrl={imageUrl}
           imageAlt={
-            mapRow.floor_label?.trim()
-              ? `Mappa: ${mapRow.floor_label}`
+            mapMeta.floor_label?.trim()
+              ? `Mappa: ${mapMeta.floor_label}`
               : "Mappa vista dall'alto"
           }
           regions={vm}
@@ -118,13 +110,7 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
           selectedRegionId={null}
           readOnly
           fillViewport
-          onImageSized={(w, h) => setImageNatural({ w, h })}
-          showGrid={showGrid}
-          gridOpacity={gridOpacity}
-          gridCellPx={gridCellPx}
-          gridCellSourcePxX={resolvedGridSourceCellPx}
-          gridOffsetXCells={Number(mapRow.grid_offset_x_cells ?? 0)}
-          gridOffsetYCells={Number(mapRow.grid_offset_y_cells ?? 0)}
+          showGrid={false}
         />
       </div>
     </div>
