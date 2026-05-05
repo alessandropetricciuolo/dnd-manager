@@ -26,6 +26,7 @@ import { TagsInput } from "@/components/wiki/tags-input";
 import {
   createEntity,
   generateWikiQuickAiAction,
+  listCampaignMissionsLiteForGm,
   type WikiGeneratorEntityType,
 } from "@/app/campaigns/wiki-actions";
 import { generateFullAiWikiEntity } from "@/lib/actions/ai-wiki-chain";
@@ -147,6 +148,8 @@ export function CreateEntityDialog({
   const [relations, setRelations] = useState<RelationRow[]>([]);
   const [wikiOptions, setWikiOptions] = useState<{ id: string; name: string }[]>([]);
   const [mapOptions, setMapOptions] = useState<{ id: string; name: string }[]>([]);
+  const [missionOptions, setMissionOptions] = useState<{ id: string; title: string }[]>([]);
+  const [linkedMissionId, setLinkedMissionId] = useState("");
   const aiProgressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   function clearAiProgressTimer() {
@@ -293,6 +296,9 @@ export function CreateEntityDialog({
     if (sortOrder.trim() !== "") formData.set("sort_order", sortOrder.trim());
     if (showCoreCheckbox && isCore) formData.set("is_core", "on");
     if (showAiMemoryCheckbox && includeInAiMemory) formData.set("include_in_campaign_ai_memory", "on");
+    if (campaignType === "long") {
+      formData.set("linked_mission_id", linkedMissionId.trim());
+    }
     formData.set("relations", JSON.stringify(relations));
 
     setIsLoading(true);
@@ -313,6 +319,7 @@ export function CreateEntityDialog({
         setSelectedPlayerIds([]);
         setSelectedPartyIds([]);
         setIncludeInAiMemory(false);
+        setLinkedMissionId("");
         router.refresh();
       } else {
         toast.error(result.message);
@@ -566,8 +573,19 @@ export function CreateEntityDialog({
       setSelectedPartyIds([]);
       setVisibility("public");
       setIncludeInAiMemory(false);
+      setLinkedMissionId("");
+      setMissionOptions([]);
     }
   }
+
+  useEffect(() => {
+    if (!open || campaignType !== "long") return;
+    setLinkedMissionId("");
+    void listCampaignMissionsLiteForGm(campaignId).then((r) => {
+      if (r.success) setMissionOptions(r.data);
+      else setMissionOptions([]);
+    });
+  }, [open, campaignType, campaignId]);
 
   useEffect(() => {
     return () => clearAiProgressTimer();
@@ -750,6 +768,29 @@ export function CreateEntityDialog({
                   </p>
                 </div>
               </div>
+            </div>
+          )}
+
+          {campaignType === "long" && (
+            <div className="space-y-2">
+              <Label htmlFor="create-linked-mission">Missione collegata (opzionale)</Label>
+              <select
+                id="create-linked-mission"
+                value={linkedMissionId}
+                onChange={(e) => setLinkedMissionId(e.target.value)}
+                disabled={isLoading}
+                className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
+              >
+                <option value="">Nessuna — Generale / trasversale</option>
+                {missionOptions.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.title}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-barber-paper/55">
+                Utile per ordinare il wiki e filtrare le immagini nella Regia GM per missione.
+              </p>
             </div>
           )}
 

@@ -15,13 +15,19 @@ import {
 } from "@/components/ui/tabs";
 import { DualSourceImage } from "@/components/dual-source-image";
 import { Image as ImageIcon } from "lucide-react";
-import { getGmGalleryItems, type GmGalleryItem } from "@/app/campaigns/wiki-actions";
+import {
+  getGmGalleryItems,
+  listCampaignMissionsLiteForGm,
+  type GmGalleryItem,
+  type GmGalleryWikiMissionFilter,
+} from "@/app/campaigns/wiki-actions";
 import { cn } from "@/lib/utils";
 
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   campaignId: string;
+  campaignType?: "oneshot" | "quest" | "long" | null;
 };
 
 function resolveImageUrl(item: GmGalleryItem): string | null {
@@ -32,13 +38,6 @@ function resolveImageUrl(item: GmGalleryItem): string | null {
     return `/api/tg-image/${encodeURIComponent(item.telegram_fallback_id)}`;
   }
   return null;
-}
-
-function openInPlayerScreen(url: string) {
-  if (!url) return;
-  const FEATURES =
-    "width=1280,height=720,menubar=no,toolbar=no,location=no,status=no";
-  window.open(url, "PlayerScreenWindow", FEATURES);
 }
 
 const CATEGORY_TABS: {
@@ -54,32 +53,54 @@ const CATEGORY_TABS: {
   { value: "lore", label: "Lore" },
 ];
 
-export function GmGallerySheet({ open, onOpenChange, campaignId }: Props) {
+export function GmGallerySheet({ open, onOpenChange, campaignId, campaignType = null }: Props) {
   const [items, setItems] = useState<GmGalleryItem[]>([]);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"all" | "pg" | "npc" | "monster" | "location" | "item" | "lore">("all");
+  const [wikiMissionFilter, setWikiMissionFilter] = useState<GmGalleryWikiMissionFilter>("all");
+  const [missions, setMissions] = useState<{ id: string; title: string }[]>([]);
+
+  const isLong = campaignType === "long";
+
+  useEffect(() => {
+    if (!open || !isLong) {
+      setMissions([]);
+      setWikiMissionFilter("all");
+      return;
+    }
+    void listCampaignMissionsLiteForGm(campaignId).then((r) => {
+      if (r.success) setMissions(r.data);
+      else setMissions([]);
+    });
+  }, [open, isLong, campaignId]);
 
   useEffect(() => {
     if (!open) return;
     (async () => {
-      const res = await getGmGalleryItems(campaignId);
+      const opts =
+        isLong ? { wikiMissionFilter } : undefined;
+      const res = await getGmGalleryItems(campaignId, opts);
       if (res.success && res.data) setItems(res.data);
       else setItems([]);
     })();
-  }, [open, campaignId]);
+  }, [open, campaignId, isLong, wikiMissionFilter]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return items.filter((item) => {
       if (tab !== "all" && item.category !== tab) return false;
       if (!q) return true;
-      return item.title.toLowerCase().includes(q);
+      const missionHit = item.mission_title?.toLowerCase().includes(q);
+      return item.title.toLowerCase().includes(q) || Boolean(missionHit);
     });
   }, [items, search, tab]);
 
   const handleClickImage = useCallback((item: GmGalleryItem) => {
     const url = resolveImageUrl(item);
-    if (url) openInPlayerScreen(url);
+    if (!url) return;
+    const FEATURES =
+      "width=1280,height=720,menubar=no,toolbar=no,location=no,status=no";
+    window.open(url, "PlayerScreenWindow", FEATURES);
   }, []);
 
   return (
@@ -97,12 +118,36 @@ export function GmGallerySheet({ open, onOpenChange, campaignId }: Props) {
         <div className="flex min-h-0 flex-1 flex-col gap-3 px-4 py-3">
           <div className="space-y-2">
             <Input
-              placeholder="Cerca per titolo..."
+              placeholder="Cerca per titolo o missione…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="h-8 bg-zinc-900 text-xs text-zinc-100 placeholder:text-zinc-500"
             />
           </div>
+          {isLong && (
+            <div className="space-y-1">
+              <label htmlFor="gm-gallery-mission" className="text-[11px] font-medium uppercase tracking-wide text-amber-400/80">
+                Wiki per missione
+              </label>
+              <select
+                id="gm-gallery-mission"
+                value={wikiMissionFilter}
+                onChange={(e) => setWikiMissionFilter(e.target.value as GmGalleryWikiMissionFilter)}
+                className="h-9 w-full rounded-md border border-amber-600/35 bg-zinc-900 px-2 text-xs text-amber-100"
+              >
+                <option value="all">Tutte le missioni</option>
+                <option value="none">Senza missione</option>
+                {missions.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.title}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[10px] text-zinc-500">
+                I PG restano sempre visibili nelle tab PG / Tutti. Le immagini wiki si filtrano in base al legame missione.
+              </p>
+            </div>
+          )}
           <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
             <TabsList className="flex flex-wrap gap-1 rounded-lg border border-amber-600/30 bg-zinc-900 p-1">
               {CATEGORY_TABS.map((c) => (
@@ -129,15 +174,12 @@ export function GmGallerySheet({ open, onOpenChange, campaignId }: Props) {
             ) : (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {filtered.map((item) => {
-                  const url = resolveImageUrl(item);
                   return (
                     <button
                       key={item.id}
                       type="button"
                       className="group flex flex-col items-stretch overflow-hidden rounded-md border border-amber-600/30 bg-zinc-900 text-left text-xs"
-                      onClick={() => {
-                        if (url) openInPlayerScreen(url);
-                      }}
+                      onClick={() => handleClickImage(item)}
                     >
                       <div className="relative aspect-square w-full overflow-hidden bg-zinc-800">
                         <DualSourceImage
@@ -155,15 +197,20 @@ export function GmGallerySheet({ open, onOpenChange, campaignId }: Props) {
                           {item.category === "pg"
                             ? "PG"
                             : item.category === "npc"
-                            ? "NPC"
-                            : item.category === "monster"
-                            ? "Mostro"
-                            : item.category === "location"
-                            ? "Luogo"
-                            : item.category === "item"
-                            ? "Oggetto"
-                            : "Lore"}
+                              ? "NPC"
+                              : item.category === "monster"
+                                ? "Mostro"
+                                : item.category === "location"
+                                  ? "Luogo"
+                                  : item.category === "item"
+                                    ? "Oggetto"
+                                    : "Lore"}
                         </span>
+                        {item.category !== "pg" && item.mission_title && (
+                          <span className="line-clamp-2 text-[10px] leading-tight text-zinc-400">
+                            {item.mission_title}
+                          </span>
+                        )}
                       </div>
                     </button>
                   );
@@ -176,4 +223,3 @@ export function GmGallerySheet({ open, onOpenChange, campaignId }: Props) {
     </Sheet>
   );
 }
-

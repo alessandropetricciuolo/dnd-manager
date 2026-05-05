@@ -2,10 +2,13 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
 import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { CampaignList } from "@/components/campaign-list";
 import { MySessionsList } from "@/components/my-sessions-list";
 import { CalendarSessionsLoader } from "@/components/dashboard/calendar-sessions-loader";
 import { GmAdminSessionHistorySection } from "@/components/dashboard/gm-admin-session-history-section";
+import { CreateOpenCalendarEventDialog } from "@/components/dashboard/create-open-calendar-event-dialog";
+import { OpenCalendarSessionsGmPanel } from "@/components/dashboard/open-calendar-sessions-gm-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +55,32 @@ export default async function DashboardPage() {
 
   const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
 
+  let gmAdminUsers: { id: string; label: string }[] = [];
+  if (isGmOrAdmin) {
+    try {
+      const admin = createSupabaseAdminClient();
+      const { data: gmAdminsRaw } = await admin
+        .from("profiles")
+        .select("id, first_name, last_name, display_name")
+        .in("role", ["gm", "admin"])
+        .order("first_name");
+      type GmProfileRow = {
+        id: string;
+        first_name: string | null;
+        last_name: string | null;
+        display_name: string | null;
+      };
+      const gmAdmins = (gmAdminsRaw ?? []) as GmProfileRow[];
+      gmAdminUsers = gmAdmins.map((p) => {
+        const full = [p.first_name, p.last_name].filter(Boolean).join(" ").trim();
+        const label = full || p.display_name?.trim() || `Utente ${p.id.slice(0, 8)}`;
+        return { id: p.id, label };
+      });
+    } catch (e) {
+      console.error("[dashboard] lista GM/Admin", e);
+    }
+  }
+
   return (
     <div className="min-h-full w-full bg-barber-dark p-4 md:p-8">
       <div className="mx-auto flex max-w-5xl flex-col gap-6 md:gap-8">
@@ -63,7 +92,12 @@ export default async function DashboardPage() {
         </header>
 
         <div className="space-y-6">
-          <section className="w-full min-w-0 overflow-hidden">
+          <section className="w-full min-w-0 overflow-hidden space-y-3">
+            {isGmOrAdmin ? (
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <CreateOpenCalendarEventDialog gmAdminUsers={gmAdminUsers} defaultDmId={user.id} />
+              </div>
+            ) : null}
             <Suspense
               fallback={
                 <div className="h-[320px] animate-pulse rounded-xl border border-barber-gold/30 bg-barber-dark/80" />
@@ -75,6 +109,11 @@ export default async function DashboardPage() {
                 </div>
               </div>
             </Suspense>
+            {isGmOrAdmin ? (
+              <Suspense fallback={<div className="h-24 animate-pulse rounded-xl border border-barber-gold/30 bg-barber-dark/80" />}>
+                <OpenCalendarSessionsGmPanel />
+              </Suspense>
+            ) : null}
           </section>
 
           {isGmOrAdmin ? (

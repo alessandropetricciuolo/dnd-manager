@@ -37,7 +37,7 @@ const ENABLE_DAY_DRAWER = process.env.NEXT_PUBLIC_DASHBOARD_CALENDAR_DAY_DRAWER 
 
 export type SessionForCalendar = {
   id: string;
-  campaign_id: string;
+  campaign_id: string | null;
   scheduled_at: string;
   title: string | null;
   campaign_name: string;
@@ -130,12 +130,18 @@ function SessionHoverCard({
           <p className="mt-1 text-xs text-slate-500">
             {session.signup_count}/{session.max_players} posti
           </p>
-          <Link
-            href={`/campaigns/${session.campaign_id}`}
-            className="mt-2 block text-center text-xs font-medium text-barber-gold hover:underline"
-          >
-            Vai alla campagna →
-          </Link>
+          {session.campaign_id ? (
+            <Link
+              href={`/campaigns/${session.campaign_id}`}
+              className="mt-2 block text-center text-xs font-medium text-barber-gold hover:underline"
+            >
+              Vai alla campagna →
+            </Link>
+          ) : (
+            <p className="mt-2 text-center text-xs text-slate-500">
+              Campagna da assegnare · iscriviti dalla dashboard
+            </p>
+          )}
         </div>
       )}
     </div>
@@ -229,7 +235,7 @@ export function SessionCalendar({ sessions }: SessionCalendarProps) {
                   hasSessions && typeColor === "bg-slate-500" && "!bg-slate-500/30 sm:!bg-transparent"
                 )}
               >
-                {!ENABLE_DAY_DRAWER && hasSessions && firstSession && (
+                {!ENABLE_DAY_DRAWER && hasSessions && firstSession && firstSession.campaign_id && (
                   <Link
                     href={`/campaigns/${firstSession.campaign_id}`}
                     className="absolute inset-0 z-0 rounded border-0"
@@ -300,20 +306,36 @@ export function SessionCalendar({ sessions }: SessionCalendarProps) {
               <p className="text-sm text-slate-400">Nessuna sessione pianificata.</p>
             ) : (
               selectedDaySessions.map((session) => (
-                <Link
-                  key={session.id}
-                  href={`/campaigns/${session.campaign_id}`}
-                  className="block rounded-lg border border-barber-gold/20 bg-barber-dark/70 p-3 hover:bg-barber-gold/10"
-                  onClick={() => setSelectedDay(null)}
-                >
-                  <p className="text-xs text-slate-400">{session.campaign_name}</p>
-                  <p className="mt-0.5 text-sm font-semibold text-barber-paper">
-                    {session.title || "Sessione"}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-400">
-                    {formatSessionInRome(session.scheduled_at, "HH:mm", { locale: it })} · {session.signup_count}/{session.max_players} posti
-                  </p>
-                </Link>
+                <div key={session.id}>
+                  {session.campaign_id ? (
+                    <Link
+                      href={`/campaigns/${session.campaign_id}`}
+                      className="block rounded-lg border border-barber-gold/20 bg-barber-dark/70 p-3 hover:bg-barber-gold/10"
+                      onClick={() => setSelectedDay(null)}
+                    >
+                      <p className="text-xs text-slate-400">{session.campaign_name}</p>
+                      <p className="mt-0.5 text-sm font-semibold text-barber-paper">
+                        {session.title || "Sessione"}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-400">
+                        {formatSessionInRome(session.scheduled_at, "HH:mm", { locale: it })} · {session.signup_count}/{session.max_players} posti
+                      </p>
+                    </Link>
+                  ) : (
+                    <div className="rounded-lg border border-barber-gold/20 bg-barber-dark/70 p-3">
+                      <p className="text-xs text-amber-200/90">{session.campaign_name}</p>
+                      <p className="mt-0.5 text-sm font-semibold text-barber-paper">
+                        {session.title || "Sessione"}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-400">
+                        {formatSessionInRome(session.scheduled_at, "HH:mm", { locale: it })} · {session.signup_count}/{session.max_players} posti
+                      </p>
+                      <p className="mt-2 text-xs text-slate-500">
+                        Iscrizione da &quot;Sessioni disponibili&quot; sotto nel dashboard.
+                      </p>
+                    </div>
+                  )}
+                </div>
               ))
             )}
           </div>

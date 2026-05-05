@@ -191,6 +191,221 @@ export async function createSession(
   }
 }
 
+/**
+ * Evento calendario senza campagna: i giocatori possono iscriversi; la campagna si collega dopo con `assignCampaignToOpenSession`.
+ */
+export async function createOpenCalendarEvent(formData: FormData): Promise<CreateSessionResult> {
+  const date = (formData.get("date") as string | null)?.trim();
+  const time = (formData.get("time") as string | null)?.trim() ?? "20:00";
+  const location = (formData.get("location") as string | null)?.trim() ?? "";
+  const maxPlayersStr = (formData.get("max_players") as string | null)?.trim();
+  const maxPlayers = maxPlayersStr ? parseInt(maxPlayersStr, 10) : 6;
+  const dmId = (formData.get("dm_id") as string | null)?.trim() || null;
+  const titleRaw = (formData.get("title") as string | null)?.trim() || null;
+
+  if (!date) {
+    return { success: false, message: "La data è obbligatoria." };
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    const can = await isGmOrAdminByRole(supabase);
+    if (!can) {
+      return { success: false, message: "Solo GM e Admin possono creare eventi sul calendario." };
+    }
+
+    let scheduledAt: string;
+    try {
+      scheduledAt = sessionFormLocalToUtcIso(date, time.includes(":") ? time : `${time}:00`);
+    } catch {
+      return { success: false, message: "Data o orario non validi." };
+    }
+
+    const admin = createSupabaseAdminClient();
+    const { error } = await admin.from("sessions").insert({
+      campaign_id: null,
+      title: titleRaw,
+      scheduled_at: scheduledAt,
+      status: "scheduled",
+      max_players: Math.max(1, Math.min(20, maxPlayers)),
+      notes: location || null,
+      ...(dmId ? { dm_id: dmId } : {}),
+    } as never);
+
+    if (error) {
+      console.error("[createOpenCalendarEvent]", error);
+      return { success: false, message: error.message ?? "Errore durante la creazione dell'evento." };
+    }
+
+    revalidatePath("/dashboard");
+    return { success: true, message: "Evento calendario creato. Potrai collegare una campagna in seguito." };
+  } catch (err) {
+    console.error("[createOpenCalendarEvent]", err);
+    return { success: false, message: "Si è verificato un errore imprevisto. Riprova." };
+  }
+}
+
+export type OpenCalendarSessionRow = {
+  id: string;
+  title: string | null;
+  scheduled_at: string;
+  notes: string | null;
+  signup_count: number;
+};
+
+export async function listOpenCalendarSessionsForGmAdmin(): Promise<{
+  success: boolean;
+  data?: OpenCalendarSessionRow[];
+  message?: string;
+}> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const can = await isGmOrAdminByRole(supabase);
+    if (!can) return { success: false, message: "Non autorizzato." };
+
+    const admin = createSupabaseAdminClient();
+    const { data: rows, error } = await admin
+      .from("sessions")
+      .select("id, title, scheduled_at, notes")
+      .is("campaign_id", null)
+      .eq("status", "scheduled")
+      .order("scheduled_at", { ascending: true });
+
+    if (error) {
+      console.error("[listOpenCalendarSessionsForGmAdmin]", error);
+      return { success: false, message: error.message ?? "Errore nel caricamento." };
+    }
+
+    type SessionListRow = { id: string; title: string | null; scheduled_at: string; notes: string | null };
+    const list = (rows ?? []) as SessionListRow[];
+    const ids = list.map((r) => r.id);
+    const signupCounts = new Map<string, number>();
+    if (ids.length > 0) {
+      const { data: signups } = await admin.from("session_signups").select("session_id").in("session_id", ids);
+      for (const s of signups ?? []) {
+        const sid = (s as { session_id: string }).session_id;
+        signupCounts.set(sid, (signupCounts.get(sid) ?? 0) + 1);
+      }
+    }
+
+    return {
+      success: true,
+      data: list.map((r) => ({
+        id: r.id,
+        title: r.title ?? null,
+        scheduled_at: r.scheduled_at,
+        notes: r.notes ?? null,
+        signup_count: signupCounts.get(r.id) ?? 0,
+      })),
+    };
+  } catch (err) {
+    console.error("[listOpenCalendarSessionsForGmAdmin]", err);
+    return { success: false, message: "Errore imprevisto." };
+  }
+}
+
+export async function listCampaignsForOpenSessionAssignment(): Promise<{
+  success: boolean;
+  data?: Array<{ id: string; name: string }>;
+  message?: string;
+}> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { success: false, message: "Non autenticato." };
+
+    const can = await isGmOrAdminByRole(supabase);
+    if (!can) return { success: false, message: "Non autorizzato." };
+
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    const admin = createSupabaseAdminClient();
+
+    if (profile?.role === "admin") {
+      const { data, error } = await admin.from("campaigns").select("id, name").order("name");
+      if (error) return { success: false, message: error.message ?? "Errore." };
+      return { success: true, data: (data ?? []) as Array<{ id: string; name: string }> };
+    }
+
+    const { data, error } = await admin
+      .from("campaigns")
+      .select("id, name")
+      .eq("gm_id", user.id)
+      .order("name");
+    if (error) return { success: false, message: error.message ?? "Errore." };
+    return { success: true, data: (data ?? []) as Array<{ id: string; name: string }> };
+  } catch (err) {
+    console.error("[listCampaignsForOpenSessionAssignment]", err);
+    return { success: false, message: "Errore imprevisto." };
+  }
+}
+
+export async function assignCampaignToOpenSession(
+  sessionId: string,
+  campaignId: string
+): Promise<CreateSessionResult> {
+  const sid = sessionId?.trim();
+  const cid = campaignId?.trim();
+  if (!sid || !cid) {
+    return { success: false, message: "Sessione e campagna sono obbligatorie." };
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { success: false, message: "Devi essere autenticato." };
+
+    const can = await isGmOrAdminByRole(supabase);
+    if (!can) return { success: false, message: "Solo GM e Admin possono collegare una campagna." };
+
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    const admin = createSupabaseAdminClient();
+
+    const { data: campaign, error: campErr } = await admin.from("campaigns").select("id, gm_id").eq("id", cid).maybeSingle();
+    if (campErr || !campaign) {
+      return { success: false, message: "Campagna non trovata." };
+    }
+    if (profile?.role !== "admin" && (campaign as { gm_id: string }).gm_id !== user.id) {
+      return { success: false, message: "Puoi collegare solo campagne di cui sei il Master titolare." };
+    }
+
+    const { data: session, error: sessErr } = await admin
+      .from("sessions")
+      .select("id, campaign_id, status")
+      .eq("id", sid)
+      .maybeSingle();
+    if (sessErr || !session) {
+      return { success: false, message: "Sessione non trovata." };
+    }
+    const row = session as { campaign_id: string | null; status: string };
+    if (row.status !== "scheduled") {
+      return { success: false, message: "Solo sessioni ancora programmate possono essere aggiornate." };
+    }
+    if (row.campaign_id != null) {
+      return { success: false, message: "Questa sessione ha già una campagna collegata." };
+    }
+
+    const { error: updErr } = await admin
+      .from("sessions")
+      .update({ campaign_id: cid } as never)
+      .eq("id", sid);
+    if (updErr) {
+      console.error("[assignCampaignToOpenSession]", updErr);
+      return { success: false, message: updErr.message ?? "Errore durante l'aggiornamento." };
+    }
+
+    revalidatePath("/dashboard");
+    revalidatePath(`/campaigns/${cid}`);
+    return { success: true, message: "Campagna collegata all'evento." };
+  } catch (err) {
+    console.error("[assignCampaignToOpenSession]", err);
+    return { success: false, message: "Errore imprevisto. Riprova." };
+  }
+}
+
 export type CampaignPartyRow = {
   id: string;
   campaign_id: string;
@@ -539,6 +754,15 @@ async function isGmOrAdmin(
   return campaign?.gm_id === user?.id;
 }
 
+/** Sessione senza campagna: gestibile solo da GM/Admin (guild). Con campagna: GM della campagna o guild. */
+async function canManageSessionByCampaign(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  campaignId: string | null
+): Promise<boolean> {
+  if (campaignId == null) return isGmOrAdminByRole(supabase);
+  return isGmOrAdmin(supabase, campaignId);
+}
+
 async function sendFeedbackRequestEmailsForSession(
   admin: ReturnType<typeof createSupabaseAdminClient>,
   campaignId: string,
@@ -758,27 +982,31 @@ export async function joinSession(sessionId: string): Promise<JoinSessionResult>
     if (sessionError || !session) {
       return { success: false, message: "Sessione non trovata." };
     }
-    const { data: campaign } = await supabase
-      .from("campaigns")
-      .select("id, type")
-      .eq("id", session.campaign_id)
-      .single();
-    if (!campaign) {
-      return { success: false, message: "Campagna non trovata." };
-    }
-    if (campaign.type === "long") {
-      const { data: member } = await supabase
-        .from("campaign_members")
-        .select("id")
-        .eq("campaign_id", session.campaign_id)
-        .eq("player_id", user.id)
-        .maybeSingle();
-      if (!member) {
-        return {
-          success: false,
-          message:
-            "Per prenotare sessioni di campagne Long devi prima iscriverti alla campagna.",
-        };
+
+    const sessionCampaignId = session.campaign_id as string | null;
+    if (sessionCampaignId != null) {
+      const { data: campaign } = await supabase
+        .from("campaigns")
+        .select("id, type")
+        .eq("id", sessionCampaignId)
+        .single();
+      if (!campaign) {
+        return { success: false, message: "Campagna non trovata." };
+      }
+      if (campaign.type === "long") {
+        const { data: member } = await supabase
+          .from("campaign_members")
+          .select("id")
+          .eq("campaign_id", sessionCampaignId)
+          .eq("player_id", user.id)
+          .maybeSingle();
+        if (!member) {
+          return {
+            success: false,
+            message:
+              "Per prenotare sessioni di campagne Long devi prima iscriverti alla campagna.",
+          };
+        }
       }
     }
 
@@ -807,14 +1035,16 @@ export async function joinSession(sessionId: string): Promise<JoinSessionResult>
     }
 
     void (async () => {
-      const [{ data: playerProfile }, { data: sessionInfo }, { data: campaignInfo }] = await Promise.all([
+      const [{ data: playerProfile }, { data: sessionInfo }, campaignRes] = await Promise.all([
         supabase
           .from("profiles")
           .select("first_name, last_name, display_name")
           .eq("id", user.id)
           .maybeSingle(),
         supabase.from("sessions").select("title, scheduled_at").eq("id", sessionId).maybeSingle(),
-        supabase.from("campaigns").select("name").eq("id", session.campaign_id).maybeSingle(),
+        sessionCampaignId
+          ? supabase.from("campaigns").select("name").eq("id", sessionCampaignId).maybeSingle()
+          : Promise.resolve({ data: null as { name: string | null } | null }),
       ]);
 
       const player = (playerProfile ?? null) as
@@ -824,7 +1054,9 @@ export async function joinSession(sessionId: string): Promise<JoinSessionResult>
       const playerName = fullName || player?.display_name?.trim() || "Giocatore";
       const sessionRow = (sessionInfo as { title?: string | null; scheduled_at?: string | null } | null) ?? null;
       const sessionTitle = (sessionRow?.title ?? "").trim() || "Sessione";
-      const campaignName = ((campaignInfo as { name?: string | null } | null)?.name ?? "").trim() || "Campagna";
+      const campaignName = sessionCampaignId
+        ? ((campaignRes.data?.name ?? "").trim() || "Campagna")
+        : "Evento (campagna da definire)";
       const sessionDate = sessionRow?.scheduled_at
         ? formatSessionInRome(sessionRow.scheduled_at, "dd/MM/yyyy HH:mm")
         : "Data non disponibile";
@@ -834,7 +1066,9 @@ export async function joinSession(sessionId: string): Promise<JoinSessionResult>
       ).catch(console.error);
     })().catch(console.error);
 
-    revalidatePath(`/campaigns/${session.campaign_id}`);
+    if (sessionCampaignId) {
+      revalidatePath(`/campaigns/${sessionCampaignId}`);
+    }
     revalidatePath("/dashboard");
     return { success: true, message: "Iscrizione effettuata. In attesa di approvazione." };
   } catch (err) {
@@ -865,14 +1099,17 @@ export async function listAssignablePlayersForSession(
       return { success: false, message: "Sessione non trovata." };
     }
 
-    const allowed = await isGmOrAdmin(supabase, session.campaign_id);
+    const allowed = await canManageSessionByCampaign(supabase, session.campaign_id as string | null);
     if (!allowed) {
       return { success: false, message: "Solo GM o Admin possono aggiungere iscritti." };
     }
 
     const admin = createSupabaseAdminClient();
+    const campaignIdForSession = session.campaign_id as string | null;
     const [{ data: campaignRaw }, { data: existingSignupsRaw, error: signupsError }] = await Promise.all([
-      admin.from("campaigns").select("id, type").eq("id", session.campaign_id).maybeSingle(),
+      campaignIdForSession
+        ? admin.from("campaigns").select("id, type").eq("id", campaignIdForSession).maybeSingle()
+        : Promise.resolve({ data: null as { id: string; type: string | null } | null }),
       admin.from("session_signups").select("player_id").eq("session_id", sessionId),
     ]);
     const campaign = (campaignRaw as { id: string; type: string | null } | null) ?? null;
@@ -889,11 +1126,11 @@ export async function listAssignablePlayersForSession(
     );
 
     let allowedPlayerIds: Set<string> | null = null;
-    if (campaign?.type === "long") {
+    if (campaign?.type === "long" && campaignIdForSession) {
       const { data: membersRaw, error: membersError } = await admin
         .from("campaign_members")
         .select("player_id")
-        .eq("campaign_id", session.campaign_id);
+        .eq("campaign_id", campaignIdForSession);
       if (membersError) {
         console.error("[listAssignablePlayersForSession] members", membersError);
         return { success: false, message: membersError.message ?? "Errore nel caricamento membri campagna." };
@@ -965,14 +1202,17 @@ export async function addSessionSignupForGm(
       return { success: false, message: "Sessione non trovata." };
     }
 
-    const allowed = await isGmOrAdmin(supabase, session.campaign_id);
+    const campaignIdForSession = session.campaign_id as string | null;
+    const allowed = await canManageSessionByCampaign(supabase, campaignIdForSession);
     if (!allowed) {
       return { success: false, message: "Solo GM o Admin possono aggiungere iscritti." };
     }
 
     const admin = createSupabaseAdminClient();
     const [{ data: campaignRaw }, { data: profile }, { data: existingSignup }] = await Promise.all([
-      admin.from("campaigns").select("id, type").eq("id", session.campaign_id).maybeSingle(),
+      campaignIdForSession
+        ? admin.from("campaigns").select("id, type").eq("id", campaignIdForSession).maybeSingle()
+        : Promise.resolve({ data: null as { id: string; type: string | null } | null }),
       admin.from("profiles").select("id, role").eq("id", playerId).maybeSingle(),
       admin
         .from("session_signups")
@@ -993,11 +1233,11 @@ export async function addSessionSignupForGm(
       return { success: false, message: "Il giocatore è già iscritto a questa sessione." };
     }
 
-    if (campaign?.type === "long") {
+    if (campaign?.type === "long" && campaignIdForSession) {
       const { data: member } = await admin
         .from("campaign_members")
         .select("id")
-        .eq("campaign_id", session.campaign_id)
+        .eq("campaign_id", campaignIdForSession)
         .eq("player_id", playerId)
         .maybeSingle();
       if (!member) {
@@ -1021,12 +1261,14 @@ export async function addSessionSignupForGm(
       return { success: false, message: insertError.message ?? "Errore durante l'aggiunta dell'iscritto." };
     }
 
-    revalidatePath(`/campaigns/${session.campaign_id}`);
+    if (campaignIdForSession) {
+      revalidatePath(`/campaigns/${campaignIdForSession}`);
+    }
     revalidatePath("/dashboard");
     return {
       success: true,
       message: "Giocatore aggiunto alla sessione e segnato come approvato.",
-      campaignId: session.campaign_id,
+      campaignId: campaignIdForSession ?? undefined,
     };
   } catch (err) {
     console.error("[addSessionSignupForGm]", err);
@@ -1064,7 +1306,7 @@ export async function updateSignupStatus(
       .select("campaign_id")
       .eq("id", signup.session_id)
       .single();
-    if (!session?.campaign_id) {
+    if (!session) {
       return { success: false, message: "Sessione non trovata." };
     }
 
@@ -1130,8 +1372,12 @@ export async function updateSignupStatus(
       }
     }
 
-    revalidatePath(`/campaigns/${session.campaign_id}`);
-    return { success: true, message: "Stato aggiornato.", campaignId: session.campaign_id };
+    const cid = session.campaign_id as string | null;
+    if (cid) {
+      revalidatePath(`/campaigns/${cid}`);
+    }
+    revalidatePath("/dashboard");
+    return { success: true, message: "Stato aggiornato.", campaignId: cid ?? undefined };
   } catch (err) {
     console.error("[updateSignupStatus]", err);
     return { success: false, message: "Errore imprevisto. Riprova." };
@@ -1171,7 +1417,7 @@ export async function deleteSignup(signupId: string): Promise<DeleteSignupResult
       .select("campaign_id")
       .eq("id", signup.session_id)
       .single();
-    if (!session?.campaign_id) {
+    if (!session) {
       return { success: false, message: "Sessione non trovata." };
     }
 
@@ -1185,8 +1431,12 @@ export async function deleteSignup(signupId: string): Promise<DeleteSignupResult
       return { success: false, message: deleteError.message ?? "Errore durante la rimozione." };
     }
 
-    revalidatePath(`/campaigns/${session.campaign_id}`);
-    return { success: true, message: "Giocatore rimosso dalla sessione.", campaignId: session.campaign_id };
+    const cid = session.campaign_id as string | null;
+    if (cid) {
+      revalidatePath(`/campaigns/${cid}`);
+    }
+    revalidatePath("/dashboard");
+    return { success: true, message: "Giocatore rimosso dalla sessione.", campaignId: cid ?? undefined };
   } catch (err) {
     console.error("[deleteSignup]", err);
     return { success: false, message: "Errore imprevisto. Riprova." };
@@ -1229,18 +1479,21 @@ export async function deleteSession(sessionId: string): Promise<DeleteSessionRes
       return { success: false, message: deleteError.message ?? "Errore durante l'eliminazione." };
     }
 
-    try {
-      await Promise.all([
-        deleteCampaignMemorySource(admin, session.campaign_id, "session_summary", sessionId),
-        deleteCampaignMemorySource(admin, session.campaign_id, "session_note", sessionId),
-      ]);
-    } catch (memoryErr) {
-      console.error("[deleteSession] campaign memory delete", memoryErr);
+    const cid = session.campaign_id as string | null;
+    if (cid) {
+      try {
+        await Promise.all([
+          deleteCampaignMemorySource(admin, cid, "session_summary", sessionId),
+          deleteCampaignMemorySource(admin, cid, "session_note", sessionId),
+        ]);
+      } catch (memoryErr) {
+        console.error("[deleteSession] campaign memory delete", memoryErr);
+      }
+      revalidatePath(`/campaigns/${cid}`);
     }
 
-    revalidatePath(`/campaigns/${session.campaign_id}`);
     revalidatePath("/dashboard");
-    return { success: true, message: "Sessione eliminata.", campaignId: session.campaign_id };
+    return { success: true, message: "Sessione eliminata.", campaignId: cid ?? undefined };
   } catch (err) {
     console.error("[deleteSession]", err);
     return { success: false, message: "Errore imprevisto. Riprova." };
@@ -1278,9 +1531,9 @@ export async function updateSession(
       return { success: false, message: "Sessione non trovata." };
     }
 
-    const canEdit = await isGmOrAdmin(supabase, session.campaign_id);
+    const canEdit = await canManageSessionByCampaign(supabase, session.campaign_id as string | null);
     if (!canEdit) {
-      return { success: false, message: "Non puoi modificare sessioni di questa campagna." };
+      return { success: false, message: "Non puoi modificare questa sessione." };
     }
 
     const updates: { title?: string | null; session_summary?: string | null; gm_private_notes?: string | null } = {};
@@ -1288,8 +1541,9 @@ export async function updateSession(
     if (payload.session_summary !== undefined) updates.session_summary = payload.session_summary?.trim() || null;
     if (payload.gm_private_notes !== undefined) updates.gm_private_notes = payload.gm_private_notes?.trim() || null;
 
+    const cid = session.campaign_id as string | null;
     if (Object.keys(updates).length === 0) {
-      return { success: true, message: "Nessuna modifica.", campaignId: session.campaign_id };
+      return { success: true, message: "Nessuna modifica.", campaignId: cid ?? undefined };
     }
 
     const { error: updateError } = await supabase
@@ -1302,15 +1556,18 @@ export async function updateSession(
       return { success: false, message: updateError.message ?? "Errore durante il salvataggio." };
     }
 
-    try {
-      const admin = createSupabaseAdminClient();
-      await syncSessionToCampaignMemory(admin, sessionId, { campaignId: session.campaign_id });
-    } catch (memoryErr) {
-      console.error("[updateSession] campaign memory sync", memoryErr);
+    if (cid) {
+      try {
+        const admin = createSupabaseAdminClient();
+        await syncSessionToCampaignMemory(admin, sessionId, { campaignId: cid });
+      } catch (memoryErr) {
+        console.error("[updateSession] campaign memory sync", memoryErr);
+      }
+      revalidatePath(`/campaigns/${cid}`);
     }
 
-    revalidatePath(`/campaigns/${session.campaign_id}`);
-    return { success: true, message: "Sessione aggiornata.", campaignId: session.campaign_id };
+    revalidatePath("/dashboard");
+    return { success: true, message: "Sessione aggiornata.", campaignId: cid ?? undefined };
   } catch (err) {
     console.error("[updateSession]", err);
     return { success: false, message: "Errore imprevisto. Riprova." };

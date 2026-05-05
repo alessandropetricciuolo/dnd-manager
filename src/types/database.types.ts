@@ -236,7 +236,7 @@ export interface Database {
       sessions: {
         Row: {
           id: string;
-          campaign_id: string;
+          campaign_id: string | null;
           title: string | null;
           scheduled_at: string;
           status: "scheduled" | "completed" | "cancelled";

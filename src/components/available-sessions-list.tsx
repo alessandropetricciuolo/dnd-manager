@@ -1,11 +1,9 @@
 import { createSupabaseServerClient } from "@/utils/supabase/server";
-import { format } from "date-fns";
-import { it } from "date-fns/locale";
 import { AvailableSessionsListClient } from "@/components/available-sessions-list-client";
 
 export type AvailableSessionRow = {
   sessionId: string;
-  campaignId: string;
+  campaignId: string | null;
   campaignName: string;
   scheduledAt: string;
   notes: string | null;
@@ -37,36 +35,65 @@ export async function AvailableSessionsList() {
     .eq("player_id", user.id);
   const myCampaignIds = (memberRows ?? []).map((r) => r.campaign_id);
 
-  const campaignQuery = supabase
-    .from("campaigns")
-    .select("id, name")
-    .order("name");
-  const { data: campaigns } = myCampaignIds.length > 0
-    ? await campaignQuery.or(`is_public.eq.true,id.in.(${myCampaignIds.join(",")})`)
-    : await campaignQuery.eq("is_public", true);
+  const campaignQuery = supabase.from("campaigns").select("id, name").order("name");
+  const { data: campaigns } =
+    myCampaignIds.length > 0
+      ? await campaignQuery.or(`is_public.eq.true,id.in.(${myCampaignIds.join(",")})`)
+      : await campaignQuery.eq("is_public", true);
 
-  if (!campaigns?.length) {
-    return (
-      <div className="rounded-xl border border-emerald-700/40 bg-slate-950/60 px-6 py-8 text-center text-slate-400">
-        Nessuna campagna disponibile. Unisciti a una campagna pubblica o attendi un invito.
-      </div>
-    );
+  const campaignList = campaigns ?? [];
+  const campaignIds = campaignList.map((c) => c.id);
+  const campaignByName = new Map(campaignList.map((c) => [c.id, c.name]));
+
+  const now = new Date().toISOString();
+
+  let sessionsFromCampaigns: Array<{
+    id: string;
+    campaign_id: string | null;
+    scheduled_at: string;
+    notes: string | null;
+  }> = [];
+
+  if (campaignIds.length > 0) {
+    const { data } = await supabase
+      .from("sessions")
+      .select("id, campaign_id, scheduled_at, notes")
+      .in("campaign_id", campaignIds)
+      .eq("status", "scheduled")
+      .gte("scheduled_at", now)
+      .order("scheduled_at", { ascending: true });
+    sessionsFromCampaigns = data ?? [];
   }
 
-  const campaignIds = campaigns.map((c) => c.id);
-  const now = new Date().toISOString();
-  const { data: sessions } = await supabase
+  const { data: openSessionsRaw } = await supabase
     .from("sessions")
     .select("id, campaign_id, scheduled_at, notes")
-    .in("campaign_id", campaignIds)
+    .is("campaign_id", null)
     .eq("status", "scheduled")
     .gte("scheduled_at", now)
     .order("scheduled_at", { ascending: true });
 
-  if (!sessions?.length) {
+  const openSessions = openSessionsRaw ?? [];
+
+  const mergedById = new Map<
+    string,
+    { id: string; campaign_id: string | null; scheduled_at: string; notes: string | null }
+  >();
+  for (const s of sessionsFromCampaigns) {
+    mergedById.set(s.id, s);
+  }
+  for (const s of openSessions) {
+    if (!mergedById.has(s.id)) mergedById.set(s.id, s);
+  }
+
+  const sessions = [...mergedById.values()].sort((a, b) =>
+    a.scheduled_at.localeCompare(b.scheduled_at)
+  );
+
+  if (!sessions.length) {
     return (
       <div className="rounded-xl border border-emerald-700/40 bg-slate-950/60 px-6 py-8 text-center text-slate-400">
-        Nessuna sessione in programma al momento. Torna più tardi o controlla le campagne.
+        Nessuna sessione o evento in programma al momento. Controlla il calendario sopra o torna più tardi.
       </div>
     );
   }
@@ -79,16 +106,18 @@ export async function AvailableSessionsList() {
     .in("session_id", sessionIds);
 
   const signupBySession = new Map((mySignups ?? []).map((s) => [s.session_id, s.status]));
-  const campaignByName = new Map(campaigns.map((c) => [c.id, c.name]));
 
-  const rows: AvailableSessionRow[] = sessions.map((s) => ({
-    sessionId: s.id,
-    campaignId: s.campaign_id,
-    campaignName: campaignByName.get(s.campaign_id) ?? "Campagna",
-    scheduledAt: s.scheduled_at,
-    notes: s.notes ?? null,
-    mySignupStatus: signupBySession.get(s.id) ?? null,
-  }));
+  const rows: AvailableSessionRow[] = sessions.map((s) => {
+    const cid = s.campaign_id as string | null;
+    return {
+      sessionId: s.id,
+      campaignId: cid,
+      campaignName: cid ? (campaignByName.get(cid) ?? "Campagna") : "Evento (campagna da definire)",
+      scheduledAt: s.scheduled_at,
+      notes: s.notes ?? null,
+      mySignupStatus: signupBySession.get(s.id) ?? null,
+    };
+  });
 
   return <AvailableSessionsListClient rows={rows} />;
 }

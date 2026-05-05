@@ -109,6 +109,31 @@ function isMissingWikiAiMemoryColumnError(err: { message?: string } | null | und
   );
 }
 
+function isMissingWikiLinkedMissionColumnError(err: { message?: string } | null | undefined): boolean {
+  const m = (err?.message ?? "").toLowerCase();
+  return (
+    m.includes("linked_mission_id") &&
+    (m.includes("schema cache") || m.includes("could not find") || m.includes("column"))
+  );
+}
+
+async function resolveLinkedMissionIdForLongCampaign(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  campaignId: string,
+  raw: string
+): Promise<{ id: string | null } | { error: string }> {
+  const trimmed = raw.trim();
+  if (!trimmed) return { id: null };
+  const { data: row, error } = await supabase
+    .from("campaign_missions")
+    .select("id")
+    .eq("id", trimmed)
+    .eq("campaign_id", campaignId)
+    .maybeSingle();
+  if (error || !row) return { error: "Missione non trovata in questa campagna." };
+  return { id: trimmed };
+}
+
 export async function createEntity(
   campaignId: string,
   formData: FormData
@@ -239,20 +264,37 @@ export async function createEntity(
         formData.get("include_in_campaign_ai_memory") === "on" ||
         formData.get("include_in_campaign_ai_memory") === "true";
       insertPayload.include_in_campaign_ai_memory = includeMem;
+      const rawMission = (formData.get("linked_mission_id") as string | null)?.trim() ?? "";
+      const missionRes = await resolveLinkedMissionIdForLongCampaign(supabase, campaignId, rawMission);
+      if ("error" in missionRes) {
+        return { success: false, message: missionRes.error };
+      }
+      insertPayload.linked_mission_id = missionRes.id;
     }
     if (type === "monster") {
       insertPayload.xp_value = xpValue;
     }
 
-    let insertRes = await supabase.from("wiki_entities").insert(insertPayload).select("id").single();
+    let insertPayloadMutable: Record<string, unknown> = insertPayload;
+    let insertRes = await supabase.from("wiki_entities").insert(insertPayloadMutable).select("id").single();
 
     if (
       insertRes.error &&
-      "include_in_campaign_ai_memory" in insertPayload &&
+      "include_in_campaign_ai_memory" in insertPayloadMutable &&
       isMissingWikiAiMemoryColumnError(insertRes.error)
     ) {
-      const { include_in_campaign_ai_memory: _d, ...rest } = insertPayload;
-      insertRes = await supabase.from("wiki_entities").insert(rest).select("id").single();
+      const { include_in_campaign_ai_memory: _d, ...rest } = insertPayloadMutable;
+      insertPayloadMutable = rest;
+      insertRes = await supabase.from("wiki_entities").insert(insertPayloadMutable).select("id").single();
+    }
+    if (
+      insertRes.error &&
+      "linked_mission_id" in insertPayloadMutable &&
+      isMissingWikiLinkedMissionColumnError(insertRes.error)
+    ) {
+      const { linked_mission_id: _lm, ...rest } = insertPayloadMutable;
+      insertPayloadMutable = rest;
+      insertRes = await supabase.from("wiki_entities").insert(insertPayloadMutable).select("id").single();
     }
 
     const { data: inserted, error } = insertRes;
@@ -463,23 +505,44 @@ export async function updateEntity(
         formData.get("include_in_campaign_ai_memory") === "on" ||
         formData.get("include_in_campaign_ai_memory") === "true";
       updatePayload.include_in_campaign_ai_memory = includeMem;
+      const rawMission = (formData.get("linked_mission_id") as string | null)?.trim() ?? "";
+      const missionRes = await resolveLinkedMissionIdForLongCampaign(supabase, campaignId, rawMission);
+      if ("error" in missionRes) {
+        return { success: false, message: missionRes.error };
+      }
+      updatePayload.linked_mission_id = missionRes.id;
     }
 
+    let updatePayloadMutable: Record<string, unknown> = updatePayload;
     let updateRes = await supabase
       .from("wiki_entities")
-      .update(updatePayload)
+      .update(updatePayloadMutable)
       .eq("id", entityId)
       .eq("campaign_id", campaignId);
 
     if (
       updateRes.error &&
-      "include_in_campaign_ai_memory" in updatePayload &&
+      "include_in_campaign_ai_memory" in updatePayloadMutable &&
       isMissingWikiAiMemoryColumnError(updateRes.error)
     ) {
-      const { include_in_campaign_ai_memory: _d, ...rest } = updatePayload;
+      const { include_in_campaign_ai_memory: _d, ...rest } = updatePayloadMutable;
+      updatePayloadMutable = rest;
       updateRes = await supabase
         .from("wiki_entities")
-        .update(rest)
+        .update(updatePayloadMutable)
+        .eq("id", entityId)
+        .eq("campaign_id", campaignId);
+    }
+    if (
+      updateRes.error &&
+      "linked_mission_id" in updatePayloadMutable &&
+      isMissingWikiLinkedMissionColumnError(updateRes.error)
+    ) {
+      const { linked_mission_id: _lm, ...rest } = updatePayloadMutable;
+      updatePayloadMutable = rest;
+      updateRes = await supabase
+        .from("wiki_entities")
+        .update(updatePayloadMutable)
         .eq("id", entityId)
         .eq("campaign_id", campaignId);
     }
@@ -715,6 +778,8 @@ export type WikiEntity = {
   tags?: string[] | null;
   /** Campagne long: voce inclusa nel contesto IA per generazioni wiki successive. */
   include_in_campaign_ai_memory?: boolean;
+  /** Campagne long: missione di riferimento (filtraggi GM screen / wiki). */
+  linked_mission_id?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -911,15 +976,58 @@ export type GmGalleryItem = {
   category: "pg" | "npc" | "monster" | "location" | "item" | "lore";
   image_url: string | null;
   telegram_fallback_id?: string | null;
+  linked_mission_id?: string | null;
+  mission_title?: string | null;
 };
+
+export type GmGalleryWikiMissionFilter = "all" | "none" | string;
+
+/** Elenco missioni (Long) per select GM / filtri wiki. Solo GM/Admin. */
+export async function listCampaignMissionsLiteForGm(
+  campaignId: string
+): Promise<
+  | { success: true; data: { id: string; title: string }[] }
+  | { success: false; message: string }
+> {
+  if (!campaignId?.trim()) return { success: false, message: "Campagna non valida." };
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) return { success: false, message: "Non autenticato." };
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    if (profile?.role !== "gm" && profile?.role !== "admin") {
+      return { success: false, message: "Non autorizzato." };
+    }
+    const { data, error } = await supabase
+      .from("campaign_missions")
+      .select("id, title")
+      .eq("campaign_id", campaignId)
+      .order("title", { ascending: true });
+    if (error) return { success: false, message: error.message ?? "Errore nel caricamento missioni." };
+    return {
+      success: true,
+      data: (data ?? []).map((r: { id: string; title: string }) => ({
+        id: r.id,
+        title: r.title?.trim() ? r.title : "Senza titolo",
+      })),
+    };
+  } catch {
+    return { success: false, message: "Errore imprevisto." };
+  }
+}
 
 /** Galleria multimediale GM Screen: immagini da Wiki (tutte le categorie) + personaggi della campagna. Solo GM/Admin. */
 export async function getGmGalleryItems(
-  campaignId: string
+  campaignId: string,
+  opts?: { wikiMissionFilter?: GmGalleryWikiMissionFilter }
 ): Promise<
   | { success: true; data: GmGalleryItem[] }
   | { success: false; error: string }
 > {
+  const wikiMissionFilter = opts?.wikiMissionFilter ?? "all";
   try {
     const supabase = await createSupabaseServerClient();
     const {
@@ -940,12 +1048,34 @@ export async function getGmGalleryItems(
       return { success: false, error: "Solo il Master può usare la galleria." };
     }
 
-    // Wiki entities con immagine
-    const { data: wikiRows, error: wikiErr } = await supabase
+    const { data: missionsRows } = await supabase
+      .from("campaign_missions")
+      .select("id, title")
+      .eq("campaign_id", campaignId);
+    const missionTitleById = new Map(
+      (missionsRows ?? []).map((m: { id: string; title: string }) => [
+        m.id,
+        m.title?.trim() ? m.title : "Senza titolo",
+      ])
+    );
+
+    let wikiSelect = "id, name, type, image_url, telegram_fallback_id, linked_mission_id";
+    let { data: wikiRows, error: wikiErr } = await supabase
       .from("wiki_entities")
-      .select("id, name, type, image_url, telegram_fallback_id")
+      .select(wikiSelect)
       .eq("campaign_id", campaignId)
       .not("image_url", "is", null);
+
+    if (wikiErr && isMissingWikiLinkedMissionColumnError(wikiErr)) {
+      wikiSelect = "id, name, type, image_url, telegram_fallback_id";
+      const retry = await supabase
+        .from("wiki_entities")
+        .select(wikiSelect)
+        .eq("campaign_id", campaignId)
+        .not("image_url", "is", null);
+      wikiRows = retry.data;
+      wikiErr = retry.error;
+    }
 
     if (wikiErr) {
       console.error("[getGmGalleryItems] wiki", wikiErr);
@@ -955,37 +1085,37 @@ export async function getGmGalleryItems(
       };
     }
 
-    const wikiItems: GmGalleryItem[] = (wikiRows ?? []).map(
-      (r: {
-        id: string;
-        name: string;
-        type: string;
-        image_url: string | null;
-        telegram_fallback_id?: string | null;
-      }) => {
-        const t = r.type as
-          | "npc"
-          | "monster"
-          | "location"
-          | "item"
-          | "lore";
-        const safeType: GmGalleryItem["category"] =
-          t === "npc" ||
-          t === "monster" ||
-          t === "location" ||
-          t === "item" ||
-          t === "lore"
-            ? t
-            : "lore";
-        return {
-          id: r.id,
-          title: r.name,
-          category: safeType,
-          image_url: r.image_url ?? null,
-          telegram_fallback_id: r.telegram_fallback_id ?? null,
-        };
-      }
-    );
+    type WikiRow = {
+      id: string;
+      name: string;
+      type: string;
+      image_url: string | null;
+      telegram_fallback_id?: string | null;
+      linked_mission_id?: string | null;
+    };
+
+    let filteredWiki = (wikiRows ?? []) as unknown as WikiRow[];
+    if (wikiMissionFilter === "none") {
+      filteredWiki = filteredWiki.filter((r) => !r.linked_mission_id);
+    } else if (wikiMissionFilter !== "all") {
+      filteredWiki = filteredWiki.filter((r) => r.linked_mission_id === wikiMissionFilter);
+    }
+
+    const wikiItems: GmGalleryItem[] = filteredWiki.map((r) => {
+      const t = r.type as "npc" | "monster" | "location" | "item" | "lore";
+      const safeType: GmGalleryItem["category"] =
+        t === "npc" || t === "monster" || t === "location" || t === "item" || t === "lore" ? t : "lore";
+      const mid = r.linked_mission_id ?? null;
+      return {
+        id: r.id,
+        title: r.name,
+        category: safeType,
+        image_url: r.image_url ?? null,
+        telegram_fallback_id: r.telegram_fallback_id ?? null,
+        linked_mission_id: mid,
+        mission_title: mid ? missionTitleById.get(mid) ?? null : null,
+      };
+    });
 
     // Personaggi della campagna con immagine
     const { data: charRows, error: charErr } = await supabase

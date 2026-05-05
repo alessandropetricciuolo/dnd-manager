@@ -196,7 +196,7 @@ export function GmScreenLegacyLayout({
           campaignId={campaignId}
           currentUserId={currentUserId}
         />
-        <GmGallerySheet open={galleryOpen} onOpenChange={setGalleryOpen} campaignId={campaignId} />
+        <GmGallerySheet open={galleryOpen} onOpenChange={setGalleryOpen} campaignId={campaignId} campaignType={campaignType} />
       </main>
     </div>
   );

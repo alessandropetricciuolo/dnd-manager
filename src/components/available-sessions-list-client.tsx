@@ -91,12 +91,18 @@ export function AvailableSessionsListClient({
                   )}
                 </div>
               )}
-              <Link
-                href={`/campaigns/${row.campaignId}`}
-                className="block text-center text-xs text-emerald-400/80 hover:text-emerald-300"
-              >
-                Vai alla campagna →
-              </Link>
+              {row.campaignId ? (
+                <Link
+                  href={`/campaigns/${row.campaignId}`}
+                  className="block text-center text-xs text-emerald-400/80 hover:text-emerald-300"
+                >
+                  Vai alla campagna →
+                </Link>
+              ) : (
+                <p className="text-center text-xs text-slate-500">
+                  Il Master collegherà la campagna quando sarà decisa.
+                </p>
+              )}
             </CardContent>
           </Card>
         );

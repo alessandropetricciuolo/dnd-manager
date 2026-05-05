@@ -596,6 +596,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
                 </div>
                 <WikiList
                   campaignId={campaign.id}
+                  campaignType={campaign.type ?? null}
                   eligiblePlayers={eligiblePlayers}
                   eligibleParties={eligibleParties}
                 />

@@ -19,7 +19,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageSourceField } from "@/components/ui/image-source-field";
 import { TagsInput } from "@/components/wiki/tags-input";
-import { updateEntity, setWikiEntityGlobalStatus } from "@/app/campaigns/wiki-actions";
+import {
+  listCampaignMissionsLiteForGm,
+  setWikiEntityGlobalStatus,
+  updateEntity,
+} from "@/app/campaigns/wiki-actions";
 import { getWikiEntitiesForCampaign, getMapsForCampaign, getWikiRelationshipsForEntity } from "@/app/campaigns/entity-graph-actions";
 import { getEmptyAttributes } from "@/types/wiki";
 import type { WikiEntity } from "@/app/campaigns/wiki-actions";
@@ -114,6 +118,8 @@ export function EditEntityDialog({
   const [relations, setRelations] = useState<RelationRow[]>([]);
   const [wikiOptions, setWikiOptions] = useState<{ id: string; name: string }[]>([]);
   const [mapOptions, setMapOptions] = useState<{ id: string; name: string }[]>([]);
+  const [missionOptions, setMissionOptions] = useState<{ id: string; title: string }[]>([]);
+  const [linkedMissionId, setLinkedMissionId] = useState<string>(() => entity.linked_mission_id ?? "");
   const isLongCampaign = campaignType === "long";
   const showCoreFields = isLongCampaign && (type === "npc" || type === "monster");
   const [includeInAiMemory, setIncludeInAiMemory] = useState(
@@ -136,6 +142,15 @@ export function EditEntityDialog({
       getWikiEntitiesForCampaign(campaignId).then((r) => r.success && setWikiOptions(r.data));
       getMapsForCampaign(campaignId).then((r) => r.success && setMapOptions(r.data));
       getWikiRelationshipsForEntity(campaignId, entity.id).then((r) => r.success && setRelations(r.data));
+      setLinkedMissionId(entity.linked_mission_id ?? "");
+      if (campaignType === "long") {
+        void listCampaignMissionsLiteForGm(campaignId).then((r) => {
+          if (r.success) setMissionOptions(r.data);
+          else setMissionOptions([]);
+        });
+      } else {
+        setMissionOptions([]);
+      }
     }
   }, [
     open,
@@ -148,6 +163,8 @@ export function EditEntityDialog({
     entity.global_status,
     entity.xp_value,
     entity.include_in_campaign_ai_memory,
+    entity.linked_mission_id,
+    campaignType,
     initialVisibility,
     initialAllowedUserIds,
     initialAllowedPartyIds,
@@ -198,6 +215,9 @@ export function EditEntityDialog({
     if (removeImage) formData.set("remove_image", "on");
     if (showCoreFields && isCore) formData.set("is_core", "on");
     if (isLongCampaign && includeInAiMemory) formData.set("include_in_campaign_ai_memory", "on");
+    if (isLongCampaign) {
+      formData.set("linked_mission_id", linkedMissionId.trim());
+    }
     formData.set("relations", JSON.stringify(relations));
 
     setIsLoading(true);
@@ -386,6 +406,29 @@ export function EditEntityDialog({
                   </p>
                 </div>
               </div>
+            </div>
+          )}
+
+          {isLongCampaign && (
+            <div className="space-y-2">
+              <Label htmlFor="edit-linked-mission">Missione collegata (opzionale)</Label>
+              <select
+                id="edit-linked-mission"
+                value={linkedMissionId}
+                onChange={(e) => setLinkedMissionId(e.target.value)}
+                disabled={isLoading}
+                className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
+              >
+                <option value="">Nessuna — Generale / trasversale</option>
+                {missionOptions.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.title}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-barber-paper/60">
+                Ordina il wiki e filtra le immagini nella Regia GM per missione.
+              </p>
             </div>
           )}
 

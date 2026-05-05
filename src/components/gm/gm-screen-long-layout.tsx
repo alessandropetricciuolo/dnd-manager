@@ -379,7 +379,7 @@ function LongWorkspace({
           campaignId={campaignId}
           currentUserId={currentUserId}
         />
-        <GmGallerySheet open={galleryOpen} onOpenChange={setGalleryOpen} campaignId={campaignId} />
+        <GmGallerySheet open={galleryOpen} onOpenChange={setGalleryOpen} campaignId={campaignId} campaignType="long" />
       </main>
     </div>
   );

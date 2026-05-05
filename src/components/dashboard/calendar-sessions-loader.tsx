@@ -55,12 +55,13 @@ export async function CalendarSessionsLoader() {
 
   const sessions: SessionForCalendar[] = sessionsRaw.map((s) => {
     const campaign = s.campaigns as unknown as { name: string; type: string | null; image_url: string | null } | null;
+    const campaignId = s.campaign_id as string | null;
     return {
       id: s.id,
-      campaign_id: s.campaign_id,
+      campaign_id: campaignId,
       scheduled_at: s.scheduled_at,
       title: s.title ?? null,
-      campaign_name: campaign?.name ?? "—",
+      campaign_name: campaign?.name ?? (campaignId == null ? "Campagna da definire" : "—"),
       campaign_type: campaign?.type && ["oneshot", "quest", "long"].includes(campaign.type)
         ? (campaign.type as "oneshot" | "quest" | "long")
         : null,

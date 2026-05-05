@@ -12,12 +12,14 @@ import { getWikiContentBody } from "@/lib/wiki/content";
 import { WIKI_ENTITY_LABELS_IT } from "@/lib/wiki/entity-types";
 type WikiListProps = {
   campaignId: string;
+  campaignType?: "oneshot" | "quest" | "long" | null;
   eligiblePlayers?: { id: string; label: string }[];
   eligibleParties?: { id: string; label: string; memberIds: string[] }[];
 };
 
 export async function WikiList({
   campaignId,
+  campaignType = null,
   eligiblePlayers = [],
   eligibleParties = [],
 }: WikiListProps) {
@@ -40,15 +42,33 @@ export async function WikiList({
 
   const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
 
-  type EntityRow = { id: string; name: string; type: string; is_secret: boolean; visibility?: string; sort_order?: number | null; tags?: string[] | null; content?: { body?: string } | null };
+  type EntityRow = {
+    id: string;
+    name: string;
+    type: string;
+    is_secret: boolean;
+    visibility?: string;
+    sort_order?: number | null;
+    tags?: string[] | null;
+    content?: { body?: string } | null;
+    linked_mission_id?: string | null;
+  };
   let entities: EntityRow[] | null = null;
   let error: { message?: string } | null = null;
   const res = await supabase
     .from("wiki_entities")
-    .select("id, name, type, is_secret, visibility, sort_order, tags, content")
+    .select("id, name, type, is_secret, visibility, sort_order, tags, content, linked_mission_id")
     .eq("campaign_id", campaignId)
     .order("name");
-  if (res.error?.message?.includes("sort_order")) {
+  if (res.error?.message?.includes("linked_mission_id")) {
+    const fallback = await supabase
+      .from("wiki_entities")
+      .select("id, name, type, is_secret, visibility, sort_order, tags, content")
+      .eq("campaign_id", campaignId)
+      .order("name");
+    entities = (fallback.data ?? []).map((e) => ({ ...e, linked_mission_id: null }));
+    error = fallback.error;
+  } else if (res.error?.message?.includes("sort_order")) {
     const fallback = await supabase
       .from("wiki_entities")
       .select("id, name, type, is_secret, visibility, tags, content")
@@ -154,6 +174,20 @@ export async function WikiList({
     );
   }
 
+  let missionsForLong: { id: string; title: string }[] = [];
+  if (campaignType === "long") {
+    const { data: missionRows } = await supabase
+      .from("campaign_missions")
+      .select("id, title")
+      .eq("campaign_id", campaignId)
+      .order("title", { ascending: true });
+    missionsForLong = ((missionRows ?? []) as { id: string; title: string }[]).map((m) => ({
+      id: m.id,
+      title: m.title?.trim() ? m.title : "Senza titolo",
+    }));
+  }
+  const missionTitleById = new Map(missionsForLong.map((m) => [m.id, m.title]));
+
   const list = visibleEntities.map((e) => ({
     id: e.id,
     name: e.name,
@@ -164,6 +198,8 @@ export async function WikiList({
     tags: e.tags ?? [],
     description: getWikiContentBody(e.content),
     selectiveAudienceLabel: selectiveAudienceByEntityId[e.id] ?? null,
+    linkedMissionId: e.linked_mission_id ?? null,
+    missionTitle: e.linked_mission_id ? missionTitleById.get(e.linked_mission_id) ?? null : null,
   }));
 
   const emptyMessage = !isGmOrAdmin
@@ -173,6 +209,8 @@ export async function WikiList({
   return (
     <WikiListClient
       campaignId={campaignId}
+      campaignType={campaignType}
+      missions={missionsForLong}
       entities={list}
       isGmOrAdmin={isGmOrAdmin ?? false}
       typeLabels={WIKI_ENTITY_LABELS_IT}
