@@ -457,11 +457,12 @@ export async function assignCampaignToOpenSession(
     const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
     const admin = createSupabaseAdminClient();
 
-    const { data: campaign, error: campErr } = await admin.from("campaigns").select("id, gm_id").eq("id", cid).maybeSingle();
+    const { data: campaign, error: campErr } = await admin.from("campaigns").select("id, gm_id, type").eq("id", cid).maybeSingle();
     if (campErr || !campaign) {
       return { success: false, message: "Campagna non trovata." };
     }
-    if (profile?.role !== "admin" && (campaign as { gm_id: string }).gm_id !== user.id) {
+    const campaignRow = campaign as { gm_id: string; type: string | null };
+    if (profile?.role !== "admin" && campaignRow.gm_id !== user.id) {
       return { success: false, message: "Puoi collegare solo campagne di cui sei il Master titolare." };
     }
 
@@ -479,6 +480,52 @@ export async function assignCampaignToOpenSession(
     }
     if (row.campaign_id != null) {
       return { success: false, message: "Questa sessione ha già una campagna collegata." };
+    }
+
+    if (campaignRow.type === "long") {
+      const { data: signupRows, error: signupErr } = await admin
+        .from("session_signups")
+        .select("player_id")
+        .eq("session_id", sid);
+      if (signupErr) {
+        console.error("[assignCampaignToOpenSession] signups", signupErr);
+        return { success: false, message: signupErr.message ?? "Errore durante il controllo iscritti." };
+      }
+
+      const signedPlayerIds = Array.from(
+        new Set(
+          ((signupRows ?? []) as Array<{ player_id: string | null }>)
+            .map((s) => s.player_id)
+            .filter((playerId): playerId is string => typeof playerId === "string" && playerId.length > 0)
+        )
+      );
+      if (signedPlayerIds.length > 0) {
+        const { data: memberRows, error: memberErr } = await admin
+          .from("campaign_members")
+          .select("player_id")
+          .eq("campaign_id", cid)
+          .in("player_id", signedPlayerIds);
+        if (memberErr) {
+          console.error("[assignCampaignToOpenSession] campaign members", memberErr);
+          return { success: false, message: memberErr.message ?? "Errore durante il controllo membri." };
+        }
+
+        const memberIds = new Set(
+          ((memberRows ?? []) as Array<{ player_id: string | null }>)
+            .map((m) => m.player_id)
+            .filter((playerId): playerId is string => typeof playerId === "string" && playerId.length > 0)
+        );
+        const nonMemberCount = signedPlayerIds.filter((playerId) => !memberIds.has(playerId)).length;
+        if (nonMemberCount > 0) {
+          return {
+            success: false,
+            message:
+              nonMemberCount === 1
+                ? "Un iscritto non fa parte della campagna Long: rimuovilo o iscrivilo alla campagna prima di collegarla."
+                : `${nonMemberCount} iscritti non fanno parte della campagna Long: rimuovili o iscrivili alla campagna prima di collegarla.`,
+          };
+        }
+      }
     }
 
     const { error: updErr } = await admin
