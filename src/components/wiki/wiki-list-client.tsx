@@ -218,25 +218,27 @@ export function WikiListClient({
           className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-barber-gold/15 px-2 py-1.5 transition-colors last:border-b-0 hover:bg-barber-gold/[0.06] sm:px-3 min-w-0 text-sm"
         >
           <div className="min-w-0 flex-1 space-y-0.5">
-            <Link
-              href={entityUrl}
-              className="block font-medium leading-tight text-barber-paper hover:text-barber-gold hover:underline truncate"
-            >
-              {displayName}
-            </Link>
-            {tagList.length > 0 ? (
-              <div className="flex flex-wrap gap-1 pt-0.5">
-                {tagList.map((tag) => (
-                  <Badge
-                    key={tag}
-                    variant="outline"
-                    className="h-5 shrink-0 border-barber-gold/25 px-1.5 py-0 text-[10px] font-normal leading-none text-barber-paper/75"
-                  >
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            ) : null}
+            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+              <Link
+                href={entityUrl}
+                className="min-w-0 shrink truncate font-medium leading-tight text-barber-paper hover:text-barber-gold hover:underline max-w-[min(100%,11rem)] sm:max-w-[min(100%,14rem)] md:max-w-[min(100%,18rem)] lg:max-w-[min(100%,24rem)] xl:max-w-[28rem]"
+              >
+                {displayName}
+              </Link>
+              {tagList.length > 0 ? (
+                <span className="flex min-w-0 flex-wrap items-center gap-1">
+                  {tagList.map((tag) => (
+                    <Badge
+                      key={tag}
+                      variant="outline"
+                      className="h-5 shrink-0 border-barber-gold/25 px-1.5 py-0 text-[10px] font-normal leading-none text-barber-paper/75"
+                    >
+                      {tag}
+                    </Badge>
+                  ))}
+                </span>
+              ) : null}
+            </div>
             {campaignType === "long" && entity.missionTitle && missionFilter === MISSION_FILTER_ALL && (
               <p className="truncate text-[11px] leading-tight text-barber-paper/45">Missione: {entity.missionTitle}</p>
             )}
