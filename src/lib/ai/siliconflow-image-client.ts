@@ -75,6 +75,59 @@ type SiliconFlowImageResponse = {
   message?: string;
 };
 
+/** Prompt lunghissimi possono far fallire l'API con HTTP 500 generici. */
+const MAX_SILICONFLOW_POSITIVE_PROMPT_CHARS = 10_000;
+const MAX_SILICONFLOW_NEGATIVE_PROMPT_CHARS = 2_800;
+
+type SiliconFlowGenerationOpts = {
+  num_inference_steps?: number;
+  guidance_scale?: number;
+  /** Se true, non invia `negative_prompt` (alcuni modelli/backend si bloccano su negativi lunghi). */
+  omitNegative?: boolean;
+};
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function clampPromptForSiliconFlow(positive: string, negative: string): { pos: string; neg: string } {
+  let pos = positive.trim();
+  let neg = negative.trim();
+  if (pos.length > MAX_SILICONFLOW_POSITIVE_PROMPT_CHARS) {
+    pos = `${pos.slice(0, MAX_SILICONFLOW_POSITIVE_PROMPT_CHARS)}…`;
+  }
+  if (neg.length > MAX_SILICONFLOW_NEGATIVE_PROMPT_CHARS) {
+    neg = `${neg.slice(0, MAX_SILICONFLOW_NEGATIVE_PROMPT_CHARS)}…`;
+  }
+  return { pos, neg };
+}
+
+function isSiliconFlowTransientHttpError(status: number): boolean {
+  return (
+    status === 408 ||
+    status === 425 ||
+    status === 429 ||
+    status === 500 ||
+    status === 502 ||
+    status === 503 ||
+    status === 504
+  );
+}
+
+function isSiliconFlowTransientBodyMessage(bodyText: string): boolean {
+  const lower = bodyText.toLowerCase();
+  return (
+    lower.includes("unknown error") ||
+    lower.includes("internal error") ||
+    lower.includes("temporarily unavailable") ||
+    lower.includes("service unavailable") ||
+    lower.includes("try again") ||
+    lower.includes("timeout") ||
+    lower.includes("overload") ||
+    lower.includes("busy")
+  );
+}
+
 function pickFirstImagePayload(data: SiliconFlowImageResponse): SiliconFlowImageItem | null {
   const items = Array.isArray(data.images)
     ? data.images
@@ -158,22 +211,35 @@ async function callSiliconFlowImages(
   model: string,
   prompt: string,
   negativePrompt: string,
-  signal: AbortSignal
+  signal: AbortSignal,
+  genOpts: SiliconFlowGenerationOpts = {}
 ): Promise<{ res: Response; bodyText: string; data: SiliconFlowImageResponse | null }> {
   const base = getSiliconFlowBaseUrl();
   const url = `${base}/v1/images/generations`;
 
+  const steps =
+    typeof genOpts.num_inference_steps === "number" && Number.isFinite(genOpts.num_inference_steps)
+      ? Math.max(4, Math.min(40, Math.floor(genOpts.num_inference_steps)))
+      : 20;
+  const guidance =
+    typeof genOpts.guidance_scale === "number" && Number.isFinite(genOpts.guidance_scale)
+      ? Math.max(1, Math.min(15, genOpts.guidance_scale))
+      : 7.5;
+
+  const { pos, neg } = clampPromptForSiliconFlow(prompt, negativePrompt);
+  const negToSend = genOpts.omitNegative ? "" : neg;
+
   const body: Record<string, unknown> = {
     model,
-    prompt,
+    prompt: pos,
     image_size: "1024x1024",
     batch_size: 1,
-    num_inference_steps: 20,
-    guidance_scale: 7.5,
+    num_inference_steps: steps,
+    guidance_scale: guidance,
   };
-  if (negativePrompt) {
+  if (negToSend) {
     /** Campo supportato da Kolors/SD3.5; FLUX lo ignora senza errori. */
-    body.negative_prompt = negativePrompt;
+    body.negative_prompt = negToSend;
   }
 
   const res = await fetch(url, {
@@ -203,6 +269,8 @@ async function callSiliconFlowImages(
  *
  * Applica una piccola catena di fallback se il modello richiesto risponde 404
  * / "model not found", per non bloccare l'utente su un alias.
+ * Per HTTP 500/502/503 e messaggi «unknown error»: retry con backoff, poi tentativo
+ * senza negative prompt / passi inferenza ridotti, infine modello successivo.
  */
 export async function generateSiliconFlowImage(
   positivePrompt: string,
@@ -232,70 +300,101 @@ export async function generateSiliconFlowImage(
   let lastErrorText = "";
   let picked: { model: string; payload: SiliconFlowImageItem } | null = null;
 
+  const attemptProfiles: SiliconFlowGenerationOpts[] = [
+    { num_inference_steps: 20, guidance_scale: 7.5, omitNegative: false },
+    { num_inference_steps: 20, guidance_scale: 7.5, omitNegative: true },
+    { num_inference_steps: 14, guidance_scale: 6.5, omitNegative: true },
+  ];
+  const TRANSIENT_RETRIES = 2;
+
   try {
-    for (const model of candidates) {
-      let res: Response;
-      let bodyText: string;
-      let data: SiliconFlowImageResponse | null;
-      try {
-        ({ res, bodyText, data } = await callSiliconFlowImages(
-          apiKey,
-          model,
-          pos,
-          neg,
-          controller.signal
-        ));
-      } catch (e) {
-        if (e instanceof Error && e.name === "AbortError") {
-          throw new SiliconFlowImageError(
-            "Timeout della richiesta a SiliconFlow (oltre 180s).",
-            { status: 504, cause: e }
-          );
-        }
-        throw new SiliconFlowImageError("Errore di rete durante la chiamata a SiliconFlow.", {
-          cause: e,
-        });
-      }
+    modelLoop: for (const model of candidates) {
+      for (const profile of attemptProfiles) {
+        for (let transientAttempt = 0; transientAttempt <= TRANSIENT_RETRIES; transientAttempt++) {
+          let res: Response;
+          let bodyText: string;
+          let data: SiliconFlowImageResponse | null;
+          try {
+            ({ res, bodyText, data } = await callSiliconFlowImages(
+              apiKey,
+              model,
+              pos,
+              neg,
+              controller.signal,
+              profile
+            ));
+          } catch (e) {
+            if (e instanceof Error && e.name === "AbortError") {
+              throw new SiliconFlowImageError(
+                "Timeout della richiesta a SiliconFlow (oltre 180s).",
+                { status: 504, cause: e }
+              );
+            }
+            throw new SiliconFlowImageError("Errore di rete durante la chiamata a SiliconFlow.", {
+              cause: e,
+            });
+          }
 
-      if (res.ok) {
-        if (!data) {
-          throw new SiliconFlowImageError(
-            `SiliconFlow: risposta non JSON (HTTP ${res.status}). ${bodyText.slice(0, 400)}`,
-            { status: 502 }
-          );
-        }
-        const first = pickFirstImagePayload(data);
-        if (!first) {
-          throw new SiliconFlowImageError(
-            `SiliconFlow: risposta senza immagini. ${bodyText.slice(0, 400)}`,
-            { status: 502 }
-          );
-        }
-        picked = { model, payload: first };
-        break;
-      }
+          if (res.ok) {
+            if (!data) {
+              throw new SiliconFlowImageError(
+                `SiliconFlow: risposta non JSON (HTTP ${res.status}). ${bodyText.slice(0, 400)}`,
+                { status: 502 }
+              );
+            }
+            const first = pickFirstImagePayload(data);
+            if (!first) {
+              throw new SiliconFlowImageError(
+                `SiliconFlow: risposta senza immagini. ${bodyText.slice(0, 400)}`,
+                { status: 502 }
+              );
+            }
+            picked = { model, payload: first };
+            break modelLoop;
+          }
 
-      lastStatus = res.status;
-      lastErrorText = bodyText;
+          lastStatus = res.status;
+          lastErrorText = bodyText;
 
-      if (isSiliconFlowUnsupportedModelError(res.status, bodyText)) {
-        console.warn(
-          `[generateSiliconFlowImage] modello "${model}" non disponibile, provo il successivo.`
-        );
-        continue;
+          if (isSiliconFlowUnsupportedModelError(res.status, bodyText)) {
+            console.warn(
+              `[generateSiliconFlowImage] modello "${model}" non disponibile, provo il successivo.`
+            );
+            continue modelLoop;
+          }
+          if (isSiliconFlowInvalidKeyError(res.status, bodyText)) {
+            console.error(
+              "[generateSiliconFlowImage] chiave rifiutata:",
+              bodyText.slice(0, 300)
+            );
+            throw new SiliconFlowImageError(buildInvalidKeyMessage(), { status: 401 });
+          }
+
+          const transient =
+            isSiliconFlowTransientHttpError(res.status) || isSiliconFlowTransientBodyMessage(bodyText);
+          if (transient && transientAttempt < TRANSIENT_RETRIES) {
+            const delayMs = 750 * (transientAttempt + 1);
+            console.warn(
+              `[generateSiliconFlowImage] HTTP ${res.status} transiente su "${model}", retry tra ${delayMs}ms (tentativo ${transientAttempt + 1}/${TRANSIENT_RETRIES}).`
+            );
+            await sleep(delayMs);
+            continue;
+          }
+
+          if (transient) {
+            console.warn(
+              `[generateSiliconFlowImage] HTTP ${res.status} dopo retry su "${model}", provo profilo/parametri diversi o altro modello.`
+            );
+            break;
+          }
+
+          /** Errore non transiente (es. 400 validazione): prova profilo successivo, poi altro modello. */
+          console.warn(
+            `[generateSiliconFlowImage] HTTP ${res.status} su "${model}" (non transiente o retry esauriti), altro tentativo di richiesta.`
+          );
+          break;
+        }
       }
-      if (isSiliconFlowInvalidKeyError(res.status, bodyText)) {
-        console.error(
-          "[generateSiliconFlowImage] chiave rifiutata:",
-          bodyText.slice(0, 300)
-        );
-        throw new SiliconFlowImageError(buildInvalidKeyMessage(), { status: 401 });
-      }
-      /** Errori non recuperabili (quota, validation, ecc.): fail immediato. */
-      const msg = data?.error?.message ?? data?.message ?? bodyText.slice(0, 500);
-      throw new SiliconFlowImageError(`SiliconFlow HTTP ${res.status}: ${msg}`, {
-        status: res.status,
-      });
     }
   } finally {
     clearTimeout(timeoutId);
