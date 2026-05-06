@@ -405,7 +405,7 @@ export function LongEconomyPanel({
             <span className="tabular-nums text-zinc-300">{selectedMission.treasure_cp}</span> rame.
           </p>
         )}
-        <div className="max-h-48 space-y-1.5 overflow-y-auto pr-1">
+        <div className="max-h-56 space-y-1.5 overflow-y-auto pr-1">
           {characters.map((c) => {
             const a = payoutAlloc[c.id] ?? { gp: "", sp: "", cp: "" };
             return (
@@ -493,7 +493,7 @@ export function LongEconomyPanel({
             Salva tutte le righe
           </Button>
         </div>
-        <div className="max-h-[24rem] space-y-2 overflow-y-auto pr-1">
+        <div className="max-h-[34rem] space-y-2 overflow-y-auto pr-1">
           {characters.map((character) => {
             const liveDraft = liveDeltaDraft[character.id] ?? { gp: "", sp: "", cp: "" };
             const saveState = rowSaveState[character.id] ?? { status: "idle" };

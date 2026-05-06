@@ -294,7 +294,7 @@ function LongWorkspace({
               "grid h-full min-h-0 gap-3",
               workspaceMode === "session"
                 ? "xl:grid-cols-[minmax(560px,50vw)_minmax(0,1fr)]"
-                : "xl:grid-cols-[minmax(260px,28vw)_minmax(0,1fr)]"
+                : "lg:grid-cols-[minmax(220px,24vw)_minmax(0,1fr)]"
             )}
           >
             <aside
@@ -326,7 +326,7 @@ function LongWorkspace({
             </aside>
 
             {workspaceMode === "closure" ? (
-              <div className="min-h-0 overflow-hidden rounded-2xl border border-amber-600/20 bg-zinc-900/30 p-3 md:p-4">
+              <div className="order-2 min-h-0 overflow-hidden rounded-2xl border border-amber-600/20 bg-zinc-900/25 p-2 md:p-3 lg:order-1 lg:max-h-[46vh]">
                 <GmNotesGrid campaignId={campaignId} sessionId={selectedSessionId} sessionLabel={selectedSessionLabel} />
               </div>
             ) : null}
@@ -357,7 +357,7 @@ function LongWorkspace({
                   />
                 </div>
               ) : (
-                <div className="flex min-h-full flex-col gap-3">
+                <div className="order-1 flex min-h-full flex-col gap-2.5 lg:order-2">
                   <LongEconomyPanel
                     campaignId={campaignId}
                     playerIds={sessionPlayerIds}
