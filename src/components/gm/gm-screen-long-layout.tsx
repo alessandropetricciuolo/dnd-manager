@@ -291,10 +291,10 @@ function LongWorkspace({
         <div className="min-h-0 flex-1 overflow-hidden p-4 md:p-6">
           <div
             className={cn(
-              "grid h-full min-h-0 gap-4",
+              "grid h-full min-h-0 gap-3",
               workspaceMode === "session"
                 ? "xl:grid-cols-[minmax(560px,50vw)_minmax(0,1fr)]"
-                : "xl:grid-cols-[minmax(300px,25vw)_minmax(0,1fr)_minmax(420px,34vw)]"
+                : "xl:grid-cols-[minmax(260px,28vw)_minmax(0,1fr)]"
             )}
           >
             <aside
@@ -331,7 +331,12 @@ function LongWorkspace({
               </div>
             ) : null}
 
-            <div className="min-h-0 overflow-auto rounded-2xl border border-amber-600/20 bg-zinc-900/30 p-3 md:p-4">
+            <div
+              className={cn(
+                "min-h-0 overflow-auto rounded-2xl border border-amber-600/20 bg-zinc-900/30",
+                workspaceMode === "session" ? "p-3 md:p-4" : "p-2.5 md:p-3"
+              )}
+            >
               {workspaceMode === "session" ? (
                 <div className="flex min-h-full flex-col gap-3">
                   <LongTimePanel
@@ -352,10 +357,7 @@ function LongWorkspace({
                   />
                 </div>
               ) : (
-                <div className="flex min-h-full flex-col gap-4">
-                  <div className="rounded-lg border border-amber-600/25 bg-zinc-950/40 px-3 py-2 text-xs text-zinc-300">
-                    Modalita chiusura: qui trovi economia, tempo e calendario per finalizzare la sessione.
-                  </div>
+                <div className="flex min-h-full flex-col gap-3">
                   <LongEconomyPanel
                     campaignId={campaignId}
                     playerIds={sessionPlayerIds}

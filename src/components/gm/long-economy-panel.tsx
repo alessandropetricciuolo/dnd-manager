@@ -359,7 +359,7 @@ export function LongEconomyPanel({
   }
 
   return (
-    <div className="space-y-4 text-zinc-200">
+    <div className="space-y-3 text-zinc-200">
       <div>
         <div className="flex items-center gap-2">
           <Coins className="h-5 w-5 text-amber-300" />
@@ -370,7 +370,7 @@ export function LongEconomyPanel({
         </p>
       </div>
 
-      <div className="rounded-lg border border-amber-700/25 bg-zinc-950/50 p-3 space-y-3">
+      <div className="space-y-2.5 rounded-lg border border-amber-700/25 bg-zinc-950/50 p-2.5">
         <Label className="text-amber-200/80 text-xs">Distribuisci da bottino missione</Label>
         <Select
           value={payoutMissionId || "none"}
@@ -405,11 +405,11 @@ export function LongEconomyPanel({
             <span className="tabular-nums text-zinc-300">{selectedMission.treasure_cp}</span> rame.
           </p>
         )}
-        <div className="max-h-56 overflow-y-auto space-y-2 pr-1">
+        <div className="max-h-48 space-y-1.5 overflow-y-auto pr-1">
           {characters.map((c) => {
             const a = payoutAlloc[c.id] ?? { gp: "", sp: "", cp: "" };
             return (
-              <div key={c.id} className="grid grid-cols-[1fr_repeat(3,minmax(0,4.5rem))] gap-1.5 items-end text-[10px]">
+              <div key={c.id} className="grid grid-cols-[1fr_repeat(3,minmax(0,4.25rem))] items-end gap-1.5 text-[10px]">
                 <div className="min-w-0 pr-1">
                   <span className="text-zinc-300 font-medium truncate block">{c.name}</span>
                   {c.assignee_label && <span className="text-zinc-500 truncate block">{c.assignee_label}</span>}
@@ -427,7 +427,7 @@ export function LongEconomyPanel({
                       return next;
                     })
                   }
-                  className="h-8 px-1.5 border-amber-600/25 bg-zinc-900 text-zinc-100 text-xs"
+                  className="h-7 border-amber-600/25 bg-zinc-900 px-1.5 text-xs text-zinc-100"
                 />
                 <Input
                   placeholder="A"
@@ -442,7 +442,7 @@ export function LongEconomyPanel({
                       return next;
                     })
                   }
-                  className="h-8 px-1.5 border-amber-600/25 bg-zinc-900 text-zinc-100 text-xs"
+                  className="h-7 border-amber-600/25 bg-zinc-900 px-1.5 text-xs text-zinc-100"
                 />
                 <Input
                   placeholder="R"
@@ -457,7 +457,7 @@ export function LongEconomyPanel({
                       return next;
                     })
                   }
-                  className="h-8 px-1.5 border-amber-600/25 bg-zinc-900 text-zinc-100 text-xs"
+                  className="h-7 border-amber-600/25 bg-zinc-900 px-1.5 text-xs text-zinc-100"
                 />
               </div>
             );
@@ -474,7 +474,7 @@ export function LongEconomyPanel({
         </Button>
       </div>
 
-      <div className="rounded-lg border border-amber-700/25 bg-zinc-950/50 p-3 space-y-3">
+      <div className="space-y-2.5 rounded-lg border border-amber-700/25 bg-zinc-950/50 p-2.5">
         <div>
           <Label className="text-amber-200/80 text-xs">Saldi live dei personaggi</Label>
           <p className="mt-1 text-[11px] text-zinc-500">
@@ -493,20 +493,20 @@ export function LongEconomyPanel({
             Salva tutte le righe
           </Button>
         </div>
-        <div className="max-h-[22rem] overflow-y-auto space-y-3 pr-1">
+        <div className="max-h-[24rem] space-y-2 overflow-y-auto pr-1">
           {characters.map((character) => {
             const liveDraft = liveDeltaDraft[character.id] ?? { gp: "", sp: "", cp: "" };
             const saveState = rowSaveState[character.id] ?? { status: "idle" };
             return (
-              <div key={character.id} className="rounded-lg border border-amber-600/20 bg-zinc-900/60 p-3 space-y-3">
+              <div key={character.id} className="space-y-2 rounded-lg border border-amber-600/20 bg-zinc-900/60 p-2.5">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-zinc-100">{character.name}</p>
+                    <p className="truncate text-xs font-semibold text-zinc-100">{character.name}</p>
                     {character.assignee_label ? (
                       <p className="truncate text-[11px] text-zinc-500">{character.assignee_label}</p>
                     ) : null}
                   </div>
-                  <div className="grid grid-cols-3 gap-2 text-[11px]">
+                  <div className="grid grid-cols-3 gap-1.5 text-[10px]">
                     <span className="rounded border border-amber-600/20 bg-zinc-950/40 px-2 py-1 text-center text-amber-100">
                       O {character.coins_gp}
                     </span>
@@ -532,7 +532,7 @@ export function LongEconomyPanel({
                           type="button"
                           size="icon"
                           variant="outline"
-                          className="h-8 w-8 border-amber-600/25 text-amber-100 hover:bg-amber-600/15"
+                          className="h-7 w-7 border-amber-600/25 text-amber-100 hover:bg-amber-600/15"
                           onClick={() => adjustDraft(character.id, key, -1)}
                           disabled={isPending}
                           title="-1"
@@ -543,7 +543,7 @@ export function LongEconomyPanel({
                           type="button"
                           size="icon"
                           variant="outline"
-                          className="h-8 w-8 border-amber-600/25 text-amber-100 hover:bg-amber-600/15"
+                          className="h-7 w-7 border-amber-600/25 text-amber-100 hover:bg-amber-600/15"
                           onClick={() => adjustDraft(character.id, key, 1)}
                           disabled={isPending}
                           title="+1"
@@ -554,7 +554,7 @@ export function LongEconomyPanel({
                           type="button"
                           size="icon"
                           variant="outline"
-                          className="h-8 w-8 border-amber-600/25 text-amber-100 hover:bg-amber-600/15"
+                          className="h-7 w-7 border-amber-600/25 text-amber-100 hover:bg-amber-600/15"
                           onClick={() => adjustDraft(character.id, key, key === "gp" ? -10 : -5)}
                           disabled={isPending}
                           title={key === "gp" ? "-10" : "-5"}
@@ -565,7 +565,7 @@ export function LongEconomyPanel({
                           type="button"
                           size="icon"
                           variant="outline"
-                          className="h-8 w-8 border-amber-600/25 text-amber-100 hover:bg-amber-600/15"
+                          className="h-7 w-7 border-amber-600/25 text-amber-100 hover:bg-amber-600/15"
                           onClick={() => adjustDraft(character.id, key, key === "gp" ? 10 : 5)}
                           disabled={isPending}
                           title={key === "gp" ? "+10" : "+5"}
@@ -585,13 +585,13 @@ export function LongEconomyPanel({
                             }));
                           }}
                           placeholder="Δ"
-                          className="h-8 border-amber-600/25 bg-zinc-950 text-zinc-100 text-xs"
+                          className="h-7 border-amber-600/25 bg-zinc-950 text-xs text-zinc-100"
                         />
                       </div>
                     </div>
                   ))}
                 </div>
-                <div className="min-h-[18px] text-[11px]">
+                <div className="min-h-[14px] text-[10px]">
                   {saveState.status === "saving" ? (
                     <span className="text-amber-300">Salvataggio in corso...</span>
                   ) : null}
