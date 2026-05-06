@@ -55,5 +55,9 @@ declare namespace NodeJS {
      * (piattaforma internazionale). Per la piattaforma cinese usa `https://api.siliconflow.cn`.
      */
     SILICONFLOW_BASE_URL?: string;
+    /**
+     * Timeout client (ms) per la generazione immagine SiliconFlow. Default 300000 (5 min).
+     */
+    SILICONFLOW_IMAGE_TIMEOUT_MS?: string;
   }
 }

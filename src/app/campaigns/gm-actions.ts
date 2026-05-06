@@ -14,6 +14,14 @@ const GM_FILES_BUCKET = "gm_files";
 const GM_FILES_TELEGRAM_PREFIX = "tg:";
 const SIGNED_URL_EXPIRY_SEC = 3600;
 
+function isMissingGmAttachmentsLinkColumnError(err: { message?: string } | null | undefined): boolean {
+  const m = (err?.message ?? "").toLowerCase();
+  return (
+    (m.includes("link_kind") || m.includes("wiki_section") || m.includes("linked_mission_id")) &&
+    (m.includes("column") || m.includes("schema cache") || m.includes("could not find"))
+  );
+}
+
 type GmResult<T = void> =
   | { success: true; data?: T }
   | { success: false; error: string };
@@ -598,6 +606,9 @@ export type GmAttachmentRow = {
   file_name: string;
   mime_type: string | null;
   file_size: number | null;
+  link_kind: "free" | "wiki_section" | "mission";
+  wiki_section: "npc" | "monster" | "location" | "item" | "lore" | "pg" | null;
+  linked_mission_id: string | null;
   created_at: string;
   signed_url?: string;
 };
@@ -607,18 +618,45 @@ export async function listGmAttachments(campaignId: string): Promise<GmResult<Gm
   if (!check.success) return check;
   const supabase = check.data!;
 
-  const { data: rows, error } = await supabase
+  const initial = await supabase
     .from("gm_attachments")
-    .select("id, campaign_id, file_path, file_name, mime_type, file_size, created_at")
+    .select("id, campaign_id, file_path, file_name, mime_type, file_size, link_kind, wiki_section, linked_mission_id, created_at")
     .eq("campaign_id", campaignId)
     .order("created_at", { ascending: false });
+  let rows = initial.data as Array<Record<string, unknown>> | null;
+  let error = initial.error;
+
+  if (error && isMissingGmAttachmentsLinkColumnError(error)) {
+    const retry = await supabase
+      .from("gm_attachments")
+      .select("id, campaign_id, file_path, file_name, mime_type, file_size, created_at")
+      .eq("campaign_id", campaignId)
+      .order("created_at", { ascending: false });
+    rows = retry.data as Array<Record<string, unknown>> | null;
+    error = retry.error;
+  }
 
   if (error) {
     console.error("[listGmAttachments]", error);
     return { success: false, error: error.message ?? "Errore nel caricamento dei file." };
   }
 
-  const list = (rows ?? []) as Omit<GmAttachmentRow, "signed_url">[];
+  const list = (rows ?? []).map((r) => ({
+    id: String(r.id),
+    campaign_id: String(r.campaign_id),
+    file_path: String(r.file_path ?? ""),
+    file_name: String(r.file_name ?? ""),
+    mime_type: (r.mime_type as string | null) ?? null,
+    file_size: (r.file_size as number | null) ?? null,
+    link_kind:
+      (r.link_kind as GmAttachmentRow["link_kind"] | undefined) === "wiki_section" ||
+      (r.link_kind as GmAttachmentRow["link_kind"] | undefined) === "mission"
+        ? (r.link_kind as GmAttachmentRow["link_kind"])
+        : "free",
+    wiki_section: (r.wiki_section as GmAttachmentRow["wiki_section"] | null) ?? null,
+    linked_mission_id: (r.linked_mission_id as string | null) ?? null,
+    created_at: String(r.created_at),
+  })) as Omit<GmAttachmentRow, "signed_url">[];
   const withUrls: GmAttachmentRow[] = [];
 
   for (const row of list) {
@@ -648,7 +686,12 @@ export async function registerGmFileAfterUpload(
   filePath: string,
   fileName: string,
   mimeType: string | null,
-  fileSize: number | null
+  fileSize: number | null,
+  opts?: {
+    linkKind?: "free" | "wiki_section" | "mission";
+    wikiSection?: "npc" | "monster" | "location" | "item" | "lore" | "pg" | null;
+    linkedMissionId?: string | null;
+  }
 ): Promise<GmResult<GmAttachmentRow>> {
   const check = await ensureGmOrAdmin();
   if (!check.success) return check;
@@ -660,6 +703,28 @@ export async function registerGmFileAfterUpload(
     return { success: false, error: "Percorso file non valido per questa campagna." };
   }
 
+  const linkKind = opts?.linkKind ?? "free";
+  const wikiSection = opts?.wikiSection ?? null;
+  const linkedMissionId = opts?.linkedMissionId?.trim() ? opts.linkedMissionId.trim() : null;
+
+  if (linkKind === "wiki_section" && !wikiSection) {
+    return { success: false, error: "Seleziona una sezione wiki." };
+  }
+  if (linkKind === "mission" && !linkedMissionId) {
+    return { success: false, error: "Seleziona una missione." };
+  }
+  if (linkKind === "mission" && linkedMissionId) {
+    const { data: mission, error: missionErr } = await supabase
+      .from("campaign_missions")
+      .select("id")
+      .eq("id", linkedMissionId)
+      .eq("campaign_id", campaignId)
+      .maybeSingle();
+    if (missionErr || !mission) {
+      return { success: false, error: "Missione non valida per questa campagna." };
+    }
+  }
+
   const { data: row, error: insertError } = await supabase
     .from("gm_attachments")
     .insert({
@@ -668,9 +733,44 @@ export async function registerGmFileAfterUpload(
       file_name: fileName,
       mime_type: mimeType || null,
       file_size: fileSize != null && Number.isFinite(fileSize) ? Math.max(0, Math.floor(fileSize)) : null,
+      link_kind: linkKind,
+      wiki_section: linkKind === "wiki_section" ? wikiSection : null,
+      linked_mission_id: linkKind === "mission" ? linkedMissionId : null,
     })
-    .select("id, campaign_id, file_path, file_name, mime_type, file_size, created_at")
+    .select("id, campaign_id, file_path, file_name, mime_type, file_size, link_kind, wiki_section, linked_mission_id, created_at")
     .single();
+
+  if (insertError && isMissingGmAttachmentsLinkColumnError(insertError)) {
+    const legacy = await supabase
+      .from("gm_attachments")
+      .insert({
+        campaign_id: campaignId,
+        file_path: normalized,
+        file_name: fileName,
+        mime_type: mimeType || null,
+        file_size: fileSize != null && Number.isFinite(fileSize) ? Math.max(0, Math.floor(fileSize)) : null,
+      })
+      .select("id, campaign_id, file_path, file_name, mime_type, file_size, created_at")
+      .single();
+    if (legacy.error || !legacy.data) {
+      console.error("[registerGmFileAfterUpload] legacy", legacy.error);
+      return { success: false, error: legacy.error?.message ?? "Errore nel salvataggio del file." };
+    }
+    const signed_url = (
+      await supabase.storage.from(GM_FILES_BUCKET).createSignedUrl(normalized, SIGNED_URL_EXPIRY_SEC)
+    ).data?.signedUrl ?? undefined;
+    revalidatePath(`/campaigns/${campaignId}`);
+    return {
+      success: true,
+      data: {
+        ...(legacy.data as Omit<GmAttachmentRow, "signed_url" | "link_kind" | "wiki_section" | "linked_mission_id">),
+        link_kind: "free",
+        wiki_section: null,
+        linked_mission_id: null,
+        signed_url,
+      } as GmAttachmentRow,
+    };
+  }
 
   if (insertError) {
     console.error("[registerGmFileAfterUpload]", insertError);

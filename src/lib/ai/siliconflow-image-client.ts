@@ -14,6 +14,8 @@
  * - `SILICONFLOW_BASE_URL` — opzionale. Default: `https://api.siliconflow.com`
  *   (piattaforma internazionale). Se il tuo account è su `cloud.siliconflow.cn`
  *   imposta `SILICONFLOW_BASE_URL=https://api.siliconflow.cn`.
+ * - `SILICONFLOW_IMAGE_TIMEOUT_MS` — opzionale. Timeout client sulla singola
+ *   catena di tentativi (default 300000 = 5 minuti; min 30s, max 15 min).
  *
  * Formato risposta: `{ images: [{ url }], seed, timings }` con URL temporaneo.
  * Il client scarica l'URL e ritorna un `Buffer` PNG/JPEG, coerente con gli altri
@@ -54,6 +56,21 @@ function getSiliconFlowBaseUrl(): string {
   const raw = process.env.SILICONFLOW_BASE_URL?.trim();
   const base = raw && raw.length > 0 ? raw : DEFAULT_SILICONFLOW_BASE;
   return base.replace(/\/$/, "");
+}
+
+const DEFAULT_SILICONFLOW_IMAGE_TIMEOUT_MS = 300_000;
+const MIN_SILICONFLOW_IMAGE_TIMEOUT_MS = 30_000;
+const MAX_SILICONFLOW_IMAGE_TIMEOUT_MS = 900_000;
+
+function getSiliconFlowImageRequestTimeoutMs(): number {
+  const raw = process.env.SILICONFLOW_IMAGE_TIMEOUT_MS?.trim();
+  if (!raw) return DEFAULT_SILICONFLOW_IMAGE_TIMEOUT_MS;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return DEFAULT_SILICONFLOW_IMAGE_TIMEOUT_MS;
+  return Math.min(
+    MAX_SILICONFLOW_IMAGE_TIMEOUT_MS,
+    Math.max(MIN_SILICONFLOW_IMAGE_TIMEOUT_MS, Math.floor(n))
+  );
 }
 
 export class SiliconFlowImageError extends Error {
@@ -294,7 +311,8 @@ export async function generateSiliconFlowImage(
   const candidates = Array.from(new Set([modelId, ...SILICONFLOW_IMAGE_MODEL_FALLBACKS]));
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 180_000);
+  const requestTimeoutMs = getSiliconFlowImageRequestTimeoutMs();
+  const timeoutId = setTimeout(() => controller.abort(), requestTimeoutMs);
 
   let lastStatus = 0;
   let lastErrorText = "";
@@ -325,8 +343,9 @@ export async function generateSiliconFlowImage(
             ));
           } catch (e) {
             if (e instanceof Error && e.name === "AbortError") {
+              const sec = Math.round(requestTimeoutMs / 1000);
               throw new SiliconFlowImageError(
-                "Timeout della richiesta a SiliconFlow (oltre 180s).",
+                `Timeout della richiesta a SiliconFlow (oltre ${sec}s). Puoi alzare SILICONFLOW_IMAGE_TIMEOUT_MS (max ${MAX_SILICONFLOW_IMAGE_TIMEOUT_MS / 60000} min).`,
                 { status: 504, cause: e }
               );
             }

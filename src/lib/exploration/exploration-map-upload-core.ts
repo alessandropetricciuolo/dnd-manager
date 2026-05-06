@@ -70,6 +70,7 @@ export async function createExplorationMapFromFormData(
   const floorLabel = (formData.get("floor_label") as string | null)?.trim() ?? "";
   const sortOrderRaw = (formData.get("sort_order") as string | null)?.trim() ?? "0";
   const gridRaw = (formData.get("grid_cell_meters") as string | null)?.trim() ?? "";
+  const linkedMissionRaw = (formData.get("linked_mission_id") as string | null)?.trim() ?? "";
   let fileId: string;
   const imageRead = readImageBlobFromFormData(formData);
   const imageUrlRaw = (formData.get("image_url") as string | null)?.trim() ?? "";
@@ -127,6 +128,21 @@ export async function createExplorationMapFromFormData(
     grid_cell_meters != null && Number.isFinite(grid_cell_meters) && grid_cell_meters > 0
       ? grid_cell_meters
       : null;
+  const linkedMissionId = linkedMissionRaw.length > 0 ? linkedMissionRaw : null;
+
+  let linkedMissionValid: string | null = null;
+  if (linkedMissionId) {
+    const { data: mission, error: missionErr } = await supabase
+      .from("campaign_missions")
+      .select("id")
+      .eq("id", linkedMissionId)
+      .eq("campaign_id", campaignId)
+      .maybeSingle();
+    if (missionErr || !mission) {
+      return { success: false, error: "Missione non valida per questa campagna." };
+    }
+    linkedMissionValid = linkedMissionId;
+  }
 
   const { data: row, error: insErr } = await supabase
     .from("campaign_exploration_maps")
@@ -136,6 +152,7 @@ export async function createExplorationMapFromFormData(
       sort_order: Number.isFinite(sortOrder) ? sortOrder : 0,
       image_path: imagePath,
       grid_cell_meters: gridOk,
+      linked_mission_id: linkedMissionValid,
     })
     .select("id")
     .single();

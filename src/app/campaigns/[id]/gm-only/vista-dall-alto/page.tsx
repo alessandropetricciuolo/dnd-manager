@@ -25,10 +25,23 @@ export default async function VistaDallAltoPage({ params }: PageProps) {
 
   const { data: campaign, error: cErr } = await supabase
     .from("campaigns")
-    .select("id, name")
+    .select("id, name, type")
     .eq("id", campaignId)
     .single();
   if (cErr || !campaign) notFound();
+
+  let missionOptions: { id: string; title: string }[] = [];
+  if (campaign.type === "long") {
+    const { data: missions } = await supabase
+      .from("campaign_missions")
+      .select("id, title")
+      .eq("campaign_id", campaignId)
+      .order("title", { ascending: true });
+    missionOptions = (missions ?? []).map((m: { id: string; title: string }) => ({
+      id: m.id,
+      title: m.title?.trim() ? m.title : "Senza titolo",
+    }));
+  }
 
   const { data: maps } = await supabase
     .from("campaign_exploration_maps")
@@ -62,7 +75,12 @@ export default async function VistaDallAltoPage({ params }: PageProps) {
         <span className="text-sm text-barber-paper/60">{campaign.name}</span>
       </header>
       <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
-        <VistaDallAltoClient campaignId={campaignId} initialMaps={mapList} initialRegions={regions} />
+        <VistaDallAltoClient
+          campaignId={campaignId}
+          initialMaps={mapList}
+          initialRegions={regions}
+          missionOptions={missionOptions}
+        />
       </div>
     </div>
   );

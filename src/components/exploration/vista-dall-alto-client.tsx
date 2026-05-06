@@ -12,6 +12,7 @@ import {
   resetMapFog,
   setAllMapRegionsRevealed,
   setFowRegionRevealed,
+  updateExplorationMapMeta,
   updateFowRegionPolygon,
   type ExplorationMapRow,
   type FowRegionRow,
@@ -48,6 +49,7 @@ type Props = {
   campaignId: string;
   initialMaps: ExplorationMapRow[];
   initialRegions: FowRegionRow[];
+  missionOptions?: { id: string; title: string }[];
 };
 
 function rowsToVm(rows: FowRegionRow[]): FowRegionVm[] {
@@ -58,7 +60,12 @@ function rowsToVm(rows: FowRegionRow[]): FowRegionVm[] {
   }));
 }
 
-export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }: Props) {
+export function VistaDallAltoClient({
+  campaignId,
+  initialMaps,
+  initialRegions,
+  missionOptions = [],
+}: Props) {
   const [maps, setMaps] = useState(initialMaps);
   const [regions, setRegions] = useState<FowRegionRow[]>(initialRegions);
   const [selectedMapId, setSelectedMapId] = useState<string | null>(initialMaps[0]?.id ?? null);
@@ -70,6 +77,9 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
   const [mapCompressing, setMapCompressing] = useState(false);
   const [importText, setImportText] = useState("");
   const [importLoading, setImportLoading] = useState(false);
+  const [newMapMissionId, setNewMapMissionId] = useState<string>("none");
+  const [selectedMapMissionId, setSelectedMapMissionId] = useState<string>("none");
+  const [savingMapMission, setSavingMapMission] = useState(false);
 
   const selectedMap = maps.find((m) => m.id === selectedMapId) ?? null;
   const regionsForMap = useMemo(
@@ -87,6 +97,14 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
   useEffect(() => {
     setRegions(initialRegions);
   }, [initialRegions]);
+
+  useEffect(() => {
+    if (!selectedMap) {
+      setSelectedMapMissionId("none");
+      return;
+    }
+    setSelectedMapMissionId(selectedMap.linked_mission_id ?? "none");
+  }, [selectedMap]);
 
   useEffect(() => {
     if (!selectedMapId) return;
@@ -189,6 +207,9 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
       "grid_cell_meters",
       (form.elements.namedItem("grid_cell_meters") as HTMLInputElement | null)?.value ?? ""
     );
+    if (newMapMissionId !== "none") {
+      formData.append("linked_mission_id", newMapMissionId);
+    }
     if (fileToSend) {
       formData.append("image", fileToSend);
     }
@@ -224,6 +245,7 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
       }
       toast.success("Mappa caricata.");
       form.reset();
+      setNewMapMissionId("none");
       await refreshFromServer();
       if (res.data?.id) setSelectedMapId(res.data.id);
     } catch (err) {
@@ -385,6 +407,27 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
     setRegions((prev) => prev.map((r) => (r.id === regionId ? { ...r, is_revealed: next } : r)));
   }
 
+  async function handleSaveMapMission() {
+    if (!selectedMapId) return;
+    setSavingMapMission(true);
+    const res = await updateExplorationMapMeta(campaignId, selectedMapId, {
+      linked_mission_id: selectedMapMissionId === "none" ? null : selectedMapMissionId,
+    });
+    setSavingMapMission(false);
+    if (!res.success) {
+      toast.error(res.error ?? "Errore salvataggio missione.");
+      return;
+    }
+    setMaps((prev) =>
+      prev.map((m) =>
+        m.id === selectedMapId
+          ? { ...m, linked_mission_id: selectedMapMissionId === "none" ? null : selectedMapMissionId }
+          : m
+      )
+    );
+    toast.success("Missione collegata alla mappa.");
+  }
+
 
   return (
     <div className="flex min-h-[70vh] flex-col gap-6">
@@ -407,6 +450,7 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
               {maps.map((m) => (
                 <SelectItem key={m.id} value={m.id}>
                   {m.floor_label?.trim() || "Senza nome"} (ord. {m.sort_order})
+                  {m.linked_mission_id ? " · missione" : ""}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -462,6 +506,24 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
               className="w-24 border-barber-gold/30 bg-barber-dark"
             />
           </div>
+          {missionOptions.length > 0 ? (
+            <div className="space-y-1">
+              <Label>Missione collegata</Label>
+              <Select value={newMapMissionId} onValueChange={setNewMapMissionId}>
+                <SelectTrigger className="w-56 border-barber-gold/30 bg-barber-dark">
+                  <SelectValue placeholder="Nessuna missione" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nessuna missione</SelectItem>
+                  {missionOptions.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
           <div className="space-y-1">
             <Label htmlFor="f-img">Immagine</Label>
             <Input
@@ -625,6 +687,39 @@ export function VistaDallAltoClient({ campaignId, initialMaps, initialRegions }:
               <span>Scala: 1 quadretto ≈ {String(selectedMap.grid_cell_meters)} m</span>
             )}
           </div>
+
+          {missionOptions.length > 0 ? (
+            <section className="mb-3 rounded-lg border border-barber-gold/20 bg-barber-dark/40 p-3">
+              <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-barber-gold">
+                Missione mappa FoW
+              </h4>
+              <div className="flex flex-wrap items-end gap-2">
+                <Select value={selectedMapMissionId} onValueChange={setSelectedMapMissionId}>
+                  <SelectTrigger className="w-72 border-barber-gold/30 bg-barber-dark text-sm">
+                    <SelectValue placeholder="Nessuna missione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nessuna missione</SelectItem>
+                    {missionOptions.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        {m.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="border-barber-gold/40"
+                  disabled={savingMapMission}
+                  onClick={() => void handleSaveMapMission()}
+                >
+                  {savingMapMission ? "Salvataggio..." : "Salva missione"}
+                </Button>
+              </div>
+            </section>
+          ) : null}
 
           {mode === "prepare" && (
             <div className="mb-2 flex flex-wrap gap-2">

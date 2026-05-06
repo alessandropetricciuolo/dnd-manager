@@ -15,6 +15,7 @@ import {
 } from "@/app/campaigns/gm-actions";
 import { uploadFileToTelegram } from "@/app/actions/upload-telegram";
 import { createSupabaseBrowserClient } from "@/utils/supabase/client";
+import { listCampaignMissionsLiteForGm } from "@/app/campaigns/wiki-actions";
 
 const GM_FILES_BUCKET = "gm_files";
 
@@ -33,6 +34,14 @@ export function GmFiles({ campaignId }: GmFilesProps) {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null);
+  const [linkKind, setLinkKind] = useState<"free" | "wiki_section" | "mission">("free");
+  const [wikiSection, setWikiSection] = useState<"npc" | "monster" | "location" | "item" | "lore" | "pg">("lore");
+  const [linkedMissionId, setLinkedMissionId] = useState<string>("none");
+  const [missions, setMissions] = useState<{ id: string; title: string }[]>([]);
+  const missionTitleById = useCallback(
+    (id: string | null | undefined) => missions.find((m) => m.id === id)?.title ?? null,
+    [missions]
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadFiles = useCallback(async () => {
@@ -48,6 +57,13 @@ export function GmFiles({ campaignId }: GmFilesProps) {
   }, [loadFiles]);
 
   useEffect(() => {
+    void listCampaignMissionsLiteForGm(campaignId).then((res) => {
+      if (res.success) setMissions(res.data);
+      else setMissions([]);
+    });
+  }, [campaignId]);
+
+  useEffect(() => {
     const handler = () => fileInputRef.current?.click();
     window.addEventListener("gm-files:upload", handler);
     return () => window.removeEventListener("gm-files:upload", handler);
@@ -60,6 +76,10 @@ export function GmFiles({ campaignId }: GmFilesProps) {
     const file = input?.files?.[0];
     if (!file?.size) {
       toast.error("Seleziona un file da caricare.");
+      return;
+    }
+    if (linkKind === "mission" && linkedMissionId === "none") {
+      toast.error("Seleziona una missione prima del caricamento.");
       return;
     }
 
@@ -101,13 +121,20 @@ export function GmFiles({ campaignId }: GmFilesProps) {
       storedPath,
       file.name,
       file.type || null,
-      file.size
+      file.size,
+      {
+        linkKind,
+        wikiSection: linkKind === "wiki_section" ? wikiSection : null,
+        linkedMissionId: linkKind === "mission" && linkedMissionId !== "none" ? linkedMissionId : null,
+      }
     );
     setUploading(false);
 
     if (result.success) {
       toast.success("File caricato.");
       if (input) input.value = "";
+      setLinkKind("free");
+      setLinkedMissionId("none");
       loadFiles();
       router.refresh();
     } else {
@@ -131,7 +158,53 @@ export function GmFiles({ campaignId }: GmFilesProps) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h3 className="text-base font-semibold text-slate-200">Archivio GM</h3>
-        <form onSubmit={handleUpload} className="flex flex-wrap items-center gap-2">
+        <form onSubmit={handleUpload} className="flex flex-wrap items-end gap-2">
+          <div className="space-y-1">
+            <label className="text-[11px] uppercase tracking-wide text-slate-400">Categoria</label>
+            <select
+              value={linkKind}
+              onChange={(e) => setLinkKind(e.target.value as "free" | "wiki_section" | "mission")}
+              className="h-9 rounded-md border border-violet-500/30 bg-slate-900 px-2 text-xs text-slate-100"
+            >
+              <option value="free">Libero</option>
+              <option value="wiki_section">Sezione Wiki</option>
+              <option value="mission">Missione</option>
+            </select>
+          </div>
+          {linkKind === "wiki_section" ? (
+            <div className="space-y-1">
+              <label className="text-[11px] uppercase tracking-wide text-slate-400">Sezione Wiki</label>
+              <select
+                value={wikiSection}
+                onChange={(e) => setWikiSection(e.target.value as "npc" | "monster" | "location" | "item" | "lore" | "pg")}
+                className="h-9 rounded-md border border-violet-500/30 bg-slate-900 px-2 text-xs text-slate-100"
+              >
+                <option value="npc">NPC</option>
+                <option value="monster">Mostri</option>
+                <option value="location">Luoghi</option>
+                <option value="item">Oggetti</option>
+                <option value="lore">Lore</option>
+                <option value="pg">PG</option>
+              </select>
+            </div>
+          ) : null}
+          {linkKind === "mission" ? (
+            <div className="space-y-1">
+              <label className="text-[11px] uppercase tracking-wide text-slate-400">Missione</label>
+              <select
+                value={linkedMissionId}
+                onChange={(e) => setLinkedMissionId(e.target.value)}
+                className="h-9 min-w-[190px] rounded-md border border-violet-500/30 bg-slate-900 px-2 text-xs text-slate-100"
+              >
+                <option value="none">Seleziona missione...</option>
+                {missions.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
           <input
             ref={fileInputRef}
             type="file"
@@ -178,6 +251,13 @@ export function GmFiles({ campaignId }: GmFilesProps) {
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-violet-100" title={att.file_name}>
                     {att.file_name}
+                  </p>
+                  <p className="text-[11px] text-violet-300/85">
+                    {att.link_kind === "free"
+                      ? "Libero"
+                      : att.link_kind === "wiki_section"
+                        ? `Wiki: ${att.wiki_section ?? "sezione"}`
+                        : `Missione: ${missionTitleById(att.linked_mission_id) ?? "non impostata"}`}
                   </p>
                   {att.file_size != null && (
                     <p className="text-xs text-slate-500">

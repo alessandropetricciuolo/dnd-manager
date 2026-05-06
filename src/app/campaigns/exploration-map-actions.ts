@@ -12,6 +12,7 @@ const BUCKET = "exploration_maps";
 export type ExplorationMapRow = {
   id: string;
   campaign_id: string;
+  linked_mission_id: string | null;
   floor_label: string;
   sort_order: number;
   image_path: string;
@@ -102,6 +103,7 @@ export async function updateExplorationMapMeta(
     grid_offset_x_cells?: number;
     grid_offset_y_cells?: number;
     grid_kind?: "square" | "hex";
+    linked_mission_id?: string | null;
   }
 ): Promise<Result> {
   const supabase = await createSupabaseServerClient();
