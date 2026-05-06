@@ -359,7 +359,7 @@ export function LongEconomyPanel({
   }
 
   return (
-    <div className="space-y-3 text-zinc-200">
+    <div className="flex h-full min-h-0 flex-col gap-3 text-zinc-200">
       <div>
         <div className="flex items-center gap-2">
           <Coins className="h-5 w-5 text-amber-300" />
@@ -370,7 +370,7 @@ export function LongEconomyPanel({
         </p>
       </div>
 
-      <div className="space-y-2.5 rounded-lg border border-amber-700/25 bg-zinc-950/50 p-2.5">
+      <div className="flex min-h-0 flex-1 flex-col space-y-2.5 rounded-lg border border-amber-700/25 bg-zinc-950/50 p-2.5">
         <Label className="text-amber-200/80 text-xs">Distribuisci da bottino missione</Label>
         <Select
           value={payoutMissionId || "none"}
@@ -405,7 +405,7 @@ export function LongEconomyPanel({
             <span className="tabular-nums text-zinc-300">{selectedMission.treasure_cp}</span> rame.
           </p>
         )}
-        <div className="max-h-56 space-y-1.5 overflow-y-auto pr-1">
+        <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto pr-1">
           {characters.map((c) => {
             const a = payoutAlloc[c.id] ?? { gp: "", sp: "", cp: "" };
             return (
@@ -474,7 +474,7 @@ export function LongEconomyPanel({
         </Button>
       </div>
 
-      <div className="space-y-2.5 rounded-lg border border-amber-700/25 bg-zinc-950/50 p-2.5">
+      <div className="flex min-h-0 flex-1 flex-col space-y-2.5 rounded-lg border border-amber-700/25 bg-zinc-950/50 p-2.5">
         <div>
           <Label className="text-amber-200/80 text-xs">Saldi live dei personaggi</Label>
           <p className="mt-1 text-[11px] text-zinc-500">
@@ -493,7 +493,7 @@ export function LongEconomyPanel({
             Salva tutte le righe
           </Button>
         </div>
-        <div className="max-h-[34rem] space-y-2 overflow-y-auto pr-1">
+        <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
           {characters.map((character) => {
             const liveDraft = liveDeltaDraft[character.id] ?? { gp: "", sp: "", cp: "" };
             const saveState = rowSaveState[character.id] ?? { status: "idle" };
