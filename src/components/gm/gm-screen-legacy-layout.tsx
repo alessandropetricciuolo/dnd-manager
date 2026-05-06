@@ -66,24 +66,48 @@ export function GmScreenLegacyLayout({
     <div className="flex h-screen w-screen overflow-hidden bg-zinc-950">
       <div
         className={cn(
-          "flex shrink-0 flex-col items-center border-amber-600/20 bg-zinc-900/80 transition-all duration-300",
-          sidebarOpen ? "w-10 border-r" : "w-12 border-r"
+          "flex shrink-0 flex-col items-center gap-1 border-amber-600/20 bg-zinc-900/80 py-3 transition-all duration-300",
+          sidebarOpen ? "w-11 border-r" : "w-12 border-r"
         )}
       >
         <Button
           variant="ghost"
           size="icon"
-          className="mt-3 text-amber-400 hover:bg-amber-600/20 hover:text-amber-200"
+          className="text-amber-400 hover:bg-amber-600/20 hover:text-amber-200"
           onClick={() => setSidebarOpen((open) => !open)}
           title={sidebarOpen ? "Chiudi Initiative Tracker" : "Apri Initiative Tracker"}
+          aria-label={sidebarOpen ? "Chiudi Initiative Tracker" : "Apri Initiative Tracker"}
         >
           <ListOrdered className="h-5 w-5" />
         </Button>
         {!sidebarOpen && (
-          <span className="mt-2 w-full origin-left rotate-90 whitespace-nowrap text-[10px] font-medium text-amber-400/80">
+          <span className="mt-1 w-full origin-left rotate-90 whitespace-nowrap text-[10px] font-medium text-amber-400/80">
             Tracker
           </span>
         )}
+
+        <div className="my-1 h-px w-6 bg-amber-600/20" aria-hidden />
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-amber-400 hover:bg-amber-600/20 hover:text-amber-200"
+          onClick={() => setGalleryOpen(true)}
+          title="Regia Immagini"
+          aria-label="Apri Regia Immagini"
+        >
+          <Images className="h-5 w-5" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-amber-400 hover:bg-amber-600/20 hover:text-amber-200"
+          onClick={() => setWhispersOpen(true)}
+          title="Sussurri Segreti"
+          aria-label="Apri Sussurri Segreti"
+        >
+          <MessageCircle className="h-5 w-5" />
+        </Button>
       </div>
 
       <aside
@@ -162,31 +186,6 @@ export function GmScreenLegacyLayout({
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-
-        <div className="pointer-events-auto absolute bottom-6 left-6 z-20 flex flex-col items-start gap-3 max-md:bottom-[max(1.5rem,env(safe-area-inset-bottom))] max-md:left-[max(1.5rem,env(safe-area-inset-left))]">
-          <div className="flex gap-3">
-            <Button
-              type="button"
-              size="icon"
-              onClick={() => setGalleryOpen(true)}
-              className="h-11 w-11 rounded-full bg-amber-700 text-zinc-950 shadow-lg shadow-amber-900/40 hover:bg-amber-500"
-              title="Regia Immagini"
-              aria-label="Apri galleria immagini"
-            >
-              <Images className="h-5 w-5" />
-            </Button>
-            <Button
-              type="button"
-              size="icon"
-              onClick={() => setWhispersOpen(true)}
-              className="h-11 w-11 rounded-full bg-amber-600 text-zinc-950 shadow-lg shadow-amber-900/30 hover:bg-amber-500"
-              title="Sussurri Segreti"
-              aria-label="Apri Sussurri Segreti"
-            >
-              <MessageCircle className="h-5 w-5" />
-            </Button>
           </div>
         </div>
 

@@ -112,24 +112,48 @@ function LongWorkspace({
     <div className="flex h-screen w-screen overflow-hidden bg-zinc-950 text-zinc-100">
       <div
         className={cn(
-          "flex shrink-0 flex-col items-center border-r border-amber-600/20 bg-zinc-900/80 transition-all duration-300",
+          "flex shrink-0 flex-col items-center gap-1 border-r border-amber-600/20 bg-zinc-900/80 py-3 transition-all duration-300",
           sidebarOpen ? "w-11" : "w-12"
         )}
       >
         <Button
           variant="ghost"
           size="icon"
-          className="mt-3 text-amber-400 hover:bg-amber-600/20 hover:text-amber-200"
+          className="text-amber-400 hover:bg-amber-600/20 hover:text-amber-200"
           onClick={() => setSidebarOpen((open) => !open)}
           title={sidebarOpen ? "Chiudi Initiative Tracker" : "Apri Initiative Tracker"}
+          aria-label={sidebarOpen ? "Chiudi Initiative Tracker" : "Apri Initiative Tracker"}
         >
           <ListOrdered className="h-5 w-5" />
         </Button>
         {!sidebarOpen && (
-          <span className="mt-2 w-full origin-left rotate-90 whitespace-nowrap text-[10px] font-medium text-amber-400/80">
+          <span className="mt-1 w-full origin-left rotate-90 whitespace-nowrap text-[10px] font-medium text-amber-400/80">
             Initiative
           </span>
         )}
+
+        <div className="my-1 h-px w-6 bg-amber-600/20" aria-hidden />
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-amber-400 hover:bg-amber-600/20 hover:text-amber-200"
+          onClick={() => setGalleryOpen(true)}
+          title="Regia Immagini"
+          aria-label="Apri Regia Immagini"
+        >
+          <Images className="h-5 w-5" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-amber-400 hover:bg-amber-600/20 hover:text-amber-200"
+          onClick={() => setWhispersOpen(true)}
+          title="Sussurri Segreti"
+          aria-label="Apri Sussurri Segreti"
+        >
+          <MessageCircle className="h-5 w-5" />
+        </Button>
       </div>
 
       <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
@@ -213,20 +237,23 @@ function LongWorkspace({
             <Button
               type="button"
               variant="outline"
-              className="border-amber-600/40 text-amber-100 hover:bg-amber-600/15"
+              size="sm"
+              className="h-8 border-amber-600/40 px-2.5 text-xs text-amber-100 hover:bg-amber-600/15"
               onClick={clearSelectedSessionState}
               disabled={!selectedSessionId}
+              title="Azzera stato locale di questa sessione"
             >
-              Azzera stato locale
+              Azzera stato
             </Button>
             <Button
               type="button"
-              className="bg-amber-600 text-zinc-950 hover:bg-amber-500"
+              size="sm"
+              className="h-8 bg-amber-600 px-3 text-xs text-zinc-950 hover:bg-amber-500"
               onClick={() => setDebriefOpen(true)}
               disabled={!selectedSessionId}
             >
-              <Flag className="mr-2 h-4 w-4" />
-              Chiudi Sessione
+              <Flag className="mr-1.5 h-3.5 w-3.5" />
+              Chiudi sessione
             </Button>
           </div>
         </div>
@@ -306,7 +333,12 @@ function LongWorkspace({
 
             <div className="min-h-0 overflow-auto rounded-2xl border border-amber-600/20 bg-zinc-900/30 p-3 md:p-4">
               {workspaceMode === "session" ? (
-                <div className="flex min-h-full flex-col gap-4">
+                <div className="flex min-h-full flex-col gap-3">
+                  <LongTimePanel
+                    elapsedHours={elapsedHours}
+                    onChange={setElapsedHours}
+                    compact
+                  />
                   <GmMissionEncounterLoader campaignId={campaignId} />
                   <PlayerSessionTracker
                     campaignId={campaignId}
@@ -316,7 +348,7 @@ function LongWorkspace({
                     initiativeEntries={initiativeState.entries}
                     value={xpState}
                     onChange={setXpState}
-                  onCloseFight={() => setInitiativeState({ entries: [], currentTurnIndex: 0 })}
+                    onCloseFight={() => setInitiativeState({ entries: [], currentTurnIndex: 0 })}
                   />
                 </div>
               ) : (
@@ -345,31 +377,6 @@ function LongWorkspace({
                 </div>
               )}
             </div>
-          </div>
-        </div>
-
-        <div className="pointer-events-auto absolute bottom-6 left-6 z-20 flex flex-col items-start gap-3">
-          <div className="flex gap-3">
-            <Button
-              type="button"
-              size="icon"
-              onClick={() => setGalleryOpen(true)}
-              className="h-11 w-11 rounded-full bg-amber-700 text-zinc-950 shadow-lg shadow-amber-900/40 hover:bg-amber-500"
-              title="Regia Immagini"
-              aria-label="Apri galleria immagini"
-            >
-              <Images className="h-5 w-5" />
-            </Button>
-            <Button
-              type="button"
-              size="icon"
-              onClick={() => setWhispersOpen(true)}
-              className="h-11 w-11 rounded-full bg-amber-600 text-zinc-950 shadow-lg shadow-amber-900/30 hover:bg-amber-500"
-              title="Sussurri Segreti"
-              aria-label="Apri Sussurri Segreti"
-            >
-              <MessageCircle className="h-5 w-5" />
-            </Button>
           </div>
         </div>
 

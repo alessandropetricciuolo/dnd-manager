@@ -465,23 +465,23 @@ export function PlayerSessionTracker({
   );
 
   return (
-    <section className="flex min-h-[320px] flex-col rounded-xl border border-amber-600/25 bg-zinc-900/75 p-4 text-zinc-100">
-      <header className="mb-3 flex items-center justify-between gap-3 border-b border-amber-600/20 pb-3">
-        <div className="flex items-center gap-3">
-          <Swords className="h-5 w-5 text-amber-300" />
-          <div>
+    <section className="flex min-h-[260px] flex-col rounded-xl border border-amber-600/25 bg-zinc-900/75 p-3 text-zinc-100">
+      <header className="mb-2.5 flex items-center justify-between gap-3 border-b border-amber-600/20 pb-2.5">
+        <div className="flex items-center gap-2">
+          <Swords className="h-4 w-4 text-amber-300" />
+          <div className="leading-tight">
             <h2 className="text-sm font-semibold text-amber-200">Tracker XP Sessione</h2>
-            <p className="text-xs text-zinc-400">
-              Mostra gli iscritti della sessione e distribuisce i PE ai presenti.
+            <p className="text-[11px] text-zinc-400">
+              Distribuisce i PE ai presenti.
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <Button
             type="button"
             size="sm"
             variant="outline"
-            className="h-8 border-emerald-600/35 text-emerald-200 hover:bg-emerald-600/15"
+            className="h-7 border-emerald-600/35 px-2.5 text-[11px] text-emerald-200 hover:bg-emerald-600/15"
             onClick={closeCurrentFight}
             disabled={effectiveMonsterXp <= 0}
             title="Chiudi fight e salva i PE mostri nel totale sessione"
@@ -492,26 +492,32 @@ export function PlayerSessionTracker({
             type="button"
             size="icon"
             variant="outline"
-            className="h-8 w-8 border-amber-600/30 text-amber-100 hover:bg-amber-600/15"
+            className="h-7 w-7 border-amber-600/30 text-amber-100 hover:bg-amber-600/15"
             onClick={() => void syncMonstersXp()}
             title="Ricalcola PE da mostri morti"
           >
-            <RefreshCw className={cn("h-4 w-4", loadingMonstersXp && "animate-spin")} />
+            <RefreshCw className={cn("h-3.5 w-3.5", loadingMonstersXp && "animate-spin")} />
           </Button>
         </div>
       </header>
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        <div className="rounded-lg border border-amber-600/20 bg-zinc-950/40 p-3">
-          <p className="text-[11px] uppercase tracking-wide text-zinc-400">PE da mostri morti</p>
-          <p className="mt-1 text-lg font-semibold text-amber-200">{effectiveMonsterXp} PE</p>
+      <div className="mb-3 grid grid-cols-2 gap-2 md:grid-cols-4">
+        <div className="rounded-md border border-amber-600/20 bg-zinc-950/40 px-2.5 py-2">
+          <p className="text-[10px] uppercase tracking-wide text-zinc-400">PE mostri morti</p>
+          <p className="mt-0.5 text-base font-semibold text-amber-200">
+            {effectiveMonsterXp}
+            <span className="ml-1 text-[10px] font-normal text-zinc-400">PE</span>
+          </p>
         </div>
-        <div className="rounded-lg border border-amber-600/20 bg-zinc-950/40 p-3">
-          <p className="text-[11px] uppercase tracking-wide text-zinc-400">PE fight chiusi</p>
-          <p className="mt-1 text-lg font-semibold text-amber-200">{xpState.bankedMonsterXp || 0} PE</p>
+        <div className="rounded-md border border-amber-600/20 bg-zinc-950/40 px-2.5 py-2">
+          <p className="text-[10px] uppercase tracking-wide text-zinc-400">PE fight chiusi</p>
+          <p className="mt-0.5 text-base font-semibold text-amber-200">
+            {xpState.bankedMonsterXp || 0}
+            <span className="ml-1 text-[10px] font-normal text-zinc-400">PE</span>
+          </p>
         </div>
-        <div className="rounded-lg border border-amber-600/20 bg-zinc-950/40 p-3">
-          <label className="text-[11px] uppercase tracking-wide text-zinc-400">PE extra manuali</label>
+        <div className="rounded-md border border-amber-600/20 bg-zinc-950/40 px-2.5 py-2">
+          <label className="text-[10px] uppercase tracking-wide text-zinc-400">PE extra manuali</label>
           <Input
             type="number"
             min={0}
@@ -522,15 +528,18 @@ export function PlayerSessionTracker({
                 extraXpManual: Math.max(0, parseInt(event.target.value, 10) || 0),
               }))
             }
-            className="mt-2 h-10 border-amber-600/30 bg-zinc-950 text-zinc-100"
+            className="mt-1 h-7 border-amber-600/30 bg-zinc-950 px-2 text-sm text-zinc-100"
             placeholder="0"
           />
         </div>
-        <div className="rounded-lg border border-amber-600/20 bg-zinc-950/40 p-3">
-          <p className="text-[11px] uppercase tracking-wide text-zinc-400">PE base per presente</p>
-          <p className="mt-1 text-lg font-semibold text-amber-200">{effectiveBasePerPlayer} PE</p>
-          <p className="mt-1 text-xs text-zinc-500">
-            {xpSummary.awards.length} assegnazioni valide • {totalDistributedXp} PE distribuiti
+        <div className="rounded-md border border-amber-600/20 bg-zinc-950/40 px-2.5 py-2">
+          <p className="text-[10px] uppercase tracking-wide text-zinc-400">Base per presente</p>
+          <p className="mt-0.5 text-base font-semibold text-amber-200">
+            {effectiveBasePerPlayer}
+            <span className="ml-1 text-[10px] font-normal text-zinc-400">PE</span>
+          </p>
+          <p className="mt-0.5 truncate text-[10px] text-zinc-500" title={`${xpSummary.awards.length} assegnazioni · ${totalDistributedXp} PE distribuiti`}>
+            {xpSummary.awards.length} ass. · {totalDistributedXp} PE tot.
           </p>
         </div>
       </div>
@@ -539,10 +548,10 @@ export function PlayerSessionTracker({
         <Table>
           <TableHeader>
             <TableRow className="border-amber-600/20 hover:bg-transparent">
-              <TableHead className="h-9 w-20 px-2 text-xs font-semibold text-amber-300">Presente</TableHead>
-              <TableHead className="h-9 px-2 text-xs font-semibold text-amber-300">Personaggio</TableHead>
-              <TableHead className="h-9 w-36 px-2 text-xs font-semibold text-amber-300">+ / -</TableHead>
-              <TableHead className="h-9 w-44 px-2 text-xs font-semibold text-amber-300">PE Finali</TableHead>
+              <TableHead className="h-8 w-16 px-2 text-[11px] font-semibold text-amber-300">Pres.</TableHead>
+              <TableHead className="h-8 px-2 text-[11px] font-semibold text-amber-300">Personaggio</TableHead>
+              <TableHead className="h-8 w-32 px-2 text-[11px] font-semibold text-amber-300">+ / -</TableHead>
+              <TableHead className="h-8 w-36 px-2 text-[11px] font-semibold text-amber-300">PE Finali</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -577,7 +586,7 @@ export function PlayerSessionTracker({
                       !isPresent && "bg-zinc-900/70 text-zinc-500 opacity-70"
                     )}
                   >
-                    <TableCell className="px-2 py-2">
+                    <TableCell className="px-2 py-1.5">
                       <label className="relative inline-flex h-5 w-9 cursor-pointer items-center rounded-full">
                         <input
                           type="checkbox"
@@ -611,11 +620,11 @@ export function PlayerSessionTracker({
                         />
                       </label>
                     </TableCell>
-                    <TableCell className="px-2 py-2">
+                    <TableCell className="px-2 py-1.5">
                       <div className="min-w-0">
                         <p
                           className={cn(
-                            "truncate font-medium",
+                            "truncate text-xs font-medium",
                             isPresent ? "text-zinc-100" : "text-zinc-500 line-through"
                           )}
                           title={character.name}
@@ -623,17 +632,17 @@ export function PlayerSessionTracker({
                           {character.name}
                         </p>
                         {character.assigned_to ? (
-                          <p className="text-[11px] text-zinc-500">{character.current_xp} XP attuali</p>
+                          <p className="text-[10px] text-zinc-500">{character.current_xp} XP</p>
                         ) : null}
                       </div>
                     </TableCell>
-                    <TableCell className="px-2 py-2">
-                      <div className="flex items-center gap-1.5">
+                    <TableCell className="px-2 py-1.5">
+                      <div className="flex items-center gap-1">
                         <Button
                           type="button"
                           size="icon"
                           variant="outline"
-                          className="h-7 w-7 border-amber-600/30 text-emerald-300 hover:bg-emerald-600/20"
+                          className="h-6 w-6 border-amber-600/30 text-emerald-300 hover:bg-emerald-600/20"
                           onClick={() =>
                             setCharacterState(character.id, (previous) => ({
                               ...previous,
@@ -643,16 +652,16 @@ export function PlayerSessionTracker({
                           disabled={!isPresent}
                           title={`Aggiungi +${XP_STEP} PE`}
                         >
-                          <Plus className="h-3.5 w-3.5" />
+                          <Plus className="h-3 w-3" />
                         </Button>
-                        <div className="min-w-[72px] text-center text-xs text-zinc-200">
+                        <div className="min-w-[60px] text-center text-[11px] tabular-nums text-zinc-200">
                           +{state.plus} / -{state.minus}
                         </div>
                         <Button
                           type="button"
                           size="icon"
                           variant="outline"
-                          className="h-7 w-7 border-amber-600/30 text-red-300 hover:bg-red-600/20"
+                          className="h-6 w-6 border-amber-600/30 text-red-300 hover:bg-red-600/20"
                           onClick={() =>
                             setCharacterState(character.id, (previous) => ({
                               ...previous,
@@ -662,12 +671,12 @@ export function PlayerSessionTracker({
                           disabled={!isPresent}
                           title={`Aggiungi -${XP_STEP} PE`}
                         >
-                          <Minus className="h-3.5 w-3.5" />
+                          <Minus className="h-3 w-3" />
                         </Button>
                       </div>
                     </TableCell>
-                    <TableCell className="px-2 py-2">
-                      <div className="space-y-1">
+                    <TableCell className="px-2 py-1.5">
+                      <div className="space-y-0.5">
                         <Input
                           type="number"
                           min={0}
@@ -684,15 +693,16 @@ export function PlayerSessionTracker({
                             }));
                           }}
                           placeholder={String(computed)}
-                          className="h-9 border-amber-600/30 bg-zinc-950 text-zinc-100"
+                          className="h-7 border-amber-600/30 bg-zinc-950 px-2 text-xs text-zinc-100"
                           disabled={!isPresent}
                         />
-                        <p className="text-[11px] text-zinc-400">
-                          Calcolato: <span className="font-semibold text-amber-200">{computed} PE</span>
+                        <p className="truncate text-[10px] text-zinc-400">
+                          Calc.{" "}
+                          <span className="font-semibold text-amber-200">{computed}</span>
                           {isOverridden ? (
                             <>
                               {" "}
-                              • Assegnato: <span className="font-semibold text-emerald-300">{finalValue} PE</span>
+                              · <span className="font-semibold text-emerald-300">{finalValue}</span>
                             </>
                           ) : null}
                         </p>
