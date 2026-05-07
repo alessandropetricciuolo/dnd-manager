@@ -43,6 +43,7 @@ import {
   deleteGuildAction,
   deleteMissionAction,
   reopenMissionAction,
+  setMissionProgressStatusAction,
   updateGuildAction,
   updateMissionAction,
 } from "@/lib/actions/mission-actions";
@@ -104,6 +105,31 @@ const EMPTY_GUILD_DRAFT = {
   autoRank: true,
 };
 
+type MissionProgressStatus = "open" | "in_progress" | "completed";
+
+function normalizeMissionStatus(status: string | null | undefined): MissionProgressStatus {
+  if (status === "completed" || status === "in_progress") return status;
+  return "open";
+}
+
+function missionStatusLabel(status: string | null | undefined): string {
+  const normalized = normalizeMissionStatus(status);
+  if (normalized === "open") return "Accettabile";
+  if (normalized === "in_progress") return "In corso";
+  return "Non accettabile";
+}
+
+function missionRowTone(status: string | null | undefined): string {
+  const normalized = normalizeMissionStatus(status);
+  if (normalized === "open") {
+    return "bg-emerald-900/20 hover:bg-emerald-700/20";
+  }
+  if (normalized === "in_progress") {
+    return "bg-amber-900/20 hover:bg-amber-700/20";
+  }
+  return "bg-red-900/20 hover:bg-red-700/20";
+}
+
 export function MissionBoard({
   campaignId,
   missions,
@@ -123,8 +149,14 @@ export function MissionBoard({
 
   const sortedMissions = useMemo(() => {
     return [...missions].sort((a, b) => {
-      const ao = a.status === "open" ? 0 : 1;
-      const bo = b.status === "open" ? 0 : 1;
+      const priority = (status: string): number => {
+        const s = normalizeMissionStatus(status);
+        if (s === "open") return 0;
+        if (s === "in_progress") return 1;
+        return 2;
+      };
+      const ao = priority(a.status);
+      const bo = priority(b.status);
       if (ao !== bo) return ao - bo;
       const gradeDelta = guildRankOrder(b.grade ?? "D") - guildRankOrder(a.grade ?? "D");
       if (gradeDelta !== 0) return gradeDelta;
@@ -343,7 +375,9 @@ export function MissionBoard({
   }
 
   function submitCompleteMission() {
-    if (!detailsMission || detailsMission.status !== "open") return;
+    if (!detailsMission) return;
+    const status = normalizeMissionStatus(detailsMission.status);
+    if (status !== "open" && status !== "in_progress") return;
     if (!completeGuildId) {
       toast.error("Seleziona la gilda che completa la missione.");
       return;
@@ -363,6 +397,19 @@ export function MissionBoard({
       }
       toast.success("Missione completata. Punti gilda e tesoretto registrati.");
       setDetailsOpen(false);
+      router.refresh();
+    });
+  }
+
+  function submitSetMissionProgress(status: "open" | "in_progress") {
+    if (!detailsMission) return;
+    startTransition(async () => {
+      const res = await setMissionProgressStatusAction(campaignId, detailsMission.id, status);
+      if (!res.success) {
+        toast.error(res.message ?? "Errore aggiornamento stato missione.");
+        return;
+      }
+      toast.success(status === "in_progress" ? "Missione segnata come in corso." : "Missione segnata come accettabile.");
       router.refresh();
     });
   }
@@ -509,13 +556,12 @@ export function MissionBoard({
                         key={m.id}
                         className={cn(
                           "cursor-pointer transition-colors",
-                          "hover:bg-amber-600/10",
-                          m.status === "completed" && "opacity-70"
+                          missionRowTone(m.status)
                         )}
                         onClick={() => openDetailsMission(m)}
                       >
                         <TableCell className="whitespace-nowrap text-xs text-amber-100/90">
-                          {m.status === "completed" ? "Completata" : "Disponibile"}
+                          {missionStatusLabel(m.status)}
                         </TableCell>
                         <TableCell className="font-medium text-amber-100">{m.grade}</TableCell>
                         <TableCell className="text-zinc-100">{m.title}</TableCell>
@@ -634,23 +680,30 @@ export function MissionBoard({
 
           {detailsMission ? (
             <div className="space-y-4">
+              {(() => {
+                const status = normalizeMissionStatus(detailsMission.status);
+                return (
               <div className="flex flex-wrap gap-2 text-sm">
                 <span
                   className={cn(
                     "rounded-md px-2 py-0.5 text-xs font-semibold",
-                    detailsMission.status === "completed"
+                    status === "open"
                       ? "bg-emerald-900/50 text-emerald-200"
-                      : "bg-amber-900/40 text-amber-200"
+                      : status === "in_progress"
+                        ? "bg-amber-900/40 text-amber-200"
+                        : "bg-red-900/40 text-red-200"
                   )}
                 >
-                  {detailsMission.status === "completed" ? "Completata" : "Disponibile"}
+                  {missionStatusLabel(status)}
                 </span>
                 <span className="text-zinc-400">
                   Punti premio: <strong className="text-zinc-200">{detailsMission.points_reward ?? 0}</strong>
                 </span>
               </div>
+                );
+              })()}
 
-              {detailsMission.status === "completed" && (
+              {normalizeMissionStatus(detailsMission.status) === "completed" && (
                 <div className="rounded-lg border border-emerald-600/20 bg-emerald-950/20 p-3 text-sm text-zinc-200 space-y-3">
                   <p>
                     Completata da:{" "}
@@ -771,7 +824,10 @@ export function MissionBoard({
                 </div>
               )}
 
-              {isGmOrAdmin && detailsMission.status === "open" && guilds.length > 0 && (
+              {isGmOrAdmin &&
+                (normalizeMissionStatus(detailsMission.status) === "open" ||
+                  normalizeMissionStatus(detailsMission.status) === "in_progress") &&
+                guilds.length > 0 && (
                 <div className="rounded-lg border border-amber-600/30 bg-zinc-900/40 p-3 space-y-2">
                   <Label className="text-amber-100">Segna completata dalla gilda</Label>
                   <Select value={completeGuildId} onValueChange={setCompleteGuildId}>
@@ -832,13 +888,16 @@ export function MissionBoard({
                 </div>
               )}
 
-              {isGmOrAdmin && detailsMission.status === "open" && guilds.length === 0 && (
+              {isGmOrAdmin &&
+                (normalizeMissionStatus(detailsMission.status) === "open" ||
+                  normalizeMissionStatus(detailsMission.status) === "in_progress") &&
+                guilds.length === 0 && (
                 <p className="text-sm text-amber-200/80">
                   Aggiungi almeno una gilda nella tab Classifica per poter chiudere una missione.
                 </p>
               )}
 
-              {isGmOrAdmin && detailsMission.status === "completed" && (
+              {isGmOrAdmin && normalizeMissionStatus(detailsMission.status) === "completed" && (
                 <Button
                   type="button"
                   variant="outline"
@@ -847,6 +906,30 @@ export function MissionBoard({
                   onClick={() => submitReopenMission()}
                 >
                   Riapri missione (ritira i punti dalla gilda)
+                </Button>
+              )}
+
+              {isGmOrAdmin && normalizeMissionStatus(detailsMission.status) === "open" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-amber-500/40 text-amber-100 hover:bg-amber-500/15"
+                  disabled={isPending}
+                  onClick={() => submitSetMissionProgress("in_progress")}
+                >
+                  Segna missione in corso
+                </Button>
+              )}
+
+              {isGmOrAdmin && normalizeMissionStatus(detailsMission.status) === "in_progress" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-emerald-500/40 text-emerald-100 hover:bg-emerald-500/15"
+                  disabled={isPending}
+                  onClick={() => submitSetMissionProgress("open")}
+                >
+                  Segna missione accettabile
                 </Button>
               )}
 
