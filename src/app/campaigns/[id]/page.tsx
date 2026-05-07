@@ -726,6 +726,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
               />
             ) : undefined
           }
+          showGmTab={isGmOrAdmin}
           showMissionsTab={showMissionsTab}
         />
               )}

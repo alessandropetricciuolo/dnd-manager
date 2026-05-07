@@ -34,6 +34,7 @@ type CampaignTabsClientProps = {
   pgContent: React.ReactNode;
   /** Area GM: passato solo se user è GM o Admin; tab e contenuto visibili solo in quel caso */
   gmAreaContent?: React.ReactNode | null;
+  showGmTab?: boolean;
   showMissionsTab: boolean;
 };
 
@@ -46,13 +47,13 @@ export function CampaignTabsClient({
   missionsContent,
   pgContent,
   gmAreaContent,
+  showGmTab = gmAreaContent != null,
   showMissionsTab,
 }: CampaignTabsClientProps) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [tabSheetOpen, setTabSheetOpen] = useState(false);
-  const showGmTab = gmAreaContent != null;
 
   const tabParam = searchParams.get("tab");
   let tab: TabValue =
