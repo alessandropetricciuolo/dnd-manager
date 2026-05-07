@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Calendar, Flag, Images, ListOrdered, MessageCircle, Users } from "lucide-react";
 import { GmNotesGrid } from "./gm-notes-grid";
 import { InitiativeTracker } from "./initiative-tracker";
@@ -15,7 +15,12 @@ import { GmScreenLongStateProvider, useGmScreenLongState } from "./gm-screen-lon
 import { EndSessionWizard } from "@/components/sessions/end-session-wizard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -23,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { createGmNote } from "@/app/campaigns/gm-actions";
 
 type GmScreenLongLayoutProps = {
   campaignId: string;
@@ -77,6 +83,10 @@ function LongWorkspace({
   const [whispersOpen, setWhispersOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [workspaceMode, setWorkspaceMode] = useState<"session" | "closure">("session");
+  const [quickNoteOpen, setQuickNoteOpen] = useState(false);
+  const [quickNoteLoading, setQuickNoteLoading] = useState(false);
+  const [quickNoteTitle, setQuickNoteTitle] = useState("");
+  const [quickNoteContent, setQuickNoteContent] = useState("");
 
   useEffect(() => {
     if (autoOpenDebrief && selectedSessionId) {
@@ -107,6 +117,36 @@ function LongWorkspace({
       }),
     [attendance, initiativeState.entries, sessionCharacters, xpState]
   );
+
+  async function handleQuickClosureNoteSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (quickNoteLoading) return;
+    const title = quickNoteTitle.trim();
+    if (!title) {
+      toast.error("Il titolo della nota è obbligatorio.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set("title", title);
+    formData.set("content", quickNoteContent.trim());
+    formData.set("session_id", selectedSessionId ?? "");
+
+    setQuickNoteLoading(true);
+    try {
+      const result = await createGmNote(campaignId, formData);
+      if (!result.success) {
+        toast.error(result.error ?? "Errore creazione nota.");
+        return;
+      }
+      toast.success("Nota creata.");
+      setQuickNoteOpen(false);
+      setQuickNoteTitle("");
+      setQuickNoteContent("");
+    } finally {
+      setQuickNoteLoading(false);
+    }
+  }
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-zinc-950 text-zinc-100">
@@ -294,7 +334,7 @@ function LongWorkspace({
               "grid h-full min-h-0 gap-3",
               workspaceMode === "session"
                 ? "xl:grid-cols-[minmax(560px,50vw)_minmax(0,1fr)]"
-                : "lg:grid-cols-[minmax(220px,24vw)_minmax(0,1fr)]"
+                : "grid-cols-1"
             )}
           >
             <aside
@@ -326,8 +366,68 @@ function LongWorkspace({
             </aside>
 
             {workspaceMode === "closure" ? (
-              <div className="order-2 min-h-0 overflow-hidden rounded-2xl border border-amber-600/20 bg-zinc-900/25 p-2 md:p-3 lg:order-1 lg:max-h-[46vh]">
-                <GmNotesGrid campaignId={campaignId} sessionId={selectedSessionId} sessionLabel={selectedSessionLabel} />
+              <div className="order-2 flex items-center justify-end">
+                <Dialog open={quickNoteOpen} onOpenChange={setQuickNoteOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-8 border-amber-600/35 px-3 text-xs text-amber-100 hover:bg-amber-600/15"
+                    >
+                      Nuova nota
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-lg border-amber-600/30 bg-zinc-900 text-zinc-100">
+                    <DialogHeader>
+                      <DialogTitle className="text-amber-300">Nuova nota rapida</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleQuickClosureNoteSubmit} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="closure-quick-note-title">Titolo</Label>
+                        <Input
+                          id="closure-quick-note-title"
+                          value={quickNoteTitle}
+                          onChange={(e) => setQuickNoteTitle(e.target.value)}
+                          placeholder="Es. Debito con la gilda"
+                          className="border-amber-600/30 bg-zinc-800 text-zinc-100"
+                          disabled={quickNoteLoading}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="closure-quick-note-content">Contenuto</Label>
+                        <Textarea
+                          id="closure-quick-note-content"
+                          value={quickNoteContent}
+                          onChange={(e) => setQuickNoteContent(e.target.value)}
+                          placeholder="Scrivi la nota..."
+                          rows={7}
+                          className="min-h-[140px] border-amber-600/30 bg-zinc-800 text-zinc-100"
+                          disabled={quickNoteLoading}
+                        />
+                      </div>
+                      <DialogFooter>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="border-amber-600/40 text-zinc-300"
+                          onClick={() => setQuickNoteOpen(false)}
+                          disabled={quickNoteLoading}
+                        >
+                          Annulla
+                        </Button>
+                        <Button
+                          type="submit"
+                          className="bg-amber-600 text-zinc-950 hover:bg-amber-500"
+                          disabled={quickNoteLoading}
+                        >
+                          {quickNoteLoading ? "Creazione..." : "Crea nota"}
+                        </Button>
+                      </DialogFooter>
+                    </form>
+                  </DialogContent>
+                </Dialog>
               </div>
             ) : null}
 
