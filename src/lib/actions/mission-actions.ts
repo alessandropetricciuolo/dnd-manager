@@ -347,6 +347,11 @@ function isMissingMissionProgressColumns(err: { message?: string } | null): bool
   );
 }
 
+function normalizeMissionStatus(status: string | null | undefined): "open" | "in_progress" | "completed" {
+  if (status === "completed" || status === "in_progress") return status;
+  return "open";
+}
+
 export async function updateMissionAction(
   campaignId: string,
   missionId: string,
@@ -460,6 +465,75 @@ export async function setMissionProgressStatusAction(
         status,
         completed_at: null,
         completed_by_guild_id: null,
+        updated_at: now,
+      })
+      .eq("id", missionId)
+      .eq("campaign_id", campaignId);
+
+    if (error) {
+      const msg = (error.message ?? "").toLowerCase();
+      if (msg.includes("status") || msg.includes("schema cache")) {
+        return {
+          success: false,
+          message: "Aggiorna il database (migration missioni: stato in_progress) e riprova.",
+        };
+      }
+      return { success: false, message: error.message };
+    }
+
+    revalidatePath(`/campaigns/${campaignId}`);
+    return { success: true };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Errore sconosciuto.";
+    return { success: false, message: msg };
+  }
+}
+
+export async function setMissionAvailabilityStatusAction(
+  campaignId: string,
+  missionId: string,
+  status: "open" | "completed"
+): Promise<MissionBoardResult> {
+  if (!campaignId || !missionId) {
+    return { success: false, message: "Dati missione non validi." };
+  }
+  if (status !== "open" && status !== "completed") {
+    return { success: false, message: "Stato missione non valido." };
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    const allowed = await isGmOrAdminByRole(supabase);
+    if (!allowed) return { success: false, message: "Non autorizzato." };
+
+    const { data: mission, error: missionErr } = await supabase
+      .from("campaign_missions")
+      .select("status")
+      .eq("id", missionId)
+      .eq("campaign_id", campaignId)
+      .single();
+    if (missionErr || !mission) {
+      return { success: false, message: missionErr?.message ?? "Missione non trovata." };
+    }
+
+    const currentStatus = normalizeMissionStatus((mission as { status?: string }).status);
+    if (currentStatus === status) return { success: true };
+
+    if (status === "open") {
+      // Riusa la logica robusta che ripristina i punti gilda se la missione era stata completata con una gilda.
+      return reopenMissionAction(campaignId, missionId);
+    }
+
+    const now = new Date().toISOString();
+    const { error } = await supabase
+      .from("campaign_missions")
+      .update({
+        status: "completed",
+        completed_at: now,
+        completed_by_guild_id: null,
+        treasure_gp: 0,
+        treasure_sp: 0,
+        treasure_cp: 0,
         updated_at: now,
       })
       .eq("id", missionId)

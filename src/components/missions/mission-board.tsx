@@ -43,6 +43,7 @@ import {
   deleteGuildAction,
   deleteMissionAction,
   reopenMissionAction,
+  setMissionAvailabilityStatusAction,
   setMissionProgressStatusAction,
   updateGuildAction,
   updateMissionAction,
@@ -410,6 +411,23 @@ export function MissionBoard({
         return;
       }
       toast.success(status === "in_progress" ? "Missione segnata come in corso." : "Missione segnata come accettabile.");
+      router.refresh();
+    });
+  }
+
+  function submitSetMissionAvailability(status: "open" | "completed") {
+    if (!detailsMission) return;
+    startTransition(async () => {
+      const res = await setMissionAvailabilityStatusAction(campaignId, detailsMission.id, status);
+      if (!res.success) {
+        toast.error(res.message ?? "Errore aggiornamento stato missione.");
+        return;
+      }
+      toast.success(
+        status === "completed"
+          ? "Missione segnata come non accettabile."
+          : "Missione segnata come accettabile."
+      );
       router.refresh();
     });
   }
@@ -910,27 +928,49 @@ export function MissionBoard({
               )}
 
               {isGmOrAdmin && normalizeMissionStatus(detailsMission.status) === "open" && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="border-amber-500/40 text-amber-100 hover:bg-amber-500/15"
-                  disabled={isPending}
-                  onClick={() => submitSetMissionProgress("in_progress")}
-                >
-                  Segna missione in corso
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-amber-500/40 text-amber-100 hover:bg-amber-500/15"
+                    disabled={isPending}
+                    onClick={() => submitSetMissionProgress("in_progress")}
+                  >
+                    Segna missione in corso
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-red-500/40 text-red-100 hover:bg-red-500/15"
+                    disabled={isPending}
+                    onClick={() => submitSetMissionAvailability("completed")}
+                  >
+                    Segna missione non accettabile
+                  </Button>
+                </div>
               )}
 
               {isGmOrAdmin && normalizeMissionStatus(detailsMission.status) === "in_progress" && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="border-emerald-500/40 text-emerald-100 hover:bg-emerald-500/15"
-                  disabled={isPending}
-                  onClick={() => submitSetMissionProgress("open")}
-                >
-                  Segna missione accettabile
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-emerald-500/40 text-emerald-100 hover:bg-emerald-500/15"
+                    disabled={isPending}
+                    onClick={() => submitSetMissionProgress("open")}
+                  >
+                    Segna missione accettabile
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-red-500/40 text-red-100 hover:bg-red-500/15"
+                    disabled={isPending}
+                    onClick={() => submitSetMissionAvailability("completed")}
+                  >
+                    Segna missione non accettabile
+                  </Button>
+                </div>
               )}
 
               {isGmOrAdmin && (
