@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { generateSheetAction } from "@/lib/actions/generator-actions";
@@ -14,7 +14,7 @@ import { saveGeneratedSheetToCharacter } from "@/app/campaigns/character-actions
 const CREATE_CHARACTER_DRAFT_KEY_PREFIX = "create-character-draft";
 const CREATE_CHARACTER_GENERATED_SHEET_KEY_PREFIX = "create-character-generated-sheet";
 
-export default function GeneratorPage() {
+function GeneratorPageContent() {
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const initial = useMemo(
@@ -498,5 +498,13 @@ export default function GeneratorPage() {
         )}
       </section>
     </main>
+  );
+}
+
+export default function GeneratorPage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen bg-barber-dark" />}>
+      <GeneratorPageContent />
+    </Suspense>
   );
 }

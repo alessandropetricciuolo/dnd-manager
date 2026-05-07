@@ -1,11 +1,18 @@
 import Link from "next/link";
-import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { Crown, Medal, Star } from "lucide-react";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
+
+type PublicHeroProfile = {
+  id: string;
+  nickname: string | null;
+  avatar_url: string | null;
+  fame_score: number | null;
+};
 
 export default async function HallOfFamePage() {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseAdminClient();
   const { data: profiles, error } = await supabase
     .from("profiles")
     .select("id, nickname, avatar_url, fame_score")
@@ -22,7 +29,7 @@ export default async function HallOfFamePage() {
     );
   }
 
-  const list = profiles ?? [];
+  const list = (profiles ?? []) as PublicHeroProfile[];
   const top3 = list.slice(0, 3);
   const rest = list.slice(3);
 

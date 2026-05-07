@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Check, Lock, UserCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -74,11 +75,12 @@ export function AvatarSelector({
               aria-pressed={selected}
               aria-label={unlocked ? `Seleziona ${avatar.name}` : `Bloccato: ${avatar.name}`}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={avatar.image_url}
                 alt={avatar.name}
-                className="absolute inset-0 h-full w-full object-cover"
+                fill
+                sizes="(max-width: 640px) 20vw, 96px"
+                className="object-cover"
               />
               {selected && (
                 <span className="absolute inset-0 flex items-center justify-center bg-black/30">

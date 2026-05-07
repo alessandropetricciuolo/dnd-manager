@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Calendar, Flag, Images, ListOrdered, MessageCircle, Users } from "lucide-react";
+import { Calendar, Flag, Images, ListOrdered, MessageCircle, ScrollText, Users } from "lucide-react";
 import { GmNotesGrid } from "./gm-notes-grid";
 import { InitiativeTracker } from "./initiative-tracker";
 import { PlayerSessionTracker, computeSessionXpAwards } from "./player-session-tracker";
@@ -148,6 +148,15 @@ function LongWorkspace({
     }
   }
 
+  function openMissionProjection() {
+    const features = "width=1920,height=1080,menubar=no,toolbar=no,location=no,status=no";
+    window.open(
+      `/campaigns/${campaignId}/gm-only/missioni/proiezione`,
+      "MissionProjectionWindow",
+      features
+    );
+  }
+
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-zinc-950 text-zinc-100">
       <div
@@ -193,6 +202,16 @@ function LongWorkspace({
           aria-label="Apri Sussurri Segreti"
         >
           <MessageCircle className="h-5 w-5" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-amber-400 hover:bg-amber-600/20 hover:text-amber-200"
+          onClick={openMissionProjection}
+          title="Proiezione Missioni"
+          aria-label="Apri Proiezione Missioni"
+        >
+          <ScrollText className="h-5 w-5" />
         </Button>
       </div>
 

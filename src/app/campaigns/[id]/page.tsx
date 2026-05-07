@@ -47,9 +47,18 @@ type PageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
+const CAMPAIGN_TAB_VALUES = ["sessioni", "wiki", "mappe", "missioni", "pg", "gm"] as const;
+type CampaignTabValue = (typeof CAMPAIGN_TAB_VALUES)[number];
+
+function parseCampaignTab(raw: string | string[] | undefined): CampaignTabValue | null {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return value && CAMPAIGN_TAB_VALUES.includes(value as CampaignTabValue) ? (value as CampaignTabValue) : null;
+}
+
 export default async function CampaignPage({ params, searchParams }: PageProps) {
   const { id } = await params;
   const sp = (await searchParams) ?? {};
+  const requestedTab = parseCampaignTab(sp.tab);
   const openCreateDialogOnLoad =
     (typeof sp.openCreateCharacter === "string" ? sp.openCreateCharacter : "") === "1";
   const openEditCharacterId =
@@ -122,11 +131,16 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
   /** Solo ruoli globali GM/Admin possono gestire PG/schede in tutte le campagne. */
   const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
   const isAdmin = profile?.role === "admin";
+  const wantsSessionTab = requestedTab == null || requestedTab === "sessioni";
+  const wantsWikiTab = requestedTab === "wiki";
+  const wantsMappeTab = requestedTab === "mappe";
+  const wantsPgTab = requestedTab === "pg" || openCreateDialogOnLoad || openEditCharacterId != null;
+  const wantsGmTab = requestedTab === "gm";
 
   /** Contesto AI: solo GM/Admin (non esposto ai player nel payload). */
   let aiContextParsed: CampaignAiContext | null = null;
   let excludedManualBookKeys: string[] = [];
-  if (isGmOrAdmin) {
+  if (isGmOrAdmin && wantsGmTab) {
     const { data: aiRow } = await supabase
       .from("campaigns")
       .select("ai_context")
@@ -139,7 +153,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
 
   /** Lista GM/Admin per la select DM nel form Nuova Sessione (solo se isGmOrAdmin). */
   let gmAdminUsers: { id: string; label: string }[] = [];
-  if (isGmOrAdmin) {
+  if (isGmOrAdmin && wantsSessionTab) {
     try {
       const admin = createSupabaseAdminClient();
       const { data: gmAdminsRaw } = await admin
@@ -191,7 +205,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
   let eligiblePlayers: { id: string; label: string }[] = [];
   let eligibleParties: { id: string; label: string; memberIds: string[] }[] = [];
   let playerPartyById: Record<string, string> = {};
-  if (isGmOrAdmin) {
+  if (isGmOrAdmin && (wantsWikiTab || wantsMappeTab || wantsPgTab)) {
     const playersResult = await getCampaignEligiblePlayers(id);
     if (playersResult.success && playersResult.data) eligiblePlayers = playersResult.data;
     const [{ data: partiesRaw }, { data: membersRaw }] = await Promise.all([
@@ -230,7 +244,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
   let worldOperationalMapUrl: string | null = null;
   let operationalPortals: Portal[] = [];
   let operationalMapCharacters: MapCharacterPin[] = [];
-  if (isGmOrAdmin) {
+  if (isGmOrAdmin && wantsMappeTab) {
     const [wmRes, prRes, chRes] = await Promise.all([
       supabase
         .from("maps")
@@ -268,7 +282,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
 
   /** Sessione eventualmente salvata in bozza (pre-chiusura) da un qualsiasi GM. */
   let preClosedSession: PreClosedSessionRow | null = null;
-  if (isGmOrAdmin) {
+  if (isGmOrAdmin && wantsSessionTab) {
     try {
       const res = await getPreClosedSessionForCampaign(campaign.id);
       if (res.success) {
@@ -283,7 +297,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
     | { join_enabled: boolean; join_subject: string; join_body_html: string }
     | null = null;
   let bulkEmailTemplates: Array<{ id: string; subject: string; body_html: string; created_at: string }> = [];
-  if (isGmOrAdmin && campaign.type === "long") {
+  if (isGmOrAdmin && campaign.type === "long" && wantsGmTab) {
     const [joinRes, bulkRes] = await Promise.all([
       supabase
         .from("campaign_email_settings")
@@ -305,6 +319,18 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
   /** Tab iniziale: player con PG assegnato → PG, player senza PG o GM → Sessioni */
   const defaultTab =
     isGmOrAdmin || characters.length === 0 ? "sessioni" : "pg";
+  let initialContentTab: CampaignTabValue = requestedTab ?? defaultTab;
+  if (initialContentTab === "gm" && !isGmOrAdmin) initialContentTab = defaultTab;
+  if (initialContentTab === "missioni" && !showMissionsTab) initialContentTab = defaultTab;
+  if ((initialContentTab === "wiki" || initialContentTab === "mappe") && !hasPlayedCampaign) {
+    initialContentTab = "sessioni";
+  }
+  const renderSessioniTab = initialContentTab === "sessioni";
+  const renderWikiTab = initialContentTab === "wiki";
+  const renderMappeTab = initialContentTab === "mappe";
+  const renderMissioniTab = initialContentTab === "missioni";
+  const renderPgTab = initialContentTab === "pg";
+  const renderGmTab = initialContentTab === "gm";
 
   const leftColumnContent = (
     <>
@@ -318,7 +344,6 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           placeholder="blur"
           blurDataURL={IMAGE_BLUR_PLACEHOLDER}
-          unoptimized={!!campaign.image_url}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-barber-dark via-barber-dark/50 to-transparent" />
       </div>
@@ -431,7 +456,6 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
             fill
             className="object-cover"
             sizes="100vw"
-            unoptimized={!!campaign.image_url}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-barber-dark via-barber-dark/80 to-transparent" />
           {gmDisplayName && (
@@ -496,7 +520,8 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
           hasPlayedCampaign={hasPlayedCampaign}
           defaultTab={defaultTab}
           sessioniContent={
-            <>
+            renderSessioniTab ? (
+              <>
               {isGmOrAdmin && preClosedSession && (
                 <div className="mb-4 rounded-lg border border-amber-500/70 bg-amber-950/40 px-4 py-3 text-sm text-amber-50">
                   <div className="flex flex-wrap items-center justify-between gap-3">
@@ -573,10 +598,11 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
                   <PlayerFeedbackSection campaignId={campaign.id} />
                 </>
               )}
-            </>
+              </>
+            ) : null
           }
           wikiContent={
-            hasPlayedCampaign ? (
+            renderWikiTab && hasPlayedCampaign ? (
               <>
                 <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
                   <h2 className="text-lg font-semibold text-barber-paper">
@@ -604,7 +630,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
             ) : null
           }
           mappeContent={
-            hasPlayedCampaign ? (
+            renderMappeTab && hasPlayedCampaign ? (
               <>
                 <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
                   <h2 className="text-lg font-semibold text-barber-paper">
@@ -662,7 +688,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
             ) : null
           }
           missionsContent={
-            showMissionsTab ? (
+            renderMissioniTab && showMissionsTab ? (
               <MissionBoardSection
                 campaignId={campaign.id}
                 isGmOrAdmin={isGmOrAdmin}
@@ -671,7 +697,8 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
             ) : null
           }
           pgContent={
-            <CharactersSection
+            renderPgTab ? (
+              <CharactersSection
               campaignId={campaign.id}
               campaignType={campaign.type ?? null}
               characters={characters}
@@ -683,9 +710,10 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
               currentUserId={user.id}
               gmId={campaign.gm_id ?? undefined}
             />
+            ) : null
           }
           gmAreaContent={
-            isGmOrAdmin ? (
+            renderGmTab && isGmOrAdmin ? (
               <GmHomepage
                 campaignId={campaign.id}
                 campaignType={campaign.type ?? null}

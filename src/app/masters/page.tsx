@@ -1,13 +1,25 @@
 import Link from "next/link";
 import Image from "next/image";
-import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { Button } from "@/components/ui/button";
 import { Swords, Theater, Skull } from "lucide-react";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
+
+type PublicGmProfile = {
+  id: string;
+  display_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  username: string | null;
+  portrait_url: string | null;
+  stat_combat: number | null;
+  stat_roleplay: number | null;
+  stat_lethality: number | null;
+};
 
 export default async function MastersPage() {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseAdminClient();
   const { data: profiles, error } = await supabase
     .from("profiles")
     .select(
@@ -25,7 +37,7 @@ export default async function MastersPage() {
     );
   }
 
-  const list = profiles ?? [];
+  const list = (profiles ?? []) as PublicGmProfile[];
 
   return (
     <div className="min-h-screen bg-barber-dark text-barber-paper">

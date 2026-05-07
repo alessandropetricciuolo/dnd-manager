@@ -144,10 +144,8 @@ export async function CampaignList({ variant = "all" }: CampaignListProps) {
                 fill
                 className="object-contain"
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                priority={index === 0}
                 placeholder="blur"
                 blurDataURL={IMAGE_BLUR_PLACEHOLDER}
-                unoptimized={!!campaign.image_url}
               />
             </div>
             <CardHeader className="pb-2 min-w-0">

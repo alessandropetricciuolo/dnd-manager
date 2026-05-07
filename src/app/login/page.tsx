@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, type FormEvent } from "react";
+import { Suspense, useState, useEffect, type FormEvent } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useRouter as useTopLoaderRouter } from "nextjs-toploader/app";
@@ -48,7 +48,7 @@ function isAdultFromIsoDate(dateIso: string): boolean {
   return age >= 18;
 }
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useTopLoaderRouter();
   const searchParams = useSearchParams();
   const [mode, setMode] = useState<Mode>("login");
@@ -408,6 +408,14 @@ export default function LoginPage() {
         </CardFooter>
       </Card>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-barber-dark" />}>
+      <LoginPageContent />
+    </Suspense>
   );
 }
 

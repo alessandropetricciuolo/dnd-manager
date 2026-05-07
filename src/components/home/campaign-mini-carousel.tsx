@@ -1,25 +1,29 @@
-import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { CampaignMiniCarouselClient } from "./campaign-mini-carousel-client";
 
-type CampaignMiniCarouselProps = {
-  isAuthenticated: boolean;
+type PublicCampaignPreview = {
+  id: string;
+  name: string;
+  description: string | null;
+  image_url: string | null;
 };
 
-export async function CampaignMiniCarousel({ isAuthenticated }: CampaignMiniCarouselProps) {
-  const supabase = await createSupabaseServerClient();
+export async function CampaignMiniCarousel() {
+  const supabase = createSupabaseAdminClient();
 
   const { data: campaigns, error } = await supabase
     .from("campaigns")
     .select("id, name, description, image_url")
     .eq("is_public", true)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(8);
 
   if (error) {
     console.error("[CampaignMiniCarousel]", error);
     return null;
   }
 
-  const list = (campaigns ?? []).map((c) => ({
+  const list = ((campaigns ?? []) as PublicCampaignPreview[]).map((c) => ({
     id: c.id,
     name: c.name,
     description: c.description ?? null,
@@ -28,5 +32,5 @@ export async function CampaignMiniCarousel({ isAuthenticated }: CampaignMiniCaro
 
   if (!list.length) return null;
 
-  return <CampaignMiniCarouselClient campaigns={list} isAuthenticated={isAuthenticated} />;
+  return <CampaignMiniCarouselClient campaigns={list} />;
 }

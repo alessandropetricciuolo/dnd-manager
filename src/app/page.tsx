@@ -1,19 +1,15 @@
 import Link from "next/link";
 import { Dices, MapPinned, Shield, Sparkles, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { CampaignMiniCarousel } from "@/components/home/campaign-mini-carousel";
 
 const HERO_BG =
   "https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=2000&q=80";
 
-export default async function HomePage() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const isAuthenticated = !!user;
-  const ctaHref = isAuthenticated ? "/dashboard" : "/login";
+export const revalidate = 300;
+
+export default function HomePage() {
+  const ctaHref = "/login";
 
   return (
     <main className="min-h-screen bg-[#0b0a10] text-barber-paper">
@@ -43,11 +39,11 @@ export default async function HomePage() {
               <Link href={ctaHref}>Unisciti alla Gilda</Link>
             </Button>
             <Button asChild variant="outline" size="lg" className="border-barber-gold/40 text-barber-gold hover:bg-barber-gold/10">
-              <Link href={ctaHref}>Scopri le Avventure</Link>
+              <Link href="/scopri">Scopri le Avventure</Link>
             </Button>
           </div>
           <div className="pt-1">
-            <CampaignMiniCarousel isAuthenticated={isAuthenticated} />
+            <CampaignMiniCarousel />
           </div>
         </div>
       </section>

@@ -41,9 +41,9 @@ export default function RootLayout({
       >
         <Script
           src="https://embeds.iubenda.com/widgets/e7d80735-aa56-4d5b-b82d-fe7ee6ce61d6.js"
-          strategy="beforeInteractive"
+          strategy="afterInteractive"
         />
-        <Script id="iubenda-floating-preferences-left" strategy="afterInteractive">
+        <Script id="iubenda-floating-preferences-left" strategy="lazyOnload">
           {`(function () {
   function patch() {
     try {

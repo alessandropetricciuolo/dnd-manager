@@ -41,6 +41,15 @@ function redirectWithSupabaseCookies(redirectUrl: URL, supabaseResponse: NextRes
 }
 
 export async function updateSession(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+
+  // Le pagine pubbliche non devono leggere la sessione: evita set-cookie inutili
+  // e permette alla CDN di cacheare HTML marketing/statico.
+  const isApiPath = pathname === "/api" || pathname.startsWith("/api/");
+  if (!isApiPath && (isPublicPath(pathname) || (!isAuthRoute(pathname) && !isProtectedRoute(pathname)))) {
+    return NextResponse.next({ request });
+  }
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -68,13 +77,6 @@ export async function updateSession(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  const pathname = request.nextUrl.pathname;
-
-  // Caso C: Homepage, Privacy e risorse statiche (matcher già esclude static) → lascia passare
-  if (isPublicPath(pathname)) {
-    return supabaseResponse;
-  }
 
   // Caso A: Utente loggato che accede a pagine di auth → redirect a /dashboard
   if (user && isAuthRoute(pathname)) {

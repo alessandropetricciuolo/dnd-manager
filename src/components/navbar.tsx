@@ -1,14 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
-import { createSupabaseServerClient } from "@/utils/supabase/server";
-import { NavbarUserMenu } from "@/components/navbar-user-menu";
+import { NavbarAuthSlot } from "@/components/navbar-auth-slot";
 
-export async function Navbar() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+export function Navbar() {
   return (
     <header className="sticky top-0 z-50 h-16 w-full border-b border-barber-gold/20 bg-barber-dark/95 backdrop-blur supports-[backdrop-filter]:bg-barber-dark/80">
       <nav className="mx-auto flex h-full max-w-6xl items-center justify-between gap-2 px-4 py-3 sm:gap-4 sm:px-6">
@@ -50,24 +44,7 @@ export async function Navbar() {
           >
             Contatti
           </Link>
-          {user ? (
-            <NavbarUserMenu user={user} />
-          ) : (
-            <>
-              <Link
-                href="/login"
-                className="text-sm font-medium text-barber-paper/90 transition-colors hover:text-barber-gold"
-              >
-                Entra
-              </Link>
-              <Link
-                href="/login"
-                className="rounded-md bg-barber-red px-4 py-2 text-sm font-medium text-barber-paper transition-colors hover:bg-barber-red/90"
-              >
-                Registrati
-              </Link>
-            </>
-          )}
+          <NavbarAuthSlot />
         </div>
       </nav>
     </header>
