@@ -15,14 +15,12 @@ import type {
   ManualSearchResult,
   ManualSourceFilter,
 } from "@/lib/manual-search-types";
-
-export type {
-  ManualSearchCompareSide,
-  ManualSearchHit,
-  ManualSearchMode,
-  ManualSearchResult,
-  ManualSourceFilter,
-} from "@/lib/manual-search-types";
+import {
+  buildSpellNameIndexFromMarkdown,
+  extractSpellEntryFromMarkdown,
+  hasMarkdownSpellStatBlock,
+  normalizeHeadingForExactMatch,
+} from "@/lib/manual-search-spell-helpers";
 
 type MatchRow = {
   id?: string;
@@ -272,56 +270,6 @@ function isLikelySpellNameQuery(query: string): boolean {
   return true;
 }
 
-function normalizeHeadingForExactMatch(s: string): string {
-  return s
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\([^)]*\)/g, " ")
-    .replace(/[^A-Za-z0-9 ]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toUpperCase();
-}
-
-function buildSpellNameIndexFromMarkdown(md: string): Map<string, string> {
-  const index = new Map<string, string>();
-  const lines = md.replace(/\r/g, "").split("\n");
-  for (let i = 0; i < lines.length; i += 1) {
-    const h = lines[i].match(/^#{1,6}\s+(.+?)\s*$/);
-    if (!h) continue;
-    const title = h[1].trim();
-    const norm = normalizeHeadingForExactMatch(title);
-    if (!norm) continue;
-    const window = lines.slice(i + 1, i + 14).join("\n");
-    if (!hasMarkdownSpellStatBlock(window)) continue;
-    if (!index.has(norm)) index.set(norm, title);
-  }
-  return index;
-}
-
-function extractSpellEntryFromMarkdown(md: string, spellName: string): string {
-  const lines = md.replace(/\r/g, "").split("\n");
-  const target = normalizeHeadingForExactMatch(spellName);
-  let start = -1;
-  for (let i = 0; i < lines.length; i += 1) {
-    const h = lines[i].match(/^#{1,6}\s+(.+?)\s*$/);
-    if (!h) continue;
-    if (normalizeHeadingForExactMatch(h[1]) === target) {
-      start = i;
-      break;
-    }
-  }
-  if (start < 0) return "";
-  let end = lines.length;
-  for (let i = start + 1; i < lines.length; i += 1) {
-    if (/^#{1,6}\s+/.test(lines[i])) {
-      end = i;
-      break;
-    }
-  }
-  return lines.slice(start, end).join("\n").trim();
-}
-
 function extractSpellEntryFromPhbFileDirect(spellName: string): string {
   const candidates = [
     path.join(process.cwd(), "public", "manuals", PHB_MD_FILE),
@@ -370,13 +318,6 @@ function classifyQueryAsSpell(query: string): { isSpell: boolean; canonical: str
   const canonical = cachedPhbSpellIndex.get(norm) ?? raw;
   return { isSpell: cachedPhbSpellIndex.has(norm), canonical };
 }
-
-export const __manualSearchInternals = {
-  normalizeHeadingForExactMatch,
-  buildSpellNameIndexFromMarkdown,
-  extractSpellEntryFromMarkdown,
-  classifyQueryAsSpell,
-};
 
 function buildPhbSpellPrimaryText(spellName: string, spellMd: string): string {
   const body = stripTwoColumnLines(spellMd.trim(), spellName);
@@ -608,11 +549,6 @@ function countTableLikeLines(text: string, maxLines = 50): number {
 
 function isTableHeavyChunk(content: string): boolean {
   return countTableLikeLines(content, 45) >= 10;
-}
-
-/** MD: blocco scheda incantesimo (da preferire rispetto a elenchi solo-nome). */
-function hasMarkdownSpellStatBlock(content: string): boolean {
-  return /\*\*Tempo di Lancio:\*\*/i.test(content) || /\*\*Gittata:\*\*/i.test(content);
 }
 
 /**

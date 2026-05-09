@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { __manualSearchInternals } from "@/lib/actions/manual-search-actions";
+import {
+  buildSpellNameIndexFromMarkdown,
+  extractSpellEntryFromMarkdown,
+  normalizeHeadingForExactMatch,
+} from "@/lib/manual-search-spell-helpers";
 
 const SAMPLE_MD = `
 # DARDO INCANTATO
@@ -23,19 +27,19 @@ Un bardo può ispirare...
 `;
 
 test("normalize heading strips accents and punctuation", () => {
-  const n = __manualSearchInternals.normalizeHeadingForExactMatch("Palla di fuoco (rituale)");
+  const n = normalizeHeadingForExactMatch("Palla di fuoco (rituale)");
   assert.equal(n, "PALLA DI FUOCO");
 });
 
 test("build spell index keeps only spell-like entries", () => {
-  const idx = __manualSearchInternals.buildSpellNameIndexFromMarkdown(SAMPLE_MD);
+  const idx = buildSpellNameIndexFromMarkdown(SAMPLE_MD);
   assert.equal(idx.has("PALLA DI FUOCO"), true);
   assert.equal(idx.has("PALLA DI FUOCO RITARDATA"), true);
   assert.equal(idx.has("ISPIRAZIONE BARDICA"), false);
 });
 
 test("extract exact spell entry avoids delayed-fireball collision", () => {
-  const entry = __manualSearchInternals.extractSpellEntryFromMarkdown(SAMPLE_MD, "palla di fuoco");
+  const entry = extractSpellEntryFromMarkdown(SAMPLE_MD, "palla di fuoco");
   assert.match(entry, /^# PALLA DI FUOCO$/m);
   assert.doesNotMatch(entry, /RITARDATA/);
 });
