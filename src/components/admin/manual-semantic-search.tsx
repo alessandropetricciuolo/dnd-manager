@@ -164,29 +164,45 @@ export function ManualSemanticSearch() {
       toast.error("Inserisci almeno 2 caratteri.");
       return;
     }
-    startTransition(async () => {
-      const res = await searchManualsSemanticAction(q, { sourceFilter });
-      if (!res.success) {
-        toast.error(res.message);
-        setPrimaryText(null);
-        setHits([]);
-        setMode(null);
-        setPipeline(null);
-        setCompare(null);
-        return;
-      }
-      setPrimaryText(res.primaryText);
-      setHits(res.hits);
-      setMode(res.mode);
-      setPipeline(res.pipeline);
-      setCompare(res.compare ?? null);
-      toast.success(
-        res.mode === "phrase-focus"
-          ? "Risultato dalla frase esatta nel manuale (blocco regola estratto)."
-          : res.mode === "semantic"
-            ? "Risultato da ricerca semantica (chunk più pertinente)."
-            : "Risultato da ricerca testuale (fallback o embedding non disponibile)."
-      );
+    startTransition(() => {
+      void (async () => {
+        try {
+          const res = await searchManualsSemanticAction(q, { sourceFilter });
+          if (!res.success) {
+            toast.error(res.message);
+            setPrimaryText(null);
+            setHits([]);
+            setMode(null);
+            setPipeline(null);
+            setCompare(null);
+            return;
+          }
+          setPrimaryText(res.primaryText);
+          setHits(res.hits);
+          setMode(res.mode);
+          setPipeline(res.pipeline);
+          setCompare(res.compare ?? null);
+          toast.success(
+            res.mode === "phrase-focus"
+              ? "Risultato dalla frase esatta nel manuale (blocco regola estratto)."
+              : res.mode === "semantic"
+                ? "Risultato da ricerca semantica (chunk più pertinente)."
+                : "Risultato da ricerca testuale (fallback o embedding non disponibile)."
+          );
+        } catch (err) {
+          console.error("[ManualSemanticSearch]", err);
+          toast.error(
+            err instanceof Error
+              ? `Errore ricerca manuali: ${err.message.slice(0, 240)}`
+              : "Errore imprevisto durante la ricerca nei manuali. Riprova."
+          );
+          setPrimaryText(null);
+          setHits([]);
+          setMode(null);
+          setPipeline(null);
+          setCompare(null);
+        }
+      })();
     });
   }
 

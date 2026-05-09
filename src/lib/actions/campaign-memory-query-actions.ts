@@ -144,6 +144,27 @@ function metadataDate(row: CampaignMemoryChunkRow): number {
   return Number.isFinite(ms) ? ms : 0;
 }
 
+/** Token della domanda utili per matching lessicale (evita stopword corte tipo "chi"). */
+function significantQuestionTokens(question: string): string[] {
+  return tokenizeQuestion(question).filter((t) => t.length >= 4);
+}
+
+/**
+ * Spinge in alto i chunk che contengono termini distintivi della domanda nel titolo o nel testo
+ * (es. nome NPC cercato), riducendo mismatch embedding vs intent.
+ */
+function questionTermOverlapBoost(question: string, row: CampaignMemoryChunkRow): number {
+  const tokens = significantQuestionTokens(question);
+  if (!tokens.length) return 0;
+  const titleLower = row.title.toLowerCase();
+  const contentLower = row.content.toLowerCase();
+  let hits = 0;
+  for (const t of tokens) {
+    if (titleLower.includes(t) || contentLower.includes(t)) hits += 1;
+  }
+  return Math.min(0.48, hits * 0.2);
+}
+
 function rerankMatches(question: string, rows: CampaignMemoryChunkRow[]): CampaignMemoryChunkRow[] {
   const wantsRecent = questionHasRecentIntent(question);
   const wantsCharacters = questionHasCharacterIntent(question);
@@ -153,6 +174,7 @@ function rerankMatches(question: string, rows: CampaignMemoryChunkRow[]): Campai
   return [...rows]
     .map((row) => {
       let score = typeof row.similarity === "number" ? row.similarity : 0;
+      score += questionTermOverlapBoost(question, row);
       if (wantsCharacters && row.source_type === "character_background") score += 0.18;
       if (wantsRecent && (row.source_type === "session_summary" || row.source_type === "wiki" || row.source_type === "map_description")) {
         const ageMs = Math.max(0, now - metadataDate(row));
@@ -303,9 +325,11 @@ async function semanticMatches(
   };
 }
 
+/** Chunk passati al modello e mostrati come fonti devono coincidere (evita fonti senza contesto in prompt). */
+const GROUNDED_CONTEXT_CHUNK_LIMIT = 14;
+
 async function groundedAnswer(question: string, rows: CampaignMemoryChunkRow[]): Promise<string> {
-  const topRows = rows.slice(0, 6);
-  const context = topRows
+  const context = rows
     .map(
       (row, index) =>
         `[${index + 1}] Tipo: ${sourceLabel(row.source_type)}\nTitolo: ${row.title}\nContenuto:\n${row.content}`
@@ -315,6 +339,7 @@ async function groundedAnswer(question: string, rows: CampaignMemoryChunkRow[]):
   const prompt = [
     "Sei l'archivista della memoria di una campagna lunga di D&D 5e.",
     "Rispondi SOLO usando le fonti sotto. Se non bastano, dichiaralo chiaramente.",
+    "Se il nome o il soggetto richiesto nella domanda compare nel Titolo di una fonte [n], quella fonte è pertinente: riassumi ciò che dice il Contenuto e non negare l'esistenza del soggetto solo perché il nome non è ripetuto nel corpo.",
     "Obiettivo: aiutare il GM a mantenere coerenza narrativa, senza inventare fatti.",
     `Domanda del GM: ${question.trim()}`,
     "",
@@ -377,15 +402,16 @@ export async function queryCampaignMemoryAction(
   }
 
   const ranked = rerankMatches(trimmed, rows);
-  const sources = uniqueSources(campaignId, ranked);
+  const contextRows = ranked.slice(0, GROUNDED_CONTEXT_CHUNK_LIMIT);
+  const sources = uniqueSources(campaignId, contextRows);
   let answer: string;
   try {
-    answer = await groundedAnswer(trimmed, ranked);
+    answer = await groundedAnswer(trimmed, contextRows);
   } catch (error) {
     const msg =
       error instanceof Error ? error.message : "Errore durante la sintesi AI.";
     console.error("[queryCampaignMemoryAction] answer generation failed", msg);
-    answer = fallbackAnswer(trimmed, ranked);
+    answer = fallbackAnswer(trimmed, contextRows);
   }
 
   return {

@@ -1017,7 +1017,7 @@ function mergeHitsUnique(primary: ManualSearchHit[], secondary: ManualSearchHit[
 }
 
 /** Ricerca sui manuali (GM/Admin): ibrido frase + semantica, estrazione blocco regola, filtro sorgente e confronto MD/TXT. */
-export async function searchManualsSemanticAction(
+async function searchManualsSemanticActionInner(
   query: string,
   options?: { sourceFilter?: ManualSourceFilter }
 ): Promise<ManualSearchResult> {
@@ -1318,4 +1318,22 @@ export async function searchManualsSemanticAction(
     vectorListFull,
     q
   );
+}
+
+export async function searchManualsSemanticAction(
+  query: string,
+  options?: { sourceFilter?: ManualSourceFilter }
+): Promise<ManualSearchResult> {
+  try {
+    return await searchManualsSemanticActionInner(query, options);
+  } catch (e) {
+    console.error("[searchManualsSemanticAction] unexpected", e);
+    const msg = e instanceof Error ? e.message : String(e);
+    return {
+      success: false,
+      message:
+        "La ricerca nei manuali è andata in errore (eccezione non gestita). Controlla i log Vercel; per la parte semantica servono embedding (es. OPENROUTER_API_KEY / OPENROUTER_RAG_EMBEDDING_MODEL) e per il vector search SUPABASE_SERVICE_ROLE_KEY sullo stesso ambiente del deploy. " +
+        (msg ? `Dettaglio: ${msg.slice(0, 220)}` : ""),
+    };
+  }
 }
