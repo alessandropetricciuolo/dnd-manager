@@ -110,10 +110,27 @@ export async function updateExplorationMapMeta(
   const ctx = await requireGm(supabase);
   if (!ctx.user || !ctx.ok) return { success: false, error: "Non autorizzato." };
 
+  const nextInput = { ...input };
+  if ("linked_mission_id" in nextInput) {
+    const linkedMissionId = nextInput.linked_mission_id?.trim() || null;
+    if (linkedMissionId) {
+      const { data: mission, error: missionErr } = await supabase
+        .from("campaign_missions")
+        .select("id")
+        .eq("id", linkedMissionId)
+        .eq("campaign_id", campaignId)
+        .maybeSingle();
+      if (missionErr || !mission) {
+        return { success: false, error: "Missione non valida per questa campagna." };
+      }
+    }
+    nextInput.linked_mission_id = linkedMissionId;
+  }
+
   const { error } = await supabase
     .from("campaign_exploration_maps")
     .update({
-      ...input,
+      ...nextInput,
       updated_at: new Date().toISOString(),
     })
     .eq("id", mapId)
@@ -373,36 +390,48 @@ export async function importExplorationScene(
     return { success: false, error: e instanceof Error ? e.message : "Errore import scena." };
   }
 
-  if (replaceExisting) {
-    const { error: delErr } = await supabase
-      .from("campaign_exploration_fow_regions")
-      .delete()
-      .eq("map_id", mapId);
-    if (delErr) return { success: false, error: delErr.message };
-  }
-
   const rows = imported.regions.map((r) => ({
-    map_id: mapId,
     polygon: r.polygon as unknown as Json,
-    is_revealed: false,
     sort_order: r.sortOrder,
   }));
-  const { error: insertErr } = await supabase.from("campaign_exploration_fow_regions").insert(rows);
-  if (insertErr) return { success: false, error: insertErr.message };
 
-  const { error: mapMetaErr } = await supabase
-    .from("campaign_exploration_maps")
-    .update({
-      grid_cells_w: imported.gridCellsW,
-      grid_cells_h: imported.gridCellsH,
-      grid_offset_x_cells: imported.gridOffsetXCells,
-      grid_offset_y_cells: imported.gridOffsetYCells,
-      grid_source_cell_px: null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", mapId)
-    .eq("campaign_id", campaignId);
-  if (mapMetaErr) return { success: false, error: mapMetaErr.message };
+  if (replaceExisting) {
+    const { error: replaceErr } = await supabase.rpc("replace_exploration_map_fow_regions", {
+      p_campaign_id: campaignId,
+      p_map_id: mapId,
+      p_regions: rows,
+      p_grid_cells_w: imported.gridCellsW,
+      p_grid_cells_h: imported.gridCellsH,
+      p_grid_offset_x_cells: imported.gridOffsetXCells,
+      p_grid_offset_y_cells: imported.gridOffsetYCells,
+    });
+    if (replaceErr) return { success: false, error: replaceErr.message };
+  } else {
+    const insertRows = rows.map((r) => ({
+      map_id: mapId,
+      polygon: r.polygon,
+      is_revealed: false,
+      sort_order: r.sort_order,
+    }));
+    const { error: insertErr } = await supabase
+      .from("campaign_exploration_fow_regions")
+      .insert(insertRows);
+    if (insertErr) return { success: false, error: insertErr.message };
+
+    const { error: mapMetaErr } = await supabase
+      .from("campaign_exploration_maps")
+      .update({
+        grid_cells_w: imported.gridCellsW,
+        grid_cells_h: imported.gridCellsH,
+        grid_offset_x_cells: imported.gridOffsetXCells,
+        grid_offset_y_cells: imported.gridOffsetYCells,
+        grid_source_cell_px: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", mapId)
+      .eq("campaign_id", campaignId);
+    if (mapMetaErr) return { success: false, error: mapMetaErr.message };
+  }
 
   revalidatePath(`/campaigns/${campaignId}`);
   return {
