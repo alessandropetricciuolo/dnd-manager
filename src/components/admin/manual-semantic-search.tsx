@@ -191,10 +191,16 @@ export function ManualSemanticSearch() {
           );
         } catch (err) {
           console.error("[ManualSemanticSearch]", err);
+          const raw =
+            err instanceof Error ? err.message : typeof err === "string" ? err : "Errore sconosciuto.";
+          const isProdDigest =
+            raw.includes("Server Components render") ||
+            raw.includes("digest property") ||
+            raw.includes("digest");
           toast.error(
-            err instanceof Error
-              ? `Errore ricerca manuali: ${err.message.slice(0, 240)}`
-              : "Errore imprevisto durante la ricerca nei manuali. Riprova."
+            isProdDigest
+              ? "La ricerca non è stata consegnata al browser (risposta troppo grande o errore di serializzazione). Prova una query più specifica, il filtro «solo Markdown» o «solo .txt», oppure riprova più tardi. Controlla i log su Vercel."
+              : `Errore ricerca manuali: ${raw.slice(0, 280)}`
           );
           setPrimaryText(null);
           setHits([]);

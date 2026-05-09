@@ -1016,6 +1016,55 @@ function mergeHitsUnique(primary: ManualSearchHit[], secondary: ManualSearchHit[
   return out;
 }
 
+/** Limiti trasporto verso il client (Flight): payload enormi causano fallimento silenzioso con messaggio generico Next in produzione. */
+const MANUAL_SEARCH_MAX_PRIMARY_CHARS = 220_000;
+const MANUAL_SEARCH_MAX_HIT_CONTENT_CHARS = 28_000;
+const MANUAL_SEARCH_MAX_COMPARE_CHARS = 160_000;
+const MANUAL_SEARCH_MAX_HITS = 18;
+
+function truncateForManualSearchTransport(text: string, maxChars: number): string {
+  if (text.length <= maxChars) return text;
+  return `${text.slice(0, maxChars)}\n\n[… contenuto troncato (${text.length} → ${maxChars} caratteri) per limite di trasporto …]`;
+}
+
+function clampManualSearchResultForClient(result: ManualSearchResult): ManualSearchResult {
+  if (!result.success) return result;
+  const { compare: rawCompare, ...rest } = result;
+  const hits = rest.hits.slice(0, MANUAL_SEARCH_MAX_HITS).map((h) => ({
+    ...h,
+    content: truncateForManualSearchTransport(h.content, MANUAL_SEARCH_MAX_HIT_CONTENT_CHARS),
+  }));
+  const compare =
+    rawCompare === undefined
+      ? undefined
+      : {
+          markdown: rawCompare.markdown
+            ? {
+                ...rawCompare.markdown,
+                primaryText: truncateForManualSearchTransport(
+                  rawCompare.markdown.primaryText,
+                  MANUAL_SEARCH_MAX_COMPARE_CHARS
+                ),
+              }
+            : null,
+          txt: rawCompare.txt
+            ? {
+                ...rawCompare.txt,
+                primaryText: truncateForManualSearchTransport(
+                  rawCompare.txt.primaryText,
+                  MANUAL_SEARCH_MAX_COMPARE_CHARS
+                ),
+              }
+            : null,
+        };
+  return {
+    ...rest,
+    primaryText: truncateForManualSearchTransport(rest.primaryText, MANUAL_SEARCH_MAX_PRIMARY_CHARS),
+    hits,
+    ...(compare !== undefined ? { compare } : {}),
+  };
+}
+
 /** Ricerca sui manuali (GM/Admin): ibrido frase + semantica, estrazione blocco regola, filtro sorgente e confronto MD/TXT. */
 async function searchManualsSemanticActionInner(
   query: string,
@@ -1028,7 +1077,17 @@ async function searchManualsSemanticActionInner(
 
   const sourceFilter: ManualSourceFilter = options?.sourceFilter ?? "all";
 
-  const supabase = await createSupabaseServerClient();
+  let supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>;
+  try {
+    supabase = await createSupabaseServerClient();
+  } catch (e) {
+    console.error("[searchManualsSemanticAction] createSupabaseServerClient", e);
+    return {
+      success: false,
+      message:
+        "Sessione Supabase non inizializzata (cookie/env). Verifica NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY per questo ambiente.",
+    };
+  }
   const {
     data: { user },
     error: userErr,
@@ -1325,7 +1384,8 @@ export async function searchManualsSemanticAction(
   options?: { sourceFilter?: ManualSourceFilter }
 ): Promise<ManualSearchResult> {
   try {
-    return await searchManualsSemanticActionInner(query, options);
+    const raw = await searchManualsSemanticActionInner(query, options);
+    return clampManualSearchResultForClient(raw);
   } catch (e) {
     console.error("[searchManualsSemanticAction] unexpected", e);
     const msg = e instanceof Error ? e.message : String(e);
