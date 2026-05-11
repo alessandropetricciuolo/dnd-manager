@@ -1,13 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createSupabaseBrowserClient } from "@/utils/supabase/client";
 import { getExplorationMapPublicUrl } from "@/lib/exploration/exploration-storage";
 import type { ExplorationMapRow, FowRegionRow } from "@/app/campaigns/exploration-map-actions";
 import { parsePolygonJson } from "@/lib/exploration/fow-geometry";
 import { ExplorationMapStage, type FowRegionVm } from "@/components/exploration/exploration-map-stage";
-import { FowRadialMenu, type FowRadialMenuItem } from "@/components/exploration/fow-radial-menu";
-import { Maximize2, Minimize2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Maximize2, Menu, Minimize2 } from "lucide-react";
 
 type Props = {
   mapRow: ExplorationMapRow;
@@ -25,26 +34,11 @@ function rowsToVm(rows: FowRegionRow[]): FowRegionVm[] {
 export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
   const [regions, setRegions] = useState<FowRegionRow[]>(initialRegions);
   const [mapMeta, setMapMeta] = useState<ExplorationMapRow>(mapRow);
-  /** Menu radiale su `document.body` per evitare clip (overflow/transform) sotto la mappa. */
-  const [radialPortalTarget, setRadialPortalTarget] = useState<HTMLElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [radial, setRadial] = useState<{
-    open: boolean;
-    x: number;
-    y: number;
-    /** Evita chiusura immediata del backdrop sullo stesso gesto che apre il menu */
-    guardUntil: number;
-  }>({ open: false, x: 0, y: 0, guardUntil: 0 });
+  const [projectionEffect, setProjectionEffect] = useState<"none" | "fuoco" | "veleno">("none");
   const rootRef = useRef<HTMLDivElement>(null);
   const imageUrl = getExplorationMapPublicUrl(mapMeta.image_path);
   const vm = useMemo(() => rowsToVm(regions), [regions]);
-  const radialItems = useMemo<FowRadialMenuItem[]>(
-    () => [
-      { id: "fullscreen", label: isFullscreen ? "Esci da schermo intero" : "Schermo intero" },
-      { id: "close", label: "Chiudi menu" },
-    ],
-    [isFullscreen]
-  );
 
   const toggleFullscreen = useCallback(async () => {
     try {
@@ -65,10 +59,6 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
   useEffect(() => {
     setRegions(initialRegions);
   }, [initialRegions]);
-
-  useLayoutEffect(() => {
-    setRadialPortalTarget(document.body);
-  }, []);
 
   useEffect(() => {
     const onFsChange = () => {
@@ -139,34 +129,51 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
     };
   }, [mapMeta.id]);
 
-  const openProjectionRadial = useCallback((clientX: number, clientY: number) => {
-    const guardUntil = performance.now() + 600;
-    setRadial({ open: true, x: clientX, y: clientY, guardUntil });
-  }, []);
-
-  useEffect(() => {
-    const onContextMenu = (e: MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      openProjectionRadial(e.clientX, e.clientY);
-    };
-    window.addEventListener("contextmenu", onContextMenu, true);
-    return () => window.removeEventListener("contextmenu", onContextMenu, true);
-  }, [openProjectionRadial]);
-
   return (
     <div
       ref={rootRef}
       className="fixed inset-0 flex min-h-0 flex-col overflow-hidden bg-black"
     >
-      <button
-        type="button"
-        onClick={() => void toggleFullscreen()}
-        className="fixed right-4 top-4 z-[60000] inline-flex items-center gap-2 rounded-md border border-white/25 bg-black/55 px-3 py-2 text-xs text-white/90 backdrop-blur-sm transition hover:bg-black/75"
-      >
-        {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-        {isFullscreen ? "Esci fullscreen" : "Fullscreen"}
-      </button>
+      <div className="fixed right-4 top-4 z-[60000] flex items-center gap-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="border-white/25 bg-black/55 text-white/90 hover:bg-black/75 hover:text-white"
+            >
+              <Menu className="mr-2 h-4 w-4" />
+              Effetti
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" sideOffset={8} className="min-w-[220px]">
+            <DropdownMenuLabel>Effetti visivi proiezione</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuRadioGroup
+              value={projectionEffect}
+              onValueChange={(v) => {
+                if (v === "none" || v === "fuoco" || v === "veleno") setProjectionEffect(v);
+              }}
+            >
+              <DropdownMenuRadioItem value="none">Nessuno</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="fuoco">Fuoco (bagliore)</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="veleno">Veleno (bagliore)</DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => void toggleFullscreen()}
+          className="border-white/25 bg-black/55 text-white/90 hover:bg-black/75 hover:text-white"
+        >
+          {isFullscreen ? <Minimize2 className="mr-2 h-4 w-4" /> : <Maximize2 className="mr-2 h-4 w-4" />}
+          {isFullscreen ? "Esci" : "Fullscreen"}
+        </Button>
+      </div>
       <div className="min-h-0 flex-1">
         <ExplorationMapStage
           imageUrl={imageUrl}
@@ -182,29 +189,9 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
           readOnly
           fillViewport
           showGrid={false}
+          projectionEffect={projectionEffect}
         />
       </div>
-      <FowRadialMenu
-        open={radial.open}
-        x={radial.x}
-        y={radial.y}
-        ariaLabel="Menu proiezione"
-        items={radialItems}
-        variant="default"
-        portalTarget={radialPortalTarget}
-        zIndexBase={2147483000}
-        openingGuardUntil={radial.open ? radial.guardUntil : 0}
-        onClose={() => setRadial((prev) => ({ ...prev, open: false, guardUntil: 0 }))}
-        onSelect={(item) => {
-          if (item.id === "fullscreen") {
-            void toggleFullscreen();
-            return;
-          }
-          if (item.id === "close") {
-            return;
-          }
-        }}
-      />
     </div>
   );
 }

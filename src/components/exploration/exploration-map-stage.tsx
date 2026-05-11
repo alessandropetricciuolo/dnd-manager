@@ -46,6 +46,8 @@ type ExplorationMapStageProps = {
   gridCellSourcePxX?: number | null;
   gridOffsetXCells?: number;
   gridOffsetYCells?: number;
+  /** Solo proiezione: effetto visivo sui poligoni rivelati (non persiste, read-only). */
+  projectionEffect?: "none" | "fuoco" | "veleno";
 };
 
 const FOG_RGBA = "rgba(8, 6, 4, 0.82)";
@@ -128,6 +130,7 @@ export function ExplorationMapStage({
   gridCellSourcePxX = null,
   gridOffsetXCells = 0,
   gridOffsetYCells = 0,
+  projectionEffect = "none",
 }: ExplorationMapStageProps) {
   const imgRef = useRef<HTMLImageElement>(null);
   const fogRef = useRef<HTMLCanvasElement>(null);
@@ -611,6 +614,25 @@ export function ExplorationMapStage({
             />
           );
         })}
+
+        {readOnly && projectionEffect !== "none" && revealedPolys.length > 0 && (
+          <>
+            {revealedPolys.map((poly, idx) => (
+              <polygon
+                key={`fx-${projectionEffect}-${idx}`}
+                points={poly
+                  .map((p) => {
+                    const [sx, sy] = normToSvg(p);
+                    return `${sx},${sy}`;
+                  })
+                  .join(" ")}
+                fill={projectionEffect === "fuoco" ? "rgba(255, 92, 64, 0.14)" : "rgba(78, 207, 125, 0.14)"}
+                stroke={projectionEffect === "fuoco" ? "rgba(255, 92, 64, 0.65)" : "rgba(78, 207, 125, 0.65)"}
+                strokeWidth={0.55}
+              />
+            ))}
+          </>
+        )}
         {draftPoints.length > 1 && (
           <polyline
             points={draftPoints
