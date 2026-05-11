@@ -7,16 +7,7 @@ import type { ExplorationMapRow, FowRegionRow } from "@/app/campaigns/exploratio
 import { parsePolygonJson } from "@/lib/exploration/fow-geometry";
 import { ExplorationMapStage, type FowRegionVm } from "@/components/exploration/exploration-map-stage";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Maximize2, Menu, Minimize2 } from "lucide-react";
+import { Maximize2, Minimize2 } from "lucide-react";
 
 type Props = {
   mapRow: ExplorationMapRow;
@@ -35,7 +26,6 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
   const [regions, setRegions] = useState<FowRegionRow[]>(initialRegions);
   const [mapMeta, setMapMeta] = useState<ExplorationMapRow>(mapRow);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [projectionEffect, setProjectionEffect] = useState<"none" | "fuoco" | "veleno">("none");
   const rootRef = useRef<HTMLDivElement>(null);
   const imageUrl = getExplorationMapPublicUrl(mapMeta.image_path);
   const vm = useMemo(() => rowsToVm(regions), [regions]);
@@ -134,46 +124,16 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
       ref={rootRef}
       className="fixed inset-0 flex min-h-0 flex-col overflow-hidden bg-black"
     >
-      <div className="fixed right-4 top-4 z-[60000] flex items-center gap-2">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="border-white/25 bg-black/55 text-white/90 hover:bg-black/75 hover:text-white"
-            >
-              <Menu className="mr-2 h-4 w-4" />
-              Effetti
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" sideOffset={8} className="min-w-[220px]">
-            <DropdownMenuLabel>Effetti visivi proiezione</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuRadioGroup
-              value={projectionEffect}
-              onValueChange={(v) => {
-                if (v === "none" || v === "fuoco" || v === "veleno") setProjectionEffect(v);
-              }}
-            >
-              <DropdownMenuRadioItem value="none">Nessuno</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="fuoco">Fuoco (bagliore)</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="veleno">Veleno (bagliore)</DropdownMenuRadioItem>
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => void toggleFullscreen()}
-          className="border-white/25 bg-black/55 text-white/90 hover:bg-black/75 hover:text-white"
-        >
-          {isFullscreen ? <Minimize2 className="mr-2 h-4 w-4" /> : <Maximize2 className="mr-2 h-4 w-4" />}
-          {isFullscreen ? "Esci" : "Fullscreen"}
-        </Button>
-      </div>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={() => void toggleFullscreen()}
+        className="fixed right-4 top-4 z-[60000] border-white/25 bg-black/55 text-white/90 hover:bg-black/75 hover:text-white"
+      >
+        {isFullscreen ? <Minimize2 className="mr-2 h-4 w-4" /> : <Maximize2 className="mr-2 h-4 w-4" />}
+        {isFullscreen ? "Esci" : "Fullscreen"}
+      </Button>
       <div className="min-h-0 flex-1">
         <ExplorationMapStage
           imageUrl={imageUrl}
@@ -189,7 +149,7 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
           readOnly
           fillViewport
           showGrid={false}
-          projectionEffect={projectionEffect}
+          effectsEnabled
         />
       </div>
     </div>

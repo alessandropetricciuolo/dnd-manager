@@ -5,6 +5,7 @@ import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import { cn } from "@/lib/utils";
 import type { NormPoint } from "@/lib/exploration/fow-geometry";
 import {
+  clampNormPoint,
   intrinsicNormToElementPx,
   intrinsicNormToSvgUserUnits,
   pointInPolygon,
@@ -12,10 +13,17 @@ import {
 import { FowRadialMenu, type FowRadialMenuItem } from "@/components/exploration/fow-radial-menu";
 import {
   generateShapePolygon,
+  centroid,
   scalePolygonFromCenter,
   translatePolygon,
   type FowShapeKind,
 } from "@/lib/exploration/fow-shape-tools";
+import {
+  drawParticles,
+  tickParticleSystem,
+  type ParticleElement,
+  type ParticleSystem,
+} from "@/lib/exploration/polygon-particles";
 
 export type FowRegionVm = {
   id: string;
@@ -46,8 +54,8 @@ type ExplorationMapStageProps = {
   gridCellSourcePxX?: number | null;
   gridOffsetXCells?: number;
   gridOffsetYCells?: number;
-  /** Solo proiezione: effetto visivo sui poligoni rivelati (non persiste, read-only). */
-  projectionEffect?: "none" | "fuoco" | "veleno";
+  /** Solo proiezione: abilita motore "effetti" stile overlacchio (effimeri, client-only). */
+  effectsEnabled?: boolean;
 };
 
 const FOG_RGBA = "rgba(8, 6, 4, 0.82)";
@@ -68,6 +76,34 @@ const RADIAL_SHAPE_ITEMS: FowRadialMenuItem[] = [
 ];
 
 const RADIAL_CONTEXT_ITEMS: FowRadialMenuItem[] = [
+  { id: "sposta", label: "Sposta" },
+  { id: "ridimensiona", label: "Ridimensiona" },
+  { id: "elimina", label: "Elimina" },
+];
+
+const EFFECT_RADIAL_MAIN_ITEMS_BASE: FowRadialMenuItem[] = [
+  { id: "pulisci", label: "Pulisci" },
+  { id: "mostra", label: "Mostra" },
+  { id: "giorno", label: "Giorno" },
+  { id: "notte", label: "Notte" },
+  { id: "forme", label: "Forme" },
+];
+
+const EFFECT_RADIAL_SHAPE_ITEMS: FowRadialMenuItem[] = [
+  { id: "quadrato", label: "Quadrato (base)" },
+  { id: "cerchio", label: "Cerchio" },
+  { id: "spray", label: "Spray" },
+  { id: "poligono-libero", label: "Poligono libero" },
+  { id: "indietro", label: "← Menu" },
+];
+
+const EFFECT_RADIAL_ELEMENT_ITEMS: FowRadialMenuItem[] = [
+  { id: "fuoco", label: "Fuoco" },
+  { id: "veleno", label: "Veleno" },
+  { id: "indietro", label: "← Menu" },
+];
+
+const EFFECT_RADIAL_CONTEXT_ITEMS: FowRadialMenuItem[] = [
   { id: "sposta", label: "Sposta" },
   { id: "ridimensiona", label: "Ridimensiona" },
   { id: "elimina", label: "Elimina" },
@@ -130,7 +166,7 @@ export function ExplorationMapStage({
   gridCellSourcePxX = null,
   gridOffsetXCells = 0,
   gridOffsetYCells = 0,
-  projectionEffect = "none",
+  effectsEnabled = false,
 }: ExplorationMapStageProps) {
   const imgRef = useRef<HTMLImageElement>(null);
   const fogRef = useRef<HTMLCanvasElement>(null);
@@ -156,10 +192,183 @@ export function ExplorationMapStage({
     preview: NormPoint[];
   } | null>(null);
 
+  // --- Effetti "overlacchio" (solo proiezione, effimeri) ---
+  const effectsCanvasRef = useRef<HTMLCanvasElement>(null);
+  const nightOverlayCanvasRef = useRef<HTMLCanvasElement>(null);
+  const particleSystemsRef = useRef<ParticleSystem[]>([]);
+
+  type EffectPolygon = { element: ParticleElement; points: NormPoint[] };
+  const [effectPolygons, setEffectPolygons] = useState<EffectPolygon[]>([]);
+  const [effectIsNight, setEffectIsNight] = useState(false);
+  const [effectIsVisible, setEffectIsVisible] = useState(true);
+  const [effectPolygonElement, setEffectPolygonElement] = useState<ParticleElement | null>(null);
+  const [effectDrawShape, setEffectDrawShape] = useState<FowShapeKind>("quadrato");
+  const [effectFreeDraftVertices, setEffectFreeDraftVertices] = useState<NormPoint[]>([]);
+  const [effectRectDrag, setEffectRectDrag] = useState<{
+    element: ParticleElement;
+    shape: FowShapeKind;
+    start: NormPoint;
+    current: NormPoint;
+  } | null>(null);
+  const [effectTransform, setEffectTransform] = useState<{
+    mode: "move" | "resize";
+    idx: number;
+    last: NormPoint;
+    basePoints: NormPoint[];
+    center: NormPoint;
+    startDist: number;
+  } | null>(null);
+
+  const [effectInteractionMode, setEffectInteractionMode] = useState<"move" | "resize" | null>(null);
+  const [effectSelectedIdx, setEffectSelectedIdx] = useState<number | null>(null);
+
+  const [effectRadial, setEffectRadial] = useState<{
+    open: boolean;
+    x: number;
+    y: number;
+    variant: "default" | "context";
+    items: FowRadialMenuItem[];
+    contextIdx: number | null;
+    guardUntil: number;
+  }>({
+    open: false,
+    x: 0,
+    y: 0,
+    variant: "default",
+    items: EFFECT_RADIAL_MAIN_ITEMS_BASE,
+    contextIdx: null,
+    guardUntil: 0,
+  });
+
+  const effectMainItems = useMemo(() => {
+    return EFFECT_RADIAL_MAIN_ITEMS_BASE.map((item) => {
+      if (item.id === "mostra") return { ...item, label: effectIsVisible ? "Mostra: ON" : "Mostra: OFF" };
+      return item;
+    });
+  }, [effectIsVisible]);
+
+  const effectRectDragRef = useRef(effectRectDrag);
+  const effectTransformRef = useRef(effectTransform);
+  useEffect(() => {
+    effectRectDragRef.current = effectRectDrag;
+  }, [effectRectDrag]);
+  useEffect(() => {
+    effectTransformRef.current = effectTransform;
+  }, [effectTransform]);
+
   const revealedPolys = useMemo(
     () => regions.filter((r) => r.is_revealed).map((r) => r.polygon),
     [regions]
   );
+
+  const effectPolygonsRef = useRef(effectPolygons);
+  const effectIsNightRef = useRef(effectIsNight);
+  const effectIsVisibleRef = useRef(effectIsVisible);
+
+  useEffect(() => {
+    effectPolygonsRef.current = effectPolygons;
+  }, [effectPolygons]);
+  useEffect(() => {
+    effectIsNightRef.current = effectIsNight;
+  }, [effectIsNight]);
+  useEffect(() => {
+    effectIsVisibleRef.current = effectIsVisible;
+  }, [effectIsVisible]);
+
+  useEffect(() => {
+    if (!effectsEnabled) return;
+    const sys = particleSystemsRef.current;
+    while (sys.length < effectPolygons.length) sys.push({ particles: [] });
+    sys.length = effectPolygons.length;
+  }, [effectsEnabled, effectPolygons.length]);
+
+  function tracePolygonPathPx(
+    ctx: CanvasRenderingContext2D,
+    poly: NormPoint[],
+    w: number,
+    h: number,
+    naturalW: number,
+    naturalH: number
+  ) {
+    if (poly.length < 3) return;
+    const [x0, y0] = intrinsicNormToElementPx(poly[0].x, poly[0].y, w, h, naturalW, naturalH);
+    ctx.beginPath();
+    ctx.moveTo(x0, y0);
+    for (let i = 1; i < poly.length; i++) {
+      const [xi, yi] = intrinsicNormToElementPx(poly[i].x, poly[i].y, w, h, naturalW, naturalH);
+      ctx.lineTo(xi, yi);
+    }
+    ctx.closePath();
+  }
+
+  useEffect(() => {
+    if (!effectsEnabled) return;
+    let raf = 0;
+    let last = performance.now();
+
+    const tick = (now: number) => {
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+
+      const img = imgRef.current;
+      const naturalW = natural?.w ?? 0;
+      const naturalH = natural?.h ?? 0;
+      if (!img || naturalW <= 0 || naturalH <= 0) {
+        raf = requestAnimationFrame(tick);
+        return;
+      }
+
+      const w = img.offsetWidth;
+      const h = img.offsetHeight;
+      const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
+
+      const fxCv = effectsCanvasRef.current;
+      const fxCtx = fxCv?.getContext("2d") ?? null;
+      if (fxCv && fxCtx && w > 0 && h > 0) {
+        fxCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        fxCtx.clearRect(0, 0, w, h);
+
+        if (effectIsVisibleRef.current) {
+          const polys = effectPolygonsRef.current;
+          for (let i = 0; i < polys.length; i++) {
+            const poly = polys[i];
+            const sys = particleSystemsRef.current[i];
+            tickParticleSystem(poly.points, poly.element, sys, dt, { w, h });
+            // Clip: disegna particelle solo dentro la forma effetto.
+            fxCtx.save();
+            tracePolygonPathPx(fxCtx, poly.points, w, h, naturalW, naturalH);
+            fxCtx.clip();
+            drawParticles(fxCtx, sys?.particles ?? []);
+            fxCtx.restore();
+          }
+        }
+      }
+
+      const nightCv = nightOverlayCanvasRef.current;
+      const nightCtx = nightCv?.getContext("2d") ?? null;
+      if (nightCv && nightCtx && w > 0 && h > 0) {
+        nightCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        nightCtx.clearRect(0, 0, w, h);
+        if (effectIsVisibleRef.current && effectIsNightRef.current) {
+          nightCtx.fillStyle = "rgba(0, 0, 0, 0.75)";
+          nightCtx.fillRect(0, 0, w, h);
+          nightCtx.globalCompositeOperation = "destination-out";
+          const polys = effectPolygonsRef.current;
+          for (const poly of polys) {
+            if (poly.element !== "fuoco") continue;
+            tracePolygonPathPx(nightCtx, poly.points, w, h, naturalW, naturalH);
+            nightCtx.fill();
+          }
+          nightCtx.globalCompositeOperation = "source-over";
+        }
+      }
+
+      raf = requestAnimationFrame(tick);
+    };
+
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [effectsEnabled, natural]);
 
   const fogFill = readOnly ? FOG_RGBA_OPAQUE : FOG_RGBA;
 
@@ -173,7 +382,25 @@ export function ExplorationMapStage({
     const cv = fogRef.current;
     if (!cv) return;
     drawFog(cv, w, h, mode === "explore" || readOnly ? revealedPolys : [], fogFill, img.naturalWidth, img.naturalHeight);
-  }, [revealedPolys, mode, readOnly, fogFill]);
+    // Effetti: sincronizza dimensioni canvas sotto/ sopra la foglia
+    if (effectsEnabled) {
+      const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
+      const fx = effectsCanvasRef.current;
+      if (fx) {
+        fx.width = Math.max(1, Math.floor(w * dpr));
+        fx.height = Math.max(1, Math.floor(h * dpr));
+        fx.style.width = `${w}px`;
+        fx.style.height = `${h}px`;
+      }
+      const night = nightOverlayCanvasRef.current;
+      if (night) {
+        night.width = Math.max(1, Math.floor(w * dpr));
+        night.height = Math.max(1, Math.floor(h * dpr));
+        night.style.width = `${w}px`;
+        night.style.height = `${h}px`;
+      }
+    }
+  }, [revealedPolys, mode, readOnly, fogFill, effectsEnabled]);
 
   useEffect(() => {
     syncFog();
@@ -254,6 +481,355 @@ export function ExplorationMapStage({
       setRadial({ open: true, x: e.clientX, y: e.clientY });
     },
     [hitRegionIdAtPoint, mode, normFromEvent, readOnly]
+  );
+
+  const hitTestEffectIndexAtPoint = useCallback((n: NormPoint): number | null => {
+    const polys = effectPolygonsRef.current;
+    for (let i = polys.length - 1; i >= 0; i--) {
+      if (pointInPolygon(n.x, n.y, polys[i].points)) return i;
+    }
+    return null;
+  }, []);
+
+  const closeEffectRadial = useCallback(() => {
+    setEffectRadial((prev) => ({ ...prev, open: false, contextIdx: null }));
+  }, []);
+
+  const onEffectsContextMenu = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!effectsEnabled) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const n = normFromEvent(e.clientX, e.clientY);
+      const guardUntil = performance.now() + 600;
+      if (!n) {
+        setEffectRadial({
+          open: true,
+          x: e.clientX,
+          y: e.clientY,
+          variant: "default",
+          items: effectMainItems,
+          contextIdx: null,
+          guardUntil,
+        });
+        return;
+      }
+      const hitIdx = hitTestEffectIndexAtPoint(n);
+      if (hitIdx != null) {
+        setEffectSelectedIdx(hitIdx);
+        setEffectRadial({
+          open: true,
+          x: e.clientX,
+          y: e.clientY,
+          variant: "context",
+          items: EFFECT_RADIAL_CONTEXT_ITEMS,
+          contextIdx: hitIdx,
+          guardUntil,
+        });
+      } else {
+        setEffectSelectedIdx(null);
+        setEffectRadial({
+          open: true,
+          x: e.clientX,
+          y: e.clientY,
+          variant: "default",
+          items: effectMainItems,
+          contextIdx: null,
+          guardUntil,
+        });
+      }
+    },
+    [effectsEnabled, effectMainItems, hitTestEffectIndexAtPoint, normFromEvent]
+  );
+
+  const onEffectsRadialSelect = useCallback(
+    (item: FowRadialMenuItem) => {
+      const ctxIdx = effectRadial.contextIdx;
+
+      if (item.id === "forme") {
+        setEffectRadial((prev) => ({ ...prev, items: EFFECT_RADIAL_SHAPE_ITEMS }));
+        return false;
+      }
+      if (item.id === "indietro") {
+        const isElementMenu = effectRadial.items.some((i) => i.id === "fuoco" || i.id === "veleno");
+        setEffectRadial((prev) => ({
+          ...prev,
+          items: isElementMenu ? EFFECT_RADIAL_SHAPE_ITEMS : effectMainItems,
+        }));
+        return false;
+      }
+      if (item.id === "pulisci") {
+        setEffectPolygons([]);
+        setEffectPolygonElement(null);
+        setEffectFreeDraftVertices([]);
+        setEffectRectDrag(null);
+        setEffectInteractionMode(null);
+        setEffectSelectedIdx(null);
+        setEffectTransform(null);
+        return;
+      }
+      if (item.id === "mostra") {
+        setEffectIsVisible((v) => !v);
+        return;
+      }
+      if (item.id === "giorno") {
+        setEffectIsNight(false);
+        return;
+      }
+      if (item.id === "notte") {
+        setEffectIsNight(true);
+        return;
+      }
+      if (
+        item.id === "quadrato" ||
+        item.id === "cerchio" ||
+        item.id === "spray" ||
+        item.id === "poligono-libero"
+      ) {
+        setEffectDrawShape(item.id as FowShapeKind);
+        setEffectFreeDraftVertices([]);
+        setEffectRadial((prev) => ({ ...prev, items: EFFECT_RADIAL_ELEMENT_ITEMS }));
+        return false;
+      }
+      if (item.id === "fuoco") {
+        setEffectPolygonElement("fuoco");
+        return;
+      }
+      if (item.id === "veleno") {
+        setEffectPolygonElement("veleno");
+        return;
+      }
+      if (item.id === "sposta") {
+        if (ctxIdx == null) return;
+        setEffectInteractionMode("move");
+        setEffectSelectedIdx(ctxIdx);
+        return;
+      }
+      if (item.id === "ridimensiona") {
+        if (ctxIdx == null) return;
+        setEffectInteractionMode("resize");
+        setEffectSelectedIdx(ctxIdx);
+        return;
+      }
+      if (item.id === "elimina") {
+        if (ctxIdx == null) return;
+        setEffectPolygons((prev) => prev.filter((_, i) => i !== ctxIdx));
+        return;
+      }
+    },
+    [effectMainItems, effectRadial.contextIdx, effectRadial.items]
+  );
+
+  const MIN_RECT_DRAG_NORM = 0.01;
+
+  const isEffectRectDragging = effectRectDrag !== null;
+  const isEffectTransforming = effectTransform !== null;
+
+  useEffect(() => {
+    if (!effectsEnabled) return;
+    if (!isEffectRectDragging && !isEffectTransforming) return;
+
+    const onMove = (ev: MouseEvent) => {
+      const n = normFromEvent(ev.clientX, ev.clientY);
+      if (!n) return;
+
+      if (effectRectDragRef.current) {
+        const rd = effectRectDragRef.current;
+        effectRectDragRef.current = { ...rd, current: n };
+        setEffectRectDrag((prev) => (prev ? { ...prev, current: n } : prev));
+      } else if (effectTransformRef.current) {
+        const tr = effectTransformRef.current;
+        if (!tr) return;
+
+        if (tr.mode === "move") {
+          const dx = n.x - tr.last.x;
+          const dy = n.y - tr.last.y;
+          effectTransformRef.current = { ...tr, last: n };
+          setEffectTransform((prev) => (prev ? { ...prev, last: n } : prev));
+          setEffectPolygons((prev) =>
+            prev.map((poly, i) =>
+              i !== tr.idx
+                ? poly
+                : {
+                    ...poly,
+                      points: poly.points.map((p) =>
+                        clampNormPoint({ x: p.x + dx, y: p.y + dy })
+                      ),
+                  }
+            )
+          );
+        } else {
+          const cx = tr.center.x;
+          const cy = tr.center.y;
+          const d1 = Math.hypot(n.x - cx, n.y - cy);
+          const s = Math.max(0.12, d1 / Math.max(tr.startDist, 0.02));
+          setEffectPolygons((prev) =>
+            prev.map((poly, i) =>
+              i !== tr.idx
+                ? poly
+                  : {
+                      ...poly,
+                      points: tr.basePoints.map((p) =>
+                        clampNormPoint({
+                          x: cx + (p.x - cx) * s,
+                          y: cy + (p.y - cy) * s,
+                        })
+                      ),
+                    }
+            )
+          );
+        }
+      }
+    };
+
+    const onUp = () => {
+      const rd = effectRectDragRef.current;
+      if (rd) {
+        const w = Math.abs(rd.current.x - rd.start.x);
+        const h = Math.abs(rd.current.y - rd.start.y);
+        effectRectDragRef.current = null;
+        setEffectRectDrag(null);
+        if (w >= MIN_RECT_DRAG_NORM && h >= MIN_RECT_DRAG_NORM) {
+          const pts = generateShapePolygon(rd.shape, rd.start, rd.current);
+          if (pts.length >= 3) {
+            setEffectPolygons((prev) => [...prev, { element: rd.element, points: pts }]);
+          }
+        }
+      }
+
+      const tr = effectTransformRef.current;
+      if (tr) {
+        effectTransformRef.current = null;
+        setEffectTransform(null);
+        setEffectInteractionMode(null);
+        setEffectSelectedIdx(null);
+      }
+    };
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [
+    effectsEnabled,
+    isEffectRectDragging,
+    isEffectTransforming,
+    MIN_RECT_DRAG_NORM,
+    normFromEvent,
+    setEffectPolygons,
+  ]);
+
+  const handleEffectsMouseDown = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!effectsEnabled) return;
+      if (e.button !== 0) return;
+      if (effectInteractionMode && effectSelectedIdx != null) {
+        const n = normFromEvent(e.clientX, e.clientY);
+        if (!n) return;
+        const poly = effectPolygonsRef.current[effectSelectedIdx];
+        if (!poly) return;
+
+        if (effectInteractionMode === "move") {
+          const next = {
+            mode: "move" as const,
+            idx: effectSelectedIdx,
+            last: n,
+            basePoints: poly.points,
+            center: centroid(poly.points),
+            startDist: 1,
+          };
+          effectTransformRef.current = next;
+          setEffectTransform(next);
+        } else {
+          const c = centroid(poly.points);
+          const d0 = Math.hypot(n.x - c.x, n.y - c.y);
+          const next = {
+            mode: "resize" as const,
+            idx: effectSelectedIdx,
+            last: n,
+            basePoints: poly.points,
+            center: c,
+            startDist: Math.max(d0, 0.02),
+          };
+          effectTransformRef.current = next;
+          setEffectTransform(next);
+        }
+        return;
+      }
+
+      // Creazione forme
+      if (effectPolygonElement && effectDrawShape !== "poligono-libero") {
+        const n = normFromEvent(e.clientX, e.clientY);
+        if (!n) return;
+        const next = {
+          element: effectPolygonElement,
+          shape: effectDrawShape,
+          start: n,
+          current: n,
+        };
+        effectRectDragRef.current = next;
+        setEffectRectDrag(next);
+      }
+    },
+    [effectsEnabled, effectDrawShape, effectInteractionMode, effectPolygonElement, effectSelectedIdx, normFromEvent]
+  );
+
+  const handleEffectsClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!effectsEnabled) return;
+      if (e.button !== 0) return;
+      if (effectInteractionMode) return;
+      if (effectTransform) return;
+      if (effectRectDrag) return;
+      if (effectDrawShape !== "poligono-libero") return;
+      if (!effectPolygonElement) return;
+      if (e.detail !== 1) return;
+      const n = normFromEvent(e.clientX, e.clientY);
+      if (!n) return;
+      setEffectFreeDraftVertices((prev) => [...prev, n]);
+    },
+    [
+      effectsEnabled,
+      effectDrawShape,
+      effectInteractionMode,
+      effectPolygonElement,
+      effectRectDrag,
+      effectTransform,
+      normFromEvent,
+    ]
+  );
+
+  const handleEffectsDoubleClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!effectsEnabled) return;
+      if (effectInteractionMode) return;
+      if (effectTransform) return;
+      if (effectRectDrag) return;
+      if (effectDrawShape !== "poligono-libero") return;
+      if (!effectPolygonElement) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      setEffectFreeDraftVertices((prev) => {
+        if (prev.length < 3) return prev;
+        const popped = prev.slice(0, -1);
+        const pts = popped.length >= 3 ? popped : prev;
+        if (pts.length >= 3) {
+          setEffectPolygons((cur) => [...cur, { element: effectPolygonElement, points: pts }]);
+        }
+        return [];
+      });
+    },
+    [
+      effectsEnabled,
+      effectDrawShape,
+      effectInteractionMode,
+      effectPolygonElement,
+      effectRectDrag,
+      effectTransform,
+    ]
   );
 
   const onRadialSelect = useCallback(
@@ -539,6 +1115,13 @@ export function ExplorationMapStage({
         draggable={false}
         onLoad={onImgLoad}
       />
+      {effectsEnabled ? (
+        <canvas
+          ref={effectsCanvasRef}
+          className="pointer-events-none absolute left-0 top-0 h-full w-full"
+          aria-hidden
+        />
+      ) : null}
       {(mode === "explore" || readOnly) && (
         <canvas
           ref={fogRef}
@@ -546,6 +1129,13 @@ export function ExplorationMapStage({
           aria-hidden
         />
       )}
+      {effectsEnabled ? (
+        <canvas
+          ref={nightOverlayCanvasRef}
+          className="pointer-events-none absolute left-0 top-0 h-full w-full"
+          aria-hidden
+        />
+      ) : null}
       {gridData && (
         <svg
           className="pointer-events-none absolute left-0 top-0 h-full w-full"
@@ -615,24 +1205,6 @@ export function ExplorationMapStage({
           );
         })}
 
-        {readOnly && projectionEffect !== "none" && revealedPolys.length > 0 && (
-          <>
-            {revealedPolys.map((poly, idx) => (
-              <polygon
-                key={`fx-${projectionEffect}-${idx}`}
-                points={poly
-                  .map((p) => {
-                    const [sx, sy] = normToSvg(p);
-                    return `${sx},${sy}`;
-                  })
-                  .join(" ")}
-                fill={projectionEffect === "fuoco" ? "rgba(255, 92, 64, 0.14)" : "rgba(78, 207, 125, 0.14)"}
-                stroke={projectionEffect === "fuoco" ? "rgba(255, 92, 64, 0.65)" : "rgba(78, 207, 125, 0.65)"}
-                strokeWidth={0.55}
-              />
-            ))}
-          </>
-        )}
         {draftPoints.length > 1 && (
           <polyline
             points={draftPoints
@@ -678,6 +1250,59 @@ export function ExplorationMapStage({
           const [cx, cy] = normToSvg(p);
           return <circle key={`fs-${i}`} cx={cx} cy={cy} r={0.75} fill="rgba(34, 211, 238, 0.95)" />;
         })}
+        {/* Effetti (overlacchio): draft in costruzione */}
+        {effectsEnabled && effectRectDrag ? (
+          (() => {
+            const a = effectRectDrag.start;
+            const b = effectRectDrag.current;
+            const color =
+              effectRectDrag.element === "fuoco"
+                ? { fill: "rgba(255, 92, 64, 0.12)", stroke: "rgba(255, 92, 64, 0.95)" }
+                : { fill: "rgba(78, 207, 125, 0.12)", stroke: "rgba(78, 207, 125, 0.95)" };
+            const pts =
+              effectRectDrag.shape === "spray"
+                ? [
+                    { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y) },
+                    { x: Math.max(a.x, b.x), y: Math.min(a.y, b.y) },
+                    { x: Math.max(a.x, b.x), y: Math.max(a.y, b.y) },
+                    { x: Math.min(a.x, b.x), y: Math.max(a.y, b.y) },
+                  ]
+                : generateShapePolygon(effectRectDrag.shape as FowShapeKind, a, b);
+            return (
+              <polygon
+                points={pts
+                  .map((p) => {
+                    const [sx, sy] = normToSvg(p);
+                    return `${sx},${sy}`;
+                  })
+                  .join(" ")}
+                fill={color.fill}
+                stroke={color.stroke}
+                strokeWidth={0.4}
+                strokeDasharray="1.1 0.8"
+              />
+            );
+          })()
+        ) : null}
+        {effectsEnabled && effectFreeDraftVertices.length > 1 ? (
+          <polyline
+            points={effectFreeDraftVertices
+              .map((p) => {
+                const [sx, sy] = normToSvg(p);
+                return `${sx},${sy}`;
+              })
+              .join(" ")}
+            fill="none"
+            stroke="rgba(255,255,255,0.6)"
+            strokeDasharray="1.1 0.7"
+            strokeWidth={0.35}
+          />
+        ) : null}
+        {effectsEnabled &&
+          effectFreeDraftVertices.map((p, i) => {
+            const [cx, cy] = normToSvg(p);
+            return <circle key={`ef-${i}`} cx={cx} cy={cy} r={0.75} fill="rgba(255,255,255,0.75)" />;
+          })}
         {draftPoints.map((p, i) => {
           const [cx, cy] = normToSvg(p);
           return (
@@ -747,8 +1372,10 @@ export function ExplorationMapStage({
                 ? undefined
                 : { aspectRatio: String(aspect), maxHeight: "min(78vh, 1200px)" }
             }
-            onClick={mode === "explore" && onRevealClick ? handleExploreClick : undefined}
-            onContextMenu={onStageContextMenu}
+            onClick={effectsEnabled ? handleEffectsClick : mode === "explore" && onRevealClick ? handleExploreClick : undefined}
+            onMouseDown={effectsEnabled ? handleEffectsMouseDown : undefined}
+            onDoubleClick={effectsEnabled ? handleEffectsDoubleClick : undefined}
+            onContextMenu={effectsEnabled ? onEffectsContextMenu : onStageContextMenu}
           >
             {fillViewport ? (
               <div className="relative inline-block max-h-full max-w-full">{mapLayers}</div>
@@ -769,6 +1396,22 @@ export function ExplorationMapStage({
         onClose={closeRadial}
         onSelect={onRadialSelect}
       />
+
+      {effectsEnabled ? (
+        <FowRadialMenu
+          open={effectRadial.open}
+          x={effectRadial.x}
+          y={effectRadial.y}
+          ariaLabel={effectRadial.variant === "context" ? "Menu contestuale effetto" : "Menu effetti"}
+          items={effectRadial.items}
+          variant={effectRadial.variant}
+          openingGuardUntil={effectRadial.guardUntil}
+          portalTarget={typeof document !== "undefined" ? document.body : null}
+          zIndexBase={2147483000}
+          onClose={closeEffectRadial}
+          onSelect={onEffectsRadialSelect}
+        />
+      ) : null}
     </div>
   );
 }
