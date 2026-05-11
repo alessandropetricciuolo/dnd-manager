@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createSupabaseBrowserClient } from "@/utils/supabase/client";
 import { getExplorationMapPublicUrl } from "@/lib/exploration/exploration-storage";
 import type { ExplorationMapRow, FowRegionRow } from "@/app/campaigns/exploration-map-actions";
@@ -25,6 +25,8 @@ function rowsToVm(rows: FowRegionRow[]): FowRegionVm[] {
 export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
   const [regions, setRegions] = useState<FowRegionRow[]>(initialRegions);
   const [mapMeta, setMapMeta] = useState<ExplorationMapRow>(mapRow);
+  /** Menu radiale su `document.body` per evitare clip (overflow/transform) sotto la mappa. */
+  const [radialPortalTarget, setRadialPortalTarget] = useState<HTMLElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [radial, setRadial] = useState<{
     open: boolean;
@@ -63,6 +65,10 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
   useEffect(() => {
     setRegions(initialRegions);
   }, [initialRegions]);
+
+  useLayoutEffect(() => {
+    setRadialPortalTarget(document.body);
+  }, []);
 
   useEffect(() => {
     const onFsChange = () => {
@@ -134,19 +140,24 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
   }, [mapMeta.id]);
 
   const openProjectionRadial = useCallback((clientX: number, clientY: number) => {
-    const guardUntil = performance.now() + 450;
+    const guardUntil = performance.now() + 600;
     setRadial({ open: true, x: clientX, y: clientY, guardUntil });
   }, []);
+
+  useEffect(() => {
+    const onContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openProjectionRadial(e.clientX, e.clientY);
+    };
+    window.addEventListener("contextmenu", onContextMenu, true);
+    return () => window.removeEventListener("contextmenu", onContextMenu, true);
+  }, [openProjectionRadial]);
 
   return (
     <div
       ref={rootRef}
       className="fixed inset-0 flex min-h-0 flex-col overflow-hidden bg-black"
-      onContextMenuCapture={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        openProjectionRadial(e.clientX, e.clientY);
-      }}
     >
       <button
         type="button"
@@ -180,7 +191,8 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
         ariaLabel="Menu proiezione"
         items={radialItems}
         variant="default"
-        zIndexBase={59000}
+        portalTarget={radialPortalTarget}
+        zIndexBase={2147483000}
         openingGuardUntil={radial.open ? radial.guardUntil : 0}
         onClose={() => setRadial((prev) => ({ ...prev, open: false, guardUntil: 0 }))}
         onSelect={(item) => {

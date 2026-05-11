@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import { createPortal } from "react-dom";
 
 export type FowRadialMenuItem = {
   id: string;
@@ -18,6 +19,8 @@ type FowRadialMenuProps = {
   variant?: "default" | "context";
   /** Sopra canvas / transform (proiezione FoW); default 1200 */
   zIndexBase?: number;
+  /** Se impostato, il menu viene montato qui (es. `document.body`) per evitare clip/stacking da antenati. */
+  portalTarget?: HTMLElement | null;
   onClose: () => void;
   onSelect: (item: FowRadialMenuItem) => boolean | void;
 };
@@ -63,6 +66,7 @@ export function FowRadialMenu({
   openingGuardUntil,
   variant = "default",
   zIndexBase = 1200,
+  portalTarget = null,
   onClose,
   onSelect,
 }: FowRadialMenuProps) {
@@ -71,7 +75,7 @@ export function FowRadialMenu({
   const zRoot = zIndexBase;
   const zMenu = zIndexBase + 1;
 
-  return (
+  const tree = (
     <AnimatePresence>
       {open ? (
         <motion.div
@@ -195,4 +199,9 @@ export function FowRadialMenu({
       ) : null}
     </AnimatePresence>
   );
+
+  if (portalTarget) {
+    return createPortal(tree, portalTarget);
+  }
+  return tree;
 }
