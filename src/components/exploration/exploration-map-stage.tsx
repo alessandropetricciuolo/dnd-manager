@@ -9,6 +9,13 @@ import {
   intrinsicNormToSvgUserUnits,
   pointInPolygon,
 } from "@/lib/exploration/fow-geometry";
+import { FowRadialMenu, type FowRadialMenuItem } from "@/components/exploration/fow-radial-menu";
+import {
+  generateShapePolygon,
+  scalePolygonFromCenter,
+  translatePolygon,
+  type FowShapeKind,
+} from "@/lib/exploration/fow-shape-tools";
 
 export type FowRegionVm = {
   id: string;
@@ -25,7 +32,10 @@ type ExplorationMapStageProps = {
   selectedRegionId: string | null;
   onImageSized?: (width: number, height: number) => void;
   onCanvasClick?: (norm: NormPoint) => void;
+  onShapeCreate?: (polygon: NormPoint[]) => void | Promise<void>;
   onVertexDragEnd?: (regionId: string, vertexIndex: number, norm: NormPoint) => void;
+  onRegionPolygonChange?: (regionId: string, polygon: NormPoint[]) => void | Promise<void>;
+  onRegionDelete?: (regionId: string) => void | Promise<void>;
   onRevealClick?: (norm: NormPoint) => void;
   readOnly?: boolean;
   /** Proiezione: mappa a tutto lo spazio disponibile (senza max-height GM). */
@@ -41,6 +51,25 @@ type ExplorationMapStageProps = {
 const FOG_RGBA = "rgba(8, 6, 4, 0.82)";
 /** In proiezione la nebbia deve coprire del tutto (niente map visibile sotto). */
 const FOG_RGBA_OPAQUE = "rgba(0, 0, 0, 1)";
+
+const RADIAL_MAIN_ITEMS: FowRadialMenuItem[] = [
+  { id: "manual", label: "Vertici manuali" },
+  { id: "forme", label: "Forme" },
+];
+
+const RADIAL_SHAPE_ITEMS: FowRadialMenuItem[] = [
+  { id: "quadrato", label: "Quadrato" },
+  { id: "cerchio", label: "Cerchio" },
+  { id: "spray", label: "Spray" },
+  { id: "poligono-libero", label: "Poligono libero" },
+  { id: "indietro", label: "← Menu" },
+];
+
+const RADIAL_CONTEXT_ITEMS: FowRadialMenuItem[] = [
+  { id: "sposta", label: "Sposta" },
+  { id: "ridimensiona", label: "Ridimensiona" },
+  { id: "elimina", label: "Elimina" },
+];
 
 function drawFog(
   canvas: HTMLCanvasElement,
@@ -86,7 +115,10 @@ export function ExplorationMapStage({
   selectedRegionId,
   onImageSized,
   onCanvasClick,
+  onShapeCreate,
   onVertexDragEnd,
+  onRegionPolygonChange,
+  onRegionDelete,
   onRevealClick,
   readOnly = false,
   fillViewport = false,
@@ -105,6 +137,21 @@ export function ExplorationMapStage({
   const [drag, setDrag] = useState<{ regionId: string; vi: number } | null>(null);
   const [dragPreview, setDragPreview] = useState<NormPoint | null>(null);
   const dragPreviewRef = useRef<NormPoint | null>(null);
+  const openingGuardUntilRef = useRef(0);
+  const [shapeTool, setShapeTool] = useState<"manual" | FowShapeKind>("manual");
+  const [radial, setRadial] = useState({ open: false, x: 0, y: 0 });
+  const [radialItems, setRadialItems] = useState<FowRadialMenuItem[]>(RADIAL_MAIN_ITEMS);
+  const [radialVariant, setRadialVariant] = useState<"default" | "context">("default");
+  const [contextRegionId, setContextRegionId] = useState<string | null>(null);
+  const [shapeDrag, setShapeDrag] = useState<{ start: NormPoint; current: NormPoint } | null>(null);
+  const [freeShapeDraft, setFreeShapeDraft] = useState<NormPoint[]>([]);
+  const [regionTransform, setRegionTransform] = useState<{
+    kind: "move" | "resize";
+    regionId: string;
+    start: NormPoint | null;
+    base: NormPoint[];
+    preview: NormPoint[];
+  } | null>(null);
 
   const revealedPolys = useMemo(
     () => regions.filter((r) => r.is_revealed).map((r) => r.polygon),
@@ -136,7 +183,7 @@ export function ExplorationMapStage({
     return () => ro.disconnect();
   }, [syncFog]);
 
-  const normFromEvent = (clientX: number, clientY: number): NormPoint | null => {
+  const normFromEvent = useCallback((clientX: number, clientY: number): NormPoint | null => {
     const img = imgRef.current;
     if (!img) return null;
     const r = img.getBoundingClientRect();
@@ -154,13 +201,127 @@ export function ExplorationMapStage({
     const y = (ly - oy) / drawH;
     if (x < 0 || x > 1 || y < 0 || y > 1) return null;
     return { x, y };
-  };
+  }, []);
+
+  useEffect(() => {
+    if (mode !== "prepare") {
+      setShapeDrag(null);
+      setFreeShapeDraft([]);
+      setRegionTransform(null);
+      setRadial((p) => ({ ...p, open: false }));
+    }
+  }, [mode]);
+
+  const hitRegionIdAtPoint = useCallback(
+    (n: NormPoint): string | null => {
+      for (let i = regions.length - 1; i >= 0; i--) {
+        if (pointInPolygon(n.x, n.y, regions[i].polygon)) return regions[i].id;
+      }
+      return null;
+    },
+    [regions]
+  );
+
+  const closeRadial = useCallback(() => {
+    setRadial((prev) => ({ ...prev, open: false }));
+    setRadialItems(RADIAL_MAIN_ITEMS);
+    setRadialVariant("default");
+    setContextRegionId(null);
+  }, []);
+
+  const onStageContextMenu = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (mode !== "prepare" || readOnly) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const n = normFromEvent(e.clientX, e.clientY);
+      openingGuardUntilRef.current = performance.now() + 240;
+      if (n) {
+        const hitId = hitRegionIdAtPoint(n);
+        if (hitId) {
+          setContextRegionId(hitId);
+          setRadialVariant("context");
+          setRadialItems(RADIAL_CONTEXT_ITEMS);
+        } else {
+          setContextRegionId(null);
+          setRadialVariant("default");
+          setRadialItems(RADIAL_MAIN_ITEMS);
+        }
+      }
+      setRadial({ open: true, x: e.clientX, y: e.clientY });
+    },
+    [hitRegionIdAtPoint, mode, normFromEvent, readOnly]
+  );
+
+  const onRadialSelect = useCallback(
+    (item: FowRadialMenuItem) => {
+      if (item.id === "forme") {
+        setRadialItems(RADIAL_SHAPE_ITEMS);
+        return false;
+      }
+      if (item.id === "indietro") {
+        setRadialItems(RADIAL_MAIN_ITEMS);
+        return false;
+      }
+      if (item.id === "manual") {
+        setShapeTool("manual");
+        setFreeShapeDraft([]);
+        return;
+      }
+      if (
+        item.id === "quadrato" ||
+        item.id === "cerchio" ||
+        item.id === "spray" ||
+        item.id === "poligono-libero"
+      ) {
+        setShapeTool(item.id as FowShapeKind);
+        setFreeShapeDraft([]);
+        return;
+      }
+      if (item.id === "elimina" && contextRegionId && onRegionDelete) {
+        void onRegionDelete(contextRegionId);
+        return;
+      }
+      if (item.id === "sposta" && contextRegionId) {
+        const row = regions.find((r) => r.id === contextRegionId);
+        if (!row) return;
+        setRegionTransform({
+          kind: "move",
+          regionId: row.id,
+          start: null,
+          base: row.polygon,
+          preview: row.polygon,
+        });
+        return;
+      }
+      if (item.id === "ridimensiona" && contextRegionId) {
+        const row = regions.find((r) => r.id === contextRegionId);
+        if (!row) return;
+        setRegionTransform({
+          kind: "resize",
+          regionId: row.id,
+          start: null,
+          base: row.polygon,
+          preview: row.polygon,
+        });
+      }
+    },
+    [contextRegionId, onRegionDelete, regions]
+  );
 
   const handlePrepareClick = (e: React.MouseEvent) => {
-    if (mode !== "prepare" || readOnly || !onCanvasClick) return;
+    if (mode !== "prepare" || readOnly) return;
     const n = normFromEvent(e.clientX, e.clientY);
     if (!n) return;
-    onCanvasClick(n);
+    if (shapeTool === "manual") {
+      onCanvasClick?.(n);
+      return;
+    }
+    if (shapeTool === "poligono-libero") {
+      setFreeShapeDraft((prev) => [...prev, n]);
+      return;
+    }
+    setShapeDrag({ start: n, current: n });
   };
 
   const handleExploreClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -179,6 +340,79 @@ export function ExplorationMapStage({
     }
     syncFog();
   };
+
+  useEffect(() => {
+    function onMove(ev: MouseEvent) {
+      if (shapeDrag) {
+        const n = normFromEvent(ev.clientX, ev.clientY);
+        if (n) setShapeDrag((prev) => (prev ? { ...prev, current: n } : prev));
+        return;
+      }
+      if (regionTransform) {
+        const n = normFromEvent(ev.clientX, ev.clientY);
+        if (!n) return;
+        const start = regionTransform.start;
+        if (!start) {
+          setRegionTransform((prev) => (prev ? { ...prev, start: n } : prev));
+          return;
+        }
+        if (regionTransform.kind === "move") {
+          const dx = n.x - start.x;
+          const dy = n.y - start.y;
+          setRegionTransform((prev) =>
+            prev ? { ...prev, preview: translatePolygon(prev.base, dx, dy) } : prev
+          );
+          return;
+        }
+        const c = regionTransform.base.reduce(
+          (acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }),
+          { x: 0, y: 0 }
+        );
+        const center = { x: c.x / regionTransform.base.length, y: c.y / regionTransform.base.length };
+        const d0 = Math.hypot(start.x - center.x, start.y - center.y);
+        const d1 = Math.hypot(n.x - center.x, n.y - center.y);
+        const scale = Math.max(0.1, d1 / Math.max(d0, 0.02));
+        setRegionTransform((prev) =>
+          prev ? { ...prev, preview: scalePolygonFromCenter(prev.base, scale) } : prev
+        );
+      }
+    }
+
+    function onUp() {
+      if (shapeDrag) {
+        const poly = generateShapePolygon(shapeTool as FowShapeKind, shapeDrag.start, shapeDrag.current);
+        setShapeDrag(null);
+        if (poly.length >= 3 && onShapeCreate) void onShapeCreate(poly);
+        return;
+      }
+      if (regionTransform) {
+        if (onRegionPolygonChange) {
+          void onRegionPolygonChange(regionTransform.regionId, regionTransform.preview);
+        }
+        setRegionTransform(null);
+      }
+    }
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [normFromEvent, onRegionPolygonChange, onShapeCreate, regionTransform, shapeDrag, shapeTool]);
+
+  useEffect(() => {
+    function onDoubleClick() {
+      if (shapeTool !== "poligono-libero") return;
+      setFreeShapeDraft((prev) => {
+        if (prev.length < 3 || !onShapeCreate) return prev;
+        void onShapeCreate(prev);
+        return [];
+      });
+    }
+    window.addEventListener("dblclick", onDoubleClick);
+    return () => window.removeEventListener("dblclick", onDoubleClick);
+  }, [onShapeCreate, shapeTool]);
 
   useEffect(() => {
     function onMove(ev: MouseEvent) {
@@ -210,13 +444,15 @@ export function ExplorationMapStage({
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
     };
-  }, [drag, onVertexDragEnd]);
+  }, [drag, normFromEvent, onVertexDragEnd]);
 
   const aspect = natural ? natural.w / natural.h : 16 / 9;
 
   const vertexPreview = (r: FowRegionVm) => {
-    if (!drag || drag.regionId !== r.id || !dragPreview) return r.polygon;
-    return r.polygon.map((p, i) => (i === drag.vi ? dragPreview : p));
+    let out = r.polygon;
+    if (regionTransform && regionTransform.regionId === r.id) out = regionTransform.preview;
+    if (!drag || drag.regionId !== r.id || !dragPreview) return out;
+    return out.map((p, i) => (i === drag.vi ? dragPreview : p));
   };
 
   const elW = layoutSize?.w ?? 0;
@@ -388,6 +624,38 @@ export function ExplorationMapStage({
             strokeWidth={0.35}
           />
         )}
+        {shapeDrag && shapeTool !== "poligono-libero" && (
+          <polygon
+            points={generateShapePolygon(shapeTool as FowShapeKind, shapeDrag.start, shapeDrag.current)
+              .map((p) => {
+                const [sx, sy] = normToSvg(p);
+                return `${sx},${sy}`;
+              })
+              .join(" ")}
+            fill="rgba(34, 211, 238, 0.12)"
+            stroke="rgba(34, 211, 238, 0.95)"
+            strokeWidth={0.35}
+            strokeDasharray="1.1 0.8"
+          />
+        )}
+        {freeShapeDraft.length > 1 && (
+          <polyline
+            points={freeShapeDraft
+              .map((p) => {
+                const [sx, sy] = normToSvg(p);
+                return `${sx},${sy}`;
+              })
+              .join(" ")}
+            fill="none"
+            stroke="rgba(34, 211, 238, 0.95)"
+            strokeDasharray="1 0.7"
+            strokeWidth={0.35}
+          />
+        )}
+        {freeShapeDraft.map((p, i) => {
+          const [cx, cy] = normToSvg(p);
+          return <circle key={`fs-${i}`} cx={cx} cy={cy} r={0.75} fill="rgba(34, 211, 238, 0.95)" />;
+        })}
         {draftPoints.map((p, i) => {
           const [cx, cy] = normToSvg(p);
           return (
@@ -458,6 +726,7 @@ export function ExplorationMapStage({
                 : { aspectRatio: String(aspect), maxHeight: "min(78vh, 1200px)" }
             }
             onClick={mode === "explore" && onRevealClick ? handleExploreClick : undefined}
+            onContextMenu={onStageContextMenu}
           >
             {fillViewport ? (
               <div className="relative inline-block max-h-full max-w-full">{mapLayers}</div>
@@ -467,6 +736,17 @@ export function ExplorationMapStage({
           </div>
         </TransformComponent>
       </TransformWrapper>
+      <FowRadialMenu
+        open={radial.open}
+        x={radial.x}
+        y={radial.y}
+        ariaLabel={radialVariant === "context" ? "Menu contestuale poligono" : "Menu FoW"}
+        items={radialItems}
+        variant={radialVariant}
+        openingGuardUntil={openingGuardUntilRef.current}
+        onClose={closeRadial}
+        onSelect={onRadialSelect}
+      />
     </div>
   );
 }

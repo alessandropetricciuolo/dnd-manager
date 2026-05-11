@@ -368,6 +368,42 @@ export function VistaDallAltoClient({
     } else toast.error(res?.error ?? "Errore");
   }
 
+  async function handleDeleteRegionById(regionId: string) {
+    const res = await deleteFowRegion(campaignId, regionId);
+    if (!res?.success) {
+      toast.error(res?.error ?? "Errore");
+      return;
+    }
+    setRegions((p) => p.filter((r) => r.id !== regionId));
+    if (selectedRegionId === regionId) setSelectedRegionId(null);
+    toast.success("Poligono eliminato.");
+  }
+
+  async function handleShapeCreate(polygon: NormPoint[]) {
+    if (!selectedMapId || polygon.length < 3) return;
+    const res = await createFowRegion(campaignId, selectedMapId, polygon);
+    if (!res?.success) {
+      toast.error(res?.error ?? "Errore");
+      return;
+    }
+    toast.success("Poligono salvato.");
+    await refreshFromServer();
+  }
+
+  async function handleRegionPolygonChange(regionId: string, polygon: NormPoint[]) {
+    if (polygon.length < 3) return;
+    const res = await updateFowRegionPolygon(campaignId, regionId, polygon);
+    if (!res?.success) {
+      toast.error(res?.error ?? "Errore");
+      return;
+    }
+    setRegions((prev) =>
+      prev.map((r) =>
+        r.id === regionId ? { ...r, polygon: polygon as unknown as FowRegionRow["polygon"] } : r
+      )
+    );
+  }
+
   async function handleResetFog() {
     if (!selectedMapId || !confirm("Oscurare di nuovo tutta la mappa (rivelazioni annullate)?")) return;
     const res = await resetMapFog(campaignId, selectedMapId);
@@ -809,14 +845,18 @@ export function VistaDallAltoClient({
             draftPoints={draftPoints}
             selectedRegionId={selectedRegionId}
             onCanvasClick={onCanvasClick}
+            onShapeCreate={handleShapeCreate}
             onVertexDragEnd={handleVertexDragEnd}
+            onRegionPolygonChange={handleRegionPolygonChange}
+            onRegionDelete={handleDeleteRegionById}
             onRevealClick={mode === "explore" ? onRevealClick : undefined}
             showGrid={false}
           />
 
           <p className="text-xs text-barber-paper/55">
-            Preparazione: clic per vertici, «Chiudi poligono» per salvare; seleziona un poligono e trascina i punti
-            gialli. Esplora: clic su un&apos;area per mostrarla ai giocatori (proiezione si aggiorna in tempo reale).
+            Preparazione: clic per vertici, «Chiudi poligono» per salvare; oppure tasto destro sulla mappa per menu
+            radiale (forme rapide e azioni contestuali sposta/ridimensiona/elimina). Esplora: clic su un&apos;area
+            per mostrarla ai giocatori (proiezione si aggiorna in tempo reale).
           </p>
         </>
       )}
