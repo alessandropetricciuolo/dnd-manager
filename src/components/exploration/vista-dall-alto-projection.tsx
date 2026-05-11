@@ -26,8 +26,13 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
   const [regions, setRegions] = useState<FowRegionRow[]>(initialRegions);
   const [mapMeta, setMapMeta] = useState<ExplorationMapRow>(mapRow);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [radial, setRadial] = useState({ open: false, x: 0, y: 0 });
-  const openingGuardUntilRef = useRef(0);
+  const [radial, setRadial] = useState<{
+    open: boolean;
+    x: number;
+    y: number;
+    /** Evita chiusura immediata del backdrop sullo stesso gesto che apre il menu */
+    guardUntil: number;
+  }>({ open: false, x: 0, y: 0, guardUntil: 0 });
   const rootRef = useRef<HTMLDivElement>(null);
   const imageUrl = getExplorationMapPublicUrl(mapMeta.image_path);
   const vm = useMemo(() => rowsToVm(regions), [regions]);
@@ -128,15 +133,19 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
     };
   }, [mapMeta.id]);
 
+  const openProjectionRadial = useCallback((clientX: number, clientY: number) => {
+    const guardUntil = performance.now() + 240;
+    setRadial({ open: true, x: clientX, y: clientY, guardUntil });
+  }, []);
+
   return (
     <div
       ref={rootRef}
       className="fixed inset-0 flex min-h-0 flex-col overflow-hidden bg-black"
-      onContextMenu={(e) => {
+      onContextMenuCapture={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        openingGuardUntilRef.current = performance.now() + 240;
-        setRadial({ open: true, x: e.clientX, y: e.clientY });
+        openProjectionRadial(e.clientX, e.clientY);
       }}
     >
       <button
@@ -171,11 +180,14 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
         ariaLabel="Menu proiezione"
         items={radialItems}
         variant="default"
-        openingGuardUntil={openingGuardUntilRef.current}
-        onClose={() => setRadial((prev) => ({ ...prev, open: false }))}
+        openingGuardUntil={radial.open ? radial.guardUntil : 0}
+        onClose={() => setRadial((prev) => ({ ...prev, open: false, guardUntil: 0 }))}
         onSelect={(item) => {
           if (item.id === "fullscreen") {
             void toggleFullscreen();
+            return;
+          }
+          if (item.id === "close") {
             return;
           }
         }}
