@@ -157,3 +157,13 @@ html.vista-proiezione-fullscreen iframe[src*="iubenda"] {
     page-break-inside: avoid;
   }
 }
+
+/* Menu radiale FoW (da overlacchio): i pulsanti partono da opacity 0 e dipendono da questa animazione */
+@keyframes radialItemFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
