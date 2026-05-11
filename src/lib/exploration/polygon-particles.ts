@@ -16,7 +16,7 @@ export type Particle = {
 };
 
 export type ParticleSystem = { particles: Particle[] };
-export type ParticleElement = "fuoco" | "veleno";
+export type ParticleElement = "fuoco" | "veleno" | "fumo" | "fumini";
 
 export function polygonBBox(points: NormPoint[]) {
   let minX = Infinity;
@@ -114,14 +114,14 @@ function tickVeleno(p: Particle, dt: number): boolean {
   return p.life >= p.maxLife;
 }
 
-const LIMITS: Record<ParticleElement, { max: number; spawnPerSec: number }> = {
+const LIMITS: Record<"fuoco" | "veleno", { max: number; spawnPerSec: number }> = {
   fuoco: { max: 300, spawnPerSec: 110 },
   veleno: { max: 300, spawnPerSec: 90 },
 };
 
 export function tickParticleSystem(
   points: NormPoint[],
-  element: ParticleElement,
+  element: "fuoco" | "veleno",
   system: ParticleSystem,
   dt: number,
   dims: { w: number; h: number }

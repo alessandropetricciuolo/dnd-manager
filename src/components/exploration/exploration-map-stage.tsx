@@ -19,6 +19,18 @@ import {
   type FowShapeKind,
 } from "@/lib/exploration/fow-shape-tools";
 import {
+  createPixiSmokeRuntime,
+  destroyPixiSmokeRuntime,
+  drawPixiSmokeSprites,
+  ensurePixiSmokeSystems,
+  renderPixiSmokeFrame,
+  resizePixiSmokeRuntime,
+  syncPixiSmokeLayers,
+  tickPixiSmokeSystem,
+  type PixiSmokeRuntime,
+  type PixiSmokeSystem,
+} from "@/lib/exploration/pixi-smoke-effects";
+import {
   drawParticles,
   tickParticleSystem,
   type ParticleElement,
@@ -100,6 +112,8 @@ const EFFECT_RADIAL_SHAPE_ITEMS: FowRadialMenuItem[] = [
 const EFFECT_RADIAL_ELEMENT_ITEMS: FowRadialMenuItem[] = [
   { id: "fuoco", label: "Fuoco" },
   { id: "veleno", label: "Veleno" },
+  { id: "fumo", label: "Fumo" },
+  { id: "fumini", label: "Fumini" },
   { id: "indietro", label: "← Menu" },
 ];
 
@@ -108,6 +122,21 @@ const EFFECT_RADIAL_CONTEXT_ITEMS: FowRadialMenuItem[] = [
   { id: "ridimensiona", label: "Ridimensiona" },
   { id: "elimina", label: "Elimina" },
 ];
+
+function effectElementDraftStyle(element: ParticleElement): { fill: string; stroke: string } {
+  switch (element) {
+    case "fuoco":
+      return { fill: "rgba(255, 92, 64, 0.12)", stroke: "rgba(255, 92, 64, 0.95)" };
+    case "veleno":
+      return { fill: "rgba(78, 207, 125, 0.12)", stroke: "rgba(78, 207, 125, 0.95)" };
+    case "fumo":
+      return { fill: "rgba(190, 198, 210, 0.14)", stroke: "rgba(210, 218, 230, 0.9)" };
+    case "fumini":
+      return { fill: "rgba(140, 190, 235, 0.12)", stroke: "rgba(120, 185, 240, 0.92)" };
+    default:
+      return { fill: "rgba(255, 255, 255, 0.1)", stroke: "rgba(255, 255, 255, 0.85)" };
+  }
+}
 
 function drawFog(
   canvas: HTMLCanvasElement,
@@ -195,7 +224,10 @@ export function ExplorationMapStage({
   // --- Effetti "overlacchio" (solo proiezione, effimeri) ---
   const effectsCanvasRef = useRef<HTMLCanvasElement>(null);
   const nightOverlayCanvasRef = useRef<HTMLCanvasElement>(null);
+  const pixiHostRef = useRef<HTMLDivElement>(null);
+  const pixiSmokeRtRef = useRef<PixiSmokeRuntime | null>(null);
   const particleSystemsRef = useRef<ParticleSystem[]>([]);
+  const pixiSmokeSystemsRef = useRef<PixiSmokeSystem[]>([]);
 
   type EffectPolygon = { element: ParticleElement; points: NormPoint[] };
   const [effectPolygons, setEffectPolygons] = useState<EffectPolygon[]>([]);
@@ -280,7 +312,46 @@ export function ExplorationMapStage({
     const sys = particleSystemsRef.current;
     while (sys.length < effectPolygons.length) sys.push({ particles: [] });
     sys.length = effectPolygons.length;
+    ensurePixiSmokeSystems(pixiSmokeSystemsRef.current, effectPolygons.length);
   }, [effectsEnabled, effectPolygons.length]);
+
+  useEffect(() => {
+    if (!effectsEnabled) {
+      destroyPixiSmokeRuntime(pixiSmokeRtRef.current);
+      pixiSmokeRtRef.current = null;
+    }
+  }, [effectsEnabled]);
+
+  useEffect(() => {
+    if (!effectsEnabled || !layoutSize || layoutSize.w < 2 || layoutSize.h < 2) return;
+    const host = pixiHostRef.current;
+    if (!host) return;
+    let cancelled = false;
+    const w = layoutSize.w;
+    const h = layoutSize.h;
+    const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
+    void (async () => {
+      if (!pixiSmokeRtRef.current) {
+        try {
+          const rt = await createPixiSmokeRuntime(host, w, h, dpr);
+          if (cancelled) {
+            destroyPixiSmokeRuntime(rt);
+            return;
+          }
+          pixiSmokeRtRef.current = rt;
+        } catch (err) {
+          if (typeof console !== "undefined" && console.warn) {
+            console.warn("[effetti] PixiJS fumo/fumini non inizializzato:", err);
+          }
+        }
+      } else {
+        resizePixiSmokeRuntime(pixiSmokeRtRef.current, w, h, dpr);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [effectsEnabled, layoutSize]);
 
   function tracePolygonPathPx(
     ctx: CanvasRenderingContext2D,
@@ -332,6 +403,7 @@ export function ExplorationMapStage({
           const polys = effectPolygonsRef.current;
           for (let i = 0; i < polys.length; i++) {
             const poly = polys[i];
+            if (poly.element !== "fuoco" && poly.element !== "veleno") continue;
             const sys = particleSystemsRef.current[i];
             tickParticleSystem(poly.points, poly.element, sys, dt, { w, h });
             // Clip: disegna particelle solo dentro la forma effetto.
@@ -361,6 +433,24 @@ export function ExplorationMapStage({
           }
           nightCtx.globalCompositeOperation = "source-over";
         }
+      }
+
+      const rt = pixiSmokeRtRef.current;
+      if (rt && w > 0 && h > 0 && naturalW > 0 && naturalH > 0) {
+        rt.root.visible = effectIsVisibleRef.current;
+        if (effectIsVisibleRef.current) {
+          const polys = effectPolygonsRef.current;
+          const pixiSys = pixiSmokeSystemsRef.current;
+          for (let i = 0; i < polys.length; i++) {
+            const el = polys[i].element;
+            if (el === "fumo" || el === "fumini") {
+              tickPixiSmokeSystem(polys[i].points, el, pixiSys[i]!, dt, { w, h }, naturalW, naturalH);
+            }
+          }
+          syncPixiSmokeLayers(rt, polys, naturalW, naturalH, w, h);
+          drawPixiSmokeSprites(rt, polys, pixiSys);
+        }
+        renderPixiSmokeFrame(rt);
       }
 
       raf = requestAnimationFrame(tick);
@@ -551,7 +641,9 @@ export function ExplorationMapStage({
         return false;
       }
       if (item.id === "indietro") {
-        const isElementMenu = effectRadial.items.some((i) => i.id === "fuoco" || i.id === "veleno");
+        const isElementMenu = effectRadial.items.some(
+          (i) => i.id === "fuoco" || i.id === "veleno" || i.id === "fumo" || i.id === "fumini"
+        );
         setEffectRadial((prev) => ({
           ...prev,
           items: isElementMenu ? EFFECT_RADIAL_SHAPE_ITEMS : effectMainItems,
@@ -597,6 +689,14 @@ export function ExplorationMapStage({
       }
       if (item.id === "veleno") {
         setEffectPolygonElement("veleno");
+        return;
+      }
+      if (item.id === "fumo") {
+        setEffectPolygonElement("fumo");
+        return;
+      }
+      if (item.id === "fumini") {
+        setEffectPolygonElement("fumini");
         return;
       }
       if (item.id === "sposta") {
@@ -1118,7 +1218,14 @@ export function ExplorationMapStage({
       {effectsEnabled ? (
         <canvas
           ref={effectsCanvasRef}
-          className="pointer-events-none absolute left-0 top-0 h-full w-full"
+          className="pointer-events-none absolute left-0 top-0 z-[1] h-full w-full"
+          aria-hidden
+        />
+      ) : null}
+      {effectsEnabled ? (
+        <div
+          ref={pixiHostRef}
+          className="pointer-events-none absolute left-0 top-0 z-[2] h-full w-full"
           aria-hidden
         />
       ) : null}
@@ -1132,7 +1239,7 @@ export function ExplorationMapStage({
       {effectsEnabled ? (
         <canvas
           ref={nightOverlayCanvasRef}
-          className="pointer-events-none absolute left-0 top-0 h-full w-full"
+          className="pointer-events-none absolute left-0 top-0 z-[3] h-full w-full"
           aria-hidden
         />
       ) : null}
@@ -1255,10 +1362,7 @@ export function ExplorationMapStage({
           (() => {
             const a = effectRectDrag.start;
             const b = effectRectDrag.current;
-            const color =
-              effectRectDrag.element === "fuoco"
-                ? { fill: "rgba(255, 92, 64, 0.12)", stroke: "rgba(255, 92, 64, 0.95)" }
-                : { fill: "rgba(78, 207, 125, 0.12)", stroke: "rgba(78, 207, 125, 0.95)" };
+            const color = effectElementDraftStyle(effectRectDrag.element);
             const pts =
               effectRectDrag.shape === "spray"
                 ? [
@@ -1355,7 +1459,23 @@ export function ExplorationMapStage({
 
   return (
     <div className={cn("w-full", fillViewport ? "h-full min-h-0 bg-black" : "bg-black/50")}>
-      <TransformWrapper initialScale={1} minScale={0.2} maxScale={6} centerOnInit limitToBounds={false}>
+      <TransformWrapper
+        initialScale={1}
+        minScale={0.2}
+        maxScale={6}
+        centerOnInit
+        limitToBounds={false}
+        panning={
+          effectsEnabled
+            ? {
+                allowLeftClickPan: false,
+                allowMiddleClickPan: true,
+                allowRightClickPan: false,
+              }
+            : undefined
+        }
+        doubleClick={effectsEnabled ? { disabled: true } : undefined}
+      >
         <TransformComponent
           wrapperStyle={{ width: "100%", height: "100%" }}
           contentStyle={{ width: "100%", height: "100%", position: "relative" }}

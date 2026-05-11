@@ -43,6 +43,7 @@
     "nextjs-toploader": "^3.9.17",
     "nodemailer": "^8.0.4",
     "pdf-lib": "^1.17.1",
+    "pixi.js": "^8.18.1",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.0",
     "react-dom": "^18.3.1",
