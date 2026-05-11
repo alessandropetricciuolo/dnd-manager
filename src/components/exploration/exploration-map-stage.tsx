@@ -235,7 +235,7 @@ export function ExplorationMapStage({
       e.preventDefault();
       e.stopPropagation();
       const n = normFromEvent(e.clientX, e.clientY);
-      openingGuardUntilRef.current = performance.now() + 240;
+      openingGuardUntilRef.current = performance.now() + 450;
       if (n) {
         const hitId = hitRegionIdAtPoint(n);
         if (hitId) {

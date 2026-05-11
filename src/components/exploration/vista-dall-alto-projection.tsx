@@ -134,7 +134,7 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
   }, [mapMeta.id]);
 
   const openProjectionRadial = useCallback((clientX: number, clientY: number) => {
-    const guardUntil = performance.now() + 240;
+    const guardUntil = performance.now() + 450;
     setRadial({ open: true, x: clientX, y: clientY, guardUntil });
   }, []);
 
@@ -151,7 +151,7 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
       <button
         type="button"
         onClick={() => void toggleFullscreen()}
-        className="fixed right-4 top-4 z-[1250] inline-flex items-center gap-2 rounded-md border border-white/25 bg-black/55 px-3 py-2 text-xs text-white/90 backdrop-blur-sm transition hover:bg-black/75"
+        className="fixed right-4 top-4 z-[60000] inline-flex items-center gap-2 rounded-md border border-white/25 bg-black/55 px-3 py-2 text-xs text-white/90 backdrop-blur-sm transition hover:bg-black/75"
       >
         {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
         {isFullscreen ? "Esci fullscreen" : "Fullscreen"}
@@ -180,6 +180,7 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
         ariaLabel="Menu proiezione"
         items={radialItems}
         variant="default"
+        zIndexBase={59000}
         openingGuardUntil={radial.open ? radial.guardUntil : 0}
         onClose={() => setRadial((prev) => ({ ...prev, open: false, guardUntil: 0 }))}
         onSelect={(item) => {
