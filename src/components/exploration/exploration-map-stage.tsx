@@ -300,6 +300,16 @@ export function ExplorationMapStage({
   useEffect(() => {
     effectPolygonsRef.current = effectPolygons;
   }, [effectPolygons]);
+
+  const effectPolygonElementRef = useRef(effectPolygonElement);
+  const effectFreeDraftVerticesRef = useRef(effectFreeDraftVertices);
+  const effectDblCloseGuardRef = useRef(0);
+  useEffect(() => {
+    effectPolygonElementRef.current = effectPolygonElement;
+  }, [effectPolygonElement]);
+  useEffect(() => {
+    effectFreeDraftVerticesRef.current = effectFreeDraftVertices;
+  }, [effectFreeDraftVertices]);
   useEffect(() => {
     effectIsNightRef.current = effectIsNight;
   }, [effectIsNight]);
@@ -405,7 +415,7 @@ export function ExplorationMapStage({
             const poly = polys[i];
             if (poly.element !== "fuoco" && poly.element !== "veleno") continue;
             const sys = particleSystemsRef.current[i];
-            tickParticleSystem(poly.points, poly.element, sys, dt, { w, h });
+            tickParticleSystem(poly.points, poly.element, sys, dt, { w, h }, naturalW, naturalH);
             // Clip: disegna particelle solo dentro la forma effetto.
             fxCtx.save();
             tracePolygonPathPx(fxCtx, poly.points, w, h, naturalW, naturalH);
@@ -507,18 +517,20 @@ export function ExplorationMapStage({
     const img = imgRef.current;
     if (!img) return null;
     const r = img.getBoundingClientRect();
-    const lx = clientX - r.left;
-    const ly = clientY - r.top;
+    const W = img.offsetWidth;
+    const H = img.offsetHeight;
     const naturalW = img.naturalWidth || 0;
     const naturalH = img.naturalHeight || 0;
-    if (naturalW <= 0 || naturalH <= 0 || r.width <= 0 || r.height <= 0) return null;
-    const scale = Math.min(r.width / naturalW, r.height / naturalH);
-    const drawW = naturalW * scale;
-    const drawH = naturalH * scale;
-    const ox = (r.width - drawW) / 2;
-    const oy = (r.height - drawH) / 2;
-    const x = (lx - ox) / drawW;
-    const y = (ly - oy) / drawH;
+    if (naturalW <= 0 || naturalH <= 0 || W <= 0 || H <= 0 || r.width <= 0 || r.height <= 0) return null;
+    const px = ((clientX - r.left) / r.width) * W;
+    const py = ((clientY - r.top) / r.height) * H;
+    const scale = Math.min(W / naturalW, H / naturalH);
+    const dw = naturalW * scale;
+    const dh = naturalH * scale;
+    const ox = (W - dw) / 2;
+    const oy = (H - dh) / 2;
+    const x = (px - ox) / dw;
+    const y = (py - oy) / dh;
     if (x < 0 || x > 1 || y < 0 || y > 1) return null;
     return { x, y };
   }, []);
@@ -593,6 +605,9 @@ export function ExplorationMapStage({
       const n = normFromEvent(e.clientX, e.clientY);
       const guardUntil = performance.now() + 600;
       if (!n) {
+        setEffectInteractionMode(null);
+        setEffectSelectedIdx(null);
+        setEffectTransform(null);
         setEffectRadial({
           open: true,
           x: e.clientX,
@@ -618,6 +633,8 @@ export function ExplorationMapStage({
         });
       } else {
         setEffectSelectedIdx(null);
+        setEffectInteractionMode(null);
+        setEffectTransform(null);
         setEffectRadial({
           open: true,
           x: e.clientX,
@@ -680,23 +697,38 @@ export function ExplorationMapStage({
       ) {
         setEffectDrawShape(item.id as FowShapeKind);
         setEffectFreeDraftVertices([]);
+        setEffectInteractionMode(null);
+        setEffectSelectedIdx(null);
+        setEffectTransform(null);
         setEffectRadial((prev) => ({ ...prev, items: EFFECT_RADIAL_ELEMENT_ITEMS }));
         return false;
       }
       if (item.id === "fuoco") {
         setEffectPolygonElement("fuoco");
+        setEffectInteractionMode(null);
+        setEffectSelectedIdx(null);
+        setEffectTransform(null);
         return;
       }
       if (item.id === "veleno") {
         setEffectPolygonElement("veleno");
+        setEffectInteractionMode(null);
+        setEffectSelectedIdx(null);
+        setEffectTransform(null);
         return;
       }
       if (item.id === "fumo") {
         setEffectPolygonElement("fumo");
+        setEffectInteractionMode(null);
+        setEffectSelectedIdx(null);
+        setEffectTransform(null);
         return;
       }
       if (item.id === "fumini") {
         setEffectPolygonElement("fumini");
+        setEffectInteractionMode(null);
+        setEffectSelectedIdx(null);
+        setEffectTransform(null);
         return;
       }
       if (item.id === "sposta") {
@@ -714,6 +746,9 @@ export function ExplorationMapStage({
       if (item.id === "elimina") {
         if (ctxIdx == null) return;
         setEffectPolygons((prev) => prev.filter((_, i) => i !== ctxIdx));
+        setEffectInteractionMode(null);
+        setEffectSelectedIdx(null);
+        setEffectTransform(null);
         return;
       }
     },
@@ -801,8 +836,6 @@ export function ExplorationMapStage({
       if (tr) {
         effectTransformRef.current = null;
         setEffectTransform(null);
-        setEffectInteractionMode(null);
-        setEffectSelectedIdx(null);
       }
     };
 
@@ -908,25 +941,24 @@ export function ExplorationMapStage({
       if (effectTransform) return;
       if (effectRectDrag) return;
       if (effectDrawShape !== "poligono-libero") return;
-      if (!effectPolygonElement) return;
+      const el = effectPolygonElementRef.current;
+      if (!el) return;
       e.preventDefault();
       e.stopPropagation();
 
-      setEffectFreeDraftVertices((prev) => {
-        if (prev.length < 3) return prev;
-        const popped = prev.slice(0, -1);
-        const pts = popped.length >= 3 ? popped : prev;
-        if (pts.length >= 3) {
-          setEffectPolygons((cur) => [...cur, { element: effectPolygonElement, points: pts }]);
-        }
-        return [];
-      });
+      const now = performance.now();
+      if (now - effectDblCloseGuardRef.current < 280) return;
+      effectDblCloseGuardRef.current = now;
+
+      const draft = effectFreeDraftVerticesRef.current;
+      if (draft.length < 3) return;
+      setEffectPolygons((cur) => [...cur, { element: el, points: draft }]);
+      setEffectFreeDraftVertices([]);
     },
     [
       effectsEnabled,
       effectDrawShape,
       effectInteractionMode,
-      effectPolygonElement,
       effectRectDrag,
       effectTransform,
     ]
@@ -1217,14 +1249,14 @@ export function ExplorationMapStage({
       />
       {effectsEnabled ? (
         <canvas
-          ref={effectsCanvasRef}
+          ref={nightOverlayCanvasRef}
           className="pointer-events-none absolute left-0 top-0 z-[1] h-full w-full"
           aria-hidden
         />
       ) : null}
       {effectsEnabled ? (
-        <div
-          ref={pixiHostRef}
+        <canvas
+          ref={effectsCanvasRef}
           className="pointer-events-none absolute left-0 top-0 z-[2] h-full w-full"
           aria-hidden
         />
@@ -1232,14 +1264,14 @@ export function ExplorationMapStage({
       {(mode === "explore" || readOnly) && (
         <canvas
           ref={fogRef}
-          className="pointer-events-none absolute left-0 top-0 h-full w-full"
+          className="pointer-events-none absolute left-0 top-0 z-[3] h-full w-full"
           aria-hidden
         />
       )}
       {effectsEnabled ? (
-        <canvas
-          ref={nightOverlayCanvasRef}
-          className="pointer-events-none absolute left-0 top-0 z-[3] h-full w-full"
+        <div
+          ref={pixiHostRef}
+          className="pointer-events-none absolute left-0 top-0 z-[4] h-full w-full"
           aria-hidden
         />
       ) : null}
@@ -1494,11 +1526,11 @@ export function ExplorationMapStage({
             }
             onClick={effectsEnabled ? handleEffectsClick : mode === "explore" && onRevealClick ? handleExploreClick : undefined}
             onMouseDown={effectsEnabled ? handleEffectsMouseDown : undefined}
-            onDoubleClick={effectsEnabled ? handleEffectsDoubleClick : undefined}
+            onDoubleClickCapture={effectsEnabled ? handleEffectsDoubleClick : undefined}
             onContextMenu={effectsEnabled ? onEffectsContextMenu : onStageContextMenu}
           >
             {fillViewport ? (
-              <div className="relative inline-block max-h-full max-w-full">{mapLayers}</div>
+              <div className="relative inline-block max-h-full max-w-full leading-none">{mapLayers}</div>
             ) : (
               mapLayers
             )}

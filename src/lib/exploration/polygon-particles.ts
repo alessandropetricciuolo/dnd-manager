@@ -1,5 +1,5 @@
 import type { NormPoint } from "@/lib/exploration/fow-geometry";
-import { pointInPolygon } from "@/lib/exploration/fow-geometry";
+import { intrinsicNormToElementPx, pointInPolygon } from "@/lib/exploration/fow-geometry";
 
 export type Particle = {
   x: number;
@@ -61,14 +61,20 @@ export function randomPointInPolygon(points: NormPoint[]): NormPoint {
   return centroid(points);
 }
 
-function spawnFuoco(pt: NormPoint, dims: { w: number; h: number }): Particle {
+function spawnFuoco(
+  pt: NormPoint,
+  dims: { w: number; h: number },
+  naturalW: number,
+  naturalH: number
+): Particle {
+  const [x, y] = intrinsicNormToElementPx(pt.x, pt.y, dims.w, dims.h, naturalW, naturalH);
   const yellowish = Math.random() < 0.42;
   const r = yellowish ? 255 : 248 + Math.random() * 7;
   const g = yellowish ? 210 + Math.random() * 45 : 130 + Math.random() * 75;
   const b = yellowish ? 70 + Math.random() * 55 : 28 + Math.random() * 55;
   return {
-    x: pt.x * dims.w,
-    y: pt.y * dims.h,
+    x,
+    y,
     vx: (Math.random() - 0.5) * 32,
     vy: -(78 + Math.random() * 92),
     life: 0,
@@ -89,10 +95,16 @@ function tickFuoco(p: Particle, dt: number): boolean {
   return p.life >= p.maxLife;
 }
 
-function spawnVeleno(pt: NormPoint, dims: { w: number; h: number }): Particle {
+function spawnVeleno(
+  pt: NormPoint,
+  dims: { w: number; h: number },
+  naturalW: number,
+  naturalH: number
+): Particle {
+  const [x, y] = intrinsicNormToElementPx(pt.x, pt.y, dims.w, dims.h, naturalW, naturalH);
   return {
-    x: pt.x * dims.w,
-    y: pt.y * dims.h,
+    x,
+    y,
     vx: (Math.random() - 0.5) * 18,
     vy: -(32 + Math.random() * 48),
     life: 0,
@@ -124,19 +136,25 @@ export function tickParticleSystem(
   element: "fuoco" | "veleno",
   system: ParticleSystem,
   dt: number,
-  dims: { w: number; h: number }
+  dims: { w: number; h: number },
+  naturalW: number,
+  naturalH: number
 ) {
   if (!system || points.length < 3) return;
   const lim = LIMITS[element];
   let spawnBudget = lim.spawnPerSec * dt;
   while (spawnBudget > 0 && system.particles.length < lim.max && spawnBudget >= 1) {
     const pt = randomPointInPolygon(points);
-    system.particles.push(element === "fuoco" ? spawnFuoco(pt, dims) : spawnVeleno(pt, dims));
+    system.particles.push(
+      element === "fuoco" ? spawnFuoco(pt, dims, naturalW, naturalH) : spawnVeleno(pt, dims, naturalW, naturalH)
+    );
     spawnBudget -= 1;
   }
   if (spawnBudget > 0 && system.particles.length < lim.max && Math.random() < spawnBudget) {
     const pt = randomPointInPolygon(points);
-    system.particles.push(element === "fuoco" ? spawnFuoco(pt, dims) : spawnVeleno(pt, dims));
+    system.particles.push(
+      element === "fuoco" ? spawnFuoco(pt, dims, naturalW, naturalH) : spawnVeleno(pt, dims, naturalW, naturalH)
+    );
   }
 
   const next: Particle[] = [];
