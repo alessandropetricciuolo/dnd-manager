@@ -134,7 +134,7 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
         {isFullscreen ? <Minimize2 className="mr-2 h-4 w-4" /> : <Maximize2 className="mr-2 h-4 w-4" />}
         {isFullscreen ? "Esci" : "Fullscreen"}
       </Button>
-      <div className="min-h-0 flex-1">
+      <div className="relative min-h-0 flex-1 overflow-hidden">
         <ExplorationMapStage
           imageUrl={imageUrl}
           imageAlt={
@@ -150,6 +150,8 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
           fillViewport
           showGrid={false}
           effectsEnabled
+          fogRevealAll
+          projectionEffectsStorageKey={`barber-fow-projection-effects-v1-${mapMeta.id}`}
         />
       </div>
     </div>

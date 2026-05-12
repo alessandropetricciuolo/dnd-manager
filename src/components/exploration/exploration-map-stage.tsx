@@ -67,7 +67,57 @@ type ExplorationMapStageProps = {
   gridOffsetYCells?: number;
   /** Solo proiezione: abilita motore "effetti" stile overlacchio (effimeri, client-only). */
   effectsEnabled?: boolean;
+  /**
+   * Proiezione: mostra tutta la mappa sotto la nebbia (un solo “buco” a tutto bitmap),
+   * indipendentemente da `is_revealed` sulle regioni FoW.
+   */
+  fogRevealAll?: boolean;
+  /** Se valorizzato con `effectsEnabled`, carica/salva i poligoni effetto in `localStorage`. */
+  projectionEffectsStorageKey?: string;
 };
+
+const FOW_FULL_BITMAP_RECT: NormPoint[] = [
+  { x: 0, y: 0 },
+  { x: 1, y: 0 },
+  { x: 1, y: 1 },
+  { x: 0, y: 1 },
+];
+
+const PROJECTION_EFFECT_ELEMENTS: ParticleElement[] = [
+  "fuoco",
+  "veleno",
+  "fumo",
+  "fumini",
+  "oscurita",
+  "ghiaccio",
+];
+
+function parseStoredProjectionEffects(raw: string): { element: ParticleElement; points: NormPoint[] }[] {
+  try {
+    const data = JSON.parse(raw) as unknown;
+    if (!Array.isArray(data)) return [];
+    const out: { element: ParticleElement; points: NormPoint[] }[] = [];
+    for (const row of data) {
+      if (!row || typeof row !== "object") continue;
+      const el = (row as { element?: string }).element;
+      if (!el || !PROJECTION_EFFECT_ELEMENTS.includes(el as ParticleElement)) continue;
+      const pts = (row as { points?: unknown }).points;
+      if (!Array.isArray(pts) || pts.length < 3) continue;
+      const points: NormPoint[] = [];
+      for (const p of pts) {
+        if (p && typeof p === "object" && "x" in p && "y" in p) {
+          const x = Number((p as NormPoint).x);
+          const y = Number((p as NormPoint).y);
+          if (Number.isFinite(x) && Number.isFinite(y)) points.push({ x, y });
+        }
+      }
+      if (points.length >= 3) out.push({ element: el as ParticleElement, points });
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
 
 const FOG_RGBA = "rgba(8, 6, 4, 0.82)";
 /** In proiezione la nebbia deve coprire del tutto (niente map visibile sotto). */
@@ -220,6 +270,8 @@ export function ExplorationMapStage({
   gridOffsetXCells = 0,
   gridOffsetYCells = 0,
   effectsEnabled = false,
+  fogRevealAll = false,
+  projectionEffectsStorageKey,
 }: ExplorationMapStageProps) {
   const imgRef = useRef<HTMLImageElement>(null);
   /** Box della mappa (img + overlay): stesso sistema di coordinate di SVG/canvas. */
@@ -307,6 +359,38 @@ export function ExplorationMapStage({
     guardUntil: 0,
   });
 
+  const [projectionEffectsPersistReady, setProjectionEffectsPersistReady] = useState(false);
+
+  useEffect(() => {
+    if (!projectionEffectsStorageKey || !effectsEnabled) return;
+    setProjectionEffectsPersistReady(false);
+    try {
+      const raw = localStorage.getItem(projectionEffectsStorageKey);
+      if (raw) {
+        const parsed = parseStoredProjectionEffects(raw);
+        if (parsed.length) setEffectPolygons(parsed);
+      }
+    } catch {
+      /* ignore corrotto */
+    }
+    const id = requestAnimationFrame(() => {
+      requestAnimationFrame(() => setProjectionEffectsPersistReady(true));
+    });
+    return () => {
+      cancelAnimationFrame(id);
+      setProjectionEffectsPersistReady(false);
+    };
+  }, [projectionEffectsStorageKey, effectsEnabled]);
+
+  useEffect(() => {
+    if (!projectionEffectsStorageKey || !effectsEnabled || !projectionEffectsPersistReady) return;
+    try {
+      localStorage.setItem(projectionEffectsStorageKey, JSON.stringify(effectPolygons));
+    } catch {
+      /* ignore quota */
+    }
+  }, [projectionEffectsStorageKey, effectsEnabled, projectionEffectsPersistReady, effectPolygons]);
+
   const effectMainItems = useMemo(() => {
     return EFFECT_RADIAL_MAIN_ITEMS_BASE.map((item) => {
       if (item.id === "mostra") return { ...item, label: effectIsVisible ? "Mostra: ON" : "Mostra: OFF" };
@@ -325,10 +409,10 @@ export function ExplorationMapStage({
     effectTransformRef.current = effectTransform;
   }, [effectTransform]);
 
-  const revealedPolys = useMemo(
-    () => regions.filter((r) => r.is_revealed).map((r) => r.polygon),
-    [regions]
-  );
+  const revealedPolys = useMemo(() => {
+    if (fogRevealAll) return [FOW_FULL_BITMAP_RECT];
+    return regions.filter((r) => r.is_revealed).map((r) => r.polygon);
+  }, [regions, fogRevealAll]);
 
   /** Stesso box usato da `normFromEvent` (surface se presente): evita scarto SVG/canvas vs `img.offset*`. */
   const readMapLayoutDims = useCallback((): { w: number; h: number } | null => {
@@ -735,6 +819,13 @@ export function ExplorationMapStage({
       }
       if (item.id === "pulisci") {
         setEffectPolygons([]);
+        if (projectionEffectsStorageKey) {
+          try {
+            localStorage.removeItem(projectionEffectsStorageKey);
+          } catch {
+            /* ignore */
+          }
+        }
         setEffectPolygonElement(null);
         setEffectFreeDraftVertices([]);
         setEffectRectDrag(null);
@@ -848,7 +939,7 @@ export function ExplorationMapStage({
         return;
       }
     },
-    [effectMainItems, effectRadial.contextIdx, effectRadial.items]
+    [effectMainItems, effectRadial.contextIdx, effectRadial.items, projectionEffectsStorageKey]
   );
 
   const MIN_RECT_DRAG_NORM = 0.01;
@@ -1693,7 +1784,7 @@ export function ExplorationMapStage({
         initialScale={1}
         minScale={0.2}
         maxScale={6}
-        centerOnInit
+        centerOnInit={!fillViewport}
         limitToBounds={false}
         panning={
           effectsEnabled

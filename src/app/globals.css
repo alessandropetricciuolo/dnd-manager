@@ -96,10 +96,12 @@ button[class*="iubenda-cs-preference-button"] {
 html.vista-proiezione-fullscreen {
   overflow: hidden !important;
   height: 100%;
+  min-height: 100dvh;
 }
 
 html.vista-proiezione-fullscreen body {
   overflow: hidden !important;
+  min-height: 100dvh;
 }
 
 html.vista-proiezione-fullscreen #iubenda-cs-floating-button,
