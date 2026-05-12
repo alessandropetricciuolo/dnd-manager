@@ -79,7 +79,7 @@ function spawnFuoco(
     vy: -(78 + Math.random() * 92),
     life: 0,
     maxLife: 0.42 + Math.random() * 0.62,
-    size: 1.1 + Math.random() * 2.4,
+    size: 2.2 + Math.random() * 3.8,
     cr: r,
     cg: g,
     cb: b,
@@ -109,7 +109,7 @@ function spawnVeleno(
     vy: -(32 + Math.random() * 48),
     life: 0,
     maxLife: 0.65 + Math.random() * 0.85,
-    size: 0.9 + Math.random() * 2,
+    size: 1.6 + Math.random() * 3.4,
     phase: Math.random() * Math.PI * 2,
     cr: 36 + Math.random() * 55,
     cg: 175 + Math.random() * 75,
@@ -127,8 +127,8 @@ function tickVeleno(p: Particle, dt: number): boolean {
 }
 
 const LIMITS: Record<"fuoco" | "veleno", { max: number; spawnPerSec: number }> = {
-  fuoco: { max: 300, spawnPerSec: 110 },
-  veleno: { max: 300, spawnPerSec: 90 },
+  fuoco: { max: 520, spawnPerSec: 210 },
+  veleno: { max: 420, spawnPerSec: 160 },
 };
 
 export function tickParticleSystem(

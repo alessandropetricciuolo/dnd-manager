@@ -433,6 +433,12 @@ export function ExplorationMapStage({
             fxCtx.save();
             tracePolygonPathPx(fxCtx, poly.points, w, h, naturalW, naturalH);
             fxCtx.clip();
+            // Base glow per rendere l'effetto chiaramente visibile anche da lontano.
+            fxCtx.globalCompositeOperation = "screen";
+            fxCtx.fillStyle =
+              poly.element === "fuoco" ? "rgba(255, 114, 62, 0.22)" : "rgba(92, 228, 140, 0.2)";
+            fxCtx.fillRect(0, 0, w, h);
+            fxCtx.globalCompositeOperation = "source-over";
             drawParticles(fxCtx, sys?.particles ?? []);
             fxCtx.restore();
           }
