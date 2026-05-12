@@ -198,6 +198,8 @@ export function ExplorationMapStage({
   effectsEnabled = false,
 }: ExplorationMapStageProps) {
   const imgRef = useRef<HTMLImageElement>(null);
+  /** Box della mappa (img + overlay): stesso sistema di coordinate di SVG/canvas. */
+  const mapSurfaceRef = useRef<HTMLDivElement>(null);
   const fogRef = useRef<HTMLCanvasElement>(null);
   const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
   /** Dimensioni layout dell'img (per SVG allineato al bitmap con object-contain). */
@@ -275,9 +277,11 @@ export function ExplorationMapStage({
   const effectMainItems = useMemo(() => {
     return EFFECT_RADIAL_MAIN_ITEMS_BASE.map((item) => {
       if (item.id === "mostra") return { ...item, label: effectIsVisible ? "Mostra: ON" : "Mostra: OFF" };
+      if (item.id === "giorno") return { ...item, label: effectIsNight ? "Giorno" : "Giorno · attivo" };
+      if (item.id === "notte") return { ...item, label: effectIsNight ? "Notte · attivo" : "Notte" };
       return item;
     });
-  }, [effectIsVisible]);
+  }, [effectIsVisible, effectIsNight]);
 
   const effectRectDragRef = useRef(effectRectDrag);
   const effectTransformRef = useRef(effectTransform);
@@ -310,6 +314,15 @@ export function ExplorationMapStage({
   useEffect(() => {
     effectFreeDraftVerticesRef.current = effectFreeDraftVertices;
   }, [effectFreeDraftVertices]);
+
+  const effectDrawShapeRef = useRef(effectDrawShape);
+  const effectInteractionModeRef = useRef(effectInteractionMode);
+  useEffect(() => {
+    effectDrawShapeRef.current = effectDrawShape;
+  }, [effectDrawShape]);
+  useEffect(() => {
+    effectInteractionModeRef.current = effectInteractionMode;
+  }, [effectInteractionMode]);
   useEffect(() => {
     effectIsNightRef.current = effectIsNight;
   }, [effectIsNight]);
@@ -515,24 +528,30 @@ export function ExplorationMapStage({
 
   const normFromEvent = useCallback((clientX: number, clientY: number): NormPoint | null => {
     const img = imgRef.current;
-    if (!img) return null;
-    const r = img.getBoundingClientRect();
-    const W = img.offsetWidth;
-    const H = img.offsetHeight;
+    const surface = mapSurfaceRef.current;
+    const box = surface ?? img;
+    if (!img || !box) return null;
+    const sr = box.getBoundingClientRect();
+    const W = box.clientWidth;
+    const H = box.clientHeight;
     const naturalW = img.naturalWidth || 0;
     const naturalH = img.naturalHeight || 0;
-    if (naturalW <= 0 || naturalH <= 0 || W <= 0 || H <= 0 || r.width <= 0 || r.height <= 0) return null;
-    const px = ((clientX - r.left) / r.width) * W;
-    const py = ((clientY - r.top) / r.height) * H;
-    const scale = Math.min(W / naturalW, H / naturalH);
-    const dw = naturalW * scale;
-    const dh = naturalH * scale;
+    if (naturalW <= 0 || naturalH <= 0 || W <= 0 || H <= 0 || sr.width <= 0 || sr.height <= 0) return null;
+    const pxRaw = ((clientX - sr.left) / sr.width) * W;
+    const pyRaw = ((clientY - sr.top) / sr.height) * H;
+    /** Fuori dal box mappa (padding flex ecc.): ignora. Vicini ai bordi: clamp per drag continuo. */
+    const slack = 12;
+    if (pxRaw < -slack || pxRaw > W + slack || pyRaw < -slack || pyRaw > H + slack) return null;
+    const px = Math.min(W, Math.max(0, pxRaw));
+    const py = Math.min(H, Math.max(0, pyRaw));
+    const scaleGeom = Math.min(W / naturalW, H / naturalH);
+    const dw = naturalW * scaleGeom;
+    const dh = naturalH * scaleGeom;
     const ox = (W - dw) / 2;
     const oy = (H - dh) / 2;
     const x = (px - ox) / dw;
     const y = (py - oy) / dh;
-    if (x < 0 || x > 1 || y < 0 || y > 1) return null;
-    return { x, y };
+    return clampNormPoint({ x, y });
   }, []);
 
   useEffect(() => {
@@ -934,35 +953,35 @@ export function ExplorationMapStage({
     ]
   );
 
-  const handleEffectsDoubleClick = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!effectsEnabled) return;
-      if (effectInteractionMode) return;
-      if (effectTransform) return;
-      if (effectRectDrag) return;
-      if (effectDrawShape !== "poligono-libero") return;
-      const el = effectPolygonElementRef.current;
-      if (!el) return;
-      e.preventDefault();
-      e.stopPropagation();
+  const finalizeEffectFreePolygon = useCallback(() => {
+    const el = effectPolygonElementRef.current;
+    if (!el) return;
+    const draft = effectFreeDraftVerticesRef.current;
+    if (draft.length < 3) return;
+    const now = performance.now();
+    if (now - effectDblCloseGuardRef.current < 280) return;
+    effectDblCloseGuardRef.current = now;
+    setEffectPolygons((cur) => [...cur, { element: el, points: draft }]);
+    setEffectFreeDraftVertices([]);
+  }, []);
 
-      const now = performance.now();
-      if (now - effectDblCloseGuardRef.current < 280) return;
-      effectDblCloseGuardRef.current = now;
-
-      const draft = effectFreeDraftVerticesRef.current;
-      if (draft.length < 3) return;
-      setEffectPolygons((cur) => [...cur, { element: el, points: draft }]);
-      setEffectFreeDraftVertices([]);
-    },
-    [
-      effectsEnabled,
-      effectDrawShape,
-      effectInteractionMode,
-      effectRectDrag,
-      effectTransform,
-    ]
-  );
+  useEffect(() => {
+    if (!effectsEnabled) return;
+    const surface = mapSurfaceRef.current;
+    if (!surface) return;
+    const onDbl = (ev: MouseEvent) => {
+      if (!effectPolygonElementRef.current) return;
+      if (effectInteractionModeRef.current) return;
+      if (effectTransformRef.current) return;
+      if (effectRectDragRef.current) return;
+      if (effectDrawShapeRef.current !== "poligono-libero") return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      finalizeEffectFreePolygon();
+    };
+    surface.addEventListener("dblclick", onDbl);
+    return () => surface.removeEventListener("dblclick", onDbl);
+  }, [effectsEnabled, finalizeEffectFreePolygon]);
 
   const onRadialSelect = useCallback(
     (item: FowRadialMenuItem) => {
@@ -1247,27 +1266,27 @@ export function ExplorationMapStage({
         draggable={false}
         onLoad={onImgLoad}
       />
+      {(mode === "explore" || readOnly) && (
+        <canvas
+          ref={fogRef}
+          className="pointer-events-none absolute left-0 top-0 z-[1] h-full w-full"
+          aria-hidden
+        />
+      )}
       {effectsEnabled ? (
         <canvas
           ref={nightOverlayCanvasRef}
-          className="pointer-events-none absolute left-0 top-0 z-[1] h-full w-full"
+          className="pointer-events-none absolute left-0 top-0 z-[2] h-full w-full"
           aria-hidden
         />
       ) : null}
       {effectsEnabled ? (
         <canvas
           ref={effectsCanvasRef}
-          className="pointer-events-none absolute left-0 top-0 z-[2] h-full w-full"
-          aria-hidden
-        />
-      ) : null}
-      {(mode === "explore" || readOnly) && (
-        <canvas
-          ref={fogRef}
           className="pointer-events-none absolute left-0 top-0 z-[3] h-full w-full"
           aria-hidden
         />
-      )}
+      ) : null}
       {effectsEnabled ? (
         <div
           ref={pixiHostRef}
@@ -1526,14 +1545,17 @@ export function ExplorationMapStage({
             }
             onClick={effectsEnabled ? handleEffectsClick : mode === "explore" && onRevealClick ? handleExploreClick : undefined}
             onMouseDown={effectsEnabled ? handleEffectsMouseDown : undefined}
-            onDoubleClickCapture={effectsEnabled ? handleEffectsDoubleClick : undefined}
             onContextMenu={effectsEnabled ? onEffectsContextMenu : onStageContextMenu}
           >
-            {fillViewport ? (
-              <div className="relative inline-block max-h-full max-w-full leading-none">{mapLayers}</div>
-            ) : (
-              mapLayers
-            )}
+            <div
+              ref={mapSurfaceRef}
+              className={cn(
+                "relative leading-none",
+                fillViewport ? "inline-block max-h-full max-w-full" : "block w-full"
+              )}
+            >
+              {mapLayers}
+            </div>
           </div>
         </TransformComponent>
       </TransformWrapper>

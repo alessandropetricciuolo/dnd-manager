@@ -168,7 +168,8 @@ export function tickParticleSystem(
 export function drawParticles(ctx: CanvasRenderingContext2D, particles: Particle[]) {
   for (const p of particles) {
     const u = p.life / p.maxLife;
-    const a = Math.max(0, (1 - u) * (1 - u));
+    /** Leggermente più visibile sopra la nebbia (clip interno alla forma). */
+    const a = Math.min(1, Math.max(0, (1 - u) * (1 - u)) * 1.15);
     ctx.fillStyle = `rgba(${Math.round(p.cr)},${Math.round(p.cg)},${Math.round(p.cb)},${a})`;
     ctx.beginPath();
     ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
