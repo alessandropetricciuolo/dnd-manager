@@ -38,6 +38,9 @@ export function rectangleToNormPolygon(a: NormPoint, b: NormPoint): NormPoint[] 
   ].map(clampNormPoint);
 }
 
+/** Mezza larghezza tratto spray in coordinate normalizzate (≈ pennello su mappa). */
+export const EFFECT_SPRAY_HALF_WIDTH_NORM = 0.0065;
+
 export function ellipseToNormPolygon(a: NormPoint, b: NormPoint, segments = 28): NormPoint[] {
   const cx = (a.x + b.x) / 2;
   const cy = (a.y + b.y) / 2;
@@ -47,6 +50,62 @@ export function ellipseToNormPolygon(a: NormPoint, b: NormPoint, segments = 28):
   for (let i = 0; i < segments; i++) {
     const t = (i / segments) * Math.PI * 2;
     pts.push(clampNormPoint({ x: cx + Math.cos(t) * rx, y: cy + Math.sin(t) * ry }));
+  }
+  return pts;
+}
+
+function normPerp(dx: number, dy: number): [number, number] {
+  const L = Math.hypot(dx, dy) || 1e-9;
+  return [-dy / L, dx / L];
+}
+
+/**
+ * Converte una pennellata (centrolinea) in poligono chiuso = alone dello spray.
+ */
+export function thickPolylineToNormPolygon(samples: NormPoint[], halfWidth: number): NormPoint[] {
+  const w = Math.max(1e-6, halfWidth);
+  if (samples.length === 0) return [];
+  if (samples.length === 1) {
+    const c = samples[0];
+    return ellipseToNormPolygon(
+      clampNormPoint({ x: c.x - w, y: c.y - w }),
+      clampNormPoint({ x: c.x + w, y: c.y + w })
+    );
+  }
+  const pts: NormPoint[] = [];
+  for (let i = 0; i < samples.length; i++) {
+    const p = samples[i];
+    let tx: number;
+    let ty: number;
+    if (i === 0) {
+      tx = samples[1].x - p.x;
+      ty = samples[1].y - p.y;
+    } else if (i === samples.length - 1) {
+      tx = p.x - samples[i - 1].x;
+      ty = p.y - samples[i - 1].y;
+    } else {
+      tx = samples[i + 1].x - samples[i - 1].x;
+      ty = samples[i + 1].y - samples[i - 1].y;
+    }
+    const [nx, ny] = normPerp(tx, ty);
+    pts.push(clampNormPoint({ x: p.x + nx * w, y: p.y + ny * w }));
+  }
+  for (let i = samples.length - 1; i >= 0; i--) {
+    const p = samples[i];
+    let tx: number;
+    let ty: number;
+    if (i === 0) {
+      tx = samples[1].x - p.x;
+      ty = samples[1].y - p.y;
+    } else if (i === samples.length - 1) {
+      tx = p.x - samples[i - 1].x;
+      ty = p.y - samples[i - 1].y;
+    } else {
+      tx = samples[i + 1].x - samples[i - 1].x;
+      ty = samples[i + 1].y - samples[i - 1].y;
+    }
+    const [nx, ny] = normPerp(tx, ty);
+    pts.push(clampNormPoint({ x: p.x - nx * w, y: p.y - ny * w }));
   }
   return pts;
 }

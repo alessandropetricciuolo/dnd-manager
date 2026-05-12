@@ -16,17 +16,16 @@ import {
   centroid,
   scalePolygonFromCenter,
   translatePolygon,
+  thickPolylineToNormPolygon,
+  EFFECT_SPRAY_HALF_WIDTH_NORM,
   type FowShapeKind,
 } from "@/lib/exploration/fow-shape-tools";
 import {
   createPixiSmokeRuntime,
   destroyPixiSmokeRuntime,
-  drawPixiSmokeSprites,
   ensurePixiSmokeSystems,
   renderPixiSmokeFrame,
   resizePixiSmokeRuntime,
-  syncPixiSmokeLayers,
-  tickPixiSmokeSystem,
   type PixiSmokeRuntime,
   type PixiSmokeSystem,
 } from "@/lib/exploration/pixi-smoke-effects";
@@ -113,7 +112,9 @@ const EFFECT_RADIAL_ELEMENT_ITEMS: FowRadialMenuItem[] = [
   { id: "fuoco", label: "Fuoco" },
   { id: "veleno", label: "Veleno" },
   { id: "fumo", label: "Fumo" },
-  { id: "fumini", label: "Fumini" },
+  { id: "fumini", label: "Fulmine" },
+  { id: "oscurita", label: "Oscurità" },
+  { id: "ghiaccio", label: "Ghiaccio" },
   { id: "indietro", label: "← Menu" },
 ];
 
@@ -133,8 +134,31 @@ function effectElementDraftStyle(element: ParticleElement): { fill: string; stro
       return { fill: "rgba(190, 198, 210, 0.14)", stroke: "rgba(210, 218, 230, 0.9)" };
     case "fumini":
       return { fill: "rgba(140, 190, 235, 0.12)", stroke: "rgba(120, 185, 240, 0.92)" };
+    case "oscurita":
+      return { fill: "rgba(12, 12, 18, 0.35)", stroke: "rgba(180, 180, 190, 0.55)" };
+    case "ghiaccio":
+      return { fill: "rgba(190, 235, 255, 0.18)", stroke: "rgba(160, 220, 255, 0.92)" };
     default:
       return { fill: "rgba(255, 255, 255, 0.1)", stroke: "rgba(255, 255, 255, 0.85)" };
+  }
+}
+
+function effectBaseScreenTint(element: ParticleElement): string {
+  switch (element) {
+    case "fuoco":
+      return "rgba(255, 72, 28, 0.1)";
+    case "veleno":
+      return "rgba(48, 200, 96, 0.1)";
+    case "fumo":
+      return "rgba(140, 150, 168, 0.12)";
+    case "fumini":
+      return "rgba(160, 200, 255, 0.06)";
+    case "oscurita":
+      return "rgba(0, 0, 0, 0.24)";
+    case "ghiaccio":
+      return "rgba(200, 240, 255, 0.14)";
+    default:
+      return "rgba(0, 0, 0, 0.08)";
   }
 }
 
@@ -202,7 +226,7 @@ export function ExplorationMapStage({
   const mapSurfaceRef = useRef<HTMLDivElement>(null);
   const fogRef = useRef<HTMLCanvasElement>(null);
   const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
-  /** Dimensioni layout dell'img (per SVG allineato al bitmap con object-contain). */
+  /** Dimensioni layout del box mappa (stesso di `mapSurfaceRef` / `normFromEvent`, allineato al bitmap con object-contain). */
   const [layoutSize, setLayoutSize] = useState<{ w: number; h: number } | null>(null);
   const [drag, setDrag] = useState<{ regionId: string; vi: number } | null>(null);
   const [dragPreview, setDragPreview] = useState<NormPoint | null>(null);
@@ -244,6 +268,15 @@ export function ExplorationMapStage({
     start: NormPoint;
     current: NormPoint;
   } | null>(null);
+  /** Spray vernice: campioni lungo il tracciato (mouse down → move → up). */
+  const [effectSprayDrag, setEffectSprayDrag] = useState<{
+    element: ParticleElement;
+    samples: NormPoint[];
+  } | null>(null);
+  const effectSprayDragRef = useRef(effectSprayDrag);
+  useEffect(() => {
+    effectSprayDragRef.current = effectSprayDrag;
+  }, [effectSprayDrag]);
   const [effectTransform, setEffectTransform] = useState<{
     mode: "move" | "resize";
     idx: number;
@@ -296,6 +329,16 @@ export function ExplorationMapStage({
     () => regions.filter((r) => r.is_revealed).map((r) => r.polygon),
     [regions]
   );
+
+  /** Stesso box usato da `normFromEvent` (surface se presente): evita scarto SVG/canvas vs `img.offset*`. */
+  const readMapLayoutDims = useCallback((): { w: number; h: number } | null => {
+    const surface = mapSurfaceRef.current;
+    const img = imgRef.current;
+    const w = surface ? surface.clientWidth : img?.offsetWidth ?? 0;
+    const h = surface ? surface.clientHeight : img?.offsetHeight ?? 0;
+    if (w < 2 || h < 2) return null;
+    return { w, h };
+  }, []);
 
   const effectPolygonsRef = useRef(effectPolygons);
   const effectIsNightRef = useRef(effectIsNight);
@@ -412,8 +455,12 @@ export function ExplorationMapStage({
         return;
       }
 
-      const w = img.offsetWidth;
-      const h = img.offsetHeight;
+      const dims = readMapLayoutDims();
+      if (!dims) {
+        raf = requestAnimationFrame(tick);
+        return;
+      }
+      const { w, h } = dims;
       const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
 
       const fxCv = effectsCanvasRef.current;
@@ -426,20 +473,19 @@ export function ExplorationMapStage({
           const polys = effectPolygonsRef.current;
           for (let i = 0; i < polys.length; i++) {
             const poly = polys[i];
-            if (poly.element !== "fuoco" && poly.element !== "veleno") continue;
             const sys = particleSystemsRef.current[i];
+            if (!sys) continue;
             tickParticleSystem(poly.points, poly.element, sys, dt, { w, h }, naturalW, naturalH);
             // Clip: disegna particelle solo dentro la forma effetto.
             fxCtx.save();
             tracePolygonPathPx(fxCtx, poly.points, w, h, naturalW, naturalH);
             fxCtx.clip();
-            // Base glow per rendere l'effetto chiaramente visibile anche da lontano.
-            fxCtx.globalCompositeOperation = "screen";
-            fxCtx.fillStyle =
-              poly.element === "fuoco" ? "rgba(255, 114, 62, 0.22)" : "rgba(92, 228, 140, 0.2)";
+            // Base glow (oscurità: source-over per scurire leggermente; resto screen).
+            fxCtx.globalCompositeOperation = poly.element === "oscurita" ? "source-over" : "screen";
+            fxCtx.fillStyle = effectBaseScreenTint(poly.element);
             fxCtx.fillRect(0, 0, w, h);
             fxCtx.globalCompositeOperation = "source-over";
-            drawParticles(fxCtx, sys?.particles ?? []);
+            drawParticles(fxCtx, sys?.particles ?? [], poly.element);
             fxCtx.restore();
           }
         }
@@ -466,19 +512,8 @@ export function ExplorationMapStage({
 
       const rt = pixiSmokeRtRef.current;
       if (rt && w > 0 && h > 0 && naturalW > 0 && naturalH > 0) {
-        rt.root.visible = effectIsVisibleRef.current;
-        if (effectIsVisibleRef.current) {
-          const polys = effectPolygonsRef.current;
-          const pixiSys = pixiSmokeSystemsRef.current;
-          for (let i = 0; i < polys.length; i++) {
-            const el = polys[i].element;
-            if (el === "fumo" || el === "fumini") {
-              tickPixiSmokeSystem(polys[i].points, el, pixiSys[i]!, dt, { w, h }, naturalW, naturalH);
-            }
-          }
-          syncPixiSmokeLayers(rt, polys, naturalW, naturalH, w, h);
-          drawPixiSmokeSprites(rt, polys, pixiSys);
-        }
+        // Canvas fallback stabile: disabilita render Pixi per evitare disallineamenti su alcune GPU/browser.
+        rt.root.visible = false;
         renderPixiSmokeFrame(rt);
       }
 
@@ -487,16 +522,16 @@ export function ExplorationMapStage({
 
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [effectsEnabled, natural]);
+  }, [effectsEnabled, natural, readMapLayoutDims]);
 
   const fogFill = readOnly ? FOG_RGBA_OPAQUE : FOG_RGBA;
 
   const syncFog = useCallback(() => {
     const img = imgRef.current;
     if (!img || !img.naturalWidth) return;
-    const w = img.offsetWidth;
-    const h = img.offsetHeight;
-    if (w < 2 || h < 2) return;
+    const dims = readMapLayoutDims();
+    if (!dims) return;
+    const { w, h } = dims;
     setLayoutSize((prev) => (prev?.w === w && prev?.h === h ? prev : { w, h }));
     const cv = fogRef.current;
     if (!cv) return;
@@ -519,7 +554,7 @@ export function ExplorationMapStage({
         night.style.height = `${h}px`;
       }
     }
-  }, [revealedPolys, mode, readOnly, fogFill, effectsEnabled]);
+  }, [revealedPolys, mode, readOnly, fogFill, effectsEnabled, readMapLayoutDims]);
 
   useEffect(() => {
     syncFog();
@@ -527,7 +562,7 @@ export function ExplorationMapStage({
 
   useEffect(() => {
     const ro = new ResizeObserver(() => syncFog());
-    const el = imgRef.current;
+    const el = mapSurfaceRef.current;
     if (el) ro.observe(el);
     return () => ro.disconnect();
   }, [syncFog]);
@@ -684,7 +719,13 @@ export function ExplorationMapStage({
       }
       if (item.id === "indietro") {
         const isElementMenu = effectRadial.items.some(
-          (i) => i.id === "fuoco" || i.id === "veleno" || i.id === "fumo" || i.id === "fumini"
+          (i) =>
+            i.id === "fuoco" ||
+            i.id === "veleno" ||
+            i.id === "fumo" ||
+            i.id === "fumini" ||
+            i.id === "oscurita" ||
+            i.id === "ghiaccio"
         );
         setEffectRadial((prev) => ({
           ...prev,
@@ -697,6 +738,8 @@ export function ExplorationMapStage({
         setEffectPolygonElement(null);
         setEffectFreeDraftVertices([]);
         setEffectRectDrag(null);
+        setEffectSprayDrag(null);
+        effectSprayDragRef.current = null;
         setEffectInteractionMode(null);
         setEffectSelectedIdx(null);
         setEffectTransform(null);
@@ -722,6 +765,8 @@ export function ExplorationMapStage({
       ) {
         setEffectDrawShape(item.id as FowShapeKind);
         setEffectFreeDraftVertices([]);
+        setEffectSprayDrag(null);
+        effectSprayDragRef.current = null;
         setEffectInteractionMode(null);
         setEffectSelectedIdx(null);
         setEffectTransform(null);
@@ -730,6 +775,8 @@ export function ExplorationMapStage({
       }
       if (item.id === "fuoco") {
         setEffectPolygonElement("fuoco");
+        setEffectSprayDrag(null);
+        effectSprayDragRef.current = null;
         setEffectInteractionMode(null);
         setEffectSelectedIdx(null);
         setEffectTransform(null);
@@ -737,6 +784,8 @@ export function ExplorationMapStage({
       }
       if (item.id === "veleno") {
         setEffectPolygonElement("veleno");
+        setEffectSprayDrag(null);
+        effectSprayDragRef.current = null;
         setEffectInteractionMode(null);
         setEffectSelectedIdx(null);
         setEffectTransform(null);
@@ -744,6 +793,8 @@ export function ExplorationMapStage({
       }
       if (item.id === "fumo") {
         setEffectPolygonElement("fumo");
+        setEffectSprayDrag(null);
+        effectSprayDragRef.current = null;
         setEffectInteractionMode(null);
         setEffectSelectedIdx(null);
         setEffectTransform(null);
@@ -751,6 +802,26 @@ export function ExplorationMapStage({
       }
       if (item.id === "fumini") {
         setEffectPolygonElement("fumini");
+        setEffectSprayDrag(null);
+        effectSprayDragRef.current = null;
+        setEffectInteractionMode(null);
+        setEffectSelectedIdx(null);
+        setEffectTransform(null);
+        return;
+      }
+      if (item.id === "oscurita") {
+        setEffectPolygonElement("oscurita");
+        setEffectSprayDrag(null);
+        effectSprayDragRef.current = null;
+        setEffectInteractionMode(null);
+        setEffectSelectedIdx(null);
+        setEffectTransform(null);
+        return;
+      }
+      if (item.id === "ghiaccio") {
+        setEffectPolygonElement("ghiaccio");
+        setEffectSprayDrag(null);
+        effectSprayDragRef.current = null;
         setEffectInteractionMode(null);
         setEffectSelectedIdx(null);
         setEffectTransform(null);
@@ -781,17 +852,30 @@ export function ExplorationMapStage({
   );
 
   const MIN_RECT_DRAG_NORM = 0.01;
+  const SPRAY_SAMPLE_DIST_NORM = 0.0024;
 
   const isEffectRectDragging = effectRectDrag !== null;
+  const isEffectSprayDragging = effectSprayDrag !== null;
   const isEffectTransforming = effectTransform !== null;
 
   useEffect(() => {
     if (!effectsEnabled) return;
-    if (!isEffectRectDragging && !isEffectTransforming) return;
+    if (!isEffectRectDragging && !isEffectTransforming && !isEffectSprayDragging) return;
 
     const onMove = (ev: MouseEvent) => {
       const n = normFromEvent(ev.clientX, ev.clientY);
       if (!n) return;
+
+      const spray = effectSprayDragRef.current;
+      if (spray) {
+        const last = spray.samples[spray.samples.length - 1];
+        if (Math.hypot(n.x - last.x, n.y - last.y) >= SPRAY_SAMPLE_DIST_NORM) {
+          const next = { ...spray, samples: [...spray.samples, n] };
+          effectSprayDragRef.current = next;
+          setEffectSprayDrag(next);
+        }
+        return;
+      }
 
       if (effectRectDragRef.current) {
         const rd = effectRectDragRef.current;
@@ -843,6 +927,16 @@ export function ExplorationMapStage({
     };
 
     const onUp = () => {
+      const spray = effectSprayDragRef.current;
+      if (spray) {
+        effectSprayDragRef.current = null;
+        setEffectSprayDrag(null);
+        const pts = thickPolylineToNormPolygon(spray.samples, EFFECT_SPRAY_HALF_WIDTH_NORM);
+        if (pts.length >= 3) {
+          setEffectPolygons((prev) => [...prev, { element: spray.element, points: pts }]);
+        }
+      }
+
       const rd = effectRectDragRef.current;
       if (rd) {
         const w = Math.abs(rd.current.x - rd.start.x);
@@ -873,6 +967,7 @@ export function ExplorationMapStage({
   }, [
     effectsEnabled,
     isEffectRectDragging,
+    isEffectSprayDragging,
     isEffectTransforming,
     MIN_RECT_DRAG_NORM,
     normFromEvent,
@@ -921,6 +1016,12 @@ export function ExplorationMapStage({
       if (effectPolygonElement && effectDrawShape !== "poligono-libero") {
         const n = normFromEvent(e.clientX, e.clientY);
         if (!n) return;
+        if (effectDrawShape === "spray") {
+          const next = { element: effectPolygonElement, samples: [n] };
+          effectSprayDragRef.current = next;
+          setEffectSprayDrag(next);
+          return;
+        }
         const next = {
           element: effectPolygonElement,
           shape: effectDrawShape,
@@ -931,7 +1032,14 @@ export function ExplorationMapStage({
         setEffectRectDrag(next);
       }
     },
-    [effectsEnabled, effectDrawShape, effectInteractionMode, effectPolygonElement, effectSelectedIdx, normFromEvent]
+    [
+      effectsEnabled,
+      effectDrawShape,
+      effectInteractionMode,
+      effectPolygonElement,
+      effectSelectedIdx,
+      normFromEvent,
+    ]
   );
 
   const handleEffectsClick = useCallback(
@@ -941,6 +1049,7 @@ export function ExplorationMapStage({
       if (effectInteractionMode) return;
       if (effectTransform) return;
       if (effectRectDrag) return;
+      if (effectSprayDragRef.current) return;
       if (effectDrawShape !== "poligono-libero") return;
       if (!effectPolygonElement) return;
       if (e.detail !== 1) return;
@@ -997,6 +1106,7 @@ export function ExplorationMapStage({
       if (effectInteractionModeRef.current) return;
       if (effectTransformRef.current) return;
       if (effectRectDragRef.current) return;
+      if (effectSprayDragRef.current) return;
       if (effectDrawShapeRef.current !== "poligono-libero") return;
       ev.preventDefault();
       ev.stopPropagation();
@@ -1431,10 +1541,9 @@ export function ExplorationMapStage({
           const [cx, cy] = normToSvg(p);
           return <circle key={`fs-${i}`} cx={cx} cy={cy} r={0.75} fill="rgba(34, 211, 238, 0.95)" />;
         })}
-        {/* Overlay persistente aree effetti: utile anche quando le particelle sono poco visibili. */}
+        {/* Aree effetto: niente bordo a riposo; solo guida tratteggiata se selezionata (sposta/ridimensiona). */}
         {effectsEnabled &&
           effectPolygons.map((poly, i) => {
-            const style = effectElementDraftStyle(poly.element);
             const isSelected = i === effectSelectedIdx;
             return (
               <polygon
@@ -1445,28 +1554,20 @@ export function ExplorationMapStage({
                     return `${sx},${sy}`;
                   })
                   .join(" ")}
-                fill={style.fill}
-                stroke={isSelected ? "rgba(255,255,255,0.98)" : style.stroke}
-                strokeWidth={isSelected ? 0.55 : 0.35}
+                fill="none"
+                stroke={isSelected ? "rgba(255, 255, 255, 0.42)" : "none"}
+                strokeWidth={0.42}
                 strokeDasharray={isSelected ? "1.2 0.7" : undefined}
               />
             );
           })}
-        {/* Effetti (overlacchio): draft in costruzione */}
+        {/* Effetti: bozza rettangolo / cerchio */}
         {effectsEnabled && effectRectDrag ? (
           (() => {
             const a = effectRectDrag.start;
             const b = effectRectDrag.current;
             const color = effectElementDraftStyle(effectRectDrag.element);
-            const pts =
-              effectRectDrag.shape === "spray"
-                ? [
-                    { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y) },
-                    { x: Math.max(a.x, b.x), y: Math.min(a.y, b.y) },
-                    { x: Math.max(a.x, b.x), y: Math.max(a.y, b.y) },
-                    { x: Math.min(a.x, b.x), y: Math.max(a.y, b.y) },
-                  ]
-                : generateShapePolygon(effectRectDrag.shape as FowShapeKind, a, b);
+            const pts = generateShapePolygon(effectRectDrag.shape as FowShapeKind, a, b);
             return (
               <polygon
                 points={pts
@@ -1482,6 +1583,40 @@ export function ExplorationMapStage({
               />
             );
           })()
+        ) : null}
+        {effectsEnabled && effectSprayDrag && effectSprayDrag.samples.length > 0 ? (
+          <>
+            {effectSprayDrag.samples.length > 1 ? (
+              <polyline
+                points={effectSprayDrag.samples
+                  .map((p) => {
+                    const [sx, sy] = normToSvg(p);
+                    return `${sx},${sy}`;
+                  })
+                  .join(" ")}
+                fill="none"
+                stroke={effectElementDraftStyle(effectSprayDrag.element).stroke}
+                strokeWidth={0.45}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeDasharray="1.1 0.75"
+              />
+            ) : null}
+            {effectSprayDrag.samples.map((p, i) => {
+              const [cx, cy] = normToSvg(p);
+              return (
+                <circle
+                  key={`espray-${i}`}
+                  cx={cx}
+                  cy={cy}
+                  r={effectSprayDrag.samples.length === 1 ? 1.0 : 0.5}
+                  fill="none"
+                  stroke={effectElementDraftStyle(effectSprayDrag.element).stroke}
+                  strokeWidth={0.28}
+                />
+              );
+            })}
+          </>
         ) : null}
         {effectsEnabled && effectFreeDraftVertices.length > 1 ? (
           <polyline
