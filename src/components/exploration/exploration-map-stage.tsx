@@ -618,9 +618,10 @@ export function ExplorationMapStage({
     const { w, h } = dims;
     setLayoutSize((prev) => (prev?.w === w && prev?.h === h ? prev : { w, h }));
     const cv = fogRef.current;
-    if (!cv) return;
-    drawFog(cv, w, h, mode === "explore" || readOnly ? revealedPolys : [], fogFill, img.naturalWidth, img.naturalHeight);
-    // Effetti: sincronizza dimensioni canvas sotto/ sopra la foglia
+    if (cv && !fogRevealAll) {
+      drawFog(cv, w, h, mode === "explore" || readOnly ? revealedPolys : [], fogFill, img.naturalWidth, img.naturalHeight);
+    }
+    // Effetti: sempre se abilitati (anche senza canvas nebbia in proiezione fogRevealAll).
     if (effectsEnabled) {
       const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
       const fx = effectsCanvasRef.current;
@@ -638,7 +639,7 @@ export function ExplorationMapStage({
         night.style.height = `${h}px`;
       }
     }
-  }, [revealedPolys, mode, readOnly, fogFill, effectsEnabled, readMapLayoutDims]);
+  }, [revealedPolys, mode, readOnly, fogFill, effectsEnabled, readMapLayoutDims, fogRevealAll]);
 
   useEffect(() => {
     syncFog();
@@ -1490,7 +1491,7 @@ export function ExplorationMapStage({
         draggable={false}
         onLoad={onImgLoad}
       />
-      {(mode === "explore" || readOnly) && (
+      {(mode === "explore" || readOnly) && !fogRevealAll && (
         <canvas
           ref={fogRef}
           className="pointer-events-none absolute left-0 top-0 z-[10] h-full w-full"
@@ -1798,6 +1799,8 @@ export function ExplorationMapStage({
         doubleClick={effectsEnabled ? { disabled: true } : undefined}
       >
         <TransformComponent
+          wrapperClass={fillViewport ? "h-full min-h-0 w-full" : undefined}
+          contentClass={fillViewport ? "h-full min-h-0 w-full" : undefined}
           wrapperStyle={{ width: "100%", height: "100%" }}
           contentStyle={{ width: "100%", height: "100%", position: "relative" }}
         >

@@ -122,7 +122,7 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
   return (
     <div
       ref={rootRef}
-      className="fixed inset-0 flex min-h-0 flex-col overflow-hidden bg-black"
+      className="fixed inset-0 flex min-h-0 flex-col overflow-hidden bg-black supports-[height:100dvh]:h-[100dvh] supports-[height:100dvh]:max-h-[100dvh]"
     >
       <Button
         type="button"
