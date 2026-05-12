@@ -1,3 +1,4 @@
+import "pixi.js/unsafe-eval";
 import { Application, Container, Graphics, Sprite, Texture } from "pixi.js";
 import type { NormPoint } from "@/lib/exploration/fow-geometry";
 import { intrinsicNormToElementPx } from "@/lib/exploration/fow-geometry";

@@ -941,6 +941,22 @@ export function ExplorationMapStage({
       if (performance.now() - effectDblCloseGuardRef.current < 280) return;
       const n = normFromEvent(e.clientX, e.clientY);
       if (!n) return;
+      const draft = effectFreeDraftVerticesRef.current;
+      if (draft.length >= 3) {
+        const first = draft[0];
+        const d = Math.hypot(n.x - first.x, n.y - first.y);
+        // UX robusta: click vicino al primo vertice chiude il poligono.
+        if (d <= 0.02) {
+          const el = effectPolygonElementRef.current;
+          if (!el) return;
+          const now = performance.now();
+          if (now - effectDblCloseGuardRef.current < 280) return;
+          effectDblCloseGuardRef.current = now;
+          setEffectPolygons((cur) => [...cur, { element: el, points: draft }]);
+          setEffectFreeDraftVertices([]);
+          return;
+        }
+      }
       setEffectFreeDraftVertices((prev) => [...prev, n]);
     },
     [
