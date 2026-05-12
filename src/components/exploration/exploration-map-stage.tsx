@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import { cn } from "@/lib/utils";
 import type { NormPoint } from "@/lib/exploration/fow-geometry";
@@ -644,6 +644,22 @@ export function ExplorationMapStage({
   useEffect(() => {
     syncFog();
   }, [syncFog, imageUrl]);
+
+  /**
+   * In produzione l'immagine è spesso già in cache: `onLoad` non parte e `natural` resta null,
+   * quindi il canvas effetti non disegna (tick esce se naturalW/H === 0). Idrauta da `complete`.
+   */
+  useLayoutEffect(() => {
+    const img = imgRef.current;
+    if (!img?.complete || !img.naturalWidth || !img.naturalHeight) return;
+    setNatural((prev) =>
+      prev?.w === img.naturalWidth && prev?.h === img.naturalHeight
+        ? prev
+        : { w: img.naturalWidth, h: img.naturalHeight }
+    );
+    onImageSized?.(img.naturalWidth, img.naturalHeight);
+    syncFog();
+  }, [imageUrl, onImageSized, syncFog]);
 
   useEffect(() => {
     const ro = new ResizeObserver(() => syncFog());
