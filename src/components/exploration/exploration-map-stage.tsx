@@ -1431,6 +1431,27 @@ export function ExplorationMapStage({
           const [cx, cy] = normToSvg(p);
           return <circle key={`fs-${i}`} cx={cx} cy={cy} r={0.75} fill="rgba(34, 211, 238, 0.95)" />;
         })}
+        {/* Overlay persistente aree effetti: utile anche quando le particelle sono poco visibili. */}
+        {effectsEnabled &&
+          effectPolygons.map((poly, i) => {
+            const style = effectElementDraftStyle(poly.element);
+            const isSelected = i === effectSelectedIdx;
+            return (
+              <polygon
+                key={`epoly-${i}`}
+                points={poly.points
+                  .map((p) => {
+                    const [sx, sy] = normToSvg(p);
+                    return `${sx},${sy}`;
+                  })
+                  .join(" ")}
+                fill={style.fill}
+                stroke={isSelected ? "rgba(255,255,255,0.98)" : style.stroke}
+                strokeWidth={isSelected ? 0.55 : 0.35}
+                strokeDasharray={isSelected ? "1.2 0.7" : undefined}
+              />
+            );
+          })}
         {/* Effetti (overlacchio): draft in costruzione */}
         {effectsEnabled && effectRectDrag ? (
           (() => {
