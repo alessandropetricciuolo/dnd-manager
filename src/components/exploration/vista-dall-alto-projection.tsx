@@ -61,14 +61,6 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
-    async function reloadRegionsFromDb() {
-      const { data } = await supabase
-        .from("campaign_exploration_fow_regions")
-        .select("*")
-        .eq("map_id", mapMeta.id)
-        .order("sort_order", { ascending: true });
-      setRegions((data ?? []) as FowRegionRow[]);
-    }
     const channel = supabase
       .channel(`fow-proj-${mapMeta.id}`)
       .on(
@@ -80,7 +72,7 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
           filter: `map_id=eq.${mapMeta.id}`,
         },
         (payload) => {
-          void reloadRegionsFromDb();
+          // Solo merge dal payload: evita race con SELECT che può tornare stale e annullare is_revealed.
           setRegions((prev) => {
             if (payload.eventType === "INSERT" && payload.new) {
               const row = payload.new as FowRegionRow;

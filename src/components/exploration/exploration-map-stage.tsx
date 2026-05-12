@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import { cn } from "@/lib/utils";
 import type { NormPoint } from "@/lib/exploration/fow-geometry";
@@ -493,9 +493,18 @@ export function ExplorationMapStage({
     if (w < 2 || h < 2) return;
     setLayoutSize((prev) => (prev?.w === w && prev?.h === h ? prev : { w, h }));
     const cv = fogRef.current;
-    if (!cv) return;
-    drawFog(cv, w, h, mode === "explore" || readOnly ? revealedPolys : [], fogFill, img.naturalWidth, img.naturalHeight);
-    // Effetti: sincronizza dimensioni canvas sotto/ sopra la foglia
+    if (cv) {
+      drawFog(
+        cv,
+        w,
+        h,
+        mode === "explore" || readOnly ? revealedPolys : [],
+        fogFill,
+        img.naturalWidth,
+        img.naturalHeight
+      );
+    }
+    // Effetti: sincronizza dimensioni canvas anche se il canvas nebbia non è ancora montato
     if (effectsEnabled) {
       const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
       const fx = effectsCanvasRef.current;
@@ -515,9 +524,21 @@ export function ExplorationMapStage({
     }
   }, [revealedPolys, mode, readOnly, fogFill, effectsEnabled]);
 
+  /** Immagine in cache: onLoad può non partire; allinea SVG/canvas alla stessa geometria di drawFog. */
+  useLayoutEffect(() => {
+    const img = imgRef.current;
+    if (!img?.naturalWidth || !img.naturalHeight) return;
+    setNatural((prev) => {
+      const next = { w: img.naturalWidth, h: img.naturalHeight };
+      if (prev?.w === next.w && prev?.h === next.h) return prev;
+      return next;
+    });
+    onImageSized?.(img.naturalWidth, img.naturalHeight);
+  }, [imageUrl, onImageSized]);
+
   useEffect(() => {
     syncFog();
-  }, [syncFog, imageUrl]);
+  }, [syncFog, imageUrl, natural]);
 
   useEffect(() => {
     const ro = new ResizeObserver(() => syncFog());
@@ -1204,8 +1225,9 @@ export function ExplorationMapStage({
 
   const elW = layoutSize?.w ?? 0;
   const elH = layoutSize?.h ?? 0;
-  const nw = natural?.w ?? 0;
-  const nh = natural?.h ?? 0;
+  const imgEl = imgRef.current;
+  const nw = natural?.w ?? imgEl?.naturalWidth ?? 0;
+  const nh = natural?.h ?? imgEl?.naturalHeight ?? 0;
   const hasLayout = elW > 0 && elH > 0;
 
   const normToSvg = (p: NormPoint): [number, number] =>
@@ -1360,25 +1382,26 @@ export function ExplorationMapStage({
         preserveAspectRatio="none"
         aria-hidden
       >
-        {regions.map((r) => {
-          const poly = vertexPreview(r);
-          return (
-            <polygon
-              key={r.id}
-              points={poly
-                .map((p) => {
-                  const [sx, sy] = normToSvg(p);
-                  return `${sx},${sy}`;
-                })
-                .join(" ")}
-              fill="none"
-              stroke={
-                r.id === selectedRegionId ? "rgba(251, 191, 36, 0.95)" : "rgba(251, 191, 36, 0.5)"
-              }
-              strokeWidth={0.35}
-            />
-          );
-        })}
+        {!(readOnly && effectsEnabled) &&
+          regions.map((r) => {
+            const poly = vertexPreview(r);
+            return (
+              <polygon
+                key={r.id}
+                points={poly
+                  .map((p) => {
+                    const [sx, sy] = normToSvg(p);
+                    return `${sx},${sy}`;
+                  })
+                  .join(" ")}
+                fill="none"
+                stroke={
+                  r.id === selectedRegionId ? "rgba(251, 191, 36, 0.95)" : "rgba(251, 191, 36, 0.5)"
+                }
+                strokeWidth={0.35}
+              />
+            );
+          })}
 
         {draftPoints.length > 1 && (
           <polyline
