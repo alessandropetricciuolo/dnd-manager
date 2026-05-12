@@ -25,8 +25,8 @@ export type PixiSmokeSystem = {
   burstCd: number;
 };
 
-const FUMO_LIMIT = { max: 220, spawnPerSec: 52 };
-const FUMINI_LIMIT = { max: 160, burstEvery: 0.16, burstCount: 14 };
+const FUMO_LIMIT = { max: 300, spawnPerSec: 68 };
+const FUMINI_LIMIT = { max: 180, burstEvery: 0.14, burstCount: 16 };
 
 function spawnFumo(
   pt: NormPoint,
@@ -42,8 +42,8 @@ function spawnFumo(
     vy: -(38 + Math.random() * 52),
     life: 0,
     maxLife: 1.1 + Math.random() * 1.4,
-    scale: 0.55 + Math.random() * 0.55,
-    scaleGrowth: 0.35 + Math.random() * 0.45,
+    scale: 0.62 + Math.random() * 0.62,
+    scaleGrowth: 0.42 + Math.random() * 0.48,
     rot: Math.random() * Math.PI * 2,
     vr: (Math.random() - 0.5) * 0.35,
   };
@@ -145,10 +145,11 @@ function buildSmokeTexture(): Texture {
   const ctx = c.getContext("2d");
   if (!ctx) return Texture.WHITE;
   const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-  g.addColorStop(0, "rgba(245, 245, 250, 0.55)");
-  g.addColorStop(0.35, "rgba(210, 215, 225, 0.22)");
-  g.addColorStop(0.65, "rgba(170, 178, 190, 0.08)");
-  g.addColorStop(1, "rgba(140, 148, 160, 0)");
+  g.addColorStop(0, "rgba(255, 255, 255, 0.88)");
+  g.addColorStop(0.18, "rgba(236, 240, 252, 0.52)");
+  g.addColorStop(0.4, "rgba(200, 210, 228, 0.26)");
+  g.addColorStop(0.68, "rgba(155, 168, 188, 0.1)");
+  g.addColorStop(1, "rgba(115, 125, 145, 0)");
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, size, size);
   return Texture.from(c);
@@ -319,7 +320,7 @@ export function drawPixiSmokeSprites(
       spr.x = p.x;
       spr.y = p.y;
       spr.rotation = p.rot;
-      spr.alpha = a * 0.92;
+      spr.alpha = Math.min(1, a * 0.98 + 0.04);
       spr.scale.set(p.scale);
     }
     for (; u < L.pool.length; u++) L.pool[u].visible = false;

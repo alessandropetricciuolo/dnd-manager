@@ -76,6 +76,74 @@ export function generateShapePolygon(kind: FowShapeKind, a: NormPoint, b: NormPo
   return rectangleToNormPolygon(a, b);
 }
 
+/** Mezza larghezza del tratto spray in coordinate normalizzate (0–1 sull’immagine). */
+export const EFFECT_SPRAY_HALF_WIDTH_NORM = 0.013;
+
+/**
+ * Converte una pennellata (sequenza di punti) in un poligono chiuso a “nastro”.
+ * Usato per lo spray effetti (non il rettangolo blob).
+ */
+export function sprayStrokeToNormPolygon(stroke: NormPoint[], halfWidth: number): NormPoint[] {
+  if (stroke.length === 0) return [];
+  const hw = Math.max(0.004, Math.min(0.06, halfWidth));
+
+  if (stroke.length === 1) {
+    const c = stroke[0];
+    const seg = 18;
+    const out: NormPoint[] = [];
+    for (let i = 0; i < seg; i++) {
+      const t = (i / seg) * Math.PI * 2;
+      out.push(clampNormPoint({ x: c.x + Math.cos(t) * hw * 1.4, y: c.y + Math.sin(t) * hw * 1.4 }));
+    }
+    return out;
+  }
+
+  function strokeTangent(i: number): { dx: number; dy: number } {
+    const cur = stroke[i];
+    if (stroke.length === 2) {
+      const o = stroke[1 - i];
+      let dx = cur.x - o.x;
+      let dy = cur.y - o.y;
+      const L = Math.hypot(dx, dy) || 1e-6;
+      return { dx: dx / L, dy: dy / L };
+    }
+    if (i === 0) {
+      const nx = stroke[1].x - cur.x;
+      const ny = stroke[1].y - cur.y;
+      const L = Math.hypot(nx, ny) || 1e-6;
+      return { dx: nx / L, dy: ny / L };
+    }
+    if (i === stroke.length - 1) {
+      const px = cur.x - stroke[i - 1].x;
+      const py = cur.y - stroke[i - 1].y;
+      const L = Math.hypot(px, py) || 1e-6;
+      return { dx: px / L, dy: py / L };
+    }
+    const t1x = cur.x - stroke[i - 1].x;
+    const t1y = cur.y - stroke[i - 1].y;
+    const t2x = stroke[i + 1].x - cur.x;
+    const t2y = stroke[i + 1].y - cur.y;
+    const L1 = Math.hypot(t1x, t1y) || 1e-6;
+    const L2 = Math.hypot(t2x, t2y) || 1e-6;
+    let dx = t1x / L1 + t2x / L2;
+    let dy = t1y / L1 + t2y / L2;
+    const L = Math.hypot(dx, dy) || 1e-6;
+    return { dx: dx / L, dy: dy / L };
+  }
+
+  const left: NormPoint[] = [];
+  const right: NormPoint[] = [];
+  for (let i = 0; i < stroke.length; i++) {
+    const cur = stroke[i];
+    const { dx, dy } = strokeTangent(i);
+    const px = -dy * hw;
+    const py = dx * hw;
+    left.push(clampNormPoint({ x: cur.x + px, y: cur.y + py }));
+    right.push(clampNormPoint({ x: cur.x - px, y: cur.y - py }));
+  }
+  return [...left, ...right.slice().reverse()];
+}
+
 export function centroid(points: NormPoint[]): NormPoint {
   let x = 0;
   let y = 0;
