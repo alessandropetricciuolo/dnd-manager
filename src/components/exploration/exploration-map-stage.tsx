@@ -938,6 +938,7 @@ export function ExplorationMapStage({
       if (effectDrawShape !== "poligono-libero") return;
       if (!effectPolygonElement) return;
       if (e.detail !== 1) return;
+      if (performance.now() - effectDblCloseGuardRef.current < 280) return;
       const n = normFromEvent(e.clientX, e.clientY);
       if (!n) return;
       setEffectFreeDraftVertices((prev) => [...prev, n]);
@@ -1269,28 +1270,28 @@ export function ExplorationMapStage({
       {(mode === "explore" || readOnly) && (
         <canvas
           ref={fogRef}
-          className="pointer-events-none absolute left-0 top-0 z-[1] h-full w-full"
+          className="pointer-events-none absolute left-0 top-0 z-[10] h-full w-full"
           aria-hidden
         />
       )}
       {effectsEnabled ? (
         <canvas
           ref={nightOverlayCanvasRef}
-          className="pointer-events-none absolute left-0 top-0 z-[2] h-full w-full"
+          className="pointer-events-none absolute left-0 top-0 z-[30] h-full w-full"
           aria-hidden
         />
       ) : null}
       {effectsEnabled ? (
         <canvas
           ref={effectsCanvasRef}
-          className="pointer-events-none absolute left-0 top-0 z-[3] h-full w-full"
+          className="pointer-events-none absolute left-0 top-0 z-[31] h-full w-full"
           aria-hidden
         />
       ) : null}
       {effectsEnabled ? (
         <div
           ref={pixiHostRef}
-          className="pointer-events-none absolute left-0 top-0 z-[4] h-full w-full"
+          className="pointer-events-none absolute left-0 top-0 z-[32] h-full w-full"
           aria-hidden
         />
       ) : null}
