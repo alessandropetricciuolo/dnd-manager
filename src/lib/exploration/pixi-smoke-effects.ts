@@ -310,6 +310,7 @@ export function drawPixiSmokeSprites(
       continue;
     }
     let u = 0;
+    const tint = poly.element === "fumini" ? 0x6ab0e8 : 0x98aab8;
     for (const p of sys.particles) {
       const spr = L.pool[u++];
       if (!spr) break;
@@ -317,10 +318,11 @@ export function drawPixiSmokeSprites(
       const fade = Math.max(0, 1 - t);
       const a = fade * fade;
       spr.visible = true;
+      spr.tint = tint;
       spr.x = p.x;
       spr.y = p.y;
       spr.rotation = p.rot;
-      spr.alpha = Math.min(1, a * 0.98 + 0.04);
+      spr.alpha = Math.min(1, a * 0.98 + 0.06);
       spr.scale.set(p.scale);
     }
     for (; u < L.pool.length; u++) L.pool[u].visible = false;

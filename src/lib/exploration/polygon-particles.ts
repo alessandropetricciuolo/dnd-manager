@@ -80,11 +80,11 @@ function spawnFuoco(
   return {
     x,
     y,
-    vx: (Math.random() - 0.5) * 38,
-    vy: -(88 + Math.random() * 100),
+    vx: (Math.random() - 0.5) * 42,
+    vy: -(92 + Math.random() * 105),
     life: 0,
-    maxLife: 0.48 + Math.random() * 0.72,
-    size: 1.4 + Math.random() * 3.2,
+    maxLife: 0.52 + Math.random() * 0.78,
+    size: 1.8 + Math.random() * 4.2,
     cr: r,
     cg: g,
     cb: b,
@@ -94,12 +94,13 @@ function spawnFuoco(
 function tickFuoco(p: Particle, dt: number): boolean {
   p.x += p.vx * dt;
   p.y += p.vy * dt;
-  p.vx += (Math.random() - 0.5) * 32 * dt;
-  p.vy -= 48 * dt;
+  p.vx += (Math.random() - 0.5) * 36 * dt;
+  p.vy -= 52 * dt;
   p.life += dt;
   return p.life >= p.maxLife;
 }
 
+/** Nebbia verde: lenta, molto diffusa, poco moto verticale (non “pallini che salgono”). */
 function spawnVeleno(
   pt: NormPoint,
   dims: { w: number; h: number },
@@ -110,27 +111,31 @@ function spawnVeleno(
   return {
     x,
     y,
-    vx: (Math.random() - 0.5) * 22,
-    vy: -(38 + Math.random() * 58),
+    vx: (Math.random() - 0.5) * 52,
+    vy: -(5 + Math.random() * 16),
     life: 0,
-    maxLife: 0.75 + Math.random() * 1.05,
-    size: 1.2 + Math.random() * 2.8,
+    maxLife: 2.2 + Math.random() * 2.8,
+    size: 5 + Math.random() * 12,
     phase: Math.random() * Math.PI * 2,
-    cr: 28 + Math.random() * 65,
-    cg: 165 + Math.random() * 95,
-    cb: 72 + Math.random() * 75,
+    cr: 32 + Math.random() * 55,
+    cg: 175 + Math.random() * 75,
+    cb: 78 + Math.random() * 65,
   };
 }
 
 function tickVeleno(p: Particle, dt: number): boolean {
-  p.phase = (p.phase ?? 0) + dt * 7;
-  p.x += (p.vx + Math.sin(p.phase) * 18) * dt;
-  p.y += p.vy * dt;
-  p.vy -= 12 * dt;
+  p.phase = (p.phase ?? 0) + dt * 2.4;
+  p.vx += (Math.random() - 0.5) * 42 * dt;
+  p.vy += (Math.random() - 0.5) * 22 * dt;
+  p.x += (p.vx + Math.sin(p.phase) * 28 + Math.cos(p.phase * 0.37) * 12) * dt;
+  p.y += (p.vy + Math.sin(p.phase * 0.61) * 10) * dt;
+  p.vx *= 1 - 0.35 * dt;
+  p.vy *= 1 - 0.28 * dt;
   p.life += dt;
   return p.life >= p.maxLife;
 }
 
+/** Cristalli / brina: quasi fermi, chiari, diversi dal fumo grigio Pixi. */
 function spawnGhiaccio(
   pt: NormPoint,
   dims: { w: number; h: number },
@@ -138,31 +143,33 @@ function spawnGhiaccio(
   naturalH: number
 ): Particle {
   const [x, y] = intrinsicNormToElementPx(pt.x, pt.y, dims.w, dims.h, naturalW, naturalH);
-  const frost = Math.random() < 0.55;
+  const sparkle = Math.random() < 0.28;
   return {
     x,
     y,
-    vx: (Math.random() - 0.5) * 26,
-    vy: frost ? -(12 + Math.random() * 28) : -(4 + Math.random() * 18),
+    vx: (Math.random() - 0.5) * (sparkle ? 42 : 14),
+    vy: (Math.random() - 0.5) * (sparkle ? 38 : 10) - (sparkle ? 15 : 4),
     life: 0,
-    maxLife: 0.85 + Math.random() * 1.35,
-    size: 0.9 + Math.random() * 2.6,
+    maxLife: sparkle ? 0.22 + Math.random() * 0.35 : 1.1 + Math.random() * 1.6,
+    size: sparkle ? 0.55 + Math.random() * 1.2 : 1.4 + Math.random() * 3.2,
     phase: Math.random() * Math.PI * 2,
-    cr: frost ? 210 + Math.random() * 45 : 140 + Math.random() * 70,
-    cg: 230 + Math.random() * 25,
-    cb: 248 + Math.random() * 7,
+    cr: sparkle ? 240 : 170 + Math.random() * 75,
+    cg: sparkle ? 252 : 220 + Math.random() * 32,
+    cb: 255,
   };
 }
 
 function tickGhiaccio(p: Particle, dt: number): boolean {
-  p.phase = (p.phase ?? 0) + dt * 4.5;
-  p.x += (p.vx + Math.cos(p.phase) * 10) * dt;
-  p.y += p.vy * dt;
-  p.vy -= 6 * dt;
+  p.phase = (p.phase ?? 0) + dt * (p.size < 1.4 ? 11 : 3.2);
+  p.x += (p.vx * 0.85 + Math.cos(p.phase) * (p.size < 1.4 ? 22 : 8)) * dt;
+  p.y += (p.vy * 0.85 + Math.sin(p.phase * 0.9) * (p.size < 1.4 ? 18 : 5)) * dt;
+  p.vx *= 1 - 1.1 * dt;
+  p.vy *= 1 - 1.1 * dt;
   p.life += dt;
   return p.life >= p.maxLife;
 }
 
+/** Scarica elettrica: azzurro-bianco, corta, compositing lighter in draw. */
 function spawnFulmine(
   pt: NormPoint,
   dims: { w: number; h: number },
@@ -170,26 +177,26 @@ function spawnFulmine(
   naturalH: number
 ): Particle {
   const [x, y] = intrinsicNormToElementPx(pt.x, pt.y, dims.w, dims.h, naturalW, naturalH);
-  const core = Math.random() < 0.35;
+  const core = Math.random() < 0.28;
   return {
     x,
     y,
-    vx: (Math.random() - 0.5) * 420,
-    vy: (Math.random() - 0.5) * 420,
+    vx: (Math.random() - 0.5) * (core ? 620 : 380),
+    vy: (Math.random() - 0.5) * (core ? 620 : 380),
     life: 0,
-    maxLife: 0.05 + Math.random() * 0.11,
-    size: core ? 2.2 + Math.random() * 3.5 : 0.8 + Math.random() * 1.8,
-    cr: core ? 255 : 160 + Math.random() * 95,
-    cg: core ? 255 : 210 + Math.random() * 45,
-    cb: core ? 255 : 255,
+    maxLife: core ? 0.04 + Math.random() * 0.06 : 0.07 + Math.random() * 0.1,
+    size: core ? 3 + Math.random() * 5 : 1.2 + Math.random() * 2.8,
+    cr: core ? 255 : 80 + Math.random() * 120,
+    cg: core ? 255 : 160 + Math.random() * 95,
+    cb: core ? 255 : 235 + Math.random() * 20,
   };
 }
 
 function tickFulmine(p: Particle, dt: number): boolean {
   p.x += p.vx * dt;
   p.y += p.vy * dt;
-  p.vx *= 1 - 2.4 * dt;
-  p.vy *= 1 - 2.4 * dt;
+  p.vx *= 1 - 3.2 * dt;
+  p.vy *= 1 - 3.2 * dt;
   p.life += dt;
   return p.life >= p.maxLife;
 }
@@ -204,32 +211,32 @@ function spawnOscurita(
   return {
     x,
     y,
-    vx: (Math.random() - 0.5) * 14,
-    vy: (Math.random() - 0.5) * 14,
+    vx: (Math.random() - 0.5) * 18,
+    vy: (Math.random() - 0.5) * 18,
     life: 0,
-    maxLife: 1.4 + Math.random() * 2.2,
-    size: 2.2 + Math.random() * 5.5,
+    maxLife: 1.8 + Math.random() * 2.6,
+    size: 10 + Math.random() * 18,
     phase: Math.random() * Math.PI * 2,
-    cr: 12 + Math.random() * 35,
-    cg: 4 + Math.random() * 22,
-    cb: 28 + Math.random() * 55,
+    cr: 18 + Math.random() * 28,
+    cg: 8 + Math.random() * 18,
+    cb: 38 + Math.random() * 45,
   };
 }
 
 function tickOscurita(p: Particle, dt: number): boolean {
-  p.phase = (p.phase ?? 0) + dt * 1.8;
-  p.x += (p.vx + Math.sin(p.phase) * 6) * dt;
-  p.y += (p.vy + Math.cos(p.phase * 0.7) * 6) * dt;
+  p.phase = (p.phase ?? 0) + dt * 1.4;
+  p.x += (p.vx + Math.sin(p.phase) * 5) * dt;
+  p.y += (p.vy + Math.cos(p.phase * 0.7) * 5) * dt;
   p.life += dt;
   return p.life >= p.maxLife;
 }
 
 const LIMITS: Record<CanvasParticleKind, { max: number; spawnPerSec: number }> = {
-  fuoco: { max: 420, spawnPerSec: 155 },
-  veleno: { max: 400, spawnPerSec: 115 },
-  ghiaccio: { max: 380, spawnPerSec: 95 },
-  fulmine: { max: 520, spawnPerSec: 380 },
-  oscurità: { max: 260, spawnPerSec: 48 },
+  fuoco: { max: 520, spawnPerSec: 185 },
+  veleno: { max: 620, spawnPerSec: 210 },
+  ghiaccio: { max: 420, spawnPerSec: 120 },
+  fulmine: { max: 580, spawnPerSec: 320 },
+  oscurità: { max: 420, spawnPerSec: 95 },
 };
 
 function spawnFor(
@@ -306,48 +313,68 @@ export function drawParticles(
   particles: Particle[],
   element: CanvasParticleKind
 ) {
-  const glow = element === "fuoco" || element === "fulmine" || element === "ghiaccio";
-  const softOsc = element === "oscurità";
+  const prevComp = ctx.globalCompositeOperation;
+
+  if (element === "fulmine") {
+    ctx.globalCompositeOperation = "lighter";
+  }
 
   for (const p of particles) {
     const u = p.life / p.maxLife;
     let a: number;
     if (element === "fulmine") {
-      a = Math.min(1, (1 - u) * (1 - u) * 1.85);
+      a = Math.min(1, (1 - u) * (1 - u) * 2.35);
     } else if (element === "oscurità") {
-      a = Math.min(0.42, Math.max(0, (1 - u * 0.65) * 0.38));
+      a = Math.min(0.88, (1 - u * 0.45) * 0.62);
+    } else if (element === "veleno") {
+      a = Math.min(0.55, (1 - u) ** 0.55 * 0.48);
+    } else if (element === "ghiaccio") {
+      a = Math.min(1, p.size < 1.4 ? (1 - u) * 1.5 : (1 - u) * (1 - u) * 1.25);
     } else {
-      a = Math.min(1, Math.max(0, (1 - u) * (1 - u)) * (element === "fuoco" ? 1.22 : 1.08));
+      a = Math.min(1, Math.max(0, (1 - u) * (1 - u)) * 1.38);
     }
 
     const rr = Math.round(p.cr);
     const gg = Math.round(p.cg);
     const bb = Math.round(p.cb);
 
-    if (glow) {
+    const useGlow = element === "fuoco" || element === "fulmine" || element === "ghiaccio";
+    if (useGlow) {
       ctx.save();
-      ctx.shadowColor = `rgba(${rr},${gg},${bb},${Math.min(0.95, a + 0.15)})`;
-      ctx.shadowBlur = element === "fulmine" ? 14 : element === "fuoco" ? 10 : 7;
+      ctx.shadowColor = `rgba(${rr},${gg},${bb},${Math.min(0.98, a + 0.22)})`;
+      ctx.shadowBlur =
+        element === "fulmine" ? 18 : element === "fuoco" ? 12 : p.size < 1.4 ? 8 : 6;
     }
 
-    if (softOsc) {
-      const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 2.2);
-      g.addColorStop(0, `rgba(${rr},${gg},${bb},${a * 0.95})`);
-      g.addColorStop(0.45, `rgba(${rr},${gg},${bb},${a * 0.35})`);
+    let rMul = 1.4;
+    if (element === "veleno") rMul = 3.1;
+    else if (element === "oscurità") rMul = 2.45;
+    else if (element === "ghiaccio") rMul = p.size < 1.4 ? 2.2 : 1.85;
+    else if (element === "fulmine") rMul = 1.25;
+
+    const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * rMul);
+    if (element === "oscurità") {
+      g.addColorStop(0, `rgba(${rr},${gg},${bb},${a * 0.82})`);
+      g.addColorStop(0.28, `rgba(${rr},${gg},${bb},${a * 0.58})`);
+      g.addColorStop(0.55, `rgba(${rr},${gg},${bb},${a * 0.32})`);
       g.addColorStop(1, `rgba(${rr},${gg},${bb},0)`);
-      ctx.fillStyle = g;
+    } else if (element === "veleno") {
+      g.addColorStop(0, `rgba(${rr},${gg},${bb},${a * 0.42})`);
+      g.addColorStop(0.4, `rgba(${rr},${gg},${bb},${a * 0.22})`);
+      g.addColorStop(1, `rgba(${rr},${gg},${bb},0)`);
     } else {
-      const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 1.35);
       g.addColorStop(0, `rgba(${rr},${gg},${bb},${a})`);
-      g.addColorStop(0.55, `rgba(${rr},${gg},${bb},${a * 0.45})`);
+      g.addColorStop(0.5, `rgba(${rr},${gg},${bb},${a * 0.5})`);
       g.addColorStop(1, `rgba(${rr},${gg},${bb},0)`);
-      ctx.fillStyle = g;
     }
+    ctx.fillStyle = g;
 
     ctx.beginPath();
-    ctx.arc(p.x, p.y, p.size * (element === "fulmine" ? 1.15 : 1.4), 0, Math.PI * 2);
+    ctx.arc(p.x, p.y, p.size * (element === "fulmine" ? 1.2 : 1.45), 0, Math.PI * 2);
     ctx.fill();
 
-    if (glow) ctx.restore();
+    if (useGlow) ctx.restore();
   }
+
+  ctx.globalCompositeOperation = prevComp;
 }

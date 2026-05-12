@@ -573,27 +573,25 @@ export function ExplorationMapStage({
 
   const normFromEvent = useCallback((clientX: number, clientY: number): NormPoint | null => {
     const img = imgRef.current;
-    const surface = mapSurfaceRef.current;
-    const box = surface ?? img;
-    if (!img || !box) return null;
-    const sr = box.getBoundingClientRect();
-    const W = box.clientWidth;
-    const H = box.clientHeight;
-    const naturalW = img.naturalWidth || 0;
-    const naturalH = img.naturalHeight || 0;
-    if (naturalW <= 0 || naturalH <= 0 || W <= 0 || H <= 0 || sr.width <= 0 || sr.height <= 0) return null;
-    const pxRaw = ((clientX - sr.left) / sr.width) * W;
-    const pyRaw = ((clientY - sr.top) / sr.height) * H;
-    /** Fuori dal box mappa (padding flex ecc.): ignora. Vicini ai bordi: clamp per drag continuo. */
-    const slack = 12;
-    if (pxRaw < -slack || pxRaw > W + slack || pyRaw < -slack || pyRaw > H + slack) return null;
-    const px = Math.min(W, Math.max(0, pxRaw));
-    const py = Math.min(H, Math.max(0, pyRaw));
-    const scaleGeom = Math.min(W / naturalW, H / naturalH);
+    if (!img || !img.naturalWidth || !img.naturalHeight) return null;
+    const naturalW = img.naturalWidth;
+    const naturalH = img.naturalHeight;
+    /** Stesso spazio di intrinsicNormToElementPx / canvas: rect schermo (include zoom TransformWrapper) × offset interno. */
+    const sr = img.getBoundingClientRect();
+    const elW = img.offsetWidth;
+    const elH = img.offsetHeight;
+    if (elW < 1 || elH < 1 || sr.width <= 0 || sr.height <= 0) return null;
+    const pxRaw = ((clientX - sr.left) / sr.width) * elW;
+    const pyRaw = ((clientY - sr.top) / sr.height) * elH;
+    const slack = 12 * (elW / Math.max(sr.width, 1e-6));
+    if (pxRaw < -slack || pxRaw > elW + slack || pyRaw < -slack || pyRaw > elH + slack) return null;
+    const px = Math.min(elW, Math.max(0, pxRaw));
+    const py = Math.min(elH, Math.max(0, pyRaw));
+    const scaleGeom = Math.min(elW / naturalW, elH / naturalH);
     const dw = naturalW * scaleGeom;
     const dh = naturalH * scaleGeom;
-    const ox = (W - dw) / 2;
-    const oy = (H - dh) / 2;
+    const ox = (elW - dw) / 2;
+    const oy = (elH - dh) / 2;
     const x = (px - ox) / dw;
     const y = (py - oy) / dh;
     return clampNormPoint({ x, y });
