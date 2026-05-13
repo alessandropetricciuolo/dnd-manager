@@ -23,12 +23,20 @@ import {
 import {
   createPixiSmokeRuntime,
   destroyPixiSmokeRuntime,
+  drawPixiFireSprites,
+  drawPixiLightning,
   drawPixiSmokeSprites,
+  ensurePixiFireSystems,
+  ensurePixiLightningSystems,
   ensurePixiSmokeSystems,
   renderPixiSmokeFrame,
   resizePixiSmokeRuntime,
   syncPixiSmokeLayers,
+  tickPixiFireSystem,
+  tickPixiLightningSystem,
   tickPixiSmokeSystem,
+  type PixiFireSystem,
+  type PixiLightningSystem,
   type PixiSmokeRuntime,
   type PixiSmokeSystem,
 } from "@/lib/exploration/pixi-smoke-effects";
@@ -252,6 +260,8 @@ export function ExplorationMapStage({
   const pixiSmokeRtRef = useRef<PixiSmokeRuntime | null>(null);
   const particleSystemsRef = useRef<ParticleSystem[]>([]);
   const pixiSmokeSystemsRef = useRef<PixiSmokeSystem[]>([]);
+  const pixiFireSystemsRef = useRef<PixiFireSystem[]>([]);
+  const pixiLightningSystemsRef = useRef<PixiLightningSystem[]>([]);
 
   type EffectPolygon = { element: ParticleElement; points: NormPoint[] };
   const [effectPolygons, setEffectPolygons] = useState<EffectPolygon[]>([]);
@@ -361,6 +371,8 @@ export function ExplorationMapStage({
     while (sys.length < effectPolygons.length) sys.push({ particles: [] });
     sys.length = effectPolygons.length;
     ensurePixiSmokeSystems(pixiSmokeSystemsRef.current, effectPolygons.length);
+    ensurePixiFireSystems(pixiFireSystemsRef.current, effectPolygons.length);
+    ensurePixiLightningSystems(pixiLightningSystemsRef.current, effectPolygons.length);
   }, [effectsEnabled, effectPolygons.length]);
 
   useEffect(() => {
@@ -389,7 +401,7 @@ export function ExplorationMapStage({
           pixiSmokeRtRef.current = rt;
         } catch (err) {
           if (typeof console !== "undefined" && console.warn) {
-            console.warn("[effetti] PixiJS fumo/fumini non inizializzato:", err);
+            console.warn("[effetti] PixiJS (fumo/fuoco/fulmine) non inizializzato:", err);
           }
         }
       } else {
@@ -488,14 +500,23 @@ export function ExplorationMapStage({
         if (effectIsVisibleRef.current) {
           const polys = effectPolygonsRef.current;
           const pixiSys = pixiSmokeSystemsRef.current;
+          const fireSys = pixiFireSystemsRef.current;
+          const lightSys = pixiLightningSystemsRef.current;
           for (let i = 0; i < polys.length; i++) {
             const el = polys[i].element;
+            const pts = polys[i].points;
             if (el === "fumo" || el === "fumini") {
-              tickPixiSmokeSystem(polys[i].points, el, pixiSys[i]!, dt, { w, h }, naturalW, naturalH);
+              tickPixiSmokeSystem(pts, el, pixiSys[i]!, dt, { w, h }, naturalW, naturalH);
+            } else if (el === "fuoco") {
+              tickPixiFireSystem(pts, fireSys[i]!, dt, { w, h }, naturalW, naturalH);
+            } else if (el === "fulmine") {
+              tickPixiLightningSystem(pts, lightSys[i]!, dt, { w, h }, naturalW, naturalH);
             }
           }
           syncPixiSmokeLayers(rt, polys, naturalW, naturalH, w, h);
           drawPixiSmokeSprites(rt, polys, pixiSys);
+          drawPixiFireSprites(rt, polys, fireSys);
+          drawPixiLightning(rt, polys, lightSys);
         }
         renderPixiSmokeFrame(rt);
       }
@@ -1313,9 +1334,12 @@ export function ExplorationMapStage({
     return out.map((p, i) => (i === drag.vi ? dragPreview : p));
   };
 
-  const elW = layoutSize?.w ?? 0;
-  const elH = layoutSize?.h ?? 0;
   const imgEl = imgRef.current;
+  /** Stesso box di normFromEvent e dei canvas (RAF): lo stato layoutSize può lagare dopo resize/zoom e spostare la guida SVG rispetto al mouse. */
+  const elW =
+    imgEl && imgEl.offsetWidth > 0 ? imgEl.offsetWidth : (layoutSize?.w ?? 0);
+  const elH =
+    imgEl && imgEl.offsetHeight > 0 ? imgEl.offsetHeight : (layoutSize?.h ?? 0);
   const nw = natural?.w ?? imgEl?.naturalWidth ?? 0;
   const nh = natural?.h ?? imgEl?.naturalHeight ?? 0;
   const hasLayout = elW > 0 && elH > 0;

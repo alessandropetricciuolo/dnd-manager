@@ -17,11 +17,11 @@ export type Particle = {
 
 export type ParticleSystem = { particles: Particle[] };
 
-/** Elementi disegnati su canvas 2D (clip poligono). */
-export type CanvasParticleKind = "fuoco" | "veleno" | "ghiaccio" | "fulmine" | "oscurità";
+/** Elementi disegnati su canvas 2D (clip poligono). Fuoco e fulmine sono su Pixi. */
+export type CanvasParticleKind = "veleno" | "ghiaccio" | "oscurità";
 
-/** Tutti gli elementi selezionabili (canvas + Pixi fumo). */
-export type ParticleElement = CanvasParticleKind | "fumo" | "fumini";
+/** Tutti gli elementi selezionabili (canvas + Pixi: fumo, fuoco, fulmine…). */
+export type ParticleElement = CanvasParticleKind | "fumo" | "fumini" | "fuoco" | "fulmine";
 
 export function polygonBBox(points: NormPoint[]) {
   let minX = Infinity;
@@ -64,40 +64,6 @@ export function randomPointInPolygon(points: NormPoint[]): NormPoint {
     if (pointInPolygon(x, y, points)) return { x, y };
   }
   return centroid(points);
-}
-
-function spawnFuoco(
-  pt: NormPoint,
-  dims: { w: number; h: number },
-  naturalW: number,
-  naturalH: number
-): Particle {
-  const [x, y] = intrinsicNormToElementPx(pt.x, pt.y, dims.w, dims.h, naturalW, naturalH);
-  const yellowish = Math.random() < 0.48;
-  const r = yellowish ? 255 : 248 + Math.random() * 7;
-  const g = yellowish ? 200 + Math.random() * 55 : 120 + Math.random() * 85;
-  const b = yellowish ? 55 + Math.random() * 70 : 20 + Math.random() * 60;
-  return {
-    x,
-    y,
-    vx: (Math.random() - 0.5) * 42,
-    vy: -(92 + Math.random() * 105),
-    life: 0,
-    maxLife: 0.52 + Math.random() * 0.78,
-    size: 1.8 + Math.random() * 4.2,
-    cr: r,
-    cg: g,
-    cb: b,
-  };
-}
-
-function tickFuoco(p: Particle, dt: number): boolean {
-  p.x += p.vx * dt;
-  p.y += p.vy * dt;
-  p.vx += (Math.random() - 0.5) * 36 * dt;
-  p.vy -= 52 * dt;
-  p.life += dt;
-  return p.life >= p.maxLife;
 }
 
 /** Nebbia verde: lenta, molto diffusa, poco moto verticale (non “pallini che salgono”). */
@@ -169,38 +135,6 @@ function tickGhiaccio(p: Particle, dt: number): boolean {
   return p.life >= p.maxLife;
 }
 
-/** Scarica elettrica: azzurro-bianco, corta, compositing lighter in draw. */
-function spawnFulmine(
-  pt: NormPoint,
-  dims: { w: number; h: number },
-  naturalW: number,
-  naturalH: number
-): Particle {
-  const [x, y] = intrinsicNormToElementPx(pt.x, pt.y, dims.w, dims.h, naturalW, naturalH);
-  const core = Math.random() < 0.28;
-  return {
-    x,
-    y,
-    vx: (Math.random() - 0.5) * (core ? 620 : 380),
-    vy: (Math.random() - 0.5) * (core ? 620 : 380),
-    life: 0,
-    maxLife: core ? 0.04 + Math.random() * 0.06 : 0.07 + Math.random() * 0.1,
-    size: core ? 3 + Math.random() * 5 : 1.2 + Math.random() * 2.8,
-    cr: core ? 255 : 80 + Math.random() * 120,
-    cg: core ? 255 : 160 + Math.random() * 95,
-    cb: core ? 255 : 235 + Math.random() * 20,
-  };
-}
-
-function tickFulmine(p: Particle, dt: number): boolean {
-  p.x += p.vx * dt;
-  p.y += p.vy * dt;
-  p.vx *= 1 - 3.2 * dt;
-  p.vy *= 1 - 3.2 * dt;
-  p.life += dt;
-  return p.life >= p.maxLife;
-}
-
 function spawnOscurita(
   pt: NormPoint,
   dims: { w: number; h: number },
@@ -232,10 +166,8 @@ function tickOscurita(p: Particle, dt: number): boolean {
 }
 
 const LIMITS: Record<CanvasParticleKind, { max: number; spawnPerSec: number }> = {
-  fuoco: { max: 520, spawnPerSec: 185 },
   veleno: { max: 620, spawnPerSec: 210 },
   ghiaccio: { max: 420, spawnPerSec: 120 },
-  fulmine: { max: 580, spawnPerSec: 320 },
   oscurità: { max: 420, spawnPerSec: 95 },
 };
 
@@ -247,14 +179,10 @@ function spawnFor(
   naturalH: number
 ): Particle {
   switch (element) {
-    case "fuoco":
-      return spawnFuoco(pt, dims, naturalW, naturalH);
     case "veleno":
       return spawnVeleno(pt, dims, naturalW, naturalH);
     case "ghiaccio":
       return spawnGhiaccio(pt, dims, naturalW, naturalH);
-    case "fulmine":
-      return spawnFulmine(pt, dims, naturalW, naturalH);
     case "oscurità":
       return spawnOscurita(pt, dims, naturalW, naturalH);
   }
@@ -262,14 +190,10 @@ function spawnFor(
 
 function tickParticle(p: Particle, element: CanvasParticleKind, dt: number): boolean {
   switch (element) {
-    case "fuoco":
-      return tickFuoco(p, dt);
     case "veleno":
       return tickVeleno(p, dt);
     case "ghiaccio":
       return tickGhiaccio(p, dt);
-    case "fulmine":
-      return tickFulmine(p, dt);
     case "oscurità":
       return tickOscurita(p, dt);
   }
@@ -305,7 +229,7 @@ export function tickParticleSystem(
 }
 
 export function isCanvasParticleElement(el: ParticleElement): el is CanvasParticleKind {
-  return el === "fuoco" || el === "veleno" || el === "ghiaccio" || el === "fulmine" || el === "oscurità";
+  return el === "veleno" || el === "ghiaccio" || el === "oscurità";
 }
 
 export function drawParticles(
@@ -315,42 +239,32 @@ export function drawParticles(
 ) {
   const prevComp = ctx.globalCompositeOperation;
 
-  if (element === "fulmine") {
-    ctx.globalCompositeOperation = "lighter";
-  }
-
   for (const p of particles) {
     const u = p.life / p.maxLife;
     let a: number;
-    if (element === "fulmine") {
-      a = Math.min(1, (1 - u) * (1 - u) * 2.35);
-    } else if (element === "oscurità") {
+    if (element === "oscurità") {
       a = Math.min(0.88, (1 - u * 0.45) * 0.62);
     } else if (element === "veleno") {
       a = Math.min(0.55, (1 - u) ** 0.55 * 0.48);
-    } else if (element === "ghiaccio") {
-      a = Math.min(1, p.size < 1.4 ? (1 - u) * 1.5 : (1 - u) * (1 - u) * 1.25);
     } else {
-      a = Math.min(1, Math.max(0, (1 - u) * (1 - u)) * 1.38);
+      a = Math.min(1, p.size < 1.4 ? (1 - u) * 1.5 : (1 - u) * (1 - u) * 1.25);
     }
 
     const rr = Math.round(p.cr);
     const gg = Math.round(p.cg);
     const bb = Math.round(p.cb);
 
-    const useGlow = element === "fuoco" || element === "fulmine" || element === "ghiaccio";
+    const useGlow = element === "ghiaccio";
     if (useGlow) {
       ctx.save();
       ctx.shadowColor = `rgba(${rr},${gg},${bb},${Math.min(0.98, a + 0.22)})`;
-      ctx.shadowBlur =
-        element === "fulmine" ? 18 : element === "fuoco" ? 12 : p.size < 1.4 ? 8 : 6;
+      ctx.shadowBlur = p.size < 1.4 ? 8 : 6;
     }
 
     let rMul = 1.4;
     if (element === "veleno") rMul = 3.1;
     else if (element === "oscurità") rMul = 2.45;
-    else if (element === "ghiaccio") rMul = p.size < 1.4 ? 2.2 : 1.85;
-    else if (element === "fulmine") rMul = 1.25;
+    else rMul = p.size < 1.4 ? 2.2 : 1.85;
 
     const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * rMul);
     if (element === "oscurità") {
@@ -370,7 +284,7 @@ export function drawParticles(
     ctx.fillStyle = g;
 
     ctx.beginPath();
-    ctx.arc(p.x, p.y, p.size * (element === "fulmine" ? 1.2 : 1.45), 0, Math.PI * 2);
+    ctx.arc(p.x, p.y, p.size * 1.45, 0, Math.PI * 2);
     ctx.fill();
 
     if (useGlow) ctx.restore();
