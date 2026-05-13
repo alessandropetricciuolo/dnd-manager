@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ListOrdered, Calendar, Flag, MessageCircle, Images } from "lucide-react";
+import { ListOrdered, Calendar, Flag, MessageCircle, Images, Headphones } from "lucide-react";
 import { InitiativeTracker } from "./initiative-tracker";
 import { GmNotesGrid } from "./gm-notes-grid";
 import { PlayerSessionTracker } from "./player-session-tracker";
 import { SecretWhispersSheet } from "./secret-whispers-sheet";
 import { GmGallerySheet } from "./gm-gallery-sheet";
+import { GmAudioForgeSheet } from "./gm-audio-forge-sheet";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getCampaignSessionsForGm, type CampaignSessionOption } from "@/app/campaigns/gm-actions";
@@ -20,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { formatSessionInRome } from "@/lib/session-datetime";
 import { it } from "date-fns/locale";
+import { useGmAudioForge } from "@/lib/gm-audio-forge/use-gm-audio-forge";
 
 type GmScreenLegacyLayoutProps = {
   campaignId: string;
@@ -47,6 +49,8 @@ export function GmScreenLegacyLayout({
   const [debriefOpen, setDebriefOpen] = useState(Boolean(initialSessionId && autoOpenDebrief));
   const [whispersOpen, setWhispersOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const [audioForgeOpen, setAudioForgeOpen] = useState(false);
+  const audioForge = useGmAudioForge(campaignId);
 
   const loadSessions = useCallback(async () => {
     const result = await getCampaignSessionsForGm(campaignId);
@@ -107,6 +111,16 @@ export function GmScreenLegacyLayout({
           aria-label="Apri Sussurri Segreti"
         >
           <MessageCircle className="h-5 w-5" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-amber-400 hover:bg-amber-600/20 hover:text-amber-200"
+          onClick={() => setAudioForgeOpen(true)}
+          title="Audio"
+          aria-label="Apri Audio"
+        >
+          <Headphones className="h-5 w-5" />
         </Button>
       </div>
 
@@ -196,6 +210,7 @@ export function GmScreenLegacyLayout({
           currentUserId={currentUserId}
         />
         <GmGallerySheet open={galleryOpen} onOpenChange={setGalleryOpen} campaignId={campaignId} campaignType={campaignType} />
+        <GmAudioForgeSheet open={audioForgeOpen} onOpenChange={setAudioForgeOpen} forge={audioForge} />
       </main>
     </div>
   );

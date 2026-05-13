@@ -603,6 +603,33 @@ export interface Database {
         };
         Update: Partial<Database["public"]["Tables"]["campaign_exploration_maps"]["Insert"]>;
       };
+      gm_global_audio_tracks: {
+        Row: {
+          id: string;
+          title: string;
+          audio_type: "music" | "sfx" | "atmosphere";
+          mood: string;
+          storage_key: string;
+          public_url: string;
+          mime_type: string | null;
+          file_size_bytes: number | null;
+          created_at: string;
+          created_by: string | null;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          audio_type: "music" | "sfx" | "atmosphere";
+          mood?: string;
+          storage_key: string;
+          public_url: string;
+          mime_type?: string | null;
+          file_size_bytes?: number | null;
+          created_at?: string;
+          created_by?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["gm_global_audio_tracks"]["Insert"]>;
+      };
       campaign_exploration_fow_regions: {
         Row: {
           id: string;

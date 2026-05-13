@@ -3,7 +3,7 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Shield, FileJson, Trophy, BookOpen, BookText, Palette, Swords, BarChart3, Mail } from "lucide-react";
+import { ArrowLeft, Shield, FileJson, Trophy, BookOpen, BookText, Palette, Swords, BarChart3, Mail, Headphones } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +55,16 @@ export default async function AdminLayout({
             >
               <Shield className="mr-2 h-4 w-4" />
               Utenti
+            </Button>
+          </Link>
+          <Link href="/admin/audio-library">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-barber-paper/80 hover:text-barber-paper"
+            >
+              <Headphones className="mr-2 h-4 w-4" />
+              Audio Gilda
             </Button>
           </Link>
           <Link href="/admin/crm">

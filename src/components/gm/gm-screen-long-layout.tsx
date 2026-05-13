@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Calendar, Flag, Images, ListOrdered, MessageCircle, ScrollText, Users } from "lucide-react";
+import { Calendar, Flag, Headphones, Images, ListOrdered, MessageCircle, ScrollText, Users } from "lucide-react";
 import { GmNotesGrid } from "./gm-notes-grid";
 import { InitiativeTracker } from "./initiative-tracker";
 import { PlayerSessionTracker, computeSessionXpAwards } from "./player-session-tracker";
 import { SecretWhispersSheet } from "./secret-whispers-sheet";
 import { GmGallerySheet } from "./gm-gallery-sheet";
+import { GmAudioForgeSheet } from "./gm-audio-forge-sheet";
 import { LongEconomyPanel } from "./long-economy-panel";
 import { LongTimePanel } from "./long-time-panel";
 import { LongCalendarPanel } from "./long-calendar-panel";
@@ -29,6 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createGmNote } from "@/app/campaigns/gm-actions";
+import { useGmAudioForge } from "@/lib/gm-audio-forge/use-gm-audio-forge";
 
 type GmScreenLongLayoutProps = {
   campaignId: string;
@@ -82,6 +84,8 @@ function LongWorkspace({
   const [debriefOpen, setDebriefOpen] = useState(Boolean(selectedSessionId && autoOpenDebrief));
   const [whispersOpen, setWhispersOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const [audioForgeOpen, setAudioForgeOpen] = useState(false);
+  const audioForge = useGmAudioForge(campaignId);
   const [workspaceMode, setWorkspaceMode] = useState<"session" | "closure">("session");
   const [quickNoteOpen, setQuickNoteOpen] = useState(false);
   const [quickNoteLoading, setQuickNoteLoading] = useState(false);
@@ -202,6 +206,16 @@ function LongWorkspace({
           aria-label="Apri Sussurri Segreti"
         >
           <MessageCircle className="h-5 w-5" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-amber-400 hover:bg-amber-600/20 hover:text-amber-200"
+          onClick={() => setAudioForgeOpen(true)}
+          title="Audio"
+          aria-label="Apri Audio"
+        >
+          <Headphones className="h-5 w-5" />
         </Button>
         <Button
           variant="ghost"
@@ -508,6 +522,7 @@ function LongWorkspace({
           currentUserId={currentUserId}
         />
         <GmGallerySheet open={galleryOpen} onOpenChange={setGalleryOpen} campaignId={campaignId} campaignType="long" />
+        <GmAudioForgeSheet open={audioForgeOpen} onOpenChange={setAudioForgeOpen} forge={audioForge} />
       </main>
     </div>
   );

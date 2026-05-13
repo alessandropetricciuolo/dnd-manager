@@ -11,6 +11,7 @@
     "test:manual-search": "tsx --test src/lib/actions/__tests__/*.test.ts",
     "test:security": "tsx --test --test-concurrency=1 src/lib/security/__tests__/*.test.ts",
     "security:smoke-remote": "tsx scripts/security-smoke-remote.ts",
+    "test:r2-env": "tsx scripts/test-r2-env.ts",
     "export:dungeonedraghi": "node scripts/export-dungeonedraghi-compendio.mjs",
     "mm:chunks": "tsx scripts/delimit-manuale-mostri.ts"
   },
@@ -28,6 +29,8 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.98.0",
+    "@aws-sdk/client-s3": "^3.1045.0",
+    "@aws-sdk/s3-request-presigner": "^3.1045.0",
     "@xyflow/react": "^12.10.1",
     "browser-image-compression": "^2.0.2",
     "class-variance-authority": "^0.7.0",
