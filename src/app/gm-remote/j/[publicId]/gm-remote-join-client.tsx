@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Pause, Play, SkipBack, SkipForward, Square, Volume2, VolumeX } from "lucide-react";
+import { Loader2, Play, SkipBack, SkipForward, Square, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -35,12 +35,22 @@ async function postCommand(
   }
 }
 
+type SpotifyPlaylistOpt = {
+  id: string;
+  title: string;
+  mood: string | null;
+  spotify_playlist_id: string;
+};
+
 export function GmRemoteJoinClient({ publicId }: Props) {
   const [linkState, setLinkState] = useState<"loading" | "bad" | "ok">("loading");
   const [token, setToken] = useState<string | null>(null);
   const [musicVolPct, setMusicVolPct] = useState(75);
   const [muted, setMuted] = useState(false);
   const [sending, setSending] = useState(false);
+  const [spotifyRows, setSpotifyRows] = useState<SpotifyPlaylistOpt[]>([]);
+  const [spotifyLoading, setSpotifyLoading] = useState(false);
+  const [spotifyLoadError, setSpotifyLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     const hash = typeof window !== "undefined" ? window.location.hash : "";
@@ -51,6 +61,37 @@ export function GmRemoteJoinClient({ publicId }: Props) {
     setToken(decodeURIComponent(hash.slice(3)));
     setLinkState("ok");
   }, []);
+
+  useEffect(() => {
+    if (linkState !== "ok" || !token) return;
+    let cancelled = false;
+    setSpotifyLoadError(null);
+    (async () => {
+      setSpotifyLoading(true);
+      try {
+        const origin = typeof window !== "undefined" ? window.location.origin : "";
+        const res = await fetch(`${origin}/api/gm-remote/${publicId}/spotify-playlists`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token }),
+        });
+        const j = (await res.json().catch(() => ({}))) as {
+          ok?: boolean;
+          playlists?: SpotifyPlaylistOpt[];
+        };
+        if (cancelled) return;
+        if (res.ok && j.ok && Array.isArray(j.playlists)) setSpotifyRows(j.playlists);
+        else setSpotifyLoadError("Impossibile caricare le playlist.");
+      } catch {
+        if (!cancelled) setSpotifyLoadError("Impossibile caricare le playlist.");
+      } finally {
+        if (!cancelled) setSpotifyLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [linkState, token, publicId]);
 
   const send = useCallback(
     async (type: string, payload: Record<string, unknown> = {}) => {
@@ -193,6 +234,43 @@ export function GmRemoteJoinClient({ publicId }: Props) {
             {muted ? <Volume2 className="mr-2 h-4 w-4" /> : <VolumeX className="mr-2 h-4 w-4" />}
             {muted ? "Ripristina volume (unmute)" : "Mute musica"}
           </Button>
+        </div>
+
+        <div className="rounded-xl border border-emerald-900/35 bg-zinc-900/50 p-4">
+          <p className="mb-2 text-center text-xs font-medium uppercase tracking-wide text-zinc-500">
+            Spotify (sul PC del GM)
+          </p>
+          {spotifyLoading ? (
+            <div className="flex justify-center py-6 text-zinc-400">
+              <Loader2 className="h-7 w-7 animate-spin" />
+            </div>
+          ) : spotifyLoadError ? (
+            <p className="text-center text-xs text-red-400">{spotifyLoadError}</p>
+          ) : spotifyRows.length === 0 ? (
+            <p className="text-center text-xs text-zinc-500">Nessuna playlist configurata in gilda.</p>
+          ) : (
+            <div className="max-h-52 space-y-1.5 overflow-y-auto pr-0.5">
+              {spotifyRows.map((r) => (
+                <Button
+                  key={r.id}
+                  type="button"
+                  variant="outline"
+                  className="h-auto min-h-11 w-full touch-manipulation flex-col items-start gap-0 border-amber-800/40 py-2 text-left"
+                  disabled={sending}
+                  onClick={() =>
+                    void send("audio.spotify_select_playlist", { spotify_playlist_id: r.spotify_playlist_id })
+                  }
+                >
+                  <span className="w-full truncate text-sm text-zinc-100">{r.title}</span>
+                  {r.mood ? <span className="w-full truncate text-[10px] text-zinc-500">{r.mood}</span> : null}
+                </Button>
+              ))}
+            </div>
+          )}
+          <p className="mt-3 text-[10px] leading-relaxed text-zinc-600">
+            Cambia la playlist nell&apos;embed Spotify sul PC. Play/pause dall&apos;interfaccia Spotify sul computer
+            (limitazione tecnica dell&apos;embed).
+          </p>
         </div>
 
         <div>

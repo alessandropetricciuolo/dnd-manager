@@ -9,6 +9,7 @@ import { SecretWhispersSheet } from "./secret-whispers-sheet";
 import { GmGallerySheet } from "./gm-gallery-sheet";
 import { GmAudioForgeSheet } from "./gm-audio-forge-sheet";
 import { GmRemoteIntegration } from "./gm-remote-integration";
+import { GmSpotifyEmbedDock } from "./gm-spotify-embed-dock";
 import { LongEconomyPanel } from "./long-economy-panel";
 import { LongTimePanel } from "./long-time-panel";
 import { LongCalendarPanel } from "./long-calendar-panel";
@@ -86,6 +87,7 @@ function LongWorkspace({
   const [whispersOpen, setWhispersOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [audioForgeOpen, setAudioForgeOpen] = useState(false);
+  const [spotifyEmbedPlaylistId, setSpotifyEmbedPlaylistId] = useState<string | null>(null);
   const audioForge = useGmAudioForge(campaignId);
   const [workspaceMode, setWorkspaceMode] = useState<"session" | "closure">("session");
   const [quickNoteOpen, setQuickNoteOpen] = useState(false);
@@ -218,7 +220,11 @@ function LongWorkspace({
         >
           <Headphones className="h-5 w-5" />
         </Button>
-        <GmRemoteIntegration campaignId={campaignId} forge={audioForge} />
+        <GmRemoteIntegration
+          campaignId={campaignId}
+          forge={audioForge}
+          onSpotifySelectPlaylist={setSpotifyEmbedPlaylistId}
+        />
         <Button
           variant="ghost"
           size="icon"
@@ -524,7 +530,14 @@ function LongWorkspace({
           currentUserId={currentUserId}
         />
         <GmGallerySheet open={galleryOpen} onOpenChange={setGalleryOpen} campaignId={campaignId} campaignType="long" />
-        <GmAudioForgeSheet open={audioForgeOpen} onOpenChange={setAudioForgeOpen} forge={audioForge} />
+        <GmAudioForgeSheet
+          open={audioForgeOpen}
+          onOpenChange={setAudioForgeOpen}
+          forge={audioForge}
+          spotifyEmbedPlaylistId={spotifyEmbedPlaylistId}
+          onSpotifyEmbedPlaylistIdChange={setSpotifyEmbedPlaylistId}
+        />
+        <GmSpotifyEmbedDock playlistId={spotifyEmbedPlaylistId} />
       </main>
     </div>
   );

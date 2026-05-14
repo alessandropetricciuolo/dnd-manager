@@ -2,10 +2,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { gmRemoteRateLimit } from "@/lib/gm-remote/rate-limit";
-import { parseRemotePostBody, isRecord } from "@/lib/gm-remote/protocol";
+import { isRecord } from "@/lib/gm-remote/protocol";
 import { validateGmRemoteSession } from "@/lib/gm-remote/validate-remote-session";
 
-const RATE_MAX = 45;
+const RATE_MAX = 20;
 const RATE_WINDOW_MS = 60_000;
 
 type RouteParams = { params: { publicId: string } };
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ ok: false, error: "bad_request" }, { status: 400 });
   }
 
-  if (!gmRemoteRateLimit(`cmd:${publicId}`, RATE_MAX, RATE_WINDOW_MS)) {
+  if (!gmRemoteRateLimit(`spotify-list:${publicId}`, RATE_MAX, RATE_WINDOW_MS)) {
     return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
   }
 
@@ -26,13 +26,14 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   } catch {
     return NextResponse.json({ ok: false, error: "invalid_json" }, { status: 400 });
   }
-
-  const parsed = parseRemotePostBody(json);
-  if (!parsed.ok) {
-    return NextResponse.json({ ok: false, error: parsed.error }, { status: 400 });
+  if (!isRecord(json)) {
+    return NextResponse.json({ ok: false, error: "invalid_json" }, { status: 400 });
+  }
+  const token = typeof json.token === "string" ? json.token.trim() : "";
+  if (token.length < 16) {
+    return NextResponse.json({ ok: false, error: "invalid_token" }, { status: 400 });
   }
 
-  const { token, envelope } = parsed.data;
   const v = await validateGmRemoteSession(publicId, token);
   if (!v.ok) {
     const status =
@@ -43,27 +44,15 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   }
 
   const admin = createSupabaseAdminClient() as SupabaseClient<any>;
-  const payloadJson = isRecord(envelope.payload) ? envelope.payload : {};
+  const { data: rows, error } = await admin
+    .from("gm_spotify_playlists")
+    .select("id, title, mood, spotify_playlist_id")
+    .order("title", { ascending: true });
 
-  const { error: insErr } = await admin.from("gm_remote_commands").insert({
-    session_public_id: publicId,
-    campaign_id: v.session.campaign_id,
-    command_id: envelope.command_id,
-    seq: envelope.seq ?? null,
-    type: envelope.type,
-    payload: payloadJson,
-    issued_at: envelope.issued_at,
-    source: envelope.source ?? "remote",
-  });
-
-  if (insErr) {
-    const dup = insErr.code === "23505" || insErr.message?.toLowerCase().includes("duplicate");
-    if (dup) {
-      return NextResponse.json({ ok: true, deduped: true });
-    }
-    console.warn("[gm-remote] insert_failed", insErr.code);
-    return NextResponse.json({ ok: false, error: "persist_failed" }, { status: 500 });
+  if (error) {
+    console.warn("[gm-remote] spotify_playlists", error.code);
+    return NextResponse.json({ ok: false, error: "load_failed" }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, playlists: rows ?? [] });
 }

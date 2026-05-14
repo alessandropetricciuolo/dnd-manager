@@ -9,6 +9,7 @@ import { SecretWhispersSheet } from "./secret-whispers-sheet";
 import { GmGallerySheet } from "./gm-gallery-sheet";
 import { GmAudioForgeSheet } from "./gm-audio-forge-sheet";
 import { GmRemoteIntegration } from "./gm-remote-integration";
+import { GmSpotifyEmbedDock } from "./gm-spotify-embed-dock";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getCampaignSessionsForGm, type CampaignSessionOption } from "@/app/campaigns/gm-actions";
@@ -51,6 +52,7 @@ export function GmScreenLegacyLayout({
   const [whispersOpen, setWhispersOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [audioForgeOpen, setAudioForgeOpen] = useState(false);
+  const [spotifyEmbedPlaylistId, setSpotifyEmbedPlaylistId] = useState<string | null>(null);
   const audioForge = useGmAudioForge(campaignId);
 
   const loadSessions = useCallback(async () => {
@@ -123,7 +125,11 @@ export function GmScreenLegacyLayout({
         >
           <Headphones className="h-5 w-5" />
         </Button>
-        <GmRemoteIntegration campaignId={campaignId} forge={audioForge} />
+        <GmRemoteIntegration
+          campaignId={campaignId}
+          forge={audioForge}
+          onSpotifySelectPlaylist={setSpotifyEmbedPlaylistId}
+        />
       </div>
 
       <aside
@@ -212,7 +218,14 @@ export function GmScreenLegacyLayout({
           currentUserId={currentUserId}
         />
         <GmGallerySheet open={galleryOpen} onOpenChange={setGalleryOpen} campaignId={campaignId} campaignType={campaignType} />
-        <GmAudioForgeSheet open={audioForgeOpen} onOpenChange={setAudioForgeOpen} forge={audioForge} />
+        <GmAudioForgeSheet
+          open={audioForgeOpen}
+          onOpenChange={setAudioForgeOpen}
+          forge={audioForge}
+          spotifyEmbedPlaylistId={spotifyEmbedPlaylistId}
+          onSpotifyEmbedPlaylistIdChange={setSpotifyEmbedPlaylistId}
+        />
+        <GmSpotifyEmbedDock playlistId={spotifyEmbedPlaylistId} />
       </main>
     </div>
   );

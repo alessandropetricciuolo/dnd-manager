@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { loadGmAudioForgeLibrary, saveGmAudioForgeLibrary } from "./storage";
 import {
   createDefaultLibrary,
@@ -58,6 +59,11 @@ export function useGmAudioForge(campaignId: string) {
   const sfxBackgroundArmedRef = useRef<Set<string>>(new Set());
   const [sfxBackgroundUiTick, setSfxBackgroundUiTick] = useState(0);
 
+  const activeAtmosphereIdsRef = useRef<Record<string, boolean>>({});
+  useEffect(() => {
+    activeAtmosphereIdsRef.current = activeAtmosphereIds;
+  }, [activeAtmosphereIds]);
+
   const stopMusicInternal = useCallback(() => {
     const a = musicAudioRef.current;
     if (a) {
@@ -111,6 +117,15 @@ export function useGmAudioForge(campaignId: string) {
 
   const playMusicTrack = useCallback(
     (categoryId: string, track: GmAudioTrack) => {
+      const url = track.url?.trim() ?? "";
+      if (!url) {
+        toast.error("Traccia senza URL.");
+        return;
+      }
+      if (!isAllowedAudioUrl(url)) {
+        toast.error("URL audio non valido: serve HTTPS (o path /… su questo sito).");
+        return;
+      }
       let a = musicAudioRef.current;
       if (!a) {
         a = new Audio();
@@ -142,17 +157,33 @@ export function useGmAudioForge(campaignId: string) {
         };
         a.addEventListener("ended", onEnded);
       }
-      musicStateRef.current = { categoryId, trackUrl: track.url };
+      musicStateRef.current = { categoryId, trackUrl: url };
       const catNow = getCategory(libraryRef.current, categoryId);
       a.loop = catNow?.playbackMode === "loop_one";
-      a.src = track.url;
-      void a.play().catch(() => {});
+      a.src = url;
+      void a.play().catch((err: unknown) => {
+        const name = err instanceof DOMException ? err.name : "";
+        if (name === "NotAllowedError") {
+          toast.error("Riproduzione bloccata: interagisci di nuovo con la pagina (clic) e riprova.");
+        } else {
+          toast.error("Impossibile avviare la musica (rete, formato o permessi del browser).");
+        }
+      });
     },
     [stopMusicInternal]
   );
 
   const playAtmosphereTrack = useCallback(
     (categoryId: string, track: GmAudioTrack) => {
+      const url = track.url?.trim() ?? "";
+      if (!url) {
+        toast.error("Traccia senza URL.");
+        return;
+      }
+      if (!isAllowedAudioUrl(url)) {
+        toast.error("URL atmosfera non valido: serve HTTPS (o path /… su questo sito).");
+        return;
+      }
       let a = atmosAudiosRef.current.get(categoryId);
       if (!a) {
         a = new Audio();
@@ -184,11 +215,18 @@ export function useGmAudioForge(campaignId: string) {
         };
         a.addEventListener("ended", onEnded);
       }
-      atmosStateRef.current.set(categoryId, { trackUrl: track.url });
+      atmosStateRef.current.set(categoryId, { trackUrl: url });
       const catNow = getCategory(libraryRef.current, categoryId);
       a.loop = catNow?.playbackMode === "loop_one";
-      a.src = track.url;
-      void a.play().catch(() => {});
+      a.src = url;
+      void a.play().catch((err: unknown) => {
+        const name = err instanceof DOMException ? err.name : "";
+        if (name === "NotAllowedError") {
+          toast.error("Atmosfera: clic di nuovo sulla pagina e riprova.");
+        } else {
+          toast.error("Impossibile avviare l’atmosfera (rete o formato).");
+        }
+      });
     },
     [stopAtmosphereInternal]
   );
@@ -231,7 +269,10 @@ export function useGmAudioForge(campaignId: string) {
         cat.playbackMode === "loop_one"
           ? pickRandomTrack(cat.tracks, null)
           : pickRandomTrack(cat.tracks, null);
-      if (!first) return;
+      if (!first) {
+        toast.error("Nessuna traccia riproducibile in questa categoria.");
+        return;
+      }
       playMusicTrack(categoryId, first);
     },
     [playMusicTrack, stopMusicInternal]
@@ -242,7 +283,7 @@ export function useGmAudioForge(campaignId: string) {
       const cat = getCategory(libraryRef.current, categoryId);
       if (!cat || cat.kind !== "atmosphere") return;
       if (cat.tracks.length === 0) return;
-      if (activeAtmosphereIds[categoryId]) {
+      if (activeAtmosphereIdsRef.current[categoryId]) {
         stopAtmosphereInternal(categoryId);
         return;
       }
@@ -251,7 +292,7 @@ export function useGmAudioForge(campaignId: string) {
       if (!first) return;
       playAtmosphereTrack(categoryId, first);
     },
-    [activeAtmosphereIds, playAtmosphereTrack, stopAtmosphereInternal]
+    [playAtmosphereTrack, stopAtmosphereInternal]
   );
 
   const playSfxRandom = useCallback(

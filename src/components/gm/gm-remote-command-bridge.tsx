@@ -11,12 +11,34 @@ type Props = {
   sessionPublicId: string | null;
   forge: GmAudioForgeControls;
   onRealtimeStatus: (connected: boolean) => void;
+  onSpotifySelectPlaylist?: (spotifyPlaylistId: string) => void;
 };
 
-export function GmRemoteCommandBridge({ campaignId, sessionPublicId, forge, onRealtimeStatus }: Props) {
+function parsePayloadCell(raw: unknown): Record<string, unknown> {
+  if (isRecord(raw)) return raw;
+  if (typeof raw === "string") {
+    try {
+      const p: unknown = JSON.parse(raw);
+      return isRecord(p) ? p : {};
+    } catch {
+      return {};
+    }
+  }
+  return {};
+}
+
+export function GmRemoteCommandBridge({
+  campaignId,
+  sessionPublicId,
+  forge,
+  onRealtimeStatus,
+  onSpotifySelectPlaylist,
+}: Props) {
   const seenRef = useRef(new Set<string>());
   const forgeRef = useRef(forge);
   forgeRef.current = forge;
+  const spotifyCbRef = useRef(onSpotifySelectPlaylist);
+  spotifyCbRef.current = onSpotifySelectPlaylist;
 
   useEffect(() => {
     seenRef.current.clear();
@@ -29,40 +51,67 @@ export function GmRemoteCommandBridge({ campaignId, sessionPublicId, forge, onRe
     }
 
     const supabase = createSupabaseBrowserClient();
-    const channel = supabase
-      .channel(`gm-remote-${campaignId}-${sessionPublicId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "gm_remote_commands",
-          filter: `session_public_id=eq.${sessionPublicId}`,
-        },
-        (payload) => {
-          const row = payload.new as Record<string, unknown>;
-          const commandId = typeof row.command_id === "string" ? row.command_id : null;
-          const type = typeof row.type === "string" ? row.type : null;
-          if (!commandId || !type) return;
-          if (seenRef.current.has(commandId)) return;
-          seenRef.current.add(commandId);
-          if (seenRef.current.size > 500) {
-            seenRef.current = new Set([...seenRef.current].slice(-300));
+    let cancelled = false;
+    const channelRef: { current: ReturnType<typeof supabase.channel> | null } = { current: null };
+
+    void (async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (cancelled) return;
+      await supabase.realtime.setAuth(session?.access_token ?? null);
+      if (cancelled) return;
+
+      const channel = supabase
+        .channel(`gm-remote-${campaignId}-${sessionPublicId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "gm_remote_commands",
+            filter: `session_public_id=eq.${sessionPublicId}`,
+          },
+          (payload) => {
+            const row = payload.new as Record<string, unknown>;
+            const commandId = typeof row.command_id === "string" ? row.command_id : null;
+            const type = typeof row.type === "string" ? row.type : null;
+            if (!commandId || !type) return;
+            if (seenRef.current.has(commandId)) return;
+            seenRef.current.add(commandId);
+            if (seenRef.current.size > 500) {
+              seenRef.current = new Set([...seenRef.current].slice(-300));
+            }
+            const pl = parsePayloadCell(row.payload);
+
+            if (type === "audio.spotify_select_playlist") {
+              const sid = typeof pl.spotify_playlist_id === "string" ? pl.spotify_playlist_id.trim() : "";
+              if (sid) spotifyCbRef.current?.(sid);
+              return;
+            }
+
+            applyRemoteAudioCommand(forgeRef.current, type, pl);
           }
-          const pl = isRecord(row.payload) ? row.payload : {};
-          applyRemoteAudioCommand(forgeRef.current, type, pl);
-        }
-      )
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") onRealtimeStatus(true);
-        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
-          onRealtimeStatus(false);
-        }
-      });
+        )
+        .subscribe((status, err) => {
+          if (err) {
+            console.warn("[gm-remote] subscribe", err.message);
+          }
+          if (status === "SUBSCRIBED") onRealtimeStatus(true);
+          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+            onRealtimeStatus(false);
+          }
+        });
+
+      channelRef.current = channel;
+    })();
 
     return () => {
+      cancelled = true;
       onRealtimeStatus(false);
-      void supabase.removeChannel(channel);
+      const ch = channelRef.current;
+      channelRef.current = null;
+      if (ch) void supabase.removeChannel(ch);
     };
   }, [campaignId, sessionPublicId, onRealtimeStatus]);
 

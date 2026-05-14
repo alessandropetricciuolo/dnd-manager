@@ -30,6 +30,8 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   forge: GmAudioForgeControls;
+  spotifyEmbedPlaylistId: string | null;
+  onSpotifyEmbedPlaylistIdChange: (spotifyPlaylistId: string) => void;
 };
 
 function createEmptyCategory(kind: GmAudioCategoryKind): GmAudioCategory {
@@ -76,7 +78,13 @@ function CategoryTile({
   );
 }
 
-export function GmAudioForgeSheet({ open, onOpenChange, forge }: Props) {
+export function GmAudioForgeSheet({
+  open,
+  onOpenChange,
+  forge,
+  spotifyEmbedPlaylistId,
+  onSpotifyEmbedPlaylistIdChange,
+}: Props) {
   const {
     library,
     setLibrary,
@@ -208,9 +216,8 @@ export function GmAudioForgeSheet({ open, onOpenChange, forge }: Props) {
           </SheetTitle>
           <p className="text-xs leading-relaxed text-zinc-400">
             Libreria locale per campagna + <strong className="font-medium text-zinc-300">catalogo Gilda</strong> (tab
-            Catalogo) e <strong className="font-medium text-zinc-300">playlist Spotify</strong> (tab Spotify) e il{" "}
-            <strong className="font-medium text-zinc-300">pad SFX</strong> a 12 tasti (tab Pad SFX). URL manuali solo
-            HTTPS. Ispirato al flusso{" "}
+            Catalogo). Nel tab <strong className="font-medium text-zinc-300">Mixer</strong> trovi musica, atmosfere,
+            playlist Spotify e il pad SFX a 12 tasti. URL manuali solo HTTPS. Ispirato al flusso{" "}
             <a
               href="https://slashpaf.com/it/audioforge/doc/"
               target="_blank"
@@ -231,12 +238,6 @@ export function GmAudioForgeSheet({ open, onOpenChange, forge }: Props) {
             <TabsTrigger value="catalog" className="text-xs data-[state=active]:bg-amber-600/25">
               Catalogo
             </TabsTrigger>
-            <TabsTrigger value="spotify" className="text-xs data-[state=active]:bg-amber-600/25">
-              Spotify
-            </TabsTrigger>
-            <TabsTrigger value="pad" className="text-xs data-[state=active]:bg-amber-600/25">
-              Pad SFX
-            </TabsTrigger>
             <TabsTrigger value="fx" className="text-xs data-[state=active]:bg-amber-600/25">
               fx
             </TabsTrigger>
@@ -247,19 +248,6 @@ export function GmAudioForgeSheet({ open, onOpenChange, forge }: Props) {
 
           <TabsContent value="catalog" className="mt-3 min-h-0 flex-1 overflow-y-auto pr-1">
             <GmGlobalAudioCatalog library={library} setLibrary={setLibrary} />
-          </TabsContent>
-
-          <TabsContent value="spotify" className="mt-3 min-h-0 flex-1 overflow-y-auto pr-1">
-            <GmSpotifyPlayerPanel />
-          </TabsContent>
-
-          <TabsContent value="pad" className="mt-3 min-h-0 flex-1 overflow-y-auto pr-1">
-            <GmSfxPadPanel
-              library={library}
-              setLibrary={setLibrary}
-              playSfxUrl={playSfxUrl}
-              isAllowedAudioUrl={isAllowedAudioUrl}
-            />
           </TabsContent>
 
           <TabsContent value="mixer" className="mt-3 min-h-0 flex-1 overflow-y-auto pr-1">
@@ -300,7 +288,24 @@ export function GmAudioForgeSheet({ open, onOpenChange, forge }: Props) {
                 step={1}
                 onValueChange={(v) => setAtmosMaster((v[0] ?? 0) / 100)}
               />
+              <div className="flex items-center gap-2 text-xs font-medium text-amber-200/90">
+                <Volume2 className="h-3.5 w-3.5" />
+                SFX (master)
+              </div>
+              <Slider
+                value={[sfxMaster * 100]}
+                max={100}
+                step={1}
+                onValueChange={(v) => setSfxMaster((v[0] ?? 0) / 100)}
+              />
             </div>
+
+            <p className="mb-2 rounded-md border border-amber-900/30 bg-zinc-900/50 px-2 py-2 text-[11px] leading-relaxed text-zinc-400">
+              <strong className="text-zinc-300">Musica:</strong> tocca un riquadro per <em>avviare</em> quella
+              categoria; tocca di nuovo la stessa per <em>fermare</em>. Solo categorie con almeno una traccia sono
+              attive. Tracce dal catalogo usano il proxy del sito (URL che inizia con{" "}
+              <code className="text-amber-200/90">/api/gm-global-audio-preview</code>).
+            </p>
 
             <p className="mb-2 text-[11px] uppercase tracking-wide text-zinc-500">Musica — una categoria attiva</p>
             {musicCats.length === 0 ? (
@@ -349,11 +354,29 @@ export function GmAudioForgeSheet({ open, onOpenChange, forge }: Props) {
                 ))}
               </div>
             )}
+
+            <div className="mt-8 space-y-3 border-t border-amber-900/30 pt-6">
+              <p className="text-[11px] uppercase tracking-wide text-zinc-500">Spotify</p>
+              <GmSpotifyPlayerPanel
+                spotifyEmbedPlaylistId={spotifyEmbedPlaylistId}
+                onSpotifyEmbedPlaylistIdChange={onSpotifyEmbedPlaylistIdChange}
+              />
+            </div>
+
+            <div className="mt-8 space-y-3 border-t border-amber-900/30 pt-6">
+              <p className="text-[11px] uppercase tracking-wide text-zinc-500">Pad SFX (12 slot)</p>
+              <GmSfxPadPanel
+                library={library}
+                setLibrary={setLibrary}
+                playSfxUrl={playSfxUrl}
+                isAllowedAudioUrl={isAllowedAudioUrl}
+              />
+            </div>
           </TabsContent>
 
           <TabsContent value="fx" className="mt-3 min-h-0 flex-1 overflow-y-auto pr-1">
             <div className="mb-4 space-y-2 rounded-lg border border-amber-800/25 bg-zinc-900/40 p-3">
-              <Label className="text-xs text-zinc-400">Volume SFX</Label>
+              <Label className="text-xs text-zinc-400">Volume SFX (stesso controllo del Mixer)</Label>
               <Slider
                 value={[sfxMaster * 100]}
                 max={100}

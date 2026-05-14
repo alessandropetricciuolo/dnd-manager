@@ -11,9 +11,10 @@ import type { GmRemoteSessionCreated } from "@/app/campaigns/gm-remote-actions";
 type Props = {
   campaignId: string;
   forge: GmAudioForgeControls;
+  onSpotifySelectPlaylist?: (spotifyPlaylistId: string) => void;
 };
 
-export function GmRemoteIntegration({ campaignId, forge }: Props) {
+export function GmRemoteIntegration({ campaignId, forge, onSpotifySelectPlaylist }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [session, setSession] = useState<GmRemoteSessionCreated | null>(null);
   const [realtimeConnected, setRealtimeConnected] = useState(false);
@@ -25,6 +26,7 @@ export function GmRemoteIntegration({ campaignId, forge }: Props) {
         sessionPublicId={session?.publicId ?? null}
         forge={forge}
         onRealtimeStatus={setRealtimeConnected}
+        onSpotifySelectPlaylist={onSpotifySelectPlaylist}
       />
       <Button
         type="button"

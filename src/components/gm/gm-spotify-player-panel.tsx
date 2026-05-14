@@ -1,21 +1,24 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
 import { Loader2, Music2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { listSpotifyPlaylistsForGmAction } from "@/app/campaigns/spotify-playlists-gm-actions";
 import type { GmSpotifyPlaylistRow } from "@/lib/spotify/types";
-import { spotifyPlaylistEmbedSrc } from "@/lib/spotify/playlist-id";
 import { cn } from "@/lib/utils";
 
-export function GmSpotifyPlayerPanel() {
+type Props = {
+  /** ID playlist Spotify (non UUID riga DB): controlla l’embed sul GM screen. */
+  spotifyEmbedPlaylistId: string | null;
+  onSpotifyEmbedPlaylistIdChange: (spotifyPlaylistId: string) => void;
+};
+
+export function GmSpotifyPlayerPanel({ spotifyEmbedPlaylistId, onSpotifyEmbedPlaylistIdChange }: Props) {
   const [rows, setRows] = useState<GmSpotifyPlaylistRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
 
   const load = useCallback(async () => {
@@ -25,10 +28,6 @@ export function GmSpotifyPlayerPanel() {
     setLoading(false);
     if (res.success) {
       setRows(res.data);
-      setSelectedId((prev) => {
-        if (prev && res.data.some((r) => r.id === prev)) return prev;
-        return res.data[0]?.id ?? null;
-      });
     } else {
       setErr(res.message);
       setRows([]);
@@ -38,6 +37,17 @@ export function GmSpotifyPlayerPanel() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  /** Allinea embed a una playlist valida dopo caricamento o se l’ID non è più in elenco. */
+  useEffect(() => {
+    if (rows.length === 0) return;
+    const ok =
+      spotifyEmbedPlaylistId &&
+      rows.some((r) => r.spotify_playlist_id === spotifyEmbedPlaylistId);
+    if (ok) return;
+    const first = rows[0]?.spotify_playlist_id;
+    if (first) onSpotifyEmbedPlaylistIdChange(first);
+  }, [rows, spotifyEmbedPlaylistId, onSpotifyEmbedPlaylistIdChange]);
 
   const filtered = useMemo(() => {
     const q = filter.trim().toLowerCase();
@@ -49,8 +59,6 @@ export function GmSpotifyPlayerPanel() {
         r.spotify_playlist_id.toLowerCase().includes(q)
     );
   }, [rows, filter]);
-
-  const selected = rows.find((r) => r.id === selectedId) ?? null;
 
   if (loading) {
     return (
@@ -74,49 +82,42 @@ export function GmSpotifyPlayerPanel() {
   }
 
   return (
-    <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
-        <div className="flex flex-wrap items-end gap-2">
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="border-amber-700/50 text-amber-200"
-            onClick={() => void load()}
-          >
-            Aggiorna
-          </Button>
-          <div className="min-w-0 flex-1 space-y-1">
-            <Label className="text-[11px] text-zinc-500">Cerca</Label>
-            <Input
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              placeholder="Titolo o mood…"
-              className="border-amber-800/40 bg-zinc-950 text-sm"
-            />
-          </div>
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-end gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="border-amber-700/50 text-amber-200"
+          onClick={() => void load()}
+        >
+          Aggiorna
+        </Button>
+        <div className="min-w-0 flex-1 space-y-1">
+          <Label className="text-[11px] text-zinc-500">Cerca</Label>
+          <Input
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="Titolo o mood…"
+            className="border-amber-800/40 bg-zinc-950 text-sm"
+          />
         </div>
-        <p className="text-[11px] leading-relaxed text-zinc-500">
-          Player ufficiale Spotify (embed). Serve account Spotify e rispetto dei{" "}
-          <a
-            href="https://www.spotify.com/legal/end-user-agreement/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-amber-400 underline-offset-2 hover:underline"
-          >
-            termini Spotify
-          </a>
-          .
-        </p>
-        <ul className="max-h-[min(40vh,16rem)] space-y-1 overflow-y-auto pr-1">
-          {filtered.map((r) => (
+      </div>
+      <p className="text-[11px] leading-relaxed text-zinc-500">
+        Il player Spotify è il riquadro in basso a destra sul GM screen (anche con questo pannello chiuso). Qui
+        scegli la playlist; play/pause resta nell&apos;embed (termini Spotify). Serve account Spotify.
+      </p>
+      <ul className="max-h-[min(40vh,16rem)] space-y-1 overflow-y-auto pr-1">
+        {filtered.map((r) => {
+          const active = r.spotify_playlist_id === spotifyEmbedPlaylistId;
+          return (
             <li key={r.id}>
               <button
                 type="button"
-                onClick={() => setSelectedId(r.id)}
+                onClick={() => onSpotifyEmbedPlaylistIdChange(r.spotify_playlist_id)}
                 className={cn(
                   "flex w-full items-start gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-colors",
-                  selectedId === r.id
+                  active
                     ? "border-amber-400 bg-amber-600/20 text-amber-50"
                     : "border-amber-900/40 bg-zinc-900/50 text-zinc-300 hover:border-amber-700/50"
                 )}
@@ -128,24 +129,9 @@ export function GmSpotifyPlayerPanel() {
                 </span>
               </button>
             </li>
-          ))}
-        </ul>
-      </div>
-
-      {selected ? (
-        <div className="w-full shrink-0 overflow-hidden rounded-xl border border-amber-800/40 bg-black/40 lg:w-[min(100%,400px)]">
-          <iframe
-            title={`Spotify: ${selected.title}`}
-            src={spotifyPlaylistEmbedSrc(selected.spotify_playlist_id)}
-            width="100%"
-            height="380"
-            style={{ border: 0, display: "block" }}
-            loading="lazy"
-            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-            referrerPolicy="strict-origin-when-cross-origin"
-          />
-        </div>
-      ) : null}
+          );
+        })}
+      </ul>
     </div>
   );
 }

@@ -96,6 +96,7 @@ export function GmGlobalAudioCatalog({ library, setLibrary }: Props) {
       toast.error("Per SFX usa tracce catalogate come SFX.");
       return;
     }
+    const proxyUrl = `/api/gm-global-audio-preview?id=${encodeURIComponent(track.id)}`;
     setLibrary((lib) => ({
       ...lib,
       categories: lib.categories.map((c) =>
@@ -104,20 +105,21 @@ export function GmGlobalAudioCatalog({ library, setLibrary }: Props) {
               ...c,
               tracks: [
                 ...c.tracks,
-                { id: newGmAudioEntityId(), label: track.title, url: track.public_url },
+                { id: newGmAudioEntityId(), label: track.title, url: proxyUrl },
               ],
             }
           : c
       ),
     }));
-    toast.success(`Aggiunto a «${cat.name}». Vai al Mixer o agli fx per riprodurlo.`);
+    toast.success(`Aggiunto a «${cat.name}». Apri il tab Mixer e tocca la categoria per avviare.`);
   }
 
   return (
     <div className="space-y-4">
       <p className="text-xs text-zinc-400">
-        Libreria caricata dagli admin su Cloudflare. Aggiungi una traccia a una tua categoria locale (Impostazioni),
-        poi usala dal Mixer / fx.
+        Libreria caricata dagli admin. Aggiungi una traccia a una categoria locale (Impostazioni), poi nel tab{" "}
+        <strong className="text-zinc-300">Mixer</strong> tocca il riquadro della categoria musica/atmosfera per
+        avviare o fermare. L&apos;audio passa dal server (stesso dominio) così il browser non blocca il file.
       </p>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
         <Button
@@ -207,8 +209,8 @@ export function GmGlobalAudioCatalog({ library, setLibrary }: Props) {
                   variant="secondary"
                   className="h-8 border-amber-800/40 bg-zinc-800 text-zinc-100"
                   onClick={() => {
-                    const a = new Audio(r.public_url);
-                    void a.play().catch(() => toast.error("Anteprima non disponibile (CORS o rete)."));
+                    const a = new Audio(`/api/gm-global-audio-preview?id=${encodeURIComponent(r.id)}`);
+                    void a.play().catch(() => toast.error("Anteprima non disponibile (rete o permessi)."));
                   }}
                 >
                   <Play className="mr-1 h-3.5 w-3.5" />

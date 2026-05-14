@@ -1,0 +1,45 @@
+"use client";
+
+import { useState } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { spotifyPlaylistEmbedSrc } from "@/lib/spotify/playlist-id";
+
+type Props = {
+  playlistId: string | null;
+};
+
+/** Embed Spotify fisso sul GM screen: controllabile anche dal telecomando (cambio playlist). */
+export function GmSpotifyEmbedDock({ playlistId }: Props) {
+  const [open, setOpen] = useState(true);
+  if (!playlistId) return null;
+
+  return (
+    <div className="pointer-events-auto fixed bottom-3 right-3 z-[60] flex max-w-[calc(100vw-1.5rem)] flex-col items-end gap-1">
+      <Button
+        type="button"
+        size="sm"
+        variant="secondary"
+        className="h-7 border-amber-800/50 bg-zinc-900 text-[10px] text-amber-100"
+        onClick={() => setOpen((o) => !o)}
+      >
+        {open ? <ChevronDown className="mr-1 h-3 w-3" /> : <ChevronUp className="mr-1 h-3 w-3" />}
+        Spotify
+      </Button>
+      {open ? (
+        <div className="w-[min(100vw-24px,400px)] overflow-hidden rounded-xl border border-amber-800/50 bg-black/80 shadow-2xl">
+          <iframe
+            key={playlistId}
+            title="Spotify"
+            src={spotifyPlaylistEmbedSrc(playlistId)}
+            width="100%"
+            height={380}
+            style={{ border: 0, display: "block" }}
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+            referrerPolicy="strict-origin-when-cross-origin"
+          />
+        </div>
+      ) : null}
+    </div>
+  );
+}
