@@ -80,7 +80,7 @@ export function GmGlobalAudioCatalog({ library, setLibrary }: Props) {
 
   function addToLocalCategory(track: GmGlobalAudioRow) {
     if (!targetCategoryId) {
-      toast.error("Scegli una categoria nelle Impostazioni (o creane una), poi selezionala qui.");
+      toast.error("Scegli una categoria nel menu in alto.");
       return;
     }
     const cat = library.categories.find((c) => c.id === targetCategoryId);
@@ -115,7 +115,7 @@ export function GmGlobalAudioCatalog({ library, setLibrary }: Props) {
           : c
       ),
     }));
-    toast.success(`Aggiunto a «${cat.name}». Apri il tab Mixer e tocca la categoria per avviare.`);
+    toast.success(`Aggiunto a «${cat.name}». Nel Mixer tocca la categoria per avviare.`);
   }
 
   const togglePreview = useCallback((rowId: string) => {
@@ -151,10 +151,9 @@ export function GmGlobalAudioCatalog({ library, setLibrary }: Props) {
 
   return (
     <div className="space-y-4">
-      <p className="text-xs text-zinc-400">
-        Libreria caricata dagli admin. Aggiungi una traccia a una categoria locale (Impostazioni), poi nel tab{" "}
-        <strong className="text-zinc-300">Mixer</strong> tocca il riquadro della categoria musica/atmosfera per
-        avviare o fermare. L&apos;audio passa dal server (stesso dominio) così il browser non blocca il file.
+      <p className="text-xs leading-relaxed text-zinc-500">
+        Scegli la categoria di destinazione, poi <strong className="font-medium text-zinc-400">Aggiungi</strong> per
+        importare nel Mixer. L&apos;anteprima usa il proxy del sito.
       </p>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
         <Button

@@ -42,6 +42,30 @@ type SpotifyPlaylistOpt = {
   spotify_playlist_id: string;
 };
 
+type GlobalMusicOpt = {
+  id: string;
+  title: string;
+  mood: string | null;
+};
+
+function remoteErrorMessage(code: string | undefined): string {
+  switch (code) {
+    case "session_expired":
+    case "session_revoked":
+      return "Sessione scaduta o revocata.";
+    case "invalid_token":
+      return "Token non valido.";
+    case "session_not_found":
+      return "Sessione non trovata.";
+    case "rate_limited":
+      return "Troppe richieste. Attendi un attimo.";
+    case "load_failed":
+      return "Errore server nel caricamento.";
+    default:
+      return "Impossibile caricare.";
+  }
+}
+
 export function GmRemoteJoinClient({ publicId }: Props) {
   const [linkState, setLinkState] = useState<"loading" | "bad" | "ok">("loading");
   const [token, setToken] = useState<string | null>(null);
@@ -51,6 +75,9 @@ export function GmRemoteJoinClient({ publicId }: Props) {
   const [spotifyRows, setSpotifyRows] = useState<SpotifyPlaylistOpt[]>([]);
   const [spotifyLoading, setSpotifyLoading] = useState(false);
   const [spotifyLoadError, setSpotifyLoadError] = useState<string | null>(null);
+  const [catalogRows, setCatalogRows] = useState<GlobalMusicOpt[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [catalogLoadError, setCatalogLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     const hash = typeof window !== "undefined" ? window.location.hash : "";
@@ -66,26 +93,50 @@ export function GmRemoteJoinClient({ publicId }: Props) {
     if (linkState !== "ok" || !token) return;
     let cancelled = false;
     setSpotifyLoadError(null);
+    setCatalogLoadError(null);
     (async () => {
       setSpotifyLoading(true);
+      setCatalogLoading(true);
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
       try {
-        const origin = typeof window !== "undefined" ? window.location.origin : "";
-        const res = await fetch(`${origin}/api/gm-remote/${publicId}/spotify-playlists`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token }),
-        });
-        const j = (await res.json().catch(() => ({}))) as {
+        const [resPl, resCat] = await Promise.all([
+          fetch(`${origin}/api/gm-remote/${publicId}/spotify-playlists`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token }),
+          }),
+          fetch(`${origin}/api/gm-remote/${publicId}/global-music-tracks`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token }),
+          }),
+        ]);
+        const jPl = (await resPl.json().catch(() => ({}))) as {
           ok?: boolean;
           playlists?: SpotifyPlaylistOpt[];
+          error?: string;
+        };
+        const jCat = (await resCat.json().catch(() => ({}))) as {
+          ok?: boolean;
+          tracks?: GlobalMusicOpt[];
+          error?: string;
         };
         if (cancelled) return;
-        if (res.ok && j.ok && Array.isArray(j.playlists)) setSpotifyRows(j.playlists);
-        else setSpotifyLoadError("Impossibile caricare le playlist.");
+        if (resPl.ok && jPl.ok && Array.isArray(jPl.playlists)) setSpotifyRows(jPl.playlists);
+        else setSpotifyLoadError(remoteErrorMessage(jPl.error));
+
+        if (resCat.ok && jCat.ok && Array.isArray(jCat.tracks)) setCatalogRows(jCat.tracks);
+        else setCatalogLoadError(remoteErrorMessage(jCat.error));
       } catch {
-        if (!cancelled) setSpotifyLoadError("Impossibile caricare le playlist.");
+        if (!cancelled) {
+          setSpotifyLoadError("Impossibile caricare le playlist.");
+          setCatalogLoadError("Impossibile caricare il catalogo musica.");
+        }
       } finally {
-        if (!cancelled) setSpotifyLoading(false);
+        if (!cancelled) {
+          setSpotifyLoading(false);
+          setCatalogLoading(false);
+        }
       }
     })();
     return () => {
@@ -145,6 +196,40 @@ export function GmRemoteJoinClient({ publicId }: Props) {
       <section className="mx-auto max-w-md space-y-4 pb-12">
         <div className="rounded-xl border border-emerald-900/35 bg-zinc-900/50 p-4">
           <p className="mb-2 text-center text-xs font-medium uppercase tracking-wide text-zinc-500">
+            Musica catalogo Gilda (sul PC)
+          </p>
+          {catalogLoading ? (
+            <div className="flex justify-center py-6 text-zinc-400">
+              <Loader2 className="h-7 w-7 animate-spin" />
+            </div>
+          ) : catalogLoadError ? (
+            <p className="text-center text-xs text-red-400">{catalogLoadError}</p>
+          ) : catalogRows.length === 0 ? (
+            <p className="text-center text-xs text-zinc-500">Nessuna traccia musica nel catalogo globale.</p>
+          ) : (
+            <div className="max-h-52 space-y-1.5 overflow-y-auto pr-0.5">
+              {catalogRows.map((r) => (
+                <Button
+                  key={r.id}
+                  type="button"
+                  variant="outline"
+                  className="h-auto min-h-11 w-full touch-manipulation flex-col items-start gap-0 border-emerald-800/35 py-2 text-left"
+                  disabled={sending}
+                  onClick={() => void send("audio.music_play_global_catalog", { global_track_id: r.id })}
+                >
+                  <span className="w-full truncate text-sm text-zinc-100">{r.title}</span>
+                  {r.mood ? <span className="w-full truncate text-[10px] text-zinc-500">{r.mood}</span> : null}
+                </Button>
+              ))}
+            </div>
+          )}
+          <p className="mt-3 text-[10px] leading-relaxed text-zinc-600">
+            Riproduzione sul canale musica del mixer (sul PC del GM).
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-emerald-900/35 bg-zinc-900/50 p-4">
+          <p className="mb-2 text-center text-xs font-medium uppercase tracking-wide text-zinc-500">
             Spotify (sul PC del GM)
           </p>
           {spotifyLoading ? (
@@ -154,7 +239,10 @@ export function GmRemoteJoinClient({ publicId }: Props) {
           ) : spotifyLoadError ? (
             <p className="text-center text-xs text-red-400">{spotifyLoadError}</p>
           ) : spotifyRows.length === 0 ? (
-            <p className="text-center text-xs text-zinc-500">Nessuna playlist configurata in gilda.</p>
+            <p className="text-center text-xs text-zinc-500">
+              Nessuna playlist Spotify in elenco (configurazione admin). Le tracce del catalogo musica Gilda sono nella
+              sezione sopra.
+            </p>
           ) : (
             <div className="max-h-52 space-y-1.5 overflow-y-auto pr-0.5">
               {spotifyRows.map((r) => (

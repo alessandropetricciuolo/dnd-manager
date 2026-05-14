@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { GmAudioForgeControls } from "@/lib/gm-audio-forge/use-gm-audio-forge";
@@ -14,16 +14,78 @@ type Props = {
   onSpotifySelectPlaylist?: (spotifyPlaylistId: string) => void;
 };
 
+type BridgeSnapshot = { publicId: string; expiresAt: string };
+
+function bridgeStorageKey(campaignId: string): string {
+  return `gm-remote-bridge:${campaignId}`;
+}
+
 export function GmRemoteIntegration({ campaignId, forge, onSpotifySelectPlaylist }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
-  const [session, setSession] = useState<GmRemoteSessionCreated | null>(null);
+  const [modalSession, setModalSession] = useState<GmRemoteSessionCreated | null>(null);
+  const [bridgeSession, setBridgeSession] = useState<BridgeSnapshot | null>(null);
   const [realtimeConnected, setRealtimeConnected] = useState(false);
+
+  useEffect(() => {
+    const key = bridgeStorageKey(campaignId);
+    try {
+      const raw = sessionStorage.getItem(key);
+      if (!raw) return;
+      const o = JSON.parse(raw) as unknown;
+      if (typeof o !== "object" || o === null) return;
+      const rec = o as Record<string, unknown>;
+      const publicId = typeof rec.publicId === "string" ? rec.publicId.trim() : "";
+      const expiresAt = typeof rec.expiresAt === "string" ? rec.expiresAt.trim() : "";
+      if (!publicId || !expiresAt) return;
+      if (Date.now() >= Date.parse(expiresAt)) {
+        sessionStorage.removeItem(key);
+        return;
+      }
+      setBridgeSession({ publicId, expiresAt });
+    } catch {
+      try {
+        sessionStorage.removeItem(key);
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [campaignId]);
+
+  const persistBridgeSnapshot = useCallback((snap: BridgeSnapshot | null) => {
+    const key = bridgeStorageKey(campaignId);
+    try {
+      if (!snap) {
+        sessionStorage.removeItem(key);
+        return;
+      }
+      sessionStorage.setItem(key, JSON.stringify(snap));
+    } catch {
+      /* ignore */
+    }
+  }, [campaignId]);
+
+  const onRemoteSessionChange = useCallback(
+    (next: GmRemoteSessionCreated | null) => {
+      setModalSession(next);
+      if (next) {
+        const snap = { publicId: next.publicId, expiresAt: next.expiresAt };
+        setBridgeSession(snap);
+        persistBridgeSnapshot(snap);
+      } else {
+        setBridgeSession(null);
+        persistBridgeSnapshot(null);
+      }
+    },
+    [persistBridgeSnapshot]
+  );
+
+  const sessionPublicId = modalSession?.publicId ?? bridgeSession?.publicId ?? null;
 
   return (
     <>
       <GmRemoteCommandBridge
         campaignId={campaignId}
-        sessionPublicId={session?.publicId ?? null}
+        sessionPublicId={sessionPublicId}
         forge={forge}
         onRealtimeStatus={setRealtimeConnected}
         onSpotifySelectPlaylist={onSpotifySelectPlaylist}
@@ -43,8 +105,10 @@ export function GmRemoteIntegration({ campaignId, forge, onSpotifySelectPlaylist
         open={modalOpen}
         onOpenChange={setModalOpen}
         campaignId={campaignId}
-        session={session}
-        onSessionChange={setSession}
+        session={modalSession}
+        listeningRestored={!!bridgeSession && !modalSession}
+        bridgeExpiresAt={bridgeSession?.expiresAt ?? null}
+        onSessionChange={onRemoteSessionChange}
         realtimeConnected={realtimeConnected}
       />
     </>

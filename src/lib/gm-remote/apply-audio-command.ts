@@ -69,6 +69,14 @@ export function applyRemoteAudioCommand(forge: GmAudioForgeControls, type: strin
       if (categoryId) forge.playSfxRandom(categoryId);
       return;
     }
+    case "audio.spotify_select_playlist":
+      // gestito in GmRemoteCommandBridge
+      return;
+    case "audio.music_play_global_catalog": {
+      const globalTrackId = str(payload.global_track_id);
+      if (globalTrackId) forge.playGlobalCatalogMusicByTrackId(globalTrackId);
+      return;
+    }
     case "audio.stop_all":
       forge.stopAll();
       return;

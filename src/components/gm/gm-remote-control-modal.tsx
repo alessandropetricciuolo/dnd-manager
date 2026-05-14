@@ -22,6 +22,9 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   campaignId: string;
   session: SessionState | null;
+  /** Sessione ripristinata da sessionStorage (dopo refresh): comandi attivi, QR/link non in memoria. */
+  listeningRestored: boolean;
+  bridgeExpiresAt: string | null;
   onSessionChange: (s: SessionState | null) => void;
   realtimeConnected: boolean;
 };
@@ -36,6 +39,8 @@ export function GmRemoteControlModal({
   onOpenChange,
   campaignId,
   session,
+  listeningRestored,
+  bridgeExpiresAt,
   onSessionChange,
   realtimeConnected,
 }: Props) {
@@ -131,10 +136,20 @@ export function GmRemoteControlModal({
             <span className="text-zinc-300">
               Realtime:{" "}
               <span className={realtimeConnected ? "text-emerald-300" : "text-zinc-500"}>
-                {session ? (realtimeConnected ? "connesso" : "in attesa…") : "—"}
+                {session || listeningRestored ? (realtimeConnected ? "connesso" : "in attesa…") : "—"}
               </span>
             </span>
           </div>
+
+          {listeningRestored && !session ? (
+            <p className="rounded-md border border-emerald-900/40 bg-emerald-950/30 px-2 py-2 text-[11px] text-emerald-100/90">
+              Ricezione telecomando attiva dopo un aggiornamento della pagina. Il telefono con il link già
+              condiviso continua a funzionare
+              {bridgeExpiresAt ? ` (fino al ${new Date(bridgeExpiresAt).toLocaleString("it-IT")})` : ""}. Per un
+              nuovo QR o link copiabile usa il pulsante sotto: verrà creata una nuova sessione e dovrai
+              ricondividere il link con i telefoni.
+            </p>
+          ) : null}
 
           {!session ? (
             <p className="text-xs text-zinc-500">

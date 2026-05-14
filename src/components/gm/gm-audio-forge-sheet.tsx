@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Headphones, Plus, Trash2, Volume2, Square } from "lucide-react";
+import { Headphones, Plus, Trash2, Square } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,35 @@ function createEmptyCategory(kind: GmAudioCategoryKind): GmAudioCategory {
   };
 }
 
+function SectionCard({
+  title,
+  description,
+  children,
+  className,
+}: {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <section
+      className={cn(
+        "rounded-2xl border border-amber-900/25 bg-zinc-900/40 p-4 shadow-sm ring-1 ring-black/20 sm:p-5",
+        className
+      )}
+    >
+      <header className="mb-4 flex flex-col gap-1 border-b border-amber-900/20 pb-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h3 className="text-sm font-semibold tracking-tight text-amber-50">{title}</h3>
+          {description ? <p className="mt-1 max-w-prose text-xs leading-relaxed text-zinc-500">{description}</p> : null}
+        </div>
+      </header>
+      {children}
+    </section>
+  );
+}
+
 function CategoryTile({
   name,
   active,
@@ -66,11 +95,11 @@ function CategoryTile({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "flex min-h-[4.5rem] flex-col items-center justify-center rounded-lg border px-2 py-2 text-center text-xs font-medium transition-colors",
+        "flex min-h-[5.25rem] flex-col items-center justify-center rounded-xl border-2 px-3 py-3 text-center text-sm font-medium transition-all duration-150",
         active
-          ? "border-amber-400 bg-amber-600/25 text-amber-100"
-          : "border-amber-700/40 bg-zinc-900/60 text-zinc-300 hover:border-amber-500/50 hover:bg-zinc-800/80",
-        disabled && "cursor-not-allowed opacity-40"
+          ? "border-amber-400/90 bg-amber-600/20 text-amber-50 shadow-md shadow-amber-900/20 ring-2 ring-amber-500/25"
+          : "border-amber-800/35 bg-zinc-950/60 text-zinc-300 hover:border-amber-600/50 hover:bg-zinc-800/70",
+        disabled && "cursor-not-allowed border-zinc-800 opacity-45 hover:border-zinc-800 hover:bg-zinc-950/60"
       )}
     >
       <span className="line-clamp-2">{name}</span>
@@ -135,7 +164,7 @@ export function GmAudioForgeSheet({
       ...lib,
       categories: [...lib.categories, createEmptyCategory(newKind)],
     }));
-    toast.success("Categoria aggiunta. Configurala nelle Impostazioni.");
+    toast.success("Categoria aggiunta. Configurala qui sotto.");
   }, [newKind, setLibrary]);
 
   const removeCategory = useCallback(
@@ -203,427 +232,424 @@ export function GmAudioForgeSheet({
     [setLibrary]
   );
 
+  const emptyCatsHint = "Crea categorie nella sezione Libreria qui accanto.";
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="flex w-full max-w-none flex-col border-l border-amber-600/25 bg-zinc-950 p-0 sm:max-w-3xl"
+        className="flex w-full max-w-none flex-col border-l border-amber-600/25 bg-zinc-950 p-0 sm:max-w-2xl"
       >
-        <SheetHeader className="border-b border-amber-800/30 px-4 pb-3 pt-4 pr-12 text-left">
-          <SheetTitle className="flex items-center gap-2 text-amber-100">
-            <Headphones className="h-5 w-5 text-amber-400" />
+        <SheetHeader className="shrink-0 border-b border-amber-800/30 bg-zinc-900/30 px-5 pb-4 pt-5 pr-14">
+          <SheetTitle className="flex items-center gap-3 text-lg font-semibold tracking-tight text-amber-50">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-700/40 bg-amber-950/40 text-amber-400">
+              <Headphones className="h-5 w-5" />
+            </span>
             Audio
           </SheetTitle>
-          <p className="text-xs leading-relaxed text-zinc-400">
-            Libreria locale per campagna + <strong className="font-medium text-zinc-300">catalogo Gilda</strong> (tab
-            Catalogo). Nel tab <strong className="font-medium text-zinc-300">Mixer</strong> trovi musica, atmosfere,
-            playlist Spotify e il pad SFX a 12 tasti. URL manuali solo HTTPS. Ispirato al flusso{" "}
-            <a
-              href="https://slashpaf.com/it/audioforge/doc/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-amber-400 underline-offset-2 hover:underline"
-            >
-              Audio Forge
-            </a>
-            : una musica alla volta, più atmosfere, SFX one-shot.
-          </p>
         </SheetHeader>
 
-        <Tabs defaultValue="mixer" className="flex min-h-0 flex-1 flex-col px-4 pb-4 pt-2">
-          <TabsList className="h-auto min-h-9 shrink-0 flex-wrap gap-0.5 bg-zinc-900/80 p-0.5">
-            <TabsTrigger value="mixer" className="text-xs data-[state=active]:bg-amber-600/25">
+        <Tabs defaultValue="mixer" className="flex min-h-0 flex-1 flex-col px-4 pb-5 pt-3 sm:px-5">
+          <TabsList className="mb-4 grid h-11 w-full shrink-0 grid-cols-2 gap-1 rounded-xl border border-amber-900/35 bg-zinc-900 p-1 shadow-inner">
+            <TabsTrigger
+              value="mixer"
+              className="rounded-lg text-sm font-medium text-zinc-400 transition-all data-[state=active]:bg-amber-600/25 data-[state=active]:text-amber-50 data-[state=active]:shadow-sm data-[state=inactive]:hover:text-zinc-300"
+            >
               Mixer
             </TabsTrigger>
-            <TabsTrigger value="catalog" className="text-xs data-[state=active]:bg-amber-600/25">
-              Catalogo
-            </TabsTrigger>
-            <TabsTrigger value="fx" className="text-xs data-[state=active]:bg-amber-600/25">
-              fx
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="text-xs data-[state=active]:bg-amber-600/25">
-              Impostazioni
+            <TabsTrigger
+              value="library"
+              className="rounded-lg text-sm font-medium text-zinc-400 transition-all data-[state=active]:bg-amber-600/25 data-[state=active]:text-amber-50 data-[state=active]:shadow-sm data-[state=inactive]:hover:text-zinc-300"
+            >
+              Libreria
             </TabsTrigger>
           </TabsList>
-
-          <TabsContent value="catalog" className="mt-3 min-h-0 flex-1 overflow-y-auto pr-1">
-            <GmGlobalAudioCatalog library={library} setLibrary={setLibrary} />
-          </TabsContent>
 
           <TabsContent
             value="mixer"
             forceMount
-            className="mt-3 min-h-0 flex-1 overflow-y-auto pr-1 data-[state=inactive]:hidden"
+            className="mt-0 min-h-0 flex-1 space-y-5 overflow-y-auto overflow-x-hidden pb-2 pr-0.5 data-[state=inactive]:hidden"
           >
-            <div className="mb-4 flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-3">
               <Button
                 type="button"
                 size="sm"
                 variant="outline"
-                className="border-red-800/50 text-red-300 hover:bg-red-950/40"
+                className="rounded-lg border-red-800/50 text-red-300 hover:bg-red-950/40"
                 onClick={() => {
                   stopAll();
                   toast.message("Tutto fermato.");
                 }}
               >
-                <Square className="mr-1.5 h-3.5 w-3.5" />
+                <Square className="mr-2 h-4 w-4" />
                 Stop tutto
               </Button>
             </div>
 
-            <div className="mb-6 space-y-3 rounded-lg border border-amber-800/25 bg-zinc-900/40 p-3">
-              <div className="flex items-center gap-2 text-xs font-medium text-amber-200/90">
-                <Volume2 className="h-3.5 w-3.5" />
-                Musica (master)
-              </div>
-              <Slider
-                value={[musicMaster * 100]}
-                max={100}
-                step={1}
-                onValueChange={(v) => setMusicMaster((v[0] ?? 0) / 100)}
-              />
-              <div className="flex items-center gap-2 text-xs font-medium text-amber-200/90">
-                <Volume2 className="h-3.5 w-3.5" />
-                Atmosfere (master)
-              </div>
-              <Slider
-                value={[atmosMaster * 100]}
-                max={100}
-                step={1}
-                onValueChange={(v) => setAtmosMaster((v[0] ?? 0) / 100)}
-              />
-              <div className="flex items-center gap-2 text-xs font-medium text-amber-200/90">
-                <Volume2 className="h-3.5 w-3.5" />
-                SFX (master)
-              </div>
-              <Slider
-                value={[sfxMaster * 100]}
-                max={100}
-                step={1}
-                onValueChange={(v) => setSfxMaster((v[0] ?? 0) / 100)}
-              />
-            </div>
-
-            <p className="mb-2 rounded-md border border-amber-900/30 bg-zinc-900/50 px-2 py-2 text-[11px] leading-relaxed text-zinc-400">
-              <strong className="text-zinc-300">Musica:</strong> tocca un riquadro per <em>avviare</em> quella
-              categoria; tocca di nuovo la stessa per <em>fermare</em>. Se avevi incollato l&apos;URL pubblico R2
-              dall&apos;admin, al caricamento della pagina viene sostituito automaticamente con il proxy del sito (
-              <code className="text-amber-200/90">/api/gm-global-audio-preview</code>).
-            </p>
-
-            <p className="mb-2 text-[11px] uppercase tracking-wide text-zinc-500">Musica — una categoria attiva</p>
-            {musicCats.length === 0 ? (
-              <p className="text-sm text-zinc-500">Aggiungi categorie nelle Impostazioni.</p>
-            ) : (
-              <div className="mb-8 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {musicCats.map((c) => (
-                  <CategoryTile
-                    key={c.id}
-                    name={c.name}
-                    active={activeMusicCategoryId === c.id}
-                    disabled={c.tracks.length === 0}
-                    onClick={() => {
-                      if (c.tracks.length === 0) {
-                        toast.error("Aggiungi almeno una traccia nelle Impostazioni.");
-                        return;
-                      }
-                      toggleMusicCategory(c.id);
-                    }}
+            <SectionCard title="Volume" description="Controlli master indipendenti per musica, atmosfere ed effetti.">
+              <div className="grid gap-6 sm:grid-cols-3">
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium text-amber-200/90">Musica</Label>
+                  <Slider
+                    value={[musicMaster * 100]}
+                    max={100}
+                    step={1}
+                    onValueChange={(v) => setMusicMaster((v[0] ?? 0) / 100)}
+                    className="py-1"
                   />
-                ))}
-              </div>
-            )}
-
-            <p className="mb-2 text-[11px] uppercase tracking-wide text-zinc-500">
-              Atmosfere — più categorie insieme
-            </p>
-            {atmosCats.length === 0 ? (
-              <p className="text-sm text-zinc-500">Aggiungi categorie nelle Impostazioni.</p>
-            ) : (
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {atmosCats.map((c) => (
-                  <CategoryTile
-                    key={c.id}
-                    name={c.name}
-                    active={Boolean(activeAtmosphereIds[c.id])}
-                    disabled={c.tracks.length === 0}
-                    onClick={() => {
-                      if (c.tracks.length === 0) {
-                        toast.error("Aggiungi almeno una traccia nelle Impostazioni.");
-                        return;
-                      }
-                      toggleAtmosphereCategory(c.id);
-                    }}
+                  <p className="text-right text-[11px] tabular-nums text-zinc-500">{Math.round(musicMaster * 100)}%</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium text-amber-200/90">Atmosfere</Label>
+                  <Slider
+                    value={[atmosMaster * 100]}
+                    max={100}
+                    step={1}
+                    onValueChange={(v) => setAtmosMaster((v[0] ?? 0) / 100)}
+                    className="py-1"
                   />
-                ))}
+                  <p className="text-right text-[11px] tabular-nums text-zinc-500">{Math.round(atmosMaster * 100)}%</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium text-amber-200/90">SFX</Label>
+                  <Slider
+                    value={[sfxMaster * 100]}
+                    max={100}
+                    step={1}
+                    onValueChange={(v) => setSfxMaster((v[0] ?? 0) / 100)}
+                    className="py-1"
+                  />
+                  <p className="text-right text-[11px] tabular-nums text-zinc-500">{Math.round(sfxMaster * 100)}%</p>
+                </div>
               </div>
-            )}
+            </SectionCard>
 
-            <div className="mt-8 space-y-3 border-t border-amber-900/30 pt-6">
-              <p className="text-[11px] uppercase tracking-wide text-zinc-500">Spotify</p>
+            <SectionCard title="Musica" description="Una sola categoria attiva. Tocco = play, stesso tocco = stop.">
+              {musicCats.length === 0 ? (
+                <p className="text-sm text-zinc-500">{emptyCatsHint}</p>
+              ) : (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {musicCats.map((c) => (
+                    <CategoryTile
+                      key={c.id}
+                      name={c.name}
+                      active={activeMusicCategoryId === c.id}
+                      disabled={c.tracks.length === 0}
+                      onClick={() => {
+                        if (c.tracks.length === 0) {
+                          toast.error("Aggiungi almeno una traccia nella Libreria.");
+                          return;
+                        }
+                        toggleMusicCategory(c.id);
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </SectionCard>
+
+            <SectionCard title="Atmosfere" description="Più categorie possono suonare insieme.">
+              {atmosCats.length === 0 ? (
+                <p className="text-sm text-zinc-500">{emptyCatsHint}</p>
+              ) : (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {atmosCats.map((c) => (
+                    <CategoryTile
+                      key={c.id}
+                      name={c.name}
+                      active={Boolean(activeAtmosphereIds[c.id])}
+                      disabled={c.tracks.length === 0}
+                      onClick={() => {
+                        if (c.tracks.length === 0) {
+                          toast.error("Aggiungi almeno una traccia nella Libreria.");
+                          return;
+                        }
+                        toggleAtmosphereCategory(c.id);
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </SectionCard>
+
+            <SectionCard title="Spotify">
               <GmSpotifyPlayerPanel
                 spotifyEmbedPlaylistId={spotifyEmbedPlaylistId}
                 onSpotifyEmbedPlaylistIdChange={onSpotifyEmbedPlaylistIdChange}
               />
-            </div>
+            </SectionCard>
 
-            <div className="mt-8 space-y-3 border-t border-amber-900/30 pt-6">
-              <p className="text-[11px] uppercase tracking-wide text-zinc-500">Pad SFX (12 slot)</p>
+            <SectionCard title="Pad SFX" description="Dodici slot rapidi. Assegna suoni nella Libreria.">
               <GmSfxPadPanel
                 library={library}
                 setLibrary={setLibrary}
                 playSfxUrl={playSfxUrl}
                 isAllowedAudioUrl={isAllowedAudioUrl}
               />
-            </div>
-          </TabsContent>
+            </SectionCard>
 
-          <TabsContent value="fx" className="mt-3 min-h-0 flex-1 overflow-y-auto pr-1">
-            <div className="mb-4 space-y-2 rounded-lg border border-amber-800/25 bg-zinc-900/40 p-3">
-              <Label className="text-xs text-zinc-400">Volume SFX (stesso controllo del Mixer)</Label>
-              <Slider
-                value={[sfxMaster * 100]}
-                max={100}
-                step={1}
-                onValueChange={(v) => setSfxMaster((v[0] ?? 0) / 100)}
-              />
-            </div>
-            {sfxCats.length === 0 ? (
-              <p className="text-sm text-zinc-500">Aggiungi categorie SFX nelle Impostazioni.</p>
-            ) : (
-              <div className="space-y-3">
-                {sfxCats.map((c) => {
-                  const bgOn = sfxBackgroundArmedIds.includes(c.id);
-                  return (
-                    <div
-                      key={c.id}
-                      className="flex flex-col gap-2 rounded-lg border border-amber-800/25 bg-zinc-900/50 p-3 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                      <div>
-                        <p className="text-sm font-medium text-zinc-100">{c.name}</p>
-                        <p className="text-[11px] text-zinc-500">
-                          Tocco: suono casuale
-                          {c.sfxBackgroundRepeat ? " · Ripetizione disponibile" : ""}
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          type="button"
-                          size="sm"
-                          className="bg-amber-600 text-zinc-950 hover:bg-amber-500"
-                          disabled={c.tracks.length === 0}
-                          onClick={() => {
-                            if (c.tracks.length === 0) toast.error("Aggiungi tracce nelle Impostazioni.");
-                            else playSfxRandom(c.id);
-                          }}
-                        >
-                          Riproduci
-                        </Button>
-                        {c.sfxBackgroundRepeat ? (
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant={bgOn ? "secondary" : "outline"}
-                            className={cn(
-                              bgOn ? "border-amber-500/40 bg-amber-900/30 text-amber-100" : "border-amber-800/40"
-                            )}
-                            disabled={c.tracks.length === 0}
-                            onClick={() => toggleSfxBackground(c.id)}
-                          >
-                            {bgOn ? "Ferma ripetizione" : "Ripetizione"}
-                          </Button>
-                        ) : null}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="settings" className="mt-3 min-h-0 flex-1 overflow-y-auto pr-1">
-            <div className="mb-4 flex flex-col gap-2 rounded-lg border border-amber-800/25 bg-zinc-900/40 p-3 sm:flex-row sm:items-end">
-              <div className="flex-1 space-y-1.5">
-                <Label className="text-xs text-zinc-400">Nuova categoria</Label>
-                <Select value={newKind} onValueChange={(v) => setNewKind(v as GmAudioCategoryKind)}>
-                  <SelectTrigger className="border-amber-800/40 bg-zinc-950 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="border-amber-800/40 bg-zinc-950">
-                    <SelectItem value="music">Musica</SelectItem>
-                    <SelectItem value="atmosphere">Atmosfera</SelectItem>
-                    <SelectItem value="sfx">SFX (fx)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button type="button" size="sm" className="bg-amber-600 text-zinc-950 hover:bg-amber-500" onClick={addCategory}>
-                <Plus className="mr-1 h-4 w-4" />
-                Aggiungi
-              </Button>
-            </div>
-
-            <div className="space-y-2">
-              {library.categories.length === 0 ? (
-                <p className="text-sm text-zinc-500">Nessuna categoria.</p>
+            <SectionCard
+              title="SFX da categorie"
+              description="Suoni casuali e ripetizione dalle categorie SFX della campagna."
+            >
+              {sfxCats.length === 0 ? (
+                <p className="text-sm text-zinc-500">{emptyCatsHint}</p>
               ) : (
-                library.categories.map((c) => {
-                  const openRow = expandedId === c.id;
-                  const nt = getNewTrackFields(c.id);
-                  return (
-                    <div key={c.id} className="rounded-lg border border-amber-800/30 bg-zinc-900/50">
-                      <button
-                        type="button"
-                        className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-zinc-800/50"
-                        onClick={() => setExpandedId(openRow ? null : c.id)}
+                <ul className="space-y-3">
+                  {sfxCats.map((c) => {
+                    const bgOn = sfxBackgroundArmedIds.includes(c.id);
+                    return (
+                      <li
+                        key={c.id}
+                        className="flex flex-col gap-3 rounded-xl border border-amber-900/25 bg-zinc-950/50 p-4 sm:flex-row sm:items-center sm:justify-between"
                       >
-                        <span className="font-medium text-zinc-100">
-                          {c.name}{" "}
-                          <span className="text-xs font-normal text-zinc-500">
-                            ({c.kind}) · {c.tracks.length} tracce
-                          </span>
-                        </span>
-                        <span className="text-xs text-amber-500/80">{openRow ? "−" : "+"}</span>
-                      </button>
-                      {openRow ? (
-                        <div className="space-y-3 border-t border-amber-900/30 px-3 py-3">
-                          <div className="grid gap-2 sm:grid-cols-2">
-                            <div className="space-y-1">
-                              <Label className="text-xs">Nome</Label>
-                              <Input
-                                value={c.name}
-                                onChange={(e) => patchCategory(c.id, { name: e.target.value })}
-                                className="border-amber-800/40 bg-zinc-950 text-sm"
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <Label className="text-xs">Riproduzione brani</Label>
-                              <Select
-                                value={c.playbackMode}
-                                onValueChange={(v) => patchCategory(c.id, { playbackMode: v as GmAudioPlaybackMode })}
-                              >
-                                <SelectTrigger className="border-amber-800/40 bg-zinc-950 text-sm">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="border-amber-800/40 bg-zinc-950">
-                                  <SelectItem value="shuffle">Shuffle tra brani</SelectItem>
-                                  <SelectItem value="loop_one">Loop singolo brano (casuale)</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-
-                          {c.kind === "sfx" ? (
-                            <div className="space-y-3 rounded-md border border-zinc-800 bg-zinc-950/50 p-2">
-                              <div className="flex items-center justify-between gap-2">
-                                <Label htmlFor={`sfx-bg-${c.id}`} className="text-xs text-zinc-300">
-                                  Ripetizione casuale (fx)
-                                </Label>
-                                <Switch
-                                  id={`sfx-bg-${c.id}`}
-                                  checked={c.sfxBackgroundRepeat}
-                                  onCheckedChange={(checked) => patchCategory(c.id, { sfxBackgroundRepeat: checked })}
-                                />
-                              </div>
-                              {c.sfxBackgroundRepeat ? (
-                                <div className="grid grid-cols-2 gap-2">
-                                  <div className="space-y-1">
-                                    <Label className="text-[11px] text-zinc-500">Pausa min (ms)</Label>
-                                    <Input
-                                      type="number"
-                                      min={0}
-                                      value={c.sfxRepeatGapMinMs}
-                                      onChange={(e) =>
-                                        patchCategory(c.id, { sfxRepeatGapMinMs: Number(e.target.value) || 0 })
-                                      }
-                                      className="border-amber-800/40 bg-zinc-950 text-sm"
-                                    />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-[11px] text-zinc-500">Pausa max (ms)</Label>
-                                    <Input
-                                      type="number"
-                                      min={0}
-                                      value={c.sfxRepeatGapMaxMs}
-                                      onChange={(e) =>
-                                        patchCategory(c.id, { sfxRepeatGapMaxMs: Number(e.target.value) || 0 })
-                                      }
-                                      className="border-amber-800/40 bg-zinc-950 text-sm"
-                                    />
-                                  </div>
-                                </div>
-                              ) : null}
-                            </div>
-                          ) : null}
-
-                          <div className="space-y-2">
-                            <Label className="text-xs text-zinc-400">Tracce (URL + etichetta)</Label>
-                            <div className="flex flex-col gap-2 sm:flex-row">
-                              <Input
-                                placeholder="https://…"
-                                value={nt.url}
-                                onChange={(e) => setNewTrackFields(c.id, { url: e.target.value })}
-                                className="border-amber-800/40 bg-zinc-950 text-sm"
-                              />
-                              <Input
-                                placeholder="Etichetta"
-                                value={nt.label}
-                                onChange={(e) => setNewTrackFields(c.id, { label: e.target.value })}
-                                className="border-amber-800/40 bg-zinc-950 text-sm sm:max-w-[10rem]"
-                              />
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="secondary"
-                                className="shrink-0"
-                                onClick={() => addTrackToCategory(c.id)}
-                              >
-                                Aggiungi traccia
-                              </Button>
-                            </div>
-                            <ul className="max-h-40 space-y-1 overflow-y-auto text-xs">
-                              {c.tracks.map((t) => (
-                                <li
-                                  key={t.id}
-                                  className="flex items-center justify-between gap-2 rounded border border-zinc-800/80 bg-zinc-950/80 px-2 py-1"
-                                >
-                                  <span className="min-w-0 truncate text-zinc-300" title={t.url}>
-                                    {t.label}
-                                  </span>
-                                  <Button
-                                    type="button"
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-7 w-7 shrink-0 text-red-400 hover:bg-red-950/40 hover:text-red-300"
-                                    onClick={() => removeTrack(c.id, t.id)}
-                                    aria-label="Rimuovi traccia"
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </Button>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-
+                        <div className="min-w-0">
+                          <p className="font-medium text-zinc-100">{c.name}</p>
+                          <p className="text-xs text-zinc-500">
+                            Casuale a ogni pressione
+                            {c.sfxBackgroundRepeat ? " · ripetizione attivabile" : ""}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 flex-wrap gap-2">
                           <Button
                             type="button"
                             size="sm"
-                            variant="outline"
-                            className="border-red-900/50 text-red-400 hover:bg-red-950/30"
+                            className="rounded-lg bg-amber-600 text-zinc-950 hover:bg-amber-500"
+                            disabled={c.tracks.length === 0}
                             onClick={() => {
-                              removeCategory(c.id);
-                              toast.message("Categoria rimossa.");
+                              if (c.tracks.length === 0) toast.error("Aggiungi tracce nella Libreria.");
+                              else playSfxRandom(c.id);
                             }}
                           >
-                            <Trash2 className="mr-1 h-3.5 w-3.5" />
-                            Elimina categoria
+                            Riproduci
                           </Button>
+                          {c.sfxBackgroundRepeat ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant={bgOn ? "secondary" : "outline"}
+                              className={cn(
+                                "rounded-lg",
+                                bgOn ? "border-amber-500/40 bg-amber-900/30 text-amber-100" : "border-amber-800/40"
+                              )}
+                              disabled={c.tracks.length === 0}
+                              onClick={() => toggleSfxBackground(c.id)}
+                            >
+                              {bgOn ? "Ferma ripetizione" : "Ripetizione"}
+                            </Button>
+                          ) : null}
                         </div>
-                      ) : null}
-                    </div>
-                  );
-                })
+                      </li>
+                    );
+                  })}
+                </ul>
               )}
-            </div>
+            </SectionCard>
+          </TabsContent>
+
+          <TabsContent value="library" className="mt-0 min-h-0 flex-1 space-y-8 overflow-y-auto overflow-x-hidden pb-2 pr-0.5">
+            <SectionCard title="Catalogo Gilda" description="Tracce condivise dagli admin: aggiungile alle tue categorie.">
+              <GmGlobalAudioCatalog library={library} setLibrary={setLibrary} />
+            </SectionCard>
+
+            <SectionCard title="Categorie campagna" description="Musica, atmosfere ed SFX per questa campagna. URL manuali solo HTTPS.">
+              <div className="mb-5 flex flex-col gap-3 rounded-xl border border-amber-900/20 bg-zinc-950/40 p-4 sm:flex-row sm:items-end">
+                <div className="min-w-0 flex-1 space-y-2">
+                  <Label className="text-xs text-zinc-400">Nuova categoria</Label>
+                  <Select value={newKind} onValueChange={(v) => setNewKind(v as GmAudioCategoryKind)}>
+                    <SelectTrigger className="rounded-lg border-amber-800/40 bg-zinc-950 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="border-amber-800/40 bg-zinc-950">
+                      <SelectItem value="music">Musica</SelectItem>
+                      <SelectItem value="atmosphere">Atmosfera</SelectItem>
+                      <SelectItem value="sfx">SFX</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="shrink-0 rounded-lg bg-amber-600 text-zinc-950 hover:bg-amber-500"
+                  onClick={addCategory}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Aggiungi categoria
+                </Button>
+              </div>
+
+              <div className="space-y-3">
+                {library.categories.length === 0 ? (
+                  <p className="text-sm text-zinc-500">Nessuna categoria ancora.</p>
+                ) : (
+                  library.categories.map((c) => {
+                    const openRow = expandedId === c.id;
+                    const nt = getNewTrackFields(c.id);
+                    return (
+                      <div
+                        key={c.id}
+                        className="overflow-hidden rounded-xl border border-amber-800/30 bg-zinc-950/40 shadow-sm"
+                      >
+                        <button
+                          type="button"
+                          className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors hover:bg-zinc-800/40"
+                          onClick={() => setExpandedId(openRow ? null : c.id)}
+                        >
+                          <span className="font-medium text-zinc-100">
+                            {c.name}
+                            <span className="ml-2 text-xs font-normal text-zinc-500">
+                              {c.kind} · {c.tracks.length} tracce
+                            </span>
+                          </span>
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-amber-800/40 text-xs text-amber-400">
+                            {openRow ? "−" : "+"}
+                          </span>
+                        </button>
+                        {openRow ? (
+                          <div className="space-y-4 border-t border-amber-900/25 bg-zinc-950/30 px-4 py-4">
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <div className="space-y-1.5">
+                                <Label className="text-xs text-zinc-400">Nome</Label>
+                                <Input
+                                  value={c.name}
+                                  onChange={(e) => patchCategory(c.id, { name: e.target.value })}
+                                  className="rounded-lg border-amber-800/40 bg-zinc-950 text-sm"
+                                />
+                              </div>
+                              <div className="space-y-1.5">
+                                <Label className="text-xs text-zinc-400">Riproduzione brani</Label>
+                                <Select
+                                  value={c.playbackMode}
+                                  onValueChange={(v) =>
+                                    patchCategory(c.id, { playbackMode: v as GmAudioPlaybackMode })
+                                  }
+                                >
+                                  <SelectTrigger className="rounded-lg border-amber-800/40 bg-zinc-950 text-sm">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent className="border-amber-800/40 bg-zinc-950">
+                                    <SelectItem value="shuffle">Shuffle tra brani</SelectItem>
+                                    <SelectItem value="loop_one">Loop singolo brano (casuale)</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+
+                            {c.kind === "sfx" ? (
+                              <div className="space-y-3 rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
+                                <div className="flex items-center justify-between gap-2">
+                                  <Label htmlFor={`sfx-bg-${c.id}`} className="text-xs text-zinc-300">
+                                    Ripetizione casuale
+                                  </Label>
+                                  <Switch
+                                    id={`sfx-bg-${c.id}`}
+                                    checked={c.sfxBackgroundRepeat}
+                                    onCheckedChange={(checked) =>
+                                      patchCategory(c.id, { sfxBackgroundRepeat: checked })
+                                    }
+                                  />
+                                </div>
+                                {c.sfxBackgroundRepeat ? (
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                      <Label className="text-[11px] text-zinc-500">Pausa min (ms)</Label>
+                                      <Input
+                                        type="number"
+                                        min={0}
+                                        value={c.sfxRepeatGapMinMs}
+                                        onChange={(e) =>
+                                          patchCategory(c.id, { sfxRepeatGapMinMs: Number(e.target.value) || 0 })
+                                        }
+                                        className="rounded-lg border-amber-800/40 bg-zinc-950 text-sm"
+                                      />
+                                    </div>
+                                    <div className="space-y-1">
+                                      <Label className="text-[11px] text-zinc-500">Pausa max (ms)</Label>
+                                      <Input
+                                        type="number"
+                                        min={0}
+                                        value={c.sfxRepeatGapMaxMs}
+                                        onChange={(e) =>
+                                          patchCategory(c.id, { sfxRepeatGapMaxMs: Number(e.target.value) || 0 })
+                                        }
+                                        className="rounded-lg border-amber-800/40 bg-zinc-950 text-sm"
+                                      />
+                                    </div>
+                                  </div>
+                                ) : null}
+                              </div>
+                            ) : null}
+
+                            <div className="space-y-2">
+                              <Label className="text-xs text-zinc-400">Tracce (HTTPS o path /…)</Label>
+                              <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+                                <Input
+                                  placeholder="https://…"
+                                  value={nt.url}
+                                  onChange={(e) => setNewTrackFields(c.id, { url: e.target.value })}
+                                  className="min-w-0 flex-1 rounded-lg border-amber-800/40 bg-zinc-950 text-sm"
+                                />
+                                <Input
+                                  placeholder="Etichetta"
+                                  value={nt.label}
+                                  onChange={(e) => setNewTrackFields(c.id, { label: e.target.value })}
+                                  className="rounded-lg border-amber-800/40 bg-zinc-950 text-sm sm:max-w-[10rem]"
+                                />
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="secondary"
+                                  className="shrink-0 rounded-lg"
+                                  onClick={() => addTrackToCategory(c.id)}
+                                >
+                                  Aggiungi traccia
+                                </Button>
+                              </div>
+                              <ul className="max-h-44 space-y-1.5 overflow-y-auto rounded-lg border border-zinc-800/80 bg-zinc-950/50 p-2 text-xs">
+                                {c.tracks.map((t) => (
+                                  <li
+                                    key={t.id}
+                                    className="flex items-center justify-between gap-2 rounded-md border border-zinc-800/60 bg-zinc-900/80 px-2.5 py-1.5"
+                                  >
+                                    <span className="min-w-0 truncate text-zinc-300" title={t.url}>
+                                      {t.label}
+                                    </span>
+                                    <Button
+                                      type="button"
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-8 w-8 shrink-0 rounded-md text-red-400 hover:bg-red-950/40 hover:text-red-300"
+                                      onClick={() => removeTrack(c.id, t.id)}
+                                      aria-label="Rimuovi traccia"
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="rounded-lg border-red-900/50 text-red-400 hover:bg-red-950/30"
+                              onClick={() => {
+                                removeCategory(c.id);
+                                toast.message("Categoria rimossa.");
+                              }}
+                            >
+                              <Trash2 className="mr-2 h-3.5 w-3.5" />
+                              Elimina categoria
+                            </Button>
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </SectionCard>
           </TabsContent>
         </Tabs>
       </SheetContent>

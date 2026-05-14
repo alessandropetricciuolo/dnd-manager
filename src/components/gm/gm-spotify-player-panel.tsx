@@ -112,13 +112,12 @@ export function GmSpotifyPlayerPanel({ spotifyEmbedPlaylistId, onSpotifyEmbedPla
           />
         </div>
       </div>
-      <p className="text-[11px] leading-relaxed text-zinc-500">
-        Scegli una playlist qui sotto. Per <strong className="font-medium text-zinc-400">aggiungerne di nuove</strong>{" "}
-        servono i permessi admin:{" "}
+      <p className="text-xs text-zinc-500">
+        Nuove playlist:{" "}
         <Link href="/admin/audio-library" className="text-amber-400 underline-offset-2 hover:underline">
           Admin → Libreria audio
-        </Link>{" "}
-        (tab Spotify). Play/pause resta nell&apos;embed (termini Spotify).
+        </Link>
+        .
       </p>
       <ul className="max-h-[min(32vh,14rem)] space-y-1 overflow-y-auto pr-1">
         {filtered.map((r) => {
@@ -148,10 +147,6 @@ export function GmSpotifyPlayerPanel({ spotifyEmbedPlaylistId, onSpotifyEmbedPla
 
       {spotifyEmbedPlaylistId ? (
         <div className="relative z-0 isolate overflow-hidden rounded-xl border border-amber-800/45 bg-black/60 shadow-inner ring-1 ring-amber-900/25">
-          <p className="border-b border-amber-900/40 bg-zinc-950/80 px-2 py-1.5 text-[10px] text-zinc-500">
-            Player Spotify · con il foglio Audio chiuso lo stesso brano resta nel riquadro in basso a destra sullo
-            schermo.
-          </p>
           <iframe
             key={spotifyEmbedPlaylistId}
             title="Spotify"

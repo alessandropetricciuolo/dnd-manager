@@ -27,6 +27,7 @@ export const GM_REMOTE_AUDIO_TYPES = [
   "audio.sfx_pad_slot",
   "audio.sfx_category_random",
   "audio.spotify_select_playlist",
+  "audio.music_play_global_catalog",
   "audio.stop_all",
 ] as const;
 
@@ -36,7 +37,7 @@ export function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
 
-function isUuid(v: string): boolean {
+export function isUuidString(v: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
 }
 
@@ -52,7 +53,7 @@ export function parseRemotePostBody(raw: unknown):
   const token = typeof raw.token === "string" ? raw.token.trim() : "";
   if (token.length < 16) return { ok: false, error: "invalid_token" };
   const command_id = typeof raw.command_id === "string" ? raw.command_id.trim() : "";
-  if (!isUuid(command_id)) return { ok: false, error: "invalid_command_id" };
+  if (!isUuidString(command_id)) return { ok: false, error: "invalid_command_id" };
   const type = typeof raw.type === "string" ? raw.type.trim() : "";
   if (!type || type.length > 120) return { ok: false, error: "invalid_type" };
   const issued_at = typeof raw.issued_at === "string" ? raw.issued_at.trim() : "";

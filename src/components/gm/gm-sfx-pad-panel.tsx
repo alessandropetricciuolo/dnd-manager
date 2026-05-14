@@ -175,8 +175,8 @@ export function GmSfxPadPanel({ library, setLibrary, playSfxUrl, isAllowedAudioU
 
       <p className="text-[11px] leading-relaxed text-zinc-500">
         {customize
-          ? "Tocca un tasto per modificarlo. Trascina un tasto su un altro per cambiare l’ordine. Scegli un suono dalle categorie SFX (Impostazioni) oppure incolla un URL HTTPS."
-          : "Tocca un’icona per riprodurre il suono collegato. Volume regolato dal cursore nella tab fx."}
+          ? "Tocca un tasto per modificarlo. Trascina per riordinare. Scegli un suono dalle categorie SFX (Libreria) oppure incolla un URL HTTPS."
+          : "Tocca un’icona per riprodurre. Il volume master SFX è nel Mixer sopra."}
       </p>
 
       <div
@@ -330,7 +330,7 @@ export function GmSfxPadPanel({ library, setLibrary, playSfxUrl, isAllowedAudioU
               </SelectContent>
             </Select>
             {sfxTrackOptions.length === 0 ? (
-              <p className="text-[11px] text-zinc-600">Aggiungi categorie SFX e tracce in Impostazioni.</p>
+              <p className="text-[11px] text-zinc-600">Aggiungi categorie SFX e tracce in Libreria.</p>
             ) : null}
           </div>
 

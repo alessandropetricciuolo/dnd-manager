@@ -12,6 +12,10 @@ import {
 import { isAllowedAudioUrl, toAbsoluteMediaUrl } from "./url-validation";
 import { listGlobalAudioLibraryForGmAction } from "@/app/campaigns/gm-global-audio-actions";
 import { gmGlobalAudioPreviewPath } from "@/lib/gm-global-audio/preview-url";
+import { isUuidString } from "@/lib/gm-remote/protocol";
+
+/** Categoria sintetica: musica dal catalogo Gilda avviata dal telecomando (proxy). */
+const GM_GLOBAL_REMOTE_MUSIC_CATEGORY_ID = "__gm_global_remote_music__";
 
 export function newGmAudioEntityId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -149,6 +153,10 @@ export function useGmAudioForge(campaignId: string) {
           const lib = libraryRef.current;
           const st = musicStateRef.current;
           if (!st || !el) return;
+          if (st.categoryId === GM_GLOBAL_REMOTE_MUSIC_CATEGORY_ID) {
+            stopMusicInternal();
+            return;
+          }
           const cat = getCategory(lib, st.categoryId);
           if (!cat || cat.kind !== "music") return;
           if (cat.tracks.length === 0) {
@@ -555,6 +563,26 @@ export function useGmAudioForge(campaignId: string) {
     [playMusicTrack]
   );
 
+  const playGlobalCatalogMusicByTrackId = useCallback(
+    (globalTrackId: string) => {
+      const id = globalTrackId.trim();
+      if (!isUuidString(id)) return;
+      const path = gmGlobalAudioPreviewPath(id);
+      if (!isAllowedAudioUrl(path)) {
+        toast.error("URL audio non valido.");
+        return;
+      }
+      const track: GmAudioTrack = {
+        id,
+        label: "",
+        url: path,
+      };
+      setActiveMusicCategoryId(null);
+      playMusicTrack(GM_GLOBAL_REMOTE_MUSIC_CATEGORY_ID, track);
+    },
+    [playMusicTrack]
+  );
+
   const setMusicMuted = useCallback((muted: boolean) => {
     if (muted) {
       setMusicMaster(0);
@@ -629,6 +657,7 @@ export function useGmAudioForge(campaignId: string) {
     toggleMusicPlayback,
     skipMusicTrack,
     playMusicByTrackId,
+    playGlobalCatalogMusicByTrackId,
     setMusicMuted,
     isAllowedAudioUrl,
     sfxBackgroundArmedIds,
