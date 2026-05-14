@@ -33,7 +33,9 @@ export function GmSpotifyEmbedDock({ playlistId, audioSheetOpen }: Props) {
       <div
         className={cn(
           "w-[min(100vw-24px,400px)] overflow-hidden rounded-xl border border-amber-800/50 bg-black/80 shadow-2xl",
-          open ? "relative" : "pointer-events-none fixed left-0 top-0 z-[-1] h-[2px] w-[320px] overflow-hidden opacity-0"
+          open
+            ? "relative"
+            : "pointer-events-none fixed left-[-10000px] top-0 z-0 h-[380px] w-[400px] opacity-0"
         )}
         aria-hidden={!open}
       >
