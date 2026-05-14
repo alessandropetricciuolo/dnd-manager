@@ -8,6 +8,7 @@ import { PlayerSessionTracker } from "./player-session-tracker";
 import { SecretWhispersSheet } from "./secret-whispers-sheet";
 import { GmGallerySheet } from "./gm-gallery-sheet";
 import { GmAudioForgeSheet } from "./gm-audio-forge-sheet";
+import { GmRemoteIntegration } from "./gm-remote-integration";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getCampaignSessionsForGm, type CampaignSessionOption } from "@/app/campaigns/gm-actions";
@@ -122,6 +123,7 @@ export function GmScreenLegacyLayout({
         >
           <Headphones className="h-5 w-5" />
         </Button>
+        <GmRemoteIntegration campaignId={campaignId} forge={audioForge} />
       </div>
 
       <aside

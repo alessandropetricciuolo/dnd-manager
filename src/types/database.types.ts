@@ -649,6 +649,58 @@ export interface Database {
         };
         Update: Partial<Database["public"]["Tables"]["gm_spotify_playlists"]["Insert"]>;
       };
+      gm_remote_sessions: {
+        Row: {
+          id: string;
+          public_id: string;
+          campaign_id: string;
+          token_hash: string;
+          expires_at: string;
+          revoked_at: string | null;
+          created_by: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          public_id?: string;
+          campaign_id: string;
+          token_hash: string;
+          expires_at: string;
+          revoked_at?: string | null;
+          created_by: string;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["gm_remote_sessions"]["Insert"]>;
+        Relationships: [];
+      };
+      gm_remote_commands: {
+        Row: {
+          id: string;
+          session_public_id: string;
+          campaign_id: string;
+          command_id: string;
+          seq: number | null;
+          type: string;
+          payload: Json;
+          issued_at: string;
+          source: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          session_public_id: string;
+          campaign_id: string;
+          command_id: string;
+          seq?: number | null;
+          type: string;
+          payload?: Json;
+          issued_at: string;
+          source?: string;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["gm_remote_commands"]["Insert"]>;
+        Relationships: [];
+      };
       campaign_exploration_fow_regions: {
         Row: {
           id: string;
@@ -670,6 +722,12 @@ export interface Database {
         };
         Update: Partial<Database["public"]["Tables"]["campaign_exploration_fow_regions"]["Insert"]>;
       };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      [_ in never]: never;
     };
   };
 }

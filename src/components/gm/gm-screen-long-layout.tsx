@@ -8,6 +8,7 @@ import { PlayerSessionTracker, computeSessionXpAwards } from "./player-session-t
 import { SecretWhispersSheet } from "./secret-whispers-sheet";
 import { GmGallerySheet } from "./gm-gallery-sheet";
 import { GmAudioForgeSheet } from "./gm-audio-forge-sheet";
+import { GmRemoteIntegration } from "./gm-remote-integration";
 import { LongEconomyPanel } from "./long-economy-panel";
 import { LongTimePanel } from "./long-time-panel";
 import { LongCalendarPanel } from "./long-calendar-panel";
@@ -217,6 +218,7 @@ function LongWorkspace({
         >
           <Headphones className="h-5 w-5" />
         </Button>
+        <GmRemoteIntegration campaignId={campaignId} forge={audioForge} />
         <Button
           variant="ghost"
           size="icon"
