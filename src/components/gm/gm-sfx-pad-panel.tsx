@@ -30,6 +30,11 @@ function sortedSlots(lib: GmAudioForgeLibrary): SfxPadSlot[] {
   return [...lib.sfxPad.slots].sort((a, b) => a.slotIndex - b.slotIndex);
 }
 
+/** Riferimento univoco categoria+traccia (Radix Select richiede value unici; più tracce possono avere lo stesso URL). */
+function sfxPadLibraryRef(categoryId: string, trackId: string): string {
+  return `${categoryId}|${trackId}`;
+}
+
 function reorderSfxPadSlots(slots: SfxPadSlot[], from: number, to: number): SfxPadSlot[] {
   const ordered = [...slots].sort((a, b) => a.slotIndex - b.slotIndex);
   if (from === to || from < 0 || to < 0 || from > 11 || to > 11) return ordered;
@@ -67,11 +72,15 @@ export function GmSfxPadPanel({ library, setLibrary, playSfxUrl, isAllowedAudioU
   const slots = useMemo(() => sortedSlots(library), [library]);
 
   const sfxTrackOptions = useMemo(() => {
-    const out: { value: string; label: string }[] = [];
+    const out: { ref: string; url: string; label: string }[] = [];
     for (const c of library.categories) {
       if (c.kind !== "sfx") continue;
       for (const t of c.tracks) {
-        out.push({ value: t.url, label: `${c.name} — ${t.label}` });
+        out.push({
+          ref: sfxPadLibraryRef(c.id, t.id),
+          url: t.url,
+          label: `${c.name} — ${t.label}`,
+        });
       }
     }
     return out;
@@ -127,7 +136,7 @@ export function GmSfxPadPanel({ library, setLibrary, playSfxUrl, isAllowedAudioU
       toast.error("URL non valido (solo HTTPS o path /…).");
       return;
     }
-    updateSlot(selectedSlot, { trackUrl: u });
+    updateSlot(selectedSlot, { trackUrl: u, libraryRef: undefined });
     toast.success("URL salvato sul tasto.");
   }
 
@@ -175,7 +184,7 @@ export function GmSfxPadPanel({ library, setLibrary, playSfxUrl, isAllowedAudioU
 
       <p className="text-[11px] leading-relaxed text-zinc-500">
         {customize
-          ? "Tocca un tasto per modificarlo. Trascina per riordinare. Scegli un suono dalle categorie SFX (Libreria) oppure incolla un URL HTTPS."
+          ? "Tocca un tasto per modificarlo. Scegli un brano dalla libreria o incolla un URL. Trascina per riordinare."
           : "Tocca un’icona per riprodurre. Il volume master SFX è nel Mixer sopra."}
       </p>
 
@@ -304,16 +313,35 @@ export function GmSfxPadPanel({ library, setLibrary, playSfxUrl, isAllowedAudioU
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-[11px] text-zinc-500">Suono da categoria SFX</Label>
+            <Label className="text-[11px] text-zinc-500">Brano dalla libreria (SFX)</Label>
             <Select
-              value={editing.trackUrl && sfxTrackOptions.some((o) => o.value === editing.trackUrl) ? editing.trackUrl : "__none__"}
+              value={(() => {
+                if (!editing) return "__none__";
+                if (
+                  editing.libraryRef &&
+                  sfxTrackOptions.some((o) => o.ref === editing.libraryRef)
+                ) {
+                  return editing.libraryRef;
+                }
+                const u = editing.trackUrl.trim();
+                if (u) {
+                  const hit = sfxTrackOptions.find((o) => o.url === u);
+                  if (hit) return hit.ref;
+                }
+                return "__none__";
+              })()}
               onValueChange={(v) => {
+                const idx = selectedSlot;
+                if (idx === null) return;
                 if (v === "__none__") {
-                  updateSlot(editing.slotIndex, { trackUrl: "" });
+                  updateSlot(idx, { trackUrl: "", libraryRef: undefined });
                   setManualUrlDraft("");
-                } else {
-                  updateSlot(editing.slotIndex, { trackUrl: v });
-                  setManualUrlDraft(v);
+                  return;
+                }
+                const opt = sfxTrackOptions.find((o) => o.ref === v);
+                if (opt) {
+                  updateSlot(idx, { trackUrl: opt.url, libraryRef: opt.ref });
+                  setManualUrlDraft(opt.url);
                 }
               }}
             >
@@ -323,7 +351,7 @@ export function GmSfxPadPanel({ library, setLibrary, playSfxUrl, isAllowedAudioU
               <SelectContent className="max-h-60 border-amber-800/40 bg-zinc-950">
                 <SelectItem value="__none__">Nessuno</SelectItem>
                 {sfxTrackOptions.map((o) => (
-                  <SelectItem key={o.value} value={o.value} className="text-xs">
+                  <SelectItem key={o.ref} value={o.ref} className="text-xs">
                     {o.label}
                   </SelectItem>
                 ))}
@@ -335,7 +363,7 @@ export function GmSfxPadPanel({ library, setLibrary, playSfxUrl, isAllowedAudioU
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-[11px] text-zinc-500">Oppure URL audio (HTTPS)</Label>
+            <Label className="text-[11px] text-zinc-500">Oppure incolla un URL (HTTPS)</Label>
             <div className="flex flex-col gap-2 sm:flex-row">
               <Input
                 value={manualUrlDraft}

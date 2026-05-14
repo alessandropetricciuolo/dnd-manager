@@ -38,6 +38,11 @@ export type SfxPadSlot = {
   etichetta: string;
   /** URL HTTPS del suono; vuoto = tasto muto. */
   trackUrl: string;
+  /**
+   * Se il suono è stato scelto dal menu libreria: `${categoryId}|${trackId}`.
+   * Serve perché più tracce possono condividere lo stesso URL (es. proxy catalogo); il Select non può usare l’URL come value duplicato.
+   */
+  libraryRef?: string;
 };
 
 export type SfxPadConfig = {

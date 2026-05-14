@@ -77,7 +77,12 @@ function parseSfxPad(raw: unknown): SfxPadConfig | null {
     const iconKey = typeof s.iconKey === "string" && s.iconKey.trim() ? s.iconKey.trim() : "Bell";
     const etichetta = typeof s.etichetta === "string" ? s.etichetta : "";
     const trackUrl = typeof s.trackUrl === "string" ? s.trackUrl : "";
-    byIndex.set(idx, { slotIndex: idx, iconKey, etichetta, trackUrl });
+    const libraryRefRaw = (s as Record<string, unknown>).libraryRef;
+    const libraryRef =
+      typeof libraryRefRaw === "string" && libraryRefRaw.includes("|") && libraryRefRaw.trim().length > 2
+        ? libraryRefRaw.trim()
+        : undefined;
+    byIndex.set(idx, { slotIndex: idx, iconKey, etichetta, trackUrl, ...(libraryRef ? { libraryRef } : {}) });
   }
   if (byIndex.size === 0) return null;
   const def = createDefaultSfxPad();
