@@ -263,8 +263,8 @@ export function GmRemoteJoinClient({ publicId }: Props) {
             </div>
           )}
           <p className="mt-3 text-[10px] leading-relaxed text-zinc-600">
-            Cambia la playlist nell&apos;embed Spotify sul PC. Play/pause solo dall&apos;interfaccia Spotify sul
-            computer.
+            Scegli la playlist sul PC. <strong className="font-medium text-zinc-500">Play / Pause</strong> comanda
+            l&apos;embed Spotify (se attivo sul GM screen); altrimenti la musica del mixer.
           </p>
         </div>
 
@@ -317,6 +317,11 @@ export function GmRemoteJoinClient({ publicId }: Props) {
             Next
           </Button>
         </div>
+
+        <p className="mx-auto max-w-md text-center text-[10px] text-zinc-600">
+          Prev / Next: solo la <strong className="font-medium text-zinc-500">musica del mixer</strong> (categorie
+          Libreria). L&apos;API embed Spotify non espone salto brano da remoto.
+        </p>
 
         <div className="rounded-xl border border-amber-900/40 bg-zinc-900/50 p-4">
           <div className="mb-2 flex items-center justify-between text-sm text-amber-100/90">

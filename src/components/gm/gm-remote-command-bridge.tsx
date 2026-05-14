@@ -3,8 +3,9 @@
 import { useEffect, useRef } from "react";
 import { createSupabaseBrowserClient } from "@/utils/supabase/client";
 import { applyRemoteAudioCommand } from "@/lib/gm-remote/apply-audio-command";
-import type { GmAudioForgeControls } from "@/lib/gm-audio-forge/use-gm-audio-forge";
 import { isRecord } from "@/lib/gm-remote/protocol";
+import type { GmAudioForgeControls } from "@/lib/gm-audio-forge/use-gm-audio-forge";
+import { spotifyEmbedTogglePlay } from "@/lib/spotify/spotify-embed-bus";
 
 type Props = {
   campaignId: string;
@@ -88,6 +89,10 @@ export function GmRemoteCommandBridge({
               const sid = typeof pl.spotify_playlist_id === "string" ? pl.spotify_playlist_id.trim() : "";
               if (sid) spotifyCbRef.current?.(sid);
               return;
+            }
+
+            if (type === "audio.music_play_pause") {
+              if (spotifyEmbedTogglePlay()) return;
             }
 
             applyRemoteAudioCommand(forgeRef.current, type, pl);

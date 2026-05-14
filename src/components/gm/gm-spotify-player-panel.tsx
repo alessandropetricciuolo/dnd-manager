@@ -8,8 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { listSpotifyPlaylistsForGmAction } from "@/app/campaigns/spotify-playlists-gm-actions";
 import type { GmSpotifyPlaylistRow } from "@/lib/spotify/types";
-import { spotifyPlaylistEmbedSrc } from "@/lib/spotify/playlist-id";
 import { cn } from "@/lib/utils";
+import { SpotifyEmbedControlled } from "@/components/gm/spotify-embed-controlled";
 
 type Props = {
   /** ID playlist Spotify (non UUID riga DB): controlla l’embed sul GM screen. */
@@ -147,17 +147,12 @@ export function GmSpotifyPlayerPanel({ spotifyEmbedPlaylistId, onSpotifyEmbedPla
 
       {spotifyEmbedPlaylistId ? (
         <div className="relative z-0 isolate overflow-hidden rounded-xl border border-amber-800/45 bg-black/60 shadow-inner ring-1 ring-amber-900/25">
-          <iframe
+          <SpotifyEmbedControlled
             key={spotifyEmbedPlaylistId}
-            title="Spotify"
-            src={spotifyPlaylistEmbedSrc(spotifyEmbedPlaylistId)}
+            playlistId={spotifyEmbedPlaylistId}
             width="100%"
             height={280}
             className="block min-h-[220px] w-full bg-black"
-            style={{ border: 0 }}
-            loading="lazy"
-            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-            referrerPolicy="strict-origin-when-cross-origin"
           />
         </div>
       ) : null}
