@@ -29,6 +29,33 @@ const TYPE_LABEL: Record<GmGlobalAudioType, string> = {
   atmosphere: "Atmosfera",
 };
 
+/** Fallback se il browser non popola `file.type` (capita su Safari/macOS). */
+function guessMimeFromFileName(name: string): string {
+  const ext = name.toLowerCase().split(".").pop() ?? "";
+  switch (ext) {
+    case "mp3":
+      return "audio/mpeg";
+    case "wav":
+    case "wave":
+      return "audio/wav";
+    case "ogg":
+    case "oga":
+      return "audio/ogg";
+    case "webm":
+      return "audio/webm";
+    case "flac":
+      return "audio/flac";
+    case "m4a":
+      return "audio/x-m4a";
+    case "aac":
+      return "audio/aac";
+    case "mp4":
+      return "audio/mp4";
+    default:
+      return "application/octet-stream";
+  }
+}
+
 export function AdminAudioLibraryClient() {
   const [rows, setRows] = useState<GmGlobalAudioRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,16 +101,26 @@ export function AdminAudioLibraryClient() {
     }
     setUploading(true);
     try {
-      const prep = await prepareGlobalAudioUploadAction(file.name, file.type || "application/octet-stream", file.size);
+      const contentTypeIn = (file.type || "").trim() || guessMimeFromFileName(file.name);
+      const prep = await prepareGlobalAudioUploadAction(file.name, contentTypeIn, file.size);
       if (!prep.success) {
         toast.error(prep.message);
         return;
       }
-      const put = await fetch(prep.uploadUrl, {
-        method: "PUT",
-        body: file,
-        headers: { "Content-Type": prep.contentType },
-      });
+      let put: Response;
+      try {
+        put = await fetch(prep.uploadUrl, {
+          method: "PUT",
+          body: file,
+          headers: { "Content-Type": prep.contentType },
+        });
+      } catch (netErr) {
+        console.error("[audio-library] R2 PUT network error", netErr);
+        toast.error(
+          "Impossibile contattare R2 (errore di rete/CORS). Sul bucket R2 → Settings → CORS abilita PUT/HEAD/GET dall'origine del sito."
+        );
+        return;
+      }
       if (!put.ok) {
         toast.error(`Upload su R2 fallito (${put.status}). Controlla CORS (PUT) sul bucket.`);
         return;
@@ -105,6 +142,18 @@ export function AdminAudioLibraryClient() {
       setMood("");
       setFile(null);
       await load();
+    } catch (err) {
+      console.error("[audio-library] handleUpload", err);
+      const raw = err instanceof Error ? err.message : typeof err === "string" ? err : "Errore sconosciuto.";
+      const isProdDigest =
+        raw.includes("Server Components render") ||
+        raw.includes("digest property") ||
+        raw.includes("Server Action");
+      toast.error(
+        isProdDigest
+          ? "Errore lato server durante l'upload. Verifica su Vercel le env R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET, R2_PUBLIC_BASE_URL per questo ambiente."
+          : `Upload non riuscito: ${raw.slice(0, 240)}`
+      );
     } finally {
       setUploading(false);
     }
