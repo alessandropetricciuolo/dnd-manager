@@ -18,6 +18,8 @@ import { listGlobalAudioLibraryForGmAction } from "@/app/campaigns/gm-global-aud
 import type { GmGlobalAudioRow, GmGlobalAudioType } from "@/lib/gm-global-audio/types";
 import type { GmAudioForgeLibrary } from "@/lib/gm-audio-forge/types";
 import { newGmAudioEntityId } from "@/lib/gm-audio-forge/use-gm-audio-forge";
+import { toAbsoluteMediaUrl } from "@/lib/gm-audio-forge/url-validation";
+import { gmGlobalAudioPreviewPath } from "@/lib/gm-global-audio/preview-url";
 
 const TYPE_LABEL: Record<GmGlobalAudioType, string> = {
   music: "Musica",
@@ -98,7 +100,7 @@ export function GmGlobalAudioCatalog({ library, setLibrary }: Props) {
       toast.error("Per SFX usa tracce catalogate come SFX.");
       return;
     }
-    const proxyUrl = `/api/gm-global-audio-preview?id=${encodeURIComponent(track.id)}`;
+    const proxyUrl = gmGlobalAudioPreviewPath(track.id);
     setLibrary((lib) => ({
       ...lib,
       categories: lib.categories.map((c) =>
@@ -129,7 +131,7 @@ export function GmGlobalAudioCatalog({ library, setLibrary }: Props) {
       cur.pause();
       cur.src = "";
     }
-    const url = `/api/gm-global-audio-preview?id=${encodeURIComponent(rowId)}`;
+    const url = toAbsoluteMediaUrl(gmGlobalAudioPreviewPath(rowId));
     const a = new Audio(url);
     previewAudioRef.current = a;
     setPreviewingId(rowId);

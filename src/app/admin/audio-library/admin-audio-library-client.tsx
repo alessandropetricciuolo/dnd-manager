@@ -20,6 +20,8 @@ import {
   prepareGlobalAudioUploadAction,
 } from "@/app/admin/audio-library/actions";
 import type { GmGlobalAudioRow, GmGlobalAudioType } from "@/lib/gm-global-audio/types";
+import { gmGlobalAudioPreviewPath } from "@/lib/gm-global-audio/preview-url";
+import { toAbsoluteMediaUrl } from "@/lib/gm-audio-forge/url-validation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminSpotifyPlaylistsSection } from "@/app/admin/audio-library/admin-spotify-playlists-section";
 
@@ -314,8 +316,8 @@ export function AdminAudioLibraryClient() {
                     variant="outline"
                     className="border-barber-gold/40 text-barber-paper"
                     onClick={() => {
-                      const a = new Audio(r.public_url);
-                      void a.play().catch(() => toast.error("Riproduzione bloccata (CORS o formato)."));
+                      const a = new Audio(toAbsoluteMediaUrl(gmGlobalAudioPreviewPath(r.id)));
+                      void a.play().catch(() => toast.error("Anteprima non disponibile (rete o permessi)."));
                     }}
                   >
                     Anteprima

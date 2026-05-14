@@ -7,12 +7,14 @@ import { spotifyPlaylistEmbedSrc } from "@/lib/spotify/playlist-id";
 
 type Props = {
   playlistId: string | null;
+  /** Con foglio Audio aperto il player inline è nel pannello: nascondi il dock per evitare doppioni sotto il modal. */
+  audioSheetOpen?: boolean;
 };
 
 /** Embed Spotify fisso sul GM screen: controllabile anche dal telecomando (cambio playlist). */
-export function GmSpotifyEmbedDock({ playlistId }: Props) {
+export function GmSpotifyEmbedDock({ playlistId, audioSheetOpen }: Props) {
   const [open, setOpen] = useState(true);
-  if (!playlistId) return null;
+  if (!playlistId || audioSheetOpen) return null;
 
   return (
     /** z-40: sotto al foglio Audio (z-50) così i clic sulla lista Spotify nel foglio non finiscono sull’iframe e non chiudono il pannello. */

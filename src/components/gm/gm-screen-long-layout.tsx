@@ -537,7 +537,7 @@ function LongWorkspace({
           spotifyEmbedPlaylistId={spotifyEmbedPlaylistId}
           onSpotifyEmbedPlaylistIdChange={setSpotifyEmbedPlaylistId}
         />
-        <GmSpotifyEmbedDock playlistId={spotifyEmbedPlaylistId} />
+        <GmSpotifyEmbedDock playlistId={spotifyEmbedPlaylistId} audioSheetOpen={audioForgeOpen} />
       </main>
     </div>
   );

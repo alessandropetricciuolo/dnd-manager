@@ -41,7 +41,11 @@ export async function GET(req: NextRequest) {
     (upstreamHeaders as Record<string, string>).Range = range;
   }
 
-  const upstream = await fetch(row.public_url, { headers: upstreamHeaders });
+  let upstream = await fetch(row.public_url, { headers: upstreamHeaders });
+  /** Alcuni storage rispondono 416 al primo Range: riprova senza Range. */
+  if (upstream.status === 416 && range) {
+    upstream = await fetch(row.public_url);
+  }
   if (!upstream.ok || !upstream.body) {
     return NextResponse.json({ error: "upstream" }, { status: 502 });
   }
