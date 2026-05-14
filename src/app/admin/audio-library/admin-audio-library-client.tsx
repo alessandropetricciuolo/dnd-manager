@@ -20,6 +20,8 @@ import {
   prepareGlobalAudioUploadAction,
 } from "@/app/admin/audio-library/actions";
 import type { GmGlobalAudioRow, GmGlobalAudioType } from "@/lib/gm-global-audio/types";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AdminSpotifyPlaylistsSection } from "@/app/admin/audio-library/admin-spotify-playlists-section";
 
 const TYPE_LABEL: Record<GmGlobalAudioType, string> = {
   music: "Musica",
@@ -122,10 +124,24 @@ export function AdminAudioLibraryClient() {
       <div>
         <h1 className="font-serif text-2xl text-barber-paper">Libreria audio globale</h1>
         <p className="mt-1 text-sm text-barber-paper/70">
-          Caricamento su Cloudflare R2. Musica ed effetti sono visibili a tutti i master nel GM Screen (tab Catalogo).
+          File su Cloudflare R2 e playlist Spotify curate qui. I master le usano dal GM Screen (tab Catalogo / Spotify).
         </p>
       </div>
 
+      <Tabs defaultValue="r2" className="space-y-6">
+        <TabsList className="bg-barber-dark/90 p-1">
+          <TabsTrigger value="r2" className="data-[state=active]:bg-barber-red/90 data-[state=active]:text-barber-paper">
+            File R2
+          </TabsTrigger>
+          <TabsTrigger
+            value="spotify"
+            className="data-[state=active]:bg-barber-red/90 data-[state=active]:text-barber-paper"
+          >
+            Spotify
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="r2" className="mt-0 space-y-8">
       <form
         onSubmit={handleUpload}
         className="space-y-4 rounded-xl border border-barber-gold/25 bg-barber-dark/80 p-4"
@@ -270,6 +286,12 @@ export function AdminAudioLibraryClient() {
           </ul>
         )}
       </div>
+        </TabsContent>
+
+        <TabsContent value="spotify" className="mt-0">
+          <AdminSpotifyPlaylistsSection />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

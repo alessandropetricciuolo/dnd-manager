@@ -22,12 +22,59 @@ export type GmAudioCategory = {
 };
 
 export type GmAudioForgeLibrary = {
-  version: 1;
+  version: 2;
   categories: GmAudioCategory[];
+  /** Pad SFX 12 tasti (icone + URL) per campagna. */
+  sfxPad: SfxPadConfig;
 };
 
-export const GM_AUDIO_FORGE_LIBRARY_VERSION = 1 as const;
+export const GM_AUDIO_FORGE_LIBRARY_VERSION = 2 as const;
+
+export type SfxPadSlot = {
+  /** Indice fisso 0..11 */
+  slotIndex: number;
+  /** Nome icona Lucide (vedi sfx-pad-icons). */
+  iconKey: string;
+  etichetta: string;
+  /** URL HTTPS del suono; vuoto = tasto muto. */
+  trackUrl: string;
+};
+
+export type SfxPadConfig = {
+  slots: SfxPadSlot[];
+};
+
+export function createDefaultSfxPad(): SfxPadConfig {
+  const slots: SfxPadSlot[] = [];
+  const icons = [
+    "Bell",
+    "Skull",
+    "Flame",
+    "Zap",
+    "Volume2",
+    "Wind",
+    "CloudRain",
+    "Swords",
+    "Shield",
+    "Footprints",
+    "Moon",
+    "Sparkles",
+  ] as const;
+  for (let i = 0; i < 12; i++) {
+    slots.push({
+      slotIndex: i,
+      iconKey: icons[i] ?? "Bell",
+      etichetta: `Tasto ${i + 1}`,
+      trackUrl: "",
+    });
+  }
+  return { slots };
+}
 
 export function createDefaultLibrary(): GmAudioForgeLibrary {
-  return { version: GM_AUDIO_FORGE_LIBRARY_VERSION, categories: [] };
+  return {
+    version: GM_AUDIO_FORGE_LIBRARY_VERSION,
+    categories: [],
+    sfxPad: createDefaultSfxPad(),
+  };
 }

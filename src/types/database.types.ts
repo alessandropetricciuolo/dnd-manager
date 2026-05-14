@@ -630,6 +630,25 @@ export interface Database {
         };
         Update: Partial<Database["public"]["Tables"]["gm_global_audio_tracks"]["Insert"]>;
       };
+      gm_spotify_playlists: {
+        Row: {
+          id: string;
+          title: string;
+          mood: string;
+          spotify_playlist_id: string;
+          created_at: string;
+          created_by: string | null;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          mood?: string;
+          spotify_playlist_id: string;
+          created_at?: string;
+          created_by?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["gm_spotify_playlists"]["Insert"]>;
+      };
       campaign_exploration_fow_regions: {
         Row: {
           id: string;

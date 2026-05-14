@@ -1,8 +1,11 @@
 import {
   createDefaultLibrary,
+  createDefaultSfxPad,
   GM_AUDIO_FORGE_LIBRARY_VERSION,
   type GmAudioCategory,
   type GmAudioForgeLibrary,
+  type SfxPadConfig,
+  type SfxPadSlot,
 } from "./types";
 
 const STORAGE_PREFIX = "bd-gm-audio-forge:";
@@ -60,6 +63,41 @@ function parseCategory(raw: unknown): GmAudioCategory | null {
   };
 }
 
+function parseSfxPad(raw: unknown): SfxPadConfig | null {
+  if (!isRecord(raw)) return null;
+  const slotsIn = Array.isArray(raw.slots) ? raw.slots : [];
+  const byIndex = new Map<number, SfxPadSlot>();
+  for (const s of slotsIn) {
+    if (!isRecord(s)) continue;
+    const idx =
+      typeof s.slotIndex === "number" && Number.isInteger(s.slotIndex) && s.slotIndex >= 0 && s.slotIndex < 12
+        ? s.slotIndex
+        : null;
+    if (idx === null) continue;
+    const iconKey = typeof s.iconKey === "string" && s.iconKey.trim() ? s.iconKey.trim() : "Bell";
+    const etichetta = typeof s.etichetta === "string" ? s.etichetta : "";
+    const trackUrl = typeof s.trackUrl === "string" ? s.trackUrl : "";
+    byIndex.set(idx, { slotIndex: idx, iconKey, etichetta, trackUrl });
+  }
+  if (byIndex.size === 0) return null;
+  const def = createDefaultSfxPad();
+  const slots: SfxPadSlot[] = [];
+  for (let i = 0; i < 12; i++) {
+    slots.push(byIndex.get(i) ?? def.slots[i]!);
+  }
+  return { slots };
+}
+
+function parseCategories(parsed: Record<string, unknown>): GmAudioCategory[] {
+  const catsIn = Array.isArray(parsed.categories) ? parsed.categories : [];
+  const categories: GmAudioCategory[] = [];
+  for (const c of catsIn) {
+    const cat = parseCategory(c);
+    if (cat) categories.push(cat);
+  }
+  return categories;
+}
+
 export function loadGmAudioForgeLibrary(campaignId: string): GmAudioForgeLibrary {
   if (typeof window === "undefined") return createDefaultLibrary();
   try {
@@ -67,14 +105,26 @@ export function loadGmAudioForgeLibrary(campaignId: string): GmAudioForgeLibrary
     if (!raw) return createDefaultLibrary();
     const parsed: unknown = JSON.parse(raw);
     if (!isRecord(parsed)) return createDefaultLibrary();
-    if (parsed.version !== GM_AUDIO_FORGE_LIBRARY_VERSION) return createDefaultLibrary();
-    const catsIn = Array.isArray(parsed.categories) ? parsed.categories : [];
-    const categories: GmAudioCategory[] = [];
-    for (const c of catsIn) {
-      const cat = parseCategory(c);
-      if (cat) categories.push(cat);
+
+    const ver = parsed.version;
+    const categories = parseCategories(parsed);
+
+    if (ver === 1) {
+      return {
+        version: GM_AUDIO_FORGE_LIBRARY_VERSION,
+        categories,
+        sfxPad: createDefaultSfxPad(),
+      };
     }
-    return { version: GM_AUDIO_FORGE_LIBRARY_VERSION, categories };
+
+    if (ver !== 2) return createDefaultLibrary();
+
+    const sfxPad = parseSfxPad(parsed.sfxPad) ?? createDefaultSfxPad();
+    return {
+      version: GM_AUDIO_FORGE_LIBRARY_VERSION,
+      categories,
+      sfxPad,
+    };
   } catch {
     return createDefaultLibrary();
   }

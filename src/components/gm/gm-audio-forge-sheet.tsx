@@ -23,6 +23,8 @@ import type { GmAudioForgeControls } from "@/lib/gm-audio-forge/use-gm-audio-for
 import type { GmAudioCategory, GmAudioCategoryKind, GmAudioPlaybackMode } from "@/lib/gm-audio-forge/types";
 import { normalizeAudioUrl } from "@/lib/gm-audio-forge/url-validation";
 import { GmGlobalAudioCatalog } from "./gm-global-audio-catalog";
+import { GmSpotifyPlayerPanel } from "./gm-spotify-player-panel";
+import { GmSfxPadPanel } from "./gm-sfx-pad-panel";
 
 type Props = {
   open: boolean;
@@ -89,6 +91,7 @@ export function GmAudioForgeSheet({ open, onOpenChange, forge }: Props) {
     toggleMusicCategory,
     toggleAtmosphereCategory,
     playSfxRandom,
+    playSfxUrl,
     toggleSfxBackground,
     stopAll,
     isAllowedAudioUrl,
@@ -196,7 +199,7 @@ export function GmAudioForgeSheet({ open, onOpenChange, forge }: Props) {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="flex w-full max-w-none flex-col border-l border-amber-600/25 bg-zinc-950 p-0 sm:max-w-2xl"
+        className="flex w-full max-w-none flex-col border-l border-amber-600/25 bg-zinc-950 p-0 sm:max-w-3xl"
       >
         <SheetHeader className="border-b border-amber-800/30 px-4 pb-3 pt-4 pr-12 text-left">
           <SheetTitle className="flex items-center gap-2 text-amber-100">
@@ -205,7 +208,9 @@ export function GmAudioForgeSheet({ open, onOpenChange, forge }: Props) {
           </SheetTitle>
           <p className="text-xs leading-relaxed text-zinc-400">
             Libreria locale per campagna + <strong className="font-medium text-zinc-300">catalogo Gilda</strong> (tab
-            Catalogo). URL manuali solo HTTPS. Ispirato al flusso{" "}
+            Catalogo) e <strong className="font-medium text-zinc-300">playlist Spotify</strong> (tab Spotify) e il{" "}
+            <strong className="font-medium text-zinc-300">pad SFX</strong> a 12 tasti (tab Pad SFX). URL manuali solo
+            HTTPS. Ispirato al flusso{" "}
             <a
               href="https://slashpaf.com/it/audioforge/doc/"
               target="_blank"
@@ -226,6 +231,12 @@ export function GmAudioForgeSheet({ open, onOpenChange, forge }: Props) {
             <TabsTrigger value="catalog" className="text-xs data-[state=active]:bg-amber-600/25">
               Catalogo
             </TabsTrigger>
+            <TabsTrigger value="spotify" className="text-xs data-[state=active]:bg-amber-600/25">
+              Spotify
+            </TabsTrigger>
+            <TabsTrigger value="pad" className="text-xs data-[state=active]:bg-amber-600/25">
+              Pad SFX
+            </TabsTrigger>
             <TabsTrigger value="fx" className="text-xs data-[state=active]:bg-amber-600/25">
               fx
             </TabsTrigger>
@@ -236,6 +247,19 @@ export function GmAudioForgeSheet({ open, onOpenChange, forge }: Props) {
 
           <TabsContent value="catalog" className="mt-3 min-h-0 flex-1 overflow-y-auto pr-1">
             <GmGlobalAudioCatalog library={library} setLibrary={setLibrary} />
+          </TabsContent>
+
+          <TabsContent value="spotify" className="mt-3 min-h-0 flex-1 overflow-y-auto pr-1">
+            <GmSpotifyPlayerPanel />
+          </TabsContent>
+
+          <TabsContent value="pad" className="mt-3 min-h-0 flex-1 overflow-y-auto pr-1">
+            <GmSfxPadPanel
+              library={library}
+              setLibrary={setLibrary}
+              playSfxUrl={playSfxUrl}
+              isAllowedAudioUrl={isAllowedAudioUrl}
+            />
           </TabsContent>
 
           <TabsContent value="mixer" className="mt-3 min-h-0 flex-1 overflow-y-auto pr-1">

@@ -275,6 +275,25 @@ export function useGmAudioForge(campaignId: string) {
     [sfxMaster]
   );
 
+  const playSfxUrl = useCallback(
+    (url: string) => {
+      const u = url.trim();
+      if (!u || !isAllowedAudioUrl(u)) return;
+      const a = new Audio(u);
+      a.volume = clampVolume(sfxMaster);
+      sfxPlayingRef.current.add(a);
+      void a.play().catch(() => {});
+      a.addEventListener(
+        "ended",
+        () => {
+          sfxPlayingRef.current.delete(a);
+        },
+        { once: true }
+      );
+    },
+    [sfxMaster]
+  );
+
   const scheduleNextSfxBackground = useCallback(
     (categoryId: string) => {
       const existing = sfxTimeoutsRef.current.get(categoryId);
@@ -416,6 +435,7 @@ export function useGmAudioForge(campaignId: string) {
     toggleMusicCategory,
     toggleAtmosphereCategory,
     playSfxRandom,
+    playSfxUrl,
     toggleSfxBackground,
     stopAll,
     isAllowedAudioUrl,
