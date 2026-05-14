@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Plus, Play } from "lucide-react";
+import { Loader2, Plus, Play, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,6 +37,8 @@ export function GmGlobalAudioCatalog({ library, setLibrary }: Props) {
   const [filterType, setFilterType] = useState<string>("all");
   const [filterText, setFilterText] = useState("");
   const [targetCategoryId, setTargetCategoryId] = useState<string>("");
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [previewingId, setPreviewingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -113,6 +115,37 @@ export function GmGlobalAudioCatalog({ library, setLibrary }: Props) {
     }));
     toast.success(`Aggiunto a «${cat.name}». Apri il tab Mixer e tocca la categoria per avviare.`);
   }
+
+  const togglePreview = useCallback((rowId: string) => {
+    const cur = previewAudioRef.current;
+    if (previewingId === rowId && cur && !cur.paused) {
+      cur.pause();
+      cur.currentTime = 0;
+      previewAudioRef.current = null;
+      setPreviewingId(null);
+      return;
+    }
+    if (cur) {
+      cur.pause();
+      cur.src = "";
+    }
+    const url = `/api/gm-global-audio-preview?id=${encodeURIComponent(rowId)}`;
+    const a = new Audio(url);
+    previewAudioRef.current = a;
+    setPreviewingId(rowId);
+    const onEnded = () => {
+      if (previewAudioRef.current === a) {
+        previewAudioRef.current = null;
+        setPreviewingId(null);
+      }
+    };
+    a.addEventListener("ended", onEnded, { once: true });
+    void a.play().catch(() => {
+      toast.error("Anteprima non disponibile (rete o permessi).");
+      if (previewAudioRef.current === a) previewAudioRef.current = null;
+      setPreviewingId(null);
+    });
+  }, [previewingId]);
 
   return (
     <div className="space-y-4">
@@ -207,14 +240,24 @@ export function GmGlobalAudioCatalog({ library, setLibrary }: Props) {
                   type="button"
                   size="sm"
                   variant="secondary"
-                  className="h-8 border-amber-800/40 bg-zinc-800 text-zinc-100"
-                  onClick={() => {
-                    const a = new Audio(`/api/gm-global-audio-preview?id=${encodeURIComponent(r.id)}`);
-                    void a.play().catch(() => toast.error("Anteprima non disponibile (rete o permessi)."));
-                  }}
+                  className={
+                    previewingId === r.id
+                      ? "h-8 border-amber-500/60 bg-amber-900/40 text-amber-100"
+                      : "h-8 border-amber-800/40 bg-zinc-800 text-zinc-100"
+                  }
+                  onClick={() => togglePreview(r.id)}
                 >
-                  <Play className="mr-1 h-3.5 w-3.5" />
-                  Play
+                  {previewingId === r.id ? (
+                    <>
+                      <Square className="mr-1 h-3.5 w-3.5" />
+                      Stop
+                    </>
+                  ) : (
+                    <>
+                      <Play className="mr-1 h-3.5 w-3.5" />
+                      Play
+                    </>
+                  )}
                 </Button>
                 <Button
                   type="button"

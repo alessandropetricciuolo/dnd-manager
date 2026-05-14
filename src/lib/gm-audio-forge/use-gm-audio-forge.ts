@@ -46,6 +46,13 @@ export function useGmAudioForge(campaignId: string) {
   const [atmosMaster, setAtmosMaster] = useState(0.65);
   const [sfxMaster, setSfxMaster] = useState(0.9);
 
+  const musicMasterRef = useRef(musicMaster);
+  const atmosMasterRef = useRef(atmosMaster);
+  const sfxMasterRef = useRef(sfxMaster);
+  musicMasterRef.current = musicMaster;
+  atmosMasterRef.current = atmosMaster;
+  sfxMasterRef.current = sfxMaster;
+
   const musicAudioRef = useRef<HTMLAudioElement | null>(null);
   const musicStateRef = useRef<{ categoryId: string; trackUrl: string } | null>(null);
   const lastPositiveMusicMasterRef = useRef(0.75);
@@ -152,6 +159,7 @@ export function useGmAudioForge(campaignId: string) {
           }
           musicStateRef.current = { categoryId: st.categoryId, trackUrl: next.url };
           el.loop = false;
+          el.volume = clampVolume(musicMasterRef.current);
           el.src = next.url;
           void el.play().catch(() => {});
         };
@@ -160,6 +168,7 @@ export function useGmAudioForge(campaignId: string) {
       musicStateRef.current = { categoryId, trackUrl: url };
       const catNow = getCategory(libraryRef.current, categoryId);
       a.loop = catNow?.playbackMode === "loop_one";
+      a.volume = clampVolume(musicMasterRef.current);
       a.src = url;
       void a.play().catch((err: unknown) => {
         const name = err instanceof DOMException ? err.name : "";
@@ -210,6 +219,7 @@ export function useGmAudioForge(campaignId: string) {
           }
           atmosStateRef.current.set(categoryId, { trackUrl: next.url });
           el.loop = false;
+          el.volume = clampVolume(atmosMasterRef.current);
           el.src = next.url;
           void el.play().catch(() => {});
         };
@@ -218,6 +228,7 @@ export function useGmAudioForge(campaignId: string) {
       atmosStateRef.current.set(categoryId, { trackUrl: url });
       const catNow = getCategory(libraryRef.current, categoryId);
       a.loop = catNow?.playbackMode === "loop_one";
+      a.volume = clampVolume(atmosMasterRef.current);
       a.src = url;
       void a.play().catch((err: unknown) => {
         const name = err instanceof DOMException ? err.name : "";
@@ -303,7 +314,7 @@ export function useGmAudioForge(campaignId: string) {
       const track = pickRandomTrack(cat.tracks, null);
       if (!track) return;
       const a = new Audio(track.url);
-      a.volume = clampVolume(sfxMaster);
+      a.volume = clampVolume(sfxMasterRef.current);
       sfxPlayingRef.current.add(a);
       void a.play().catch(() => {});
       a.addEventListener(
@@ -314,7 +325,7 @@ export function useGmAudioForge(campaignId: string) {
         { once: true }
       );
     },
-    [sfxMaster]
+    []
   );
 
   const playSfxUrl = useCallback(
@@ -322,7 +333,7 @@ export function useGmAudioForge(campaignId: string) {
       const u = url.trim();
       if (!u || !isAllowedAudioUrl(u)) return;
       const a = new Audio(u);
-      a.volume = clampVolume(sfxMaster);
+      a.volume = clampVolume(sfxMasterRef.current);
       sfxPlayingRef.current.add(a);
       void a.play().catch(() => {});
       a.addEventListener(
@@ -333,7 +344,7 @@ export function useGmAudioForge(campaignId: string) {
         { once: true }
       );
     },
-    [sfxMaster]
+    []
   );
 
   const scheduleNextSfxBackground = useCallback(
@@ -362,7 +373,7 @@ export function useGmAudioForge(campaignId: string) {
         const track = pickRandomTrack(c2.tracks, null);
         if (!track) return;
         const a = new Audio(track.url);
-        a.volume = clampVolume(sfxMaster);
+        a.volume = clampVolume(sfxMasterRef.current);
         sfxPlayingRef.current.add(a);
         void a.play().catch(() => {});
         a.addEventListener(
@@ -378,7 +389,7 @@ export function useGmAudioForge(campaignId: string) {
       }, delay);
       sfxTimeoutsRef.current.set(categoryId, t);
     },
-    [sfxMaster]
+    []
   );
 
   const toggleSfxBackground = useCallback(
@@ -405,7 +416,7 @@ export function useGmAudioForge(campaignId: string) {
         return;
       }
       const a = new Audio(track.url);
-      a.volume = clampVolume(sfxMaster);
+      a.volume = clampVolume(sfxMasterRef.current);
       sfxPlayingRef.current.add(a);
       void a.play().catch(() => {});
       a.addEventListener(
@@ -419,7 +430,7 @@ export function useGmAudioForge(campaignId: string) {
         { once: true }
       );
     },
-    [scheduleNextSfxBackground, sfxMaster]
+    [scheduleNextSfxBackground]
   );
 
   const stopAll = useCallback(() => {
@@ -432,8 +443,10 @@ export function useGmAudioForge(campaignId: string) {
     const a = musicAudioRef.current;
     const st = musicStateRef.current;
     if (!a || !st) return;
-    if (a.paused) void a.play().catch(() => {});
-    else a.pause();
+    if (a.paused) {
+      a.volume = clampVolume(musicMasterRef.current);
+      void a.play().catch(() => {});
+    } else a.pause();
   }, []);
 
   const skipMusicTrack = useCallback(
@@ -493,6 +506,13 @@ export function useGmAudioForge(campaignId: string) {
       a.volume = m;
     }
   }, [atmosMaster, activeAtmosphereIds]);
+
+  useEffect(() => {
+    const v = clampVolume(sfxMaster);
+    for (const a of sfxPlayingRef.current) {
+      a.volume = v;
+    }
+  }, [sfxMaster]);
 
   useEffect(() => {
     // Rimuovi atmosfere se la categoria è stata cancellata dal library

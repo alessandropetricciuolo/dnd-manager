@@ -3,7 +3,7 @@ import { createSupabaseServerClient } from "@/utils/supabase/server";
 
 /**
  * Proxy streaming per anteprima catalogo: bypass CORS R2/public URL da client.
- * Solo GM/Admin autenticati.
+ * Solo GM/Admin autenticati. Inoltra Range → molti browser richiedono 206 per <audio>.
  */
 export async function GET(req: NextRequest) {
   const id = req.nextUrl.searchParams.get("id")?.trim();
@@ -35,18 +35,32 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
-  const upstream = await fetch(row.public_url);
+  const range = req.headers.get("range");
+  const upstreamHeaders: HeadersInit = {};
+  if (range) {
+    (upstreamHeaders as Record<string, string>).Range = range;
+  }
+
+  const upstream = await fetch(row.public_url, { headers: upstreamHeaders });
   if (!upstream.ok || !upstream.body) {
     return NextResponse.json({ error: "upstream" }, { status: 502 });
   }
 
   const ct = upstream.headers.get("content-type") ?? row.mime_type ?? "application/octet-stream";
 
+  const out = new Headers();
+  out.set("Content-Type", ct);
+  out.set("Cache-Control", "private, max-age=300");
+  out.set("Accept-Ranges", upstream.headers.get("Accept-Ranges") ?? "bytes");
+
+  const pass = ["content-length", "content-range"] as const;
+  for (const k of pass) {
+    const v = upstream.headers.get(k);
+    if (v) out.set(k, v);
+  }
+
   return new NextResponse(upstream.body, {
-    status: 200,
-    headers: {
-      "Content-Type": ct,
-      "Cache-Control": "private, max-age=300",
-    },
+    status: upstream.status,
+    headers: out,
   });
 }

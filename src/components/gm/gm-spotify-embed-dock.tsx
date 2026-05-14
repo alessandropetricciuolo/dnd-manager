@@ -15,7 +15,8 @@ export function GmSpotifyEmbedDock({ playlistId }: Props) {
   if (!playlistId) return null;
 
   return (
-    <div className="pointer-events-auto fixed bottom-3 right-3 z-[60] flex max-w-[calc(100vw-1.5rem)] flex-col items-end gap-1">
+    /** z-40: sotto al foglio Audio (z-50) così i clic sulla lista Spotify nel foglio non finiscono sull’iframe e non chiudono il pannello. */
+    <div className="pointer-events-auto fixed bottom-3 right-3 z-40 flex max-w-[calc(100vw-1.5rem)] flex-col items-end gap-1">
       <Button
         type="button"
         size="sm"
