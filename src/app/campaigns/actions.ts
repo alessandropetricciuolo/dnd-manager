@@ -570,6 +570,48 @@ export async function createCampaignParty(
   }
 }
 
+export async function deleteCampaignParty(
+  campaignId: string,
+  partyId: string
+): Promise<{ success: boolean; message: string }> {
+  if (!partyId?.trim()) {
+    return { success: false, message: "Gruppo non valido." };
+  }
+  try {
+    const supabase = await createSupabaseServerClient();
+    const can = await isGmOrAdmin(supabase, campaignId);
+    if (!can) {
+      return { success: false, message: "Non autorizzato." };
+    }
+
+    const { data: party } = await supabase
+      .from("campaign_parties")
+      .select("id")
+      .eq("id", partyId)
+      .eq("campaign_id", campaignId)
+      .maybeSingle();
+    if (!party) {
+      return { success: false, message: "Gruppo non trovato in questa campagna." };
+    }
+
+    const { error } = await supabase
+      .from("campaign_parties")
+      .delete()
+      .eq("id", partyId)
+      .eq("campaign_id", campaignId);
+    if (error) {
+      console.error("[deleteCampaignParty]", error);
+      return { success: false, message: error.message ?? "Errore nell'eliminazione del gruppo." };
+    }
+
+    revalidatePath(`/campaigns/${campaignId}`);
+    return { success: true, message: "Gruppo eliminato." };
+  } catch (err) {
+    console.error("[deleteCampaignParty]", err);
+    return { success: false, message: "Errore imprevisto." };
+  }
+}
+
 export type CampaignMemberForGmRow = {
   player_id: string;
   player_name: string;

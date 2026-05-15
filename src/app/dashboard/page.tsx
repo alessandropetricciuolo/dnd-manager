@@ -162,14 +162,16 @@ export default async function DashboardPage() {
             </Suspense>
           </section>
 
-          <section className="min-w-0">
-            <h2 className="mb-4 break-words font-serif text-xl font-semibold leading-tight text-barber-paper sm:text-2xl">
-              Le mie sessioni
-            </h2>
-            <Suspense fallback={<div className="h-32 animate-pulse rounded-xl border border-barber-gold/30 bg-barber-dark/80" />}>
-              <MySessionsList />
-            </Suspense>
-          </section>
+          {!isGmOrAdmin ? (
+            <section className="min-w-0">
+              <h2 className="mb-4 break-words font-serif text-xl font-semibold leading-tight text-barber-paper sm:text-2xl">
+                Le mie sessioni
+              </h2>
+              <Suspense fallback={<div className="h-32 animate-pulse rounded-xl border border-barber-gold/30 bg-barber-dark/80" />}>
+                <MySessionsList />
+              </Suspense>
+            </section>
+          ) : null}
 
           <section className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 p-4">
             <h3 className="text-sm font-medium text-barber-paper">

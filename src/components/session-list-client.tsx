@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { cn } from "@/lib/utils";
 import {
   updateSignupStatus,
   deleteSignup,
@@ -62,6 +63,18 @@ function normalizeStatus(s: string): string {
   if (s === "waitlist") return "pending";
   if (s === "cancelled") return "rejected";
   return s;
+}
+
+function signupSummary(signups: SignupWithPlayer[]): string {
+  if (signups.length === 0) return "Nessun iscritto";
+  const pending = signups.filter((s) => normalizeStatus(s.status) === "pending").length;
+  const approved = signups.filter((s) => normalizeStatus(s.status) === "approved").length;
+  const attended = signups.filter((s) => normalizeStatus(s.status) === "attended").length;
+  const parts = [`${signups.length} iscritti`];
+  if (pending > 0) parts.push(`${pending} in attesa`);
+  if (approved > 0) parts.push(`${approved} approvati`);
+  if (attended > 0) parts.push(`${attended} presenti`);
+  return parts.join(" · ");
 }
 
 export function SessionListClient({
@@ -196,20 +209,39 @@ export function SessionListClient({
 
   return (
     <>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {sessions.map((session) => {
+      <div
+        className={cn(
+          isGmOrAdmin ? "flex flex-col" : "grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        )}
+      >
+        {sessions.map((session, sessionIndex) => {
           const isOpen = session.status === "scheduled";
           const sessionInstant = new Date(session.scheduled_at);
           const isTodayOrPast = sessionInstant <= new Date();
 
-          return (
-            <Card
-              key={session.id}
-              className="border-barber-gold/40 bg-barber-dark/90"
-            >
+          const sessionCard = (
+            <Card className="w-full border-barber-gold/40 bg-barber-dark/90">
               <CardHeader className="pb-2">
+                {isGmOrAdmin ? (
+                  <div className="mb-2 flex flex-wrap items-center gap-2 border-b border-barber-gold/10 pb-2 sm:hidden">
+                    <CalendarIcon className="h-4 w-4 shrink-0 text-barber-gold/70" />
+                    <time
+                      dateTime={session.scheduled_at}
+                      className="text-sm font-medium text-barber-paper"
+                    >
+                      {formatSessionInRome(session.scheduled_at, "EEE d MMM yyyy · HH:mm", {
+                        locale: it,
+                      })}
+                    </time>
+                  </div>
+                ) : null}
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 text-barber-paper/55 min-w-0">
+                  <div
+                    className={cn(
+                      "flex min-w-0 items-center gap-2 text-barber-paper/55",
+                      isGmOrAdmin && "sm:sr-only"
+                    )}
+                  >
                     <CalendarIcon className="h-4 w-4 shrink-0" />
                     <time dateTime={session.scheduled_at}>
                       {formatSessionInRome(session.scheduled_at, "EEEE d MMMM yyyy, HH:mm", {
@@ -323,7 +355,14 @@ export function SessionListClient({
                 {isGmOrAdmin && (
                   <div className="space-y-2 border-t border-barber-gold/15 pt-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-xs font-medium text-barber-paper/55">Iscritti</p>
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-barber-paper/55">Iscritti</p>
+                        {expandedSessionId !== session.id ? (
+                          <p className="mt-0.5 text-[11px] text-barber-paper/45">
+                            {signupSummary(session.signups)}
+                          </p>
+                        ) : null}
+                      </div>
                       <Button
                         size="sm"
                         variant="outline"
@@ -529,6 +568,37 @@ export function SessionListClient({
                 )}
               </CardContent>
             </Card>
+          );
+
+          if (!isGmOrAdmin) {
+            return (
+              <div key={session.id} className="min-w-0">
+                {sessionCard}
+              </div>
+            );
+          }
+
+          const dateLabel = formatSessionInRome(session.scheduled_at, "EEEE", { locale: it });
+          const dayLabel = formatSessionInRome(session.scheduled_at, "d MMM", { locale: it });
+          const timeLabel = formatSessionInRome(session.scheduled_at, "HH:mm", { locale: it });
+
+          return (
+            <div key={session.id} className="relative flex gap-3 sm:gap-5">
+              {sessionIndex < sessions.length - 1 ? (
+                <div
+                  aria-hidden
+                  className="absolute bottom-0 left-[4.75rem] top-14 hidden w-px bg-barber-gold/20 sm:block"
+                />
+              ) : null}
+              <div className="hidden w-[4.75rem] shrink-0 flex-col items-end border-r border-barber-gold/15 pr-3 pt-5 text-right sm:flex">
+                <span className="text-[10px] font-medium uppercase tracking-wide text-barber-gold/80">
+                  {dateLabel}
+                </span>
+                <span className="font-serif text-lg leading-none text-barber-paper">{dayLabel}</span>
+                <span className="mt-1 text-xs text-barber-paper/55">{timeLabel}</span>
+              </div>
+              <div className="min-w-0 flex-1 pb-4">{sessionCard}</div>
+            </div>
           );
         })}
       </div>

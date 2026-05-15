@@ -1,6 +1,4 @@
-import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
-import { IMAGE_BLUR_PLACEHOLDER } from "@/lib/utils";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { SessionList } from "@/components/session-list";
@@ -16,7 +14,7 @@ import { BulkImportWikiDialog } from "@/components/wiki/bulk-import-wiki-dialog"
 import { DeleteCampaignButton } from "@/components/delete-campaign-button";
 import { CampaignVisibilityToggle } from "@/components/campaign-visibility-toggle";
 import { EditCampaignDialog } from "@/components/campaigns/edit-campaign-dialog";
-import { CampaignTabsClient } from "@/components/campaigns/campaign-tabs-client";
+import { CampaignWorkspace } from "@/components/campaigns/campaign-workspace";
 import { JoinLongCampaignButton } from "@/components/campaigns/join-long-campaign-button";
 import { LongRegistrationsToggle } from "@/components/campaigns/long-registrations-toggle";
 import { CampaignPartyMembersPanel } from "@/components/campaigns/campaign-party-members-panel";
@@ -29,18 +27,15 @@ import { MissionBoardSection } from "@/components/missions/mission-board-section
 import { CharactersSection } from "@/components/characters/characters-section";
 import { getCampaignCharacters, getCampaignEligiblePlayers } from "@/app/campaigns/character-actions";
 import { getPreClosedSessionForCampaign, type PreClosedSessionRow } from "@/app/campaigns/gm-actions";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { CampaignMobileHeader } from "@/components/campaigns/campaign-mobile-header";
+import { SectionHeader } from "@/components/ui/section-header";
+import { CalendarDays } from "lucide-react";
 import {
   parseCampaignAiContextFromDb,
   readExcludedManualBookKeysFromAiContextJson,
   type CampaignAiContext,
 } from "@/lib/campaign-ai-context";
 import type { Json } from "@/types/database.types";
-
-const PLACEHOLDER_IMAGE =
-  "https://placehold.co/1200x400/1c1917/fbbf24/png?text=Campagna";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -332,194 +327,85 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
   const renderPgTab = initialContentTab === "pg";
   const renderGmTab = initialContentTab === "gm";
 
-  const leftColumnContent = (
+  const campaignInfoFooter = (
     <>
-      <div className="relative aspect-[21/9] min-h-[140px] w-full shrink-0 overflow-hidden rounded-lg bg-barber-dark">
-        <Image
-          src={campaign.image_url ?? PLACEHOLDER_IMAGE}
-          alt=""
-          fill
-          className="object-cover"
-          priority
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          placeholder="blur"
-          blurDataURL={IMAGE_BLUR_PLACEHOLDER}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-barber-dark via-barber-dark/50 to-transparent" />
-      </div>
-      <div className="flex flex-col gap-3 p-4">
-        <h1 className="text-xl font-semibold text-barber-paper md:text-2xl">
-          {campaign.name}
-        </h1>
-        {campaignTypeLabel && (
-          <span className="inline-block w-fit rounded-full border border-barber-gold/50 bg-barber-gold/10 px-3 py-1 text-xs font-medium text-barber-gold">
-            {campaignTypeLabel}
-          </span>
-        )}
-        {campaign.description ? (
-          <p className="text-sm text-barber-paper/80 leading-relaxed whitespace-pre-wrap">
-            {campaign.description}
+      {!hasPlayedCampaign && campaign.type !== "long" ? (
+        <p className="rounded-lg border border-barber-gold/40 bg-barber-gold/10 px-3 py-2 text-xs text-barber-gold">
+          Partecipa a una sessione per sbloccare Wiki e Mappe.
+        </p>
+      ) : null}
+      {!isGmOrAdmin && campaign.type === "long" && !isCampaignMember ? (
+        <div className="space-y-2 rounded-lg border border-barber-gold/40 bg-barber-gold/10 px-3 py-3">
+          <p className="text-xs text-barber-gold">
+            Per campagne Long iscriviti alla campagna, poi potrai prenotare le sessioni.
           </p>
-        ) : null}
-        {gmDisplayName && (
-          <p className="text-sm text-barber-gold/90">
-            GM · {gmDisplayName}
-          </p>
-        )}
-        {campaign.player_primer?.trim() && (
-          <Link
-            href={`/campaigns/${campaign.id}/primer`}
-            className="inline-flex items-center gap-2 rounded-lg border border-barber-gold/50 bg-barber-gold/10 px-4 py-2 text-sm font-medium text-barber-gold hover:bg-barber-gold/20 transition-colors"
-          >
-            📖 Leggi la Guida del Giocatore
-          </Link>
-        )}
-        {!hasPlayedCampaign && campaign.type !== "long" && (
-          <p className="rounded-lg border border-barber-gold/40 bg-barber-gold/10 px-3 py-2 text-xs text-barber-gold">
-            Partecipa a una sessione per sbloccare Wiki e Mappe.
-          </p>
-        )}
-        {!isGmOrAdmin && campaign.type === "long" && !isCampaignMember && (
-          <div className="space-y-2 rounded-lg border border-barber-gold/40 bg-barber-gold/10 px-3 py-3">
-            <p className="text-xs text-barber-gold">
-              Per campagne Long devi prima iscriverti alla campagna, poi potrai prenotare le sessioni.
+          {!longRegistrationsOpen ? (
+            <p className="text-xs text-amber-200/90">
+              Le iscrizioni sono chiuse. Contatta il GM per entrare in campagna.
             </p>
-            {!longRegistrationsOpen ? (
-              <p className="text-xs text-amber-200/90">
-                Le iscrizioni sono chiuse in questo momento. Scrivi al GM se vuoi entrare in campagna.
-              </p>
-            ) : null}
-            <JoinLongCampaignButton
-              campaignId={campaign.id}
-              registrationsOpen={longRegistrationsOpen}
-              className="h-8 bg-barber-red text-xs text-barber-paper hover:bg-barber-red/90"
-            />
-          </div>
-        )}
-        {!isGmOrAdmin && campaign.type === "long" && isCampaignMember && (
-          <p className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300">
-            Iscritto alla campagna Long.
-          </p>
-        )}
-        {isGmOrAdmin && (
-          <div className="flex flex-wrap gap-2">
-            <EditCampaignDialog
-              campaign={{
-                id: campaign.id,
-                name: campaign.name,
-                description: campaign.description ?? null,
-                type: campaign.type ?? null,
-                image_url: campaign.image_url ?? null,
-                is_long_campaign: campaign.is_long_campaign ?? false,
-                player_primer: campaign.player_primer ?? null,
-              }}
-            />
-            <CampaignVisibilityToggle
-              campaignId={campaign.id}
-              isPublic={campaign.is_public ?? false}
-            />
-            {isLongCampaign && (
-              <LongRegistrationsToggle
-                campaignId={campaign.id}
-                registrationsOpen={longRegistrationsOpen}
-              />
-            )}
-            <DeleteCampaignButton campaignId={campaign.id} campaignName={campaign.name} />
-          </div>
-        )}
-      </div>
+          ) : null}
+          <JoinLongCampaignButton
+            campaignId={campaign.id}
+            registrationsOpen={longRegistrationsOpen}
+            className="h-8 bg-barber-red text-xs text-barber-paper hover:bg-barber-red/90"
+          />
+        </div>
+      ) : null}
+      {!isGmOrAdmin && campaign.type === "long" && isCampaignMember ? (
+        <p className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300">
+          Iscritto alla campagna Long.
+        </p>
+      ) : null}
+      {isViewerLockedOut && !longRegistrationsOpen ? (
+        <p className="text-xs text-amber-200/90">
+          Le iscrizioni sono chiuse. Contatta il GM per essere aggiunto manualmente.
+        </p>
+      ) : null}
     </>
   );
 
-  return (
-    <div className="h-[calc(100vh-theme(spacing.16))] overflow-hidden bg-barber-dark">
-      {/* Mobile: cover in alto, poi area scroll con tabs sticky + contenuto */}
-      <div className="flex h-full flex-col lg:flex-row">
-        {/* Colonna sinistra (solo desktop): fissa, scroll interna */}
-        <aside className="hidden min-h-0 w-80 shrink-0 flex-col border-r border-barber-gold/20 bg-barber-dark lg:flex">
-          <ScrollArea className="min-h-0 flex-1">
-            <div className="min-h-0">{leftColumnContent}</div>
-          </ScrollArea>
-        </aside>
-
-        {/* Mobile: barra con hamburger + indietro + titolo */}
-        <CampaignMobileHeader
-          isAdmin={isAdmin}
-          isGmOrAdmin={isGmOrAdmin}
-          campaignName={campaign.name}
+  const campaignHeaderActions = isGmOrAdmin ? (
+    <div className="flex max-w-[min(100%,20rem)] flex-wrap justify-end gap-1.5 sm:max-w-none">
+      <EditCampaignDialog
+        campaign={{
+          id: campaign.id,
+          name: campaign.name,
+          description: campaign.description ?? null,
+          type: campaign.type ?? null,
+          image_url: campaign.image_url ?? null,
+          is_long_campaign: campaign.is_long_campaign ?? false,
+          player_primer: campaign.player_primer ?? null,
+        }}
+      />
+      <CampaignVisibilityToggle campaignId={campaign.id} isPublic={campaign.is_public ?? false} />
+      {isLongCampaign ? (
+        <LongRegistrationsToggle
+          campaignId={campaign.id}
+          registrationsOpen={longRegistrationsOpen}
         />
-        {/* Mobile: cover immagine + GM */}
-        <div className="relative h-28 shrink-0 overflow-hidden bg-barber-dark lg:hidden">
-          <Image
-            src={campaign.image_url ?? PLACEHOLDER_IMAGE}
-            alt=""
-            fill
-            className="object-cover"
-            sizes="100vw"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-barber-dark via-barber-dark/80 to-transparent" />
-          {gmDisplayName && (
-            <div className="absolute bottom-0 left-0 right-0 p-4">
-              <p className="text-xs text-barber-gold/90">GM · {gmDisplayName}</p>
-            </div>
-          )}
-        </div>
+      ) : null}
+      <DeleteCampaignButton campaignId={campaign.id} campaignName={campaign.name} />
+    </div>
+  ) : undefined;
 
-        {/* Colonna destra: scroll, tabs sticky in cima */}
-        <main className="min-h-0 min-w-0 flex-1 flex flex-col overflow-hidden">
-          <ScrollArea className="min-h-0 flex-1 overflow-x-hidden">
-            <div className="min-w-0 w-full max-w-full px-4 pb-8 pt-4 lg:px-6 lg:pt-6">
-              {/* Mobile: sinossi visibile (su desktop è nella sidebar) */}
-              <section className="mb-6 rounded-xl border border-barber-gold/20 bg-barber-dark/60 p-4 lg:hidden">
-                <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-barber-gold/90">
-                  Sinossi
-                </h2>
-                {campaignTypeLabel && (
-                  <span className="mb-3 inline-block rounded-full border border-barber-gold/50 bg-barber-gold/10 px-3 py-1 text-xs font-medium text-barber-gold">
-                    {campaignTypeLabel}
-                  </span>
-                )}
-                {campaign.description ? (
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-barber-paper/90">
-                    {campaign.description}
-                  </p>
-                ) : (
-                  <p className="text-sm text-barber-paper/50">Nessuna descrizione.</p>
-                )}
-                {gmDisplayName && (
-                  <p className="mt-3 text-sm text-barber-gold/90">GM · {gmDisplayName}</p>
-                )}
-                {campaign.player_primer?.trim() && (
-                  <Link
-                    href={`/campaigns/${campaign.id}/primer`}
-                    className="mt-3 inline-flex items-center gap-2 rounded-lg border border-barber-gold/50 bg-barber-gold/10 px-4 py-2 text-sm font-medium text-barber-gold hover:bg-barber-gold/20 transition-colors"
-                  >
-                    📖 Leggi la Guida del Giocatore
-                  </Link>
-                )}
-              </section>
-
-              {isViewerLockedOut ? (
-                <section className="rounded-lg border border-barber-gold/40 bg-barber-gold/10 p-4">
-                  <p className="mb-2 text-sm text-barber-gold">
-                    Per questa campagna devi prima iscriverti. Finche non sei iscritto puoi vedere solo la sinossi.
-                  </p>
-                  {!longRegistrationsOpen ? (
-                    <p className="mb-2 text-xs text-amber-200/90">
-                      Le iscrizioni sono chiuse. Contatta il GM per essere aggiunto manualmente.
-                    </p>
-                  ) : null}
-                  <JoinLongCampaignButton
-                    campaignId={campaign.id}
-                    registrationsOpen={longRegistrationsOpen}
-                    className="h-8 bg-barber-red text-xs text-barber-paper hover:bg-barber-red/90"
-                  />
-                </section>
-              ) : (
-              <CampaignTabsClient
-          hasPlayedCampaign={hasPlayedCampaign}
-          defaultTab={defaultTab}
-          sessioniContent={
+  return (
+    <div className="flex h-[calc(100dvh-4rem)] min-h-0 flex-col overflow-hidden bg-barber-dark">
+      <CampaignWorkspace
+        campaignId={campaign.id}
+        campaignName={campaign.name}
+        imageUrl={campaign.image_url}
+        campaignTypeLabel={campaignTypeLabel}
+        description={campaign.description}
+        gmDisplayName={gmDisplayName}
+        playerPrimerHref={
+          campaign.player_primer?.trim() ? `/campaigns/${campaign.id}/primer` : null
+        }
+        hasPlayedCampaign={hasPlayedCampaign}
+        defaultTab={defaultTab}
+        lockedOut={isViewerLockedOut}
+        infoFooter={campaignInfoFooter}
+        headerActions={campaignHeaderActions}
+        sessioniContent={
             renderSessioniTab ? (
               <>
               {isGmOrAdmin && preClosedSession && (
@@ -574,19 +460,30 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
                   <CampaignPartyMembersPanel campaignId={campaign.id} />
                 </div>
               )}
-              <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-                <h2 className="text-lg font-semibold text-barber-paper">
-                  In programma
-                </h2>
-                {isGmOrAdmin && (
-                  <CreateSessionDialog
-                    campaignId={campaign.id}
-                    campaignType={campaign.type ?? null}
-                    gmAdminUsers={gmAdminUsers}
-                    defaultDmId={profile?.role === "gm" || profile?.role === "admin" ? user.id : null}
-                  />
-                )}
-              </div>
+              <SectionHeader
+                className="mb-6"
+                eyebrow="Sessioni"
+                title="In programma"
+                description={
+                  isGmOrAdmin
+                    ? "Gestisci iscrizioni, presenze e chiusura sessione."
+                    : "Prenota le prossime date in calendario."
+                }
+                level={3}
+                icon={<CalendarDays className="h-5 w-5" />}
+                action={
+                  isGmOrAdmin ? (
+                    <CreateSessionDialog
+                      campaignId={campaign.id}
+                      campaignType={campaign.type ?? null}
+                      gmAdminUsers={gmAdminUsers}
+                      defaultDmId={
+                        profile?.role === "gm" || profile?.role === "admin" ? user.id : null
+                      }
+                    />
+                  ) : undefined
+                }
+              />
               <SessionList campaignId={campaign.id} campaignType={campaign.type ?? null} />
               {isGmOrAdmin ? (
                 <div className="mt-10 border-t border-barber-gold/20 pt-10">
@@ -729,11 +626,6 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
           showGmTab={isGmOrAdmin}
           showMissionsTab={showMissionsTab}
         />
-              )}
-            </div>
-          </ScrollArea>
-        </main>
-      </div>
     </div>
   );
 }
