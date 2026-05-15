@@ -239,7 +239,8 @@ export function GmRemoteJoinClient({ publicId }: Props) {
             Play / Pause Spotify
           </Button>
           <p className="mt-3 text-[10px] leading-relaxed text-zinc-600">
-            Solo l&apos;embed Spotify sul PC del GM (playlist sopra). Non controlla la musica catalogo del mixer.
+            Stessi comandi del riquadro Spotify visibile in basso a destra sul GM screen. Non controlla la musica
+            catalogo del mixer.
           </p>
         </div>
 

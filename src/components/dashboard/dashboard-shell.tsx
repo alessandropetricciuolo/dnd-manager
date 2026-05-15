@@ -15,6 +15,9 @@ type DashboardShellProps = {
   isGmOrAdmin: boolean;
 };
 
+const SIDEBAR_LABEL =
+  "max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-[max-width,opacity] duration-200 ease-out group-hover/sidebar:max-w-[11rem] group-hover/sidebar:opacity-100";
+
 function NavLinks({
   isAdmin,
   isGmOrAdmin,
@@ -29,7 +32,8 @@ function NavLinks({
   const pathname = usePathname();
   const linkClass = (path: string) =>
     cn(
-      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+      "flex h-10 items-center gap-0 rounded-lg text-sm font-medium transition-colors",
+      "justify-center px-0 group-hover/sidebar:justify-start group-hover/sidebar:gap-3 group-hover/sidebar:px-3",
       pathname === path
         ? "bg-barber-gold/20 text-barber-gold"
         : "text-barber-paper/80 hover:bg-barber-gold/10 hover:text-barber-gold"
@@ -38,46 +42,68 @@ function NavLinks({
   const isCampaignDetail = pathname?.match(/^\/campaigns\/[^/]+$/);
 
   return (
-    <nav className={cn("flex flex-col gap-1", className)}>
+    <nav className={cn("flex min-h-0 flex-1 flex-col gap-1", className)}>
       {isCampaignDetail && (
-        <Link href="/dashboard" onClick={onNavigate} className={linkClass("/dashboard")}>
+        <Link
+          href="/dashboard"
+          onClick={onNavigate}
+          className={linkClass("/dashboard")}
+          title="Indietro"
+        >
           <ArrowLeft className="h-5 w-5 shrink-0" />
-          Indietro
+          <span className={SIDEBAR_LABEL}>Indietro</span>
         </Link>
       )}
-      <Link href="/dashboard" onClick={onNavigate} className={linkClass("/dashboard")}>
+      <Link
+        href="/dashboard"
+        onClick={onNavigate}
+        className={linkClass("/dashboard")}
+        title="Dashboard"
+      >
         <LayoutDashboard className="h-5 w-5 shrink-0" />
-        Dashboard
+        <span className={SIDEBAR_LABEL}>Dashboard</span>
       </Link>
-      <Link href="/profile" onClick={onNavigate} className={linkClass("/profile")}>
+      <Link href="/profile" onClick={onNavigate} className={linkClass("/profile")} title="Profilo">
         <User className="h-5 w-5 shrink-0" />
-        Profilo
+        <span className={SIDEBAR_LABEL}>Profilo</span>
       </Link>
       {isGmOrAdmin && (
-        <Link href="/dashboard/settings/profile" onClick={onNavigate} className={linkClass("/dashboard/settings/profile")}>
+        <Link
+          href="/dashboard/settings/profile"
+          onClick={onNavigate}
+          className={linkClass("/dashboard/settings/profile")}
+          title="Profilo pubblico GM"
+        >
           <UserCog className="h-5 w-5 shrink-0" />
-          Profilo pubblico GM
+          <span className={SIDEBAR_LABEL}>Profilo pubblico GM</span>
         </Link>
       )}
       {isAdmin && (
-        <Link href="/admin" onClick={onNavigate} className={linkClass("/admin")}>
+        <Link href="/admin" onClick={onNavigate} className={linkClass("/admin")} title="Admin Panel">
           <Shield className="h-5 w-5 shrink-0" />
-          Admin Panel
+          <span className={SIDEBAR_LABEL}>Admin Panel</span>
         </Link>
       )}
       {isGmOrAdmin && (
-        <div className="px-3 py-2" onClick={onNavigate}>
-          <CreateCampaignDialog />
+        <div
+          className="flex justify-center py-0.5 group-hover/sidebar:justify-start group-hover/sidebar:px-1"
+          onClick={onNavigate}
+        >
+          <CreateCampaignDialog collapsibleSidebar />
         </div>
       )}
-      <form action={signout} className="mt-auto pt-4">
+      <form action={signout} className="mt-auto pt-2">
         <Button
           type="submit"
           variant="ghost"
-          className="w-full justify-start gap-3 border border-barber-red/40 text-barber-paper/90 hover:bg-barber-red/10 hover:text-barber-paper"
+          title="Esci"
+          className={cn(
+            "h-10 w-full gap-0 border border-barber-red/40 text-barber-paper/90 hover:bg-barber-red/10 hover:text-barber-paper",
+            "justify-center px-0 group-hover/sidebar:justify-start group-hover/sidebar:gap-3 group-hover/sidebar:px-3"
+          )}
         >
           <LogOut className="h-5 w-5 shrink-0" />
-          Esci
+          <span className={SIDEBAR_LABEL}>Esci</span>
         </Button>
       </form>
     </nav>
@@ -96,23 +122,27 @@ export function DashboardShell({ children, isAdmin, isGmOrAdmin }: DashboardShel
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] w-full">
-      {/* Sidebar desktop: nascosta su mobile, visibile da md */}
-      <aside className="hidden w-56 shrink-0 flex-col border-r border-barber-gold/20 bg-barber-dark/50 md:flex md:flex-col">
-        <div className="flex flex-col gap-1 p-4">
-          <NavLinks isAdmin={isAdmin} isGmOrAdmin={isGmOrAdmin} />
+      <aside
+        className={cn(
+          "group/sidebar relative z-30 hidden shrink-0 flex-col overflow-hidden",
+          "border-r border-barber-gold/20 bg-barber-dark/95 backdrop-blur-sm",
+          "w-14 transition-[width] duration-200 ease-out hover:w-56",
+          "md:flex"
+        )}
+      >
+        <div className="flex h-full min-h-0 flex-col py-3">
+          <NavLinks isAdmin={isAdmin} isGmOrAdmin={isGmOrAdmin} className="px-1.5 group-hover/sidebar:px-2" />
         </div>
       </aside>
 
-      {/* Mobile: hamburger (nascosto nelle campagne: la pagina campagna ha il suo hamburger) */}
       <div className="flex flex-1 flex-col md:contents">
         {!isCampaignPage && (
           <div className="flex items-center gap-2 border-b border-barber-gold/20 bg-barber-dark/80 px-4 py-3 md:hidden">
             <MobileNavMenu isAdmin={isAdmin} isGmOrAdmin={isGmOrAdmin} />
-            <span className="text-sm font-medium text-barber-paper/90 truncate">Menu</span>
+            <span className="truncate text-sm font-medium text-barber-paper/90">Menu</span>
           </div>
         )}
 
-        {/* Main content */}
         <main className="min-w-0 flex-1">{children}</main>
       </div>
     </div>

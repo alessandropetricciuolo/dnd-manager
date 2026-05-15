@@ -28,6 +28,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { createCampaign } from "@/app/dashboard/actions";
 import { Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const CAMPAIGN_TYPES = [
   { value: "oneshot", label: "One Shot" },
@@ -35,7 +36,15 @@ const CAMPAIGN_TYPES = [
   { value: "long", label: "Campagna Lunga" },
 ] as const;
 
-export function CreateCampaignDialog() {
+type CreateCampaignDialogProps = {
+  /** In sidebar collassata: solo icona, etichetta visibile al hover del menu. */
+  collapsibleSidebar?: boolean;
+};
+
+const SIDEBAR_LABEL =
+  "max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-[max-width,opacity] duration-200 ease-out group-hover/sidebar:max-w-[11rem] group-hover/sidebar:opacity-100";
+
+export function CreateCampaignDialog({ collapsibleSidebar = false }: CreateCampaignDialogProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [campaignType, setCampaignType] = useState<string>("quest");
@@ -74,10 +83,19 @@ export function CreateCampaignDialog() {
       <DialogTrigger asChild>
         <Button
           type="button"
-          className="bg-barber-red text-barber-paper hover:bg-barber-red/90"
+          title="Nuova campagna"
+          className={cn(
+            "bg-barber-red text-barber-paper hover:bg-barber-red/90",
+            collapsibleSidebar &&
+              "h-10 w-10 shrink-0 gap-0 p-0 group-hover/sidebar:h-10 group-hover/sidebar:w-full group-hover/sidebar:justify-start group-hover/sidebar:gap-2 group-hover/sidebar:px-3"
+          )}
         >
-          <Plus className="h-4 w-4" />
-          Nuova campagna
+          <Plus className={cn("h-4 w-4 shrink-0", collapsibleSidebar && "h-5 w-5")} />
+          {collapsibleSidebar ? (
+            <span className={SIDEBAR_LABEL}>Nuova campagna</span>
+          ) : (
+            "Nuova campagna"
+          )}
         </Button>
       </DialogTrigger>
       <DialogContent className="border-barber-gold/40 bg-barber-dark text-barber-paper">

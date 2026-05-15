@@ -10,7 +10,6 @@ import { GmGallerySheet } from "./gm-gallery-sheet";
 import { GmAudioForgeSheet } from "./gm-audio-forge-sheet";
 import { GmRemoteIntegration } from "./gm-remote-integration";
 import { GmSpotifyEmbedDock } from "./gm-spotify-embed-dock";
-import { GmSpotifyEmbedHiddenHost } from "./gm-spotify-embed-hidden-host";
 import { LongEconomyPanel } from "./long-economy-panel";
 import { LongTimePanel } from "./long-time-panel";
 import { LongCalendarPanel } from "./long-calendar-panel";
@@ -538,7 +537,6 @@ function LongWorkspace({
           spotifyEmbedPlaylistId={spotifyEmbedPlaylistId}
           onSpotifyEmbedPlaylistIdChange={setSpotifyEmbedPlaylistId}
         />
-        <GmSpotifyEmbedHiddenHost playlistId={spotifyEmbedPlaylistId} active={audioForgeOpen} />
         <GmSpotifyEmbedDock playlistId={spotifyEmbedPlaylistId} audioSheetOpen={audioForgeOpen} />
       </main>
     </div>

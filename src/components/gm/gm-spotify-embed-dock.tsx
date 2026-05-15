@@ -8,18 +8,22 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   playlistId: string | null;
-  /** Con foglio Audio aperto il player inline è nel pannello: nascondi il dock per evitare doppioni sotto il modal. */
+  /** Con foglio Audio aperto alza lo z-index così il player resta visibile sopra il pannello. */
   audioSheetOpen?: boolean;
 };
 
-/** Embed Spotify fisso sul GM screen: controllabile anche dal telecomando (cambio playlist). */
+/** Embed Spotify fisso sul GM screen: unica istanza iFrame API, controllata dal telecomando. */
 export function GmSpotifyEmbedDock({ playlistId, audioSheetOpen }: Props) {
   const [open, setOpen] = useState(true);
-  if (!playlistId || audioSheetOpen) return null;
+  if (!playlistId) return null;
 
   return (
-    /** z-40: sotto al foglio Audio (z-50) così i clic sulla lista Spotify nel foglio non finiscono sull’iframe e non chiudono il pannello. */
-    <div className="pointer-events-auto fixed bottom-3 right-3 z-40 flex max-w-[calc(100vw-1.5rem)] flex-col items-end gap-1">
+    <div
+      className={cn(
+        "pointer-events-auto fixed bottom-3 right-3 flex max-w-[calc(100vw-1.5rem)] flex-col items-end gap-1",
+        audioSheetOpen ? "z-[60]" : "z-40"
+      )}
+    >
       <Button
         type="button"
         size="sm"

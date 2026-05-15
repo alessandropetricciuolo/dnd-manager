@@ -10,7 +10,6 @@ import { GmGallerySheet } from "./gm-gallery-sheet";
 import { GmAudioForgeSheet } from "./gm-audio-forge-sheet";
 import { GmRemoteIntegration } from "./gm-remote-integration";
 import { GmSpotifyEmbedDock } from "./gm-spotify-embed-dock";
-import { GmSpotifyEmbedHiddenHost } from "./gm-spotify-embed-hidden-host";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getCampaignSessionsForGm, type CampaignSessionOption } from "@/app/campaigns/gm-actions";
@@ -226,7 +225,6 @@ export function GmScreenLegacyLayout({
           spotifyEmbedPlaylistId={spotifyEmbedPlaylistId}
           onSpotifyEmbedPlaylistIdChange={setSpotifyEmbedPlaylistId}
         />
-        <GmSpotifyEmbedHiddenHost playlistId={spotifyEmbedPlaylistId} active={audioForgeOpen} />
         <GmSpotifyEmbedDock playlistId={spotifyEmbedPlaylistId} audioSheetOpen={audioForgeOpen} />
       </main>
     </div>

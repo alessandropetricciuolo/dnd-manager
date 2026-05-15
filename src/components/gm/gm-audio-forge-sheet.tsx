@@ -372,7 +372,7 @@ export function GmAudioForgeSheet({
               )}
             </SectionCard>
 
-            <SectionCard title="Spotify" description="Solo playlist attiva (nessun player qui). Il riquadro Spotify è nel dock a schermo; da telefono usa il telecomando.">
+            <SectionCard title="Spotify" description="Scegli la playlist attiva. Il player è nel riquadro in basso a destra; il telecomando comanda quello stesso player.">
               <GmSpotifyPlayerPanel
                 spotifyEmbedPlaylistId={spotifyEmbedPlaylistId}
                 onSpotifyEmbedPlaylistIdChange={onSpotifyEmbedPlaylistIdChange}
