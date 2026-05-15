@@ -27,6 +27,7 @@ export const GM_REMOTE_AUDIO_TYPES = [
   "audio.sfx_pad_slot",
   "audio.sfx_category_random",
   "audio.spotify_select_playlist",
+  "audio.spotify_toggle_play",
   "audio.music_play_global_catalog",
   "audio.stop_all",
 ] as const;

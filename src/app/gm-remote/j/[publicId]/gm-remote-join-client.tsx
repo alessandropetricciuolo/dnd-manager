@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, Play, SkipBack, SkipForward, Square, Volume2, VolumeX } from "lucide-react";
+import { Loader2, Music2, Play, SkipBack, SkipForward, Square, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -194,6 +194,55 @@ export function GmRemoteJoinClient({ publicId }: Props) {
       </header>
 
       <section className="mx-auto max-w-md space-y-4 pb-12">
+        <div className="rounded-xl border border-amber-900/45 bg-zinc-900/50 p-4">
+          <p className="mb-2 flex items-center justify-center gap-2 text-center text-xs font-medium uppercase tracking-wide text-amber-200/80">
+            <Music2 className="h-3.5 w-3.5" />
+            Controller Spotify (PC)
+          </p>
+          {spotifyLoading ? (
+            <div className="flex justify-center py-6 text-zinc-400">
+              <Loader2 className="h-7 w-7 animate-spin" />
+            </div>
+          ) : spotifyLoadError ? (
+            <p className="text-center text-xs text-red-400">{spotifyLoadError}</p>
+          ) : spotifyRows.length === 0 ? (
+            <p className="text-center text-xs text-zinc-500">
+              Nessuna playlist Spotify in elenco (configurazione admin).
+            </p>
+          ) : (
+            <div className="max-h-52 space-y-1.5 overflow-y-auto pr-0.5">
+              {spotifyRows.map((r) => (
+                <Button
+                  key={r.id}
+                  type="button"
+                  variant="outline"
+                  className="h-auto min-h-11 w-full touch-manipulation flex-col items-start gap-0 border-amber-800/40 py-2 text-left"
+                  disabled={sending}
+                  onClick={() =>
+                    void send("audio.spotify_select_playlist", { spotify_playlist_id: r.spotify_playlist_id })
+                  }
+                >
+                  <span className="w-full truncate text-sm text-zinc-100">{r.title}</span>
+                  {r.mood ? <span className="w-full truncate text-[10px] text-zinc-500">{r.mood}</span> : null}
+                </Button>
+              ))}
+            </div>
+          )}
+          <Button
+            type="button"
+            size="lg"
+            className="mt-3 h-14 w-full touch-manipulation border border-amber-600/50 bg-amber-950/40 text-amber-100 hover:bg-amber-950/60"
+            disabled={sending || spotifyRows.length === 0}
+            onClick={() => void send("audio.spotify_toggle_play")}
+          >
+            <Play className="mr-2 h-5 w-5" />
+            Play / Pause Spotify
+          </Button>
+          <p className="mt-3 text-[10px] leading-relaxed text-zinc-600">
+            Solo l&apos;embed Spotify sul PC del GM (playlist sopra). Non controlla la musica catalogo del mixer.
+          </p>
+        </div>
+
         <div className="rounded-xl border border-emerald-900/35 bg-zinc-900/50 p-4">
           <p className="mb-2 text-center text-xs font-medium uppercase tracking-wide text-zinc-500">
             Musica catalogo Gilda (sul PC)
@@ -228,46 +277,6 @@ export function GmRemoteJoinClient({ publicId }: Props) {
           </p>
         </div>
 
-        <div className="rounded-xl border border-emerald-900/35 bg-zinc-900/50 p-4">
-          <p className="mb-2 text-center text-xs font-medium uppercase tracking-wide text-zinc-500">
-            Spotify (sul PC del GM)
-          </p>
-          {spotifyLoading ? (
-            <div className="flex justify-center py-6 text-zinc-400">
-              <Loader2 className="h-7 w-7 animate-spin" />
-            </div>
-          ) : spotifyLoadError ? (
-            <p className="text-center text-xs text-red-400">{spotifyLoadError}</p>
-          ) : spotifyRows.length === 0 ? (
-            <p className="text-center text-xs text-zinc-500">
-              Nessuna playlist Spotify in elenco (configurazione admin). Le tracce del catalogo musica Gilda sono nella
-              sezione sopra.
-            </p>
-          ) : (
-            <div className="max-h-52 space-y-1.5 overflow-y-auto pr-0.5">
-              {spotifyRows.map((r) => (
-                <Button
-                  key={r.id}
-                  type="button"
-                  variant="outline"
-                  className="h-auto min-h-11 w-full touch-manipulation flex-col items-start gap-0 border-amber-800/40 py-2 text-left"
-                  disabled={sending}
-                  onClick={() =>
-                    void send("audio.spotify_select_playlist", { spotify_playlist_id: r.spotify_playlist_id })
-                  }
-                >
-                  <span className="w-full truncate text-sm text-zinc-100">{r.title}</span>
-                  {r.mood ? <span className="w-full truncate text-[10px] text-zinc-500">{r.mood}</span> : null}
-                </Button>
-              ))}
-            </div>
-          )}
-          <p className="mt-3 text-[10px] leading-relaxed text-zinc-600">
-            Scegli la playlist sul PC. <strong className="font-medium text-zinc-500">Play / Pause</strong> comanda
-            l&apos;embed Spotify (se attivo sul GM screen); altrimenti la musica del mixer.
-          </p>
-        </div>
-
         <div className="grid grid-cols-2 gap-2">
           <Button
             type="button"
@@ -278,7 +287,7 @@ export function GmRemoteJoinClient({ publicId }: Props) {
             onClick={() => void send("audio.music_play_pause")}
           >
             <Play className="mr-2 h-5 w-5" />
-            Play / Pause
+            Play / Pause mixer
           </Button>
           <Button
             type="button"

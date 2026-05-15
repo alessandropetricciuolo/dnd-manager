@@ -70,7 +70,8 @@ export function applyRemoteAudioCommand(forge: GmAudioForgeControls, type: strin
       return;
     }
     case "audio.spotify_select_playlist":
-      // gestito in GmRemoteCommandBridge
+    case "audio.spotify_toggle_play":
+      // gestiti in GmRemoteCommandBridge / bus Spotify
       return;
     case "audio.music_play_global_catalog": {
       const globalTrackId = str(payload.global_track_id);

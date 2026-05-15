@@ -265,19 +265,6 @@ export function GmAudioForgeSheet({
             </TabsTrigger>
           </TabsList>
 
-          {/*
-            Spotify fuori dai TabsContent: il tab Mixer usa data-[state=inactive]:hidden e nasconderebbe
-            tutto il pannello (embed incluso) passando a Libreria — l’iFrame API non inizializza bene in display:none.
-          */}
-          <div className="shrink-0 border-b border-amber-900/20 px-0 pb-4 pt-1">
-            <SectionCard title="Spotify" description="Resta visibile anche sul tab Libreria (il player non sta più solo dentro Mixer).">
-              <GmSpotifyPlayerPanel
-                spotifyEmbedPlaylistId={spotifyEmbedPlaylistId}
-                onSpotifyEmbedPlaylistIdChange={onSpotifyEmbedPlaylistIdChange}
-              />
-            </SectionCard>
-          </div>
-
           <TabsContent
             value="mixer"
             forceMount
@@ -383,6 +370,13 @@ export function GmAudioForgeSheet({
                   ))}
                 </div>
               )}
+            </SectionCard>
+
+            <SectionCard title="Spotify" description="Solo playlist attiva (nessun player qui). Il riquadro Spotify è nel dock a schermo; da telefono usa il telecomando.">
+              <GmSpotifyPlayerPanel
+                spotifyEmbedPlaylistId={spotifyEmbedPlaylistId}
+                onSpotifyEmbedPlaylistIdChange={onSpotifyEmbedPlaylistIdChange}
+              />
             </SectionCard>
 
             <SectionCard title="Pad SFX" description="Dodici slot rapidi. Assegna suoni nella Libreria.">

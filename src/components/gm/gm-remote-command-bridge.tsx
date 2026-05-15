@@ -91,8 +91,9 @@ export function GmRemoteCommandBridge({
               return;
             }
 
-            if (type === "audio.music_play_pause") {
-              if (spotifyEmbedTogglePlay()) return;
+            if (type === "audio.spotify_toggle_play") {
+              void spotifyEmbedTogglePlay();
+              return;
             }
 
             applyRemoteAudioCommand(forgeRef.current, type, pl);
