@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "nextjs-toploader/app";
 import { toast } from "sonner";
 import { FileText, User } from "lucide-react";
@@ -27,6 +27,56 @@ const MAX_TOTAL_BYTES = MAX_TOTAL_MB * 1024 * 1024;
 const CREATE_CHARACTER_DRAFT_KEY_PREFIX = "create-character-draft";
 const CREATE_CHARACTER_GENERATED_SHEET_KEY_PREFIX = "create-character-generated-sheet";
 
+function parseDraftStrings(raw: string | null): Record<string, string> {
+  if (!raw) return {};
+  try {
+    const o = JSON.parse(raw) as Record<string, unknown>;
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(o)) {
+      if (typeof v === "string") out[k] = v;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+type StoredGeneratedSheet = {
+  pdfBase64: string;
+  fileName: string;
+  armorClass: number;
+  hitPoints: number;
+};
+
+function parseStoredGeneratedSheet(raw: string | null): StoredGeneratedSheet | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as {
+      pdfBase64?: string;
+      fileName?: string;
+      armorClass?: number;
+      hitPoints?: number;
+    };
+    if (
+      typeof parsed.pdfBase64 === "string" &&
+      typeof parsed.fileName === "string" &&
+      typeof parsed.armorClass === "number" &&
+      typeof parsed.hitPoints === "number" &&
+      parsed.pdfBase64.length > 0
+    ) {
+      return {
+        pdfBase64: parsed.pdfBase64,
+        fileName: parsed.fileName,
+        armorClass: parsed.armorClass,
+        hitPoints: parsed.hitPoints,
+      };
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
 type CreateCharacterDialogProps = {
   campaignId: string;
   initialOpen?: boolean;
@@ -34,18 +84,42 @@ type CreateCharacterDialogProps = {
 
 export function CreateCharacterDialog({ campaignId, initialOpen = false }: CreateCharacterDialogProps) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(!!initialOpen);
   const [isLoading, setIsLoading] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const sheetInputRef = useRef<HTMLInputElement>(null);
-  const [generatedSheetDraft, setGeneratedSheetDraft] = useState<{
-    pdfBase64: string;
-    fileName: string;
-    armorClass: number;
-    hitPoints: number;
-  } | null>(null);
   const draftStorageKey = `${CREATE_CHARACTER_DRAFT_KEY_PREFIX}:${campaignId}`;
   const generatedSheetStorageKey = `${CREATE_CHARACTER_GENERATED_SHEET_KEY_PREFIX}:${campaignId}`;
+
+  /**
+   * Snapshot testuale da localStorage quando il dialog è aperto.
+   * Serve a `key` del form e alle props iniziali: i Select di CharacterBuildFormFields sono controllati da React
+   * — impostare solo i campi hidden via DOM non basta (il prossimo render li resetta).
+   */
+  const draftRawStored = useMemo(
+    () => (open && typeof window !== "undefined" ? localStorage.getItem(draftStorageKey) : null),
+    [open, draftStorageKey]
+  );
+  const generatedSheetRawStored = useMemo(
+    () => (open && typeof window !== "undefined" ? localStorage.getItem(generatedSheetStorageKey) : null),
+    [open, generatedSheetStorageKey]
+  );
+
+  const formSeed = useMemo(() => {
+    if (!open) return null;
+    const draft = parseDraftStrings(draftRawStored);
+    const generated = parseStoredGeneratedSheet(generatedSheetRawStored);
+    return { draft, generated };
+  }, [open, draftRawStored, generatedSheetRawStored]);
+
+  /** Remount del form quando cambia il draft o il PDF generato (solo prefisso/buste, mai l'intero base64). */
+  const formMountSignature = useMemo(() => {
+    if (!open) return "closed";
+    const d = draftRawStored?.length ?? 0;
+    const g = generatedSheetRawStored?.length ?? 0;
+    const head = draftRawStored?.slice(0, 96) ?? "";
+    return `${d}-${g}-${head}`;
+  }, [open, draftRawStored, generatedSheetRawStored]);
 
   useEffect(() => {
     if (initialOpen) setOpen(true);
@@ -63,59 +137,6 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
       // ignore draft persistence failures
     }
   }
-
-  const restoreDraftIntoForm = useCallback((form: HTMLFormElement) => {
-    try {
-      const raw = localStorage.getItem(draftStorageKey);
-      if (!raw) return;
-      const payload = JSON.parse(raw) as Record<string, string>;
-      for (const [name, value] of Object.entries(payload)) {
-        const el = form.elements.namedItem(name);
-        if (!el) continue;
-        if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) {
-          el.value = value;
-          el.dispatchEvent(new Event("input", { bubbles: true }));
-          el.dispatchEvent(new Event("change", { bubbles: true }));
-        }
-      }
-    } catch {
-      // ignore restore failures
-    }
-  }, [draftStorageKey]);
-
-  useEffect(() => {
-    if (!open || !formRef.current) return;
-    restoreDraftIntoForm(formRef.current);
-    try {
-      const raw = localStorage.getItem(generatedSheetStorageKey);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as {
-        pdfBase64?: string;
-        fileName?: string;
-        armorClass?: number;
-        hitPoints?: number;
-      };
-      if (
-        typeof parsed.pdfBase64 === "string" &&
-        typeof parsed.fileName === "string" &&
-        typeof parsed.armorClass === "number" &&
-        typeof parsed.hitPoints === "number"
-      ) {
-        setGeneratedSheetDraft({
-          pdfBase64: parsed.pdfBase64,
-          fileName: parsed.fileName,
-          armorClass: parsed.armorClass,
-          hitPoints: parsed.hitPoints,
-        });
-        const acInput = formRef.current.elements.namedItem("armor_class");
-        const hpInput = formRef.current.elements.namedItem("hit_points");
-        if (acInput instanceof HTMLInputElement && !acInput.value.trim()) acInput.value = String(parsed.armorClass);
-        if (hpInput instanceof HTMLInputElement && !hpInput.value.trim()) hpInput.value = String(parsed.hitPoints);
-      }
-    } catch {
-      // ignore sheet draft restore failures
-    }
-  }, [open, restoreDraftIntoForm, generatedSheetStorageKey]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -147,11 +168,12 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
     setIsLoading(true);
     try {
       const sheetUrl = (formData.get("sheet_url") as string | null)?.trim() || "";
-      if (generatedSheetDraft && (!sheetFile || sheetFile.size === 0) && !sheetUrl) {
-        formData.set("generated_sheet_pdf_base64", generatedSheetDraft.pdfBase64);
-        formData.set("generated_sheet_file_name", generatedSheetDraft.fileName);
-        formData.set("generated_sheet_armor_class", String(generatedSheetDraft.armorClass));
-        formData.set("generated_sheet_hit_points", String(generatedSheetDraft.hitPoints));
+      const gen = formSeed?.generated;
+      if (gen && (!sheetFile || sheetFile.size === 0) && !sheetUrl) {
+        formData.set("generated_sheet_pdf_base64", gen.pdfBase64);
+        formData.set("generated_sheet_file_name", gen.fileName);
+        formData.set("generated_sheet_armor_class", String(gen.armorClass));
+        formData.set("generated_sheet_hit_points", String(gen.hitPoints));
       }
       const result = await createCharacter(campaignId, formData);
       if (result.success) {
@@ -159,7 +181,6 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
         setOpen(false);
         form.reset();
         if (sheetInputRef.current) sheetInputRef.current.value = "";
-        setGeneratedSheetDraft(null);
         try {
           localStorage.removeItem(draftStorageKey);
           localStorage.removeItem(generatedSheetStorageKey);
@@ -225,7 +246,12 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
             Inserisci nome, classe, statistiche di combattimento, avatar, scheda tecnica (PDF) e background. L&apos;assegnazione al giocatore potrai farla dalla griglia.
           </DialogDescription>
         </DialogHeader>
-        <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
+        <form
+          ref={formRef}
+          key={formMountSignature}
+          onSubmit={handleSubmit}
+          className="space-y-4"
+        >
           <div className="space-y-2">
             <Label htmlFor="char-name">
               <User className="mr-1.5 inline h-4 w-4" />
@@ -236,12 +262,20 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
               name="name"
               required
               placeholder="Es. Aelar il Saggio"
+              defaultValue={formSeed?.draft.name ?? ""}
               className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
               disabled={isLoading}
             />
           </div>
 
-          <CharacterBuildFormFields disabled={isLoading} />
+          <CharacterBuildFormFields
+            disabled={isLoading}
+            initialRaceSlug={formSeed?.draft.race_slug?.trim() || null}
+            initialSubclassSlug={formSeed?.draft.subclass_slug?.trim() || null}
+            initialClassLabel={formSeed?.draft.character_class?.trim() || null}
+            initialClassSubclass={formSeed?.draft.class_subclass?.trim() || null}
+            initialBackgroundSlug={formSeed?.draft.background_slug?.trim() || null}
+          />
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -252,6 +286,11 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
                 type="number"
                 min={0}
                 placeholder="Es. 15"
+                defaultValue={
+                  formSeed?.generated != null
+                    ? String(formSeed.generated.armorClass)
+                    : (formSeed?.draft.armor_class ?? "")
+                }
                 className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
                 disabled={isLoading}
               />
@@ -264,6 +303,11 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
                 type="number"
                 min={0}
                 placeholder="Es. 24"
+                defaultValue={
+                  formSeed?.generated != null
+                    ? String(formSeed.generated.hitPoints)
+                    : (formSeed?.draft.hit_points ?? "")
+                }
                 className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
                 disabled={isLoading}
               />
@@ -277,6 +321,7 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
             required
             disabled={isLoading}
             previewClassName="aspect-[200/280] w-32"
+            presetUrl={formSeed?.draft.image_url?.trim() || null}
           />
 
           <div className="space-y-2">
@@ -299,10 +344,11 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
               name="sheet_url"
               type="url"
               placeholder="https://..."
+              defaultValue={formSeed?.draft.sheet_url ?? ""}
               className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper placeholder:text-barber-paper/40"
               disabled={isLoading}
             />
-            {generatedSheetDraft && (
+            {formSeed?.generated && (
               <p className="text-xs text-emerald-300/90">
                 Scheda PDF generata pronta: verra salvata con il personaggio se non carichi un altro PDF.
               </p>
@@ -315,6 +361,7 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
               id="char-background"
               name="background"
               placeholder="Storia del personaggio, tratti, note..."
+              defaultValue={formSeed?.draft.background ?? ""}
               className="min-h-[120px] resize-y bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
               disabled={isLoading}
             />

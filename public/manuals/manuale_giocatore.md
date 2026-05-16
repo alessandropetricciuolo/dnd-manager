@@ -11507,7 +11507,7 @@ Un criminale potrebbe apparire crudele a prima vista, e molti criminali sono a t
 
 Anche se le sue capacità non sono troppo diverse da quelle di uno scassinatore o di un contrabbandiere, una spia le apprende e le applica in un contesto molto diverso: come agente spionistico. Forse è un agente avallato ufficialmente dalla corona, o forse vende i segreti che scopre al migliore offerente.
 
-## EREMITA
+# EREMITA
 
 Un eremita ha trascorso gli anni formativi della sua vita in un luogo isolato, forse presso una comunità separata (come per esempio un monastero) o forse completamente da solo. Nel tempo che ha trascorso lontano dalla confusione della società ha trovato tranquillità, solitudine e magari alcune delle risposte che cercava.
 

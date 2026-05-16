@@ -1140,12 +1140,13 @@ export async function recomputeCharacterRulesSnapshot(input: {
     const merged = mergeMdChunks(rows);
     backgroundRulesMd = merged.trim() ? clipBackgroundRules(merged) : null;
     if (!backgroundRulesMd?.trim()) {
-      await preloadManualMarkdownFile(PHB_MD_FILE, await resolveRequestOriginForPhb());
-      const phb = getManualMarkdownByFileName(PHB_MD_FILE);
-      const fromMd = extractSectionByHeadingsMarkdown(phb, [bgDef.phbH1]);
+      const mdFile = bgDef.rulesSource?.markdownFile ?? PHB_MD_FILE;
+      await preloadManualMarkdownFile(mdFile, await resolveRequestOriginForPhb());
+      const md = getManualMarkdownByFileName(mdFile);
+      const fromMd = extractSectionByHeadingsMarkdown(md, [bgDef.phbH1]);
       backgroundRulesMd = fromMd.trim() ? clipBackgroundRules(fromMd) : null;
     }
-    if (!backgroundRulesMd?.trim()) warnings.push(`Background PHB «${bgDef.label}»: estratto non trovato.`);
+    if (!backgroundRulesMd?.trim()) warnings.push(`Regole background «${bgDef.label}»: estratto non trovato.`);
   }
 
   return {

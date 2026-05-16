@@ -42,7 +42,7 @@ import {
 } from "@/components/ui/popover";
 import { forceCharacterTimeSync, setCharacterCalendarOverride } from "@/app/campaigns/character-actions";
 import { parseRulesSnapshot } from "@/lib/character-rules-snapshot";
-import { backgroundBySlug, raceBySlug } from "@/lib/character-build-catalog";
+import { backgroundBySlug, backgroundRulesTooltipPrefix, raceBySlug } from "@/lib/character-build-catalog";
 import { sanitizeRaceTraitsMarkdown } from "@/lib/race-traits-sanitizer";
 
 const PLACEHOLDER_AVATAR = "https://placehold.co/200x280/1c1917/fbbf24/png?text=PG";
@@ -310,7 +310,9 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
   const raceLabel = raceDef?.label ?? null;
   const subraceLabel = raceDef?.subraces?.find((s) => s.slug === character.subclass_slug)?.label ?? null;
   const raceTraitsBody = sanitizeRaceTraitsMarkdown(character.race_slug ?? null, snap?.raceTraitsMd ?? "");
-  const bgRulesLabel = backgroundBySlug(character.background_slug ?? null)?.label ?? null;
+  const bgEntry = backgroundBySlug(character.background_slug ?? null);
+  const bgRulesLabel = bgEntry?.label ?? null;
+  const bgRulesBookPrefix = backgroundRulesTooltipPrefix(bgEntry ?? null);
 
   useEffect(() => {
     if (autoOpenEdit) setEditOpen(true);
@@ -581,7 +583,7 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
                 {bgRulesLabel ? (
                   <>
                     {" · "}
-                    <RulesTip label={`PHB: ${bgRulesLabel}`} body={snap?.backgroundRulesMd ?? ""} />
+                    <RulesTip label={`${bgRulesBookPrefix}: ${bgRulesLabel}`} body={snap?.backgroundRulesMd ?? ""} />
                   </>
                 ) : null}
               </div>
@@ -804,7 +806,7 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
                 {bgRulesLabel ? (
                   <>
                     {" · "}
-                    <RulesTip label={`PHB: ${bgRulesLabel}`} body={snap?.backgroundRulesMd ?? ""} />
+                    <RulesTip label={`${bgRulesBookPrefix}: ${bgRulesLabel}`} body={snap?.backgroundRulesMd ?? ""} />
                   </>
                 ) : null}
               </div>

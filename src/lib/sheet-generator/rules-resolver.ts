@@ -835,8 +835,9 @@ export async function resolveGeneratorRules(
 
   let backgroundMd: string | null = null;
   if (bgDef) {
-    await preloadManualMarkdownFile(PHB_MD_FILE, requestOrigin);
-    backgroundMd = extractSectionByHeadingsMarkdown(getManualMarkdownByFileName(PHB_MD_FILE), [bgDef.phbH1]) || null;
+    const mdFile = bgDef.rulesSource?.markdownFile ?? PHB_MD_FILE;
+    await preloadManualMarkdownFile(mdFile, requestOrigin);
+    backgroundMd = extractSectionByHeadingsMarkdown(getManualMarkdownByFileName(mdFile), [bgDef.phbH1]) || null;
   }
 
   const spellcastingAbility = SPELLCASTING_ABILITY_BY_CLASS[input.classLabel] ?? null;

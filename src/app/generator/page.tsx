@@ -155,15 +155,25 @@ function GeneratorPageContent() {
 
       if (initial.campaignId && initial.returnTo) {
         persistCreateDraftFromGeneratorForm();
-        localStorage.setItem(
-          `${CREATE_CHARACTER_GENERATED_SHEET_KEY_PREFIX}:${initial.campaignId}`,
-          JSON.stringify({
-            pdfBase64: base64,
-            fileName: `${sheet.characterName || "scheda"}-compilata.pdf`,
-            armorClass: sheet.armorClass,
-            hitPoints: sheet.hpMax,
-          })
-        );
+        try {
+          localStorage.setItem(
+            `${CREATE_CHARACTER_GENERATED_SHEET_KEY_PREFIX}:${initial.campaignId}`,
+            JSON.stringify({
+              pdfBase64: base64,
+              fileName: `${sheet.characterName || "scheda"}-compilata.pdf`,
+              armorClass: sheet.armorClass,
+              hitPoints: sheet.hpMax,
+            })
+          );
+        } catch (e) {
+          const msg =
+            e instanceof DOMException && e.name === "QuotaExceededError"
+              ? "Spazio localStorage insufficiente per il PDF. Riduci la scheda o scarica il PDF dal bottone «Stampa / Salva PDF» e caricane un file più leggero."
+              : "Impossibile salvare la scheda in bozza locale. Riprova o carica un PDF manualmente.";
+          setResultMessage(msg);
+          toast.error(msg);
+          return;
+        }
         const msg = "Scheda PDF pronta: torna alla creazione PG e salva il personaggio.";
         setResultMessage(msg);
         toast.success(msg);

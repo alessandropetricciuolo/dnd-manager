@@ -4,7 +4,7 @@
  * Lignaggi Van Richten: `Guida di Van Richten a Ravenloft (1).md` (`manual_book_key` van_richten_ravenloft).
  */
 
-import type { WikiManualBookKey } from "@/lib/manual-book-catalog";
+import { wikiManualBookLabel, type WikiManualBookKey } from "@/lib/manual-book-catalog";
 
 export type SpellProgression = "none" | "full" | "half" | "half_up" | "pact" | "subclass";
 
@@ -65,6 +65,8 @@ export type BackgroundCatalogEntry = {
   label: string;
   phbH1: string;
   opener: string;
+  /** Background da supplemento (es. Ravenloft): regole estratte da questo file, non dal PHB. */
+  rulesSource?: ClassSupplementRulesSource;
 };
 
 export const PHB_MD_FILE = "manuale_giocatore.md";
@@ -363,12 +365,34 @@ export const BACKGROUND_OPTIONS: BackgroundCatalogEntry[] = [
   },
   { slug: "ciarlatano", label: "Ciarlatano", phbH1: "CIARLATANO", opener: "Un ciarlatano è sempre stato portato" },
   { slug: "criminale", label: "Criminale", phbH1: "CRIMINALE", opener: "Un criminale è un esperto" },
+  {
+    slug: "eremita",
+    label: "Eremita",
+    phbH1: "EREMITA",
+    opener: "Un eremita ha trascorso gli anni formativi della sua vita in un luogo isolato",
+  },
   { slug: "eroe_popolare", label: "Eroe popolare", phbH1: "EROE POPOLARE", opener: "Un eroe popolare proviene dai ceti" },
   { slug: "forestiero", label: "Forestiero", phbH1: "FORESTIERO", opener: "Un forestiero è cresciuto nelle terre selvagge" },
   { slug: "intrattenitore", label: "Intrattenitore", phbH1: "INTRATTENITORE", opener: "Un intrattenitore brilla soprattutto quando" },
   { slug: "nobile", label: "Nobile", phbH1: "NOBILE", opener: "Un nobile conosce l'importanza della ricchezza" },
   { slug: "sapiente", label: "Sapiente", phbH1: "SAPIENTE", opener: "Un sapiente ha trascorso anni e anni" },
   { slug: "soldato", label: "Soldato", phbH1: "SOLDATO", opener: "La guerra è stata una presenza costante" },
+  {
+    slug: "tormentato",
+    label: "Il tormentato",
+    /** Sezione Ravenloft che include anche tabelle «Evento doloroso» e privilegio «Cuore dell'oscurità». */
+    phbH1: "EVENTO DOLOROSO",
+    opener:
+      "Prima di diventare un avventuriero, la vita del personaggio è stata segnata da un momento buio",
+    rulesSource: VAN_RICHTEN_SOURCE,
+  },
+  {
+    slug: "investigatore",
+    label: "Investigatore",
+    phbH1: "L'INVESTIGATORE",
+    opener: "Il tuo personaggio è alla costante ricerca della verità",
+    rulesSource: VAN_RICHTEN_SOURCE,
+  },
 ];
 
 export function classByLabel(label: string | null | undefined): ClassCatalogEntry | null {
@@ -385,6 +409,12 @@ export function raceBySlug(slug: string | null | undefined): RaceCatalogEntry | 
 export function backgroundBySlug(slug: string | null | undefined): BackgroundCatalogEntry | null {
   if (!slug?.trim()) return null;
   return BACKGROUND_OPTIONS.find((b) => b.slug === slug) ?? null;
+}
+
+/** Prefisso tooltip regole background (Manuale / supplemento). */
+export function backgroundRulesTooltipPrefix(bg: BackgroundCatalogEntry | null | undefined): string {
+  if (!bg?.rulesSource?.manualBookKey) return "PHB";
+  return wikiManualBookLabel(bg.rulesSource.manualBookKey);
 }
 
 export function maxSpellLevelOnSheet(classDef: ClassCatalogEntry | null, characterLevel: number): number {

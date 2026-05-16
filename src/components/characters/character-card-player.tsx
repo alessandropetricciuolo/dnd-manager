@@ -8,7 +8,7 @@ import { MapPopoutButton } from "@/components/maps/map-popout-button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { parseRulesSnapshot } from "@/lib/character-rules-snapshot";
 import type { CharacterRulesSnapshotV1 } from "@/lib/character-rules-snapshot";
-import { backgroundBySlug, raceBySlug } from "@/lib/character-build-catalog";
+import { backgroundBySlug, backgroundRulesTooltipPrefix, raceBySlug } from "@/lib/character-build-catalog";
 import { sanitizeRaceTraitsMarkdown } from "@/lib/race-traits-sanitizer";
 
 const PLACEHOLDER_AVATAR = "https://placehold.co/400x560/1c1917/fbbf24/png?text=PG";
@@ -256,7 +256,9 @@ export function CharacterCardPlayer({ character, isLongCampaign }: CharacterCard
   const raceLabel = raceDef?.label ?? null;
   const subraceLabel =
     raceDef?.subraces?.find((s) => s.slug === character.subclass_slug)?.label ?? null;
-  const bgRulesLabel = backgroundBySlug(character.background_slug ?? null)?.label ?? null;
+  const bgEntry = backgroundBySlug(character.background_slug ?? null);
+  const bgRulesLabel = bgEntry?.label ?? null;
+  const bgRulesBookPrefix = backgroundRulesTooltipPrefix(bgEntry ?? null);
   const snap = parseRulesSnapshot(character.rules_snapshot ?? null);
 
   const hasBuild = !!(
@@ -351,7 +353,7 @@ export function CharacterCardPlayer({ character, isLongCampaign }: CharacterCard
             {bgRulesLabel ? (
               <span className="text-sm font-normal text-barber-paper/70">
                 (
-                <RulesTip label={`PHB: ${bgRulesLabel}`}>
+                <RulesTip label={`${bgRulesBookPrefix}: ${bgRulesLabel}`}>
                   {tooltipOrWarnings(snap?.backgroundRulesMd, snap, staleFallback)}
                 </RulesTip>
                 )
