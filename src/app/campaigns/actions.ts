@@ -2629,8 +2629,11 @@ export async function closeSessionQuestOrOneshot(
       .eq("id", session.campaign_id)
       .single();
     const campaignType = (campaign as { type?: string } | null)?.type;
-    if (campaignType !== "quest" && campaignType !== "oneshot") {
-      return { success: false, message: "Questa azione è solo per sessioni di tipo Quest o Oneshot." };
+    if (campaignType !== "quest" && campaignType !== "oneshot" && campaignType !== "torneo") {
+      return {
+        success: false,
+        message: "Questa azione è solo per sessioni di tipo Quest, Oneshot o Torneo.",
+      };
     }
 
     const { data: signups } = await supabase
@@ -3014,9 +3017,10 @@ export async function updateCampaign(formData: FormData): Promise<UpdateCampaign
   const title = (formData.get("title") as string | null)?.trim();
   const description = (formData.get("description") as string | null)?.trim() ?? null;
   const typeRaw = (formData.get("type") as string | null)?.trim()?.toLowerCase();
-  const type = typeRaw && ["oneshot", "quest", "long"].includes(typeRaw)
-    ? (typeRaw as "oneshot" | "quest" | "long")
-    : null;
+  const type =
+    typeRaw && ["oneshot", "quest", "long", "torneo"].includes(typeRaw)
+      ? (typeRaw as "oneshot" | "quest" | "long" | "torneo")
+      : null;
   const isLongCampaign = formData.get("is_long_campaign") === "on" || formData.get("is_long_campaign") === "true";
   const playerPrimer = (formData.get("player_primer") as string | null)?.trim() || null;
   const imageFile = formData.get("image") as File | null;
@@ -3075,7 +3079,7 @@ export async function updateCampaign(formData: FormData): Promise<UpdateCampaign
     const payload: {
       name: string;
       description: string | null;
-      type?: "oneshot" | "quest" | "long";
+      type?: "oneshot" | "quest" | "long" | "torneo";
       is_long_campaign?: boolean;
       player_primer?: string | null;
       image_url?: string | null;

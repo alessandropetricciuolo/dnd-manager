@@ -36,6 +36,12 @@ import {
   type CampaignAiContext,
 } from "@/lib/campaign-ai-context";
 import type { Json } from "@/types/database.types";
+import {
+  CAMPAIGN_TYPE_LABELS,
+  isLongCampaignType,
+  isTorneoCampaignType,
+  type CampaignType,
+} from "@/lib/campaign-type";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -229,9 +235,11 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
       if (partyName) playerPartyById[row.player_id] = partyName;
     }
   }
-  const isViewerLockedOut = !isGmOrAdmin && campaign.type === "long" && !isCampaignMember;
-  const isLongCampaign = campaign.type === "long";
+  const isViewerLockedOut = !isGmOrAdmin && isLongCampaignType(campaign.type) && !isCampaignMember;
+  const isLongCampaign = isLongCampaignType(campaign.type);
+  const isTorneo = isTorneoCampaignType(campaign.type);
   const showMissionsTab = isLongCampaign && (isGmOrAdmin || isCampaignMember);
+  const showMappeTab = !isTorneo;
   const longRegistrationsOpen =
     (campaign as { long_registrations_open?: boolean }).long_registrations_open !== false;
 
@@ -268,12 +276,10 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
       })) ?? [];
   }
 
-  const campaignTypeLabels: Record<string, string> = {
-    oneshot: "Oneshot",
-    quest: "Quest",
-    long: "Campagna lunga",
-  };
-  const campaignTypeLabel = campaign.type ? campaignTypeLabels[campaign.type] ?? campaign.type : null;
+  const campaignTypeLabel =
+    campaign.type && campaign.type in CAMPAIGN_TYPE_LABELS
+      ? CAMPAIGN_TYPE_LABELS[campaign.type as CampaignType]
+      : campaign.type ?? null;
 
   /** Sessione eventualmente salvata in bozza (pre-chiusura) da un qualsiasi GM. */
   let preClosedSession: PreClosedSessionRow | null = null;
@@ -317,8 +323,14 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
   let initialContentTab: CampaignTabValue = requestedTab ?? defaultTab;
   if (initialContentTab === "gm" && !isGmOrAdmin) initialContentTab = defaultTab;
   if (initialContentTab === "missioni" && !showMissionsTab) initialContentTab = defaultTab;
-  if ((initialContentTab === "wiki" || initialContentTab === "mappe") && !hasPlayedCampaign) {
+  if (
+    (initialContentTab === "wiki" || (initialContentTab === "mappe" && showMappeTab)) &&
+    !hasPlayedCampaign
+  ) {
     initialContentTab = "sessioni";
+  }
+  if (initialContentTab === "mappe" && !showMappeTab) {
+    initialContentTab = defaultTab;
   }
   const renderSessioniTab = initialContentTab === "sessioni";
   const renderWikiTab = initialContentTab === "wiki";
@@ -329,9 +341,9 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
 
   const campaignInfoFooter = (
     <>
-      {!hasPlayedCampaign && campaign.type !== "long" ? (
+      {!hasPlayedCampaign && !isLongCampaign ? (
         <p className="rounded-lg border border-barber-gold/40 bg-barber-gold/10 px-3 py-2 text-xs text-barber-gold">
-          Partecipa a una sessione per sbloccare Wiki e Mappe.
+          Partecipa a una sessione per sbloccare {showMappeTab ? "Wiki e Mappe" : "Wiki"}.
         </p>
       ) : null}
       {!isGmOrAdmin && campaign.type === "long" && !isCampaignMember ? (
@@ -625,6 +637,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
           }
           showGmTab={isGmOrAdmin}
           showMissionsTab={showMissionsTab}
+          showMappeTab={showMappeTab}
         />
     </div>
   );

@@ -27,7 +27,7 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   campaignId: string;
-  campaignType?: "oneshot" | "quest" | "long" | null;
+  campaignType?: "oneshot" | "quest" | "long" | "torneo" | null;
 };
 
 function resolveImageUrl(item: GmGalleryItem): string | null {

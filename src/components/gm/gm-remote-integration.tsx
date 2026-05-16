@@ -1,16 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type RefObject } from "react";
 import { Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { GmAudioForgeControls } from "@/lib/gm-audio-forge/use-gm-audio-forge";
 import { GmRemoteCommandBridge } from "./gm-remote-command-bridge";
 import { GmRemoteControlModal } from "./gm-remote-control-modal";
+import { GmRemoteInitiativePublisher } from "./gm-remote-initiative-publisher";
 import type { GmRemoteSessionCreated } from "@/app/campaigns/gm-remote-actions";
+import type { InitiativeTrackerHandle, InitiativeTrackerState } from "./initiative-tracker";
 
 type Props = {
   campaignId: string;
-  forge: GmAudioForgeControls;
+  forge?: GmAudioForgeControls | null;
+  initiativeHandleRef?: RefObject<InitiativeTrackerHandle | null>;
+  initiativeState?: InitiativeTrackerState | null;
+  onSessionPublicIdChange?: (publicId: string | null) => void;
   onSpotifySelectPlaylist?: (spotifyPlaylistId: string) => void;
 };
 
@@ -20,7 +25,14 @@ function bridgeStorageKey(campaignId: string): string {
   return `gm-remote-bridge:${campaignId}`;
 }
 
-export function GmRemoteIntegration({ campaignId, forge, onSpotifySelectPlaylist }: Props) {
+export function GmRemoteIntegration({
+  campaignId,
+  forge,
+  initiativeHandleRef,
+  initiativeState,
+  onSessionPublicIdChange,
+  onSpotifySelectPlaylist,
+}: Props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalSession, setModalSession] = useState<GmRemoteSessionCreated | null>(null);
   const [bridgeSession, setBridgeSession] = useState<BridgeSnapshot | null>(null);
@@ -81,15 +93,27 @@ export function GmRemoteIntegration({ campaignId, forge, onSpotifySelectPlaylist
 
   const sessionPublicId = modalSession?.publicId ?? bridgeSession?.publicId ?? null;
 
+  useEffect(() => {
+    onSessionPublicIdChange?.(sessionPublicId);
+  }, [onSessionPublicIdChange, sessionPublicId]);
+
   return (
     <>
       <GmRemoteCommandBridge
         campaignId={campaignId}
         sessionPublicId={sessionPublicId}
         forge={forge}
+        initiativeHandleRef={initiativeHandleRef}
         onRealtimeStatus={setRealtimeConnected}
         onSpotifySelectPlaylist={onSpotifySelectPlaylist}
       />
+      {initiativeState && !onSessionPublicIdChange ? (
+        <GmRemoteInitiativePublisher
+          campaignId={campaignId}
+          sessionPublicId={sessionPublicId}
+          state={initiativeState}
+        />
+      ) : null}
       <Button
         type="button"
         variant="ghost"

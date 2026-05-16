@@ -65,13 +65,16 @@ export type CampaignWorkspaceProps = {
   gmAreaContent?: React.ReactNode | null;
   showGmTab?: boolean;
   showMissionsTab: boolean;
+  /** Default true. Torneo nasconde la tab Mappe. */
+  showMappeTab?: boolean;
 };
 
 function useCampaignTab(
   defaultTab: CampaignTabValue,
   hasPlayedCampaign: boolean,
   showGmTab: boolean,
-  showMissionsTab: boolean
+  showMissionsTab: boolean,
+  showMappeTab: boolean
 ) {
   const pathname = usePathname();
   const router = useRouter();
@@ -84,9 +87,10 @@ function useCampaignTab(
       : defaultTab;
   if (tab === "gm" && !showGmTab) tab = defaultTab;
   if (tab === "missioni" && !showMissionsTab) tab = defaultTab;
+  if (tab === "mappe" && !showMappeTab) tab = defaultTab;
 
   const effectiveTab =
-    (tab === "wiki" || tab === "mappe") && !hasPlayedCampaign ? "sessioni" : tab;
+    (tab === "wiki" || (tab === "mappe" && showMappeTab)) && !hasPlayedCampaign ? "sessioni" : tab;
 
   function setTab(newTab: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -261,22 +265,29 @@ export function CampaignWorkspace({
   gmAreaContent,
   showGmTab = gmAreaContent != null,
   showMissionsTab,
+  showMappeTab = true,
 }: CampaignWorkspaceProps) {
   const [infoOpen, setInfoOpen] = useState(false);
   const { effectiveTab, setTab } = useCampaignTab(
     defaultTab,
     hasPlayedCampaign,
     showGmTab,
-    showMissionsTab
+    showMissionsTab,
+    showMappeTab
   );
 
-  const visiblePlayerTabs = PLAYER_TABS.filter((t) => t !== "missioni" || showMissionsTab);
+  const visiblePlayerTabs = PLAYER_TABS.filter((t) => {
+    if (t === "missioni" && !showMissionsTab) return false;
+    if (t === "mappe" && !showMappeTab) return false;
+    return true;
+  });
 
   function renderNav(variant: "rail" | "pill") {
     return (
       <>
         {visiblePlayerTabs.map((value) => {
-          const disabled = (value === "wiki" || value === "mappe") && !hasPlayedCampaign;
+          const disabled =
+            (value === "wiki" || (value === "mappe" && showMappeTab)) && !hasPlayedCampaign;
           return (
             <NavItem
               key={value}
@@ -443,7 +454,8 @@ export function CampaignWorkspace({
             </div>
             {!hasPlayedCampaign ? (
               <p className="border-t border-amber-500/20 bg-amber-500/10 px-4 py-2 text-xs text-amber-100">
-                <span className="font-medium">Wiki e Mappe</span> si sbloccano dopo la prima sessione giocata.
+                <span className="font-medium">{showMappeTab ? "Wiki e Mappe si sbloccano" : "Wiki si sblocca"}</span>{" "}
+                dopo la prima sessione giocata.
               </p>
             ) : null}
           </div>
@@ -453,7 +465,10 @@ export function CampaignWorkspace({
             <div className="mx-auto w-full max-w-5xl px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
               {!hasPlayedCampaign ? (
                 <p className="mb-4 hidden rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs text-amber-100 lg:block">
-                  <span className="font-medium">Wiki e Mappe bloccate</span> finché non partecipi a una sessione.
+                  <span className="font-medium">
+                    {showMappeTab ? "Wiki e Mappe bloccate" : "Wiki bloccata"}
+                  </span>{" "}
+                  finché non partecipi a una sessione.
                 </p>
               ) : null}
 
@@ -463,9 +478,11 @@ export function CampaignWorkspace({
               <TabsContent value="wiki" className="mt-0 outline-none">
                 {effectiveTab === "wiki" ? wikiContent : null}
               </TabsContent>
-              <TabsContent value="mappe" className="mt-0 outline-none">
-                {effectiveTab === "mappe" ? mappeContent : null}
-              </TabsContent>
+              {showMappeTab ? (
+                <TabsContent value="mappe" className="mt-0 outline-none">
+                  {effectiveTab === "mappe" ? mappeContent : null}
+                </TabsContent>
+              ) : null}
               {showMissionsTab ? (
                 <TabsContent value="missioni" className="mt-0 outline-none">
                   {effectiveTab === "missioni" ? missionsContent : null}

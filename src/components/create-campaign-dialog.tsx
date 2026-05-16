@@ -29,12 +29,7 @@ import { Switch } from "@/components/ui/switch";
 import { createCampaign } from "@/app/dashboard/actions";
 import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const CAMPAIGN_TYPES = [
-  { value: "oneshot", label: "One Shot" },
-  { value: "quest", label: "Quest" },
-  { value: "long", label: "Campagna Lunga" },
-] as const;
+import { CAMPAIGN_TYPE_OPTIONS } from "@/lib/campaign-type";
 
 type CreateCampaignDialogProps = {
   /** In sidebar collassata: solo icona, etichetta visibile al hover del menu. */
@@ -132,7 +127,7 @@ export function CreateCampaignDialog({ collapsibleSidebar = false }: CreateCampa
                 <SelectValue placeholder="Seleziona tipo" />
               </SelectTrigger>
               <SelectContent className="border-barber-gold/30 bg-barber-dark">
-                {CAMPAIGN_TYPES.map((t) => (
+                {CAMPAIGN_TYPE_OPTIONS.map((t) => (
                   <SelectItem key={t.value} value={t.value} className="text-barber-paper">
                     {t.label}
                   </SelectItem>

@@ -494,7 +494,15 @@ function LongWorkspace({
                     initiativeEntries={initiativeState.entries}
                     value={xpState}
                     onChange={setXpState}
-                    onCloseFight={() => setInitiativeState({ entries: [], currentTurnIndex: 0 })}
+                    onCloseFight={() =>
+                      setInitiativeState({
+                        entries: [],
+                        currentTurnIndex: 0,
+                        roundNumber: 1,
+                        turnElapsedSeconds: 0,
+                        isTurnTimerRunning: false,
+                      })
+                    }
                   />
                 </div>
               ) : (

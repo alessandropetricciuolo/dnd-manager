@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from "react";
+import type { InitiativeRemoteCommandHandlers } from "@/lib/gm-remote/initiative-commands";
 import {
   Table,
   TableBody,
@@ -26,7 +27,20 @@ import {
 } from "@/components/ui/select";
 import { getCampaignCharacters } from "@/app/campaigns/character-actions";
 import { getMonstersForInitiative, getMonstersXpForIds, setWikiEntityGlobalStatus } from "@/app/campaigns/wiki-actions";
-import { UserPlus, Swords, Edit3, Trash2, ArrowDownUp, SkipForward, Copy, RotateCcw, Skull } from "lucide-react";
+import {
+  UserPlus,
+  Swords,
+  Edit3,
+  Trash2,
+  ArrowDownUp,
+  SkipForward,
+  Copy,
+  RotateCcw,
+  Skull,
+  Play,
+  Pause,
+  Timer,
+} from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { CHALLENGE_RATING_OPTIONS } from "@/lib/dnd-constants";
@@ -50,7 +64,60 @@ export type InitiativeEntry = {
   exp?: number;
   /** Stato esplicito di morte per mostri/custom. */
   isDead?: boolean;
+  /** Danni inflitti in questo combattimento (contatore offensivo). */
+  damageDealt?: number;
 };
+
+export type InitiativeTrackerState = {
+  entries: InitiativeEntry[];
+  currentTurnIndex: number;
+  /** Giro di combattimento (1 = primo giro). */
+  roundNumber: number;
+  /** Secondi trascorsi nel turno corrente. */
+  turnElapsedSeconds: number;
+  isTurnTimerRunning: boolean;
+};
+
+export function emptyInitiativeTrackerState(): InitiativeTrackerState {
+  return {
+    entries: [],
+    currentTurnIndex: 0,
+    roundNumber: 1,
+    turnElapsedSeconds: 0,
+    isTurnTimerRunning: false,
+  };
+}
+
+function normalizeInitiativeEntry(entry: InitiativeEntry): InitiativeEntry {
+  return {
+    ...entry,
+    damageDealt: Math.max(0, Math.trunc(entry.damageDealt ?? 0)),
+  };
+}
+
+export function sanitizeInitiativeTrackerState(
+  input: Partial<InitiativeTrackerState> | null | undefined
+): InitiativeTrackerState {
+  if (!input || !Array.isArray(input.entries)) return emptyInitiativeTrackerState();
+  const entries = input.entries.map(normalizeInitiativeEntry);
+  return {
+    entries,
+    currentTurnIndex:
+      entries.length > 0
+        ? Math.max(0, Math.min(Math.trunc(input.currentTurnIndex ?? 0), entries.length - 1))
+        : 0,
+    roundNumber: Math.max(1, Math.trunc(input.roundNumber ?? 1)),
+    turnElapsedSeconds: Math.max(0, Math.trunc(input.turnElapsedSeconds ?? 0)),
+    isTurnTimerRunning: Boolean(input.isTurnTimerRunning),
+  };
+}
+
+function formatTurnElapsed(seconds: number): string {
+  const s = Math.max(0, Math.trunc(seconds));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${m}:${String(r).padStart(2, "0")}`;
+}
 
 const STORAGE_KEY_PREFIX = "gm-screen-initiative-";
 
@@ -73,7 +140,8 @@ function areInitiativeEntriesEqual(a: InitiativeEntry[], b: InitiativeEntry[]) {
       left.isCore !== right.isCore ||
       left.gs !== right.gs ||
       left.exp !== right.exp ||
-      left.isDead !== right.isDead
+      left.isDead !== right.isDead ||
+      (left.damageDealt ?? 0) !== (right.damageDealt ?? 0)
     ) {
       return false;
     }
@@ -96,7 +164,7 @@ type MonsterForInitiative = {
 
 type InitiativeTrackerProps = {
   campaignId: string;
-  campaignType?: "oneshot" | "quest" | "long" | null;
+  campaignType?: "oneshot" | "quest" | "long" | "torneo" | null;
   availableCharacters?: Array<{
     id: string;
     name: string;
@@ -104,26 +172,37 @@ type InitiativeTrackerProps = {
     armor_class?: number | null;
     hit_points?: number | null;
   }>;
-  value?: {
-    entries: InitiativeEntry[];
-    currentTurnIndex: number;
-  };
-  onChange?: (state: { entries: InitiativeEntry[]; currentTurnIndex: number }) => void;
+  value?: InitiativeTrackerState;
+  onChange?: (state: InitiativeTrackerState) => void;
+  /** Notifica ogni cambio stato (es. sync telecomando). */
+  onTrackerStateChange?: (state: InitiativeTrackerState) => void;
 };
 
-export function InitiativeTracker({
-  campaignId,
-  campaignType,
-  availableCharacters,
-  value,
-  onChange,
-}: InitiativeTrackerProps) {
+export type InitiativeTrackerHandle = InitiativeRemoteCommandHandlers & {
+  getState: () => InitiativeTrackerState;
+};
+
+export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeTrackerProps>(
+  function InitiativeTracker(
+    {
+      campaignId,
+      campaignType,
+      availableCharacters,
+      value,
+      onChange,
+      onTrackerStateChange,
+    },
+    ref
+  ) {
   const storageKey = `${STORAGE_KEY_PREFIX}${campaignId}`;
   const isLongCampaign = campaignType === "long";
   const isControlled = typeof onChange === "function" && value != null;
 
   const [entries, setEntries] = useState<InitiativeEntry[]>([]);
   const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
+  const [roundNumber, setRoundNumber] = useState(1);
+  const [turnElapsedSeconds, setTurnElapsedSeconds] = useState(0);
+  const [isTurnTimerRunning, setIsTurnTimerRunning] = useState(false);
   const [editingCell, setEditingCell] = useState<{ id: string; field: "name" | "hp" | "initiative" | "armorClass" } | null>(null);
   const [addPcOpen, setAddPcOpen] = useState(false);
   const [addMonsterOpen, setAddMonsterOpen] = useState(false);
@@ -139,34 +218,45 @@ export function InitiativeTracker({
   const [customInit, setCustomInit] = useState<string>("");
   const [customGs, setCustomGs] = useState<string>("");
   const [customExp, setCustomExp] = useState<number>(0);
-  const [lastResetState, setLastResetState] = useState<{
-    entries: InitiativeEntry[];
-    currentTurnIndex: number;
-    at: number;
-  } | null>(null);
-  const entriesRef = useRef(entries);
-  const currentTurnIndexRef = useRef(currentTurnIndex);
+  const [lastResetState, setLastResetState] = useState<(InitiativeTrackerState & { at: number }) | null>(
+    null
+  );
+  const trackerRef = useRef<InitiativeTrackerState>(emptyInitiativeTrackerState());
   const skipControlledEchoRef = useRef(false);
 
+  const buildTrackerState = useCallback(
+    (overrides?: Partial<InitiativeTrackerState>): InitiativeTrackerState => ({
+      entries: overrides?.entries ?? entries,
+      currentTurnIndex: overrides?.currentTurnIndex ?? currentTurnIndex,
+      roundNumber: overrides?.roundNumber ?? roundNumber,
+      turnElapsedSeconds: overrides?.turnElapsedSeconds ?? turnElapsedSeconds,
+      isTurnTimerRunning: overrides?.isTurnTimerRunning ?? isTurnTimerRunning,
+    }),
+    [currentTurnIndex, entries, isTurnTimerRunning, roundNumber, turnElapsedSeconds]
+  );
+
   useEffect(() => {
-    entriesRef.current = entries;
-    currentTurnIndexRef.current = currentTurnIndex;
-  }, [currentTurnIndex, entries]);
+    trackerRef.current = buildTrackerState();
+  }, [buildTrackerState]);
 
   useEffect(() => {
     if (!isControlled) return;
-    const nextEntries = Array.isArray(value?.entries) ? value.entries : [];
-    const nextTurnIndex =
-      nextEntries.length > 0 ? Math.max(0, Math.min(value.currentTurnIndex ?? 0, nextEntries.length - 1)) : 0;
-    const entriesChanged = !areInitiativeEntriesEqual(entriesRef.current, nextEntries);
-    const turnChanged = currentTurnIndexRef.current !== nextTurnIndex;
-    if (!entriesChanged && !turnChanged) return;
+    const next = sanitizeInitiativeTrackerState(value ?? undefined);
+    const prev = trackerRef.current;
+    const entriesChanged = !areInitiativeEntriesEqual(prev.entries, next.entries);
+    const metaChanged =
+      prev.currentTurnIndex !== next.currentTurnIndex ||
+      prev.roundNumber !== next.roundNumber ||
+      prev.turnElapsedSeconds !== next.turnElapsedSeconds ||
+      prev.isTurnTimerRunning !== next.isTurnTimerRunning;
+    if (!entriesChanged && !metaChanged) return;
     skipControlledEchoRef.current = true;
-    if (entriesChanged) {
-      setEntries(nextEntries);
-    }
-    if (turnChanged) {
-      setCurrentTurnIndex(nextTurnIndex);
+    if (entriesChanged) setEntries(next.entries);
+    if (metaChanged || entriesChanged) {
+      setCurrentTurnIndex(next.currentTurnIndex);
+      setRoundNumber(next.roundNumber);
+      setTurnElapsedSeconds(next.turnElapsedSeconds);
+      setIsTurnTimerRunning(next.isTurnTimerRunning);
     }
   }, [isControlled, value]);
 
@@ -176,10 +266,14 @@ export function InitiativeTracker({
     try {
       const raw = localStorage.getItem(storageKey);
       if (raw) {
-        const parsed = JSON.parse(raw) as { entries?: InitiativeEntry[]; currentTurnIndex?: number };
-        if (Array.isArray(parsed.entries) && parsed.entries.length > 0) {
-          setEntries(parsed.entries);
-          setCurrentTurnIndex(Math.min(parsed.currentTurnIndex ?? 0, parsed.entries.length - 1));
+        const parsed = JSON.parse(raw) as Partial<InitiativeTrackerState>;
+        const restored = sanitizeInitiativeTrackerState(parsed);
+        if (restored.entries.length > 0) {
+          setEntries(restored.entries);
+          setCurrentTurnIndex(restored.currentTurnIndex);
+          setRoundNumber(restored.roundNumber);
+          setTurnElapsedSeconds(restored.turnElapsedSeconds);
+          setIsTurnTimerRunning(restored.isTurnTimerRunning);
         }
       }
     } catch {
@@ -187,26 +281,46 @@ export function InitiativeTracker({
     }
   }, [isControlled, storageKey]);
 
-  // Persist to localStorage when entries or currentTurnIndex change
+  // Persist tracker state
   useEffect(() => {
+    const state = buildTrackerState();
     if (isControlled) {
       if (skipControlledEchoRef.current) {
         skipControlledEchoRef.current = false;
         return;
       }
-      onChange?.({ entries, currentTurnIndex });
+      onChange?.(state);
       return;
     }
     if (entries.length === 0) return;
     try {
-      localStorage.setItem(
-        storageKey,
-        JSON.stringify({ entries, currentTurnIndex })
-      );
+      localStorage.setItem(storageKey, JSON.stringify(state));
     } catch {
       // ignore
     }
-  }, [currentTurnIndex, entries, isControlled, onChange, storageKey]);
+  }, [
+    buildTrackerState,
+    currentTurnIndex,
+    entries,
+    isControlled,
+    isTurnTimerRunning,
+    onChange,
+    roundNumber,
+    storageKey,
+    turnElapsedSeconds,
+  ]);
+
+  useEffect(() => {
+    onTrackerStateChange?.(buildTrackerState());
+  }, [buildTrackerState, onTrackerStateChange]);
+
+  useEffect(() => {
+    if (!isTurnTimerRunning || entries.length === 0) return;
+    const id = window.setInterval(() => {
+      setTurnElapsedSeconds((s) => s + 1);
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [entries.length, isTurnTimerRunning]);
 
   const updateEntry = useCallback(
     (id: string, updates: Partial<InitiativeEntry>) => {
@@ -246,6 +360,7 @@ export function InitiativeTracker({
         ...entry,
         id: generateId(),
         name: newName,
+        damageDealt: 0,
       },
     ]);
   }, [entries, getNextDuplicateName]);
@@ -255,47 +370,96 @@ export function InitiativeTracker({
       [...prev].sort((a, b) => b.initiative - a.initiative)
     );
     setCurrentTurnIndex(0);
+    setRoundNumber(1);
+    setTurnElapsedSeconds(0);
   }, []);
 
   const nextTurn = useCallback(() => {
     if (entries.length === 0) return;
-    setCurrentTurnIndex((i) => (i + 1) % entries.length);
+    setCurrentTurnIndex((i) => {
+      const next = (i + 1) % entries.length;
+      if (next === 0) {
+        setRoundNumber((r) => r + 1);
+      }
+      return next;
+    });
+    setTurnElapsedSeconds(0);
+    setIsTurnTimerRunning(true);
   }, [entries.length]);
+
+  const toggleTurnTimer = useCallback(() => {
+    if (entries.length === 0) return;
+    setIsTurnTimerRunning((running) => !running);
+  }, [entries.length]);
+
+  const resetTurnTimer = useCallback(() => {
+    setTurnElapsedSeconds(0);
+  }, []);
+
+  const resetRoundCounter = useCallback(() => {
+    setRoundNumber(1);
+    setCurrentTurnIndex(0);
+    setTurnElapsedSeconds(0);
+  }, []);
+
+  const adjustDamageDealt = useCallback((entryId: string, delta: number) => {
+    setEntries((prev) =>
+      prev.map((e) =>
+        e.id === entryId
+          ? { ...e, damageDealt: Math.max(0, (e.damageDealt ?? 0) + delta) }
+          : e
+      )
+    );
+  }, []);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      nextTurn,
+      toggleTurnTimer,
+      resetTurnTimer,
+      resetRound: resetRoundCounter,
+      adjustDamage: adjustDamageDealt,
+      getState: () => buildTrackerState(),
+    }),
+    [
+      adjustDamageDealt,
+      buildTrackerState,
+      nextTurn,
+      resetRoundCounter,
+      resetTurnTimer,
+      toggleTurnTimer,
+    ]
+  );
 
   const resetTracker = useCallback(() => {
     if (entries.length > 0) {
-      setLastResetState({ entries, currentTurnIndex, at: Date.now() });
+      setLastResetState({ ...buildTrackerState(), at: Date.now() });
     }
     setEntries([]);
     setCurrentTurnIndex(0);
+    setRoundNumber(1);
+    setTurnElapsedSeconds(0);
+    setIsTurnTimerRunning(false);
     try {
       localStorage.removeItem(storageKey);
     } catch {
       // ignore
     }
-  }, [storageKey, entries, currentTurnIndex]);
+  }, [buildTrackerState, storageKey, entries.length]);
 
   const undoReset = useCallback(() => {
     if (!lastResetState) return;
-    setEntries(lastResetState.entries);
-    setCurrentTurnIndex(
-      Math.min(
-        Math.max(0, lastResetState.currentTurnIndex),
-        Math.max(0, lastResetState.entries.length - 1)
-      )
-    );
+    const { at: _at, ...restored } = lastResetState;
+    const sanitized = sanitizeInitiativeTrackerState(restored);
+    setEntries(sanitized.entries);
+    setCurrentTurnIndex(sanitized.currentTurnIndex);
+    setRoundNumber(sanitized.roundNumber);
+    setTurnElapsedSeconds(sanitized.turnElapsedSeconds);
+    setIsTurnTimerRunning(sanitized.isTurnTimerRunning);
     setLastResetState(null);
     try {
-      localStorage.setItem(
-        storageKey,
-        JSON.stringify({
-          entries: lastResetState.entries,
-          currentTurnIndex: Math.min(
-            Math.max(0, lastResetState.currentTurnIndex),
-            Math.max(0, lastResetState.entries.length - 1)
-          ),
-        })
-      );
+      localStorage.setItem(storageKey, JSON.stringify(sanitized));
     } catch {
       // ignore
     }
@@ -348,6 +512,7 @@ export function InitiativeTracker({
           maxHp: hp,
           initiative: 0,
           playerId: characterId,
+          damageDealt: 0,
         },
       ]);
     },
@@ -409,6 +574,7 @@ export function InitiativeTracker({
           maxHp: monster.hp,
           initiative: 0,
           isDead: false,
+          damageDealt: 0,
           ...(typeof monster.xp_value === "number" && monster.xp_value > 0
             ? { exp: monster.xp_value }
             : {}),
@@ -532,6 +698,7 @@ export function InitiativeTracker({
         maxHp: hp,
         initiative,
         isDead: false,
+        damageDealt: 0,
         ...(customGs && { gs: customGs }),
         ...(customExp > 0 && { exp: customExp }),
       },
@@ -570,7 +737,8 @@ export function InitiativeTracker({
 
   return (
     <div className="flex h-full w-full flex-col p-3 text-zinc-100">
-      <header className="mb-2 flex flex-wrap items-center justify-between gap-2 border-b border-amber-600/30 pb-2">
+      <header className="mb-2 space-y-2 border-b border-amber-600/30 pb-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-sm font-bold tracking-tight text-amber-400">
           Initiative Tracker
         </h1>
@@ -619,6 +787,59 @@ export function InitiativeTracker({
             </Button>
           )}
         </div>
+        </div>
+
+        {entries.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-600/25 bg-zinc-900/60 px-2.5 py-2">
+            <span className="text-xs font-semibold text-amber-300/90">
+              Giro <span className="tabular-nums text-amber-100">{roundNumber}</span>
+            </span>
+            <span className="h-4 w-px bg-amber-600/30" aria-hidden />
+            <span className="inline-flex items-center gap-1 text-xs text-zinc-300">
+              <Timer className="h-3.5 w-3.5 text-amber-400/80" />
+              <span className="font-mono tabular-nums text-sm text-amber-100">
+                {formatTurnElapsed(turnElapsedSeconds)}
+              </span>
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-7 w-7 border-amber-600/40 text-amber-200 hover:bg-amber-600/20"
+              onClick={toggleTurnTimer}
+              title={isTurnTimerRunning ? "Pausa timer turno" : "Avvia timer turno"}
+              aria-label={isTurnTimerRunning ? "Pausa timer turno" : "Avvia timer turno"}
+            >
+              {isTurnTimerRunning ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 border-amber-600/40 px-2 text-[10px] text-amber-200 hover:bg-amber-600/20"
+              onClick={resetTurnTimer}
+              title="Azzera il timer del turno corrente"
+            >
+              Azzera timer
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-[10px] text-zinc-400 hover:bg-zinc-800 hover:text-amber-200"
+              onClick={resetRoundCounter}
+              title="Riporta a giro 1 e primo in lista"
+            >
+              Reset giro
+            </Button>
+            {entries[currentTurnIndex] ? (
+              <span className="ml-auto truncate text-[10px] text-zinc-500">
+                In turno:{" "}
+                <span className="font-medium text-amber-200/90">{entries[currentTurnIndex].name}</span>
+              </span>
+            ) : null}
+          </div>
+        ) : null}
       </header>
 
       <div className="mb-2 flex flex-wrap gap-1.5">
@@ -668,6 +889,9 @@ export function InitiativeTracker({
               <TableHead className="h-8 px-2 text-xs font-semibold text-amber-400">
                 Init
               </TableHead>
+              <TableHead className="h-8 px-2 text-xs font-semibold text-amber-400">
+                Danni
+              </TableHead>
               <TableHead className="h-8 w-12 px-1 text-xs font-semibold text-amber-400">
                 Azioni
               </TableHead>
@@ -677,7 +901,7 @@ export function InitiativeTracker({
             {entries.length === 0 ? (
               <TableRow className="border-amber-600/20">
                 <TableCell
-                  colSpan={6}
+                  colSpan={7}
                   className="py-6 text-center text-xs text-zinc-500"
                 >
                   Nessun partecipante.
@@ -885,6 +1109,70 @@ export function InitiativeTracker({
                         {entry.initiative}
                       </button>
                     )}
+                  </TableCell>
+                  <TableCell className="px-2 py-1.5">
+                    <div className="flex flex-col items-start gap-1">
+                      <div className="flex items-center gap-0.5">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-7 w-7 border-orange-600/30 bg-zinc-900/60 px-0 text-xs text-orange-200 hover:bg-orange-600/20"
+                          onClick={() => adjustDamageDealt(entry.id, -5)}
+                          title="-5 danni inflitti"
+                        >
+                          -5
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-7 w-7 border-orange-600/30 bg-zinc-900/60 px-0 text-xs text-orange-200 hover:bg-orange-600/20"
+                          onClick={() => adjustDamageDealt(entry.id, -1)}
+                          title="-1 danno inflitto"
+                        >
+                          -
+                        </Button>
+                        <span
+                          className={cn(
+                            "min-w-[2.25rem] text-center text-sm font-bold tabular-nums",
+                            entry.type === "pc" ? "text-orange-300" : "text-orange-400/80"
+                          )}
+                          title="Danni inflitti in questo combattimento"
+                        >
+                          {entry.damageDealt ?? 0}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-7 w-7 border-orange-600/30 bg-zinc-900/60 px-0 text-xs text-orange-200 hover:bg-orange-600/20"
+                          onClick={() => adjustDamageDealt(entry.id, +1)}
+                          title="+1 danno inflitto"
+                        >
+                          +
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-7 w-7 border-orange-600/30 bg-zinc-900/60 px-0 text-xs text-orange-200 hover:bg-orange-600/20"
+                          onClick={() => adjustDamageDealt(entry.id, +5)}
+                          title="+5 danni inflitti"
+                        >
+                          +5
+                        </Button>
+                      </div>
+                      {(entry.damageDealt ?? 0) > 0 ? (
+                        <button
+                          type="button"
+                          className="text-[10px] text-zinc-500 hover:text-orange-300"
+                          onClick={() => updateEntry(entry.id, { damageDealt: 0 })}
+                        >
+                          Azzera danni
+                        </button>
+                      ) : null}
+                    </div>
                   </TableCell>
                   <TableCell className="px-1 py-1.5">
                     <div className="flex items-center gap-0.5">
@@ -1262,4 +1550,4 @@ export function InitiativeTracker({
       </Dialog>
     </div>
   );
-}
+});

@@ -104,7 +104,7 @@ type EndSessionWizardProps = {
   onOpenChange: (open: boolean) => void;
   sessionId: string;
   campaignId: string;
-  campaignType?: "oneshot" | "quest" | "long" | null;
+  campaignType?: "oneshot" | "quest" | "long" | "torneo" | null;
   sessionLabel?: string;
   /** Se passato, non viene fatto fetch degli iscritti (es. da pagina Sessioni). */
   initialApprovedSignups?: ApprovedSignupForWizard[];

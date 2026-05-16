@@ -17,6 +17,8 @@ import { CampaignPrimerEditor } from "@/components/gm/campaign-primer-editor";
 import { ManualSemanticSearch } from "@/components/admin/manual-semantic-search";
 import type { CampaignAiContext } from "@/lib/campaign-ai-context";
 import type { PrimerTypography } from "@/app/campaigns/actions";
+import { isLongCampaignType, isTorneoCampaignType } from "@/lib/campaign-type";
+import type { CampaignType } from "@/lib/campaign-type";
 
 type JoinEmailSettings = {
   join_enabled: boolean;
@@ -33,7 +35,7 @@ type BulkTemplate = {
 
 type GmHomepageProps = {
   campaignId: string;
-  campaignType?: "oneshot" | "quest" | "long" | null;
+  campaignType?: CampaignType | null;
   aiContextParsed: CampaignAiContext | null;
   /** Manuali esclusi dal RAG wiki (anche senza i sei paletti Architetto). */
   excludedManualBookKeys: string[];
@@ -53,7 +55,8 @@ export function GmHomepage({
   initialPlayerPrimer,
   initialTypography,
 }: GmHomepageProps) {
-  const isLongCampaign = campaignType === "long";
+  const isLongCampaign = isLongCampaignType(campaignType);
+  const isTorneo = isTorneoCampaignType(campaignType);
 
   const [aiOpen, setAiOpen] = useState(false);
   const [commsOpen, setCommsOpen] = useState(false);
@@ -62,101 +65,106 @@ export function GmHomepage({
 
   return (
     <div className="rounded-xl border-2 border-violet-800/60 bg-slate-950/80 p-6 shadow-inner">
-      {/* Menu GM */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <GmScreenLauncher
             campaignId={campaignId}
             className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
           />
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
-          >
-            <Link href={`/campaigns/${campaignId}/gm-only/vista-dall-alto`}>
-              <Layers className="mr-2 h-4 w-4" />
-              Vista dall&apos;alto (FoW)
-            </Link>
-          </Button>
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
-          >
-            <Link href={`/campaigns/${campaignId}/gm-only/concept-map`}>
-              <Map className="mr-2 h-4 w-4" />
-              Apri Mappa Concettuale
-            </Link>
-          </Button>
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
-          >
-            <Link href={`/compendium?campaignId=${campaignId}`}>
+          {!isTorneo ? (
+            <>
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
+              >
+                <Link href={`/campaigns/${campaignId}/gm-only/vista-dall-alto`}>
+                  <Layers className="mr-2 h-4 w-4" />
+                  Vista dall&apos;alto (FoW)
+                </Link>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
+              >
+                <Link href={`/campaigns/${campaignId}/gm-only/concept-map`}>
+                  <Map className="mr-2 h-4 w-4" />
+                  Apri Mappa Concettuale
+                </Link>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
+              >
+                <Link href={`/compendium?campaignId=${campaignId}`}>
+                  <BookOpen className="mr-2 h-4 w-4" />
+                  Apri Compendio
+                </Link>
+              </Button>
+            </>
+          ) : null}
+        </div>
+
+        {!isTorneo ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
+              onClick={() => setAiOpen((o) => !o)}
+              title="Funzioni AI della campagna"
+            >
+              <Sparkles className="mr-2 h-4 w-4" />
+              AI
+            </Button>
+
+            {isLongCampaign ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
+                onClick={() => setCalendarOpen((o) => !o)}
+                title="Calendario campagna long"
+              >
+                <Map className="mr-2 h-4 w-4" />
+                Calendario
+              </Button>
+            ) : null}
+
+            {isLongCampaign ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
+                onClick={() => setCommsOpen((o) => !o)}
+                title="Comunicazioni automatiche e invii massivi"
+              >
+                <Mail className="mr-2 h-4 w-4" />
+                Comunicazioni
+              </Button>
+            ) : null}
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
+              onClick={() => setPrimerOpen((o) => !o)}
+              title="Guida del Giocatore (Bibbia)"
+            >
               <BookOpen className="mr-2 h-4 w-4" />
-              Apri Compendio
-            </Link>
-          </Button>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
-            onClick={() => setAiOpen((o) => !o)}
-            title="Funzioni AI della campagna"
-          >
-            <Sparkles className="mr-2 h-4 w-4" />
-            AI
-          </Button>
-
-          {isLongCampaign && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
-              onClick={() => setCalendarOpen((o) => !o)}
-              title="Calendario campagna long"
-            >
-              <Map className="mr-2 h-4 w-4" />
-              Calendario
+              Guida
             </Button>
-          )}
-
-          {isLongCampaign && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
-              onClick={() => setCommsOpen((o) => !o)}
-              title="Comunicazioni automatiche e invii massivi"
-            >
-              <Mail className="mr-2 h-4 w-4" />
-              Comunicazioni
-            </Button>
-          )}
-
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
-            onClick={() => setPrimerOpen((o) => !o)}
-            title="Guida del Giocatore (Bibbia)"
-          >
-            <BookOpen className="mr-2 h-4 w-4" />
-            Guida
-          </Button>
-        </div>
+          </div>
+        ) : null}
       </div>
 
       <div className="mb-8">
@@ -175,9 +183,8 @@ export function GmHomepage({
         </Card>
       ) : null}
 
-      {/* Card AI (un solo pulsante → una card) */}
-      {aiOpen ? (
-        <Card className="mb-8 border-violet-600/30 bg-violet-950/20 p-4 space-y-4">
+      {!isTorneo && aiOpen ? (
+        <Card className="mb-8 space-y-4 border-violet-600/30 bg-violet-950/20 p-4">
           <CampaignAiArchitectPanel
             campaignId={campaignId}
             initialContext={aiContextParsed}
@@ -205,7 +212,6 @@ export function GmHomepage({
         </Card>
       ) : null}
 
-      {/* Card Comunicazioni (un solo pulsante → una card) */}
       {commsOpen && isLongCampaign ? (
         <Card className="mb-8 border-violet-600/30 bg-violet-950/20 p-4">
           <CampaignEmailPanel
@@ -221,8 +227,7 @@ export function GmHomepage({
         </Card>
       ) : null}
 
-      {/* Card Guida (primer) */}
-      {primerOpen ? (
+      {!isTorneo && primerOpen ? (
         <Card className="mb-8 border-violet-600/30 bg-violet-950/20 p-4">
           <CampaignPrimerEditor
             campaignId={campaignId}
@@ -232,12 +237,10 @@ export function GmHomepage({
         </Card>
       ) : null}
 
-      {/* Homepage GM: in prima pagina solo Note + File */}
       <div className="space-y-8">
         <GmNotes campaignId={campaignId} />
-        <GmFiles campaignId={campaignId} />
+        {!isTorneo ? <GmFiles campaignId={campaignId} /> : null}
       </div>
     </div>
   );
 }
-

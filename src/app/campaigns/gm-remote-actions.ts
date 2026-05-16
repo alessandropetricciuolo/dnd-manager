@@ -2,6 +2,10 @@
 
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { generateGmRemotePlainToken, hashGmRemoteToken } from "@/lib/gm-remote/hash-token";
+import {
+  parseInitiativeRemoteSnapshot,
+  type InitiativeRemoteSnapshot,
+} from "@/lib/gm-remote/initiative-commands";
 
 type GmResult<T = void> = { success: true; data?: T } | { success: false; error: string };
 
@@ -81,6 +85,34 @@ export async function revokeGmRemoteSession(campaignId: string, publicId: string
     .update({ revoked_at: new Date().toISOString() })
     .eq("campaign_id", campaignId)
     .eq("public_id", publicId);
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+  return { success: true };
+}
+
+/** Pubblica lo snapshot initiative per il telecomando collegato. */
+export async function publishGmRemoteInitiativeSnapshot(
+  campaignId: string,
+  publicId: string,
+  snapshot: InitiativeRemoteSnapshot
+): Promise<GmResult> {
+  const check = await ensureGmOrAdmin();
+  if (!check.success) return check;
+  const supabase = check.data!;
+
+  const parsed = parseInitiativeRemoteSnapshot(snapshot);
+  if (!parsed) {
+    return { success: false, error: "Snapshot non valido." };
+  }
+
+  const { error } = await supabase
+    .from("gm_remote_sessions")
+    .update({ initiative_snapshot: parsed as unknown as Record<string, unknown> })
+    .eq("campaign_id", campaignId)
+    .eq("public_id", publicId)
+    .is("revoked_at", null);
 
   if (error) {
     return { success: false, error: error.message };

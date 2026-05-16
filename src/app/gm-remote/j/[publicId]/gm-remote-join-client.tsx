@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2, Music2, Play, SkipBack, SkipForward, Square, Volume2, VolumeX } from "lucide-react";
+import { GmRemoteInitiativePanel } from "@/components/gm/gm-remote-initiative-panel";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -194,6 +195,8 @@ export function GmRemoteJoinClient({ publicId }: Props) {
       </header>
 
       <section className="mx-auto max-w-md space-y-4 pb-12">
+        <GmRemoteInitiativePanel publicId={publicId} token={token} sending={sending} onSend={send} />
+
         <div className="rounded-xl border border-amber-900/45 bg-zinc-900/50 p-4">
           <p className="mb-2 flex items-center justify-center gap-2 text-center text-xs font-medium uppercase tracking-wide text-amber-200/80">
             <Music2 className="h-3.5 w-3.5" />

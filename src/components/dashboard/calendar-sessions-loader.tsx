@@ -87,7 +87,8 @@ export async function CalendarSessionsLoader({
       notes: (s as { notes?: string | null }).notes ?? null,
       dm_id: dmId,
       campaign_name: campaign?.name ?? (campaignId == null ? "Campagna da definire" : "—"),
-      campaign_type: campaign?.type && ["oneshot", "quest", "long"].includes(campaign.type)
+      campaign_type: campaign?.type &&
+        ["oneshot", "quest", "long", "torneo"].includes(campaign.type)
         ? (campaign.type as "oneshot" | "quest" | "long")
         : null,
       campaign_image_url: campaign?.image_url ?? null,

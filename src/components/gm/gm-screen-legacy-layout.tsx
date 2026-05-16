@@ -27,7 +27,7 @@ import { useGmAudioForge } from "@/lib/gm-audio-forge/use-gm-audio-forge";
 
 type GmScreenLegacyLayoutProps = {
   campaignId: string;
-  campaignType?: "oneshot" | "quest" | "long" | null;
+  campaignType?: "oneshot" | "quest" | "long" | "torneo" | null;
   currentUserId: string;
   initialSessionId?: string | null;
   autoOpenDebrief?: boolean;

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { GmScreenLayout } from "@/components/gm/gm-screen-layout";
+import { CAMPAIGN_TYPE_VALUES, type CampaignType } from "@/lib/campaign-type";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -33,8 +34,8 @@ export default async function GmScreenPage({ params, searchParams }: PageProps) 
   if (!campaign || !isGmOrAdmin) notFound();
 
   const campaignType =
-    campaign?.type && ["oneshot", "quest", "long"].includes(campaign.type)
-      ? (campaign.type as "oneshot" | "quest" | "long")
+    campaign?.type && (CAMPAIGN_TYPE_VALUES as readonly string[]).includes(campaign.type)
+      ? (campaign.type as CampaignType)
       : null;
 
   return (

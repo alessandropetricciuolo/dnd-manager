@@ -52,6 +52,7 @@ const CAMPAIGN_TYPE_COLORS: Record<string, string> = {
   oneshot: "bg-amber-700",
   quest: "bg-barber-red",
   long: "bg-barber-gold",
+  torneo: "bg-violet-700",
 };
 
 const PLACEHOLDER_IMAGE = "https://placehold.co/80x48/1c1917/fbbf24/png?text=Campagna";

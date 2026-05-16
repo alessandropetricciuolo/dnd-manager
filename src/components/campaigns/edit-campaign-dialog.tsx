@@ -27,18 +27,13 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { updateCampaign } from "@/app/campaigns/actions";
-
-const CAMPAIGN_TYPES = [
-  { value: "oneshot", label: "One Shot" },
-  { value: "quest", label: "Quest" },
-  { value: "long", label: "Campagna Lunga" },
-] as const;
+import { CAMPAIGN_TYPE_OPTIONS, type CampaignType } from "@/lib/campaign-type";
 
 export type CampaignForEdit = {
   id: string;
   name: string;
   description: string | null;
-  type: "oneshot" | "quest" | "long" | null;
+  type: CampaignType | null;
   image_url: string | null;
   is_long_campaign?: boolean;
   player_primer?: string | null;
@@ -139,7 +134,7 @@ export function EditCampaignDialog({ campaign }: EditCampaignDialogProps) {
                 <SelectValue placeholder="Seleziona tipo" />
               </SelectTrigger>
               <SelectContent className="border-slate-700 bg-slate-900">
-                {CAMPAIGN_TYPES.map((t) => (
+                {CAMPAIGN_TYPE_OPTIONS.map((t) => (
                   <SelectItem key={t.value} value={t.value} className="text-slate-50">
                     {t.label}
                   </SelectItem>

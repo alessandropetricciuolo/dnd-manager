@@ -17,7 +17,12 @@ import {
   saveLongCampaignCalendarBaseDate,
 } from "@/app/campaigns/actions";
 import { getCampaignSessionsForGm, type CampaignSessionOption } from "@/app/campaigns/gm-actions";
-import type { InitiativeEntry } from "@/components/gm/initiative-tracker";
+import {
+  type InitiativeEntry,
+  type InitiativeTrackerState,
+  emptyInitiativeTrackerState,
+  sanitizeInitiativeTrackerState,
+} from "@/components/gm/initiative-tracker";
 import {
   DEFAULT_FANTASY_BASE_DATE,
   DEFAULT_FANTASY_CALENDAR_CONFIG,
@@ -59,10 +64,7 @@ export type LongSessionMissionSelection = {
   encounterId: string;
 };
 
-type InitiativeState = {
-  entries: InitiativeEntry[];
-  currentTurnIndex: number;
-};
+type InitiativeState = InitiativeTrackerState;
 
 type StoredLongSessionState = {
   version: 2;
@@ -114,10 +116,7 @@ type LongSessionContextValue = {
 const LAST_SESSION_KEY_PREFIX = "gm-screen-long-selected-";
 const SESSION_STATE_KEY_PREFIX = "gm-screen-long-session-";
 
-const emptyInitiativeState: InitiativeState = {
-  entries: [],
-  currentTurnIndex: 0,
-};
+const emptyInitiativeState: InitiativeState = emptyInitiativeTrackerState();
 
 const emptyXpState: LongSessionXpState = {
   version: 2,
@@ -239,14 +238,7 @@ function sanitizeXpState(
 }
 
 function sanitizeInitiativeState(input: InitiativeState | null | undefined): InitiativeState {
-  if (!input || !Array.isArray(input.entries)) return emptyInitiativeState;
-  return {
-    entries: input.entries,
-    currentTurnIndex:
-      input.entries.length > 0
-        ? Math.max(0, Math.min(Math.trunc(input.currentTurnIndex ?? 0), input.entries.length - 1))
-        : 0,
-  };
+  return sanitizeInitiativeTrackerState(input ?? undefined);
 }
 
 function sanitizeEconomyDraft(

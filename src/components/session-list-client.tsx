@@ -55,7 +55,7 @@ type SessionListClientProps = {
   sessions: SessionWithSignups[];
   isGmOrAdmin: boolean;
   campaignId: string;
-  campaignType?: "oneshot" | "quest" | "long" | null;
+  campaignType?: "oneshot" | "quest" | "long" | "torneo" | null;
 };
 
 function normalizeStatus(s: string): string {
@@ -101,7 +101,7 @@ export function SessionListClient({
   const [sessionForClose, setSessionForClose] = useState<{
     sessionId: string;
     approvedSignups: ApprovedSignupForWizard[];
-    campaignType?: "oneshot" | "quest" | "long" | null;
+    campaignType?: "oneshot" | "quest" | "long" | "torneo" | null;
   } | null>(null);
 
   async function handleJoin(sessionId: string) {
@@ -286,7 +286,9 @@ export function SessionListClient({
                 {/* GM/Admin: Chiudi Sessione (solo se data passata e ancora scheduled) */}
                 {isGmOrAdmin && isTodayOrPast && session.status === "scheduled" && (
                   <div className="space-y-1.5">
-                    {(campaignType === "quest" || campaignType === "oneshot") &&
+                    {(campaignType === "quest" ||
+                      campaignType === "oneshot" ||
+                      campaignType === "torneo") &&
                       session.signups.length > 0 &&
                       session.signups.every((s) => normalizeStatus(s.status) === "attended") && (
                         <Button

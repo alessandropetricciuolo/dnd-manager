@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { uploadToTelegram } from "@/lib/telegram-storage";
 import { parseSafeExternalUrl } from "@/lib/security/url";
+import { CAMPAIGN_TYPE_VALUES, type CampaignType } from "@/lib/campaign-type";
 
 export type CreateCampaignResult = {
   success: boolean;
@@ -17,9 +18,10 @@ export async function createCampaign(
   const description = (formData.get("description") as string | null)?.trim() ?? null;
   const isPublic = formData.get("is_public") === "on" || formData.get("is_public") === "true";
   const typeRaw = (formData.get("type") as string | null)?.trim()?.toLowerCase();
-  const type = typeRaw && ["oneshot", "quest", "long"].includes(typeRaw)
-    ? (typeRaw as "oneshot" | "quest" | "long")
-    : null;
+  const type =
+    typeRaw && (CAMPAIGN_TYPE_VALUES as readonly string[]).includes(typeRaw)
+      ? (typeRaw as CampaignType)
+      : null;
   const isLongCampaign = formData.get("is_long_campaign") === "on" || formData.get("is_long_campaign") === "true";
   const playerPrimer = (formData.get("player_primer") as string | null)?.trim() || null;
   const imageFile = formData.get("image") as File | null;

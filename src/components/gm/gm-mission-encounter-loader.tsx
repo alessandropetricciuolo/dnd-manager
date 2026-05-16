@@ -120,6 +120,9 @@ export function GmMissionEncounterLoader({ campaignId }: { campaignId: string })
       setInitiativeState({
         entries: [...pcEntries, ...monsterEntries],
         currentTurnIndex: 0,
+        roundNumber: 1,
+        turnElapsedSeconds: 0,
+        isTurnTimerRunning: false,
       });
 
       toast.success(

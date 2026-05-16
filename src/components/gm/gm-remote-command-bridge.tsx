@@ -3,14 +3,17 @@
 import { useEffect, useRef } from "react";
 import { createSupabaseBrowserClient } from "@/utils/supabase/client";
 import { applyRemoteAudioCommand } from "@/lib/gm-remote/apply-audio-command";
+import { applyInitiativeRemoteCommand, isInitiativeRemoteType } from "@/lib/gm-remote/initiative-commands";
 import { isRecord } from "@/lib/gm-remote/protocol";
 import type { GmAudioForgeControls } from "@/lib/gm-audio-forge/use-gm-audio-forge";
+import type { InitiativeTrackerHandle } from "@/components/gm/initiative-tracker";
 import { spotifyEmbedTogglePlay } from "@/lib/spotify/spotify-embed-bus";
 
 type Props = {
   campaignId: string;
   sessionPublicId: string | null;
-  forge: GmAudioForgeControls;
+  forge?: GmAudioForgeControls | null;
+  initiativeHandleRef?: React.RefObject<InitiativeTrackerHandle | null>;
   onRealtimeStatus: (connected: boolean) => void;
   onSpotifySelectPlaylist?: (spotifyPlaylistId: string) => void;
 };
@@ -32,12 +35,15 @@ export function GmRemoteCommandBridge({
   campaignId,
   sessionPublicId,
   forge,
+  initiativeHandleRef,
   onRealtimeStatus,
   onSpotifySelectPlaylist,
 }: Props) {
   const seenRef = useRef(new Set<string>());
   const forgeRef = useRef(forge);
   forgeRef.current = forge;
+  const initiativeRef = useRef(initiativeHandleRef);
+  initiativeRef.current = initiativeHandleRef;
   const spotifyCbRef = useRef(onSpotifySelectPlaylist);
   spotifyCbRef.current = onSpotifySelectPlaylist;
 
@@ -85,6 +91,14 @@ export function GmRemoteCommandBridge({
             }
             const pl = parsePayloadCell(row.payload);
 
+            if (isInitiativeRemoteType(type)) {
+              const handle = initiativeRef.current?.current;
+              if (handle) {
+                applyInitiativeRemoteCommand(handle, type, pl);
+              }
+              return;
+            }
+
             if (type === "audio.spotify_select_playlist") {
               const sid = typeof pl.spotify_playlist_id === "string" ? pl.spotify_playlist_id.trim() : "";
               if (sid) spotifyCbRef.current?.(sid);
@@ -96,7 +110,9 @@ export function GmRemoteCommandBridge({
               return;
             }
 
-            applyRemoteAudioCommand(forgeRef.current, type, pl);
+            if (forgeRef.current) {
+              applyRemoteAudioCommand(forgeRef.current, type, pl);
+            }
           }
         )
         .subscribe((status, err) => {
