@@ -21,6 +21,7 @@ import { ImageSourceField } from "@/components/ui/image-source-field";
 import { Textarea } from "@/components/ui/textarea";
 import { createCharacter } from "@/app/campaigns/character-actions";
 import { CharacterBuildFormFields } from "@/components/characters/character-build-form-fields";
+import { backgroundBySlug } from "@/lib/character-build-catalog";
 
 const MAX_TOTAL_MB = 4;
 const MAX_TOTAL_BYTES = MAX_TOTAL_MB * 1024 * 1024;
@@ -46,6 +47,8 @@ type StoredGeneratedSheet = {
   fileName: string;
   armorClass: number;
   hitPoints: number;
+  /** Presente se salvato dal generatore recente: consente di rigenerare il PDF con lo story in creazione PG. */
+  sheetData?: Record<string, unknown>;
 };
 
 function parseStoredGeneratedSheet(raw: string | null): StoredGeneratedSheet | null {
@@ -56,6 +59,7 @@ function parseStoredGeneratedSheet(raw: string | null): StoredGeneratedSheet | n
       fileName?: string;
       armorClass?: number;
       hitPoints?: number;
+      sheetData?: unknown;
     };
     if (
       typeof parsed.pdfBase64 === "string" &&
@@ -64,17 +68,44 @@ function parseStoredGeneratedSheet(raw: string | null): StoredGeneratedSheet | n
       typeof parsed.hitPoints === "number" &&
       parsed.pdfBase64.length > 0
     ) {
+      const sheetData =
+        parsed.sheetData != null &&
+        typeof parsed.sheetData === "object" &&
+        !Array.isArray(parsed.sheetData)
+          ? (parsed.sheetData as Record<string, unknown>)
+          : undefined;
       return {
         pdfBase64: parsed.pdfBase64,
         fileName: parsed.fileName,
         armorClass: parsed.armorClass,
         hitPoints: parsed.hitPoints,
+        sheetData,
       };
     }
   } catch {
     // ignore
   }
   return null;
+}
+
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]!);
+  }
+  return btoa(binary);
+}
+
+/** Allineato al generatore scheda (nome · classe liv. 1 · Background: …). */
+function buildStoryContextLineFromForm(fd: FormData): string {
+  const characterName = (fd.get("name") as string | null)?.trim() ?? "";
+  const classLabel = (fd.get("character_class") as string | null)?.trim() ?? "";
+  const bgSlug = (fd.get("background_slug") as string | null)?.trim() ?? "";
+  const bgEntry = backgroundBySlug(bgSlug);
+  const classPart = [classLabel, "liv. 1"].filter(Boolean).join(" ");
+  const bgLine = bgEntry?.label?.trim() ? `Background: ${bgEntry.label}` : "";
+  return [characterName, classPart, bgLine].filter(Boolean).join(" · ");
 }
 
 type CreateCharacterDialogProps = {
@@ -168,9 +199,36 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
     setIsLoading(true);
     try {
       const sheetUrl = (formData.get("sheet_url") as string | null)?.trim() || "";
+      const background = (formData.get("background") as string | null)?.trim() ?? "";
       const gen = formSeed?.generated;
       if (gen && (!sheetFile || sheetFile.size === 0) && !sheetUrl) {
-        formData.set("generated_sheet_pdf_base64", gen.pdfBase64);
+        let pdfBase64 = gen.pdfBase64;
+        if (gen.sheetData && background) {
+          try {
+            const pdfRes = await fetch("/api/sheet-pdf", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                fields: gen.sheetData,
+                fileName: gen.fileName,
+                storyText: background,
+                storyContextLine: buildStoryContextLineFromForm(formData),
+              }),
+            });
+            if (pdfRes.ok) {
+              const ab = await pdfRes.arrayBuffer();
+              pdfBase64 = arrayBufferToBase64(ab);
+            } else {
+              const err = (await pdfRes.json().catch(() => ({}))) as { error?: string };
+              toast.error(
+                err.error ?? "PDF con storia non generato; viene usata la scheda salvata dal generatore."
+              );
+            }
+          } catch {
+            toast.error("Errore di rete; viene usata la scheda salvata dal generatore.");
+          }
+        }
+        formData.set("generated_sheet_pdf_base64", pdfBase64);
         formData.set("generated_sheet_file_name", gen.fileName);
         formData.set("generated_sheet_armor_class", String(gen.armorClass));
         formData.set("generated_sheet_hit_points", String(gen.hitPoints));

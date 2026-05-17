@@ -7,6 +7,7 @@ import { generateSheetAction } from "@/lib/actions/generator-actions";
 import { BACKGROUND_OPTIONS, CLASS_OPTIONS, RACE_OPTIONS } from "@/lib/character-build-catalog";
 import { subclassCatalogSourceSuffix, supplementSubclassesForClass } from "@/lib/character-subclass-catalog";
 import { GeneratedSheetView } from "@/components/sheet-generator/generated-sheet-view";
+import { Textarea } from "@/components/ui/textarea";
 import type { GeneratedCharacterSheet } from "@/lib/sheet-generator/types";
 import { useSearchParams } from "next/navigation";
 import { saveGeneratedSheetToCharacter } from "@/app/campaigns/character-actions";
@@ -47,6 +48,7 @@ function GeneratorPageContent() {
   const [sheet, setSheet] = useState<GeneratedCharacterSheet | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [isSavingSheet, setIsSavingSheet] = useState(false);
+  const [characterStory, setCharacterStory] = useState("");
   const autogenKeyRef = useRef<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -116,6 +118,18 @@ function GeneratorPageContent() {
         body: JSON.stringify({
           fields: sheetDataObj,
           fileName: `${sheet.characterName || "scheda"}-compilata.pdf`,
+          ...(characterStory.trim()
+            ? {
+                storyText: characterStory.trim(),
+                storyContextLine: [
+                  sheet.characterName,
+                  [sheet.classLabel, sheet.level ? `liv. ${sheet.level}` : ""].filter(Boolean).join(" "),
+                  sheet.backgroundLabel?.trim() ? `Background: ${sheet.backgroundLabel}` : "",
+                ]
+                  .filter(Boolean)
+                  .join(" · "),
+              }
+            : {}),
         }),
       });
       if (!pdfRes.ok) {
@@ -163,6 +177,7 @@ function GeneratorPageContent() {
               fileName: `${sheet.characterName || "scheda"}-compilata.pdf`,
               armorClass: sheet.armorClass,
               hitPoints: sheet.hpMax,
+              sheetData: sheetDataObj,
             })
           );
         } catch (e) {
@@ -495,7 +510,28 @@ function GeneratorPageContent() {
             ))}
           </div>
         )}
-        {sheet && <GeneratedSheetView sheet={sheet} sheetData={sheetDataObj} />}
+        {sheet && (
+          <div className="mt-6 space-y-2 print:hidden">
+            <label htmlFor="generator-character-story" className="block text-sm font-medium text-barber-paper">
+              Storia del personaggio (opzionale, pagina extra nel PDF compilato)
+            </label>
+            <Textarea
+              id="generator-character-story"
+              rows={8}
+              value={characterStory}
+              onChange={(e) => setCharacterStory(e.target.value)}
+              placeholder="Narrazione, legami, obiettivi… identica a ciò che inserisci sulla card nella sezione Background / Storia."
+              maxLength={50_000}
+              className="min-h-[120px] border-barber-gold/30 bg-barber-dark/80 text-barber-paper placeholder:text-barber-paper/35"
+            />
+            <p className="text-xs text-barber-paper/60">
+              Vuoto → il PDF resta sulla sola Scheda_Base. Con testo → dopo la prima pagina viene aggiunta una o più pagine con titolo «Storia del personaggio».
+            </p>
+          </div>
+        )}
+        {sheet && (
+          <GeneratedSheetView sheet={sheet} sheetData={sheetDataObj} storyText={characterStory || null} />
+        )}
         {resultJson && (
           <div className="mt-5 rounded-md border border-barber-gold/25 bg-black/30 p-4">
             <p className="mb-2 text-xs uppercase tracking-wide text-barber-gold/80">

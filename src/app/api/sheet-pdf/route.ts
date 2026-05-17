@@ -1,6 +1,11 @@
 import fs from "fs";
 import path from "path";
 import { PDFDocument } from "pdf-lib";
+import {
+  appendCharacterStoryToPdf,
+  MAX_CHARACTER_STORY_PDF_CHARS,
+  storyInputToPdfPlainText,
+} from "@/lib/pdf/append-character-story-page";
 import { sanitizePdfAttachmentFileName } from "@/lib/security/pdf-filename";
 
 function resolveTemplatePath(): string | null {
@@ -81,7 +86,15 @@ function enrichFieldsFromSpellList(fields: Record<string, unknown>): Record<stri
 
 export async function POST(req: Request): Promise<Response> {
   try {
-    const body = (await req.json()) as { fields?: Record<string, unknown>; fileName?: string };
+    const body = (await req.json()) as {
+      fields?: Record<string, unknown>;
+      fileName?: string;
+      /** Testo lungo dalla card PG o dal generatore: aggiunto come pagina/e dopo la Scheda_Base. */
+      storyText?: string | null;
+      narrativeText?: string | null;
+      /** Riga contestuale sotto il titolo (es. nome · classe · background). */
+      storyContextLine?: string | null;
+    };
     const fields = enrichFieldsFromSpellList(body?.fields ?? {});
     const templateBytes = await resolveTemplateBytes(req);
     if (!templateBytes) {
@@ -119,6 +132,25 @@ export async function POST(req: Request): Promise<Response> {
     }
 
     form.updateFieldAppearances();
+
+    const rawStory =
+      typeof body?.storyText === "string"
+        ? body.storyText
+        : typeof body?.narrativeText === "string"
+          ? body.narrativeText
+          : "";
+    const sanitizedStory =
+      typeof rawStory === "string"
+        ? storyInputToPdfPlainText(rawStory.slice(0, MAX_CHARACTER_STORY_PDF_CHARS + 1))
+        : "";
+    if (sanitizedStory) {
+      const ctxRaw = typeof body?.storyContextLine === "string" ? body.storyContextLine.trim() : "";
+      const ctx = ctxRaw.slice(0, 400).trim()
+        ? storyInputToPdfPlainText(ctxRaw.slice(0, 400)).trim()
+        : undefined;
+      await appendCharacterStoryToPdf(pdfDoc, sanitizedStory, { contextLine: ctx });
+    }
+
     const out = await pdfDoc.save();
     const outName = sanitizePdfAttachmentFileName(body?.fileName);
     return new Response(Buffer.from(out), {

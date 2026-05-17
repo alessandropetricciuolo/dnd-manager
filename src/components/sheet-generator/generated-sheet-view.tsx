@@ -5,7 +5,16 @@ import type { GeneratedCharacterSheet } from "@/lib/sheet-generator/types";
 type Props = {
   sheet: GeneratedCharacterSheet;
   sheetData?: Record<string, unknown> | null;
+  /** Narrazione PG (campo «Background / Storia» sulla card): aggiunta come pagina dopo la Scheda_Base nel PDF compilato. */
+  storyText?: string | null;
 };
+
+function pdfStoryContextLine(sheet: GeneratedCharacterSheet): string {
+  const name = sheet.characterName?.trim();
+  const cls = [sheet.classLabel, sheet.level ? `liv. ${sheet.level}` : ""].filter(Boolean).join(" ");
+  const bg = sheet.backgroundLabel?.trim() ?? "";
+  return [name, cls, bg ? `Background: ${bg}` : ""].filter(Boolean).join(" · ");
+}
 
 function block(title: string, body: string | null | undefined) {
   if (!body?.trim()) return null;
@@ -23,7 +32,10 @@ function inventoryPreviewText(lines: string[]): string {
   return cleaned.map((s) => `• ${s}`).join("\n");
 }
 
-export function GeneratedSheetView({ sheet, sheetData }: Props) {
+export function GeneratedSheetView({ sheet, sheetData, storyText }: Props) {
+  const storyPdf = typeof storyText === "string" ? storyText : "";
+  const storyTrim = storyPdf.trim();
+
   async function downloadCompiledPdf() {
     if (!sheetData) return;
     const res = await fetch("/api/sheet-pdf", {
@@ -32,6 +44,9 @@ export function GeneratedSheetView({ sheet, sheetData }: Props) {
       body: JSON.stringify({
         fields: sheetData,
         fileName: `${sheet.characterName || "scheda"}-compilata.pdf`,
+        ...(storyTrim
+          ? { storyText: storyTrim, storyContextLine: pdfStoryContextLine(sheet) }
+          : {}),
       }),
     });
     if (!res.ok) {
@@ -117,6 +132,13 @@ export function GeneratedSheetView({ sheet, sheetData }: Props) {
             ))}
           </div>
         </section>
+
+        {storyTrim ? (
+          <section className="mb-4 rounded border border-barber-gold/25 bg-black/15 p-3 print:break-before-page">
+            <h3 className="mb-2 text-sm font-semibold text-barber-paper">Storia del personaggio (anche in PDF)</h3>
+            <pre className="whitespace-pre-wrap text-sm text-barber-paper/90">{storyTrim}</pre>
+          </section>
+        ) : null}
 
         <section className="grid gap-3 md:grid-cols-2">
           {block("Tratti razziali", [sheet.raceTraitsMd, sheet.subraceTraitsMd].filter(Boolean).join("\n\n"))}
