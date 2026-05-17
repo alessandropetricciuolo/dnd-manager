@@ -1,5 +1,5 @@
 {
-  "_readme": "Esempio per npm run catalog:import — percorsi file relativi alla cartella del JSON.",
+  "_readme": "Esempio per npm run catalog:import o per la pagina Admin → Catalogo PG. Da browser usa url/https o base64; i path file solo da CLI.",
   "libraryKey": "barber_and_dragons",
   "entries": [
     {

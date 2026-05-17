@@ -3,7 +3,7 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Shield, FileJson, Trophy, BookOpen, BookText, Palette, Swords, BarChart3, Mail, Headphones } from "lucide-react";
+import { ArrowLeft, Shield, FileJson, Trophy, BookOpen, BookText, Palette, Swords, BarChart3, Mail, Headphones, Library } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -125,6 +125,16 @@ export default async function AdminLayout({
             >
               <FileJson className="mr-2 h-4 w-4" />
               Importa Campagna
+            </Button>
+          </Link>
+          <Link href="/admin/character-catalog-import">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-barber-paper/80 hover:text-barber-paper"
+            >
+              <Library className="mr-2 h-4 w-4" />
+              Catalogo PG
             </Button>
           </Link>
           <Link href="/admin/knowledge">
