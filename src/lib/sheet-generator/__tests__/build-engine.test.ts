@@ -20,6 +20,15 @@ test("compute core sheet includes coherent derived stats", () => {
   assert.equal(core.hitDiceTotal, 3);
 });
 
+test("inventario da background (PDF breve)", () => {
+  const soldato = computeCoreSheet("Guerriero", 1, "soldato");
+  assert.ok(soldato.inventory.some((s) => /distintivo/i.test(s)));
+  const accredito = computeCoreSheet("Guerriero", 1, "accolito");
+  assert.ok(accredito.inventory.some((s) => /simbolo/i.test(s)));
+  const anon = computeCoreSheet("Guerriero", 1, "");
+  assert.ok(anon.inventory.some((s) => /zaino/i.test(s)));
+});
+
 test("PF = livello × (dado vita + mod CON) con dado al massimo ogni livello", () => {
   const core = computeCoreSheet("Ranger", 7);
   const conMod = core.abilityMods.con;

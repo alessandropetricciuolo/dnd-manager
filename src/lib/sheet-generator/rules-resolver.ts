@@ -16,7 +16,14 @@ import {
   preloadManualMarkdownFile,
   preloadPhbMarkdown,
 } from "@/lib/server/phb-spell-excerpt";
+import { collapseRandomDiceTablesInBackgroundMarkdown } from "@/lib/sheet-generator/background-dice-table-roll";
 import type { AbilityKey, GeneratedSpell } from "@/lib/sheet-generator/types";
+import {
+  detectThirdCasterSubclass,
+  detectWildMagicBarbarianPath,
+  getThirdCasterWizardSpellcasting,
+  spellSlotsRecordFromThirdCasterTiers,
+} from "@/lib/sheet-generator/third-caster-subclass";
 
 function headingLevel(line: string): number | null {
   const m = line.match(/^(\s*#{1,6})\s+.+$/);
@@ -185,6 +192,123 @@ function normalizeTitleForMatch(s: string): string {
     .toUpperCase();
 }
 
+/** Opzioni «### …» tipiche nello Stile di combattimento PHB italiano (Guerriero = elenco completo; Paladino = sottoinsieme nel testo). */
+const PHB_FIGHTING_STYLE_OPTION_HEADINGS_NORM = new Set(
+  [
+    "COMBATTERE CON ARMI POSSENTI",
+    "COMBATTERE CON DUE ARMI",
+    "DIFESA",
+    "DUELLARE",
+    "PROTEZIONE",
+    "TIRO",
+  ].map(normalizeTitleForMatch)
+);
+
+const STILE_DI_COMBATTIMENTO_HEADING_NORM = normalizeTitleForMatch("STILE DI COMBATTIMENTO");
+
+function stableHashNonNegative(seed: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+type MarkdownH3Section = { headingRaw: string; headingNorm: string; body: string };
+
+function splitMarkdownH3Sections(md: string): MarkdownH3Section[] {
+  const lines = md.replace(/\r/g, "").split("\n");
+  const sections: MarkdownH3Section[] = [];
+  let currentHeading: string | null = null;
+  let currentBody: string[] = [];
+
+  function flush() {
+    if (!currentHeading) return;
+    sections.push({
+      headingRaw: currentHeading,
+      headingNorm: normalizeTitleForMatch(currentHeading),
+      body: currentBody.join("\n").trim(),
+    });
+    currentHeading = null;
+    currentBody = [];
+  }
+
+  for (const line of lines) {
+    const m = line.match(/^### (.+)$/);
+    if (m) {
+      flush();
+      currentHeading = m[1].trim();
+      continue;
+    }
+    if (currentHeading) currentBody.push(line);
+  }
+  flush();
+  return sections;
+}
+
+function joinMarkdownH3Sections(sections: MarkdownH3Section[]): string {
+  return sections.map((s) => `### ${s.headingRaw}\n\n${s.body}`).join("\n\n").trim();
+}
+
+/**
+ * Guerriero e Paladino scelgono un solo stile tra quelli offerti dal PHB: in scheda restano l’introduzione e una sola opzione «### …»,
+ * scelta in modo deterministico dal seed (classe + nome pg + build).
+ */
+function collapsePhbFightingStyleOptions(md: string, seed: string): string {
+  const trimmed = md.trim();
+  if (!trimmed) return trimmed;
+
+  const sections = splitMarkdownH3Sections(trimmed);
+  if (!sections.length) return trimmed;
+
+  const stileIdx = sections.findIndex((s) => s.headingNorm === STILE_DI_COMBATTIMENTO_HEADING_NORM);
+  if (stileIdx < 0) return trimmed;
+
+  const styleIndices: number[] = [];
+  for (let j = stileIdx + 1; j < sections.length; j++) {
+    const sn = sections[j].headingNorm;
+    if (PHB_FIGHTING_STYLE_OPTION_HEADINGS_NORM.has(sn)) styleIndices.push(j);
+    else break;
+  }
+  if (styleIndices.length === 0) return trimmed;
+
+  const pick = stableHashNonNegative(`${seed}|phb-stile-combattimento`) % styleIndices.length;
+  const chosenIdx = styleIndices[pick];
+  const chosen = sections[chosenIdx];
+
+  const mergedIntro =
+    `${sections[stileIdx].body}\n\n### ${chosen.headingRaw}\n\n${chosen.body}`.trim();
+
+  const nextSections = sections.filter((_, idx) => idx !== chosenIdx && !styleIndices.includes(idx));
+  const mergedStileIdx = nextSections.findIndex((s) => s.headingNorm === STILE_DI_COMBATTIMENTO_HEADING_NORM);
+  if (mergedStileIdx >= 0) nextSections[mergedStileIdx] = { ...nextSections[mergedStileIdx], body: mergedIntro };
+
+  return joinMarkdownH3Sections(nextSections);
+}
+
+function fightingStyleSheetSeed(input: {
+  characterName?: string | null;
+  classLabel: string;
+  raceSlug: string;
+  subraceSlug: string | null;
+  backgroundSlug: string;
+  classSubclass: string | null;
+  level: number;
+}): string {
+  return [
+    input.classLabel,
+    input.characterName?.trim() ?? "",
+    input.raceSlug,
+    input.subraceSlug ?? "",
+    input.backgroundSlug,
+    input.classSubclass ?? "",
+    String(input.level),
+  ].join("|");
+}
+
+const CLASSES_WITH_PHB_FIGHTING_STYLE_COLLAPSE = new Set(["Guerriero", "Paladino"]);
+
 function filterClassFeaturesByLevel(md: string, level: number): string {
   const txt = cleanRulesExcerpt(md)
     .replace(/^##\s+PRIVILEGI DI CLASSE\s*$/gim, "")
@@ -315,7 +439,7 @@ function htmlTableToMarkdown(tableHtml: string): string | null {
   ].join("\n");
 }
 
-function normalizeMarkdownTables(md: string): string {
+export function normalizeMarkdownTables(md: string): string {
   if (!/<table>/i.test(md)) return md;
   const tableRe = /<table[^>]*>[\s\S]*?<\/table>/gi;
   let out = md;
@@ -724,6 +848,8 @@ export async function resolveGeneratorRules(
     classSubclass: string | null;
     backgroundSlug: string;
     level: number;
+    /** Usato per variare in modo stabile lo stile di combattimento del Guerriero in scheda. */
+    characterName?: string | null;
   },
   abilityModByKey: Record<AbilityKey, number>,
   proficiencyBonus: number,
@@ -840,27 +966,59 @@ export async function resolveGeneratorRules(
     backgroundMd = extractSectionByHeadingsMarkdown(getManualMarkdownByFileName(mdFile), [bgDef.phbH1]) || null;
   }
 
-  const spellcastingAbility = SPELLCASTING_ABILITY_BY_CLASS[input.classLabel] ?? null;
-  const spellSlots = slotsForClassLevel(classDef, input.level);
-  const cantripsKnown = cantripsKnownForClass(input.classLabel, input.level);
+  const tcWizard = getThirdCasterWizardSpellcasting(
+    detectThirdCasterSubclass(input.classLabel, input.classSubclass),
+    input.level
+  );
+  const wmBarbActive =
+    detectWildMagicBarbarianPath(input.classLabel, input.classSubclass) && input.level >= 3;
+
+  let spellcastingAbility: AbilityKey | null = SPELLCASTING_ABILITY_BY_CLASS[input.classLabel] ?? null;
+  let spellSlots = slotsForClassLevel(classDef, input.level);
+  let cantripsKnown = cantripsKnownForClass(input.classLabel, input.level);
+
+  if (tcWizard) {
+    spellcastingAbility = "int";
+    spellSlots = spellSlotsRecordFromThirdCasterTiers(tcWizard.slotsTiers);
+    cantripsKnown = tcWizard.cantripsKnown;
+  }
+  if (!tcWizard && spellcastingAbility === null && wmBarbActive) {
+    spellcastingAbility = "con";
+  }
+
   const castingMod = spellcastingAbility ? abilityModByKey[spellcastingAbility] : 0;
-  const spellsPrepared = spellcastingAbility
-    ? spellSelectionCount(input.classLabel, input.level, castingMod)
-    : 0;
+
+  let spellsPrepared = 0;
+  if (tcWizard) {
+    spellsPrepared = tcWizard.spellsKnown;
+  } else if (spellcastingAbility && !wmBarbActive) {
+    spellsPrepared = spellSelectionCount(input.classLabel, input.level, castingMod);
+  }
 
   const spells: GeneratedSpell[] = [];
-  if (classDef?.spellList && spellsPrepared > 0) {
-    const mdFile = classDef.supplementRulesSource?.markdownFile ?? PHB_MD_FILE;
-    await preloadManualMarkdownFile(mdFile, requestOrigin);
-    const md = getManualMarkdownByFileName(mdFile);
-    const listRaw =
-      classDef.spellList.style === "h1"
-        ? extractSectionByHeadingsMarkdown(md, [classDef.spellList.chapter])
-        : extractSectionByHeadingsMarkdown(md, [classDef.spellList.sectionHeading]);
-    const listByLevel = extractSpellListByMaxLevel(listRaw, maxSpellLevelOnSheet(classDef, input.level));
+  const shouldLoadSpells =
+    (cantripsKnown > 0 || spellsPrepared > 0) && (!!tcWizard || !!classDef?.spellList);
+
+  if (shouldLoadSpells) {
+    let listRaw = "";
+    if (tcWizard) {
+      await preloadPhbMarkdown(requestOrigin);
+      const mdPhb = getManualMarkdownByFileName(PHB_MD_FILE);
+      listRaw = extractSectionByHeadingsMarkdown(mdPhb, ["INCANTESIMI DA MAGO"]) ?? "";
+    } else if (classDef?.spellList) {
+      const mdFile = classDef.supplementRulesSource?.markdownFile ?? PHB_MD_FILE;
+      await preloadManualMarkdownFile(mdFile, requestOrigin);
+      const md = getManualMarkdownByFileName(mdFile);
+      listRaw =
+        classDef.spellList.style === "h1"
+          ? extractSectionByHeadingsMarkdown(md, [classDef.spellList.chapter]) ?? ""
+          : extractSectionByHeadingsMarkdown(md, [classDef.spellList.sectionHeading]) ?? "";
+    }
+
+    const maxOnSheet = tcWizard ? tcWizard.maxSpellLevelOnList : maxSpellLevelOnSheet(classDef, input.level);
+    const listByLevel = extractSpellListByMaxLevel(listRaw, maxOnSheet);
     const entries = parseSpellsWithLevelFromList(listByLevel);
     const cantripEntries = pickRandomUnique(entries.filter((e) => e.level === 0), cantripsKnown);
-    const maxOnSheet = maxSpellLevelOnSheet(classDef, input.level);
     const leveledEntries = pickLeveledSpellsBalanced(entries, spellsPrepared, maxOnSheet);
     const picked = [...cantripEntries, ...leveledEntries];
     await preloadPhbMarkdown(requestOrigin);
@@ -881,14 +1039,23 @@ export async function resolveGeneratorRules(
     }
   }
 
+  let filteredClassMd = filterClassFeaturesByLevel(classFeaturesMd, input.level);
+  if (CLASSES_WITH_PHB_FIGHTING_STYLE_COLLAPSE.has(input.classLabel)) {
+    filteredClassMd = collapsePhbFightingStyleOptions(filteredClassMd, fightingStyleSheetSeed(input));
+  }
+
   return {
     raceTraitsMd: normalizeMarkdownTables(cleanRulesExcerpt(stripOptionalHumanTraits(raceTraitsMd))),
     subraceTraitsMd: subraceTraitsMd ? normalizeMarkdownTables(cleanRulesExcerpt(subraceTraitsMd)) : null,
-    classFeaturesMd: normalizeMarkdownTables(filterClassFeaturesByLevel(classFeaturesMd, input.level)),
+    classFeaturesMd: normalizeMarkdownTables(filteredClassMd),
     subclassFeaturesMd: subclassFeaturesMd
       ? normalizeMarkdownTables(cleanRulesExcerpt(filterClassFeaturesByLevel(subclassFeaturesMd, input.level)))
       : null,
-    backgroundMd: backgroundMd ? normalizeMarkdownTables(cleanRulesExcerpt(backgroundMd)) : null,
+    backgroundMd: backgroundMd
+      ? collapseRandomDiceTablesInBackgroundMarkdown(
+          normalizeMarkdownTables(cleanRulesExcerpt(backgroundMd))
+        )
+      : null,
     spellcastingAbility,
     spellSlots,
     cantripsKnown,

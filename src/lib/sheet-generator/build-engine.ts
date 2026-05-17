@@ -1,5 +1,6 @@
-import { backgroundBySlug, raceBySlug } from "@/lib/character-build-catalog";
+import { backgroundBySlug, backgroundStartingInventoryLines, raceBySlug } from "@/lib/character-build-catalog";
 import { resolveGeneratorRules } from "@/lib/sheet-generator/rules-resolver";
+import { detectWildMagicBarbarianPath } from "@/lib/sheet-generator/third-caster-subclass";
 import type {
   AbilityKey,
   CharacterGeneratorInput,
@@ -479,7 +480,7 @@ function computeCoreFromAbilities(
     armorProficiencies: cfg.armorProficiencies,
     weaponProficiencies: cfg.weaponProficiencies,
     toolProficiencies: cfg.toolProficiencies,
-    inventory: ["Zaino", "Razioni x10", "Otre", "Corda di canapa (15 m)"],
+    inventory: backgroundStartingInventoryLines(backgroundSlug),
     languages: ["Comune"],
   };
 }
@@ -618,6 +619,7 @@ export async function buildGeneratedCharacterSheet(
       classSubclass: input.classSubclass,
       backgroundSlug: input.backgroundSlug,
       level: input.level,
+      characterName: input.characterName,
     },
     baseCore.abilityMods,
     baseCore.proficiencyBonus,
@@ -646,6 +648,7 @@ export async function buildGeneratedCharacterSheet(
       classSubclass: input.classSubclass,
       backgroundSlug: input.backgroundSlug,
       level: input.level,
+      characterName: input.characterName,
     },
     core.abilityMods,
     core.proficiencyBonus,
@@ -655,12 +658,15 @@ export async function buildGeneratedCharacterSheet(
   const subraceLabel = raceDef?.subraces?.find((s) => s.slug === input.subraceSlug)?.label ?? null;
   const bg = backgroundBySlug(input.backgroundSlug);
 
+  const wmBarbForSheet =
+    detectWildMagicBarbarianPath(input.classLabel, input.classSubclass) && input.level >= 3;
+
   const spellSaveDc =
     rules.spellcastingAbility != null
       ? 8 + core.proficiencyBonus + core.abilityMods[rules.spellcastingAbility]
       : null;
   const spellAttackBonus =
-    rules.spellcastingAbility != null
+    rules.spellcastingAbility != null && !wmBarbForSheet
       ? core.proficiencyBonus + core.abilityMods[rules.spellcastingAbility]
       : null;
 

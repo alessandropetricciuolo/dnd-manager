@@ -6,6 +6,10 @@ import {
   parseInitiativeRemoteSnapshot,
   type InitiativeRemoteSnapshot,
 } from "@/lib/gm-remote/initiative-commands";
+import {
+  parseSfxPadRemoteSnapshot,
+  type SfxPadRemoteSnapshot,
+} from "@/lib/gm-remote/sfx-pad-snapshot";
 
 type GmResult<T = void> = { success: true; data?: T } | { success: false; error: string };
 
@@ -110,6 +114,34 @@ export async function publishGmRemoteInitiativeSnapshot(
   const { error } = await supabase
     .from("gm_remote_sessions")
     .update({ initiative_snapshot: parsed as unknown as Record<string, unknown> })
+    .eq("campaign_id", campaignId)
+    .eq("public_id", publicId)
+    .is("revoked_at", null);
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+  return { success: true };
+}
+
+/** Pubblica icone ed etichette pad SFX per il telecomando collegato. */
+export async function publishGmRemoteSfxPadSnapshot(
+  campaignId: string,
+  publicId: string,
+  snapshot: SfxPadRemoteSnapshot
+): Promise<GmResult> {
+  const check = await ensureGmOrAdmin();
+  if (!check.success) return check;
+  const supabase = check.data!;
+
+  const parsed = parseSfxPadRemoteSnapshot(snapshot);
+  if (!parsed) {
+    return { success: false, error: "Snapshot pad non valido." };
+  }
+
+  const { error } = await supabase
+    .from("gm_remote_sessions")
+    .update({ sfx_pad_snapshot: parsed as unknown as Record<string, unknown> })
     .eq("campaign_id", campaignId)
     .eq("public_id", publicId)
     .is("revoked_at", null);

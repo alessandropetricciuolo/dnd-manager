@@ -128,7 +128,6 @@ export function GmScreenLegacyLayout({
         <GmRemoteIntegration
           campaignId={campaignId}
           forge={audioForge}
-          onSpotifySelectPlaylist={setSpotifyEmbedPlaylistId}
         />
       </div>
 

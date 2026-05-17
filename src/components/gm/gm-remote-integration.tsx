@@ -7,6 +7,7 @@ import type { GmAudioForgeControls } from "@/lib/gm-audio-forge/use-gm-audio-for
 import { GmRemoteCommandBridge } from "./gm-remote-command-bridge";
 import { GmRemoteControlModal } from "./gm-remote-control-modal";
 import { GmRemoteInitiativePublisher } from "./gm-remote-initiative-publisher";
+import { GmRemoteSfxPadPublisher } from "./gm-remote-sfx-pad-publisher";
 import type { GmRemoteSessionCreated } from "@/app/campaigns/gm-remote-actions";
 import type { InitiativeTrackerHandle, InitiativeTrackerState } from "./initiative-tracker";
 
@@ -16,7 +17,6 @@ type Props = {
   initiativeHandleRef?: RefObject<InitiativeTrackerHandle | null>;
   initiativeState?: InitiativeTrackerState | null;
   onSessionPublicIdChange?: (publicId: string | null) => void;
-  onSpotifySelectPlaylist?: (spotifyPlaylistId: string) => void;
 };
 
 type BridgeSnapshot = { publicId: string; expiresAt: string };
@@ -31,7 +31,6 @@ export function GmRemoteIntegration({
   initiativeHandleRef,
   initiativeState,
   onSessionPublicIdChange,
-  onSpotifySelectPlaylist,
 }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalSession, setModalSession] = useState<GmRemoteSessionCreated | null>(null);
@@ -105,13 +104,19 @@ export function GmRemoteIntegration({
         forge={forge}
         initiativeHandleRef={initiativeHandleRef}
         onRealtimeStatus={setRealtimeConnected}
-        onSpotifySelectPlaylist={onSpotifySelectPlaylist}
       />
       {initiativeState && !onSessionPublicIdChange ? (
         <GmRemoteInitiativePublisher
           campaignId={campaignId}
           sessionPublicId={sessionPublicId}
           state={initiativeState}
+        />
+      ) : null}
+      {forge ? (
+        <GmRemoteSfxPadPublisher
+          campaignId={campaignId}
+          sessionPublicId={sessionPublicId}
+          sfxPad={forge.library.sfxPad}
         />
       ) : null}
       <Button

@@ -395,6 +395,36 @@ export const BACKGROUND_OPTIONS: BackgroundCatalogEntry[] = [
   },
 ];
 
+/**
+ * Dotazione di partenza dal background (PHB IT / Ravenloft), sintetizzata per il campo inventario PDF.
+ * Non include equipaggiamento di classe (armi/armature): solo ciò che il manuale attribuisce al background.
+ */
+export const BACKGROUND_STARTING_INVENTORY_SHORT: Record<string, readonly string[]> = {
+  accolito: ["Simbolo sacro", "Libro di preghiere", "Incenso ×5", "Vesti liturgiche", "Borsa"],
+  artigiano_gilda: ["Strumenti da artigiano", "Lettera di gilda", "Abito da viaggiatore", "Borsa"],
+  ciarlatano: ["Abbigliamento di pregio", "Kit da truccotto", "Attrezzi da falsario", "Borsa"],
+  criminale: ["Piede di porco", "Abito comune con cappuccio", "Borsa"],
+  eremita: ["Custodia pergamene + appunti", "Coperta invernale", "Borsa da erborista", "Abito comune"],
+  eroe_popolare: ["Strumenti da artigiano", "Pala", "Vaso di ferro", "Borsa"],
+  forestiero: ["Zaino da viaggiatore", "Otre", "Utensili da cuoco", "Asta da passeggio", "Trappola"],
+  intrattenitore: ["Strumento musicale", "Complimento da fan", "Costume / trucco", "Borsa"],
+  nobile: ["Abbigliamento di pregio", "Anello con sigillo", "Pergamena lignaggio", "Borsa"],
+  sapiente: ["Inchiostro nero", "Penna di piuma", "Coltellino", "Lettera da collega", "Borsa"],
+  soldato: ["Distintivo di grado", "Trofeo nemico", "Set da gioco o dadi", "Borsa"],
+  tormentato: ["Dotazione cacciatore di mostri", "Monile dell'orrore", "Vestito comune"],
+  investigatore: ["Lente d'ingrandimento", "Indizi caso passato", "Vestito comune"],
+};
+
+const GENERIC_START_INVENTORY = ["Zaino", "Razioni ×10", "Otre", "Corda di canapa (15 m)"] as const;
+
+/** Liste brevi per compilazione inventario PDF / scheda generata. */
+export function backgroundStartingInventoryLines(slug: string | null | undefined): string[] {
+  const key = slug?.trim() ?? "";
+  const rows = BACKGROUND_STARTING_INVENTORY_SHORT[key];
+  if (rows?.length) return [...rows];
+  return [...GENERIC_START_INVENTORY];
+}
+
 export function classByLabel(label: string | null | undefined): ClassCatalogEntry | null {
   if (!label?.trim()) return null;
   const t = label.trim();

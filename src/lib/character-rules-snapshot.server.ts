@@ -24,6 +24,9 @@ import {
   preloadManualMarkdownFile,
   preloadPhbMarkdown,
 } from "@/lib/server/phb-spell-excerpt";
+import { sanitizeRaceTraitsMarkdown } from "@/lib/race-traits-sanitizer";
+import { collapseRandomDiceTablesInBackgroundMarkdown } from "@/lib/sheet-generator/background-dice-table-roll";
+import { normalizeMarkdownTables } from "@/lib/sheet-generator/rules-resolver";
 
 type MkRow = { content: string | null; metadata: Record<string, unknown> | null };
 type MkSource = { fileName: string; bookKey: string };
@@ -554,6 +557,10 @@ function clipBackgroundRules(md: string): string {
   return `${md.slice(0, MAX).trim()}\n\n_(Background PHB: testo troncato.)_`;
 }
 
+function finalizeBackgroundRulesMarkdown(md: string): string {
+  return collapseRandomDiceTablesInBackgroundMarkdown(normalizeMarkdownTables(md));
+}
+
 function inferUnlockLevel(text: string): number {
   const t = text.replace(/\r/g, " ");
   const m =
@@ -956,7 +963,10 @@ export async function recomputeCharacterRulesSnapshot(input: {
       const narrowed = extractSectionByHeadingsMarkdown(raceTraitsMd, [raceDef.traitsSectionHeading]);
       if (narrowed.trim()) raceTraitsMd = narrowed;
     }
-    raceTraitsMd = sanitizeRulesExcerpt(stripOptionalHumanTraits(raceTraitsMd));
+    raceTraitsMd = sanitizeRaceTraitsMarkdown(
+      input.raceSlug,
+      sanitizeRulesExcerpt(stripOptionalHumanTraits(raceTraitsMd))
+    );
     if (!raceTraitsMd.trim()) warnings.push(`Tratti razza non trovati in manuals_knowledge per «${raceDef.label}».`);
   }
 
@@ -1138,13 +1148,13 @@ export async function recomputeCharacterRulesSnapshot(input: {
   if (bgDef) {
     const rows = await fetchRowsContentIlike(admin, `%${bgDef.opener}%`, excluded);
     const merged = mergeMdChunks(rows);
-    backgroundRulesMd = merged.trim() ? clipBackgroundRules(merged) : null;
+    backgroundRulesMd = merged.trim() ? finalizeBackgroundRulesMarkdown(clipBackgroundRules(merged)) : null;
     if (!backgroundRulesMd?.trim()) {
       const mdFile = bgDef.rulesSource?.markdownFile ?? PHB_MD_FILE;
       await preloadManualMarkdownFile(mdFile, await resolveRequestOriginForPhb());
       const md = getManualMarkdownByFileName(mdFile);
       const fromMd = extractSectionByHeadingsMarkdown(md, [bgDef.phbH1]);
-      backgroundRulesMd = fromMd.trim() ? clipBackgroundRules(fromMd) : null;
+      backgroundRulesMd = fromMd.trim() ? finalizeBackgroundRulesMarkdown(clipBackgroundRules(fromMd)) : null;
     }
     if (!backgroundRulesMd?.trim()) warnings.push(`Regole background «${bgDef.label}»: estratto non trovato.`);
   }

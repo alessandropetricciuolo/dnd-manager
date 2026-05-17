@@ -17,6 +17,12 @@ function block(title: string, body: string | null | undefined) {
   );
 }
 
+function inventoryPreviewText(lines: string[]): string {
+  const cleaned = lines.map((s) => s.replace(/\s+/g, " ").trim()).filter(Boolean);
+  if (!cleaned.length) return "—";
+  return cleaned.map((s) => `• ${s}`).join("\n");
+}
+
 export function GeneratedSheetView({ sheet, sheetData }: Props) {
   async function downloadCompiledPdf() {
     if (!sheetData) return;
@@ -86,6 +92,14 @@ export function GeneratedSheetView({ sheet, sheetData }: Props) {
           <div><b>CA</b> {sheet.armorClass}</div>
           <div><b>PF</b> {sheet.hpMax}</div>
           <div><b>Iniziativa</b> {sheet.initiative >= 0 ? `+${sheet.initiative}` : sheet.initiative}</div>
+        </section>
+
+        <section className="mb-4 rounded border border-barber-gold/20 bg-black/20 p-3">
+          <h3 className="mb-2 text-sm font-semibold text-barber-paper">Inventario</h3>
+          <p className="mb-2 text-xs text-barber-paper/65">
+            Dotazione di partenza dal background (come sul campo inventario della Scheda_Base PDF).
+          </p>
+          <pre className="whitespace-pre-wrap text-sm text-barber-paper/90">{inventoryPreviewText(sheet.inventory)}</pre>
         </section>
 
         <section className="mb-4">

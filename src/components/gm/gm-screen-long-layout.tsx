@@ -223,7 +223,6 @@ function LongWorkspace({
         <GmRemoteIntegration
           campaignId={campaignId}
           forge={audioForge}
-          onSpotifySelectPlaylist={setSpotifyEmbedPlaylistId}
         />
         <Button
           variant="ghost"

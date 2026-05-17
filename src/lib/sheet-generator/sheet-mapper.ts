@@ -4,6 +4,20 @@ function fmt(n: number): string {
   return n >= 0 ? `+${n}` : `${n}`;
 }
 
+/** Inventario PDF: spazio ridotto — elenco sintetico con limite caratteri. */
+function formatInventoryForPdf(lines: string[], maxChars = 420): string {
+  const cleaned = lines.map((s) => s.replace(/\s+/g, " ").trim()).filter(Boolean);
+  if (!cleaned.length) return "";
+  let text = cleaned.map((s) => `• ${s}`).join("\n");
+  if (text.length <= maxChars) return text;
+  text = cleaned.join("; ");
+  if (text.length <= maxChars) return text;
+  const cut = text.slice(0, maxChars - 1).trimEnd();
+  const lastSemi = cut.lastIndexOf("; ");
+  const base = lastSemi > maxChars * 0.55 ? cut.slice(0, lastSemi) : cut;
+  return `${base}…`;
+}
+
 function compactPdfText(md: string, maxLen: number): string {
   const cleaned = md
     .replace(/\r/g, "")
@@ -290,7 +304,7 @@ export function mapGeneratedSheetToPdfFields(sheet: GeneratedCharacterSheet): Re
     ST_CHA_Prof: sheet.savingThrows.cha.proficient ? "x" : "",
     Features_Main: summarizeClassFeaturesForPdf(sheet.classFeaturesMd, sheet.subclassFeaturesMd, sheet.level, 1400),
     Feat_Racial: summarizeRaceTraitsForPdf(sheet.raceTraitsMd, sheet.subraceTraitsMd ?? "", 900),
-    Inventory: sheet.inventory.join("\n"),
+    Inventory: formatInventoryForPdf(sheet.inventory),
     Languages: sheet.languages.join(", "),
     SpellcastingClass: sheet.spellcastingClass ?? "",
     SpellcastingAbility: sheet.spellcastingAbility?.toUpperCase() ?? "",

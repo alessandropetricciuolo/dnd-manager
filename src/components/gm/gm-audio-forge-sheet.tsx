@@ -372,7 +372,7 @@ export function GmAudioForgeSheet({
               )}
             </SectionCard>
 
-            <SectionCard title="Spotify" description="Scegli la playlist attiva. Il player è nel riquadro in basso a destra; il telecomando comanda quello stesso player.">
+            <SectionCard title="Spotify" description="Scegli la playlist attiva. Il player è in basso a destra sul GM screen: collega il tuo account Premium per la musica completa.">
               <GmSpotifyPlayerPanel
                 spotifyEmbedPlaylistId={spotifyEmbedPlaylistId}
                 onSpotifyEmbedPlaylistIdChange={onSpotifyEmbedPlaylistIdChange}

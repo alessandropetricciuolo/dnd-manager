@@ -113,6 +113,80 @@ test("golden: Ranger 7 Cacciatore", async () => {
   assert.ok(!sub.toLowerCase().includes("signore delle bestie"), "fine blocco prima dell'altro archetipo");
 });
 
+test("golden: Guerriero 1 — un solo stile di combattimento nei privilegi di classe", async () => {
+  const input = {
+    characterName: "Test Guerriero",
+    raceSlug: "umano",
+    subraceSlug: null,
+    classLabel: "Guerriero",
+    classSubclass: null,
+    backgroundSlug: "soldato",
+    level: 1,
+    alignment: "Neutrale Buono",
+    age: "22",
+    height: null,
+    weight: null,
+    sex: "M",
+  } as const;
+  const res = await buildGeneratedCharacterSheet(input);
+  assert.equal(res.sheet.classLabel, "Guerriero");
+  const cls = res.sheet.classFeaturesMd;
+  assert.ok(/stile di combattimento/i.test(cls), "blocco introduzione stile");
+  const styleHeadingRe =
+    /^### (COMBATTERE CON ARMI POSSENTI|COMBATTERE CON DUE ARMI|DIFESA|DUELLARE|PROTEZIONE|TIRO)\s*$/gim;
+  const matches = [...cls.matchAll(styleHeadingRe)];
+  assert.equal(matches.length, 1, "una sola opzione di stile (non l’intero elenco PHB)");
+  const again = await buildGeneratedCharacterSheet(input);
+  assert.equal(again.sheet.classFeaturesMd, cls, "stesso seed ⇒ stesso stile");
+});
+
+test("golden: Paladino 3 — un solo stile di combattimento nei privilegi di classe", async () => {
+  const input = {
+    characterName: "Test Paladino Stile",
+    raceSlug: "umano",
+    subraceSlug: null,
+    classLabel: "Paladino",
+    classSubclass: null,
+    backgroundSlug: "soldato",
+    level: 3,
+    alignment: "Legale Buono",
+    age: "28",
+    height: null,
+    weight: null,
+    sex: "M",
+  } as const;
+  const res = await buildGeneratedCharacterSheet(input);
+  assert.equal(res.sheet.classLabel, "Paladino");
+  const cls = res.sheet.classFeaturesMd;
+  assert.ok(/stile di combattimento/i.test(cls));
+  const paladinStylesRe =
+    /^### (COMBATTERE CON ARMI POSSENTI|DIFESA|DUELLARE|PROTEZIONE)\s*$/gim;
+  assert.equal([...cls.matchAll(paladinStylesRe)].length, 1, "solo un’opzione tra quelle PHB del paladino");
+  assert.ok(!/^### COMBATTERE CON DUE ARMI\s*$/im.test(cls));
+  assert.ok(!/^### TIRO\s*$/im.test(cls));
+});
+
+test("golden: Guerriero 8 Cavaliere Mistico — incantesimi da mago dal 3° livello", async () => {
+  const res = await buildGeneratedCharacterSheet({
+    characterName: "Test EK",
+    raceSlug: "umano",
+    subraceSlug: null,
+    classLabel: "Guerriero",
+    classSubclass: "Cavaliere Mistico",
+    backgroundSlug: "soldato",
+    level: 8,
+    alignment: "Neutrale Buono",
+    age: "22",
+    height: null,
+    weight: null,
+    sex: "M",
+  });
+  assert.equal(res.sheet.spellcastingAbility, "int");
+  assert.ok(res.sheet.spells.length >= 5);
+  assert.ok(res.sheet.spellSlots[1] >= 4);
+  assert.ok(typeof res.sheet.spellSaveDc === "number");
+});
+
 test("golden: Paladino 7 Giuramento di Vendetta — sottoclasse senza spillover sul manuale", async () => {
   const res = await buildGeneratedCharacterSheet({
     characterName: "Test Paladin",
