@@ -483,6 +483,46 @@ export interface Database {
         };
         Update: Partial<Database["public"]["Tables"]["mission_encounter_monsters"]["Insert"]>;
       };
+      character_catalog: {
+        Row: {
+          id: string;
+          slug: string;
+          library_key: string;
+          name: string;
+          character_class: string | null;
+          class_subclass: string | null;
+          armor_class: number | null;
+          hit_points: number | null;
+          background: string | null;
+          race_slug: string | null;
+          subclass_slug: string | null;
+          background_slug: string | null;
+          image_url: string | null;
+          sheet_file_path: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          slug: string;
+          library_key?: string;
+          name: string;
+          character_class?: string | null;
+          class_subclass?: string | null;
+          armor_class?: number | null;
+          hit_points?: number | null;
+          background?: string | null;
+          race_slug?: string | null;
+          subclass_slug?: string | null;
+          background_slug?: string | null;
+          image_url?: string | null;
+          sheet_file_path?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["character_catalog"]["Row"]>;
+        Relationships: [];
+      };
       campaign_characters: {
         Row: {
           id: string;

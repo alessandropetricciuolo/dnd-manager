@@ -1,6 +1,7 @@
 "use client";
 
 import { CreateCharacterDialog } from "./create-character-dialog";
+import { ImportCharactersFromCatalogDialog } from "./import-characters-from-catalog-dialog";
 import { CharacterCardGm } from "./character-card-gm";
 import { CharacterCardPlayer } from "./character-card-player";
 import { PlayerSecretChat } from "@/components/player/player-secret-chat";
@@ -80,7 +81,10 @@ export function CharactersSection({
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h2 className="text-lg font-semibold text-barber-paper">Personaggi</h2>
-          <CreateCharacterDialog campaignId={campaignId} initialOpen={openCreateDialogOnLoad} />
+          <div className="flex flex-wrap items-center gap-2">
+            <ImportCharactersFromCatalogDialog campaignId={campaignId} />
+            <CreateCharacterDialog campaignId={campaignId} initialOpen={openCreateDialogOnLoad} />
+          </div>
         </div>
         {characters.length === 0 ? (
           <p className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 px-6 py-8 text-center text-barber-paper/70">

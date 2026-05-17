@@ -1,0 +1,34 @@
+{
+  "_readme": "Esempio per npm run catalog:import — percorsi file relativi alla cartella del JSON.",
+  "libraryKey": "barber_and_dragons",
+  "entries": [
+    {
+      "slug": "esempio-eroe",
+      "name": "Nome PG",
+      "character_class": "Guerriero",
+      "class_subclass": "Campione",
+      "armor_class": 18,
+      "hit_points": 32,
+      "background": "Testo background / storia (solo testo).",
+      "race_slug": "umano",
+      "subclass_slug": null,
+      "background_slug": "soldato",
+      "image": { "file": "assets/portrait.png" },
+      "sheet": { "file": "assets/scheda.pdf" }
+    },
+    {
+      "slug": "altro-esempio-url",
+      "name": "Altro PG",
+      "character_class": "Ladro",
+      "class_subclass": null,
+      "armor_class": 14,
+      "hit_points": 22,
+      "background": "Storia importata…",
+      "race_slug": "mezzelfo",
+      "subclass_slug": null,
+      "background_slug": "criminale",
+      "image": { "url": "https://example.com/avatar.png" },
+      "sheet": { "url": "https://example.com/scheda.pdf" }
+    }
+  ]
+}

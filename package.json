@@ -13,6 +13,7 @@
     "security:smoke-remote": "tsx scripts/security-smoke-remote.ts",
     "test:r2-env": "tsx scripts/test-r2-env.ts",
     "export:dungeonedraghi": "node scripts/export-dungeonedraghi-compendio.mjs",
+    "catalog:import": "tsx scripts/import-character-catalog.ts",
     "mm:chunks": "tsx scripts/delimit-manuale-mostri.ts"
   },
   "dependencies": {
