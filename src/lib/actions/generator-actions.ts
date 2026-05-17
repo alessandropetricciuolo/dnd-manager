@@ -29,6 +29,7 @@ function parseInput(formData: FormData): CharacterGeneratorInput {
     height: (formData.get("height") as string | null)?.trim() || null,
     weight: (formData.get("weight") as string | null)?.trim() || null,
     sex: (formData.get("sex") as string | null)?.trim() || null,
+    powerPlayer: formData.get("powerPlayer") === "1" || formData.get("powerPlayer") === "on",
   };
 }
 

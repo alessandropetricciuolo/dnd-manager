@@ -33,6 +33,8 @@ export type CharacterGeneratorInput = {
   height: string | null;
   weight: string | null;
   sex: string | null;
+  /** Se true, gli incantesimi sulla scheda privilegiano una tier list orientata al combattimento. */
+  powerPlayer?: boolean;
 };
 
 export type GeneratedSpell = {

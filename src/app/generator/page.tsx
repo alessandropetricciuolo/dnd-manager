@@ -36,6 +36,7 @@ function GeneratorPageContent() {
       characterId: searchParams.get("characterId") ?? "",
       returnTo: searchParams.get("returnTo") ?? "",
       autogen: searchParams.get("autogen") === "1",
+      powerPlayer: searchParams.get("powerPlayer") === "1",
     }),
     [searchParams]
   );
@@ -253,6 +254,7 @@ function GeneratorPageContent() {
       height: initial.height,
       weight: initial.weight,
       sex: initial.sex,
+      powerPlayer: initial.powerPlayer,
     });
     if (autogenKeyRef.current === autogenKey) return;
     autogenKeyRef.current = autogenKey;
@@ -269,6 +271,7 @@ function GeneratorPageContent() {
     if (initial.height) fd.set("height", initial.height);
     if (initial.weight) fd.set("weight", initial.weight);
     if (initial.sex) fd.set("sex", initial.sex);
+    if (initial.powerPlayer) fd.set("powerPlayer", "1");
 
     startTransition(async () => {
       const result = await generateSheetAction(fd);
@@ -487,6 +490,26 @@ function GeneratorPageContent() {
           <div className="space-y-2">
             <label htmlFor="sex" className="text-sm font-medium text-barber-paper">Sesso</label>
             <input id="sex" name="sex" type="text" defaultValue={initial.sex} disabled={isPending} className="h-11 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold" />
+          </div>
+
+          <div className="space-y-2">
+            <label className="flex cursor-pointer items-start gap-3 rounded-md border border-barber-gold/25 bg-barber-dark/50 px-4 py-3 text-sm text-barber-paper">
+              <input
+                type="checkbox"
+                name="powerPlayer"
+                value="1"
+                defaultChecked={initial.powerPlayer}
+                disabled={isPending}
+                className="mt-1 h-4 w-4 shrink-0 rounded border-barber-gold/40 text-barber-red focus:ring-barber-gold"
+              />
+              <span>
+                <span className="font-medium text-barber-gold">Power player (scheda)</span>
+                <span className="mt-1 block text-barber-paper/75">
+                  Trucchetti e incantesimi scelti da una tier list orientata al combattimento (nomi italiani del manuale),
+                  invece che casuali. Non cambia CA/PF né i punteggi.
+                </span>
+              </span>
+            </label>
           </div>
 
           <button

@@ -24,6 +24,7 @@ import {
   getThirdCasterWizardSpellcasting,
   spellSlotsRecordFromThirdCasterTiers,
 } from "@/lib/sheet-generator/third-caster-subclass";
+import { getSpellCombatTierScore } from "@/lib/sheet-generator/spell-combat-tier";
 
 function headingLevel(line: string): number | null {
   const m = line.match(/^(\s*#{1,6})\s+.+$/);
@@ -629,6 +630,58 @@ function extractSpellFlags(mdSpell: string): {
   return { ritual, concentration, verbal, somatic, material };
 }
 
+function pickCantripsPowerTier(
+  entries: Array<{ name: string; level: number }>,
+  count: number
+): Array<{ name: string; level: number }> {
+  if (count <= 0) return [];
+  const pool = entries.filter((e) => e.level === 0);
+  if (!pool.length) return [];
+  const sorted = [...pool].sort((a, b) => {
+    const ta = getSpellCombatTierScore(a.name);
+    const tb = getSpellCombatTierScore(b.name);
+    if (tb !== ta) return tb - ta;
+    return a.name.localeCompare(b.name, "it");
+  });
+  const picked: Array<{ name: string; level: number }> = [];
+  const seen = new Set<string>();
+  for (const e of sorted) {
+    if (picked.length >= count) break;
+    const key = e.name.toLocaleLowerCase("it");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    picked.push(e);
+  }
+  return picked;
+}
+
+function pickLeveledSpellsPowerTier(
+  entries: Array<{ name: string; level: number }>,
+  count: number,
+  maxLevel: number
+): Array<{ name: string; level: number }> {
+  if (count <= 0) return [];
+  const pool = entries.filter((e) => e.level >= 1 && e.level <= maxLevel);
+  if (!pool.length) return [];
+  const sorted = [...pool].sort((a, b) => {
+    const sa = getSpellCombatTierScore(a.name) * 100 + a.level;
+    const sb = getSpellCombatTierScore(b.name) * 100 + b.level;
+    if (sb !== sa) return sb - sa;
+    if (b.level !== a.level) return b.level - a.level;
+    return a.name.localeCompare(b.name, "it");
+  });
+  const picked: Array<{ name: string; level: number }> = [];
+  const seen = new Set<string>();
+  for (const e of sorted) {
+    if (picked.length >= count) break;
+    const key = `${e.level}:${e.name.toLocaleLowerCase("it")}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    picked.push(e);
+  }
+  return picked;
+}
+
 function pickLeveledSpellsBalanced(
   entries: Array<{ name: string; level: number }>,
   count: number,
@@ -850,6 +903,8 @@ export async function resolveGeneratorRules(
     level: number;
     /** Usato per variare in modo stabile lo stile di combattimento del Guerriero in scheda. */
     characterName?: string | null;
+    /** Incantesimi scelti con priorità tier combat invece che casuali/bilanciati. */
+    powerPlayer?: boolean;
   },
   abilityModByKey: Record<AbilityKey, number>,
   proficiencyBonus: number,
@@ -1018,8 +1073,12 @@ export async function resolveGeneratorRules(
     const maxOnSheet = tcWizard ? tcWizard.maxSpellLevelOnList : maxSpellLevelOnSheet(classDef, input.level);
     const listByLevel = extractSpellListByMaxLevel(listRaw, maxOnSheet);
     const entries = parseSpellsWithLevelFromList(listByLevel);
-    const cantripEntries = pickRandomUnique(entries.filter((e) => e.level === 0), cantripsKnown);
-    const leveledEntries = pickLeveledSpellsBalanced(entries, spellsPrepared, maxOnSheet);
+    const cantripEntries = input.powerPlayer
+      ? pickCantripsPowerTier(entries, cantripsKnown)
+      : pickRandomUnique(entries.filter((e) => e.level === 0), cantripsKnown);
+    const leveledEntries = input.powerPlayer
+      ? pickLeveledSpellsPowerTier(entries, spellsPrepared, maxOnSheet)
+      : pickLeveledSpellsBalanced(entries, spellsPrepared, maxOnSheet);
     const picked = [...cantripEntries, ...leveledEntries];
     await preloadPhbMarkdown(requestOrigin);
     for (const pickedSpell of picked) {
