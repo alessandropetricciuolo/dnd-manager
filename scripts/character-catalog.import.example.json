@@ -1,5 +1,5 @@
 {
-  "_readme": "Esempio per npm run catalog:import o per la pagina Admin → Catalogo PG. Da browser usa url/https o base64; i path file solo da CLI.",
+  "_readme": "PDF/image da Google Drive: usa il link di condivisione (/file/d/ID/view). Immagine Drive viene salvata come thumbnail; PDF viene scaricato sul server (richiede «Chiunque con il link»). Path file locali solo da CLI.",
   "libraryKey": "barber_and_dragons",
   "entries": [
     {
@@ -27,8 +27,12 @@
       "race_slug": "mezzelfo",
       "subclass_slug": null,
       "background_slug": "criminale",
-      "image": { "url": "https://example.com/avatar.png" },
-      "sheet": { "url": "https://example.com/scheda.pdf" }
+      "image": {
+        "url": "https://drive.google.com/file/d/REPLACE_ME_DRIVE_IMAGE_ID/view?usp=drive_link"
+      },
+      "sheet": {
+        "url": "https://drive.google.com/file/d/REPLACE_ME_DRIVE_PDF_ID/view?usp=drive_link"
+      }
     }
   ]
 }

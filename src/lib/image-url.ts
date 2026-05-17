@@ -2,7 +2,7 @@
  * Estrae il FILE_ID da un URL Google Drive (condivisione).
  * Supporta: /file/d/FILE_ID/view, /open?id=FILE_ID, ecc.
  */
-function extractGoogleDriveFileId(url: string): string | null {
+export function extractGoogleDriveFileId(url: string): string | null {
   const matchPath = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/i);
   if (matchPath) return matchPath[1];
   const matchQuery = url.match(/[?&]id=([a-zA-Z0-9_-]+)/i);

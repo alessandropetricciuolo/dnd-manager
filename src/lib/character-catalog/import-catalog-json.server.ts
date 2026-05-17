@@ -1,6 +1,7 @@
 /**
  * Logica condivisa import catalogo PG (CLI + admin da JSON).
  * Server-only: storage, Telegram, fetch HTTPS.
+ * Scheda PDF: supporto link Google Drive (condivisione /file/d/…).
  */
 
 import { readFile } from "node:fs/promises";
@@ -8,6 +9,8 @@ import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { uploadToTelegram } from "@/lib/telegram-storage";
 import { parseSafeExternalUrl } from "@/lib/security/url";
+import { normalizeImageUrl, extractGoogleDriveFileId } from "@/lib/image-url";
+import { downloadGoogleDriveFileBuffer } from "@/lib/google-drive-file-download";
 
 export const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const CHARACTER_SHEETS_BUCKET = "character_sheets";
@@ -43,6 +46,30 @@ export type CatalogImportRunResult = {
   successSlugs: string[];
 };
 
+type ResolvedCatalogAsset =
+  | { kind: "url"; url: string }
+  | { kind: "file"; path: string }
+  | { kind: "base64"; payload: string; fileName?: string };
+
+/** Risolve asset: una stringa https in `file` viene trattata come URL (Drive incluso). */
+function resolveCatalogAsset(x: JsonImage | JsonSheet): ResolvedCatalogAsset | null {
+  const b64Raw = typeof x.base64 === "string" ? x.base64.trim() : "";
+  if (b64Raw.length > 0) {
+    const fn = typeof x.fileName === "string" && x.fileName.trim() ? x.fileName.trim() : undefined;
+    return { kind: "base64", payload: b64Raw, fileName: fn };
+  }
+
+  const urlRaw = typeof x.url === "string" ? x.url.trim() : "";
+  const fileRaw = typeof x.file === "string" ? x.file.trim() : "";
+
+  if (fileRaw && /^https?:\/\//i.test(fileRaw)) {
+    return { kind: "url", url: fileRaw };
+  }
+  if (urlRaw) return { kind: "url", url: urlRaw };
+  if (fileRaw) return { kind: "file", path: fileRaw };
+  return null;
+}
+
 function getEnv(name: string): string {
   const v = process.env[name]?.trim();
   if (!v) throw new Error(`Missing environment variable: ${name}`);
@@ -72,6 +99,27 @@ async function fetchBinary(url: string): Promise<Buffer> {
   return Buffer.from(await res.arrayBuffer());
 }
 
+async function fetchBinaryFromCatalogUrl(rawUrl: string): Promise<Buffer> {
+  const trimmed = rawUrl.trim();
+  if (extractGoogleDriveFileId(trimmed)) {
+    return downloadGoogleDriveFileBuffer(trimmed);
+  }
+  const safe = parseSafeExternalUrl(trimmed);
+  if (!safe) throw new Error("URL non consentito (solo https e host pubblico)");
+  return fetchBinary(safe);
+}
+
+/** URL pubblico salvato su DB per avatar (Drive → thumbnail stabile come nel resto dell’app). */
+function resolvePublicImageUrl(rawUrl: string): string {
+  const trimmed = rawUrl.trim();
+  if (extractGoogleDriveFileId(trimmed)) {
+    return normalizeImageUrl(trimmed).trim();
+  }
+  const safe = parseSafeExternalUrl(trimmed);
+  if (!safe) throw new Error("image.url non consentito (solo https, host pubblico)");
+  return safe;
+}
+
 function decodeBase64Payload(raw: string): { buf: Buffer; dataUrlMime: string | null } {
   const t = raw.trim();
   const m = /^data:([^;]+);base64,([\s\S]*)$/.exec(t);
@@ -85,16 +133,9 @@ function isPdfBuffer(buf: Buffer): boolean {
   return buf.length >= 4 && buf.subarray(0, 4).toString("latin1") === "%PDF";
 }
 
-function hasAssetSource(x: JsonImage | JsonSheet): "file" | "url" | "base64" | null {
-  if (x.file) return "file";
-  if (x.url) return "url";
-  if (x.base64) return "base64";
-  return null;
-}
-
 /**
  * Esegue l’import nel DB + storage Telegram/PDF.
- * @param mode - `cli`: consente `image.file` / `sheet.file` sul disco; `admin`: solo URL o base64.
+ * @param mode - `cli`: consente `image.file` / `sheet.file` sul disco; `admin`: solo URL o base64 (anche Drive).
  */
 export async function runCharacterCatalogImport(
   parsed: CatalogJsonFile,
@@ -132,38 +173,37 @@ export async function runCharacterCatalogImport(
       const sh = entry.sheet;
       if (!img || !sh) throw new Error("image e sheet obbligatori");
 
-      const imgSrc = hasAssetSource(img);
-      const sheetSrc = hasAssetSource(sh);
-      if (!imgSrc) throw new Error("image: indica file (solo CLI), url o base64");
-      if (!sheetSrc) throw new Error("sheet: indica file (solo CLI), url o base64");
+      const imgRes = resolveCatalogAsset(img);
+      const sheetRes = resolveCatalogAsset(sh);
+      if (!imgRes) throw new Error("image: file locale (CLI), url/https (anche Drive in url o file), o base64");
+      if (!sheetRes) throw new Error("sheet: file locale (CLI), url/https (anche Drive in url o file), o base64");
 
       if (options.mode === "admin") {
-        if (imgSrc === "file" || sheetSrc === "file") {
+        if (imgRes.kind === "file" || sheetRes.kind === "file") {
           throw new Error(
-            'Percorsi "file" non disponibili da questa pagina: usa "url" o "base64", oppure lo script CLI.'
+            'Percorsi file locali non disponibili da questa pagina: usa URL (anche Drive) o base64, oppure lo script CLI.'
           );
         }
       }
 
       let imageUrl: string | null = null;
 
-      if (imgSrc === "file" && options.mode === "cli") {
-        const fp = resolvePathCli(options.jsonPath, img.file!);
+      if (imgRes.kind === "file" && options.mode === "cli") {
+        const fp = resolvePathCli(options.jsonPath, imgRes.path);
         const buf = await readFile(fp);
         const mime = mimeFromFilePath(fp);
         const fname = path.basename(fp) || "portrait.png";
         const file = new File([new Uint8Array(buf)], fname, { type: mime });
         const fileId = await uploadToTelegram(file, undefined, "photo");
         imageUrl = `/api/tg-image/${encodeURIComponent(fileId)}`;
-      } else if (imgSrc === "url") {
-        const safe = parseSafeExternalUrl(img.url!);
-        if (!safe) throw new Error("image.url non consentito (solo https, host pubblico)");
-        imageUrl = safe;
-      } else if (imgSrc === "base64") {
-        const { buf, dataUrlMime } = decodeBase64Payload(img.base64!);
+      } else if (imgRes.kind === "url") {
+        imageUrl = resolvePublicImageUrl(imgRes.url);
+      } else if (imgRes.kind === "base64") {
+        const { buf, dataUrlMime } = decodeBase64Payload(imgRes.payload);
         if (!buf.length) throw new Error("image base64 vuoto");
         const fname =
-          (typeof img.fileName === "string" && img.fileName.trim()) || "portrait.png";
+          imgRes.fileName?.trim() ||
+          "portrait.png";
         const mime = dataUrlMime?.startsWith("image/") ? dataUrlMime : mimeFromFileName(fname);
         if (!mime.startsWith("image/")) {
           throw new Error(
@@ -179,15 +219,13 @@ export async function runCharacterCatalogImport(
 
       let pdfBuf: Buffer;
 
-      if (sheetSrc === "file" && options.mode === "cli") {
-        const fp = resolvePathCli(options.jsonPath, sh.file!);
+      if (sheetRes.kind === "file" && options.mode === "cli") {
+        const fp = resolvePathCli(options.jsonPath, sheetRes.path);
         pdfBuf = await readFile(fp);
-      } else if (sheetSrc === "url") {
-        const safe = parseSafeExternalUrl(sh.url!);
-        if (!safe) throw new Error("sheet.url non consentito");
-        pdfBuf = await fetchBinary(safe);
-      } else if (sheetSrc === "base64") {
-        const { buf } = decodeBase64Payload(sh.base64!);
+      } else if (sheetRes.kind === "url") {
+        pdfBuf = await fetchBinaryFromCatalogUrl(sheetRes.url);
+      } else if (sheetRes.kind === "base64") {
+        const { buf } = decodeBase64Payload(sheetRes.payload);
         pdfBuf = buf;
       } else {
         throw new Error("sheet non risolvibile");

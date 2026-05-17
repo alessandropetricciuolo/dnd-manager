@@ -65,12 +65,13 @@ export function CharacterCatalogImportClient({ exampleJson }: Props) {
           Import catalogo personaggi
         </h1>
         <p className="max-w-2xl text-sm text-barber-paper/70">
-          Incolla un JSON nel formato sotto (stesso formato del comando{" "}
-          <span className="font-mono text-barber-gold/90">npm run catalog:import</span>). Da questa pagina puoi usare{" "}
+          Incolla un JSON nel formato sotto (stesso formato di{" "}
+          <span className="font-mono text-barber-gold/90">npm run catalog:import</span>). Puoi usare{" "}
           <span className="font-mono text-barber-gold/85">image.url</span> e{" "}
-          <span className="font-mono text-barber-gold/85">sheet.url</span> (https), oppure{" "}
-          <span className="font-mono text-barber-gold/85">base64</span> per ritagli o PDF incorporati. I percorsi{" "}
-          <span className="font-mono">file</span> sono solo per lo script da computer.
+          <span className="font-mono text-barber-gold/85">sheet.url</span> in https (anche link Drive{" "}
+          <span className="font-mono text-barber-paper/55">drive.google.com/file/d/…/view</span>),{" "}
+          <span className="font-mono text-barber-gold/85">base64</span>, oppure mettere un URL https anche nel campo{" "}
+          <span className="font-mono">file</span>. I percorsi file solo disco sono solo per lo script CLI.
         </p>
         <p className="text-xs text-amber-200/80">
           Limite payload server action: 4 MB (vedi <span className="font-mono">next.config.js</span>). Per JSON molto grandi usa lo script CLI.
