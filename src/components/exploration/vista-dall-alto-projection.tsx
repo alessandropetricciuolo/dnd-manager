@@ -26,7 +26,15 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
   const [regions, setRegions] = useState<FowRegionRow[]>(initialRegions);
   const [mapMeta, setMapMeta] = useState<ExplorationMapRow>(mapRow);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  /** Portal target per menu radiale effetti (deve stare dentro il subtree fullscreen). */
+  const [effectsRadialPortalTarget, setEffectsRadialPortalTarget] = useState<HTMLElement | null>(null);
+
+  const bindProjectionRoot = useCallback((el: HTMLDivElement | null) => {
+    rootRef.current = el;
+    setEffectsRadialPortalTarget(el);
+  }, []);
+
   const imageUrl = getExplorationMapPublicUrl(mapMeta.image_path);
   const vm = useMemo(() => rowsToVm(regions), [regions]);
 
@@ -113,7 +121,7 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
 
   return (
     <div
-      ref={rootRef}
+      ref={bindProjectionRoot}
       className="fixed inset-0 flex min-h-0 flex-col overflow-hidden bg-black"
     >
       <Button
@@ -142,6 +150,7 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
           fillViewport
           showGrid={false}
           effectsEnabled
+          effectsRadialPortalTarget={effectsRadialPortalTarget}
         />
       </div>
     </div>

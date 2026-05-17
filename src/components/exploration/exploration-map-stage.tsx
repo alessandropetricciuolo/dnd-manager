@@ -79,6 +79,11 @@ type ExplorationMapStageProps = {
   gridOffsetYCells?: number;
   /** Solo proiezione: abilita motore "effetti" stile overlacchio (effimeri, client-only). */
   effectsEnabled?: boolean;
+  /**
+   * Container per il portal del menu radiale effetti.
+   * In fullscreen il menu su `document.body` resta fuori dal layer fullscreen; passa il div proiezione che entra in fullscreen.
+   */
+  effectsRadialPortalTarget?: HTMLElement | null;
 };
 
 const FOG_RGBA = "rgba(8, 6, 4, 0.82)";
@@ -226,6 +231,7 @@ export function ExplorationMapStage({
   gridOffsetXCells = 0,
   gridOffsetYCells = 0,
   effectsEnabled = false,
+  effectsRadialPortalTarget = null,
 }: ExplorationMapStageProps) {
   const imgRef = useRef<HTMLImageElement>(null);
   /** Box della mappa (img + overlay): stesso sistema di coordinate di SVG/canvas. */
@@ -1758,7 +1764,10 @@ export function ExplorationMapStage({
           items={effectRadial.items}
           variant={effectRadial.variant}
           openingGuardUntil={effectRadial.guardUntil}
-          portalTarget={typeof document !== "undefined" ? document.body : null}
+          portalTarget={
+            effectsRadialPortalTarget ??
+            (typeof document !== "undefined" ? document.body : null)
+          }
           zIndexBase={2147483000}
           onClose={closeEffectRadial}
           onSelect={onEffectsRadialSelect}
