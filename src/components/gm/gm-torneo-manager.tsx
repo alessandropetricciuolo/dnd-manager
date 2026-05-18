@@ -68,31 +68,36 @@ export function GmTorneoManager({
 
   const refresh = useCallback(async () => {
     setLoading(true);
-    const [setupRes, charsRes] = await Promise.all([
-      getTorneoSetupAction(campaignId),
-      getCampaignCharacters(campaignId),
-    ]);
-    setLoading(false);
-    if (!setupRes.success) {
-      toast.error(setupRes.error);
-      return;
-    }
-    const nextTeams = setupRes.data!.teams;
-    const nextMatches = setupRes.data!.matches;
-    setTeams(nextTeams);
-    setMatches(nextMatches);
-    onSetupChange?.(nextTeams, nextMatches);
+    try {
+      const [setupRes, charsRes] = await Promise.all([
+        getTorneoSetupAction(campaignId),
+        getCampaignCharacters(campaignId),
+      ]);
+      if (!setupRes.success) {
+        toast.error(setupRes.error);
+        return;
+      }
+      const nextTeams = setupRes.data!.teams;
+      const nextMatches = setupRes.data!.matches;
+      setTeams(nextTeams);
+      setMatches(nextMatches);
+      onSetupChange?.(nextTeams, nextMatches);
 
-    const teamByChar = buildCharacterTeamMap(nextTeams);
-    if (charsRes.success && charsRes.data) {
-      setRoster(
-        charsRes.data.map((c) => ({
-          id: c.id,
-          name: c.name,
-          character_class: c.character_class,
-          teamId: teamByChar[c.id]?.teamId ?? null,
-        }))
-      );
+      const teamByChar = buildCharacterTeamMap(nextTeams);
+      if (charsRes.success && charsRes.data) {
+        setRoster(
+          charsRes.data.map((c) => ({
+            id: c.id,
+            name: c.name,
+            character_class: c.character_class,
+            teamId: teamByChar[c.id]?.teamId ?? null,
+          }))
+        );
+      }
+    } catch {
+      toast.error("Errore nel caricamento del torneo.");
+    } finally {
+      setLoading(false);
     }
   }, [campaignId, onSetupChange]);
 

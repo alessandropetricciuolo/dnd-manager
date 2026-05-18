@@ -31,6 +31,12 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
   const [teams, setTeams] = useState<TorneoTeamWithMembers[]>([]);
   const [matches, setMatches] = useState<TorneoMatchWithTeams[]>([]);
 
+  /** Stabile: evita che GmTorneoManager ricarichi in loop (prop inline → useEffect [refresh] infinito). */
+  const handleTorneoSetupChange = useCallback((t: TorneoTeamWithMembers[], m: TorneoMatchWithTeams[]) => {
+    setTeams(t);
+    setMatches(m);
+  }, []);
+
   const refreshTorneoMeta = useCallback(async () => {
     const res = await getTorneoSetupAction(campaignId);
     if (res.success && res.data) {
@@ -107,10 +113,7 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
             onLoadMatch={handleLoadMatch}
             activeMatchId={activeMatchId}
             onActiveMatchIdChange={setActiveMatchId}
-            onSetupChange={(t, m) => {
-              setTeams(t);
-              setMatches(m);
-            }}
+            onSetupChange={handleTorneoSetupChange}
           />
         </aside>
         <div className="min-h-0 min-w-0 flex-1 overflow-hidden p-2 md:p-3">
