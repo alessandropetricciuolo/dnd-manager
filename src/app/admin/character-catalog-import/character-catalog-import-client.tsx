@@ -17,13 +17,18 @@ export function CharacterCatalogImportClient({ exampleJson }: Props) {
   const [text, setText] = useState("");
   const [pending, startTransition] = useTransition();
   const [lastLog, setLastLog] = useState<string | null>(null);
+  const [jsonSyntaxHelp, setJsonSyntaxHelp] = useState<string | null>(null);
 
   function runImport() {
     startTransition(async () => {
       setLastLog(null);
+      setJsonSyntaxHelp(null);
       const res = await importCharacterCatalogJsonAction(text);
       if (!res.success) {
         toast.error(res.error);
+        if (res.jsonParseDetail) {
+          setJsonSyntaxHelp(res.jsonParseDetail);
+        }
         return;
       }
       const { result } = res;
@@ -87,11 +92,57 @@ export function CharacterCatalogImportClient({ exampleJson }: Props) {
         </div>
         <Textarea
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => {
+            setText(e.target.value);
+            if (jsonSyntaxHelp) setJsonSyntaxHelp(null);
+          }}
           placeholder='{"libraryKey": "barber_and_dragons", "entries": [ ... ]}'
           className="min-h-[220px] font-mono text-sm bg-barber-dark/90 border-barber-gold/30 text-barber-paper"
           spellCheck={false}
         />
+        {jsonSyntaxHelp && (
+          <div
+            role="alert"
+            className="space-y-3 rounded-lg border border-red-500/35 bg-red-950/30 p-4 text-sm text-barber-paper/95"
+          >
+            <p className="font-semibold text-red-200/95">Errore di sintassi JSON</p>
+            <p className="text-barber-paper/80">
+              Il parser non riesce a leggere il JSON. Sotto trovi il messaggio tecnico restituito dal
+              motore (spesso indica la riga o il carattere in cui qualcosa non torna).
+            </p>
+            <pre className="overflow-x-auto rounded-md border border-red-500/20 bg-black/40 p-3 font-mono text-xs text-red-100/90">
+              {jsonSyntaxHelp}
+            </pre>
+            <div className="space-y-2 text-barber-paper/75">
+              <p className="font-medium text-barber-paper/90">Controlli frequenti</p>
+              <ul className="list-inside list-disc space-y-1.5 text-xs sm:text-sm">
+                <li>
+                  Ogni stringa va tra <span className="font-mono text-barber-gold/90">doppi virgoletti</span>{" "}
+                  <span className="font-mono">{`"testo"`}</span>, non apici singoli. Gli URL sono stringhe:{" "}
+                  <span className="font-mono whitespace-nowrap">{`"url": "https://…"`}</span>, mai{" "}
+                  <span className="font-mono text-red-200/80">{`"url": https://…`}</span>.
+                </li>
+                <li>
+                  Nessuna virgola dopo l&apos;ultimo elemento di un oggetto o array (es. non mettere{" "}
+                  <span className="font-mono">,</span> prima di <span className="font-mono">{"}"}</span> o{" "}
+                  <span className="font-mono">{"]"}</span>).
+                </li>
+                <li>
+                  Parentesi <span className="font-mono">{"{ } [ ]"}</span> devono essere bilanciate; ogni campo
+                  oggetto è <span className="font-mono">{`"chiave": valore`}</span> separato da virgola.
+                </li>
+                <li>
+                  Caratteri speciali dentro una stringa vanno escapati con <span className="font-mono">\</span>{" "}
+                  (es. <span className="font-mono">{`\\"`}</span> per un virgoletto nel testo).
+                </li>
+                <li>
+                  Per verificare prima di importare: editor con evidenziazione JSON, oppure incolla in un
+                  validatore online e correggi dove segnala l&apos;errore.
+                </li>
+              </ul>
+            </div>
+          </div>
+        )}
         <Button
           type="button"
           onClick={runImport}

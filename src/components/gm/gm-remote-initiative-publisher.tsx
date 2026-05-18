@@ -12,15 +12,21 @@ type Props = {
   campaignId: string;
   sessionPublicId: string | null;
   state: InitiativeTrackerState;
+  torneoActiveMatch?: InitiativeRemoteSnapshot["activeMatch"];
 };
 
-export function GmRemoteInitiativePublisher({ campaignId, sessionPublicId, state }: Props) {
+export function GmRemoteInitiativePublisher({
+  campaignId,
+  sessionPublicId,
+  state,
+  torneoActiveMatch,
+}: Props) {
   const lastPublishedRef = useRef<string>("");
 
   useEffect(() => {
     if (!sessionPublicId || state.entries.length === 0) return;
 
-    const snapshot: InitiativeRemoteSnapshot = toInitiativeRemoteSnapshot(state);
+    const snapshot: InitiativeRemoteSnapshot = toInitiativeRemoteSnapshot(state, torneoActiveMatch ?? undefined);
     const serialized = JSON.stringify(snapshot);
     if (serialized === lastPublishedRef.current) return;
 
@@ -33,7 +39,7 @@ export function GmRemoteInitiativePublisher({ campaignId, sessionPublicId, state
     }, 400);
 
     return () => window.clearTimeout(timer);
-  }, [campaignId, sessionPublicId, state]);
+  }, [campaignId, sessionPublicId, state, torneoActiveMatch]);
 
   return null;
 }

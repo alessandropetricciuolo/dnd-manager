@@ -10,7 +10,7 @@ import {
 
 export type ImportCharacterCatalogActionResult =
   | { success: true; result: CatalogImportRunResult }
-  | { success: false; error: string };
+  | { success: false; error: string; jsonParseDetail?: string };
 
 export async function importCharacterCatalogJsonAction(
   jsonText: string
@@ -37,8 +37,18 @@ export async function importCharacterCatalogJsonAction(
   let parsed: CatalogJsonFile;
   try {
     parsed = JSON.parse(trimmed) as CatalogJsonFile;
-  } catch {
-    return { success: false, error: "JSON non valido (errore di sintassi)." };
+  } catch (e) {
+    const jsonParseDetail =
+      e instanceof SyntaxError
+        ? e.message
+        : e instanceof Error
+          ? e.message
+          : String(e);
+    return {
+      success: false,
+      error: "JSON non valido: errore di sintassi (il testo non è un JSON ben formato).",
+      jsonParseDetail,
+    };
   }
 
   try {

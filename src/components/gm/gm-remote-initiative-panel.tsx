@@ -84,6 +84,23 @@ export function GmRemoteInitiativePanel({ publicId, token, sending, onSend }: Pr
         </p>
       ) : (
         <>
+          {snapshot.activeMatch ? (
+            <div className="mb-3 grid grid-cols-2 gap-2 rounded-lg border border-violet-900/35 bg-zinc-950/60 p-2">
+              <div className="text-center" style={{ borderLeft: `3px solid ${snapshot.activeMatch.teamA.color}` }}>
+                <p className="truncate text-[10px] text-zinc-500">{snapshot.activeMatch.teamA.name}</p>
+                <p className="text-lg font-bold tabular-nums text-orange-300">
+                  {snapshot.activeMatch.teamA.damageTotal}
+                </p>
+              </div>
+              <div className="text-center" style={{ borderLeft: `3px solid ${snapshot.activeMatch.teamB.color}` }}>
+                <p className="truncate text-[10px] text-zinc-500">{snapshot.activeMatch.teamB.name}</p>
+                <p className="text-lg font-bold tabular-nums text-orange-300">
+                  {snapshot.activeMatch.teamB.damageTotal}
+                </p>
+              </div>
+            </div>
+          ) : null}
+
           <div className="mb-4 grid grid-cols-2 gap-2 rounded-lg border border-orange-800/30 bg-zinc-950/50 p-3 text-center">
             <div>
               <p className="text-[10px] uppercase text-zinc-500">Giro</p>

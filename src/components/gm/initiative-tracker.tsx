@@ -66,6 +66,10 @@ export type InitiativeEntry = {
   isDead?: boolean;
   /** Danni inflitti in questo combattimento (contatore offensivo). */
   damageDealt?: number;
+  /** Squadra torneo (PG). */
+  teamId?: string;
+  teamName?: string;
+  teamColor?: string;
 };
 
 export type InitiativeTrackerState = {
@@ -141,7 +145,10 @@ function areInitiativeEntriesEqual(a: InitiativeEntry[], b: InitiativeEntry[]) {
       left.gs !== right.gs ||
       left.exp !== right.exp ||
       left.isDead !== right.isDead ||
-      (left.damageDealt ?? 0) !== (right.damageDealt ?? 0)
+      (left.damageDealt ?? 0) !== (right.damageDealt ?? 0) ||
+      left.teamId !== right.teamId ||
+      left.teamName !== right.teamName ||
+      left.teamColor !== right.teamColor
     ) {
       return false;
     }
@@ -176,6 +183,17 @@ type InitiativeTrackerProps = {
   onChange?: (state: InitiativeTrackerState) => void;
   /** Notifica ogni cambio stato (es. sync telecomando). */
   onTrackerStateChange?: (state: InitiativeTrackerState) => void;
+  /** Chiave localStorage alternativa (es. per incontro torneo). */
+  storageKeyOverride?: string;
+  /** Mappa character_id → squadra per auto-etichetta PG. */
+  characterTeamMap?: Record<string, { teamId: string; teamName: string; teamColor: string }>;
+  /** Mostra colonna squadra (torneo). */
+  showTeamColumn?: boolean;
+  /** Barra punteggio danni per incontro attivo. */
+  torneoScoreboard?: {
+    teamA: { id: string; name: string; color: string; total: number };
+    teamB: { id: string; name: string; color: string; total: number };
+  } | null;
 };
 
 export type InitiativeTrackerHandle = InitiativeRemoteCommandHandlers & {
@@ -191,10 +209,14 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       value,
       onChange,
       onTrackerStateChange,
+      storageKeyOverride,
+      characterTeamMap,
+      showTeamColumn = false,
+      torneoScoreboard = null,
     },
     ref
   ) {
-  const storageKey = `${STORAGE_KEY_PREFIX}${campaignId}`;
+  const storageKey = storageKeyOverride ?? `${STORAGE_KEY_PREFIX}${campaignId}`;
   const isLongCampaign = campaignType === "long";
   const isControlled = typeof onChange === "function" && value != null;
 
@@ -500,6 +522,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
   const addPcEntry = useCallback(
     (characterId: string, name: string, characterClass: string | null, armorClass: number | null, hitPoints: number | null) => {
       const hp = Math.max(0, hitPoints ?? 0);
+      const team = characterTeamMap?.[characterId];
       setEntries((prev) => [
         ...prev,
         {
@@ -513,10 +536,13 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
           initiative: 0,
           playerId: characterId,
           damageDealt: 0,
+          ...(team
+            ? { teamId: team.teamId, teamName: team.teamName, teamColor: team.teamColor }
+            : {}),
         },
       ]);
     },
-    []
+    [characterTeamMap]
   );
 
   const addSelectedPcs = useCallback(() => {
@@ -870,10 +896,38 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
         </Button>
       </div>
 
+      {torneoScoreboard ? (
+        <div className="mb-2 grid grid-cols-2 gap-2 rounded-lg border border-violet-900/40 bg-zinc-900/90 p-2">
+          <div
+            className="rounded-md px-2 py-1.5 text-center"
+            style={{ borderLeft: `3px solid ${torneoScoreboard.teamA.color}` }}
+          >
+            <p className="truncate text-[10px] font-medium uppercase tracking-wide text-zinc-500">
+              {torneoScoreboard.teamA.name}
+            </p>
+            <p className="text-lg font-bold tabular-nums text-orange-300">{torneoScoreboard.teamA.total}</p>
+            <p className="text-[9px] text-zinc-600">danni inflitti (squadra)</p>
+          </div>
+          <div
+            className="rounded-md px-2 py-1.5 text-center"
+            style={{ borderLeft: `3px solid ${torneoScoreboard.teamB.color}` }}
+          >
+            <p className="truncate text-[10px] font-medium uppercase tracking-wide text-zinc-500">
+              {torneoScoreboard.teamB.name}
+            </p>
+            <p className="text-lg font-bold tabular-nums text-orange-300">{torneoScoreboard.teamB.total}</p>
+            <p className="text-[9px] text-zinc-600">danni inflitti (squadra)</p>
+          </div>
+        </div>
+      ) : null}
+
       <div className="min-h-0 flex-1 overflow-auto rounded border border-amber-600/30 bg-zinc-900/80">
         <Table>
           <TableHeader>
             <TableRow className="border-amber-600/20 hover:bg-transparent">
+              {showTeamColumn ? (
+                <TableHead className="h-8 w-24 px-2 text-xs font-semibold text-amber-400">Squadra</TableHead>
+              ) : null}
               <TableHead className="h-8 px-2 text-xs font-semibold text-amber-400">
                 Nome
               </TableHead>
@@ -901,7 +955,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
             {entries.length === 0 ? (
               <TableRow className="border-amber-600/20">
                 <TableCell
-                  colSpan={7}
+                  colSpan={showTeamColumn ? 8 : 7}
                   className="py-6 text-center text-xs text-zinc-500"
                 >
                   Nessun partecipante.
@@ -918,6 +972,25 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
                       "bg-amber-600/25 ring-1 ring-amber-500/50"
                   )}
                 >
+                  {showTeamColumn ? (
+                    <TableCell className="px-2 py-1.5">
+                      {entry.teamName ? (
+                        <span
+                          className="inline-block max-w-[5.5rem] truncate rounded px-1.5 py-0.5 text-[10px] font-medium"
+                          style={{
+                            color: entry.teamColor ?? "#f59e0b",
+                            backgroundColor: `${entry.teamColor ?? "#f59e0b"}22`,
+                            borderLeft: `2px solid ${entry.teamColor ?? "#f59e0b"}`,
+                          }}
+                          title={entry.teamName}
+                        >
+                          {entry.teamName}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-zinc-600">—</span>
+                      )}
+                    </TableCell>
+                  ) : null}
                   <TableCell className="px-2 py-1.5">
                     {editingCell?.id === entry.id &&
                     editingCell?.field === "name" ? (

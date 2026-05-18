@@ -14,6 +14,10 @@ export function isInitiativeRemoteType(type: string): type is GmRemoteInitiative
   return (GM_REMOTE_INITIATIVE_TYPES as readonly string[]).includes(type);
 }
 
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
 /** Snapshot leggero per il telecomando (solo lettura). */
 export type InitiativeRemoteSnapshot = {
   entries: Array<{
@@ -25,7 +29,14 @@ export type InitiativeRemoteSnapshot = {
     damageDealt: number;
     initiative: number;
     isDead?: boolean;
+    teamId?: string;
+    teamName?: string;
+    teamColor?: string;
   }>;
+  activeMatch?: {
+    teamA: { id: string; name: string; color: string; damageTotal: number };
+    teamB: { id: string; name: string; color: string; damageTotal: number };
+  } | null;
   currentTurnIndex: number;
   roundNumber: number;
   turnElapsedSeconds: number;
@@ -33,18 +44,57 @@ export type InitiativeRemoteSnapshot = {
   updatedAt: string;
 };
 
-export function toInitiativeRemoteSnapshot(state: InitiativeTrackerState): InitiativeRemoteSnapshot {
+export function toInitiativeRemoteSnapshot(
+  state: InitiativeTrackerState,
+  activeMatch?: InitiativeRemoteSnapshot["activeMatch"]
+): InitiativeRemoteSnapshot {
+  const entries = state.entries.map((e) => ({
+    id: e.id,
+    name: e.name,
+    type: e.type,
+    hp: e.hp,
+    maxHp: e.maxHp,
+    damageDealt: e.damageDealt ?? 0,
+    initiative: e.initiative,
+    isDead: e.isDead,
+    ...(e.teamId ? { teamId: e.teamId, teamName: e.teamName, teamColor: e.teamColor } : {}),
+  }));
+
+  let matchSummary = activeMatch ?? null;
+  if (!matchSummary && entries.some((e) => e.teamId)) {
+    const byTeam = new Map<string, { name: string; color: string; total: number }>();
+    for (const e of entries) {
+      if (!e.teamId) continue;
+      const cur = byTeam.get(e.teamId) ?? {
+        name: e.teamName ?? "Squadra",
+        color: e.teamColor ?? "#f59e0b",
+        total: 0,
+      };
+      cur.total += e.damageDealt;
+      byTeam.set(e.teamId, cur);
+    }
+    const teams = [...byTeam.entries()];
+    if (teams.length >= 2) {
+      matchSummary = {
+        teamA: {
+          id: teams[0]![0],
+          name: teams[0]![1].name,
+          color: teams[0]![1].color,
+          damageTotal: teams[0]![1].total,
+        },
+        teamB: {
+          id: teams[1]![0],
+          name: teams[1]![1].name,
+          color: teams[1]![1].color,
+          damageTotal: teams[1]![1].total,
+        },
+      };
+    }
+  }
+
   return {
-    entries: state.entries.map((e) => ({
-      id: e.id,
-      name: e.name,
-      type: e.type,
-      hp: e.hp,
-      maxHp: e.maxHp,
-      damageDealt: e.damageDealt ?? 0,
-      initiative: e.initiative,
-      isDead: e.isDead,
-    })),
+    entries,
+    activeMatch: matchSummary,
     currentTurnIndex: state.currentTurnIndex,
     roundNumber: state.roundNumber,
     turnElapsedSeconds: state.turnElapsedSeconds,
@@ -75,12 +125,41 @@ export function parseInitiativeRemoteSnapshot(raw: unknown): InitiativeRemoteSna
         damageDealt: typeof r.damageDealt === "number" ? Math.max(0, r.damageDealt) : 0,
         initiative: typeof r.initiative === "number" ? r.initiative : 0,
         isDead: r.isDead === true,
+        ...(typeof r.teamId === "string" && r.teamId
+          ? {
+              teamId: r.teamId,
+              teamName: typeof r.teamName === "string" ? r.teamName : undefined,
+              teamColor: typeof r.teamColor === "string" ? r.teamColor : undefined,
+            }
+          : {}),
       };
     })
     .filter((e): e is NonNullable<typeof e> => e != null);
 
+  let activeMatch: InitiativeRemoteSnapshot["activeMatch"] = null;
+  if (isRecord(o.activeMatch)) {
+    const am = o.activeMatch;
+    const parseSide = (key: "teamA" | "teamB") => {
+      const side = am[key];
+      if (!isRecord(side)) return null;
+      const id = typeof side.id === "string" ? side.id : "";
+      const name = typeof side.name === "string" ? side.name : "";
+      if (!id || !name) return null;
+      return {
+        id,
+        name,
+        color: typeof side.color === "string" ? side.color : "#f59e0b",
+        damageTotal: typeof side.damageTotal === "number" ? Math.max(0, side.damageTotal) : 0,
+      };
+    };
+    const teamA = parseSide("teamA");
+    const teamB = parseSide("teamB");
+    if (teamA && teamB) activeMatch = { teamA, teamB };
+  }
+
   return {
     entries,
+    activeMatch,
     currentTurnIndex: typeof o.currentTurnIndex === "number" ? o.currentTurnIndex : 0,
     roundNumber: typeof o.roundNumber === "number" ? Math.max(1, o.roundNumber) : 1,
     turnElapsedSeconds: typeof o.turnElapsedSeconds === "number" ? Math.max(0, o.turnElapsedSeconds) : 0,
