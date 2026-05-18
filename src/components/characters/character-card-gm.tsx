@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "nextjs-toploader/app";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Download, Eye, Pencil, Trash2, Clock } from "lucide-react";
 
@@ -41,6 +41,11 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { forceCharacterTimeSync, setCharacterCalendarOverride } from "@/app/campaigns/character-actions";
+import {
+  assignCharacterToTorneoTeamAction,
+  removeCharacterFromTorneoTeamAction,
+} from "@/app/campaigns/torneo-actions";
+import type { TorneoTeamWithMembers } from "@/lib/torneo/types";
 import { parseRulesSnapshot } from "@/lib/character-rules-snapshot";
 import { backgroundBySlug, backgroundRulesTooltipPrefix, raceBySlug } from "@/lib/character-build-catalog";
 import { sanitizeRaceTraitsMarkdown } from "@/lib/race-traits-sanitizer";
@@ -51,6 +56,9 @@ type CharacterCardGmProps = {
   character: CampaignCharacterRow;
   eligiblePlayers: EligiblePlayer[];
   isLongCampaign?: boolean;
+  isTorneoCampaign?: boolean;
+  torneoTeams?: TorneoTeamWithMembers[] | null;
+  onTorneoTeamsReload?: () => void | Promise<void>;
   autoOpenEdit?: boolean;
 };
 
@@ -261,8 +269,17 @@ function SpellsTip({
   );
 }
 
-export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, autoOpenEdit = false }: CharacterCardGmProps) {
+export function CharacterCardGm({
+  character,
+  eligiblePlayers,
+  isLongCampaign,
+  isTorneoCampaign = false,
+  torneoTeams = null,
+  onTorneoTeamsReload,
+  autoOpenEdit = false,
+}: CharacterCardGmProps) {
   const router = useRouter();
+  const skipTimeXpUi = isTorneoCampaign;
   const [assigning, setAssigning] = useState(false);
   const [assignedTo, setAssignedTo] = useState<string | null>(character.assigned_to);
   const [deleting, setDeleting] = useState(false);
@@ -272,6 +289,7 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
   const [sheetImgError, setSheetImgError] = useState(false);
   const [isLeveling, startTransition] = useTransition();
   const [isSavingXp, startXpTransition] = useTransition();
+  const [assigningTorneoTeam, startTorneoTeamTransition] = useTransition();
   const [epochOpen, setEpochOpen] = useState(false);
   const [epochDraft, setEpochDraft] = useState(String(character.time_offset_hours ?? 0));
   const [epochSaving, setEpochSaving] = useState(false);
@@ -295,6 +313,19 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
 
   const xpLabel =
     nextLevelXp != null ? `${xp} / ${nextLevelXp} PE` : `${xp} PE (livello massimo)`;
+
+  const torneoTeamId = useMemo(() => {
+    if (!isTorneoCampaign || !torneoTeams) return null;
+    for (const t of torneoTeams) {
+      if (t.members.some((m) => m.character_id === character.id)) return t.id;
+    }
+    return null;
+  }, [character.id, isTorneoCampaign, torneoTeams]);
+
+  const torneoTeamLabel = useMemo(() => {
+    if (!torneoTeamId || !torneoTeams?.length) return "Nessuna squadra";
+    return torneoTeams.find((t) => t.id === torneoTeamId)?.name ?? "Squadra";
+  }, [torneoTeamId, torneoTeams]);
   const classLabel = character.character_class?.trim() || "—";
   const hpLabel = character.hit_points != null ? String(character.hit_points) : "—";
   const acLabel = character.armor_class != null ? String(character.armor_class) : "—";
@@ -398,6 +429,31 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
     }
   }
 
+  function onTorneoTeamSelect(value: string) {
+    startTorneoTeamTransition(async () => {
+      const campaignId = character.campaign_id;
+      if (value === "__no_team__") {
+        const result = await removeCharacterFromTorneoTeamAction(campaignId, character.id);
+        if (result.success) {
+          toast.success("Rimosso dalla squadra.");
+        } else {
+          toast.error(result.error);
+          return;
+        }
+      } else {
+        const result = await assignCharacterToTorneoTeamAction(campaignId, value, character.id);
+        if (result.success) {
+          toast.success("Squadra aggiornata.");
+        } else {
+          toast.error(result.error);
+          return;
+        }
+      }
+      await onTorneoTeamsReload?.();
+      router.refresh();
+    });
+  }
+
   return (
     <>
       <Card className="relative overflow-hidden border-barber-gold/40 bg-barber-dark/80">
@@ -445,6 +501,7 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
           >
             <Pencil className="h-4 w-4" />
           </Button>
+          {!skipTimeXpUi && (
           <Popover
             open={epochOpen}
             onOpenChange={(o) => {
@@ -534,6 +591,7 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
               </Button>
             </PopoverContent>
           </Popover>
+          )}
         </div>
 
         <CardContent className="space-y-3 p-3 pt-10">
@@ -604,6 +662,8 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
                   <dt className="text-muted-foreground">Lv</dt>
                   <dd className="font-medium tabular-nums text-barber-paper">{storedLevel}</dd>
                 </div>
+                {!skipTimeXpUi && (
+                <>
                 <div className="col-span-2 flex justify-between gap-1 border-t border-barber-gold/10 pt-0.5">
                   <dt className="text-muted-foreground">Ore (epoch)</dt>
                   <dd className="font-medium tabular-nums text-amber-200/90">{epochHours}</dd>
@@ -612,6 +672,8 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
                   <dt className="text-muted-foreground">Data fantasy</dt>
                   <dd className="font-medium text-amber-200/90">{calendarLabel}</dd>
                 </div>
+                </>
+                )}
                 {isLongCampaign && (
                   <div className="col-span-2 flex flex-col gap-0.5 border-t border-barber-gold/10 pt-1">
                     <dt className="text-[10px] text-muted-foreground">Monete</dt>
@@ -621,7 +683,9 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
                   </div>
                 )}
               </dl>
+              {!skipTimeXpUi && (
               <p className="mt-1 text-[10px] text-barber-paper/55 tabular-nums">{xpLabel}</p>
+              )}
             </div>
           </div>
 
@@ -672,6 +736,45 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
             <p className="truncate text-[10px] text-barber-paper/50">{currentLabel}</p>
           </div>
 
+          {isTorneoCampaign && (
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-medium uppercase tracking-wide text-barber-paper/60">
+                Squadra
+              </label>
+              <Select
+                value={torneoTeamId ?? "__no_team__"}
+                onValueChange={(v) => onTorneoTeamSelect(v)}
+                disabled={assigningTorneoTeam || torneoTeams === null}
+              >
+                <SelectTrigger className="h-9 border-barber-gold/30 bg-barber-dark text-barber-paper text-sm">
+                  <SelectValue placeholder={torneoTeams === null ? "Caricamento…" : "Squadra"} />
+                </SelectTrigger>
+                <SelectContent className="border-barber-gold/30 bg-barber-dark">
+                  <SelectItem value="__no_team__" className="text-barber-paper focus:bg-barber-gold/20">
+                    Nessuna squadra
+                  </SelectItem>
+                  {(torneoTeams ?? []).map((t) => (
+                    <SelectItem
+                      key={t.id}
+                      value={t.id}
+                      className="text-barber-paper focus:bg-barber-gold/20"
+                    >
+                      {t.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="truncate text-[10px] text-barber-paper/50">
+                {torneoTeams === null
+                  ? "Caricamento squadre…"
+                  : torneoTeams.length === 0
+                    ? "Crea le squadre dalla schermata GM del torneo."
+                    : torneoTeamLabel}
+              </p>
+            </div>
+          )}
+
+          {!skipTimeXpUi && (
           <div className="space-y-1.5 rounded-md border border-barber-gold/35 bg-barber-dark/70 p-2">
             <div className="flex items-center justify-between text-[10px] font-medium text-barber-paper/80">
               <span>PE</span>
@@ -749,6 +852,7 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
               </Button>
             )}
           </div>
+          )}
         </CardContent>
       </Card>
 
@@ -780,6 +884,11 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
             <div>
               <h2 className="text-xl font-semibold text-barber-paper">{character.name}</h2>
               <p className="text-sm text-muted-foreground">Assegnato: {currentLabel}</p>
+              {isTorneoCampaign ? (
+                <p className="text-sm text-muted-foreground">
+                  Squadra: {torneoTeams === null ? "…" : torneoTeamLabel}
+                </p>
+              ) : null}
               <div className="mt-1 text-xs text-barber-paper/80">
                 {raceLabel ? (
                   <>
@@ -829,6 +938,7 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
                 <dd className="font-medium tabular-nums text-barber-paper">{storedLevel}</dd>
               </div>
             </dl>
+            {!skipTimeXpUi && (
             <div className="rounded-md border border-barber-gold/30 bg-barber-dark/70 p-2 text-xs text-barber-paper/80">
               <div className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Punti esperienza</span>
@@ -839,6 +949,7 @@ export function CharacterCardGm({ character, eligiblePlayers, isLongCampaign, au
                 Progresso livello: {Math.round(progressPercent)}%
               </p>
             </div>
+            )}
           </div>
 
           <div className="mt-4 flex min-h-0 flex-1 flex-col pb-[env(safe-area-inset-bottom)]">

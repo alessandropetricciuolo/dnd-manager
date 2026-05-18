@@ -1,15 +1,18 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
 import { CreateCharacterDialog } from "./create-character-dialog";
 import { ImportCharactersFromCatalogDialog } from "./import-characters-from-catalog-dialog";
 import { CharacterCardGm } from "./character-card-gm";
 import { CharacterCardPlayer } from "./character-card-player";
 import { PlayerSecretChat } from "@/components/player/player-secret-chat";
 import type { CampaignCharacterRow, EligiblePlayer } from "@/app/campaigns/character-actions";
+import { getTorneoSetupAction } from "@/app/campaigns/torneo-actions";
+import type { TorneoTeamWithMembers } from "@/lib/torneo/types";
 
 type CharactersSectionProps = {
   campaignId: string;
-  campaignType?: "oneshot" | "quest" | "long" | null;
+  campaignType?: "oneshot" | "quest" | "long" | "torneo" | null;
   characters: CampaignCharacterRow[];
   eligiblePlayers: EligiblePlayer[];
   playerPartyById?: Record<string, string>;
@@ -34,6 +37,32 @@ export function CharactersSection({
   gmId,
 }: CharactersSectionProps) {
   const isLongCampaign = campaignType === "long";
+  const isTorneoCampaign = campaignType === "torneo";
+  const [torneoTeams, setTorneoTeams] = useState<TorneoTeamWithMembers[] | null>(null);
+
+  const reloadTorneoTeams = useCallback(async () => {
+    const res = await getTorneoSetupAction(campaignId);
+    if (res.success && res.data) setTorneoTeams(res.data.teams);
+    else setTorneoTeams([]);
+  }, [campaignId]);
+
+  useEffect(() => {
+    if (!isGm || !isTorneoCampaign) {
+      setTorneoTeams(null);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const res = await getTorneoSetupAction(campaignId);
+      if (cancelled) return;
+      if (res.success && res.data) setTorneoTeams(res.data.teams);
+      else setTorneoTeams([]);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [campaignId, isGm, isTorneoCampaign]);
+
   const eligibleLabelById = new Map(eligiblePlayers.map((p) => [p.id, p.label]));
   const groupLabelForCharacter = (char: CampaignCharacterRow): string => {
     const assigned = char.assigned_to?.trim() ?? "";
@@ -104,6 +133,9 @@ export function CharactersSection({
                       character={char}
                       eligiblePlayers={eligiblePlayers}
                       isLongCampaign={isLongCampaign}
+                      isTorneoCampaign={isTorneoCampaign}
+                      torneoTeams={isTorneoCampaign ? torneoTeams : null}
+                      onTorneoTeamsReload={isTorneoCampaign ? reloadTorneoTeams : undefined}
                       autoOpenEdit={openEditCharacterId === char.id}
                     />
                   ))}
@@ -119,6 +151,9 @@ export function CharactersSection({
                 character={char}
                 eligiblePlayers={eligiblePlayers}
                 isLongCampaign={isLongCampaign}
+                isTorneoCampaign={isTorneoCampaign}
+                torneoTeams={isTorneoCampaign ? torneoTeams : null}
+                onTorneoTeamsReload={isTorneoCampaign ? reloadTorneoTeams : undefined}
                 autoOpenEdit={openEditCharacterId === char.id}
               />
             ))}
@@ -144,7 +179,11 @@ export function CharactersSection({
   return (
     <div className="space-y-6">
       <h2 className="text-lg font-semibold text-barber-paper">Il Mio Personaggio</h2>
-      <CharacterCardPlayer character={myCharacter} isLongCampaign={isLongCampaign} />
+      <CharacterCardPlayer
+        character={myCharacter}
+        isLongCampaign={isLongCampaign}
+        isTorneoCampaign={isTorneoCampaign}
+      />
       {currentUserId && gmId && (
         <PlayerSecretChat
           campaignId={campaignId}

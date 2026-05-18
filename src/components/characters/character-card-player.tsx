@@ -19,6 +19,7 @@ const STALE_SNAPSHOT_HINT =
 type CharacterCardPlayerProps = {
   character: CampaignCharacterRow;
   isLongCampaign?: boolean;
+  isTorneoCampaign?: boolean;
 };
 
 function renderRichTooltipText(text: string) {
@@ -246,7 +247,11 @@ function tooltipOrWarnings(
 }
 
 /** Versione immersiva per il giocatore: immagine grande, nome, background. Nessun link al PDF. */
-export function CharacterCardPlayer({ character, isLongCampaign }: CharacterCardPlayerProps) {
+export function CharacterCardPlayer({
+  character,
+  isLongCampaign,
+  isTorneoCampaign = false,
+}: CharacterCardPlayerProps) {
   const [imgError, setImgError] = useState(false);
   const imageSrc = imgError ? PLACEHOLDER_AVATAR : (character.image_url ?? PLACEHOLDER_AVATAR);
   const storedLevel = character.level ?? 1;
@@ -327,12 +332,16 @@ export function CharacterCardPlayer({ character, isLongCampaign }: CharacterCard
                     <SpellsTip listText={spellsBody} details={snap?.spellsDetailsMd} />
                   </>
                 ) : null}
-                <span className="mt-0.5 block text-xs text-barber-paper/65 tabular-nums">
-                  Tempo vissuto: {character.time_offset_hours ?? 0} h
-                </span>
-                <span className="mt-0.5 block text-xs text-barber-paper/65">
-                  Data fantasy: {character.calendar_date_label ?? "Non impostata"}
-                </span>
+                {!isTorneoCampaign ? (
+                  <>
+                    <span className="mt-0.5 block text-xs text-barber-paper/65 tabular-nums">
+                      Tempo vissuto: {character.time_offset_hours ?? 0} h
+                    </span>
+                    <span className="mt-0.5 block text-xs text-barber-paper/65">
+                      Data fantasy: {character.calendar_date_label ?? "Non impostata"}
+                    </span>
+                  </>
+                ) : null}
                 {isLongCampaign && (
                   <span className="mt-0.5 block text-xs text-barber-gold/90 tabular-nums">
                     {character.coins_gp ?? 0} oro · {character.coins_sp ?? 0} arg · {character.coins_cp ?? 0} ram
