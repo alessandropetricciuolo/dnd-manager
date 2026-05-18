@@ -38,16 +38,16 @@ export default async function ConceptMapPage({ params }: PageProps) {
   if (error || !campaign) notFound();
 
   return (
-    <div className="flex h-[calc(100vh-theme(spacing.16))] flex-col overflow-hidden bg-zinc-950">
-      <header className="flex shrink-0 items-center gap-4 border-b border-amber-600/20 bg-zinc-900/80 px-4 py-3">
-        <Button variant="ghost" size="sm" asChild className="text-amber-400 hover:bg-amber-600/20">
+    <div className="flex h-[calc(100vh-theme(spacing.16))] flex-col overflow-hidden bg-[#09090b]">
+      <header className="flex shrink-0 items-center gap-4 border-b border-[#282828] bg-[#141414] px-4 py-2.5 shadow-[inset_0_-1px_0_rgba(255,255,255,0.04)]">
+        <Button variant="ghost" size="sm" asChild className="text-[#b3b3b3] hover:bg-[#1f1f1f] hover:text-[#e8e8e8]">
           <Link href={`/campaigns/${campaignId}`}>
             <ChevronLeft className="mr-1 h-4 w-4" />
             Campagna
           </Link>
         </Button>
-        <h1 className="text-lg font-semibold text-amber-400/90">Mappa Concettuale</h1>
-        <span className="text-sm text-zinc-500">{campaign.name}</span>
+        <h1 className="font-sans text-base font-semibold tracking-tight text-[#dcdcdc]">Mappa concettuale</h1>
+        <span className="text-[13px] text-[#6f6f6f]">{campaign.name}</span>
       </header>
       <div className="min-h-0 flex-1">
         <EntityGraph campaignId={campaignId} />

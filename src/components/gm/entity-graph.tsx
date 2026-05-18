@@ -7,10 +7,11 @@ import {
   ReactFlow,
   ReactFlowProvider,
   Background,
+  BackgroundVariant,
   Controls,
+  MiniMap,
   useNodesState,
   useEdgesState,
-  addEdge,
   useReactFlow,
   type Node,
   type Edge,
@@ -59,8 +60,9 @@ import {
 } from "@/app/campaigns/entity-graph-actions";
 import { cn } from "@/lib/utils";
 
-const NODE_WIDTH = 160;
-const NODE_HEIGHT = 56;
+/** Bounding box stimata per Dagre (disco etichetta sotto). */
+const NODE_WIDTH = 108;
+const NODE_HEIGHT = 88;
 
 const TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   npc: User,
@@ -70,6 +72,21 @@ const TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = 
   lore: ScrollText,
 };
 
+/** Colori ispirati al graph Obsidian (aloni per tipo contenuto wiki). */
+const TYPE_DISK_STYLE: Record<string, string> = {
+  npc: "bg-gradient-to-b from-violet-500 via-violet-600 to-violet-900 shadow-[0_0_20px_-3px_rgba(139,92,246,0.55)] ring-1 ring-violet-300/40",
+  location:
+    "bg-gradient-to-b from-emerald-500 via-emerald-600 to-emerald-950 shadow-[0_0_20px_-3px_rgba(16,185,129,0.5)] ring-1 ring-emerald-300/35",
+  monster:
+    "bg-gradient-to-b from-rose-500 via-rose-700 to-rose-950 shadow-[0_0_20px_-3px_rgba(244,63,94,0.5)] ring-1 ring-rose-300/40",
+  item: "bg-gradient-to-b from-amber-400 via-amber-600 to-amber-950 shadow-[0_0_20px_-3px_rgba(245,158,11,0.48)] ring-1 ring-amber-200/40",
+  lore: "bg-gradient-to-b from-sky-500 via-sky-600 to-sky-950 shadow-[0_0_20px_-3px_rgba(14,165,233,0.48)] ring-1 ring-sky-300/40",
+};
+
+function entityDiskClasses(type: string): string {
+  return TYPE_DISK_STYLE[type] ?? "bg-gradient-to-b from-zinc-500 via-zinc-600 to-zinc-900 shadow-[0_0_14px_-2px_rgba(161,161,170,0.45)] ring-1 ring-zinc-300/35";
+}
+
 type EntityNodeData = { label: string; type: string; entityId: string };
 type MapNodeData = { label: string; mapId: string };
 
@@ -77,16 +94,31 @@ function EntityNode({ data, selected }: NodeProps<Node<EntityNodeData>>) {
   const Icon = TYPE_ICONS[(data as EntityNodeData).type] ?? BookOpen;
   const d = data as EntityNodeData;
   return (
-    <div
-      className={cn(
-        "flex items-center gap-2 rounded-lg border-2 bg-zinc-900 px-3 py-2 shadow-lg min-w-[140px]",
-        selected ? "border-amber-500" : "border-amber-600/50"
-      )}
-    >
-      <Handle type="target" position={Position.Left} className="!w-2 !h-2 !bg-amber-500" />
-      <Icon className="h-5 w-5 shrink-0 text-amber-400" />
-      <span className="truncate text-sm font-medium text-zinc-100">{d.label}</span>
-      <Handle type="source" position={Position.Right} className="!w-2 !h-2 !bg-amber-500" />
+    <div className="flex flex-col items-center gap-1 px-1 pb-0.5">
+      <div className="relative flex flex-col items-center">
+        <Handle
+          type="target"
+          position={Position.Left}
+          className="!absolute !left-0 !top-1/2 !h-2 !w-2 !-translate-x-px !-translate-y-1/2 !border-0 !bg-zinc-400/85 !opacity-80"
+        />
+        <Handle
+          type="source"
+          position={Position.Right}
+          className="!absolute !right-0 !top-1/2 !h-2 !w-2 !translate-x-px !-translate-y-1/2 !border-0 !bg-zinc-400/85 !opacity-80"
+        />
+        <div
+          className={cn(
+            "relative flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full transition-[transform,ring] duration-150",
+            entityDiskClasses(d.type),
+            selected && "scale-[1.06] ring-2 ring-[#dcdcdc]/90 shadow-[0_0_26px_-2px_rgba(255,255,255,0.35)]"
+          )}
+        >
+          <Icon className="relative z-[1] h-[22px] w-[22px] text-white/95 drop-shadow-sm" aria-hidden />
+        </div>
+      </div>
+      <span className="max-w-[6.75rem] text-center font-sans text-[10px] font-medium uppercase tracking-[0.04em] text-zinc-500">
+        <span className="line-clamp-2">{d.label}</span>
+      </span>
     </div>
   );
 }
@@ -94,16 +126,31 @@ function EntityNode({ data, selected }: NodeProps<Node<EntityNodeData>>) {
 function MapNode({ data, selected }: NodeProps<Node<MapNodeData>>) {
   const d = data as MapNodeData;
   return (
-    <div
-      className={cn(
-        "flex items-center gap-2 rounded-none border-4 border-amber-400 bg-zinc-900 px-3 py-2 shadow-lg min-w-[140px]",
-        selected ? "border-amber-300" : "border-amber-400"
-      )}
-    >
-      <Handle type="target" position={Position.Left} className="!w-2 !h-2 !bg-amber-500" />
-      <Map className="h-5 w-5 shrink-0 text-amber-400" />
-      <span className="truncate text-sm font-medium text-zinc-100">{d.label}</span>
-      <Handle type="source" position={Position.Right} className="!w-2 !h-2 !bg-amber-500" />
+    <div className="flex flex-col items-center gap-1 px-1 pb-0.5">
+      <div className="relative flex flex-col items-center">
+        <Handle
+          type="target"
+          position={Position.Left}
+          className="!absolute !left-0 !top-[26px] !h-2 !w-2 !-translate-x-px !-translate-y-1/2 !border-0 !bg-orange-400/90 !opacity-90"
+        />
+        <Handle
+          type="source"
+          position={Position.Right}
+          className="!absolute !right-0 !top-[26px] !h-2 !w-2 !translate-x-px !-translate-y-1/2 !border-0 !bg-orange-400/90 !opacity-90"
+        />
+        <div
+          className={cn(
+            "flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-xl border border-orange-400/45 bg-[#1a1612] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_0_18px_-2px_rgba(251,146,60,0.35)]",
+            selected &&
+              "ring-2 ring-orange-300/90 shadow-[0_0_24px_-2px_rgba(251,191,36,0.45)] scale-[1.05]"
+          )}
+        >
+          <Map className="h-[22px] w-[22px] text-orange-300 drop-shadow-sm" aria-hidden />
+        </div>
+      </div>
+      <span className="max-w-[6.75rem] text-center font-sans text-[10px] font-medium uppercase tracking-[0.05em] text-orange-700/95">
+        <span className="line-clamp-2">{d.label}</span>
+      </span>
     </div>
   );
 }
@@ -133,21 +180,27 @@ function LabeledEdge({
       <BaseEdge
         id={id}
         path={edgePath}
-        className={cn("stroke-amber-500/80 hover:stroke-amber-400", selected && "stroke-amber-400 stroke-[3px]")}
-        style={{ strokeWidth: selected ? 3 : 2 }}
+        className={cn(
+          "!stroke-[#585c66]",
+          "[stroke-opacity:0.72] hover:!stroke-opacity-95 hover:!stroke-[#9ca3af]",
+          selected && "!stroke-[#c4c4c4] ![stroke-opacity:1] !stroke-[1.85px]"
+        )}
+        interactionWidth={16}
       />
-      <EdgeLabelRenderer>
-        <div
-          style={{
-            position: "absolute",
-            transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
-            pointerEvents: "all",
-          }}
-          className="nodrag nopan rounded bg-zinc-800 px-2 py-0.5 text-xs text-amber-200 border border-amber-600/40 cursor-pointer hover:bg-zinc-700"
-        >
-          {label}
-        </div>
-      </EdgeLabelRenderer>
+      {label.trim() !== "" && label.trim() !== "—" && (
+        <EdgeLabelRenderer>
+          <div
+            style={{
+              position: "absolute",
+              transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+              pointerEvents: "all",
+            }}
+            className="nodrag nopan max-w-[8rem] cursor-pointer truncate rounded-full border border-zinc-600/55 bg-[#161618]/94 px-2 py-[1px] text-[10px] font-medium uppercase tracking-wide text-zinc-500 backdrop-blur-sm hover:border-zinc-500/75 hover:bg-zinc-900/95 hover:text-zinc-400"
+          >
+            {label}
+          </div>
+        </EdgeLabelRenderer>
+      )}
     </>
   );
 }
@@ -163,7 +216,7 @@ function getLayoutedNodesAndEdges(
   direction: "LR" | "TB" = "LR"
 ): { nodes: Node<GraphNodeData>[]; edges: Edge[] } {
   const g = new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
-  g.setGraph({ rankdir: direction, nodesep: 40, ranksep: 60 });
+  g.setGraph({ rankdir: direction, nodesep: 52, ranksep: 72 });
   nodes.forEach((n) => g.setNode(n.id, { width: NODE_WIDTH, height: NODE_HEIGHT }));
   edges.forEach((e) => g.setEdge(e.source, e.target));
   dagre.layout(g);
@@ -422,31 +475,33 @@ function EntityGraphInner({ campaignId }: EntityGraphProps) {
   }
 
   return (
-    <div className="flex h-full w-full">
-      {/* Sidebar Entità Slegate */}
+    <div className="flex h-full w-full bg-[#0c0c0e]">
+      {/* Sidebar tipo Obsidian — file/non collegate */}
       <div
         className={cn(
-          "flex flex-col border-r border-amber-600/20 bg-zinc-950 transition-[width] overflow-hidden",
+          "flex flex-col border-r border-[#252525] bg-[#171717] transition-[width] overflow-hidden",
           sidebarCollapsed ? "w-0" : "w-56"
         )}
       >
         {!sidebarCollapsed && (
-          <div className="flex flex-col p-2 h-full">
-            <div className="flex items-center justify-between py-2 px-1">
-              <span className="text-xs font-medium text-amber-400/90">Entità slegate</span>
+          <div className="flex flex-col h-full p-2.5">
+            <div className="flex items-center justify-between px-1 py-2">
+              <span className="select-none text-[11px] font-semibold uppercase tracking-[0.12em] text-[#979797]">
+                Non collegate
+              </span>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6 text-zinc-400 hover:text-zinc-200"
+                className="h-7 w-7 text-[#727272] hover:bg-[#2a2a2a] hover:text-[#b5b5b5]"
                 onClick={() => setSidebarCollapsed(true)}
               >
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            <p className="text-[10px] text-zinc-500 mb-2 px-1">
-              Trascina sulla lavagna per aggiungerle al grafo.
+            <p className="mb-3 px-1 text-[10px] leading-relaxed text-[#6b6b6b]">
+              Trascina nel canvas come nel graph di Obsidian.
             </p>
-            <ul className="flex-1 overflow-y-auto space-y-1">
+            <ul className="flex-1 space-y-1 overflow-y-auto">
               {unlinkedEntities.map((e) => {
                 const Icon = TYPE_ICONS[e.type] ?? BookOpen;
                 return (
@@ -457,16 +512,16 @@ function EntityGraphInner({ campaignId }: EntityGraphProps) {
                       ev.dataTransfer.setData("application/entity", JSON.stringify(e));
                       ev.dataTransfer.effectAllowed = "move";
                     }}
-                    className="flex items-center gap-2 rounded-md border border-amber-600/20 bg-zinc-900/80 px-2 py-1.5 cursor-grab active:cursor-grabbing text-zinc-200 hover:bg-zinc-800"
+                    className="flex cursor-grab items-center gap-2 rounded-lg border border-[#2f2f2f] bg-[#1f1f1f] px-2 py-1.5 text-[#c6c6c6] hover:border-[#404040] hover:bg-[#262626] active:cursor-grabbing"
                   >
-                    <GripVertical className="h-3 w-3 text-zinc-500 shrink-0" />
-                    <Icon className="h-4 w-4 shrink-0 text-amber-400/80" />
-                    <span className="truncate text-xs">{e.name}</span>
+                    <GripVertical className="h-3 w-3 shrink-0 text-[#545454]" />
+                    <Icon className="h-3.5 w-3.5 shrink-0 text-[#8a8a8a]" />
+                    <span className="truncate text-[11px]">{e.name}</span>
                   </li>
                 );
               })}
               {unlinkedEntities.length === 0 && (
-                <li className="text-xs text-zinc-500 px-2 py-4">Nessuna entità senza relazioni</li>
+                <li className="px-2 py-6 text-[11px] text-[#595959]">Tutte le voci sono collegate.</li>
               )}
             </ul>
           </div>
@@ -476,14 +531,14 @@ function EntityGraphInner({ campaignId }: EntityGraphProps) {
         <Button
           variant="ghost"
           size="sm"
-          className="absolute left-2 top-2 z-10 text-amber-400 hover:bg-amber-600/20"
+          className="absolute left-2 top-2 z-10 rounded-md border border-[#333]/80 bg-[#141414]/90 text-[11px] text-[#a3a3a3] shadow-sm backdrop-blur-sm hover:bg-[#1f1f1f] hover:text-[#e5e5e5]"
           onClick={() => setSidebarCollapsed(false)}
         >
-          Entità slegate
+          Non collegate
         </Button>
       )}
 
-      <div className="flex-1 h-full">
+      <div className="relative h-full flex-1">
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -496,12 +551,65 @@ function EntityGraphInner({ campaignId }: EntityGraphProps) {
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           fitView
-          className="bg-zinc-950"
-          minZoom={0.2}
-          maxZoom={1.5}
+          fitViewOptions={{ padding: 0.18 }}
+          defaultEdgeOptions={{
+            style: {
+              stroke: "#585c66",
+              strokeOpacity: 0.72,
+              strokeWidth: 1.25,
+            },
+          }}
+          proOptions={{ hideAttribution: true }}
+          zoomOnPinch
+          panOnDrag
+          className="[&_.react-flow__renderer]:outline-none [&_.react-flow__attribution]:hidden"
+          style={{ backgroundColor: "#0c0c0e" }}
+          colorMode="dark"
+          minZoom={0.12}
+          maxZoom={2.25}
+          elevateEdgesOnSelect
+          connectionLineStyle={{ stroke: "#6b7280", strokeWidth: 1.4, strokeOpacity: 0.9 }}
         >
-          <Background color="rgba(251,191,36,0.08)" gap={16} />
-          <Controls className="!bg-zinc-900 !border-amber-600/30 !text-zinc-200" />
+          <Background
+            id="concept-map-dots"
+            variant={BackgroundVariant.Dots}
+            gap={22}
+            size={1.15}
+            color="rgba(120,120,132,0.17)"
+          />
+          <Controls
+            className="[&_button]:rounded-md [&_button]:border [&_button]:border-[#333] [&_button]:bg-[#1a1a1a]/95 [&_button]:text-[#bdbdbd] [&_button:hover]:border-[#444] [&_button:hover]:bg-[#252525] [&_button]:shadow-md !border-[#303030]"
+          />
+          <MiniMap
+            className="!m-3 !rounded-lg !border !border-[#333] !bg-[#121212]/94 [&_.react-flow__minimap-mask]:fill-[rgba(8,8,10,0.58)] [&_.react-flow__minimap-node]:cursor-grab"
+            pannable
+            zoomable
+            nodeStrokeWidth={2}
+            nodeBorderRadius={4}
+            maskStrokeColor="#404040"
+            maskColor="rgba(8, 8, 10, 0.62)"
+            nodeColor={(n) =>
+              String(n.type) === "map"
+                ? "rgba(234,88,12,0.55)"
+                : (() => {
+                    const t = (n.data as EntityNodeData | undefined)?.type;
+                    switch (t) {
+                      case "npc":
+                        return "rgba(139,92,246,0.7)";
+                      case "location":
+                        return "rgba(34,197,94,0.65)";
+                      case "monster":
+                        return "rgba(244,63,94,0.65)";
+                      case "item":
+                        return "rgba(245,158,11,0.68)";
+                      case "lore":
+                        return "rgba(14,165,233,0.65)";
+                      default:
+                        return "rgba(113,113,122,0.65)";
+                    }
+                  })()
+            }
+          />
         </ReactFlow>
       </div>
 
