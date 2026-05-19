@@ -1,5 +1,5 @@
 import { EntityContent } from "../entity-content";
-import { MapPopoutButton } from "@/components/maps/map-popout-button";
+import { ImageMediaActions } from "@/components/media/image-media-actions";
 import { Package } from "lucide-react";
 import { DualSourceImage } from "@/components/dual-source-image";
 
@@ -24,10 +24,7 @@ export function ItemView({ name, body, imageUrl, telegramFallbackId }: ItemViewP
             className="h-full w-full object-cover"
           />
         </div>
-        <MapPopoutButton
-          imageUrl={imageUrl ?? PLACEHOLDER}
-          title={name}
-        />
+        <ImageMediaActions driveUrl={imageUrl} telegramFallbackId={telegramFallbackId} title={name} />
       </div>
       <div className="min-w-0 flex-1">
         <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-barber-gold">

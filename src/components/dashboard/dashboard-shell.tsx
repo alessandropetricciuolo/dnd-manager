@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, User, UserCog, Shield, LogOut, ArrowLeft } from "lucide-react";
+import { LayoutDashboard, User, UserCog, Shield, LogOut, ArrowLeft, ImageDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MobileNavMenu } from "@/components/dashboard/mobile-nav-menu";
 import { CreateCampaignDialog } from "@/components/create-campaign-dialog";
@@ -67,6 +67,17 @@ function NavLinks({
         <User className="h-5 w-5 shrink-0" />
         <span className={SIDEBAR_LABEL}>Profilo</span>
       </Link>
+      {isGmOrAdmin && (
+        <Link
+          href="/admin/media-export"
+          onClick={onNavigate}
+          className={linkClass("/admin/media-export")}
+          title="Export immagini"
+        >
+          <ImageDown className="h-5 w-5 shrink-0" />
+          <span className={SIDEBAR_LABEL}>Export immagini</span>
+        </Link>
+      )}
       {isGmOrAdmin && (
         <Link
           href="/dashboard/settings/profile"

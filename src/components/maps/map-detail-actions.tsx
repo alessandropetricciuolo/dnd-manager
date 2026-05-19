@@ -11,6 +11,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { MapPopoutButton } from "./map-popout-button";
+import { DownloadImageButton } from "@/components/media/download-image-button";
 
 type MapDetailActionsProps = {
   imageUrl: string;
@@ -31,6 +32,7 @@ export function MapDetailActions({
   return (
     <div className="flex flex-wrap items-center gap-2">
       {showPopout && <MapPopoutButton imageUrl={imageUrl} title={mapName} viewUrl={viewUrl} />}
+      <DownloadImageButton driveUrl={imageUrl} filename={mapName} />
       <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
         <DialogTrigger asChild>
           <Button

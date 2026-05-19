@@ -2,7 +2,7 @@ import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import { preserveMarkdownBlankLines } from "@/lib/wiki/content";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPopoutButton } from "@/components/maps/map-popout-button";
+import { ImageMediaActions } from "@/components/media/image-media-actions";
 import { Coins } from "lucide-react";
 import { GmOnlySection } from "./gm-only-section";
 import { DualSourceImage } from "@/components/dual-source-image";
@@ -50,10 +50,7 @@ export function MonsterView({
               className="h-full w-full object-cover"
             />
           </div>
-          <MapPopoutButton
-            imageUrl={imageUrl ?? PLACEHOLDER}
-            title={name}
-          />
+          <ImageMediaActions driveUrl={imageUrl} telegramFallbackId={telegramFallbackId} title={name} />
         </div>
         <div className="min-w-0">
       {hasStats || attacks ? (

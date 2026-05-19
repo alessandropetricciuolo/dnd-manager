@@ -35,6 +35,7 @@ import {
 import { calculateLevelProgress } from "@/lib/dnd-constants";
 import { Progress } from "@/components/ui/progress";
 import { MapPopoutButton } from "@/components/maps/map-popout-button";
+import { DownloadImageButton } from "@/components/media/download-image-button";
 import {
   Popover,
   PopoverContent,
@@ -473,14 +474,25 @@ export function CharacterCardGm({
             </Button>
           )}
           {character.image_url && (
-            <MapPopoutButton
-              imageUrl={character.image_url}
-              title={character.name}
-              compact
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-barber-gold"
-            />
+            <>
+              <MapPopoutButton
+                imageUrl={character.image_url}
+                title={character.name}
+                compact
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-barber-gold"
+              />
+              <DownloadImageButton
+                driveUrl={character.image_url}
+                filename={character.name}
+                compact
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-barber-gold"
+                title="Scarica immagine personaggio"
+              />
+            </>
           )}
           <Button
             variant="ghost"

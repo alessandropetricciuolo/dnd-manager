@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { CampaignCharacterRow } from "@/app/campaigns/character-actions";
-import { MapPopoutButton } from "@/components/maps/map-popout-button";
+import { ImageMediaActions } from "@/components/media/image-media-actions";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { parseRulesSnapshot } from "@/lib/character-rules-snapshot";
 import type { CharacterRulesSnapshotV1 } from "@/lib/character-rules-snapshot";
@@ -352,7 +352,7 @@ export function CharacterCardPlayer({
           </div>
           {character.image_url && (
             <div className="flex justify-end px-4">
-              <MapPopoutButton imageUrl={character.image_url} title={character.name} />
+              <ImageMediaActions driveUrl={character.image_url} title={character.name} />
             </div>
           )}
         </div>

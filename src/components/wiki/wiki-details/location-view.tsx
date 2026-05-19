@@ -1,6 +1,6 @@
 import { EntityContent } from "../entity-content";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPopoutButton } from "@/components/maps/map-popout-button";
+import { ImageMediaActions } from "@/components/media/image-media-actions";
 import { MapPin } from "lucide-react";
 import { GmOnlySection } from "./gm-only-section";
 import { DualSourceImage } from "@/components/dual-source-image";
@@ -39,10 +39,7 @@ export function LocationView({
             className="h-full w-full object-cover"
           />
         </div>
-        <MapPopoutButton
-          imageUrl={imageUrl ?? PLACEHOLDER}
-          title={name}
-        />
+        <ImageMediaActions driveUrl={imageUrl} telegramFallbackId={telegramFallbackId} title={name} />
       </div>
 
       {body ? (

@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useRouter } from "nextjs-toploader/app";
 import { toast } from "sonner";
 import { ImageIcon, Trash2, ExternalLink, MapPin, Pencil } from "lucide-react";
+import { DownloadImageButton } from "@/components/media/download-image-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { deleteMap } from "@/app/campaigns/map-actions";
@@ -153,6 +154,12 @@ export function MapCard({
             <ExternalLink className="h-4 w-4" />
             Nuova Finestra
           </Button>
+          <DownloadImageButton
+            driveUrl={map.image_url}
+            filename={map.name}
+            stopPropagation
+            className="border-barber-gold/40 bg-barber-dark/90 text-barber-paper hover:bg-barber-gold/20 hover:text-barber-gold"
+          />
         </div>
       </div>
       <CardHeader className="pb-2">

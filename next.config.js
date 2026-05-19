@@ -21,6 +21,8 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: "4mb",
     },
+    /** archiver v8 exports non compatibili con il bundler Next — solo API Node. */
+    serverComponentsExternalPackages: ["archiver"],
   },
   async headers() {
     return [

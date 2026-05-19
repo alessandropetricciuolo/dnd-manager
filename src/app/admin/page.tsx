@@ -13,7 +13,7 @@ import { CreateUserDialog } from "@/components/admin/create-user-dialog";
 import { AdminUserRow } from "@/components/admin/admin-user-row";
 import { NotificationsPausedToggle } from "@/components/admin/notifications-paused-toggle";
 import { BackupDriveImagesButton } from "@/components/admin/backup-drive-images-button";
-import { Palette, Shield, BarChart3, Mail, BookText } from "lucide-react";
+import { Palette, Shield, BarChart3, Mail, BookText, ImageDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
@@ -81,6 +81,18 @@ export default async function AdminPage() {
 
         <NotificationsPausedToggle />
         <BackupDriveImagesButton />
+        <div className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 p-4">
+          <h2 className="mb-2 text-base font-semibold text-barber-gold">Export immagini sito</h2>
+          <p className="mb-3 text-sm text-barber-paper/70">
+            Scarica un ZIP con tutte le immagini salvate nel database (campagne, wiki, mappe, personaggi, allegati GM, ecc.).
+          </p>
+          <Button asChild variant="outline" className="border-barber-gold/40 text-barber-paper/90">
+            <Link href="/admin/media-export">
+              <ImageDown className="mr-2 h-4 w-4" />
+              Apri export immagini
+            </Link>
+          </Button>
+        </div>
         <div className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 p-4">
           <h2 className="mb-2 text-base font-semibold text-barber-gold">Manuali D&D (RAG)</h2>
           <p className="mb-3 text-sm text-barber-paper/70">

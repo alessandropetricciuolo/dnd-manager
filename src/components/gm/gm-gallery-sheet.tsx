@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/tabs";
 import { DualSourceImage } from "@/components/dual-source-image";
 import { Image as ImageIcon } from "lucide-react";
+import { DownloadAllImagesButton } from "@/components/media/download-all-images-button";
+import { DownloadImageButton } from "@/components/media/download-image-button";
 import {
   getGmGalleryItems,
   listCampaignMissionsLiteForGm,
@@ -109,11 +111,17 @@ export function GmGallerySheet({ open, onOpenChange, campaignId, campaignType = 
         side="right"
         className="flex h-dvh w-full max-w-md flex-col border-amber-600/30 bg-zinc-950 text-zinc-100"
       >
-        <SheetHeader className="shrink-0 border-b border-amber-600/20 px-4 py-3">
+        <SheetHeader className="shrink-0 space-y-3 border-b border-amber-600/20 px-4 py-3">
           <SheetTitle className="flex items-center gap-2 text-left text-amber-200">
             <ImageIcon className="h-5 w-5 text-amber-400" />
             Regia Immagini
           </SheetTitle>
+          <DownloadAllImagesButton
+            campaignId={campaignId}
+            variant="outline"
+            size="sm"
+            className="w-full border-amber-600/40 text-amber-100 hover:bg-amber-600/10"
+          />
         </SheetHeader>
         <div className="flex min-h-0 flex-1 flex-col gap-3 px-4 py-3">
           <div className="space-y-2">
@@ -188,6 +196,18 @@ export function GmGallerySheet({ open, onOpenChange, campaignId, campaignType = 
                           alt={item.title}
                           className="h-full w-full object-cover transition-transform group-hover:scale-105"
                         />
+                        <div className="absolute right-1 top-1 z-10 opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
+                          <DownloadImageButton
+                            driveUrl={item.image_url}
+                            telegramFallbackId={item.telegram_fallback_id}
+                            filename={item.title}
+                            compact
+                            stopPropagation
+                            variant="secondary"
+                            size="icon"
+                            className="h-7 w-7 border-amber-600/40 bg-zinc-900/90 text-amber-100"
+                          />
+                        </div>
                       </div>
                       <div className="flex flex-col gap-0.5 px-1.5 py-1">
                         <span className="line-clamp-2 text-[11px] font-medium text-amber-100">
