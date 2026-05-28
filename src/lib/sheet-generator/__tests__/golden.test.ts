@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { buildGeneratedCharacterSheet } from "@/lib/sheet-generator/build-engine";
+import { mapGeneratedSheetToPdfFields } from "@/lib/sheet-generator/sheet-mapper";
 
 test("golden: Chierico 3 Inganno", async () => {
   const res = await buildGeneratedCharacterSheet({
@@ -248,4 +249,26 @@ test("golden: Warlock 1 — PDF summary mantiene patto e suppliche pianificate",
   const cls = res.sheet.classFeaturesMd;
   assert.ok(/###\s+Dono del Patto/i.test(cls), "la pianificazione del patto deve comparire");
   assert.ok(/###\s+Suppliche Occulte/i.test(cls), "la pianificazione delle suppliche deve comparire");
+});
+
+test("golden: Warlock 5 — Features_Main PDF non collassa su blocchi incantesimo", async () => {
+  const res = await buildGeneratedCharacterSheet({
+    characterName: "Test Warlock Lv5",
+    raceSlug: "gnomo",
+    subraceSlug: null,
+    classLabel: "Warlock",
+    classSubclass: "Il Grande Antico",
+    backgroundSlug: "ciarlatano",
+    level: 5,
+    alignment: "Neutrale",
+    age: "31",
+    height: null,
+    weight: null,
+    sex: null,
+  });
+  const fields = mapGeneratedSheetToPdfFields(res.sheet);
+  const featuresMain = String(fields.Features_Main ?? "");
+  assert.ok(!/tempo di lancio/i.test(featuresMain), "Features_Main non deve contenere statblock incantesimi");
+  assert.ok(/dono del patto/i.test(featuresMain), "Features_Main deve includere il patto");
+  assert.ok(/suppliche occulte/i.test(featuresMain), "Features_Main deve includere le suppliche");
 });

@@ -103,6 +103,30 @@ function pickMechanicSentence(text: string): string {
   return sentences[0] ?? plain;
 }
 
+function isSpellLikeFeatureBlock(heading: string, body: string): boolean {
+  const h = normalizeHeading(heading);
+  const b = toPlainSentence(body);
+  if (!b) return false;
+  if (
+    /\btempo di lancio\b/i.test(b) ||
+    /\bgittata\b/i.test(b) ||
+    /\bcomponenti\b/i.test(b) ||
+    /\bdurata\b/i.test(b)
+  ) {
+    return true;
+  }
+  if (
+    /\btrucchetto\b/i.test(b) ||
+    /\bdi [1-9]° livello\b/i.test(b) ||
+    /\bslot totali\b/i.test(b) ||
+    /\bslot spesi\b/i.test(b)
+  ) {
+    return true;
+  }
+  if (/\bLIVELLO INC\.MO\b/i.test(h)) return true;
+  return false;
+}
+
 function summarizeClassFeaturesForPdf(classMd: string, subclassMd: string | null | undefined, level: number, maxLen: number): string {
   const source = [classMd ?? "", subclassMd ?? ""].filter(Boolean).join("\n\n").trim();
   if (!source) return "";
@@ -149,7 +173,20 @@ function summarizeClassFeaturesForPdf(classMd: string, subclassMd: string | null
   });
 
   const out: string[] = [];
+  const preferredWarlockHeadings = new Set(["DONO DEL PATTO", "SUPPLICHE OCCULTE"]);
   for (const b of prioritized) {
+    const headingNorm = normalizeHeading(b.heading);
+    if (!preferredWarlockHeadings.has(headingNorm)) continue;
+    if (isSpellLikeFeatureBlock(b.heading, b.body)) continue;
+    const summary = summarizeFeatureBlock(b.body);
+    if (!summary) continue;
+    out.push(`• ${b.unlock ? `[Lv ${b.unlock}] ` : ""}${b.heading}: ${summary}`);
+  }
+
+  for (const b of prioritized) {
+    const headingNorm = normalizeHeading(b.heading);
+    if (preferredWarlockHeadings.has(headingNorm)) continue;
+    if (isSpellLikeFeatureBlock(b.heading, b.body)) continue;
     const summary = summarizeFeatureBlock(b.body);
     if (!summary) continue;
     out.push(`• ${b.unlock ? `[Lv ${b.unlock}] ` : ""}${b.heading}: ${summary}`);
