@@ -308,6 +308,142 @@ function fightingStyleSheetSeed(input: {
   ].join("|");
 }
 
+function warlockBuildSeed(input: {
+  characterName?: string | null;
+  raceSlug: string;
+  subraceSlug: string | null;
+  backgroundSlug: string;
+  classSubclass: string | null;
+  level: number;
+}): string {
+  return [
+    "Warlock",
+    input.characterName?.trim() ?? "",
+    input.raceSlug,
+    input.subraceSlug ?? "",
+    input.backgroundSlug,
+    input.classSubclass ?? "",
+    String(input.level),
+  ].join("|");
+}
+
+type WarlockPactOption = {
+  name: string;
+  summary: string;
+};
+
+type WarlockInvocationOption = {
+  name: string;
+  summary: string;
+  minLevel?: number;
+  requiresPact?: "Patto della Catena" | "Patto della Lama" | "Patto del Tomo";
+};
+
+const WARLOCK_PACT_OPTIONS: WarlockPactOption[] = [
+  {
+    name: "Patto della Catena",
+    summary: "Ottieni l'incantesimo Trova Famiglio e puoi evocare un famiglio speciale più potente.",
+  },
+  {
+    name: "Patto della Lama",
+    summary: "Puoi evocare un'arma del patto magica e usarla come focus per i tuoi poteri da warlock.",
+  },
+  {
+    name: "Patto del Tomo",
+    summary: "Ricevi il Libro delle Ombre con trucchetti aggiuntivi scelti da qualsiasi lista di classe.",
+  },
+];
+
+const WARLOCK_INVOCATION_OPTIONS: WarlockInvocationOption[] = [
+  { name: "Agonizing Blast", summary: "Aggiungi il modificatore di Carisma ai danni di Deflagrazione Occulta." },
+  { name: "Armatura delle Ombre", summary: "Puoi lanciare Armatura Magica su te stesso a volontà, senza spendere slot." },
+  { name: "Vista del Diavolo", summary: "Vedi normalmente nel buio, inclusa l'oscurità magica, entro 36 metri." },
+  { name: "Impulso Repellente", summary: "Quando colpisci con Deflagrazione Occulta, puoi spingere il bersaglio di 3 metri." },
+  { name: "Lance of Lethargy", summary: "Una volta per turno riduci la velocità di un bersaglio colpito da Deflagrazione Occulta." },
+  { name: "Mille Volti", summary: "Puoi lanciare Camuffare Se Stesso a volontà, senza spendere slot." },
+  { name: "Maschera di Molti Volti", summary: "Puoi alterare il tuo aspetto in modo illusorio con facilità tra un incontro e l'altro." },
+  { name: "Sussurri della Tomba", summary: "Puoi lanciare Parlare con i Morti a volontà, senza spendere slot." },
+  { name: "Mire della Strega", summary: "Individui più facilmente bersagli protetti da invisibilità e occultamento magico." },
+  { name: "Libro dei Segreti Antichi", summary: "Aggiungi rituali al tuo Libro delle Ombre e li lanci come rituali.", requiresPact: "Patto del Tomo" },
+  { name: "Voce del Signore della Catena", summary: "Percepisci attraverso i sensi del famiglio e puoi parlarne tramite lui.", requiresPact: "Patto della Catena" },
+  { name: "Sete della Lama", summary: "Attacchi due volte quando usi l'azione Attacco con l'arma del patto.", minLevel: 5, requiresPact: "Patto della Lama" },
+  { name: "Catene di Carceri", summary: "Puoi lanciare Blocca Mostri su celestiali, immondi ed elementali.", minLevel: 15, requiresPact: "Patto della Catena" },
+  { name: "Maestro di Miriadi Forme", summary: "Puoi lanciare Alterare Se Stesso a volontà, senza spendere slot.", minLevel: 15 },
+  { name: "Sguardo di Due Menti", summary: "Puoi percepire il mondo attraverso i sensi di una creatura consenziente." },
+];
+
+function warlockInvocationsKnown(level: number): number {
+  const lvl = Math.max(1, Math.min(20, level));
+  if (lvl < 2) return 0;
+  if (lvl < 5) return 2;
+  if (lvl < 7) return 3;
+  if (lvl < 9) return 4;
+  if (lvl < 12) return 5;
+  if (lvl < 15) return 6;
+  if (lvl < 18) return 7;
+  return 8;
+}
+
+function pickDeterministic<T>(items: T[], seed: string): T | null {
+  if (!items.length) return null;
+  const idx = stableHashNonNegative(seed) % items.length;
+  return items[idx] ?? null;
+}
+
+function pickDeterministicMany<T>(items: T[], count: number, seed: string): T[] {
+  if (count <= 0 || !items.length) return [];
+  const out: T[] = [];
+  const start = stableHashNonNegative(seed) % items.length;
+  for (let i = 0; i < items.length && out.length < count; i += 1) {
+    const idx = (start + i) % items.length;
+    out.push(items[idx]);
+  }
+  return out;
+}
+
+function buildWarlockPactAndInvocationsMarkdown(input: {
+  level: number;
+  seed: string;
+}): string {
+  const sections: string[] = [];
+  const pact = input.level >= 3 ? pickDeterministic(WARLOCK_PACT_OPTIONS, `${input.seed}|pact`) : null;
+
+  if (pact) {
+    sections.push(
+      [
+        "### Dono del Patto",
+        "",
+        "A partire dal 3° livello il warlock stringe un patto più profondo con il suo patrono.",
+        `Scelta: **${pact.name}**.`,
+        pact.summary,
+      ].join("\n")
+    );
+  }
+
+  const known = warlockInvocationsKnown(input.level);
+  if (known > 0) {
+    const available = WARLOCK_INVOCATION_OPTIONS.filter((opt) => {
+      if ((opt.minLevel ?? 1) > input.level) return false;
+      if (opt.requiresPact && opt.requiresPact !== pact?.name) return false;
+      return true;
+    });
+    const picked = pickDeterministicMany(available, known, `${input.seed}|invocations`);
+    if (picked.length > 0) {
+      sections.push(
+        [
+          "### Suppliche Occulte",
+          "",
+          "A partire dal 2° livello il warlock ottiene suppliche occulte.",
+          "Suppliche selezionate:",
+          ...picked.map((opt) => `- **${opt.name}**: ${opt.summary}`),
+        ].join("\n")
+      );
+    }
+  }
+
+  return sections.join("\n\n").trim();
+}
+
 const CLASSES_WITH_PHB_FIGHTING_STYLE_COLLAPSE = new Set(["Guerriero", "Paladino"]);
 
 function filterClassFeaturesByLevel(md: string, level: number): string {
@@ -1101,6 +1237,15 @@ export async function resolveGeneratorRules(
   let filteredClassMd = filterClassFeaturesByLevel(classFeaturesMd, input.level);
   if (CLASSES_WITH_PHB_FIGHTING_STYLE_COLLAPSE.has(input.classLabel)) {
     filteredClassMd = collapsePhbFightingStyleOptions(filteredClassMd, fightingStyleSheetSeed(input));
+  }
+  if (input.classLabel === "Warlock") {
+    const warlockExtras = buildWarlockPactAndInvocationsMarkdown({
+      level: input.level,
+      seed: warlockBuildSeed(input),
+    });
+    if (warlockExtras) {
+      filteredClassMd = [filteredClassMd, warlockExtras].filter(Boolean).join("\n\n");
+    }
   }
 
   return {
