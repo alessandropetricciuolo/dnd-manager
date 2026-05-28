@@ -271,4 +271,26 @@ test("golden: Warlock 5 — Features_Main PDF non collassa su blocchi incantesim
   assert.ok(!/tempo di lancio/i.test(featuresMain), "Features_Main non deve contenere statblock incantesimi");
   assert.ok(/dono del patto/i.test(featuresMain), "Features_Main deve includere il patto");
   assert.ok(/suppliche occulte/i.test(featuresMain), "Features_Main deve includere le suppliche");
+  assert.ok(/scelto:|scelte:/i.test(featuresMain), "Features_Main deve mostrare le scelte effettive");
+});
+
+test("golden: Gnomo — Feat_Racial PDF include più di un tratto", async () => {
+  const res = await buildGeneratedCharacterSheet({
+    characterName: "Test Gnomo",
+    raceSlug: "gnomo",
+    subraceSlug: "gnomo_rocce",
+    classLabel: "Warlock",
+    classSubclass: null,
+    backgroundSlug: "ciarlatano",
+    level: 5,
+    alignment: "Neutrale",
+    age: "31",
+    height: null,
+    weight: null,
+    sex: null,
+  });
+  const fields = mapGeneratedSheetToPdfFields(res.sheet);
+  const featRacial = String(fields.Feat_Racial ?? "");
+  const bullets = featRacial.split("\n").filter((line) => line.trim().startsWith("• ")).length;
+  assert.ok(bullets >= 2, "Feat_Racial dovrebbe includere almeno due tratti per lo gnomo");
 });

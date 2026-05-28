@@ -80,6 +80,20 @@ function summarizeFeatureBlock(body: string, maxLen = 150): string {
   return `${out}…`;
 }
 
+function summarizeWarlockSelection(heading: string, body: string): string {
+  const headingNorm = normalizeHeading(heading);
+  const txt = body.replace(/\r/g, "");
+  if (headingNorm === "DONO DEL PATTO") {
+    const pick = txt.match(/Scelta:\s*\*\*([^*]+)\*\*/i)?.[1]?.trim();
+    if (pick) return `Scelto: ${pick}.`;
+  }
+  if (headingNorm === "SUPPLICHE OCCULTE") {
+    const picks = Array.from(txt.matchAll(/-\s+\*\*([^*]+)\*\*:/g)).map((m) => (m[1] ?? "").trim()).filter(Boolean);
+    if (picks.length > 0) return `Scelte: ${picks.join(", ")}.`;
+  }
+  return summarizeFeatureBlock(body);
+}
+
 function normalizeHeading(s: string): string {
   return s
     .normalize("NFD")
@@ -107,6 +121,8 @@ function isSpellLikeFeatureBlock(heading: string, body: string): boolean {
   const h = normalizeHeading(heading);
   const b = toPlainSentence(body);
   if (!b) return false;
+  if (/^\d+\s*LIVELLO$/.test(h)) return true;
+  if (h === "LIVELLO INC MO") return true;
   if (
     /\btempo di lancio\b/i.test(b) ||
     /\bgittata\b/i.test(b) ||
@@ -123,7 +139,7 @@ function isSpellLikeFeatureBlock(heading: string, body: string): boolean {
   ) {
     return true;
   }
-  if (/\bLIVELLO INC\.MO\b/i.test(h)) return true;
+  if (h === "SUPPLICHE OCCULTE" && /\bprerequisit/i.test(b) && !/suppliche selezionate/i.test(b)) return true;
   return false;
 }
 
@@ -178,7 +194,7 @@ function summarizeClassFeaturesForPdf(classMd: string, subclassMd: string | null
     const headingNorm = normalizeHeading(b.heading);
     if (!preferredWarlockHeadings.has(headingNorm)) continue;
     if (isSpellLikeFeatureBlock(b.heading, b.body)) continue;
-    const summary = summarizeFeatureBlock(b.body);
+    const summary = summarizeWarlockSelection(b.heading, b.body);
     if (!summary) continue;
     out.push(`• ${b.unlock ? `[Lv ${b.unlock}] ` : ""}${b.heading}: ${summary}`);
   }
@@ -219,7 +235,7 @@ function summarizeRaceTraitsForPdf(raceMd: string, subraceMd: string, maxLen: nu
         return `• ${t.heading}: ${summary}`;
       })
       .filter(Boolean);
-    if (bullets.length) return compactPdfText(bullets.join("\n"), maxLen);
+    if (bullets.length >= 3) return compactPdfText(bullets.join("\n"), maxLen);
   }
 
   const lines = txt.split("\n");
@@ -255,6 +271,17 @@ function summarizeRaceTraitsForPdf(raceMd: string, subraceMd: string, maxLen: nu
     bullets.push(`• ${s.heading.replace(/[.:]+$/g, "")}: ${summary}`);
   }
   if (!bullets.length) return compactPdfText(toPlainSentence(txt), maxLen);
+  if (boldTraits.length > 0) {
+    const boldBullets = boldTraits
+      .map((t) => {
+        const summary = summarizeFeatureBlock(pickMechanicSentence(t.body), 130);
+        if (!summary) return "";
+        return `• ${t.heading}: ${summary}`;
+      })
+      .filter(Boolean);
+    const merged = [...boldBullets, ...bullets].filter((line, idx, arr) => arr.indexOf(line) === idx);
+    return compactPdfText(merged.join("\n"), maxLen);
+  }
   return compactPdfText(bullets.join("\n"), maxLen);
 }
 
