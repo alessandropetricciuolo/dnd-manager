@@ -406,9 +406,12 @@ function buildWarlockPactAndInvocationsMarkdown(input: {
   seed: string;
 }): string {
   const sections: string[] = [];
-  const pact = input.level >= 3 ? pickDeterministic(WARLOCK_PACT_OPTIONS, `${input.seed}|pact`) : null;
-
+  const pact = pickDeterministic(WARLOCK_PACT_OPTIONS, `${input.seed}|pact`);
   if (pact) {
+    const unlockNote =
+      input.level >= 3
+        ? "Privilegio disponibile al livello attuale."
+        : "Privilegio pianificato (si sblocca dal 3° livello).";
     sections.push(
       [
         "### Dono del Patto",
@@ -416,19 +419,26 @@ function buildWarlockPactAndInvocationsMarkdown(input: {
         "A partire dal 3° livello il warlock stringe un patto più profondo con il suo patrono.",
         `Scelta: **${pact.name}**.`,
         pact.summary,
+        unlockNote,
       ].join("\n")
     );
   }
 
   const known = warlockInvocationsKnown(input.level);
-  if (known > 0) {
+  const targetCount = Math.max(2, known);
+  if (targetCount > 0) {
+    const effectiveLevel = Math.max(2, input.level);
     const available = WARLOCK_INVOCATION_OPTIONS.filter((opt) => {
-      if ((opt.minLevel ?? 1) > input.level) return false;
+      if ((opt.minLevel ?? 1) > effectiveLevel) return false;
       if (opt.requiresPact && opt.requiresPact !== pact?.name) return false;
       return true;
     });
-    const picked = pickDeterministicMany(available, known, `${input.seed}|invocations`);
+    const picked = pickDeterministicMany(available, targetCount, `${input.seed}|invocations`);
     if (picked.length > 0) {
+      const unlockNote =
+        input.level >= 2
+          ? `Suppliche attive: ${known}.`
+          : "Suppliche pianificate (si sbloccano dal 2° livello).";
       sections.push(
         [
           "### Suppliche Occulte",
@@ -436,6 +446,7 @@ function buildWarlockPactAndInvocationsMarkdown(input: {
           "A partire dal 2° livello il warlock ottiene suppliche occulte.",
           "Suppliche selezionate:",
           ...picked.map((opt) => `- **${opt.name}**: ${opt.summary}`),
+          unlockNote,
         ].join("\n")
       );
     }

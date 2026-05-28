@@ -209,3 +209,23 @@ test("golden: Paladino 7 Giuramento di Vendetta — sottoclasse senza spillover 
   assert.ok(/giuramento di vendetta|dettami di vendetta|vendicatore implacabile/i.test(sub));
   assert.ok(!/cacciatori letali|nemico prescelto/i.test(sub), "non deve spillare sulla sezione Ranger");
 });
+
+test("golden: Warlock 3 — privilegi includono Dono del Patto e Suppliche Occulte", async () => {
+  const res = await buildGeneratedCharacterSheet({
+    characterName: "Test Warlock",
+    raceSlug: "tiefling",
+    subraceSlug: null,
+    classLabel: "Warlock",
+    classSubclass: null,
+    backgroundSlug: "ciarlatano",
+    level: 3,
+    alignment: "Neutrale",
+    age: "24",
+    height: null,
+    weight: null,
+    sex: null,
+  });
+  const cls = res.sheet.classFeaturesMd;
+  assert.ok(/###\s+Dono del Patto/i.test(cls), "deve comparire la sezione del patto");
+  assert.ok(/###\s+Suppliche Occulte/i.test(cls), "deve comparire la sezione delle suppliche");
+});
