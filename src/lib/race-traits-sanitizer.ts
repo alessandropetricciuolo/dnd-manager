@@ -28,6 +28,12 @@ export function sanitizeRaceTraitsMarkdown(raceSlug: string | null | undefined, 
 
   text = stripTrailingPhbRaceChapterFooterAfterLinguaggi(text);
 
+  text = text
+    .replace(/^Offrimi un caffè:[\s\S]*?(?=\n\n)/gim, "")
+    .replace(/^\d{1,3}\s*$\n?/gm, "")
+    .replace(/^CAPITOLO\s+\d+\s*\|.*$/gim, "")
+    .replace(/^#\s+SEMPRE ENTUSIASTI[\s\S]*?(?=\n\n\*\*Taglia\.|\n\n\*\*\*Taglia\.)/im, "");
+
   // In PHB IT mezzelfo c'e una riga OCR/troncata che include l'incipit dei mezzorchi.
   if (slug === "mezzelfo") {
     const leakMarkers = [

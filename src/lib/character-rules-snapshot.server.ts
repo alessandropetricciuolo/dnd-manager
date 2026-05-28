@@ -222,8 +222,25 @@ function extractSectionByContentAnchorMarkdown(raw: string, anchor: string): str
   if (startIdx < 0) return "";
   let endIdx = lines.length;
   for (let i = startIdx + 1; i < lines.length; i += 1) {
-    const lv = headingLevel(lines[i]);
-    if (lv && lv <= startLevel) {
+    const line = lines[i];
+    const lv = headingLevel(line);
+    if (!lv) continue;
+    if (lv === 1 && /^#\s+CAPITOLO\s+\d/i.test(line)) {
+      endIdx = i;
+      break;
+    }
+    if (lv === 2 && startLevel >= 3) {
+      endIdx = i;
+      break;
+    }
+    if (lv === 2 && startLevel === 1) {
+      endIdx = i;
+      break;
+    }
+    if (lv === 1 && startLevel >= 3) {
+      continue;
+    }
+    if (lv <= startLevel) {
       endIdx = i;
       break;
     }

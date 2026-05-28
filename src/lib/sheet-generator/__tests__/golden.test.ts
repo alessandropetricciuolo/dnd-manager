@@ -278,6 +278,29 @@ test("golden: Warlock 5 — Features_Main PDF non collassa su blocchi incantesim
   assert.ok(bulletCount <= 3, "Features_Main warlock deve restare compatto");
 });
 
+test("golden: Gnomo senza sottorazza — Feat_Racial include tratti meccanici base", async () => {
+  const res = await buildGeneratedCharacterSheet({
+    characterName: "Test Gnomo base",
+    raceSlug: "gnomo",
+    subraceSlug: null,
+    classLabel: "Warlock",
+    classSubclass: null,
+    backgroundSlug: "ciarlatano",
+    level: 5,
+    alignment: "Neutrale",
+    age: "31",
+    height: null,
+    weight: null,
+    sex: null,
+  });
+  const fields = mapGeneratedSheetToPdfFields(res.sheet);
+  const featRacial = String(fields.Feat_Racial ?? "");
+  const bullets = featRacial.split("\n").filter((line) => line.trim().startsWith("• ")).length;
+  assert.ok(bullets >= 3, "Feat_Racial gnomo base dovrebbe includere almeno tre tratti meccanici");
+  assert.ok(/taglia|velocita|scurovisione|astuzia/i.test(featRacial.toLowerCase()), "Feat_Racial gnomo base deve includere statistiche");
+  assert.ok(!/allineamento.*buoni|maturano alla stessa velocita/i.test(featRacial.toLowerCase()), "Feat_Racial non deve includere Età/Allineamento");
+});
+
 test("golden: Gnomo — Feat_Racial PDF include più di un tratto", async () => {
   const res = await buildGeneratedCharacterSheet({
     characterName: "Test Gnomo",
