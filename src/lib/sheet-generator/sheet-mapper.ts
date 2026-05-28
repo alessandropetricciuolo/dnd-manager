@@ -104,6 +104,65 @@ function normalizeHeading(s: string): string {
     .toUpperCase();
 }
 
+/** Tratti razziali descrittivi (non meccanici) da escludere dal PDF. */
+const RACIAL_FLAVOR_ONLY_HEADINGS = new Set([
+  "ETA",
+  "ALLINEAMENTO",
+  "NOMI",
+  "NOMI GNOMESCHI",
+]);
+
+function isPdfTemplateGarbage(heading: string, body: string): boolean {
+  const h = normalizeHeading(heading);
+  const b = toPlainSentence(body);
+  if (!h && !b) return true;
+  if (/TM\s*&\s*©|WIZARDS OF THE COAST/i.test(b)) return true;
+  if (/\[_{2,}\]|\[ \]/.test(body)) return true;
+  if (/^\d+\s*TRUCCHETTI$/i.test(h)) return true;
+  if (
+    /^(TESORO|ALLEATI|ORGANIZZAZIONI|PRIVILEGI|TRATTI|ATTACCHI|INCANTESIMI|ALTRE COMPETENZE|APPENDICE|ZOMBI|NON MORTO)$/i.test(
+      h
+    )
+  ) {
+    return true;
+  }
+  if (/PREPARATEVI|AFFRONTA LA PROSSIMA|LETTERA\s+[A-Z]\s+MINIATA|ISPIRAZIONE PER TUTTE/i.test(h)) return true;
+  if (/PUNTI FERITA ATTUALI|TS CONTRO MORTE|BONUS ATT\./i.test(b)) return true;
+  return false;
+}
+
+function parseBoldRaceTraits(md: string): Array<{ heading: string; body: string }> {
+  const txt = md.replace(/\r/g, "");
+  const traits: Array<{ heading: string; body: string }> = [];
+  const re = /\*{2,3}([^*]+?)\.\*{2,3}\s*([\s\S]*?)(?=\n\s*\*{2,3}[^*]+?\.\*{2,3}|$)/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(txt)) !== null) {
+    const heading = (m[1] ?? "").trim();
+    const body = (m[2] ?? "").trim();
+    if (!heading || !body) continue;
+    traits.push({ heading, body });
+  }
+  return traits;
+}
+
+function isMechanicalRaceTrait(heading: string, body: string): boolean {
+  const h = normalizeHeading(heading);
+  if (RACIAL_FLAVOR_ONLY_HEADINGS.has(h)) return false;
+  if (/INCREMENTO.*PUNTEGGI|INCREMENTO DEI PUNTEGGI/i.test(h)) return true;
+  if (
+    /^(TAGLIA|VELOCITA|SCUROVISIONE|ASTUZIA|LINGUAGGI|RESISTENZA|COMPETENZA|ARMA NATURALE|ARMA FISSA|SUBRACE|TRATTI DEL)/i.test(
+      h
+    ) ||
+    /\b(TAGLIA|VELOCITA|SCUROVISIONE|ASTUZIA GNOMESCA|LINGUAGGI)\b/i.test(h)
+  ) {
+    return true;
+  }
+  const b = toPlainSentence(body);
+  return /\b(aumenta di|incremento|vantaggio|svantaggio|resistenza|immunit|metri|taglia\s+(piccola|media|grande)|velocita|competenza|tiro salvezza|punteggio di)\b/i.test(
+    b
+  );
+}
+
 function pickMechanicSentence(text: string): string {
   const plain = toPlainSentence(text)
     .replace(/[“”"]/g, "")
@@ -144,7 +203,12 @@ function isSpellLikeFeatureBlock(heading: string, body: string): boolean {
 }
 
 function summarizeClassFeaturesForPdf(classMd: string, subclassMd: string | null | undefined, level: number, maxLen: number): string {
-  const source = [classMd ?? "", subclassMd ?? ""].filter(Boolean).join("\n\n").trim();
+  const classOnly = (classMd ?? "").trim();
+  const warlockUsesClassOnly =
+    /###\s+Dono del Patto/i.test(classOnly) && /###\s+Suppliche Occulte/i.test(classOnly);
+  const source = warlockUsesClassOnly
+    ? classOnly
+    : [classOnly, subclassMd ?? ""].filter(Boolean).join("\n\n").trim();
   if (!source) return "";
   const lines = source.split("\n");
   const blocks: Array<{ heading: string; body: string; unlock: number | null; order: number }> = [];
@@ -191,16 +255,6 @@ function summarizeClassFeaturesForPdf(classMd: string, subclassMd: string | null
   const out: string[] = [];
   const preferredWarlockHeadings = new Set(["DONO DEL PATTO", "SUPPLICHE OCCULTE"]);
   const hasWarlockSelectionBlocks = prioritized.some((b) => preferredWarlockHeadings.has(normalizeHeading(b.heading)));
-  const selectedWarlockInvocationsNorm = new Set<string>();
-  if (hasWarlockSelectionBlocks) {
-    for (const b of prioritized) {
-      if (normalizeHeading(b.heading) !== "SUPPLICHE OCCULTE") continue;
-      const picks = Array.from(b.body.matchAll(/-\s+\*\*([^*]+)\*\*:/g))
-        .map((m) => normalizeHeading((m[1] ?? "").trim()))
-        .filter(Boolean);
-      for (const p of picks) selectedWarlockInvocationsNorm.add(p);
-    }
-  }
   for (const b of prioritized) {
     const headingNorm = normalizeHeading(b.heading);
     if (!preferredWarlockHeadings.has(headingNorm)) continue;
@@ -210,20 +264,15 @@ function summarizeClassFeaturesForPdf(classMd: string, subclassMd: string | null
     out.push(`• ${b.unlock ? `[Lv ${b.unlock}] ` : ""}${b.heading}: ${summary}`);
   }
 
+  if (hasWarlockSelectionBlocks) {
+    return compactPdfText(out.join("\n"), maxLen);
+  }
+
   for (const b of prioritized) {
     const headingNorm = normalizeHeading(b.heading);
     if (preferredWarlockHeadings.has(headingNorm)) continue;
     if (isSpellLikeFeatureBlock(b.heading, b.body)) continue;
-    if (hasWarlockSelectionBlocks) {
-      const plain = toPlainSentence(b.body);
-      if (/^\d+\s*LIVELLO$/.test(headingNorm)) continue;
-      if (/PREPARATEVI PER L AVVENTURA/i.test(headingNorm)) continue;
-      const looksLikeWarlockInvocationEntry =
-        /\bprerequisit/i.test(plain) && /\bwarlock\b/i.test(plain) && headingNorm.length > 3;
-      if (looksLikeWarlockInvocationEntry) {
-        if (!selectedWarlockInvocationsNorm.has(headingNorm)) continue;
-      }
-    }
+    if (isPdfTemplateGarbage(b.heading, b.body)) continue;
     const summary = summarizeFeatureBlock(b.body);
     if (!summary) continue;
     out.push(`• ${b.unlock ? `[Lv ${b.unlock}] ` : ""}${b.heading}: ${summary}`);
@@ -237,79 +286,59 @@ function summarizeRaceTraitsForPdf(raceMd: string, subraceMd: string, maxLen: nu
   const txt = merged
     .replace(/\r/g, "")
     .replace(/^\s*>\s*.*$/gm, "")
+    .replace(/^Un personaggio\s+\w+\s+possiede[\s\S]*?(?=\n\s*\*{2,3}|\n\s*#{1,6})/im, "")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
-  const boldTraits: Array<{ heading: string; body: string }> = [];
-  const boldRe = /\*\*([^*]+?)\.\*\*\s*([\s\S]*?)(?=\n\s*\*\*[^*]+?\.\*\*|$)/g;
-  let bm: RegExpExecArray | null;
-  while ((bm = boldRe.exec(txt)) !== null) {
-    const heading = bm[1].trim();
-    const body = bm[2].trim();
-    if (!heading || !body) continue;
-    boldTraits.push({ heading, body });
-  }
-  if (boldTraits.length) {
-    const bullets = boldTraits
-      .map((t) => {
-        const summary = summarizeFeatureBlock(pickMechanicSentence(t.body), 130);
-        if (!summary) return "";
-        return `• ${t.heading}: ${summary}`;
-      })
-      .filter(Boolean);
-    if (bullets.length >= 3) return compactPdfText(bullets.join("\n"), maxLen);
-  }
 
-  const lines = txt.split("\n");
-  const sections: Array<{ heading: string; body: string }> = [];
-  let heading: string | null = null;
-  let bodyLines: string[] = [];
-  const flush = () => {
-    if (!heading) return;
-    const body = bodyLines.join("\n").trim();
-    sections.push({ heading, body });
-    heading = null;
-    bodyLines = [];
-  };
-  for (const line of lines) {
-    const h = line.match(/^#{1,6}\s+(.+?)\s*$/);
-    if (h) {
-      flush();
-      heading = h[1].trim();
-      continue;
-    }
-    if (heading) bodyLines.push(line);
-  }
-  flush();
-  if (!sections.length) return compactPdfText(toPlainSentence(txt), maxLen);
-
-  const skipHeadings = new Set([
+  const skipSectionHeadings = new Set([
     "TRATTI DEI MEZZORCHI",
     "TRATTI DEGLI GNOMI",
     "TRATTI RAZZIALI",
     "TRATTI",
+    "TRATTI DEL GENASI DELL ACQUA",
   ]);
+
   const bullets: string[] = [];
-  for (const s of sections) {
-    const hn = normalizeHeading(s.heading);
-    if (skipHeadings.has(hn)) continue;
-    const summary = summarizeFeatureBlock(pickMechanicSentence(s.body), 130);
-    if (!summary) continue;
-    const line = `• ${s.heading.replace(/[.:]+$/g, "")}: ${summary}`;
-    if (/^•\s*TRATTI DEGLI GNOMI:/i.test(line)) continue;
-    bullets.push(line);
+  const seen = new Set<string>();
+
+  const addTrait = (heading: string, body: string) => {
+    if (!isMechanicalRaceTrait(heading, body)) return;
+    const summary = summarizeFeatureBlock(pickMechanicSentence(body), 140);
+    if (!summary) return;
+    const hn = normalizeHeading(heading);
+    if (seen.has(hn)) return;
+    seen.add(hn);
+    bullets.push(`• ${heading.replace(/[.:]+$/g, "")}: ${summary}`);
+  };
+
+  for (const t of parseBoldRaceTraits(txt)) {
+    addTrait(t.heading, t.body);
   }
-  if (!bullets.length) return compactPdfText(toPlainSentence(txt), maxLen);
-  if (boldTraits.length > 0) {
-    const boldBullets = boldTraits
-      .map((t) => {
-        const summary = summarizeFeatureBlock(pickMechanicSentence(t.body), 130);
-        if (!summary) return "";
-        return `• ${t.heading}: ${summary}`;
-      })
-      .filter(Boolean);
-    const merged = [...boldBullets, ...bullets].filter((line, idx, arr) => arr.indexOf(line) === idx);
-    return compactPdfText(merged.join("\n"), maxLen);
+
+  const lines = txt.split("\n");
+  let sectionHeading: string | null = null;
+  let sectionBody: string[] = [];
+  const flushSection = () => {
+    if (!sectionHeading) return;
+    const hn = normalizeHeading(sectionHeading);
+    if (!skipSectionHeadings.has(hn)) {
+      addTrait(sectionHeading, sectionBody.join("\n"));
+    }
+    sectionHeading = null;
+    sectionBody = [];
+  };
+  for (const line of lines) {
+    const h = line.match(/^#{1,6}\s+(.+?)\s*$/);
+    if (h) {
+      flushSection();
+      sectionHeading = h[1].trim();
+      continue;
+    }
+    if (sectionHeading) sectionBody.push(line);
   }
+  flushSection();
+
+  if (!bullets.length) return "";
   return compactPdfText(bullets.join("\n"), maxLen);
 }
 

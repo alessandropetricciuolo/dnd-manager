@@ -273,6 +273,9 @@ test("golden: Warlock 5 — Features_Main PDF non collassa su blocchi incantesim
   assert.ok(/suppliche occulte/i.test(featuresMain), "Features_Main deve includere le suppliche");
   assert.ok(/scelto:|scelte:/i.test(featuresMain), "Features_Main deve mostrare le scelte effettive");
   assert.ok(!/preparatevi per l'avventura|preparatevi per l avventura/i.test(featuresMain), "Features_Main non deve contenere testo editoriale del manuale");
+  assert.ok(!/mente risvegliata|patrono ultraterreno|trucchetti|wizards of the coast/i.test(featuresMain), "Features_Main warlock solo patto e suppliche");
+  const bulletCount = featuresMain.split("\n").filter((l) => l.trim().startsWith("• ")).length;
+  assert.ok(bulletCount <= 3, "Features_Main warlock deve restare compatto");
 });
 
 test("golden: Gnomo — Feat_Racial PDF include più di un tratto", async () => {
@@ -293,6 +296,8 @@ test("golden: Gnomo — Feat_Racial PDF include più di un tratto", async () => 
   const fields = mapGeneratedSheetToPdfFields(res.sheet);
   const featRacial = String(fields.Feat_Racial ?? "");
   const bullets = featRacial.split("\n").filter((line) => line.trim().startsWith("• ")).length;
-  assert.ok(bullets >= 2, "Feat_Racial dovrebbe includere almeno due tratti per lo gnomo");
-  assert.ok(!/tratti degli gnomi|tratti degli gnomi/i.test(featRacial.toLowerCase()), "Feat_Racial non deve degradare nel titolo generico della sezione");
+  assert.ok(bullets >= 3, "Feat_Racial dovrebbe includere almeno tre tratti meccanici per lo gnomo");
+  assert.ok(!/tratti degli gnomi:/i.test(featRacial.toLowerCase()), "Feat_Racial non deve degradare nel titolo generico della sezione");
+  assert.ok(/scurovisione|velocita|astuzia|incremento/i.test(featRacial.toLowerCase()), "Feat_Racial deve includere statistiche/meccaniche");
+  assert.ok(!/allineamento.*buoni|maturano alla stessa velocita/i.test(featRacial.toLowerCase()), "Feat_Racial non deve includere testo descrittivo Età/Allineamento");
 });
