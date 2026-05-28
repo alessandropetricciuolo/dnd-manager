@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { normalizeImageUrl } from "@/lib/image-url";
 import type { Database } from "@/types/database.types";
 import type { ImageExportRecord } from "./types";
+import { isSafeRemoteImageUrl } from "./security";
 
 const TELEGRAM_API = "https://api.telegram.org/bot";
 const TELEGRAM_FILE_BASE = "https://api.telegram.org/file/bot";
@@ -56,21 +57,19 @@ async function fetchTelegramByFileId(fileId: string): Promise<{ buffer: Buffer; 
 
 async function fetchHttpUrl(url: string): Promise<{ buffer: Buffer; ext: string } | null> {
   const normalized = url.includes("drive.google.com") ? normalizeImageUrl(url) : url;
+  if (!isSafeRemoteImageUrl(normalized)) return null;
+
   const res = await fetch(normalized, { redirect: "follow" });
   if (!res.ok) return null;
 
   const contentType = res.headers.get("content-type") ?? "";
-  if (contentType.includes("text/html") || contentType.includes("application/json")) {
-    return null;
-  }
+  if (!contentType.toLowerCase().startsWith("image/")) return null;
 
   const arrayBuffer = await res.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
   if (buffer.length < 64) return null;
 
-  const ext = contentType.includes("image/")
-    ? extFromMime(contentType.split(";")[0]?.trim() ?? "")
-    : extFromPath(normalized);
+  const ext = extFromMime(contentType.split(";")[0]?.trim() ?? "");
 
   return { buffer, ext };
 }
