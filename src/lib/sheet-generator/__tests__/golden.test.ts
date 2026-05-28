@@ -273,9 +273,10 @@ test("golden: Warlock 5 — Features_Main PDF non collassa su blocchi incantesim
   assert.ok(/suppliche occulte/i.test(featuresMain), "Features_Main deve includere le suppliche");
   assert.ok(/scelto:|scelte:/i.test(featuresMain), "Features_Main deve mostrare le scelte effettive");
   assert.ok(!/preparatevi per l'avventura|preparatevi per l avventura/i.test(featuresMain), "Features_Main non deve contenere testo editoriale del manuale");
-  assert.ok(!/mente risvegliata|patrono ultraterreno|trucchetti|wizards of the coast/i.test(featuresMain), "Features_Main warlock solo patto e suppliche");
+  assert.ok(/mente risvegliata/i.test(featuresMain), "Features_Main deve includere il privilegio del patrono Grande Antico");
+  assert.ok(!/patrono ultraterreno|trucchetti|wizards of the coast|armatura delle ombre|tempo di lancio/i.test(featuresMain), "Features_Main non deve contenere intro generica o catalogo suppliche");
   const bulletCount = featuresMain.split("\n").filter((l) => l.trim().startsWith("• ")).length;
-  assert.ok(bulletCount <= 3, "Features_Main warlock deve restare compatto");
+  assert.ok(bulletCount >= 3 && bulletCount <= 6, "Features_Main warlock deve includere patto, suppliche e privilegi patrono");
 });
 
 test("golden: Gnomo senza sottorazza — Feat_Racial include tratti meccanici base", async () => {

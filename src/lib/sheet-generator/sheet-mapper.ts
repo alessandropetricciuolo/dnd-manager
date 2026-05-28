@@ -202,13 +202,120 @@ function isSpellLikeFeatureBlock(heading: string, body: string): boolean {
   return false;
 }
 
+const WARLOCK_OMIT_CLASS_HEADINGS = new Set([
+  "PATRONO ULTRATERRENO",
+  "MAGIA DEL PATTO",
+  "IL VINCOLO DEL PATTO",
+]);
+
+const WARLOCK_PATRON_INTRO_HEADINGS = new Set([
+  "IL GRANDE ANTICO",
+  "GRANDE ANTICO",
+  "IL SIGNORE FATATO",
+  "SIGNORE FATATO",
+  "L IMMONDO",
+  "IMMOND",
+]);
+
+function isWarlockGeneratedSelectionBlock(headingNorm: string): boolean {
+  return headingNorm === "DONO DEL PATTO" || headingNorm === "SUPPLICHE OCCULTE";
+}
+
+function isWarlockPatronPrivilegeBlock(heading: string, body: string): boolean {
+  const h = normalizeHeading(heading);
+  if (WARLOCK_PATRON_INTRO_HEADINGS.has(h)) return false;
+  if (/^LISTA AMPLIATA|^INCANTESIMI AMPLIATI/.test(h)) return false;
+  if (h === "SUPPLICHE OCCULTE") return false;
+  return /\b(a partire dal|al\s+\d+[°º]?\s+livello|quando raggiunge il)\b/i.test(body);
+}
+
+function isWarlockInvocationCatalogEntry(heading: string, body: string): boolean {
+  const h = normalizeHeading(heading);
+  if (isWarlockGeneratedSelectionBlock(h)) return false;
+  if (isWarlockPatronPrivilegeBlock(heading, body)) return false;
+  const b = body.replace(/\r/g, "").trim();
+  if (!b) return true;
+  if (/\*prerequisit/i.test(b) && !/\bsuppliche selezionate\b/i.test(b)) return true;
+  if (/^Il warlock pu[oò]\s+lanciare/i.test(b) && !/\ba partire dal\b/i.test(b)) return true;
+  return false;
+}
+
+function summarizeWarlockClassFeaturesForPdf(
+  classMd: string,
+  subclassMd: string | null | undefined,
+  level: number,
+  maxLen: number
+): string {
+  const source = [classMd, subclassMd ?? ""].filter(Boolean).join("\n\n").trim();
+  if (!source) return "";
+  const lines = source.split("\n");
+  const blocks: Array<{ heading: string; body: string; unlock: number | null; order: number }> = [];
+  let currentHeading: string | null = null;
+  let currentBody: string[] = [];
+  let idx = 0;
+  const flush = () => {
+    if (!currentHeading) return;
+    const body = currentBody.join("\n").trim();
+    if (!body) {
+      currentHeading = null;
+      currentBody = [];
+      return;
+    }
+    const unlock = extractUnlockLevel(`${currentHeading}\n${body}`);
+    if (unlock && unlock > level) {
+      currentHeading = null;
+      currentBody = [];
+      return;
+    }
+    blocks.push({ heading: currentHeading, body, unlock, order: idx++ });
+    currentHeading = null;
+    currentBody = [];
+  };
+  for (const line of lines) {
+    const h = line.match(/^#{1,3}\s+(.+?)\s*$/);
+    if (h) {
+      flush();
+      currentHeading = h[1].trim();
+      continue;
+    }
+    if (currentHeading) currentBody.push(line);
+  }
+  flush();
+
+  const out: string[] = [];
+  for (const b of blocks) {
+    const headingNorm = normalizeHeading(b.heading);
+    if (WARLOCK_OMIT_CLASS_HEADINGS.has(headingNorm)) continue;
+    if (WARLOCK_PATRON_INTRO_HEADINGS.has(headingNorm)) continue;
+    if (/^LISTA AMPLIATA|^INCANTESIMI AMPLIATI/.test(headingNorm)) continue;
+    if (isSpellLikeFeatureBlock(b.heading, b.body)) continue;
+    if (isPdfTemplateGarbage(b.heading, b.body)) continue;
+    if (isWarlockInvocationCatalogEntry(b.heading, b.body)) continue;
+
+    if (isWarlockGeneratedSelectionBlock(headingNorm)) {
+      const summary = summarizeWarlockSelection(b.heading, b.body);
+      if (!summary) continue;
+      out.push(`• ${b.unlock ? `[Lv ${b.unlock}] ` : ""}${b.heading}: ${summary}`);
+      continue;
+    }
+
+    if (!isWarlockPatronPrivilegeBlock(b.heading, b.body)) continue;
+    const summary = summarizeFeatureBlock(b.body, 180);
+    if (!summary) continue;
+    out.push(`• ${b.unlock ? `[Lv ${b.unlock}] ` : ""}${b.heading}: ${summary}`);
+  }
+
+  return compactPdfText(out.join("\n"), maxLen);
+}
+
 function summarizeClassFeaturesForPdf(classMd: string, subclassMd: string | null | undefined, level: number, maxLen: number): string {
   const classOnly = (classMd ?? "").trim();
-  const warlockUsesClassOnly =
+  const isWarlockSheet =
     /###\s+Dono del Patto/i.test(classOnly) && /###\s+Suppliche Occulte/i.test(classOnly);
-  const source = warlockUsesClassOnly
-    ? classOnly
-    : [classOnly, subclassMd ?? ""].filter(Boolean).join("\n\n").trim();
+  if (isWarlockSheet) {
+    return summarizeWarlockClassFeaturesForPdf(classOnly, subclassMd, level, maxLen);
+  }
+  const source = [classOnly, subclassMd ?? ""].filter(Boolean).join("\n\n").trim();
   if (!source) return "";
   const lines = source.split("\n");
   const blocks: Array<{ heading: string; body: string; unlock: number | null; order: number }> = [];
@@ -253,24 +360,8 @@ function summarizeClassFeaturesForPdf(classMd: string, subclassMd: string | null
   });
 
   const out: string[] = [];
-  const preferredWarlockHeadings = new Set(["DONO DEL PATTO", "SUPPLICHE OCCULTE"]);
-  const hasWarlockSelectionBlocks = prioritized.some((b) => preferredWarlockHeadings.has(normalizeHeading(b.heading)));
   for (const b of prioritized) {
     const headingNorm = normalizeHeading(b.heading);
-    if (!preferredWarlockHeadings.has(headingNorm)) continue;
-    if (isSpellLikeFeatureBlock(b.heading, b.body)) continue;
-    const summary = summarizeWarlockSelection(b.heading, b.body);
-    if (!summary) continue;
-    out.push(`• ${b.unlock ? `[Lv ${b.unlock}] ` : ""}${b.heading}: ${summary}`);
-  }
-
-  if (hasWarlockSelectionBlocks) {
-    return compactPdfText(out.join("\n"), maxLen);
-  }
-
-  for (const b of prioritized) {
-    const headingNorm = normalizeHeading(b.heading);
-    if (preferredWarlockHeadings.has(headingNorm)) continue;
     if (isSpellLikeFeatureBlock(b.heading, b.body)) continue;
     if (isPdfTemplateGarbage(b.heading, b.body)) continue;
     const summary = summarizeFeatureBlock(b.body);

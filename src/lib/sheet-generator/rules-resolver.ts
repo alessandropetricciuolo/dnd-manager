@@ -143,7 +143,7 @@ function siblingSubclassStopHeadings(parentClassLabel: string, currentSubclassLa
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
-  return supplementSubclassesForClass(parentClassLabel)
+  const stops = supplementSubclassesForClass(parentClassLabel)
     .filter((e) => {
       const lab = e.label
         .trim()
@@ -153,6 +153,24 @@ function siblingSubclassStopHeadings(parentClassLabel: string, currentSubclassLa
       return lab !== cur;
     })
     .flatMap((e) => e.sectionHeadings);
+  if (parentClassLabel.trim() === "Warlock") {
+    stops.push("SUPPLICHE OCCULTE");
+  }
+  return stops;
+}
+
+/** Rimuove liste incantesimi e catalogo suppliche dal blocco patrono warlock. */
+function trimWarlockPatronSubclassMarkdown(md: string): string {
+  let t = md.replace(/\r/g, "").trim();
+  if (!t) return "";
+  const catalogStop = t.search(/^#{1,2}\s+SUPPLICHE OCCULTE\b/im);
+  if (catalogStop >= 0) t = t.slice(0, catalogStop).trim();
+  t = t.replace(
+    /^#{1,3}\s+LISTA AMPLIATA[\s\S]*?(?=^#{1,3}\s+(?:MENTE|BENEDIZIONE|FORTUNA|RESILIENZA|SCAGLIARE|INTERDIZIONE|SCUDO|CREARE|PROTEZIONE|PASSO|SIGNATURA|RAGGI|RISVEGLI))/im,
+    ""
+  );
+  t = t.replace(/^#{1,3}\s+INCANTESIMI AMPLIATI[\s\S]*?(?=^#{1,3}\s+)/im, "");
+  return t.trim();
 }
 
 function cleanRulesExcerpt(md: string): string {
@@ -1285,7 +1303,16 @@ export async function resolveGeneratorRules(
     subraceTraitsMd: subraceTraitsMd ? normalizeMarkdownTables(cleanRulesExcerpt(subraceTraitsMd)) : null,
     classFeaturesMd: normalizeMarkdownTables(filteredClassMd),
     subclassFeaturesMd: subclassFeaturesMd
-      ? normalizeMarkdownTables(cleanRulesExcerpt(filterClassFeaturesByLevel(subclassFeaturesMd, input.level)))
+      ? normalizeMarkdownTables(
+          cleanRulesExcerpt(
+            filterClassFeaturesByLevel(
+              input.classLabel === "Warlock"
+                ? trimWarlockPatronSubclassMarkdown(subclassFeaturesMd)
+                : subclassFeaturesMd,
+              input.level
+            )
+          )
+        )
       : null,
     backgroundMd: backgroundMd
       ? collapseRandomDiceTablesInBackgroundMarkdown(
