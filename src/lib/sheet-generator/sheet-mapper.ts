@@ -190,6 +190,17 @@ function summarizeClassFeaturesForPdf(classMd: string, subclassMd: string | null
 
   const out: string[] = [];
   const preferredWarlockHeadings = new Set(["DONO DEL PATTO", "SUPPLICHE OCCULTE"]);
+  const hasWarlockSelectionBlocks = prioritized.some((b) => preferredWarlockHeadings.has(normalizeHeading(b.heading)));
+  const selectedWarlockInvocationsNorm = new Set<string>();
+  if (hasWarlockSelectionBlocks) {
+    for (const b of prioritized) {
+      if (normalizeHeading(b.heading) !== "SUPPLICHE OCCULTE") continue;
+      const picks = Array.from(b.body.matchAll(/-\s+\*\*([^*]+)\*\*:/g))
+        .map((m) => normalizeHeading((m[1] ?? "").trim()))
+        .filter(Boolean);
+      for (const p of picks) selectedWarlockInvocationsNorm.add(p);
+    }
+  }
   for (const b of prioritized) {
     const headingNorm = normalizeHeading(b.heading);
     if (!preferredWarlockHeadings.has(headingNorm)) continue;
@@ -203,6 +214,16 @@ function summarizeClassFeaturesForPdf(classMd: string, subclassMd: string | null
     const headingNorm = normalizeHeading(b.heading);
     if (preferredWarlockHeadings.has(headingNorm)) continue;
     if (isSpellLikeFeatureBlock(b.heading, b.body)) continue;
+    if (hasWarlockSelectionBlocks) {
+      const plain = toPlainSentence(b.body);
+      if (/^\d+\s*LIVELLO$/.test(headingNorm)) continue;
+      if (/PREPARATEVI PER L AVVENTURA/i.test(headingNorm)) continue;
+      const looksLikeWarlockInvocationEntry =
+        /\bprerequisit/i.test(plain) && /\bwarlock\b/i.test(plain) && headingNorm.length > 3;
+      if (looksLikeWarlockInvocationEntry) {
+        if (!selectedWarlockInvocationsNorm.has(headingNorm)) continue;
+      }
+    }
     const summary = summarizeFeatureBlock(b.body);
     if (!summary) continue;
     out.push(`• ${b.unlock ? `[Lv ${b.unlock}] ` : ""}${b.heading}: ${summary}`);
@@ -261,14 +282,21 @@ function summarizeRaceTraitsForPdf(raceMd: string, subraceMd: string, maxLen: nu
   flush();
   if (!sections.length) return compactPdfText(toPlainSentence(txt), maxLen);
 
-  const skipHeadings = new Set(["TRATTI DEI MEZZORCHI", "TRATTI RAZZIALI", "TRATTI"]);
+  const skipHeadings = new Set([
+    "TRATTI DEI MEZZORCHI",
+    "TRATTI DEGLI GNOMI",
+    "TRATTI RAZZIALI",
+    "TRATTI",
+  ]);
   const bullets: string[] = [];
   for (const s of sections) {
     const hn = normalizeHeading(s.heading);
     if (skipHeadings.has(hn)) continue;
     const summary = summarizeFeatureBlock(pickMechanicSentence(s.body), 130);
     if (!summary) continue;
-    bullets.push(`• ${s.heading.replace(/[.:]+$/g, "")}: ${summary}`);
+    const line = `• ${s.heading.replace(/[.:]+$/g, "")}: ${summary}`;
+    if (/^•\s*TRATTI DEGLI GNOMI:/i.test(line)) continue;
+    bullets.push(line);
   }
   if (!bullets.length) return compactPdfText(toPlainSentence(txt), maxLen);
   if (boldTraits.length > 0) {

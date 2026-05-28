@@ -272,6 +272,7 @@ test("golden: Warlock 5 — Features_Main PDF non collassa su blocchi incantesim
   assert.ok(/dono del patto/i.test(featuresMain), "Features_Main deve includere il patto");
   assert.ok(/suppliche occulte/i.test(featuresMain), "Features_Main deve includere le suppliche");
   assert.ok(/scelto:|scelte:/i.test(featuresMain), "Features_Main deve mostrare le scelte effettive");
+  assert.ok(!/preparatevi per l'avventura|preparatevi per l avventura/i.test(featuresMain), "Features_Main non deve contenere testo editoriale del manuale");
 });
 
 test("golden: Gnomo — Feat_Racial PDF include più di un tratto", async () => {
@@ -293,4 +294,5 @@ test("golden: Gnomo — Feat_Racial PDF include più di un tratto", async () => 
   const featRacial = String(fields.Feat_Racial ?? "");
   const bullets = featRacial.split("\n").filter((line) => line.trim().startsWith("• ")).length;
   assert.ok(bullets >= 2, "Feat_Racial dovrebbe includere almeno due tratti per lo gnomo");
+  assert.ok(!/tratti degli gnomi|tratti degli gnomi/i.test(featRacial.toLowerCase()), "Feat_Racial non deve degradare nel titolo generico della sezione");
 });
