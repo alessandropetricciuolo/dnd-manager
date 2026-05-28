@@ -229,3 +229,23 @@ test("golden: Warlock 3 — privilegi includono Dono del Patto e Suppliche Occul
   assert.ok(/###\s+Dono del Patto/i.test(cls), "deve comparire la sezione del patto");
   assert.ok(/###\s+Suppliche Occulte/i.test(cls), "deve comparire la sezione delle suppliche");
 });
+
+test("golden: Warlock 1 — PDF summary mantiene patto e suppliche pianificate", async () => {
+  const res = await buildGeneratedCharacterSheet({
+    characterName: "Test Warlock Lv1",
+    raceSlug: "tiefling",
+    subraceSlug: null,
+    classLabel: "Warlock",
+    classSubclass: null,
+    backgroundSlug: "ciarlatano",
+    level: 1,
+    alignment: "Neutrale",
+    age: "24",
+    height: null,
+    weight: null,
+    sex: null,
+  });
+  const cls = res.sheet.classFeaturesMd;
+  assert.ok(/###\s+Dono del Patto/i.test(cls), "la pianificazione del patto deve comparire");
+  assert.ok(/###\s+Suppliche Occulte/i.test(cls), "la pianificazione delle suppliche deve comparire");
+});

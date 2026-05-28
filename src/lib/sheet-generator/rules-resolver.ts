@@ -408,15 +408,17 @@ function buildWarlockPactAndInvocationsMarkdown(input: {
   const sections: string[] = [];
   const pact = pickDeterministic(WARLOCK_PACT_OPTIONS, `${input.seed}|pact`);
   if (pact) {
-    const unlockNote =
+    const intro =
       input.level >= 3
-        ? "Privilegio disponibile al livello attuale."
-        : "Privilegio pianificato (si sblocca dal 3° livello).";
+        ? "A partire dal 3° livello il warlock stringe un patto più profondo con il suo patrono."
+        : "Il warlock ha gia un cammino di patto pianificato per i prossimi livelli.";
+    const unlockNote =
+      input.level >= 3 ? "Privilegio disponibile al livello attuale." : "Privilegio pianificato.";
     sections.push(
       [
         "### Dono del Patto",
         "",
-        "A partire dal 3° livello il warlock stringe un patto più profondo con il suo patrono.",
+        intro,
         `Scelta: **${pact.name}**.`,
         pact.summary,
         unlockNote,
@@ -435,15 +437,17 @@ function buildWarlockPactAndInvocationsMarkdown(input: {
     });
     const picked = pickDeterministicMany(available, targetCount, `${input.seed}|invocations`);
     if (picked.length > 0) {
-      const unlockNote =
+      const intro =
         input.level >= 2
-          ? `Suppliche attive: ${known}.`
-          : "Suppliche pianificate (si sbloccano dal 2° livello).";
+          ? "A partire dal 2° livello il warlock ottiene suppliche occulte."
+          : "Il warlock ha gia una selezione di suppliche occulte pianificata.";
+      const unlockNote =
+        input.level >= 2 ? `Suppliche attive: ${known}.` : "Suppliche pianificate.";
       sections.push(
         [
           "### Suppliche Occulte",
           "",
-          "A partire dal 2° livello il warlock ottiene suppliche occulte.",
+          intro,
           "Suppliche selezionate:",
           ...picked.map((opt) => `- **${opt.name}**: ${opt.summary}`),
           unlockNote,
