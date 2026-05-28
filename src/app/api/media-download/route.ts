@@ -5,6 +5,10 @@ import {
   downloadStorageObject,
   fetchImageForExport,
 } from "@/lib/media-export/fetch-image";
+import {
+  isGmOrAdminRole,
+  normalizeStorageDownloadTarget,
+} from "@/lib/media-export/security";
 import { hasDownloadableImage } from "@/lib/resolve-image-src";
 
 export const runtime = "nodejs";
@@ -55,17 +59,31 @@ export async function GET(req: NextRequest) {
     req.nextUrl.searchParams.get("filename") ?? "immagine"
   );
 
-  if (!storageBucket && !hasDownloadableImage(driveUrl, telegramFallbackId)) {
+  const wantsStorageDownload = Boolean(storageBucket || storagePath);
+  if (!wantsStorageDownload && !hasDownloadableImage(driveUrl, telegramFallbackId)) {
     return NextResponse.json({ error: "Nessuna immagine da scaricare." }, { status: 400 });
   }
 
   try {
-    const admin = createSupabaseAdminClient();
     const siteOrigin = siteOriginFromRequest(req);
 
     let fetched: { buffer: Buffer; ext: string } | null = null;
-    if (storageBucket && storagePath) {
-      fetched = await downloadStorageObject(admin, storageBucket, storagePath);
+    if (wantsStorageDownload) {
+      const target = normalizeStorageDownloadTarget(storageBucket, storagePath);
+      if (!target.ok) {
+        return NextResponse.json({ error: target.message }, { status: target.status });
+      }
+
+      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+      if (!isGmOrAdminRole(profile?.role)) {
+        return NextResponse.json(
+          { error: "Solo GM e Admin possono scaricare immagini da storage privato." },
+          { status: 403 }
+        );
+      }
+
+      const admin = createSupabaseAdminClient();
+      fetched = await downloadStorageObject(admin, target.bucket, target.filePath);
     } else {
       fetched = await fetchImageForExport(
         {
