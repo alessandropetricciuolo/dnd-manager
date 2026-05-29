@@ -6,6 +6,7 @@ import {
   fetchImageForExport,
 } from "@/lib/media-export/fetch-image";
 import { hasDownloadableImage } from "@/lib/resolve-image-src";
+import { isAllowedMediaStorageRequest } from "@/lib/media-export/storage-request-guard";
 
 export const runtime = "nodejs";
 
@@ -16,15 +17,6 @@ const MIME_BY_EXT: Record<string, string> = {
   gif: "image/gif",
   webp: "image/webp",
 };
-
-const ALLOWED_STORAGE_BUCKETS = new Set(["exploration_maps", "gm_files"]);
-
-export function isAllowedMediaStorageRequest(bucket: string | null, path: string | null): boolean {
-  if (!bucket || !path) return false;
-  if (!ALLOWED_STORAGE_BUCKETS.has(bucket)) return false;
-  if (path.length > 1024 || path.startsWith("/") || path.split("/").includes("..")) return false;
-  return true;
-}
 
 function isGmOrAdmin(role?: string | null): boolean {
   return role === "gm" || role === "admin";

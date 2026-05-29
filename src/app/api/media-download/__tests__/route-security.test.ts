@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { isAllowedMediaStorageRequest } from "@/app/api/media-download/route";
+import { isAllowedMediaStorageRequest } from "@/lib/media-export/storage-request-guard";
 
 test("media download only accepts expected storage buckets and object paths", () => {
   assert.equal(isAllowedMediaStorageRequest("gm_files", "campaign/file.png"), true);
