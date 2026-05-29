@@ -17,6 +17,19 @@ const MIME_BY_EXT: Record<string, string> = {
   webp: "image/webp",
 };
 
+const ALLOWED_STORAGE_BUCKETS = new Set(["exploration_maps", "gm_files"]);
+
+export function isAllowedMediaStorageRequest(bucket: string | null, path: string | null): boolean {
+  if (!bucket || !path) return false;
+  if (!ALLOWED_STORAGE_BUCKETS.has(bucket)) return false;
+  if (path.length > 1024 || path.startsWith("/") || path.split("/").includes("..")) return false;
+  return true;
+}
+
+function isGmOrAdmin(role?: string | null): boolean {
+  return role === "gm" || role === "admin";
+}
+
 function sanitizeFilename(name: string): string {
   return (
     name
@@ -51,11 +64,30 @@ export async function GET(req: NextRequest) {
   const telegramFallbackId = req.nextUrl.searchParams.get("telegramFallbackId");
   const storageBucket = req.nextUrl.searchParams.get("storageBucket")?.trim() || null;
   const storagePath = req.nextUrl.searchParams.get("storagePath")?.trim() || null;
+  const wantsStorageDownload = Boolean(storageBucket || storagePath);
   const filenameBase = sanitizeFilename(
     req.nextUrl.searchParams.get("filename") ?? "immagine"
   );
 
-  if (!storageBucket && !hasDownloadableImage(driveUrl, telegramFallbackId)) {
+  if (wantsStorageDownload) {
+    if (!isAllowedMediaStorageRequest(storageBucket, storagePath)) {
+      return NextResponse.json({ error: "Archivio non autorizzato." }, { status: 403 });
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    if (profileError || !isGmOrAdmin(profile?.role)) {
+      return NextResponse.json(
+        { error: "Solo GM e Admin possono scaricare file da archivio." },
+        { status: 403 }
+      );
+    }
+  }
+
+  if (!wantsStorageDownload && !hasDownloadableImage(driveUrl, telegramFallbackId)) {
     return NextResponse.json({ error: "Nessuna immagine da scaricare." }, { status: 400 });
   }
 
@@ -64,7 +96,7 @@ export async function GET(req: NextRequest) {
     const siteOrigin = siteOriginFromRequest(req);
 
     let fetched: { buffer: Buffer; ext: string } | null = null;
-    if (storageBucket && storagePath) {
+    if (wantsStorageDownload && storageBucket && storagePath) {
       fetched = await downloadStorageObject(admin, storageBucket, storagePath);
     } else {
       fetched = await fetchImageForExport(
