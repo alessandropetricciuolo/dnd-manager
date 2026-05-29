@@ -401,9 +401,11 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
   ) : undefined;
 
   return (
-    <div className="flex h-[calc(100dvh-4rem)] min-h-0 flex-col overflow-hidden bg-barber-dark">
+    <div className="flex h-[calc(100dvh-3.5rem)] min-h-0 flex-col overflow-hidden bg-barber-dark sm:h-[calc(100dvh-4rem)]">
       <CampaignWorkspace
         campaignId={campaign.id}
+        isAdmin={isAdmin}
+        isGmOrAdmin={isGmOrAdmin}
         campaignName={campaign.name}
         imageUrl={campaign.image_url}
         campaignTypeLabel={campaignTypeLabel}
@@ -473,7 +475,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
                 </div>
               )}
               <SectionHeader
-                className="mb-6"
+                className="mb-3 lg:mb-6"
                 eyebrow="Sessioni"
                 title="In programma"
                 description={
@@ -513,22 +515,17 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
           wikiContent={
             renderWikiTab && hasPlayedCampaign ? (
               <>
-                <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-                  <h2 className="text-lg font-semibold text-barber-paper">
-                    Wiki
-                  </h2>
-                  {isGmOrAdmin && (
-                    <div className="flex flex-wrap items-center gap-2">
-                      <CreateEntityDialog
-                        campaignId={campaign.id}
-                        campaignType={campaign.type ?? null}
-                        eligiblePlayers={eligiblePlayers}
-                        eligibleParties={eligibleParties}
-                      />
-                      <BulkImportWikiDialog campaignId={campaign.id} />
-                    </div>
-                  )}
-                </div>
+                {isGmOrAdmin ? (
+                  <div className="mb-3 flex flex-wrap items-center justify-end gap-2">
+                    <CreateEntityDialog
+                      campaignId={campaign.id}
+                      campaignType={campaign.type ?? null}
+                      eligiblePlayers={eligiblePlayers}
+                      eligibleParties={eligibleParties}
+                    />
+                    <BulkImportWikiDialog campaignId={campaign.id} />
+                  </div>
+                ) : null}
                 <WikiList
                   campaignId={campaign.id}
                   campaignType={campaign.type ?? null}
@@ -541,19 +538,16 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
           mappeContent={
             renderMappeTab && hasPlayedCampaign ? (
               <>
-                <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-                  <h2 className="text-lg font-semibold text-barber-paper">
-                    Mappe
-                  </h2>
-                  {isGmOrAdmin && (
+                {isGmOrAdmin ? (
+                  <div className="mb-3 flex justify-end">
                     <UploadMapDialog
                       campaignId={campaign.id}
                       campaignType={campaign.type ?? null}
                       eligiblePlayers={eligiblePlayers}
                       eligibleParties={eligibleParties}
                     />
-                  )}
-                </div>
+                  </div>
+                ) : null}
                 {isGmOrAdmin && (
                   <section className="mb-10 rounded-xl border border-barber-gold/30 bg-barber-dark/90 p-4 shadow-inner md:p-6">
                     <div className="mb-4 flex flex-wrap items-center gap-2 border-b border-barber-gold/20 pb-3">

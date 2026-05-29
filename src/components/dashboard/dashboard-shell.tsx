@@ -132,7 +132,7 @@ export function DashboardShell({ children, isAdmin, isGmOrAdmin }: DashboardShel
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] w-full">
+    <div className="flex min-h-[calc(100dvh-3.5rem)] w-full sm:min-h-[calc(100vh-4rem)]">
       <aside
         className={cn(
           "group/sidebar relative z-30 hidden shrink-0 flex-col overflow-hidden",

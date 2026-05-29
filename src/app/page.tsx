@@ -1,18 +1,49 @@
 import Link from "next/link";
-import { Dices, MapPinned, Shield, Sparkles, Users } from "lucide-react";
+import { Dices, LayoutDashboard, MapPinned, Shield, Sparkles, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CampaignMiniCarousel } from "@/components/home/campaign-mini-carousel";
+import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { getUserDisplayName } from "@/lib/user-display-name";
 
 const HERO_BG =
   "https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=2000&q=80";
 
 export const revalidate = 300;
 
-export default function HomePage() {
-  const ctaHref = "/login";
+export default async function HomePage() {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isLoggedIn = Boolean(user);
+  const displayName = user ? getUserDisplayName(user) : null;
+  const joinHref = "/login";
+  const primaryHref = isLoggedIn ? "/dashboard" : joinHref;
+  const primaryLabel = isLoggedIn ? "Vai alla Dashboard" : "Unisciti alla Gilda";
 
   return (
     <main className="min-h-screen bg-[#0b0a10] text-barber-paper">
+      {isLoggedIn ? (
+        <div className="border-b border-barber-gold/25 bg-gradient-to-r from-barber-gold/15 via-barber-gold/5 to-transparent">
+          <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <p className="text-sm text-barber-paper/90 sm:text-base">
+              <span className="font-medium text-barber-gold">Bentornato, {displayName}.</span>{" "}
+              Le tue campagne e le prossime sessioni ti aspettano.
+            </p>
+            <Button
+              asChild
+              size="sm"
+              className="shrink-0 bg-barber-gold text-barber-dark hover:bg-barber-gold/90"
+            >
+              <Link href="/dashboard" className="inline-flex items-center gap-2">
+                <LayoutDashboard className="h-4 w-4" />
+                Dashboard
+              </Link>
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       <section className="relative overflow-hidden border-b border-barber-gold/20">
         <div
           className="absolute inset-0 bg-cover bg-center opacity-30"
@@ -22,13 +53,16 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-gradient-to-b from-[#0b0a10]/70 via-[#0b0a10]/85 to-[#0b0a10]" aria-hidden />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_50%_0%,rgba(251,191,36,0.18),transparent)]" aria-hidden />
 
-        <div className="relative mx-auto flex max-w-6xl flex-col gap-8 px-4 pb-24 pt-16 sm:px-6 md:gap-10 md:pb-32 md:pt-24">
+        <div className="relative mx-auto flex max-w-6xl flex-col gap-8 px-4 pb-16 pt-12 sm:px-6 sm:pb-20 sm:pt-16 md:gap-10 md:pb-28 md:pt-20">
           <h1 className="max-w-4xl font-serif text-4xl font-bold leading-tight text-barber-gold sm:text-5xl md:text-6xl">
-            Il meglio del digitale. La magia del tavolo reale.
+            {isLoggedIn
+              ? "Il tavolo ti aspetta. Riprendi da dove avevi lasciato."
+              : "Il meglio del digitale. La magia del tavolo reale."}
           </h1>
           <p className="max-w-2xl text-base text-barber-paper/85 sm:text-lg">
-            Un&apos;esperienza D&D dal vivo dove mappe 3D interattive, miniature fisiche e dadi veri si fondono in un&apos;unica avventura.
-            Tu vieni e giochi.
+            {isLoggedIn
+              ? "Dalla dashboard gestisci campagne, sessioni e personaggi. Quando sei pronto, torna al tavolo dal vivo."
+              : "Un'esperienza D&D dal vivo dove mappe 3D interattive, miniature fisiche e dadi veri si fondono in un'unica avventura. Tu vieni e giochi."}
           </p>
           <div className="flex flex-wrap gap-3">
             <Button
@@ -36,10 +70,17 @@ export default function HomePage() {
               size="lg"
               className="bg-barber-red px-7 text-base font-semibold text-barber-paper hover:bg-barber-red/90"
             >
-              <Link href={ctaHref}>Unisciti alla Gilda</Link>
+              <Link href={primaryHref}>{primaryLabel}</Link>
             </Button>
-            <Button asChild variant="outline" size="lg" className="border-barber-gold/40 text-barber-gold hover:bg-barber-gold/10">
-              <Link href="/scopri">Scopri le Avventure</Link>
+            <Button
+              asChild
+              variant="outline"
+              size="lg"
+              className="border-barber-gold/40 text-barber-gold hover:bg-barber-gold/10"
+            >
+              <Link href={isLoggedIn ? "/profile" : "/scopri"}>
+                {isLoggedIn ? "Il mio profilo" : "Scopri le Avventure"}
+              </Link>
             </Button>
           </div>
           <div className="pt-1">
@@ -132,11 +173,13 @@ export default function HomePage() {
                 <li>- Tavolo, materiali e setup curati.</li>
                 <li>- Community viva dove tornare ogni settimana.</li>
               </ul>
-              <div className="mt-6">
-                <Button asChild className="bg-barber-red text-barber-paper hover:bg-barber-red/90">
-                  <Link href={ctaHref}>Unisciti alla Gilda</Link>
-                </Button>
-              </div>
+              {!isLoggedIn ? (
+                <div className="mt-6">
+                  <Button asChild className="bg-barber-red text-barber-paper hover:bg-barber-red/90">
+                    <Link href={joinHref}>Unisciti alla Gilda</Link>
+                  </Button>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
@@ -144,28 +187,23 @@ export default function HomePage() {
 
       <section className="py-14 sm:py-16">
         <div className="mx-auto max-w-6xl px-4 text-center sm:px-6">
-          <h2 className="font-serif text-2xl font-semibold text-barber-gold sm:text-3xl">Pronto a vivere D&D come non l&apos;hai mai giocato?</h2>
+          <h2 className="font-serif text-2xl font-semibold text-barber-gold sm:text-3xl">
+            {isLoggedIn
+              ? "Pronto per la prossima sessione?"
+              : "Pronto a vivere D&D come non l'hai mai giocato?"}
+          </h2>
           <p className="mx-auto mt-3 max-w-2xl text-sm text-barber-paper/75 sm:text-base">
-            Entra nella community Barber & Dragons e trova il tuo prossimo tavolo dal vivo.
+            {isLoggedIn
+              ? "Apri la dashboard per vedere campagne, iscrizioni e calendario sessioni."
+              : "Entra nella community Barber & Dragons e trova il tuo prossimo tavolo dal vivo."}
           </p>
           <div className="mt-6">
             <Button asChild size="lg" className="bg-barber-red px-8 text-barber-paper hover:bg-barber-red/90">
-              <Link href={ctaHref}>Unisciti alla Gilda</Link>
+              <Link href={primaryHref}>{primaryLabel}</Link>
             </Button>
           </div>
         </div>
       </section>
-
-      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-barber-gold/30 bg-[#0d0b12]/95 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur-sm">
-        <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-3 rounded-lg border border-barber-gold/25 bg-[#171322] px-4 py-3 text-center">
-          <p className="text-sm text-barber-paper/90">
-            Pronto a entrare nella tua prossima avventura?
-          </p>
-          <Button asChild className="bg-barber-red text-barber-paper hover:bg-barber-red/90">
-            <Link href={ctaHref}>Unisciti alla Gilda</Link>
-          </Button>
-        </div>
-      </div>
     </main>
   );
 }

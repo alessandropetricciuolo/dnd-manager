@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useRouter } from "nextjs-toploader/app";
 import {
+  ArrowLeft,
   BookOpen,
   CalendarDays,
   ChevronRight,
@@ -17,6 +18,7 @@ import {
   Swords,
   User,
 } from "lucide-react";
+import { MobileNavMenu } from "@/components/dashboard/mobile-nav-menu";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -32,14 +34,14 @@ export type CampaignTabValue = (typeof VALID_TABS)[number];
 
 const TAB_META: Record<
   CampaignTabValue,
-  { label: string; icon: typeof CalendarDays }
+  { label: string; shortLabel: string; icon: typeof CalendarDays }
 > = {
-  sessioni: { label: "Sessioni", icon: CalendarDays },
-  wiki: { label: "Wiki", icon: BookOpen },
-  mappe: { label: "Mappe", icon: Map },
-  missioni: { label: "Missioni", icon: Swords },
-  pg: { label: "Personaggi", icon: User },
-  gm: { label: "Strumenti GM", icon: Shield },
+  sessioni: { label: "Sessioni", shortLabel: "Sess.", icon: CalendarDays },
+  wiki: { label: "Wiki", shortLabel: "Wiki", icon: BookOpen },
+  mappe: { label: "Mappe", shortLabel: "Mappe", icon: Map },
+  missioni: { label: "Missioni", shortLabel: "Miss.", icon: Swords },
+  pg: { label: "Personaggi", shortLabel: "PG", icon: User },
+  gm: { label: "Strumenti GM", shortLabel: "GM", icon: Shield },
 };
 
 const PLAYER_TABS: CampaignTabValue[] = ["sessioni", "wiki", "mappe", "missioni", "pg"];
@@ -67,6 +69,8 @@ export type CampaignWorkspaceProps = {
   showMissionsTab: boolean;
   /** Default true. Torneo nasconde la tab Mappe. */
   showMappeTab?: boolean;
+  isAdmin?: boolean;
+  isGmOrAdmin?: boolean;
 };
 
 function useCampaignTab(
@@ -108,13 +112,41 @@ type NavItemProps = {
   disabled?: boolean;
   locked?: boolean;
   onSelect: (value: string) => void;
-  variant: "rail" | "pill";
+  variant: "rail" | "pill" | "pill-icon";
 };
 
 function NavItem({ value, active, disabled, locked, onSelect, variant }: NavItemProps) {
   const meta = TAB_META[value];
   const Icon = locked ? Lock : meta.icon;
   const isGm = value === "gm";
+
+  if (variant === "pill-icon") {
+    return (
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => !disabled && onSelect(value)}
+        aria-label={meta.label}
+        title={meta.label}
+        className={cn(
+          "inline-flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg border px-2 py-1.5 min-w-[3rem] transition-colors",
+          disabled && "cursor-not-allowed opacity-50",
+          isGm
+            ? active
+              ? "border-violet-400/50 bg-violet-500/20 text-violet-200"
+              : "border-transparent bg-barber-dark/40 text-violet-200/70 hover:bg-violet-500/10"
+            : active
+              ? "border-barber-gold/45 bg-barber-gold/20 text-barber-gold"
+              : "border-transparent bg-barber-dark/40 text-barber-paper/70 hover:bg-barber-gold/10 hover:text-barber-gold"
+        )}
+      >
+        <Icon className="h-4 w-4 shrink-0" />
+        <span className="max-w-[3.25rem] truncate text-[9px] font-medium leading-none">
+          {meta.shortLabel}
+        </span>
+      </button>
+    );
+  }
 
   if (variant === "pill") {
     return (
@@ -182,6 +214,7 @@ function CampaignInfoSheet({
   gmDisplayName,
   playerPrimerHref,
   infoFooter,
+  headerActions,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -191,6 +224,7 @@ function CampaignInfoSheet({
   gmDisplayName: string | null;
   playerPrimerHref: string | null;
   infoFooter?: React.ReactNode;
+  headerActions?: React.ReactNode;
 }) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -237,6 +271,14 @@ function CampaignInfoSheet({
             {infoFooter ? (
               <div className="space-y-3 border-t border-barber-gold/15 pt-4">{infoFooter}</div>
             ) : null}
+            {headerActions ? (
+              <div className="space-y-2 border-t border-barber-gold/15 pt-4 lg:hidden">
+                <p className="text-xs font-medium uppercase tracking-wide text-barber-paper/45">
+                  Gestione campagna
+                </p>
+                <div className="flex flex-wrap gap-2">{headerActions}</div>
+              </div>
+            ) : null}
           </div>
         </ScrollArea>
       </SheetContent>
@@ -266,6 +308,8 @@ export function CampaignWorkspace({
   showGmTab = gmAreaContent != null,
   showMissionsTab,
   showMappeTab = true,
+  isAdmin = false,
+  isGmOrAdmin = false,
 }: CampaignWorkspaceProps) {
   const [infoOpen, setInfoOpen] = useState(false);
   const { effectiveTab, setTab } = useCampaignTab(
@@ -282,7 +326,7 @@ export function CampaignWorkspace({
     return true;
   });
 
-  function renderNav(variant: "rail" | "pill") {
+  function renderNav(variant: "rail" | "pill" | "pill-icon") {
     return (
       <>
         {visiblePlayerTabs.map((value) => {
@@ -314,9 +358,60 @@ export function CampaignWorkspace({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {/* Hero */}
-      <div className="relative shrink-0 overflow-hidden border-b border-barber-gold/15">
-        <div className="relative h-36 sm:h-40 lg:h-44">
+      {/* Mobile: barra compatta + tab (niente hero immagine) */}
+      <div className="sticky top-14 z-40 shrink-0 border-b border-barber-gold/15 bg-barber-dark/95 backdrop-blur-md supports-[backdrop-filter]:bg-barber-dark/90 lg:hidden">
+        <div className="flex items-center gap-1.5 px-2 py-1.5 sm:px-3">
+          <MobileNavMenu isAdmin={isAdmin} isGmOrAdmin={isGmOrAdmin} iconOnly />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 shrink-0 text-barber-paper/80 hover:bg-barber-gold/10 hover:text-barber-gold"
+            asChild
+          >
+            <Link href="/dashboard" aria-label="Torna alla dashboard">
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+          </Button>
+          <button
+            type="button"
+            onClick={() => setInfoOpen(true)}
+            className="min-w-0 flex-1 text-left"
+          >
+            <p className="truncate font-serif text-sm font-semibold leading-tight text-barber-paper sm:text-base">
+              {campaignName}
+            </p>
+            {campaignTypeLabel ? (
+              <p className="truncate text-[10px] text-barber-gold/80">{campaignTypeLabel}</p>
+            ) : null}
+          </button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 shrink-0 text-barber-paper/70 hover:bg-barber-gold/10 hover:text-barber-gold"
+            onClick={() => setInfoOpen(true)}
+            aria-label="Sinossi e dettagli campagna"
+          >
+            <Info className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="flex gap-1 overflow-x-auto px-2 pb-2 pt-0.5">
+          {renderNav("pill-icon")}
+        </div>
+        {!hasPlayedCampaign ? (
+          <p className="border-t border-amber-500/20 bg-amber-500/10 px-3 py-1.5 text-[11px] leading-snug text-amber-100">
+            <span className="font-medium">
+              {showMappeTab ? "Wiki e Mappe" : "Wiki"}
+            </span>{" "}
+            dopo la prima sessione.
+          </p>
+        ) : null}
+      </div>
+
+      {/* Desktop: hero con immagine */}
+      <div className="relative hidden shrink-0 overflow-hidden border-b border-barber-gold/15 lg:block">
+        <div className="relative h-44">
           <Image
             src={imageUrl ?? PLACEHOLDER_IMAGE}
             alt=""
@@ -353,7 +448,7 @@ export function CampaignWorkspace({
                 ) : null}
               </div>
             </div>
-            <div className="flex shrink-0 flex-wrap items-center gap-2">
+              <div className="hidden shrink-0 flex-wrap items-center gap-2 sm:flex">
               <Button
                 type="button"
                 variant="outline"
@@ -392,6 +487,7 @@ export function CampaignWorkspace({
         gmDisplayName={gmDisplayName}
         playerPrimerHref={playerPrimerHref}
         infoFooter={infoFooter}
+        headerActions={headerActions}
       />
 
       {lockedOut ? (
@@ -439,30 +535,9 @@ export function CampaignWorkspace({
             </div>
           </aside>
 
-          {/* Nav pills — mobile / tablet */}
-          <div className="shrink-0 border-b border-barber-gold/15 bg-barber-dark/50 lg:hidden">
-            <div className="flex gap-2 overflow-x-auto px-4 py-3">
-              {renderNav("pill")}
-              <button
-                type="button"
-                onClick={() => setInfoOpen(true)}
-                className="inline-flex shrink-0 items-center gap-2 rounded-full border border-barber-gold/25 bg-barber-dark/60 px-3.5 py-2 text-sm text-barber-paper/75"
-              >
-                <Info className="h-4 w-4" />
-                Info
-              </button>
-            </div>
-            {!hasPlayedCampaign ? (
-              <p className="border-t border-amber-500/20 bg-amber-500/10 px-4 py-2 text-xs text-amber-100">
-                <span className="font-medium">{showMappeTab ? "Wiki e Mappe si sbloccano" : "Wiki si sblocca"}</span>{" "}
-                dopo la prima sessione giocata.
-              </p>
-            ) : null}
-          </div>
-
           {/* Main content */}
           <main className="min-h-0 min-w-0 flex-1 overflow-y-auto">
-            <div className="mx-auto w-full max-w-5xl px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+            <div className="mx-auto w-full max-w-5xl px-3 py-3 sm:px-5 sm:py-5 lg:px-8 lg:py-8">
               {!hasPlayedCampaign ? (
                 <p className="mb-4 hidden rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs text-amber-100 lg:block">
                   <span className="font-medium">

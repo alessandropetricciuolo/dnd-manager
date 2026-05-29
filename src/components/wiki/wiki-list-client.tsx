@@ -282,7 +282,7 @@ export function WikiListClient({
     return (
       <li
         key={entity.id}
-        className="flex flex-wrap items-center gap-2 border-b border-barber-gold/15 px-4 py-3 transition-colors last:border-b-0 hover:bg-barber-gold/[0.06] sm:gap-3 min-w-0"
+        className="flex flex-wrap items-center gap-2 border-b border-barber-gold/15 px-3 py-2.5 transition-colors last:border-b-0 hover:bg-barber-gold/[0.06] sm:gap-3 sm:px-4 sm:py-3 min-w-0"
       >
         <div className="min-w-0 flex-1 space-y-0.5">
           <Link
@@ -372,7 +372,7 @@ export function WikiListClient({
             <SheetTrigger asChild>
               <Button
                 variant="outline"
-                className="w-full justify-between rounded-xl border-barber-gold/40 bg-barber-dark/90 py-6 text-left text-barber-paper hover:bg-barber-gold/10 hover:text-barber-gold"
+                className="w-full justify-between rounded-xl border-barber-gold/40 bg-barber-dark/90 py-3 text-left text-barber-paper hover:bg-barber-gold/10 hover:text-barber-gold"
               >
                 <span className="font-medium">
                   Filtro tipo: {currentFilterLabel}
