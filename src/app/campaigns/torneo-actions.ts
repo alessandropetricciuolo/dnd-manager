@@ -40,6 +40,7 @@ async function ensureCampaignGm(campaignId: string): Promise<
 
 function revalidateTorneo(campaignId: string) {
   revalidatePath(`/campaigns/${campaignId}/gm-screen`);
+  revalidatePath(`/campaigns/${campaignId}/torneo-tabellone`);
   revalidatePath(`/campaigns/${campaignId}`);
 }
 
@@ -267,6 +268,64 @@ export async function removeCharacterFromTorneoTeamAction(
 
   const { error } = await check.supabase.from("torneo_team_members").delete().eq("character_id", characterId);
   if (error) return { success: false, error: error.message };
+  revalidateTorneo(campaignId);
+  return { success: true };
+}
+
+/** Salva tutte le assegnazioni PG→squadra in un'unica operazione. */
+export async function saveTorneoTeamRosterAction(
+  campaignId: string,
+  assignments: Array<{ characterId: string; teamId: string | null }>
+): Promise<Result> {
+  const check = await ensureCampaignGm(campaignId);
+  if (!check.ok) return { success: false, error: check.error };
+
+  if (assignments.length === 0) return { success: true };
+
+  const characterIds = [...new Set(assignments.map((a) => a.characterId.trim()).filter(Boolean))];
+  const teamIds = [...new Set(assignments.map((a) => a.teamId).filter((id): id is string => !!id?.trim()))];
+
+  const { data: chars } = await check.supabase
+    .from("campaign_characters")
+    .select("id")
+    .eq("campaign_id", campaignId)
+    .in("id", characterIds);
+
+  if ((chars ?? []).length !== characterIds.length) {
+    return { success: false, error: "Uno o più personaggi non appartengono a questa campagna." };
+  }
+
+  if (teamIds.length > 0) {
+    const { data: teams } = await check.supabase
+      .from("torneo_teams")
+      .select("id")
+      .eq("campaign_id", campaignId)
+      .in("id", teamIds);
+
+    if ((teams ?? []).length !== teamIds.length) {
+      return { success: false, error: "Una o più squadre non sono valide." };
+    }
+  }
+
+  const { error: delErr } = await check.supabase
+    .from("torneo_team_members")
+    .delete()
+    .in("character_id", characterIds);
+
+  if (delErr) return { success: false, error: delErr.message };
+
+  const toInsert = assignments
+    .filter((a) => a.teamId?.trim())
+    .map((a) => ({ team_id: a.teamId!.trim(), character_id: a.characterId.trim() }));
+
+  if (toInsert.length > 0) {
+    const { error: insErr } = await check.supabase.from("torneo_team_members").insert(toInsert);
+    if (insErr) {
+      if (insErr.code === "23505") return { success: false, error: "PG già in un'altra squadra." };
+      return { success: false, error: insErr.message };
+    }
+  }
+
   revalidateTorneo(campaignId);
   return { success: true };
 }

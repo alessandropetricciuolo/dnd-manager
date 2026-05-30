@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { LayoutGrid, Trophy } from "lucide-react";
 import {
   emptyInitiativeTrackerState,
   type InitiativeTrackerHandle,
@@ -8,9 +9,10 @@ import {
 } from "./initiative-tracker";
 import { GmRemoteIntegration } from "./gm-remote-integration";
 import { GmRemoteInitiativePublisher } from "./gm-remote-initiative-publisher";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GmTorneoLiveBar } from "./gm-torneo-live-bar";
 import { GmTorneoManager } from "./gm-torneo-manager";
-import { TorneoBracketBoard } from "./torneo-bracket-board";
+import { TorneoBracketLiveView } from "./torneo-bracket-live-view";
 import { TorneoMatchTracker } from "./torneo-match-tracker";
 import { computeMatchDamageTotals } from "@/lib/torneo/compute-match-damage";
 import { buildCharacterTeamMap } from "@/lib/torneo/initiative";
@@ -49,6 +51,7 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
   const [station2State, setStation2State] = useState<InitiativeTrackerState>(emptyInitiativeTrackerState());
   const [teams, setTeams] = useState<TorneoTeamWithMembers[]>([]);
   const [matches, setMatches] = useState<TorneoMatchWithTeams[]>([]);
+  const [screenTab, setScreenTab] = useState<"gestione" | "tabellone">("gestione");
 
   const liveSyncEnabled = liveSession?.status === "live";
 
@@ -159,8 +162,6 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
     [campaignId]
   );
 
-  const hasBracket = matches.some((m) => m.bracket_round != null);
-
   const station2Scoreboard = useMemo(() => {
     if (!station2Match) return null;
     const totals = computeMatchDamageTotals(station2State.entries, station2Match);
@@ -197,11 +198,35 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
   return (
     <div className="relative flex h-screen w-screen flex-col overflow-hidden bg-zinc-950">
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-amber-600/20 px-4 py-2.5">
-        <div>
-          <h1 className="text-sm font-bold tracking-tight text-amber-400">GM Screen · Torneo</h1>
-          <p className="text-[11px] text-zinc-500">
-            Sessione live · 2 tavoli · sync initiative su server
-          </p>
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-4">
+          <div>
+            <h1 className="text-sm font-bold tracking-tight text-amber-400">GM Screen · Torneo</h1>
+            <p className="text-[11px] text-zinc-500">
+              Sessione live · 2 tavoli · sync initiative su server
+            </p>
+          </div>
+          <Tabs
+            value={screenTab}
+            onValueChange={(v) => setScreenTab(v as "gestione" | "tabellone")}
+            className="shrink-0"
+          >
+            <TabsList className="h-8 border border-violet-900/40 bg-zinc-900/80 p-0.5">
+              <TabsTrigger
+                value="gestione"
+                className="h-7 gap-1.5 px-3 text-xs data-[state=active]:bg-amber-950/60 data-[state=active]:text-amber-200"
+              >
+                <LayoutGrid className="h-3.5 w-3.5" />
+                Gestione
+              </TabsTrigger>
+              <TabsTrigger
+                value="tabellone"
+                className="h-7 gap-1.5 px-3 text-xs data-[state=active]:bg-violet-950/60 data-[state=active]:text-violet-200"
+              >
+                <Trophy className="h-3.5 w-3.5" />
+                Tabellone
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <GmTorneoLiveBar
@@ -223,51 +248,60 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
         </div>
       </header>
 
-      <div className="flex min-h-0 flex-1">
-        <aside className="flex w-[min(100%,320px)] shrink-0 flex-col border-r border-violet-900/30 bg-zinc-950/80 lg:w-80">
-          {hasBracket ? (
-            <div className="shrink-0 border-b border-violet-900/30 p-2">
-              <TorneoBracketBoard matches={matches} className="scale-[0.85] origin-top" />
+      <Tabs value={screenTab} className="flex min-h-0 flex-1 flex-col">
+        <TabsContent value="gestione" className="mt-0 flex min-h-0 flex-1 data-[state=inactive]:hidden">
+          <div className="flex min-h-0 w-full flex-1">
+            <aside className="flex w-[min(100%,320px)] shrink-0 flex-col border-r border-violet-900/30 bg-zinc-950/80 lg:w-80">
+              <GmTorneoManager
+                className="min-h-0 flex-1"
+                campaignId={campaignId}
+                trackerState={trackerStateForSidebar}
+                onLoadMatch={handleLoadMatch}
+                activeMatchId={activeMatchIdForSidebar}
+                station2MatchId={station2MatchId}
+                onActiveMatchIdChange={setStation1MatchId}
+                onSetupChange={handleTorneoSetupChange}
+                liveSyncEnabled={liveSyncEnabled}
+                getTrackerStateForMatch={(matchId) => {
+                  if (matchId === station1MatchId) return station1State;
+                  if (matchId === station2MatchId) return station2State;
+                  return null;
+                }}
+              />
+            </aside>
+            <div className="grid min-h-0 min-w-0 flex-1 grid-rows-2 gap-2 overflow-hidden p-2 md:grid-cols-1 md:grid-rows-2 md:p-3">
+              <TorneoMatchTracker
+                campaignId={campaignId}
+                match={station1Match}
+                liveSyncEnabled={liveSyncEnabled}
+                characterTeamMap={characterTeamMap}
+                stationLabel="Tavolo 1"
+                initiativeHandleRef={station1Ref}
+                onStateChange={setStation1State}
+              />
+              <TorneoMatchTracker
+                campaignId={campaignId}
+                match={station2Match}
+                liveSyncEnabled={liveSyncEnabled}
+                characterTeamMap={characterTeamMap}
+                stationLabel="Tavolo 2"
+                initiativeHandleRef={station2Ref}
+                onStateChange={setStation2State}
+              />
             </div>
-          ) : null}
-          <GmTorneoManager
-            className="min-h-0 flex-1"
+          </div>
+        </TabsContent>
+
+        <TabsContent value="tabellone" className="mt-0 flex min-h-0 flex-1 data-[state=inactive]:hidden">
+          <TorneoBracketLiveView
             campaignId={campaignId}
-            trackerState={trackerStateForSidebar}
-            onLoadMatch={handleLoadMatch}
-            activeMatchId={activeMatchIdForSidebar}
-            station2MatchId={station2MatchId}
-            onActiveMatchIdChange={setStation1MatchId}
-            onSetupChange={handleTorneoSetupChange}
-            liveSyncEnabled={liveSyncEnabled}
-            getTrackerStateForMatch={(matchId) => {
-              if (matchId === station1MatchId) return station1State;
-              if (matchId === station2MatchId) return station2State;
-              return null;
-            }}
+            initialMatches={matches}
+            variant="display"
+            showToolbar
+            className="w-full"
           />
-        </aside>
-        <div className="grid min-h-0 min-w-0 flex-1 grid-rows-2 gap-2 overflow-hidden p-2 md:grid-cols-1 md:grid-rows-2 md:p-3">
-          <TorneoMatchTracker
-            campaignId={campaignId}
-            match={station1Match}
-            liveSyncEnabled={liveSyncEnabled}
-            characterTeamMap={characterTeamMap}
-            stationLabel="Tavolo 1"
-            initiativeHandleRef={station1Ref}
-            onStateChange={setStation1State}
-          />
-          <TorneoMatchTracker
-            campaignId={campaignId}
-            match={station2Match}
-            liveSyncEnabled={liveSyncEnabled}
-            characterTeamMap={characterTeamMap}
-            stationLabel="Tavolo 2"
-            initiativeHandleRef={station2Ref}
-            onStateChange={setStation2State}
-          />
-        </div>
-      </div>
+        </TabsContent>
+      </Tabs>
 
       <GmRemoteInitiativePublisher
         campaignId={campaignId}

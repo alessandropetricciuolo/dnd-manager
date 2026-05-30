@@ -1,11 +1,10 @@
 import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
-import { getTorneoLiveSessionByPublicIdAction } from "@/app/campaigns/torneo-live-actions";
 import { getTorneoSetupAction } from "@/app/campaigns/torneo-actions";
 import { TorneoBracketLiveView } from "@/components/gm/torneo-bracket-live-view";
 
 type PageProps = {
-  params: Promise<{ livePublicId: string }>;
+  params: Promise<{ id: string }>;
 };
 
 export const metadata = {
@@ -13,28 +12,32 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function TorneoBracketDisplayPage({ params }: PageProps) {
-  const { livePublicId } = await params;
+export default async function TorneoTabelloneProjectionPage({ params }: PageProps) {
+  const { id: campaignId } = await params;
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const liveRes = await getTorneoLiveSessionByPublicIdAction(livePublicId);
-  if (!liveRes.success || !liveRes.data) notFound();
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
+  if (!isGmOrAdmin) notFound();
 
-  const setupRes = await getTorneoSetupAction(liveRes.data.campaignId);
+  const { data: campaign } = await supabase.from("campaigns").select("id, type").eq("id", campaignId).single();
+  if (!campaign || campaign.type !== "torneo") notFound();
+
+  const setupRes = await getTorneoSetupAction(campaignId);
   if (!setupRes.success || !setupRes.data) notFound();
 
   return (
-    <div className="flex h-screen flex-col bg-zinc-950">
-      <header className="shrink-0 px-4 py-6 text-center">
-        <p className="text-xs uppercase tracking-[0.25em] text-violet-400/80">Torneo live</p>
+    <div className="flex h-screen w-screen flex-col overflow-hidden bg-zinc-950">
+      <header className="shrink-0 border-b border-violet-900/40 px-6 py-4 text-center">
+        <p className="text-xs uppercase tracking-[0.35em] text-violet-400/90">Barber &amp; Dragons · Torneo</p>
         <h1 className="mt-1 text-2xl font-bold text-amber-200">Tabellone</h1>
       </header>
       <TorneoBracketLiveView
-        campaignId={liveRes.data.campaignId}
+        campaignId={campaignId}
         initialMatches={setupRes.data.matches}
         variant="display"
         showToolbar={false}

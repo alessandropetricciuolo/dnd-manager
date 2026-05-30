@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, Plus, Swords, Trophy, Users } from "lucide-react";
+import { Loader2, Plus, Save, Swords, Trophy, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  assignCharacterToTorneoTeamAction,
   completeTorneoMatchAction,
   createTorneoMatchAction,
   createTorneoTeamAction,
@@ -22,7 +21,7 @@ import {
   deleteTorneoTeamAction,
   generateTorneoBracketAction,
   getTorneoSetupAction,
-  removeCharacterFromTorneoTeamAction,
+  saveTorneoTeamRosterAction,
   setTorneoMatchStatusAction,
 } from "@/app/campaigns/torneo-actions";
 import { getCampaignCharacters } from "@/app/campaigns/character-actions";
@@ -54,6 +53,21 @@ type Props = {
   className?: string;
 };
 
+type RosterRow = {
+  id: string;
+  name: string;
+  character_class: string | null;
+  teamId: string | null;
+};
+
+function rosterEqual(a: RosterRow[], b: RosterRow[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((row) => {
+    const other = b.find((r) => r.id === row.id);
+    return other?.teamId === row.teamId;
+  });
+}
+
 export function GmTorneoManager({
   campaignId,
   trackerState,
@@ -66,55 +80,84 @@ export function GmTorneoManager({
   getTrackerStateForMatch,
   className,
 }: Props) {
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [teams, setTeams] = useState<TorneoTeamWithMembers[]>([]);
   const [matches, setMatches] = useState<TorneoMatchWithTeams[]>([]);
-  const [roster, setRoster] = useState<
-    Array<{ id: string; name: string; character_class: string | null; teamId: string | null }>
-  >([]);
+  const [savedRoster, setSavedRoster] = useState<RosterRow[]>([]);
+  const [rosterDraft, setRosterDraft] = useState<RosterRow[]>([]);
   const [newTeamName, setNewTeamName] = useState("");
   const [matchTeamA, setMatchTeamA] = useState("");
   const [matchTeamB, setMatchTeamB] = useState("");
   const [matchLabel, setMatchLabel] = useState("");
   const [busy, setBusy] = useState(false);
+  const [savingRoster, setSavingRoster] = useState(false);
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [setupRes, charsRes] = await Promise.all([
-        getTorneoSetupAction(campaignId),
-        getCampaignCharacters(campaignId),
-      ]);
-      if (!setupRes.success) {
-        toast.error(setupRes.error);
-        return;
-      }
-      const nextTeams = setupRes.data!.teams;
-      const nextMatches = setupRes.data!.matches;
+  const rosterDirty = useMemo(() => !rosterEqual(savedRoster, rosterDraft), [savedRoster, rosterDraft]);
+
+  const applySetup = useCallback(
+    (nextTeams: TorneoTeamWithMembers[], nextMatches: TorneoMatchWithTeams[]) => {
       setTeams(nextTeams);
       setMatches(nextMatches);
       onSetupChange?.(nextTeams, nextMatches);
+    },
+    [onSetupChange]
+  );
 
-      const teamByChar = buildCharacterTeamMap(nextTeams);
-      if (charsRes.success && charsRes.data) {
-        setRoster(
-          charsRes.data.map((c) => ({
+  const refresh = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      if (!opts?.silent) setBusy(true);
+      try {
+        const [setupRes, charsRes] = await Promise.all([
+          getTorneoSetupAction(campaignId),
+          getCampaignCharacters(campaignId),
+        ]);
+        if (!setupRes.success) {
+          toast.error(setupRes.error);
+          return;
+        }
+        const nextTeams = setupRes.data!.teams;
+        const nextMatches = setupRes.data!.matches;
+        applySetup(nextTeams, nextMatches);
+
+        const teamByChar = buildCharacterTeamMap(nextTeams);
+        if (charsRes.success && charsRes.data) {
+          const rows: RosterRow[] = charsRes.data.map((c) => ({
             id: c.id,
             name: c.name,
             character_class: c.character_class,
             teamId: teamByChar[c.id]?.teamId ?? null,
-          }))
-        );
+          }));
+          setSavedRoster((oldSaved) => {
+            setRosterDraft((prev) => {
+              if (prev.length === 0 || rosterEqual(prev, oldSaved)) return rows;
+              return prev;
+            });
+            return rows;
+          });
+        }
+      } catch {
+        toast.error("Errore nel caricamento del torneo.");
+      } finally {
+        setInitialLoading(false);
+        if (!opts?.silent) setBusy(false);
       }
-    } catch {
-      toast.error("Errore nel caricamento del torneo.");
-    } finally {
-      setLoading(false);
-    }
-  }, [campaignId, onSetupChange]);
+    },
+    [campaignId, applySetup]
+  );
+
+  const refreshSetupOnly = useCallback(async () => {
+    const setupRes = await getTorneoSetupAction(campaignId);
+    if (!setupRes.success || !setupRes.data) return;
+    applySetup(setupRes.data.teams, setupRes.data.matches);
+    const teamByChar = buildCharacterTeamMap(setupRes.data.teams);
+    const syncTeamIds = (rows: RosterRow[]) =>
+      rows.map((c) => ({ ...c, teamId: teamByChar[c.id]?.teamId ?? null }));
+    setSavedRoster((prev) => syncTeamIds(prev));
+    setRosterDraft((prev) => syncTeamIds(prev));
+  }, [campaignId, applySetup]);
 
   useEffect(() => {
-    void refresh();
+    void refresh({ silent: true });
   }, [refresh]);
 
   useEffect(() => {
@@ -168,21 +211,31 @@ export function GmTorneoManager({
     }
     setNewTeamName("");
     toast.success("Squadra creata.");
-    void refresh();
+    void refresh({ silent: true });
   };
 
-  const handleAssign = async (characterId: string, teamId: string) => {
-    setBusy(true);
-    const res =
-      teamId === "__none"
-        ? await removeCharacterFromTorneoTeamAction(campaignId, characterId)
-        : await assignCharacterToTorneoTeamAction(campaignId, teamId, characterId);
-    setBusy(false);
+  const handleDraftTeamChange = (characterId: string, teamId: string) => {
+    setRosterDraft((prev) =>
+      prev.map((c) =>
+        c.id === characterId ? { ...c, teamId: teamId === "__none" ? null : teamId } : c
+      )
+    );
+  };
+
+  const handleSaveRoster = async () => {
+    setSavingRoster(true);
+    const res = await saveTorneoTeamRosterAction(
+      campaignId,
+      rosterDraft.map((c) => ({ characterId: c.id, teamId: c.teamId }))
+    );
+    setSavingRoster(false);
     if (!res.success) {
       toast.error(res.error);
       return;
     }
-    void refresh();
+    setSavedRoster(rosterDraft);
+    toast.success("Assegnazioni salvate.");
+    void refreshSetupOnly();
   };
 
   const handleCreateMatch = async () => {
@@ -203,7 +256,7 @@ export function GmTorneoManager({
     }
     setMatchLabel("");
     toast.success("Incontro creato.");
-    void refresh();
+    void refresh({ silent: true });
   };
 
   const loadMatchState = async (match: TorneoMatchWithTeams): Promise<InitiativeTrackerState | null> => {
@@ -244,7 +297,7 @@ export function GmTorneoManager({
     await persistTorneoMatchInitiative(campaignId, match.id, state, liveSyncEnabled);
     onLoadMatch(station, match.id, state);
     toast.success(`Incontro avviato su tavolo ${station}.`);
-    void refresh();
+    void refresh({ silent: true });
   };
 
   const resumeMatch = async (match: TorneoMatchWithTeams, station: 1 | 2) => {
@@ -279,7 +332,7 @@ export function GmTorneoManager({
     }
     toast.success("Vincitore del triello registrato.");
     persistActiveMatch(null);
-    void refresh();
+    void refresh({ silent: true });
   };
 
   const declareWinner = async (match: TorneoMatchWithTeams, winnerTeamId: string) => {
@@ -301,10 +354,10 @@ export function GmTorneoManager({
     }
     toast.success("Vincitore registrato.");
     persistActiveMatch(null);
-    void refresh();
+    void refresh({ silent: true });
   };
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <div className="flex h-full items-center justify-center text-zinc-400">
         <Loader2 className="h-6 w-6 animate-spin" />
@@ -328,7 +381,7 @@ export function GmTorneoManager({
       return;
     }
     toast.success(`Tabellone creato (${res.data?.matchCount ?? 8} incontri).`);
-    void refresh();
+    void refresh({ silent: true });
   };
 
   return (
@@ -392,7 +445,7 @@ export function GmTorneoManager({
                     const res = await deleteTorneoTeamAction(campaignId, t.id);
                     setBusy(false);
                     if (!res.success) toast.error(res.error);
-                    else void refresh();
+                    else void refresh({ silent: true });
                   })();
                 }}
               >
@@ -404,15 +457,22 @@ export function GmTorneoManager({
       </section>
 
       <section className="space-y-2 rounded-lg border border-violet-900/40 bg-zinc-900/60 p-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-violet-300/90">Assegna PG alle squadre</p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-violet-300/90">
+            Assegna PG alle squadre
+          </p>
+          {rosterDirty ? (
+            <span className="text-[10px] text-amber-400/90">Modifiche non salvate</span>
+          ) : null}
+        </div>
         <ul className="max-h-40 space-y-1 overflow-y-auto">
-          {roster.map((c) => (
+          {rosterDraft.map((c) => (
             <li key={c.id} className="flex items-center gap-2 text-xs">
               <span className="min-w-0 flex-1 truncate text-zinc-200">{c.name}</span>
               <Select
                 value={c.teamId ?? "__none"}
-                onValueChange={(v) => void handleAssign(c.id, v)}
-                disabled={busy || teams.length === 0}
+                onValueChange={(v) => handleDraftTeamChange(c.id, v)}
+                disabled={savingRoster || teams.length === 0}
               >
                 <SelectTrigger className="h-7 w-[7.5rem] border-violet-900/40 bg-zinc-950 text-[11px]">
                   <SelectValue placeholder="Squadra" />
@@ -429,6 +489,20 @@ export function GmTorneoManager({
             </li>
           ))}
         </ul>
+        <Button
+          type="button"
+          size="sm"
+          className="w-full"
+          disabled={!rosterDirty || savingRoster || teams.length === 0}
+          onClick={() => void handleSaveRoster()}
+        >
+          {savingRoster ? (
+            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Save className="mr-1.5 h-3.5 w-3.5" />
+          )}
+          Salva assegnazioni
+        </Button>
       </section>
 
       <section className="space-y-2 rounded-lg border border-violet-900/40 bg-zinc-900/60 p-3">
@@ -591,7 +665,7 @@ export function GmTorneoManager({
                         if (!res.success) toast.error(res.error);
                         else {
                           if (activeMatchId === m.id) persistActiveMatch(null);
-                          void refresh();
+                          void refresh({ silent: true });
                         }
                       })();
                     }}

@@ -19,7 +19,13 @@ import {
   type TorneoLiveSessionInfo,
   type TorneoLiveSessionStarted,
 } from "@/app/campaigns/torneo-live-actions";
-import { gmRemoteJoinUrl, torneoLiveBracketUrl, torneoLiveTableUrl, torneoLiveTimerUrl } from "@/lib/torneo/live-links";
+import {
+  gmRemoteJoinUrl,
+  torneoLiveBracketUrl,
+  torneoLiveTableUrl,
+  torneoLiveTimerUrl,
+  torneoTabelloneUrl,
+} from "@/lib/torneo/live-links";
 import type { TorneoMatchWithTeams } from "@/lib/torneo/types";
 
 type Props = {
@@ -200,25 +206,28 @@ export function GmTorneoLiveBar({ campaignId, matches, onLiveSessionChange }: Pr
                   </Button>
                 </div>
               </div>
-              {live ? (
-                <div className="space-y-1">
-                  <p className="text-[10px] font-semibold uppercase text-zinc-500">Display tabellone</p>
-                  <div className="flex gap-2">
-                    <code className="min-w-0 flex-1 truncate rounded bg-zinc-900 px-2 py-1 text-[10px] text-zinc-300">
-                      {torneoLiveBracketUrl(live.publicId)}
-                    </code>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="h-7 shrink-0"
-                      onClick={() => void copyText(torneoLiveBracketUrl(live.publicId), "Tabellone")}
-                    >
-                      <Copy className="h-3 w-3" />
-                    </Button>
-                  </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-semibold uppercase text-zinc-500">Display tabellone (secondo schermo)</p>
+                <div className="flex gap-2">
+                  <code className="min-w-0 flex-1 truncate rounded bg-zinc-900 px-2 py-1 text-[10px] text-zinc-300">
+                    {torneoTabelloneUrl(campaignId)}
+                  </code>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-7 shrink-0"
+                    onClick={() => void copyText(torneoTabelloneUrl(campaignId), "Tabellone")}
+                  >
+                    <Copy className="h-3 w-3" />
+                  </Button>
                 </div>
-              ) : null}
+                {live ? (
+                  <p className="text-[10px] text-zinc-600">
+                    Alternativa live: {torneoLiveBracketUrl(live.publicId)}
+                  </p>
+                ) : null}
+              </div>
               {live && matches.length > 0 ? (
                 <div className="space-y-2">
                   <p className="text-[10px] font-semibold uppercase text-zinc-500">PC tavolo e megatimer</p>
