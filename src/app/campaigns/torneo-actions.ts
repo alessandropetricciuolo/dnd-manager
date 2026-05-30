@@ -388,15 +388,6 @@ export async function setTorneoMatchStatusAction(
 
   if (error) return { success: false, error: error.message };
 
-  if (status === "active") {
-    await check.supabase
-      .from("torneo_matches")
-      .update({ status: "pending" })
-      .eq("campaign_id", campaignId)
-      .eq("status", "active")
-      .neq("id", matchId);
-  }
-
   revalidateTorneo(campaignId);
   return { success: true };
 }
