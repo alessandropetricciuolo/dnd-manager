@@ -20,6 +20,7 @@ import {
   createTorneoTeamAction,
   deleteTorneoMatchAction,
   deleteTorneoTeamAction,
+  generateTorneoBracketAction,
   getTorneoSetupAction,
   removeCharacterFromTorneoTeamAction,
   setTorneoMatchStatusAction,
@@ -29,6 +30,7 @@ import type { InitiativeTrackerState } from "@/components/gm/initiative-tracker"
 import { computeMatchDamageTotals } from "@/lib/torneo/compute-match-damage";
 import {
   buildInitiativeEntriesForMatch,
+  buildInitiativeEntriesForTriello,
   buildCharacterTeamMap,
   torneoActiveMatchStorageKey,
   torneoInitiativeStorageKey,
@@ -36,14 +38,20 @@ import {
 import { TORNEO_TEAM_COLORS, type TorneoMatchWithTeams, type TorneoTeamWithMembers } from "@/lib/torneo/types";
 import { cn } from "@/lib/utils";
 import { sanitizeInitiativeTrackerState } from "@/components/gm/initiative-tracker";
+import { persistTorneoMatchInitiative } from "@/components/gm/torneo-match-tracker";
+import { loadTorneoMatchInitiativeAction } from "@/app/campaigns/torneo-live-actions";
 
 type Props = {
   campaignId: string;
   trackerState: InitiativeTrackerState;
-  onLoadMatch: (matchId: string, state: InitiativeTrackerState) => void;
+  onLoadMatch: (station: 1 | 2, matchId: string, state: InitiativeTrackerState) => void;
   activeMatchId: string | null;
+  station2MatchId?: string | null;
   onActiveMatchIdChange: (matchId: string | null) => void;
   onSetupChange?: (teams: TorneoTeamWithMembers[], matches: TorneoMatchWithTeams[]) => void;
+  liveSyncEnabled?: boolean;
+  getTrackerStateForMatch?: (matchId: string) => InitiativeTrackerState | null;
+  className?: string;
 };
 
 export function GmTorneoManager({
@@ -51,8 +59,12 @@ export function GmTorneoManager({
   trackerState,
   onLoadMatch,
   activeMatchId,
+  station2MatchId = null,
   onActiveMatchIdChange,
   onSetupChange,
+  liveSyncEnabled = false,
+  getTrackerStateForMatch,
+  className,
 }: Props) {
   const [loading, setLoading] = useState(true);
   const [teams, setTeams] = useState<TorneoTeamWithMembers[]>([]);
@@ -119,10 +131,19 @@ export function GmTorneoManager({
     [matches, activeMatchId]
   );
 
-  const liveDamage = useMemo(() => {
-    if (!activeMatch) return null;
-    return computeMatchDamageTotals(trackerState.entries, activeMatch);
-  }, [activeMatch, trackerState.entries]);
+  const trielloTeam = useMemo(
+    () => teams.find((t) => matches.some((m) => m.match_kind === "triello" && m.team_a_id === t.id)),
+    [teams, matches]
+  );
+
+  const damageForMatch = useCallback(
+    (match: TorneoMatchWithTeams) => {
+      const state = getTrackerStateForMatch?.(match.id) ?? null;
+      if (!state) return null;
+      return computeMatchDamageTotals(state.entries, match);
+    },
+    [getTrackerStateForMatch]
+  );
 
   const persistActiveMatch = (id: string | null) => {
     onActiveMatchIdChange(id);
@@ -185,7 +206,21 @@ export function GmTorneoManager({
     void refresh();
   };
 
-  const startMatch = async (match: TorneoMatchWithTeams) => {
+  const loadMatchState = async (match: TorneoMatchWithTeams): Promise<InitiativeTrackerState | null> => {
+    if (liveSyncEnabled) {
+      const res = await loadTorneoMatchInitiativeAction(campaignId, match.id);
+      if (res.success && res.data?.state) return res.data.state;
+    }
+    try {
+      const raw = localStorage.getItem(torneoInitiativeStorageKey(campaignId, match.id));
+      if (raw) return sanitizeInitiativeTrackerState(JSON.parse(raw) as Partial<InitiativeTrackerState>);
+    } catch {
+      /* ignore */
+    }
+    return null;
+  };
+
+  const startMatch = async (match: TorneoMatchWithTeams, station: 1 | 2) => {
     setBusy(true);
     const res = await setTorneoMatchStatusAction(campaignId, match.id, "active");
     setBusy(false);
@@ -193,47 +228,71 @@ export function GmTorneoManager({
       toast.error(res.error);
       return;
     }
-    persistActiveMatch(match.id);
-    const entries = buildInitiativeEntriesForMatch(match, teams);
-    const key = torneoInitiativeStorageKey(campaignId, match.id);
-    const state = sanitizeInitiativeTrackerState({ entries });
-    try {
-      localStorage.setItem(key, JSON.stringify(state));
-    } catch {
-      /* ignore */
+    if (station === 1) persistActiveMatch(match.id);
+    let entries;
+    if (match.match_kind === "triello") {
+      const squad = teams.find((t) => t.id === match.team_a_id);
+      if (!squad) {
+        toast.error("Squadra campione non trovata per il triello.");
+        return;
+      }
+      entries = buildInitiativeEntriesForTriello(squad);
+    } else {
+      entries = buildInitiativeEntriesForMatch(match, teams);
     }
-    onLoadMatch(match.id, state);
-    toast.success("Incontro avviato: PG delle due squadre caricati nel tracker.");
+    const state = sanitizeInitiativeTrackerState({ entries });
+    await persistTorneoMatchInitiative(campaignId, match.id, state, liveSyncEnabled);
+    onLoadMatch(station, match.id, state);
+    toast.success(`Incontro avviato su tavolo ${station}.`);
     void refresh();
   };
 
-  const resumeMatch = (match: TorneoMatchWithTeams) => {
-    persistActiveMatch(match.id);
-    try {
-      const raw = localStorage.getItem(torneoInitiativeStorageKey(campaignId, match.id));
-      if (raw) {
-        onLoadMatch(match.id, sanitizeInitiativeTrackerState(JSON.parse(raw) as Partial<InitiativeTrackerState>));
-      } else {
-        void startMatch(match);
-        return;
-      }
-    } catch {
-      void startMatch(match);
+  const resumeMatch = async (match: TorneoMatchWithTeams, station: 1 | 2) => {
+    if (station === 1) persistActiveMatch(match.id);
+    const restored = await loadMatchState(match);
+    if (restored) {
+      onLoadMatch(station, match.id, restored);
+      toast.message(`Incontro ripreso su tavolo ${station}.`);
       return;
     }
-    toast.message("Incontro ripreso.");
+    await startMatch(match, station);
+  };
+
+  const declareTrielloWinner = async (match: TorneoMatchWithTeams, characterId: string) => {
+    const state = getTrackerStateForMatch?.(match.id) ?? null;
+    if (!state) {
+      toast.error("Apri il triello su un tavolo.");
+      return;
+    }
+    const entry = state.entries.find((e) => e.playerId === characterId);
+    const damage = entry?.damageDealt ?? 0;
+    setBusy(true);
+    const res = await completeTorneoMatchAction(campaignId, match.id, {
+      winnerCharacterId: characterId,
+      teamADamageTotal: damage,
+      teamBDamageTotal: 0,
+    });
+    setBusy(false);
+    if (!res.success) {
+      toast.error(res.error);
+      return;
+    }
+    toast.success("Vincitore del triello registrato.");
+    persistActiveMatch(null);
+    void refresh();
   };
 
   const declareWinner = async (match: TorneoMatchWithTeams, winnerTeamId: string) => {
-    if (!liveDamage) {
-      toast.error("Nessun dato danni nel tracker.");
+    const dmg = damageForMatch(match);
+    if (!dmg) {
+      toast.error("Apri l'incontro su un tavolo per registrare i danni.");
       return;
     }
     setBusy(true);
     const res = await completeTorneoMatchAction(campaignId, match.id, {
       winnerTeamId,
-      teamADamageTotal: liveDamage.teamA,
-      teamBDamageTotal: liveDamage.teamB,
+      teamADamageTotal: dmg.teamA,
+      teamBDamageTotal: dmg.teamB,
     });
     setBusy(false);
     if (!res.success) {
@@ -253,8 +312,46 @@ export function GmTorneoManager({
     );
   }
 
+  const handleGenerateBracket = async () => {
+    if (
+      !confirm(
+        "Generare il tabellone da 8 squadre? Tutti gli incontri esistenti verranno eliminati e sostituiti."
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    const res = await generateTorneoBracketAction(campaignId);
+    setBusy(false);
+    if (!res.success) {
+      toast.error(res.error);
+      return;
+    }
+    toast.success(`Tabellone creato (${res.data?.matchCount ?? 8} incontri).`);
+    void refresh();
+  };
+
   return (
-    <div className="flex h-full flex-col gap-3 overflow-y-auto p-3 text-zinc-100">
+    <div className={cn("flex flex-col gap-3 overflow-y-auto p-3 text-zinc-100", className)}>
+      <section className="space-y-2 rounded-lg border border-violet-900/40 bg-zinc-900/60 p-3">
+        <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-violet-300/90">
+          <Trophy className="h-3.5 w-3.5" />
+          Tabellone
+        </p>
+        <Button
+          type="button"
+          size="sm"
+          className="w-full"
+          disabled={busy || teams.length !== 8}
+          onClick={() => void handleGenerateBracket()}
+        >
+          Genera tabellone (8 squadre)
+        </Button>
+        {teams.length !== 8 ? (
+          <p className="text-[10px] text-zinc-500">Servono esattamente 8 squadre ({teams.length}/8).</p>
+        ) : null}
+      </section>
+
       <section className="space-y-2 rounded-lg border border-violet-900/40 bg-zinc-900/60 p-3">
         <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-violet-300/90">
           <Users className="h-3.5 w-3.5" />
@@ -382,27 +479,39 @@ export function GmTorneoManager({
         <ul className="space-y-2">
           {matches.map((m) => {
             const isActive = m.id === activeMatchId;
+            const onStation2 = m.id === station2MatchId;
             const isDone = m.status === "completed";
+            const matchDamage = damageForMatch(m);
             return (
               <li
                 key={m.id}
                 className={cn(
                   "rounded-lg border p-2 text-xs",
-                  isActive ? "border-amber-500/50 bg-amber-950/20" : "border-zinc-800 bg-zinc-950/40"
+                  isActive || onStation2
+                    ? "border-amber-500/50 bg-amber-950/20"
+                    : "border-zinc-800 bg-zinc-950/40"
                 )}
               >
+                {(isActive || onStation2) && (
+                  <p className="mb-1 text-[10px] text-amber-400/90">
+                    {isActive && onStation2 ? "Tavolo 1 + 2" : isActive ? "Tavolo 1" : "Tavolo 2"}
+                  </p>
+                )}
                 <p className="font-medium text-zinc-100">
                   {m.label || "Incontro"}{" "}
                   <span className="text-zinc-500">
-                    · {m.team_a.name} vs {m.team_b.name}
+                    {m.match_kind === "triello"
+                      ? `· Triello ${m.team_a.name}`
+                      : `· ${m.team_a.name} vs ${m.team_b.name}`}
                   </span>
                 </p>
-                {isDone && m.winner_team_id ? (
+                {isDone && (m.winner_team_id || m.winner_character_id) ? (
                   <p className="mt-1 flex items-center gap-1 text-emerald-400">
                     <Trophy className="h-3 w-3" />
-                    Vincitore:{" "}
-                    {m.winner_team_id === m.team_a_id ? m.team_a.name : m.team_b.name} ({m.team_a_damage_total}–
-                    {m.team_b_damage_total} danni)
+                    {m.match_kind === "triello" && m.winner_character_id
+                      ? "Triello completato"
+                      : `Vincitore: ${m.winner_team_id === m.team_a_id ? m.team_a.name : m.team_b.name}`}{" "}
+                    ({m.team_a_damage_total}–{m.team_b_damage_total} danni)
                   </p>
                 ) : null}
                 <div className="mt-2 flex flex-wrap gap-1">
@@ -414,11 +523,34 @@ export function GmTorneoManager({
                         variant="outline"
                         className="h-7 text-[10px]"
                         disabled={busy}
-                        onClick={() => (isActive ? resumeMatch(m) : void startMatch(m))}
+                        onClick={() => void (isActive ? resumeMatch(m, 1) : startMatch(m, 1))}
                       >
-                        {isActive ? "Riprendi" : "Avvia"}
+                        {isActive ? "T1 Riprendi" : "T1 Avvia"}
                       </Button>
-                      {isActive && liveDamage ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-[10px]"
+                        disabled={busy}
+                        onClick={() => void (onStation2 ? resumeMatch(m, 2) : startMatch(m, 2))}
+                      >
+                        {onStation2 ? "T2 Riprendi" : "T2 Avvia"}
+                      </Button>
+                      {m.match_kind === "triello" && trielloTeam ? (
+                        trielloTeam.members.map((mem) => (
+                          <Button
+                            key={mem.character_id}
+                            type="button"
+                            size="sm"
+                            className="h-7 text-[10px]"
+                            disabled={busy}
+                            onClick={() => void declareTrielloWinner(m, mem.character_id)}
+                          >
+                            Vince {mem.name}
+                          </Button>
+                        ))
+                      ) : matchDamage ? (
                         <>
                           <Button
                             type="button"

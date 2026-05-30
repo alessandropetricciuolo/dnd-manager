@@ -9,6 +9,7 @@ import { GmRemoteControlModal } from "./gm-remote-control-modal";
 import { GmRemoteInitiativePublisher } from "./gm-remote-initiative-publisher";
 import { GmRemoteSfxPadPublisher } from "./gm-remote-sfx-pad-publisher";
 import type { GmRemoteSessionCreated } from "@/app/campaigns/gm-remote-actions";
+import type { TorneoRemoteHandlers } from "@/lib/gm-remote/apply-torneo-remote";
 import type { InitiativeTrackerHandle, InitiativeTrackerState } from "./initiative-tracker";
 
 type Props = {
@@ -17,6 +18,12 @@ type Props = {
   initiativeHandleRef?: RefObject<InitiativeTrackerHandle | null>;
   initiativeState?: InitiativeTrackerState | null;
   onSessionPublicIdChange?: (publicId: string | null) => void;
+  /** Sessione telecomando dalla live torneo (stesso publicId per tutti i device). */
+  forcedSessionPublicId?: string | null;
+  initiativeHandleRef2?: RefObject<InitiativeTrackerHandle | null>;
+  station1MatchId?: string | null;
+  station2MatchId?: string | null;
+  torneoHandlers?: TorneoRemoteHandlers | null;
 };
 
 type BridgeSnapshot = { publicId: string; expiresAt: string };
@@ -31,6 +38,11 @@ export function GmRemoteIntegration({
   initiativeHandleRef,
   initiativeState,
   onSessionPublicIdChange,
+  forcedSessionPublicId,
+  initiativeHandleRef2,
+  station1MatchId,
+  station2MatchId,
+  torneoHandlers,
 }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalSession, setModalSession] = useState<GmRemoteSessionCreated | null>(null);
@@ -90,7 +102,8 @@ export function GmRemoteIntegration({
     [persistBridgeSnapshot]
   );
 
-  const sessionPublicId = modalSession?.publicId ?? bridgeSession?.publicId ?? null;
+  const sessionPublicId =
+    forcedSessionPublicId?.trim() || modalSession?.publicId || bridgeSession?.publicId || null;
 
   useEffect(() => {
     onSessionPublicIdChange?.(sessionPublicId);
@@ -103,6 +116,10 @@ export function GmRemoteIntegration({
         sessionPublicId={sessionPublicId}
         forge={forge}
         initiativeHandleRef={initiativeHandleRef}
+        initiativeHandleRef2={initiativeHandleRef2}
+        station1MatchId={station1MatchId}
+        station2MatchId={station2MatchId}
+        torneoHandlers={torneoHandlers}
         onRealtimeStatus={setRealtimeConnected}
       />
       {initiativeState && !onSessionPublicIdChange ? (

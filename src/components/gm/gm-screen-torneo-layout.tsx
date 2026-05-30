@@ -1,19 +1,33 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import {
-  InitiativeTracker,
   emptyInitiativeTrackerState,
-  sanitizeInitiativeTrackerState,
   type InitiativeTrackerHandle,
   type InitiativeTrackerState,
 } from "./initiative-tracker";
 import { GmRemoteIntegration } from "./gm-remote-integration";
 import { GmRemoteInitiativePublisher } from "./gm-remote-initiative-publisher";
+import { GmTorneoLiveBar } from "./gm-torneo-live-bar";
 import { GmTorneoManager } from "./gm-torneo-manager";
+import { TorneoBracketBoard } from "./torneo-bracket-board";
+import { TorneoMatchTracker } from "./torneo-match-tracker";
 import { computeMatchDamageTotals } from "@/lib/torneo/compute-match-damage";
-import { buildCharacterTeamMap, torneoInitiativeStorageKey } from "@/lib/torneo/initiative";
+import { buildCharacterTeamMap } from "@/lib/torneo/initiative";
 import { getTorneoSetupAction } from "@/app/campaigns/torneo-actions";
+import {
+  getTorneoMatchTimerAction,
+  patchTorneoMatchTimerAction,
+  type TorneoLiveSessionInfo,
+} from "@/app/campaigns/torneo-live-actions";
+import type { TorneoRemoteHandlers } from "@/lib/gm-remote/apply-torneo-remote";
+import {
+  buildTimerPausePatch,
+  buildTimerResetPatch,
+  buildTimerResumePatch,
+  buildTimerStartPatch,
+  DEFAULT_MATCH_TIMER_SEC,
+} from "@/lib/torneo/timer-patch";
 import type { TorneoMatchWithTeams, TorneoTeamWithMembers } from "@/lib/torneo/types";
 
 type GmScreenTorneoLayoutProps = {
@@ -22,16 +36,22 @@ type GmScreenTorneoLayoutProps = {
   initialSessionId?: string | null;
 };
 
-/** GM Screen Torneo: squadre, incontri, initiative tracker + telecomando. */
+/** GM Screen Torneo: live session, 2 tavoli paralleli, sync initiative su DB. */
 export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) {
-  const trackerRef = useRef<InitiativeTrackerHandle>(null);
-  const [trackerState, setTrackerState] = useState<InitiativeTrackerState>(emptyInitiativeTrackerState());
+  const station1Ref = useRef<InitiativeTrackerHandle>(null!);
+  const station2Ref = useRef<InitiativeTrackerHandle>(null!);
+  const [liveSession, setLiveSession] = useState<TorneoLiveSessionInfo | null>(null);
+  const [focusedRemoteMatchId, setFocusedRemoteMatchId] = useState<string | null>(null);
   const [remoteSessionPublicId, setRemoteSessionPublicId] = useState<string | null>(null);
-  const [activeMatchId, setActiveMatchId] = useState<string | null>(null);
+  const [station1MatchId, setStation1MatchId] = useState<string | null>(null);
+  const [station2MatchId, setStation2MatchId] = useState<string | null>(null);
+  const [station1State, setStation1State] = useState<InitiativeTrackerState>(emptyInitiativeTrackerState());
+  const [station2State, setStation2State] = useState<InitiativeTrackerState>(emptyInitiativeTrackerState());
   const [teams, setTeams] = useState<TorneoTeamWithMembers[]>([]);
   const [matches, setMatches] = useState<TorneoMatchWithTeams[]>([]);
 
-  /** Stabile: evita che GmTorneoManager ricarichi in loop (prop inline → useEffect [refresh] infinito). */
+  const liveSyncEnabled = liveSession?.status === "live";
+
   const handleTorneoSetupChange = useCallback((t: TorneoTeamWithMembers[], m: TorneoMatchWithTeams[]) => {
     setTeams(t);
     setMatches(m);
@@ -49,85 +69,202 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
     void refreshTorneoMeta();
   }, [refreshTorneoMeta]);
 
-  const activeMatch = useMemo(
-    () => matches.find((m) => m.id === activeMatchId) ?? null,
-    [matches, activeMatchId]
+  const handleLiveSessionChange = useCallback((session: TorneoLiveSessionInfo | null) => {
+    setLiveSession(session);
+    setRemoteSessionPublicId(session?.remoteSessionPublicId ?? null);
+  }, []);
+
+  const station1Match = useMemo(
+    () => matches.find((m) => m.id === station1MatchId) ?? null,
+    [matches, station1MatchId]
+  );
+  const station2Match = useMemo(
+    () => matches.find((m) => m.id === station2MatchId) ?? null,
+    [matches, station2MatchId]
   );
 
   const characterTeamMap = useMemo(() => buildCharacterTeamMap(teams), [teams]);
 
-  const torneoScoreboard = useMemo(() => {
-    if (!activeMatch) return null;
-    const totals = computeMatchDamageTotals(trackerState.entries, activeMatch);
-    return {
-      teamA: {
-        id: activeMatch.team_a_id,
-        name: activeMatch.team_a.name,
-        color: activeMatch.team_a.color,
-        total: totals.teamA,
-      },
-      teamB: {
-        id: activeMatch.team_b_id,
-        name: activeMatch.team_b.name,
-        color: activeMatch.team_b.color,
-        total: totals.teamB,
-      },
-    };
-  }, [activeMatch, trackerState.entries]);
-
   const handleLoadMatch = useCallback(
-    (matchId: string, state: InitiativeTrackerState) => {
-      setActiveMatchId(matchId);
-      setTrackerState(state);
+    (station: 1 | 2, matchId: string, state: InitiativeTrackerState) => {
+      if (station === 1) {
+        setStation1MatchId(matchId);
+        setStation1State(state);
+      } else {
+        setStation2MatchId(matchId);
+        setStation2State(state);
+      }
       void refreshTorneoMeta();
     },
     [refreshTorneoMeta]
   );
 
-  const storageKeyOverride = activeMatchId
-    ? torneoInitiativeStorageKey(campaignId, activeMatchId)
-    : undefined;
+  const torneoScoreboard = useMemo(() => {
+    if (!station1Match) return null;
+    const totals = computeMatchDamageTotals(station1State.entries, station1Match);
+    return {
+      teamA: {
+        id: station1Match.team_a_id,
+        name: station1Match.team_a.name,
+        color: station1Match.team_a.color,
+        total: totals.teamA,
+      },
+      teamB: {
+        id: station1Match.team_b_id,
+        name: station1Match.team_b.name,
+        color: station1Match.team_b.color,
+        total: totals.teamB,
+      },
+    };
+  }, [station1Match, station1State.entries]);
+
+  const trackerStateForSidebar = station1State;
+  const activeMatchIdForSidebar = station1MatchId;
+
+  const torneoHandlers = useMemo<TorneoRemoteHandlers>(
+    () => ({
+      setFocusedMatch: (matchId) => setFocusedRemoteMatchId(matchId),
+      applyTimerStart: (matchId, durationSec, roundLabel) => {
+        void (async () => {
+          const cur = await getTorneoMatchTimerAction(campaignId, matchId);
+          const fields = cur.success && cur.data ? cur.data : null;
+          const patch =
+            fields?.timer_started_at && fields.timer_paused_at
+              ? buildTimerResumePatch(fields)
+              : buildTimerStartPatch(durationSec ?? DEFAULT_MATCH_TIMER_SEC, roundLabel ?? "Round 1");
+          await patchTorneoMatchTimerAction(campaignId, matchId, patch);
+        })();
+      },
+      applyTimerPause: (matchId) => {
+        void (async () => {
+          const cur = await getTorneoMatchTimerAction(campaignId, matchId);
+          if (!cur.success || !cur.data) return;
+          const patch = cur.data.timer_paused_at
+            ? buildTimerResumePatch(cur.data)
+            : buildTimerPausePatch(cur.data);
+          await patchTorneoMatchTimerAction(campaignId, matchId, patch);
+        })();
+      },
+      applyTimerReset: (matchId, durationSec, roundLabel) => {
+        void patchTorneoMatchTimerAction(
+          campaignId,
+          matchId,
+          buildTimerResetPatch(durationSec ?? DEFAULT_MATCH_TIMER_SEC, roundLabel ?? "Round 1")
+        );
+      },
+      applyTimerSetRound: (matchId, roundLabel) => {
+        void patchTorneoMatchTimerAction(campaignId, matchId, { timer_round_label: roundLabel });
+      },
+    }),
+    [campaignId]
+  );
+
+  const hasBracket = matches.some((m) => m.bracket_round != null);
+
+  const station2Scoreboard = useMemo(() => {
+    if (!station2Match) return null;
+    const totals = computeMatchDamageTotals(station2State.entries, station2Match);
+    return {
+      teamA: {
+        id: station2Match.team_a_id,
+        name: station2Match.team_a.name,
+        color: station2Match.team_a.color,
+        total: totals.teamA,
+      },
+      teamB: {
+        id: station2Match.team_b_id,
+        name: station2Match.team_b.name,
+        color: station2Match.team_b.color,
+        total: totals.teamB,
+      },
+    };
+  }, [station2Match, station2State.entries]);
+
+  const publishMatchId = focusedRemoteMatchId ?? station1MatchId;
+  const publishState =
+    publishMatchId === station2MatchId
+      ? station2State
+      : publishMatchId === station1MatchId
+        ? station1State
+        : station1State;
+  const publishScoreboard =
+    publishMatchId === station2MatchId
+      ? station2Scoreboard
+      : publishMatchId === station1MatchId
+        ? torneoScoreboard
+        : torneoScoreboard;
 
   return (
     <div className="relative flex h-screen w-screen flex-col overflow-hidden bg-zinc-950">
-      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-amber-600/20 px-4 py-2.5">
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-amber-600/20 px-4 py-2.5">
         <div>
           <h1 className="text-sm font-bold tracking-tight text-amber-400">GM Screen · Torneo</h1>
           <p className="text-[11px] text-zinc-500">
-            Squadre e incontri · danni per squadra · vincitore scelto dal GM
+            Sessione live · 2 tavoli · sync initiative su server
           </p>
         </div>
-        <GmRemoteIntegration
-          campaignId={campaignId}
-          initiativeHandleRef={trackerRef}
-          initiativeState={trackerState}
-          onSessionPublicIdChange={setRemoteSessionPublicId}
-        />
+        <div className="flex flex-wrap items-center gap-3">
+          <GmTorneoLiveBar
+            campaignId={campaignId}
+            matches={matches}
+            onLiveSessionChange={handleLiveSessionChange}
+          />
+          <GmRemoteIntegration
+            campaignId={campaignId}
+            initiativeHandleRef={station1Ref as RefObject<InitiativeTrackerHandle | null>}
+            initiativeHandleRef2={station2Ref as RefObject<InitiativeTrackerHandle | null>}
+            station1MatchId={station1MatchId}
+            station2MatchId={station2MatchId}
+            torneoHandlers={torneoHandlers}
+            initiativeState={station1State}
+            forcedSessionPublicId={liveSession?.remoteSessionPublicId ?? null}
+            onSessionPublicIdChange={setRemoteSessionPublicId}
+          />
+        </div>
       </header>
 
       <div className="flex min-h-0 flex-1">
-        <aside className="w-[min(100%,320px)] shrink-0 border-r border-violet-900/30 bg-zinc-950/80 lg:w-80">
+        <aside className="flex w-[min(100%,320px)] shrink-0 flex-col border-r border-violet-900/30 bg-zinc-950/80 lg:w-80">
+          {hasBracket ? (
+            <div className="shrink-0 border-b border-violet-900/30 p-2">
+              <TorneoBracketBoard matches={matches} className="scale-[0.85] origin-top" />
+            </div>
+          ) : null}
           <GmTorneoManager
+            className="min-h-0 flex-1"
             campaignId={campaignId}
-            trackerState={trackerState}
+            trackerState={trackerStateForSidebar}
             onLoadMatch={handleLoadMatch}
-            activeMatchId={activeMatchId}
-            onActiveMatchIdChange={setActiveMatchId}
+            activeMatchId={activeMatchIdForSidebar}
+            station2MatchId={station2MatchId}
+            onActiveMatchIdChange={setStation1MatchId}
             onSetupChange={handleTorneoSetupChange}
+            liveSyncEnabled={liveSyncEnabled}
+            getTrackerStateForMatch={(matchId) => {
+              if (matchId === station1MatchId) return station1State;
+              if (matchId === station2MatchId) return station2State;
+              return null;
+            }}
           />
         </aside>
-        <div className="min-h-0 min-w-0 flex-1 overflow-hidden p-2 md:p-3">
-          <InitiativeTracker
-            ref={trackerRef}
+        <div className="grid min-h-0 min-w-0 flex-1 grid-rows-2 gap-2 overflow-hidden p-2 md:grid-cols-1 md:grid-rows-2 md:p-3">
+          <TorneoMatchTracker
             campaignId={campaignId}
-            campaignType="torneo"
-            value={trackerState}
-            onChange={setTrackerState}
-            onTrackerStateChange={setTrackerState}
-            storageKeyOverride={storageKeyOverride}
+            match={station1Match}
+            liveSyncEnabled={liveSyncEnabled}
             characterTeamMap={characterTeamMap}
-            showTeamColumn
-            torneoScoreboard={torneoScoreboard}
+            stationLabel="Tavolo 1"
+            initiativeHandleRef={station1Ref}
+            onStateChange={setStation1State}
+          />
+          <TorneoMatchTracker
+            campaignId={campaignId}
+            match={station2Match}
+            liveSyncEnabled={liveSyncEnabled}
+            characterTeamMap={characterTeamMap}
+            stationLabel="Tavolo 2"
+            initiativeHandleRef={station2Ref}
+            onStateChange={setStation2State}
           />
         </div>
       </div>
@@ -135,21 +272,22 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
       <GmRemoteInitiativePublisher
         campaignId={campaignId}
         sessionPublicId={remoteSessionPublicId}
-        state={trackerState}
+        state={publishState}
+        torneoMatchId={publishMatchId}
         torneoActiveMatch={
-          torneoScoreboard
+          publishScoreboard
             ? {
                 teamA: {
-                  id: torneoScoreboard.teamA.id,
-                  name: torneoScoreboard.teamA.name,
-                  color: torneoScoreboard.teamA.color,
-                  damageTotal: torneoScoreboard.teamA.total,
+                  id: publishScoreboard.teamA.id,
+                  name: publishScoreboard.teamA.name,
+                  color: publishScoreboard.teamA.color,
+                  damageTotal: publishScoreboard.teamA.total,
                 },
                 teamB: {
-                  id: torneoScoreboard.teamB.id,
-                  name: torneoScoreboard.teamB.name,
-                  color: torneoScoreboard.teamB.color,
-                  damageTotal: torneoScoreboard.teamB.total,
+                  id: publishScoreboard.teamB.id,
+                  name: publishScoreboard.teamB.name,
+                  color: publishScoreboard.teamB.color,
+                  damageTotal: publishScoreboard.teamB.total,
                 },
               }
             : null

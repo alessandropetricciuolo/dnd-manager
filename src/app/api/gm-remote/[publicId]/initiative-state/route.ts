@@ -37,7 +37,7 @@ export async function POST(request: Request, context: RouteContext) {
   const admin = createSupabaseAdminClient();
   const { data, error } = await admin
     .from("gm_remote_sessions")
-    .select("initiative_snapshot")
+    .select("initiative_snapshot, focused_match_id, campaign_id")
     .eq("public_id", publicId)
     .maybeSingle();
 
@@ -46,9 +46,60 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ ok: false, error: "load_failed" }, { status: 500 });
   }
 
-  const snapshot = parseInitiativeRemoteSnapshot(
-    (data as { initiative_snapshot?: unknown } | null)?.initiative_snapshot ?? null
-  );
+  const sess = data as {
+    initiative_snapshot?: unknown;
+    focused_match_id?: string | null;
+    campaign_id?: string;
+  } | null;
+
+  const focusedMatchId = sess?.focused_match_id?.trim() || null;
+  if (focusedMatchId && sess?.campaign_id) {
+    const { data: matchRow } = await admin
+      .from("torneo_matches")
+      .select("initiative_snapshot")
+      .eq("id", focusedMatchId)
+      .eq("campaign_id", sess.campaign_id)
+      .maybeSingle();
+
+    const { parseTorneoInitiativeSnapshot } = await import("@/lib/torneo/initiative-snapshot");
+    const { toInitiativeRemoteSnapshot } = await import("@/lib/gm-remote/initiative-commands");
+    const { loadTorneoSetupAdmin } = await import("@/lib/torneo/load-setup-admin");
+    const { computeMatchDamageTotals } = await import("@/lib/torneo/compute-match-damage");
+
+    const state = parseTorneoInitiativeSnapshot(
+      (matchRow as { initiative_snapshot?: unknown } | null)?.initiative_snapshot ?? null
+    );
+    if (state) {
+      const setup = await loadTorneoSetupAdmin(admin, sess.campaign_id);
+      const match = setup?.matches.find((m) => m.id === focusedMatchId) ?? null;
+      const snapshot = toInitiativeRemoteSnapshot(
+        state,
+        match
+          ? (() => {
+              const totals = computeMatchDamageTotals(state.entries, match);
+              return {
+                teamA: {
+                  id: match.team_a_id,
+                  name: match.team_a.name,
+                  color: match.team_a.color,
+                  damageTotal: totals.teamA,
+                },
+                teamB: {
+                  id: match.team_b_id,
+                  name: match.team_b.name,
+                  color: match.team_b.color,
+                  damageTotal: totals.teamB,
+                },
+              };
+            })()
+          : undefined,
+        focusedMatchId
+      );
+      return NextResponse.json({ ok: true, snapshot });
+    }
+  }
+
+  const snapshot = parseInitiativeRemoteSnapshot(sess?.initiative_snapshot ?? null);
 
   return NextResponse.json({ ok: true, snapshot });
 }

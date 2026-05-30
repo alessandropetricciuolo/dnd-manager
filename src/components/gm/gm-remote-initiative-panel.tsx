@@ -19,6 +19,9 @@ type Props = {
   token: string;
   sending: boolean;
   onSend: (type: string, payload?: Record<string, unknown>) => Promise<void>;
+  /** Incontro torneo: snapshot da match-state invece che sessione globale. */
+  focusedMatchId?: string | null;
+  commandPayload?: (base?: Record<string, unknown>) => Record<string, unknown>;
 };
 
 function formatTurnElapsed(seconds: number): string {
@@ -30,9 +33,24 @@ function formatTurnElapsed(seconds: number): string {
 
 async function fetchInitiativeSnapshot(
   publicId: string,
-  token: string
+  token: string,
+  matchId?: string | null
 ): Promise<InitiativeRemoteSnapshot | null> {
   const origin = typeof window !== "undefined" ? window.location.origin : "";
+  if (matchId) {
+    const res = await fetch(`${origin}/api/gm-remote/${publicId}/match-state`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, match_id: matchId }),
+    });
+    const j = (await res.json().catch(() => ({}))) as {
+      ok?: boolean;
+      snapshot?: InitiativeRemoteSnapshot | null;
+    };
+    if (!res.ok || !j.ok) return null;
+    return j.snapshot ?? null;
+  }
+
   const res = await fetch(`${origin}/api/gm-remote/${publicId}/initiative-state`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -46,15 +64,30 @@ async function fetchInitiativeSnapshot(
   return j.snapshot ?? null;
 }
 
-export function GmRemoteInitiativePanel({ publicId, token, sending, onSend }: Props) {
+export function GmRemoteInitiativePanel({
+  publicId,
+  token,
+  sending,
+  onSend,
+  focusedMatchId,
+  commandPayload,
+}: Props) {
   const [snapshot, setSnapshot] = useState<InitiativeRemoteSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const sendCmd = useCallback(
+    (type: string, base?: Record<string, unknown>) => {
+      const payload = commandPayload ? commandPayload(base) : base;
+      return onSend(type, payload);
+    },
+    [commandPayload, onSend]
+  );
+
   const refresh = useCallback(async () => {
-    const next = await fetchInitiativeSnapshot(publicId, token);
+    const next = await fetchInitiativeSnapshot(publicId, token, focusedMatchId);
     setSnapshot(next);
     setLoading(false);
-  }, [publicId, token]);
+  }, [publicId, token, focusedMatchId]);
 
   useEffect(() => {
     void refresh();
@@ -131,7 +164,7 @@ export function GmRemoteInitiativePanel({ publicId, token, sending, onSend }: Pr
               size="lg"
               className="h-14 touch-manipulation bg-amber-700 text-white hover:bg-amber-600"
               disabled={sending}
-              onClick={() => void onSend("initiative.next_turn")}
+              onClick={() => void sendCmd("initiative.next_turn")}
             >
               <SkipForward className="mr-2 h-5 w-5" />
               Turno
@@ -142,7 +175,7 @@ export function GmRemoteInitiativePanel({ publicId, token, sending, onSend }: Pr
               variant="outline"
               className="h-14 touch-manipulation border-amber-700/50"
               disabled={sending}
-              onClick={() => void onSend("initiative.toggle_timer")}
+              onClick={() => void sendCmd("initiative.toggle_timer")}
             >
               {snapshot.isTurnTimerRunning ? (
                 <Pause className="mr-2 h-5 w-5" />
@@ -157,7 +190,7 @@ export function GmRemoteInitiativePanel({ publicId, token, sending, onSend }: Pr
               variant="ghost"
               className="h-10 touch-manipulation text-zinc-400"
               disabled={sending}
-              onClick={() => void onSend("initiative.reset_turn_timer")}
+              onClick={() => void sendCmd("initiative.reset_turn_timer")}
             >
               Azzera timer
             </Button>
@@ -167,7 +200,7 @@ export function GmRemoteInitiativePanel({ publicId, token, sending, onSend }: Pr
               variant="ghost"
               className="h-10 touch-manipulation text-zinc-400"
               disabled={sending}
-              onClick={() => void onSend("initiative.reset_round")}
+              onClick={() => void sendCmd("initiative.reset_round")}
             >
               <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
               Reset giro
@@ -224,7 +257,7 @@ export function GmRemoteInitiativePanel({ publicId, token, sending, onSend }: Pr
                         className="h-9 touch-manipulation border-orange-800/40 px-0 text-xs"
                         disabled={sending}
                         onClick={() =>
-                          void onSend("initiative.adjust_damage", { entry_id: entry.id, delta })
+                          void sendCmd("initiative.adjust_damage", { entry_id: entry.id, delta })
                         }
                       >
                         {delta > 0 ? `+${delta}` : delta}

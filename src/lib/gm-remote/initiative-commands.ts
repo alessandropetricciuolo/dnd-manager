@@ -20,6 +20,8 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 
 /** Snapshot leggero per il telecomando (solo lettura). */
 export type InitiativeRemoteSnapshot = {
+  /** Incontro torneo attivo (sync telecomando / multi-PC). */
+  matchId?: string;
   entries: Array<{
     id: string;
     name: string;
@@ -46,7 +48,8 @@ export type InitiativeRemoteSnapshot = {
 
 export function toInitiativeRemoteSnapshot(
   state: InitiativeTrackerState,
-  activeMatch?: InitiativeRemoteSnapshot["activeMatch"]
+  activeMatch?: InitiativeRemoteSnapshot["activeMatch"],
+  matchId?: string
 ): InitiativeRemoteSnapshot {
   const entries = state.entries.map((e) => ({
     id: e.id,
@@ -93,6 +96,7 @@ export function toInitiativeRemoteSnapshot(
   }
 
   return {
+    ...(matchId ? { matchId } : {}),
     entries,
     activeMatch: matchSummary,
     currentTurnIndex: state.currentTurnIndex,
@@ -157,7 +161,10 @@ export function parseInitiativeRemoteSnapshot(raw: unknown): InitiativeRemoteSna
     if (teamA && teamB) activeMatch = { teamA, teamB };
   }
 
+  const matchId = typeof o.matchId === "string" && o.matchId.trim() ? o.matchId.trim() : undefined;
+
   return {
+    ...(matchId ? { matchId } : {}),
     entries,
     activeMatch,
     currentTurnIndex: typeof o.currentTurnIndex === "number" ? o.currentTurnIndex : 0,

@@ -31,6 +31,29 @@ export function applyTeamToEntry(
   return { ...entry, teamId: t.teamId, teamName: t.teamName, teamColor: t.teamColor };
 }
 
+/** Triello: tutti i PG della squadra vincitrice (FFA). */
+export function buildInitiativeEntriesForTriello(team: TorneoTeamWithMembers): InitiativeEntry[] {
+  const stamp = Date.now();
+  return team.members.map((m) => {
+    const hp = Math.max(0, m.hit_points ?? 0);
+    return {
+      id: `init-${stamp}-${m.character_id}`,
+      name: m.name,
+      type: "pc" as const,
+      characterClass: m.character_class,
+      armorClass: Math.max(0, m.armor_class ?? 0),
+      hp,
+      maxHp: hp,
+      initiative: 0,
+      playerId: m.character_id,
+      damageDealt: 0,
+      teamId: team.id,
+      teamName: team.name,
+      teamColor: team.color,
+    };
+  });
+}
+
 export function buildInitiativeEntriesForMatch(
   match: TorneoMatchWithTeams,
   teams: TorneoTeamWithMembers[]

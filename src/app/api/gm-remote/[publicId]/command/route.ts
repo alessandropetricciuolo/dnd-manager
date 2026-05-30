@@ -45,6 +45,14 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   const admin = createSupabaseAdminClient() as SupabaseClient<any>;
   const payloadJson = isRecord(envelope.payload) ? envelope.payload : {};
 
+  if (envelope.type === "torneo.focus_match") {
+    const matchId = typeof payloadJson.match_id === "string" ? payloadJson.match_id.trim() : null;
+    await admin
+      .from("gm_remote_sessions")
+      .update({ focused_match_id: matchId || null })
+      .eq("public_id", publicId);
+  }
+
   const { error: insErr } = await admin.from("gm_remote_commands").insert({
     session_public_id: publicId,
     campaign_id: v.session.campaign_id,

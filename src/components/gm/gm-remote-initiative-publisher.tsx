@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { publishGmRemoteInitiativeSnapshot } from "@/app/campaigns/gm-remote-actions";
+import { saveTorneoMatchInitiativeAction } from "@/app/campaigns/torneo-live-actions";
 import {
   toInitiativeRemoteSnapshot,
   type InitiativeRemoteSnapshot,
@@ -13,6 +14,7 @@ type Props = {
   sessionPublicId: string | null;
   state: InitiativeTrackerState;
   torneoActiveMatch?: InitiativeRemoteSnapshot["activeMatch"];
+  torneoMatchId?: string | null;
 };
 
 export function GmRemoteInitiativePublisher({
@@ -20,13 +22,18 @@ export function GmRemoteInitiativePublisher({
   sessionPublicId,
   state,
   torneoActiveMatch,
+  torneoMatchId,
 }: Props) {
   const lastPublishedRef = useRef<string>("");
 
   useEffect(() => {
     if (!sessionPublicId || state.entries.length === 0) return;
 
-    const snapshot: InitiativeRemoteSnapshot = toInitiativeRemoteSnapshot(state, torneoActiveMatch ?? undefined);
+    const snapshot: InitiativeRemoteSnapshot = toInitiativeRemoteSnapshot(
+      state,
+      torneoActiveMatch ?? undefined,
+      torneoMatchId ?? undefined
+    );
     const serialized = JSON.stringify(snapshot);
     if (serialized === lastPublishedRef.current) return;
 
@@ -34,12 +41,15 @@ export function GmRemoteInitiativePublisher({
       void publishGmRemoteInitiativeSnapshot(campaignId, sessionPublicId, snapshot).then((res) => {
         if (res.success) {
           lastPublishedRef.current = serialized;
+          if (torneoMatchId) {
+            void saveTorneoMatchInitiativeAction(campaignId, torneoMatchId, state);
+          }
         }
       });
     }, 400);
 
     return () => window.clearTimeout(timer);
-  }, [campaignId, sessionPublicId, state, torneoActiveMatch]);
+  }, [campaignId, sessionPublicId, state, torneoActiveMatch, torneoMatchId]);
 
   return null;
 }

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, Play, SkipBack, SkipForward, Square, Volume2, VolumeX } from "lucide-react";
 import { GmRemoteInitiativePanel } from "@/components/gm/gm-remote-initiative-panel";
+import { GmRemoteTorneoPanel } from "@/components/gm/gm-remote-torneo-panel";
 import { GmRemoteSfxPadPanel } from "@/components/gm/gm-remote-sfx-pad-panel";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -70,6 +71,7 @@ export function GmRemoteJoinClient({ publicId }: Props) {
   const [catalogRows, setCatalogRows] = useState<GlobalMusicOpt[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [catalogLoadError, setCatalogLoadError] = useState<string | null>(null);
+  const [isTorneoRemote, setIsTorneoRemote] = useState<boolean | null>(null);
 
   useEffect(() => {
     const hash = typeof window !== "undefined" ? window.location.hash : "";
@@ -106,6 +108,26 @@ export function GmRemoteJoinClient({ publicId }: Props) {
         if (!cancelled) setCatalogLoadError("Impossibile caricare il catalogo musica.");
       } finally {
         if (!cancelled) setCatalogLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [linkState, token, publicId]);
+
+  useEffect(() => {
+    if (linkState !== "ok" || !token) return;
+    let cancelled = false;
+    (async () => {
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      const res = await fetch(`${origin}/api/gm-remote/${publicId}/torneo-matches`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+      const j = (await res.json().catch(() => ({}))) as { ok?: boolean; matches?: unknown[] };
+      if (!cancelled) {
+        setIsTorneoRemote(Boolean(res.ok && j.ok && Array.isArray(j.matches) && j.matches.length > 0));
       }
     })();
     return () => {
@@ -161,8 +183,15 @@ export function GmRemoteJoinClient({ publicId }: Props) {
       </header>
 
       <section className="mx-auto max-w-md space-y-4 pb-12">
-        <GmRemoteInitiativePanel publicId={publicId} token={token} sending={sending} onSend={send} />
-
+        {isTorneoRemote === null ? (
+          <div className="flex justify-center py-8 text-zinc-400">
+            <Loader2 className="h-7 w-7 animate-spin" />
+          </div>
+        ) : isTorneoRemote ? (
+          <GmRemoteTorneoPanel publicId={publicId} token={token} sending={sending} onSend={send} />
+        ) : (
+          <GmRemoteInitiativePanel publicId={publicId} token={token} sending={sending} onSend={send} />
+        )}
 
         <div className="rounded-xl border border-emerald-900/35 bg-zinc-900/50 p-4">
           <p className="mb-2 text-center text-xs font-medium uppercase tracking-wide text-zinc-500">
