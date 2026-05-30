@@ -30,6 +30,7 @@ import {
   buildTimerStartPatch,
   DEFAULT_MATCH_TIMER_SEC,
 } from "@/lib/torneo/timer-patch";
+import { selectTorneoPublishTarget } from "@/lib/torneo/publish-target";
 import type { TorneoMatchWithTeams, TorneoTeamWithMembers } from "@/lib/torneo/types";
 
 type GmScreenTorneoLayoutProps = {
@@ -181,19 +182,15 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
     };
   }, [station2Match, station2State.entries]);
 
-  const publishMatchId = focusedRemoteMatchId ?? station1MatchId;
-  const publishState =
-    publishMatchId === station2MatchId
-      ? station2State
-      : publishMatchId === station1MatchId
-        ? station1State
-        : station1State;
-  const publishScoreboard =
-    publishMatchId === station2MatchId
-      ? station2Scoreboard
-      : publishMatchId === station1MatchId
-        ? torneoScoreboard
-        : torneoScoreboard;
+  const publishTarget = selectTorneoPublishTarget({
+    focusedMatchId: focusedRemoteMatchId,
+    station1MatchId,
+    station1State,
+    station1Scoreboard: torneoScoreboard,
+    station2MatchId,
+    station2State,
+    station2Scoreboard,
+  });
 
   return (
     <div className="relative flex h-screen w-screen flex-col overflow-hidden bg-zinc-950">
@@ -303,30 +300,32 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
         </TabsContent>
       </Tabs>
 
-      <GmRemoteInitiativePublisher
-        campaignId={campaignId}
-        sessionPublicId={remoteSessionPublicId}
-        state={publishState}
-        torneoMatchId={publishMatchId}
-        torneoActiveMatch={
-          publishScoreboard
-            ? {
-                teamA: {
-                  id: publishScoreboard.teamA.id,
-                  name: publishScoreboard.teamA.name,
-                  color: publishScoreboard.teamA.color,
-                  damageTotal: publishScoreboard.teamA.total,
-                },
-                teamB: {
-                  id: publishScoreboard.teamB.id,
-                  name: publishScoreboard.teamB.name,
-                  color: publishScoreboard.teamB.color,
-                  damageTotal: publishScoreboard.teamB.total,
-                },
-              }
-            : null
-        }
-      />
+      {publishTarget ? (
+        <GmRemoteInitiativePublisher
+          campaignId={campaignId}
+          sessionPublicId={remoteSessionPublicId}
+          state={publishTarget.state}
+          torneoMatchId={publishTarget.matchId}
+          torneoActiveMatch={
+            publishTarget.scoreboard
+              ? {
+                  teamA: {
+                    id: publishTarget.scoreboard.teamA.id,
+                    name: publishTarget.scoreboard.teamA.name,
+                    color: publishTarget.scoreboard.teamA.color,
+                    damageTotal: publishTarget.scoreboard.teamA.total,
+                  },
+                  teamB: {
+                    id: publishTarget.scoreboard.teamB.id,
+                    name: publishTarget.scoreboard.teamB.name,
+                    color: publishTarget.scoreboard.teamB.color,
+                    damageTotal: publishTarget.scoreboard.teamB.total,
+                  },
+                }
+              : null
+          }
+        />
+      ) : null}
     </div>
   );
 }
