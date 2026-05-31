@@ -18,6 +18,8 @@ type Options = {
   liveSyncEnabled: boolean;
   state: InitiativeTrackerState;
   onStateFromRemote: (state: InitiativeTrackerState) => void;
+  /** Non sovrascrivere stato locale con snapshot vuoto (race all'avvio incontro). */
+  ignoreEmptyRemoteOverwrite?: boolean;
 };
 
 const SAVE_DEBOUNCE_MS = 450;
@@ -28,6 +30,7 @@ export function useTorneoMatchInitiativeSync({
   liveSyncEnabled,
   state,
   onStateFromRemote,
+  ignoreEmptyRemoteOverwrite = false,
 }: Options) {
   const lastSavedRef = useRef<string>("");
   const lastRemoteAtRef = useRef<string | null>(null);
@@ -84,6 +87,7 @@ export function useTorneoMatchInitiativeSync({
                   ? (JSON.parse(snap) as Partial<InitiativeTrackerState>)
                   : (snap as Partial<InitiativeTrackerState>);
               const next = sanitizeInitiativeTrackerState(parsed);
+              if (ignoreEmptyRemoteOverwrite && next.entries.length === 0) return;
               lastRemoteAtRef.current = updatedAt;
               lastSavedRef.current = JSON.stringify(next);
               onStateFromRemote(next);

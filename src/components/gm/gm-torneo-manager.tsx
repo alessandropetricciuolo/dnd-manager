@@ -38,7 +38,12 @@ import { TORNEO_TEAM_COLORS, type TorneoMatchWithTeams, type TorneoTeamWithMembe
 import { cn } from "@/lib/utils";
 import { sanitizeInitiativeTrackerState } from "@/components/gm/initiative-tracker";
 import { persistTorneoMatchInitiative } from "@/components/gm/torneo-match-tracker";
-import { loadTorneoMatchInitiativeAction } from "@/app/campaigns/torneo-live-actions";
+import {
+  loadTorneoMatchInitiativeAction,
+  patchTorneoMatchTimerAction,
+  setGmRemoteFocusedMatchAction,
+} from "@/app/campaigns/torneo-live-actions";
+import { buildTimerStartPatch, TORNEO_MATCH_COUNTDOWN_SEC } from "@/lib/torneo/timer-patch";
 
 type Props = {
   campaignId: string;
@@ -49,6 +54,8 @@ type Props = {
   onActiveMatchIdChange: (matchId: string | null) => void;
   onSetupChange?: (teams: TorneoTeamWithMembers[], matches: TorneoMatchWithTeams[]) => void;
   liveSyncEnabled?: boolean;
+  remoteSessionPublicId?: string | null;
+  onMatchStarted?: (matchId: string, station: 1 | 2) => void;
   getTrackerStateForMatch?: (matchId: string) => InitiativeTrackerState | null;
   className?: string;
 };
@@ -77,6 +84,8 @@ export function GmTorneoManager({
   onActiveMatchIdChange,
   onSetupChange,
   liveSyncEnabled = false,
+  remoteSessionPublicId = null,
+  onMatchStarted,
   getTrackerStateForMatch,
   className,
 }: Props) {
@@ -304,6 +313,19 @@ export function GmTorneoManager({
 
     await persistTorneoMatchInitiative(campaignId, match.id, initiativeState, liveSyncEnabled);
     onLoadMatch(station, match.id, initiativeState);
+
+    if (liveSyncEnabled) {
+      await patchTorneoMatchTimerAction(
+        campaignId,
+        match.id,
+        buildTimerStartPatch(TORNEO_MATCH_COUNTDOWN_SEC, "Turno 1")
+      );
+      if (remoteSessionPublicId) {
+        await setGmRemoteFocusedMatchAction(remoteSessionPublicId, match.id);
+      }
+    }
+    onMatchStarted?.(match.id, station);
+
     toast.success(
       `Incontro avviato su tavolo ${station} · ${initiativeState.entries.length} PG in initiative.`
     );
@@ -588,6 +610,11 @@ export function GmTorneoManager({
                 )}
                 <p className="font-medium text-zinc-100">
                   {m.label || "Incontro"}{" "}
+                  {m.status === "active" ? (
+                    <span className="ml-1 rounded bg-emerald-900/50 px-1 py-0.5 text-[9px] text-emerald-300">
+                      in corso
+                    </span>
+                  ) : null}{" "}
                   <span className="text-zinc-500">
                     {m.match_kind === "triello"
                       ? m.team_a.isPlaceholder

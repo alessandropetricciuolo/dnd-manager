@@ -1,6 +1,10 @@
 import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
-import { getTorneoLiveSessionByPublicIdAction, getTorneoMatchTimerAction } from "@/app/campaigns/torneo-live-actions";
+import {
+  getTorneoLiveSessionByPublicIdAction,
+  getTorneoMatchTimerAction,
+  loadTorneoMatchInitiativeAction,
+} from "@/app/campaigns/torneo-live-actions";
 import { getTorneoSetupAction } from "@/app/campaigns/torneo-actions";
 import { TorneoMegatimerDisplay } from "@/components/gm/torneo-megatimer-display";
 
@@ -31,7 +35,11 @@ export default async function TorneoMegatimerPage({ params }: PageProps) {
   const match = setupRes.data.matches.find((m) => m.id === matchId);
   if (!match) notFound();
 
-  const timerRes = await getTorneoMatchTimerAction(live.campaignId, matchId);
+  const [timerRes, initRes] = await Promise.all([
+    getTorneoMatchTimerAction(live.campaignId, matchId),
+    loadTorneoMatchInitiativeAction(live.campaignId, matchId),
+  ]);
+  const initialInitiative = initRes.success ? initRes.data?.state ?? null : null;
   const initialTimer = timerRes.success && timerRes.data
     ? timerRes.data
     : {
@@ -51,6 +59,7 @@ export default async function TorneoMegatimerPage({ params }: PageProps) {
       matchId={match.id}
       matchLabel={matchLabel}
       initialTimer={initialTimer}
+      initialInitiative={initialInitiative}
     />
   );
 }

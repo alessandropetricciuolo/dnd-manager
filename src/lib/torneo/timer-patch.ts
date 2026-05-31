@@ -1,6 +1,9 @@
 import type { TorneoMatchTimerPayload } from "@/app/campaigns/torneo-live-actions";
 
-export const DEFAULT_MATCH_TIMER_SEC = 300;
+/** Countdown turno torneo (2 minuti). */
+export const TORNEO_MATCH_COUNTDOWN_SEC = 120;
+
+export const DEFAULT_MATCH_TIMER_SEC = TORNEO_MATCH_COUNTDOWN_SEC;
 
 export function buildTimerStartPatch(
   durationSec = DEFAULT_MATCH_TIMER_SEC,

@@ -91,7 +91,7 @@ export function GmRemoteInitiativePanel({
 
   useEffect(() => {
     void refresh();
-    const id = window.setInterval(() => void refresh(), 1500);
+    const id = window.setInterval(() => void refresh(), 1000);
     return () => window.clearInterval(id);
   }, [refresh]);
 
@@ -208,7 +208,7 @@ export function GmRemoteInitiativePanel({
           </div>
 
           <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-zinc-500">
-            Ordine e danni inflitti
+            Ordine · danni fatti e subiti
           </p>
           <ul className="max-h-[min(50vh,22rem)] space-y-2 overflow-y-auto pr-0.5">
             {snapshot.entries.map((entry, index) => {
@@ -243,14 +243,20 @@ export function GmRemoteInitiativePanel({
                             : ""}
                       </p>
                     </div>
-                    <span className="shrink-0 rounded bg-orange-950/60 px-2 py-1 text-sm font-bold tabular-nums text-orange-300">
-                      {entry.damageDealt}
-                    </span>
+                    <div className="shrink-0 text-right text-[10px]">
+                      <p className="text-orange-300">
+                        Fatti <span className="text-sm font-bold tabular-nums">{entry.damageDealt}</span>
+                      </p>
+                      <p className="text-red-300/90">
+                        Subiti <span className="text-sm font-bold tabular-nums">{entry.damageTaken ?? 0}</span>
+                      </p>
+                    </div>
                   </div>
-                  <div className="mt-2 grid grid-cols-4 gap-1">
+                  <p className="mt-2 text-[9px] uppercase text-zinc-600">Danni fatti</p>
+                  <div className="grid grid-cols-4 gap-1">
                     {([-5, -1, 1, 5] as const).map((delta) => (
                       <Button
-                        key={delta}
+                        key={`d-${delta}`}
                         type="button"
                         variant="outline"
                         size="sm"
@@ -258,6 +264,24 @@ export function GmRemoteInitiativePanel({
                         disabled={sending}
                         onClick={() =>
                           void sendCmd("initiative.adjust_damage", { entry_id: entry.id, delta })
+                        }
+                      >
+                        {delta > 0 ? `+${delta}` : delta}
+                      </Button>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-[9px] uppercase text-zinc-600">Danni subiti</p>
+                  <div className="grid grid-cols-4 gap-1">
+                    {([-5, -1, 1, 5] as const).map((delta) => (
+                      <Button
+                        key={`t-${delta}`}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-9 touch-manipulation border-red-900/40 px-0 text-xs text-red-200/90"
+                        disabled={sending}
+                        onClick={() =>
+                          void sendCmd("initiative.adjust_damage_taken", { entry_id: entry.id, delta })
                         }
                       >
                         {delta > 0 ? `+${delta}` : delta}

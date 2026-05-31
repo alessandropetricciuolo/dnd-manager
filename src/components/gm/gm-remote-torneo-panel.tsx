@@ -5,6 +5,7 @@ import { Loader2, Pause, Play, RotateCcw, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { computeMatchTimerView, formatTimerMmSs } from "@/lib/torneo/match-timer";
+import { TORNEO_MATCH_COUNTDOWN_SEC } from "@/lib/torneo/timer-patch";
 import type { InitiativeRemoteSnapshot } from "@/lib/gm-remote/initiative-commands";
 import { GmRemoteInitiativePanel } from "./gm-remote-initiative-panel";
 
@@ -92,7 +93,7 @@ export function GmRemoteTorneoPanel({ publicId, token, sending, onSend }: Props)
 
   useEffect(() => {
     void refreshMeta();
-    const id = window.setInterval(() => void refreshMeta(), 5000);
+    const id = window.setInterval(() => void refreshMeta(), 2000);
     return () => window.clearInterval(id);
   }, [refreshMeta]);
 
@@ -116,7 +117,7 @@ export function GmRemoteTorneoPanel({ publicId, token, sending, onSend }: Props)
       void fetchMatchState(publicId, token, focusedMatchId).then((data) => {
         if (!cancelled && data?.timer) setTimerFields(data.timer);
       });
-    }, 2000);
+    }, 1000);
     return () => {
       cancelled = true;
       window.clearInterval(id);
@@ -186,7 +187,7 @@ export function GmRemoteTorneoPanel({ publicId, token, sending, onSend }: Props)
             Megatimer incontro
           </p>
           <p className="text-center font-mono text-3xl font-bold tabular-nums text-amber-100">
-            {formatTimerMmSs(timerView.remainingSec)}
+            {timerView.isExpired ? "Tempo scaduto" : formatTimerMmSs(timerView.remainingSec)}
           </p>
           <p className="mt-1 text-center text-[10px] text-zinc-500">{timerView.roundLabel}</p>
           <div className="mt-3 grid grid-cols-2 gap-2">
@@ -195,10 +196,15 @@ export function GmRemoteTorneoPanel({ publicId, token, sending, onSend }: Props)
               size="sm"
               className="h-11 touch-manipulation"
               disabled={sending}
-              onClick={() => void onSend("torneo.timer_start", withMatch({ duration_sec: 300, round_label: "Round 1" }))}
+              onClick={() =>
+                void onSend(
+                  "torneo.timer_start",
+                  withMatch({ duration_sec: TORNEO_MATCH_COUNTDOWN_SEC, round_label: "Turno 1" })
+                )
+              }
             >
               <Play className="mr-1.5 h-4 w-4" />
-              Avvia 5m
+              Avvia 2 min
             </Button>
             <Button
               type="button"
@@ -217,7 +223,12 @@ export function GmRemoteTorneoPanel({ publicId, token, sending, onSend }: Props)
               variant="ghost"
               className="h-10 col-span-2 touch-manipulation"
               disabled={sending}
-              onClick={() => void onSend("torneo.timer_reset", withMatch({ duration_sec: 300, round_label: "Round 1" }))}
+              onClick={() =>
+                void onSend(
+                  "torneo.timer_reset",
+                  withMatch({ duration_sec: TORNEO_MATCH_COUNTDOWN_SEC, round_label: "Turno 1" })
+                )
+              }
             >
               <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
               Reset timer

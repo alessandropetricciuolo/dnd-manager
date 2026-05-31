@@ -20,6 +20,7 @@ import { getTorneoSetupAction } from "@/app/campaigns/torneo-actions";
 import {
   getTorneoMatchTimerAction,
   patchTorneoMatchTimerAction,
+  setGmRemoteFocusedMatchAction,
   type TorneoLiveSessionInfo,
 } from "@/app/campaigns/torneo-live-actions";
 import type { TorneoRemoteHandlers } from "@/lib/gm-remote/apply-torneo-remote";
@@ -28,7 +29,7 @@ import {
   buildTimerResetPatch,
   buildTimerResumePatch,
   buildTimerStartPatch,
-  DEFAULT_MATCH_TIMER_SEC,
+  TORNEO_MATCH_COUNTDOWN_SEC,
 } from "@/lib/torneo/timer-patch";
 import type { TorneoMatchWithTeams, TorneoTeamWithMembers } from "@/lib/torneo/types";
 
@@ -134,7 +135,7 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
           const patch =
             fields?.timer_started_at && fields.timer_paused_at
               ? buildTimerResumePatch(fields)
-              : buildTimerStartPatch(durationSec ?? DEFAULT_MATCH_TIMER_SEC, roundLabel ?? "Round 1");
+              : buildTimerStartPatch(durationSec ?? TORNEO_MATCH_COUNTDOWN_SEC, roundLabel ?? "Turno 1");
           await patchTorneoMatchTimerAction(campaignId, matchId, patch);
         })();
       },
@@ -152,7 +153,7 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
         void patchTorneoMatchTimerAction(
           campaignId,
           matchId,
-          buildTimerResetPatch(durationSec ?? DEFAULT_MATCH_TIMER_SEC, roundLabel ?? "Round 1")
+          buildTimerResetPatch(durationSec ?? TORNEO_MATCH_COUNTDOWN_SEC, roundLabel ?? "Turno 1")
         );
       },
       applyTimerSetRound: (matchId, roundLabel) => {
@@ -195,6 +196,72 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
         ? torneoScoreboard
         : torneoScoreboard;
 
+  const prevTurnIndex1 = useRef<number | null>(null);
+  const prevTurnIndex2 = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!liveSyncEnabled || !station1MatchId || station1State.entries.length === 0) return;
+    const idx = station1State.currentTurnIndex;
+    if (prevTurnIndex1.current === null) {
+      prevTurnIndex1.current = idx;
+      return;
+    }
+    if (prevTurnIndex1.current === idx) return;
+    prevTurnIndex1.current = idx;
+    const label = `Turno ${station1State.roundNumber} · ${station1State.currentTurnIndex + 1}/${station1State.entries.length}`;
+    void patchTorneoMatchTimerAction(
+      campaignId,
+      station1MatchId,
+      buildTimerStartPatch(TORNEO_MATCH_COUNTDOWN_SEC, label)
+    );
+  }, [
+    campaignId,
+    liveSyncEnabled,
+    station1MatchId,
+    station1State.currentTurnIndex,
+    station1State.roundNumber,
+    station1State.entries.length,
+  ]);
+
+  useEffect(() => {
+    if (!liveSyncEnabled || !station2MatchId || station2State.entries.length === 0) return;
+    const idx = station2State.currentTurnIndex;
+    if (prevTurnIndex2.current === null) {
+      prevTurnIndex2.current = idx;
+      return;
+    }
+    if (prevTurnIndex2.current === idx) return;
+    prevTurnIndex2.current = idx;
+    const label = `Turno ${station2State.roundNumber} · ${station2State.currentTurnIndex + 1}/${station2State.entries.length}`;
+    void patchTorneoMatchTimerAction(
+      campaignId,
+      station2MatchId,
+      buildTimerStartPatch(TORNEO_MATCH_COUNTDOWN_SEC, label)
+    );
+  }, [
+    campaignId,
+    liveSyncEnabled,
+    station2MatchId,
+    station2State.currentTurnIndex,
+    station2State.roundNumber,
+    station2State.entries.length,
+  ]);
+
+  const handleMatchStarted = useCallback(
+    (matchId: string, station: 1 | 2) => {
+      setFocusedRemoteMatchId(matchId);
+      if (remoteSessionPublicId) {
+        void setGmRemoteFocusedMatchAction(remoteSessionPublicId, matchId);
+      }
+      if (station === 1) {
+        prevTurnIndex1.current = null;
+      } else {
+        prevTurnIndex2.current = null;
+      }
+    },
+    [remoteSessionPublicId]
+  );
+
   return (
     <div className="relative flex h-screen w-screen flex-col overflow-hidden bg-zinc-950">
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-amber-600/20 px-4 py-2.5">
@@ -232,6 +299,9 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
           <GmTorneoLiveBar
             campaignId={campaignId}
             matches={matches}
+            livePublicId={liveSession?.publicId ?? null}
+            station1MatchId={station1MatchId}
+            station2MatchId={station2MatchId}
             onLiveSessionChange={handleLiveSessionChange}
           />
           <GmRemoteIntegration
@@ -262,6 +332,8 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
                 onActiveMatchIdChange={setStation1MatchId}
                 onSetupChange={handleTorneoSetupChange}
                 liveSyncEnabled={liveSyncEnabled}
+                remoteSessionPublicId={remoteSessionPublicId}
+                onMatchStarted={handleMatchStarted}
                 getTrackerStateForMatch={(matchId) => {
                   if (matchId === station1MatchId) return station1State;
                   if (matchId === station2MatchId) return station2State;

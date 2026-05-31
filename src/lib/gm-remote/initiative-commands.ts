@@ -6,6 +6,7 @@ export const GM_REMOTE_INITIATIVE_TYPES = [
   "initiative.reset_turn_timer",
   "initiative.reset_round",
   "initiative.adjust_damage",
+  "initiative.adjust_damage_taken",
 ] as const;
 
 export type GmRemoteInitiativeCommandType = (typeof GM_REMOTE_INITIATIVE_TYPES)[number];
@@ -29,6 +30,7 @@ export type InitiativeRemoteSnapshot = {
     hp: number;
     maxHp: number;
     damageDealt: number;
+    damageTaken: number;
     initiative: number;
     isDead?: boolean;
     teamId?: string;
@@ -58,6 +60,7 @@ export function toInitiativeRemoteSnapshot(
     hp: e.hp,
     maxHp: e.maxHp,
     damageDealt: e.damageDealt ?? 0,
+    damageTaken: e.damageTaken ?? 0,
     initiative: e.initiative,
     isDead: e.isDead,
     ...(e.teamId ? { teamId: e.teamId, teamName: e.teamName, teamColor: e.teamColor } : {}),
@@ -127,6 +130,7 @@ export function parseInitiativeRemoteSnapshot(raw: unknown): InitiativeRemoteSna
         hp: typeof r.hp === "number" ? r.hp : 0,
         maxHp: typeof r.maxHp === "number" ? r.maxHp : 0,
         damageDealt: typeof r.damageDealt === "number" ? Math.max(0, r.damageDealt) : 0,
+        damageTaken: typeof r.damageTaken === "number" ? Math.max(0, r.damageTaken) : 0,
         initiative: typeof r.initiative === "number" ? r.initiative : 0,
         isDead: r.isDead === true,
         ...(typeof r.teamId === "string" && r.teamId
@@ -181,6 +185,7 @@ export type InitiativeRemoteCommandHandlers = {
   resetTurnTimer: () => void;
   resetRound: () => void;
   adjustDamage: (entryId: string, delta: number) => void;
+  adjustDamageTaken: (entryId: string, delta: number) => void;
 };
 
 export function applyInitiativeRemoteCommand(
@@ -207,6 +212,13 @@ export function applyInitiativeRemoteCommand(
       const delta = typeof payload.delta === "number" ? payload.delta : 0;
       if (!entryId || !Number.isFinite(delta) || delta === 0) return true;
       handlers.adjustDamage(entryId, Math.trunc(delta));
+      return true;
+    }
+    case "initiative.adjust_damage_taken": {
+      const entryId = typeof payload.entry_id === "string" ? payload.entry_id : "";
+      const delta = typeof payload.delta === "number" ? payload.delta : 0;
+      if (!entryId || !Number.isFinite(delta) || delta === 0) return true;
+      handlers.adjustDamageTaken(entryId, Math.trunc(delta));
       return true;
     }
     default:

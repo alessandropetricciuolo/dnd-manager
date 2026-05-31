@@ -66,6 +66,8 @@ export type InitiativeEntry = {
   isDead?: boolean;
   /** Danni inflitti in questo combattimento (contatore offensivo). */
   damageDealt?: number;
+  /** Danni subiti in questo combattimento. */
+  damageTaken?: number;
   /** Squadra torneo (PG). */
   teamId?: string;
   teamName?: string;
@@ -96,6 +98,7 @@ function normalizeInitiativeEntry(entry: InitiativeEntry): InitiativeEntry {
   return {
     ...entry,
     damageDealt: Math.max(0, Math.trunc(entry.damageDealt ?? 0)),
+    damageTaken: Math.max(0, Math.trunc(entry.damageTaken ?? 0)),
   };
 }
 
@@ -146,6 +149,7 @@ function areInitiativeEntriesEqual(a: InitiativeEntry[], b: InitiativeEntry[]) {
       left.exp !== right.exp ||
       left.isDead !== right.isDead ||
       (left.damageDealt ?? 0) !== (right.damageDealt ?? 0) ||
+      (left.damageTaken ?? 0) !== (right.damageTaken ?? 0) ||
       left.teamId !== right.teamId ||
       left.teamName !== right.teamName ||
       left.teamColor !== right.teamColor
@@ -434,6 +438,16 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     );
   }, []);
 
+  const adjustDamageTaken = useCallback((entryId: string, delta: number) => {
+    setEntries((prev) =>
+      prev.map((e) =>
+        e.id === entryId
+          ? { ...e, damageTaken: Math.max(0, (e.damageTaken ?? 0) + delta) }
+          : e
+      )
+    );
+  }, []);
+
   useImperativeHandle(
     ref,
     () => ({
@@ -442,10 +456,12 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       resetTurnTimer,
       resetRound: resetRoundCounter,
       adjustDamage: adjustDamageDealt,
+      adjustDamageTaken,
       getState: () => buildTrackerState(),
     }),
     [
       adjustDamageDealt,
+      adjustDamageTaken,
       buildTrackerState,
       nextTurn,
       resetRoundCounter,

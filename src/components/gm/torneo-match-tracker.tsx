@@ -68,7 +68,11 @@ export function TorneoMatchTracker({
     matchId,
     liveSyncEnabled,
     state,
-    onStateFromRemote,
+    ignoreEmptyRemoteOverwrite: isControlled,
+    onStateFromRemote: (next) => {
+      if (isControlled && next.entries.length === 0 && state.entries.length > 0) return;
+      onStateFromRemote(next);
+    },
   });
 
   useEffect(() => {

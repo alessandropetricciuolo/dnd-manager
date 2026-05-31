@@ -84,7 +84,7 @@ export function GmRemoteJoinClient({ publicId }: Props) {
   }, []);
 
   useEffect(() => {
-    if (linkState !== "ok" || !token) return;
+    if (linkState !== "ok" || !token || isTorneoRemote !== false) return;
     let cancelled = false;
     setCatalogLoadError(null);
     (async () => {
@@ -193,6 +193,8 @@ export function GmRemoteJoinClient({ publicId }: Props) {
           <GmRemoteInitiativePanel publicId={publicId} token={token} sending={sending} onSend={send} />
         )}
 
+        {!isTorneoRemote ? (
+        <>
         <div className="rounded-xl border border-emerald-900/35 bg-zinc-900/50 p-4">
           <p className="mb-2 text-center text-xs font-medium uppercase tracking-wide text-zinc-500">
             Musica catalogo Gilda (sul PC)
@@ -326,6 +328,8 @@ export function GmRemoteJoinClient({ publicId }: Props) {
         </div>
 
         <GmRemoteSfxPadPanel publicId={publicId} token={token} sending={sending} onSend={send} />
+        </>
+        ) : null}
       </section>
     </div>
   );
