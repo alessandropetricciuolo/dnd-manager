@@ -19,6 +19,18 @@ export type BracketSeedSlot = {
   advancesToSlot: "a" | "b" | null;
 };
 
+export type BracketReadinessMatch = {
+  id: string;
+  team_a_id: string;
+  team_b_id: string;
+  match_kind: "bracket" | "triello";
+  bracket_round: number | null;
+  advances_to_match_id: string | null;
+  advances_to_slot: "a" | "b" | null;
+  winner_team_id: string | null;
+  status: string;
+};
+
 /** Coppie quarti: 1v8, 4v5, 2v7, 3v6 (indici su array squadre ordinate). */
 const QF_PAIRINGS: Array<[number, number]> = [
   [0, 7],
@@ -89,6 +101,44 @@ export function buildEightTeamBracketPlan(teams: TorneoTeamWithMembers[]): Brack
   });
 
   return plan;
+}
+
+function expectedUpstreamCount(match: BracketReadinessMatch): number {
+  if (match.match_kind === "triello") return 1;
+  switch (match.bracket_round) {
+    case BRACKET_ROUND.SEMI:
+    case BRACKET_ROUND.FINAL:
+      return 2;
+    default:
+      return 0;
+  }
+}
+
+export function getBracketMatchReadiness(
+  match: BracketReadinessMatch,
+  matches: BracketReadinessMatch[]
+): { ready: true } | { ready: false; reason: string } {
+  const expected = expectedUpstreamCount(match);
+  if (expected === 0) return { ready: true };
+
+  const upstream = matches.filter((m) => m.advances_to_match_id === match.id);
+  if (upstream.length < expected) {
+    return { ready: false, reason: "Completa prima gli incontri precedenti del tabellone." };
+  }
+
+  for (const source of upstream) {
+    if (source.status !== "completed" || !source.winner_team_id) {
+      return { ready: false, reason: "Completa prima gli incontri precedenti del tabellone." };
+    }
+    if (source.advances_to_slot === "a" && match.team_a_id !== source.winner_team_id) {
+      return { ready: false, reason: "Il tabellone non ha ancora ricevuto il vincitore corretto." };
+    }
+    if (source.advances_to_slot === "b" && match.team_b_id !== source.winner_team_id) {
+      return { ready: false, reason: "Il tabellone non ha ancora ricevuto il vincitore corretto." };
+    }
+  }
+
+  return { ready: true };
 }
 
 export function roundLabel(round: number | null): string {
