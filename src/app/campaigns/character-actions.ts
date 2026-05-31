@@ -25,47 +25,16 @@ import {
   deleteCampaignMemorySource,
   syncCharacterBackgroundToCampaignMemory,
 } from "@/lib/campaign-memory-indexer";
+import {
+  CHARACTER_SHEETS_BUCKET,
+  normalizeCharacterSheetStoragePath,
+} from "@/lib/character-sheets/storage-path";
 
-const CHARACTER_SHEETS_BUCKET = "character_sheets";
 const SIGNED_URL_EXPIRY_SEC = 3600;
 
 type CharResult<T = void> =
   | { success: true; data?: T }
   | { success: false; error: string };
-
-function normalizeCharacterSheetStoragePath(rawPath: string | null | undefined): string | null {
-  const p = rawPath?.trim();
-  if (!p) return null;
-
-  // Legacy values may contain bucket prefix in DB.
-  if (p.startsWith(`${CHARACTER_SHEETS_BUCKET}/`)) {
-    return p.slice(CHARACTER_SHEETS_BUCKET.length + 1) || null;
-  }
-
-  // Legacy values may contain full storage URLs (public or signed).
-  if (p.startsWith("http://") || p.startsWith("https://")) {
-    try {
-      const u = new URL(p);
-      const marker = `/storage/v1/object/`;
-      const idx = u.pathname.indexOf(marker);
-      if (idx >= 0) {
-        const tail = u.pathname.slice(idx + marker.length);
-        // Tail examples:
-        // - public/character_sheets/<path>
-        // - sign/character_sheets/<path>
-        const segments = tail.split("/").filter(Boolean);
-        if (segments.length >= 3 && (segments[0] === "public" || segments[0] === "sign") && segments[1] === CHARACTER_SHEETS_BUCKET) {
-          return decodeURIComponent(segments.slice(2).join("/")) || null;
-        }
-      }
-    } catch {
-      // Fall through to null for unknown external URL formats.
-    }
-    return null;
-  }
-
-  return p;
-}
 
 export type CampaignCharacterRow = {
   id: string;

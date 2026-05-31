@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "nextjs-toploader/app";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Download, Eye, Pencil, Trash2, Clock } from "lucide-react";
 
@@ -42,11 +42,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { forceCharacterTimeSync, setCharacterCalendarOverride } from "@/app/campaigns/character-actions";
-import {
-  assignCharacterToTorneoTeamAction,
-  removeCharacterFromTorneoTeamAction,
-} from "@/app/campaigns/torneo-actions";
-import type { TorneoTeamWithMembers } from "@/lib/torneo/types";
 import { parseRulesSnapshot } from "@/lib/character-rules-snapshot";
 import { backgroundBySlug, backgroundRulesTooltipPrefix, raceBySlug } from "@/lib/character-build-catalog";
 import { sanitizeRaceTraitsMarkdown } from "@/lib/race-traits-sanitizer";
@@ -58,8 +53,6 @@ type CharacterCardGmProps = {
   eligiblePlayers: EligiblePlayer[];
   isLongCampaign?: boolean;
   isTorneoCampaign?: boolean;
-  torneoTeams?: TorneoTeamWithMembers[] | null;
-  onTorneoTeamsReload?: () => void | Promise<void>;
   autoOpenEdit?: boolean;
 };
 
@@ -275,8 +268,6 @@ export function CharacterCardGm({
   eligiblePlayers,
   isLongCampaign,
   isTorneoCampaign = false,
-  torneoTeams = null,
-  onTorneoTeamsReload,
   autoOpenEdit = false,
 }: CharacterCardGmProps) {
   const router = useRouter();
@@ -290,7 +281,6 @@ export function CharacterCardGm({
   const [sheetImgError, setSheetImgError] = useState(false);
   const [isLeveling, startTransition] = useTransition();
   const [isSavingXp, startXpTransition] = useTransition();
-  const [assigningTorneoTeam, startTorneoTeamTransition] = useTransition();
   const [epochOpen, setEpochOpen] = useState(false);
   const [epochDraft, setEpochDraft] = useState(String(character.time_offset_hours ?? 0));
   const [epochSaving, setEpochSaving] = useState(false);
@@ -315,18 +305,6 @@ export function CharacterCardGm({
   const xpLabel =
     nextLevelXp != null ? `${xp} / ${nextLevelXp} PE` : `${xp} PE (livello massimo)`;
 
-  const torneoTeamId = useMemo(() => {
-    if (!isTorneoCampaign || !torneoTeams) return null;
-    for (const t of torneoTeams) {
-      if (t.members.some((m) => m.character_id === character.id)) return t.id;
-    }
-    return null;
-  }, [character.id, isTorneoCampaign, torneoTeams]);
-
-  const torneoTeamLabel = useMemo(() => {
-    if (!torneoTeamId || !torneoTeams?.length) return "Nessuna squadra";
-    return torneoTeams.find((t) => t.id === torneoTeamId)?.name ?? "Squadra";
-  }, [torneoTeamId, torneoTeams]);
   const classLabel = character.character_class?.trim() || "—";
   const hpLabel = character.hit_points != null ? String(character.hit_points) : "—";
   const acLabel = character.armor_class != null ? String(character.armor_class) : "—";
@@ -430,29 +408,248 @@ export function CharacterCardGm({
     }
   }
 
-  function onTorneoTeamSelect(value: string) {
-    startTorneoTeamTransition(async () => {
-      const campaignId = character.campaign_id;
-      if (value === "__no_team__") {
-        const result = await removeCharacterFromTorneoTeamAction(campaignId, character.id);
-        if (result.success) {
-          toast.success("Rimosso dalla squadra.");
-        } else {
-          toast.error(result.error);
-          return;
-        }
-      } else {
-        const result = await assignCharacterToTorneoTeamAction(campaignId, value, character.id);
-        if (result.success) {
-          toast.success("Squadra aggiornata.");
-        } else {
-          toast.error(result.error);
-          return;
-        }
+  const raceClassSubtitle = (
+    <div className="mt-0.5 min-h-4 text-[10px] leading-tight text-barber-paper/75">
+      {raceLabel ? (
+        <>
+          <RulesTip
+            label={subraceLabel ?? raceLabel}
+            body={subraceLabel ? (snap?.subraceTraitsMd ?? "") : raceTraitsBody}
+          />
+          {" · "}
+        </>
+      ) : null}
+      <RulesTip label={classLabel} body={snap?.classPrivilegesMd ?? ""} />
+      {character.class_subclass?.trim() ? (
+        <>
+          {" · "}
+          <RulesTip label={character.class_subclass.trim()} body={snap?.classSubclassMd ?? ""} />
+        </>
+      ) : null}
+      {snap?.spellcastingMd || snap?.spellsListMd ? (
+        <>
+          {" · "}
+          <SpellsTip
+            listText={[snap?.spellcastingMd, snap?.spellsListMd].filter(Boolean).join("\n\n")}
+            details={snap?.spellsDetailsMd}
+          />
+        </>
+      ) : null}
+      {bgRulesLabel ? (
+        <>
+          {" · "}
+          <RulesTip label={`${bgRulesBookPrefix}: ${bgRulesLabel}`} body={snap?.backgroundRulesMd ?? ""} />
+        </>
+      ) : null}
+    </div>
+  );
+
+  const statsDl = (compact: boolean) => (
+    <dl
+      className={
+        compact
+          ? "mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10px] text-barber-paper/75"
+          : "mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px] text-barber-paper/75 sm:text-xs"
       }
-      await onTorneoTeamsReload?.();
-      router.refresh();
-    });
+    >
+      <div className="flex justify-between gap-1">
+        <dt className="text-muted-foreground">Classe</dt>
+        <dd className="truncate font-medium tabular-nums text-barber-paper">{classLabel}</dd>
+      </div>
+      <div className="flex justify-between gap-1">
+        <dt className="text-muted-foreground">PF</dt>
+        <dd className="font-medium tabular-nums text-barber-paper">{hpLabel}</dd>
+      </div>
+      <div className="flex justify-between gap-1">
+        <dt className="text-muted-foreground">CA</dt>
+        <dd className="font-medium tabular-nums text-barber-paper">{acLabel}</dd>
+      </div>
+      <div className="flex justify-between gap-1">
+        <dt className="text-muted-foreground">Lv</dt>
+        <dd className="font-medium tabular-nums text-barber-paper">{storedLevel}</dd>
+      </div>
+    </dl>
+  );
+
+  const cardActionButtons = (iconSize: "sm" | "md") => {
+    const btn = iconSize === "sm" ? "h-7 w-7" : "h-8 w-8";
+    const icon = iconSize === "sm" ? "h-3.5 w-3.5" : "h-4 w-4";
+    return (
+      <div className="absolute right-1.5 top-1.5 z-[1] flex items-center gap-0">
+        {character.sheet_url && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`${btn} text-barber-gold hover:bg-barber-gold/15`}
+            asChild
+            title="Scarica scheda PDF"
+          >
+            <a href={character.sheet_url} target="_blank" rel="noopener noreferrer">
+              <Download className={icon} />
+            </a>
+          </Button>
+        )}
+        {character.image_url && (
+          <>
+            <MapPopoutButton
+              imageUrl={character.image_url}
+              title={character.name}
+              compact
+              variant="ghost"
+              size="icon"
+              className={`${btn} text-barber-gold`}
+            />
+            <DownloadImageButton
+              driveUrl={character.image_url}
+              filename={character.name}
+              compact
+              variant="ghost"
+              size="icon"
+              className={`${btn} text-barber-gold`}
+              title="Scarica immagine personaggio"
+            />
+          </>
+        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          className={`${btn} text-barber-paper/80 hover:bg-barber-gold/10`}
+          disabled={deleting}
+          onClick={onDelete}
+          title="Elimina personaggio"
+        >
+          <Trash2 className={`${icon} text-barber-red/90`} />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={`${btn} text-barber-paper/80 hover:bg-barber-gold/10`}
+          onClick={() => setEditOpen(true)}
+          title="Modifica personaggio"
+        >
+          <Pencil className={icon} />
+        </Button>
+      </div>
+    );
+  };
+
+  if (isTorneoCampaign) {
+    return (
+      <>
+        <Card className="relative overflow-hidden border-barber-gold/40 bg-barber-dark/80">
+          {cardActionButtons("sm")}
+          <CardContent className="space-y-2 p-2 pt-8">
+            <div className="flex gap-2">
+              <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-barber-dark ring-1 ring-barber-gold/25">
+                <Image
+                  src={imageSrc}
+                  alt={character.name}
+                  fill
+                  className="object-cover"
+                  sizes="64px"
+                  unoptimized={!!character.image_url}
+                  onError={() => setImgError(true)}
+                />
+              </div>
+              <div className="min-w-0 flex-1 pr-14">
+                <h3 className="truncate text-sm font-semibold text-barber-paper">{character.name}</h3>
+                {raceClassSubtitle}
+                {statsDl(true)}
+              </div>
+            </div>
+            {backgroundPreview ? (
+              <p className="line-clamp-2 text-xs text-muted-foreground">{character.background}</p>
+            ) : (
+              <p className="line-clamp-2 text-xs italic text-muted-foreground">Nessun background.</p>
+            )}
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="h-8 w-full border-barber-gold/30 bg-barber-gold/15 text-xs text-barber-paper hover:bg-barber-gold/25"
+              onClick={() => setDetailsOpen(true)}
+            >
+              <Eye className="mr-1.5 h-3.5 w-3.5" />
+              Dettagli
+            </Button>
+          </CardContent>
+        </Card>
+
+        {detailsOpen && (
+          <Sheet open={detailsOpen} onOpenChange={setDetailsOpen}>
+            <SheetContent
+              side="right"
+              className="flex h-full max-h-[100dvh] w-full max-w-lg flex-col overflow-hidden border-barber-gold/40 bg-barber-dark text-barber-paper sm:max-w-lg"
+            >
+              <SheetHeader className="shrink-0 space-y-1 text-left">
+                <SheetTitle className="text-barber-paper">Scheda di lettura — {character.name}</SheetTitle>
+                <SheetDescription className="text-barber-paper/65">
+                  Solo consultazione. Per modificare usa &quot;Modifica&quot; sulla card.
+                </SheetDescription>
+              </SheetHeader>
+              <div className="mt-4 shrink-0 space-y-4 border-b border-barber-gold/25 pb-4">
+                <div className="relative mx-auto aspect-[4/5] w-full max-w-[220px] overflow-hidden rounded-lg bg-barber-dark ring-1 ring-barber-gold/30">
+                  <Image
+                    src={sheetImageSrc}
+                    alt={character.name}
+                    fill
+                    className="object-cover"
+                    sizes="220px"
+                    unoptimized={!!character.image_url}
+                    onError={() => setSheetImgError(true)}
+                  />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold text-barber-paper">{character.name}</h2>
+                  <div className="mt-1 text-xs text-barber-paper/80">{raceClassSubtitle}</div>
+                </div>
+                <dl className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
+                  <div className="rounded-md border border-barber-gold/25 bg-barber-dark/80 px-2 py-1.5">
+                    <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">Classe</dt>
+                    <dd className="font-medium tabular-nums text-barber-paper">{classLabel}</dd>
+                  </div>
+                  <div className="rounded-md border border-barber-gold/25 bg-barber-dark/80 px-2 py-1.5">
+                    <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">PF</dt>
+                    <dd className="font-medium tabular-nums text-barber-paper">{hpLabel}</dd>
+                  </div>
+                  <div className="rounded-md border border-barber-gold/25 bg-barber-dark/80 px-2 py-1.5">
+                    <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">CA</dt>
+                    <dd className="font-medium tabular-nums text-barber-paper">{acLabel}</dd>
+                  </div>
+                  <div className="rounded-md border border-barber-gold/25 bg-barber-dark/80 px-2 py-1.5">
+                    <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">Livello</dt>
+                    <dd className="font-medium tabular-nums text-barber-paper">{storedLevel}</dd>
+                  </div>
+                </dl>
+              </div>
+              <div className="mt-4 flex min-h-0 flex-1 flex-col pb-[env(safe-area-inset-bottom)]">
+                <p className="mb-2 shrink-0 text-xs font-medium uppercase tracking-wide text-barber-paper/60">
+                  Background / Lore
+                </p>
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-md border border-barber-gold/25 p-3 [-webkit-overflow-scrolling:touch]">
+                  {backgroundForSheet ? (
+                    <div className="whitespace-pre-wrap break-words text-sm leading-relaxed text-barber-paper/90">
+                      {backgroundForSheet}
+                    </div>
+                  ) : (
+                    <p className="text-sm italic text-muted-foreground">Nessun background inserito.</p>
+                  )}
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+        )}
+
+        {editOpen && (
+          <EditCharacterDialog
+            character={character}
+            open={editOpen}
+            onOpenChange={setEditOpen}
+            isLongCampaign={Boolean(isLongCampaign)}
+          />
+        )}
+      </>
+    );
   }
 
   return (
@@ -748,44 +945,6 @@ export function CharacterCardGm({
             <p className="truncate text-[10px] text-barber-paper/50">{currentLabel}</p>
           </div>
 
-          {isTorneoCampaign && (
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-medium uppercase tracking-wide text-barber-paper/60">
-                Squadra
-              </label>
-              <Select
-                value={torneoTeamId ?? "__no_team__"}
-                onValueChange={(v) => onTorneoTeamSelect(v)}
-                disabled={assigningTorneoTeam || torneoTeams === null}
-              >
-                <SelectTrigger className="h-9 border-barber-gold/30 bg-barber-dark text-barber-paper text-sm">
-                  <SelectValue placeholder={torneoTeams === null ? "Caricamento…" : "Squadra"} />
-                </SelectTrigger>
-                <SelectContent className="border-barber-gold/30 bg-barber-dark">
-                  <SelectItem value="__no_team__" className="text-barber-paper focus:bg-barber-gold/20">
-                    Nessuna squadra
-                  </SelectItem>
-                  {(torneoTeams ?? []).map((t) => (
-                    <SelectItem
-                      key={t.id}
-                      value={t.id}
-                      className="text-barber-paper focus:bg-barber-gold/20"
-                    >
-                      {t.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="truncate text-[10px] text-barber-paper/50">
-                {torneoTeams === null
-                  ? "Caricamento squadre…"
-                  : torneoTeams.length === 0
-                    ? "Crea le squadre dalla schermata GM del torneo."
-                    : torneoTeamLabel}
-              </p>
-            </div>
-          )}
-
           {!skipTimeXpUi && (
           <div className="space-y-1.5 rounded-md border border-barber-gold/35 bg-barber-dark/70 p-2">
             <div className="flex items-center justify-between text-[10px] font-medium text-barber-paper/80">
@@ -896,11 +1055,6 @@ export function CharacterCardGm({
             <div>
               <h2 className="text-xl font-semibold text-barber-paper">{character.name}</h2>
               <p className="text-sm text-muted-foreground">Assegnato: {currentLabel}</p>
-              {isTorneoCampaign ? (
-                <p className="text-sm text-muted-foreground">
-                  Squadra: {torneoTeams === null ? "…" : torneoTeamLabel}
-                </p>
-              ) : null}
               <div className="mt-1 text-xs text-barber-paper/80">
                 {raceLabel ? (
                   <>

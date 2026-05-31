@@ -1,14 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
 import { CreateCharacterDialog } from "./create-character-dialog";
 import { ImportCharactersFromCatalogDialog } from "./import-characters-from-catalog-dialog";
 import { CharacterCardGm } from "./character-card-gm";
+import { DownloadTorneoSheetsButton } from "./download-torneo-sheets-button";
 import { CharacterCardPlayer } from "./character-card-player";
 import { PlayerSecretChat } from "@/components/player/player-secret-chat";
 import type { CampaignCharacterRow, EligiblePlayer } from "@/app/campaigns/character-actions";
-import { getTorneoSetupAction } from "@/app/campaigns/torneo-actions";
-import type { TorneoTeamWithMembers } from "@/lib/torneo/types";
 
 type CharactersSectionProps = {
   campaignId: string;
@@ -38,30 +36,6 @@ export function CharactersSection({
 }: CharactersSectionProps) {
   const isLongCampaign = campaignType === "long";
   const isTorneoCampaign = campaignType === "torneo";
-  const [torneoTeams, setTorneoTeams] = useState<TorneoTeamWithMembers[] | null>(null);
-
-  const reloadTorneoTeams = useCallback(async () => {
-    const res = await getTorneoSetupAction(campaignId);
-    if (res.success && res.data) setTorneoTeams(res.data.teams);
-    else setTorneoTeams([]);
-  }, [campaignId]);
-
-  useEffect(() => {
-    if (!isGm || !isTorneoCampaign) {
-      setTorneoTeams(null);
-      return;
-    }
-    let cancelled = false;
-    void (async () => {
-      const res = await getTorneoSetupAction(campaignId);
-      if (cancelled) return;
-      if (res.success && res.data) setTorneoTeams(res.data.teams);
-      else setTorneoTeams([]);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [campaignId, isGm, isTorneoCampaign]);
 
   const eligibleLabelById = new Map(eligiblePlayers.map((p) => [p.id, p.label]));
   const groupLabelForCharacter = (char: CampaignCharacterRow): string => {
@@ -111,6 +85,9 @@ export function CharactersSection({
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h2 className="text-lg font-semibold text-barber-paper">Personaggi</h2>
           <div className="flex flex-wrap items-center gap-2">
+            {isTorneoCampaign ? (
+              <DownloadTorneoSheetsButton campaignId={campaignId} characters={characters} />
+            ) : null}
             <ImportCharactersFromCatalogDialog campaignId={campaignId} />
             <CreateCharacterDialog campaignId={campaignId} initialOpen={openCreateDialogOnLoad} />
           </div>
@@ -134,8 +111,6 @@ export function CharactersSection({
                       eligiblePlayers={eligiblePlayers}
                       isLongCampaign={isLongCampaign}
                       isTorneoCampaign={isTorneoCampaign}
-                      torneoTeams={isTorneoCampaign ? torneoTeams : null}
-                      onTorneoTeamsReload={isTorneoCampaign ? reloadTorneoTeams : undefined}
                       autoOpenEdit={openEditCharacterId === char.id}
                     />
                   ))}
@@ -144,7 +119,13 @@ export function CharactersSection({
             ))}
           </div>
         ) : (
-          <div className="grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+          <div
+            className={
+              isTorneoCampaign
+                ? "grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
+                : "grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3 xl:grid-cols-4"
+            }
+          >
             {sortedCharacters.map((char) => (
               <CharacterCardGm
                 key={char.id}
@@ -152,8 +133,6 @@ export function CharactersSection({
                 eligiblePlayers={eligiblePlayers}
                 isLongCampaign={isLongCampaign}
                 isTorneoCampaign={isTorneoCampaign}
-                torneoTeams={isTorneoCampaign ? torneoTeams : null}
-                onTorneoTeamsReload={isTorneoCampaign ? reloadTorneoTeams : undefined}
                 autoOpenEdit={openEditCharacterId === char.id}
               />
             ))}
