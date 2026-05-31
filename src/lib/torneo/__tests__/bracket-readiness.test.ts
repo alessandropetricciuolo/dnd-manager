@@ -65,12 +65,12 @@ test("triello is not ready until the final winner has been advanced", () => {
     reason: "Completa prima gli incontri precedenti del tabellone.",
   });
 
-  matches[6] = { ...final, status: "completed", winner_team_id: "team-1" };
+  matches[6] = { ...final, status: "completed", winner_team_id: "team-2" };
   assert.deepEqual(getBracketMatchReadiness(triello, matches), {
     ready: false,
     reason: "Il tabellone non ha ancora ricevuto il vincitore corretto.",
   });
 
-  matches[7] = { ...triello, team_a_id: "team-1", team_b_id: "team-1" };
+  matches[7] = { ...triello, team_a_id: "team-2", team_b_id: "team-2" };
   assert.deepEqual(getBracketMatchReadiness(matches[7]!, matches), { ready: true });
 });
