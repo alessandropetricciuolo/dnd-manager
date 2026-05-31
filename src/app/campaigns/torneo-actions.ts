@@ -2,7 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
-import { buildEightTeamBracketPlan, BRACKET_ROUND } from "@/lib/torneo/bracket";
+import {
+  buildEightTeamBracketPlan,
+  BRACKET_ROUND,
+  resolveBracketSlotAfterAdvance,
+} from "@/lib/torneo/bracket";
 import type {
   TorneoMatchStatus,
   TorneoMatchWithTeams,
@@ -377,7 +381,10 @@ export async function setTorneoMatchStatusAction(
   const patch: Record<string, unknown> = { status };
   if (status === "pending") {
     patch.winner_team_id = null;
+    patch.winner_character_id = null;
     patch.completed_at = null;
+    patch.team_a_damage_total = 0;
+    patch.team_b_damage_total = 0;
   }
 
   const { error } = await check.supabase
@@ -406,7 +413,7 @@ async function advanceBracketWinner(
   campaignId: string,
   completedMatchId: string,
   winnerTeamId: string
-): Promise<void> {
+): Promise<Result> {
   const { data: completed } = await supabase
     .from("torneo_matches")
     .select("advances_to_match_id, advances_to_slot, bracket_round, match_kind")
@@ -414,25 +421,72 @@ async function advanceBracketWinner(
     .eq("campaign_id", campaignId)
     .maybeSingle();
 
-  if (!completed?.advances_to_match_id || !completed.advances_to_slot) return;
+  if (!completed?.advances_to_match_id || !completed.advances_to_slot) {
+    return { success: true };
+  }
+
+  const { data: target } = await supabase
+    .from("torneo_matches")
+    .select("team_a_id, team_b_id, match_kind")
+    .eq("id", completed.advances_to_match_id)
+    .eq("campaign_id", campaignId)
+    .maybeSingle();
+
+  if (!target) {
+    return { success: false, error: "Incontro successivo nel tabellone non trovato." };
+  }
+
+  const { data: teams } = await supabase
+    .from("torneo_teams")
+    .select("id")
+    .eq("campaign_id", campaignId)
+    .order("sort_order", { ascending: true });
+
+  const fallbackTeamId = (teams ?? []).map((t) => t.id).find((id) => id !== winnerTeamId);
+  if (!fallbackTeamId) {
+    return { success: false, error: "Impossibile aggiornare il tabellone (nessuna squadra di riserva)." };
+  }
 
   const slot = completed.advances_to_slot as "a" | "b";
-  const patch =
-    slot === "a" ? { team_a_id: winnerTeamId } : { team_b_id: winnerTeamId };
+  const matchKind = (target.match_kind ?? "bracket") as "bracket" | "triello";
+  const { teamAId, teamBId } = resolveBracketSlotAfterAdvance(
+    target.team_a_id,
+    target.team_b_id,
+    slot,
+    winnerTeamId,
+    matchKind,
+    fallbackTeamId
+  );
 
-  await supabase
+  const { error: advanceErr } = await supabase
     .from("torneo_matches")
-    .update(patch)
+    .update({ team_a_id: teamAId, team_b_id: teamBId })
     .eq("id", completed.advances_to_match_id)
     .eq("campaign_id", campaignId);
 
+  if (advanceErr) {
+    return {
+      success: false,
+      error: `Aggiornamento tabellone fallito: ${advanceErr.message}`,
+    };
+  }
+
   if (completed.bracket_round === BRACKET_ROUND.FINAL) {
-    await supabase
+    const { error: trielloErr } = await supabase
       .from("torneo_matches")
       .update({ team_a_id: winnerTeamId, team_b_id: winnerTeamId })
       .eq("campaign_id", campaignId)
       .eq("match_kind", "triello");
+
+    if (trielloErr) {
+      return {
+        success: false,
+        error: `Triello non aggiornato: ${trielloErr.message}`,
+      };
+    }
   }
+
+  return { success: true };
 }
 
 export async function generateTorneoBracketAction(campaignId: string): Promise<Result<{ matchCount: number }>> {
@@ -549,6 +603,13 @@ export async function completeTorneoMatchAction(
     }
   }
 
+  if (!isTriello && winnerTeamId) {
+    const advanceRes = await advanceBracketWinner(check.supabase, campaignId, matchId, winnerTeamId);
+    if (!advanceRes.success) {
+      return { success: false, error: advanceRes.error };
+    }
+  }
+
   const { error } = await check.supabase
     .from("torneo_matches")
     .update({
@@ -564,10 +625,6 @@ export async function completeTorneoMatchAction(
     .eq("campaign_id", campaignId);
 
   if (error) return { success: false, error: error.message };
-
-  if (!isTriello && winnerTeamId) {
-    await advanceBracketWinner(check.supabase, campaignId, matchId, winnerTeamId);
-  }
 
   revalidateTorneo(campaignId);
   return { success: true };
