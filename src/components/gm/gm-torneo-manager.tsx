@@ -39,6 +39,7 @@ import { cn } from "@/lib/utils";
 import { sanitizeInitiativeTrackerState } from "@/components/gm/initiative-tracker";
 import { persistTorneoMatchInitiative } from "@/components/gm/torneo-match-tracker";
 import { loadTorneoMatchInitiativeAction } from "@/app/campaigns/torneo-live-actions";
+import { getBracketMatchReadiness } from "@/lib/torneo/bracket";
 
 type Props = {
   campaignId: string;
@@ -556,6 +557,8 @@ export function GmTorneoManager({
             const onStation2 = m.id === station2MatchId;
             const isDone = m.status === "completed";
             const matchDamage = damageForMatch(m);
+            const readiness = getBracketMatchReadiness(m, matches);
+            const canPlay = readiness.ready;
             return (
               <li
                 key={m.id}
@@ -588,6 +591,9 @@ export function GmTorneoManager({
                     ({m.team_a_damage_total}–{m.team_b_damage_total} danni)
                   </p>
                 ) : null}
+                {!isDone && !readiness.ready ? (
+                  <p className="mt-1 text-[10px] text-amber-300/80">{readiness.reason}</p>
+                ) : null}
                 <div className="mt-2 flex flex-wrap gap-1">
                   {!isDone ? (
                     <>
@@ -596,7 +602,7 @@ export function GmTorneoManager({
                         size="sm"
                         variant="outline"
                         className="h-7 text-[10px]"
-                        disabled={busy}
+                        disabled={busy || !canPlay}
                         onClick={() => void (isActive ? resumeMatch(m, 1) : startMatch(m, 1))}
                       >
                         {isActive ? "T1 Riprendi" : "T1 Avvia"}
@@ -606,7 +612,7 @@ export function GmTorneoManager({
                         size="sm"
                         variant="outline"
                         className="h-7 text-[10px]"
-                        disabled={busy}
+                        disabled={busy || !canPlay}
                         onClick={() => void (onStation2 ? resumeMatch(m, 2) : startMatch(m, 2))}
                       >
                         {onStation2 ? "T2 Riprendi" : "T2 Avvia"}
@@ -618,7 +624,7 @@ export function GmTorneoManager({
                             type="button"
                             size="sm"
                             className="h-7 text-[10px]"
-                            disabled={busy}
+                            disabled={busy || !canPlay}
                             onClick={() => void declareTrielloWinner(m, mem.character_id)}
                           >
                             Vince {mem.name}
@@ -631,7 +637,7 @@ export function GmTorneoManager({
                             size="sm"
                             className="h-7 text-[10px]"
                             style={{ borderColor: m.team_a.color }}
-                            disabled={busy}
+                            disabled={busy || !canPlay}
                             onClick={() => void declareWinner(m, m.team_a_id)}
                           >
                             Vince {m.team_a.name}
@@ -641,7 +647,7 @@ export function GmTorneoManager({
                             size="sm"
                             className="h-7 text-[10px]"
                             style={{ borderColor: m.team_b.color }}
-                            disabled={busy}
+                            disabled={busy || !canPlay}
                             onClick={() => void declareWinner(m, m.team_b_id)}
                           >
                             Vince {m.team_b.name}

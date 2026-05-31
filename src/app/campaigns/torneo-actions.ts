@@ -2,7 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
-import { buildEightTeamBracketPlan, BRACKET_ROUND } from "@/lib/torneo/bracket";
+import {
+  buildEightTeamBracketPlan,
+  BRACKET_ROUND,
+  getBracketMatchReadiness,
+  type BracketReadinessMatch,
+} from "@/lib/torneo/bracket";
 import type {
   TorneoMatchStatus,
   TorneoMatchWithTeams,
@@ -42,6 +47,41 @@ function revalidateTorneo(campaignId: string) {
   revalidatePath(`/campaigns/${campaignId}/gm-screen`);
   revalidatePath(`/campaigns/${campaignId}/torneo-tabellone`);
   revalidatePath(`/campaigns/${campaignId}`);
+}
+
+function coerceReadinessRow(row: Record<string, unknown>): BracketReadinessMatch {
+  return {
+    id: String(row.id),
+    team_a_id: String(row.team_a_id),
+    team_b_id: String(row.team_b_id),
+    match_kind: row.match_kind === "triello" ? "triello" : "bracket",
+    bracket_round: typeof row.bracket_round === "number" ? row.bracket_round : null,
+    advances_to_match_id: typeof row.advances_to_match_id === "string" ? row.advances_to_match_id : null,
+    advances_to_slot: row.advances_to_slot === "a" || row.advances_to_slot === "b" ? row.advances_to_slot : null,
+    winner_team_id: typeof row.winner_team_id === "string" ? row.winner_team_id : null,
+    status: typeof row.status === "string" ? row.status : "pending",
+  };
+}
+
+async function loadMatchReadiness(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  campaignId: string,
+  matchId: string
+): Promise<Result<{ match: BracketReadinessMatch; matches: BracketReadinessMatch[] }>> {
+  const { data, error } = await supabase
+    .from("torneo_matches")
+    .select(
+      "id, team_a_id, team_b_id, match_kind, bracket_round, advances_to_match_id, advances_to_slot, winner_team_id, status"
+    )
+    .eq("campaign_id", campaignId);
+
+  if (error) return { success: false, error: error.message };
+
+  const matches = ((data ?? []) as Record<string, unknown>[]).map(coerceReadinessRow);
+  const match = matches.find((m) => m.id === matchId) ?? null;
+  if (!match) return { success: false, error: "Incontro non trovato." };
+
+  return { success: true, data: { match, matches } };
 }
 
 export async function getTorneoSetupAction(campaignId: string): Promise<
@@ -374,6 +414,16 @@ export async function setTorneoMatchStatusAction(
   const check = await ensureCampaignGm(campaignId);
   if (!check.ok) return { success: false, error: check.error };
 
+  if (status === "active") {
+    const loaded = await loadMatchReadiness(check.supabase, campaignId, matchId);
+    if (!loaded.success) return loaded;
+    const readiness = getBracketMatchReadiness(loaded.data.match, loaded.data.matches);
+    if (!readiness.ready) return { success: false, error: readiness.reason };
+    if (loaded.data.match.status === "completed") {
+      return { success: false, error: "Incontro già completato." };
+    }
+  }
+
   const patch: Record<string, unknown> = { status };
   if (status === "pending") {
     patch.winner_team_id = null;
@@ -424,14 +474,16 @@ async function advanceBracketWinner(
     .from("torneo_matches")
     .update(patch)
     .eq("id", completed.advances_to_match_id)
-    .eq("campaign_id", campaignId);
+    .eq("campaign_id", campaignId)
+    .eq("status", "pending");
 
   if (completed.bracket_round === BRACKET_ROUND.FINAL) {
     await supabase
       .from("torneo_matches")
       .update({ team_a_id: winnerTeamId, team_b_id: winnerTeamId })
       .eq("campaign_id", campaignId)
-      .eq("match_kind", "triello");
+      .eq("match_kind", "triello")
+      .eq("status", "pending");
   }
 }
 
@@ -446,13 +498,6 @@ export async function generateTorneoBracketAction(campaignId: string): Promise<R
     return { success: false, error: "Servono esattamente 8 squadre per il tabellone." };
   }
 
-  const { error: delErr } = await check.supabase
-    .from("torneo_matches")
-    .delete()
-    .eq("campaign_id", campaignId);
-
-  if (delErr) return { success: false, error: delErr.message };
-
   let plan;
   try {
     plan = buildEightTeamBracketPlan(setup.data.teams);
@@ -460,47 +505,18 @@ export async function generateTorneoBracketAction(campaignId: string): Promise<R
     return { success: false, error: e instanceof Error ? e.message : "Errore tabellone." };
   }
 
-  const insertedIds: string[] = [];
+  const { data: matchCount, error: rpcErr } = await check.supabase.rpc("regenerate_torneo_bracket_atomic", {
+    p_campaign_id: campaignId,
+    p_plan: plan,
+  });
 
-  for (let i = 0; i < plan.length; i += 1) {
-    const slot = plan[i]!;
-    const { data, error } = await check.supabase
-      .from("torneo_matches")
-      .insert({
-        campaign_id: campaignId,
-        team_a_id: slot.teamAId,
-        team_b_id: slot.teamBId,
-        label: slot.label,
-        sort_order: i,
-        status: "pending",
-        match_kind: slot.matchKind,
-        bracket_round: slot.round,
-        bracket_slot: slot.slot,
-      })
-      .select("id")
-      .single();
-
-    if (error || !data) return { success: false, error: error?.message ?? "Errore creazione incontro." };
-    insertedIds.push(data.id);
-  }
-
-  for (let i = 0; i < plan.length; i += 1) {
-    const slot = plan[i]!;
-    if (slot.advancesToMatchIndex == null || !slot.advancesToSlot) continue;
-    const childId = insertedIds[slot.advancesToMatchIndex];
-    if (!childId) continue;
-    await check.supabase
-      .from("torneo_matches")
-      .update({
-        advances_to_match_id: childId,
-        advances_to_slot: slot.advancesToSlot,
-      })
-      .eq("id", insertedIds[i]!)
-      .eq("campaign_id", campaignId);
-  }
+  if (rpcErr) return { success: false, error: rpcErr.message };
 
   revalidateTorneo(campaignId);
-  return { success: true, data: { matchCount: plan.length } };
+  return {
+    success: true,
+    data: { matchCount: typeof matchCount === "number" ? matchCount : plan.length },
+  };
 }
 
 export async function completeTorneoMatchAction(
@@ -517,14 +533,12 @@ export async function completeTorneoMatchAction(
   const check = await ensureCampaignGm(campaignId);
   if (!check.ok) return { success: false, error: check.error };
 
-  const { data: match } = await check.supabase
-    .from("torneo_matches")
-    .select("team_a_id, team_b_id, match_kind")
-    .eq("id", matchId)
-    .eq("campaign_id", campaignId)
-    .maybeSingle();
-
-  if (!match) return { success: false, error: "Incontro non trovato." };
+  const loaded = await loadMatchReadiness(check.supabase, campaignId, matchId);
+  if (!loaded.success) return loaded;
+  const { match } = loaded.data;
+  if (match.status === "completed") return { success: false, error: "Incontro già completato." };
+  const readiness = getBracketMatchReadiness(match, loaded.data.matches);
+  if (!readiness.ready) return { success: false, error: readiness.reason };
 
   const isTriello = match.match_kind === "triello";
   const winnerTeamId = payload.winnerTeamId?.trim() || null;
@@ -549,7 +563,7 @@ export async function completeTorneoMatchAction(
     }
   }
 
-  const { error } = await check.supabase
+  const { data: updated, error } = await check.supabase
     .from("torneo_matches")
     .update({
       status: "completed",
@@ -561,9 +575,13 @@ export async function completeTorneoMatchAction(
       notes: payload.notes?.trim() || null,
     })
     .eq("id", matchId)
-    .eq("campaign_id", campaignId);
+    .eq("campaign_id", campaignId)
+    .neq("status", "completed")
+    .select("id")
+    .maybeSingle();
 
   if (error) return { success: false, error: error.message };
+  if (!updated) return { success: false, error: "Incontro già completato." };
 
   if (!isTriello && winnerTeamId) {
     await advanceBracketWinner(check.supabase, campaignId, matchId, winnerTeamId);

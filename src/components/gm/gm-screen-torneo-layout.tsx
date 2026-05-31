@@ -181,7 +181,9 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
     };
   }, [station2Match, station2State.entries]);
 
-  const publishMatchId = focusedRemoteMatchId ?? station1MatchId;
+  const focusedMatchLoaded =
+    focusedRemoteMatchId === station1MatchId || focusedRemoteMatchId === station2MatchId;
+  const publishMatchId = focusedMatchLoaded ? focusedRemoteMatchId : focusedRemoteMatchId ? null : station1MatchId;
   const publishState =
     publishMatchId === station2MatchId
       ? station2State
