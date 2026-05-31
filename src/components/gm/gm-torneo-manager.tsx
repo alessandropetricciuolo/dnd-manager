@@ -29,8 +29,7 @@ import type { InitiativeTrackerState } from "@/components/gm/initiative-tracker"
 import { computeMatchDamageTotals } from "@/lib/torneo/compute-match-damage";
 import { isTorneoMatchPlayable } from "@/lib/torneo/map-match-row";
 import {
-  buildInitiativeEntriesForMatch,
-  buildInitiativeEntriesForTriello,
+  buildMatchInitiativeState,
   buildCharacterTeamMap,
   torneoActiveMatchStorageKey,
   torneoInitiativeStorageKey,
@@ -275,6 +274,25 @@ export function GmTorneoManager({
   };
 
   const startMatch = async (match: TorneoMatchWithTeams, station: 1 | 2) => {
+    const setupRes = await getTorneoSetupAction(campaignId);
+    const freshTeams = setupRes.success && setupRes.data ? setupRes.data.teams : teams;
+    const freshMatch = setupRes.success && setupRes.data
+      ? setupRes.data.matches.find((m) => m.id === match.id) ?? match
+      : match;
+
+    const initiativeState = buildMatchInitiativeState(freshMatch, freshTeams);
+    if (initiativeState.entries.length === 0) {
+      const missingSides = [freshMatch.team_a, freshMatch.team_b]
+        .filter((s) => s.isPlaceholder)
+        .map((s) => s.name);
+      if (missingSides.length > 0) {
+        toast.error(`Attendi i vincitori del tabellone (${missingSides.join(", ")}).`);
+      } else {
+        toast.error("Assegna almeno un PG a ciascuna squadra dell'incontro, poi salva le assegnazioni.");
+      }
+      return;
+    }
+
     setBusy(true);
     const res = await setTorneoMatchStatusAction(campaignId, match.id, "active");
     setBusy(false);
@@ -283,28 +301,23 @@ export function GmTorneoManager({
       return;
     }
     if (station === 1) persistActiveMatch(match.id);
-    let entries;
-    if (match.match_kind === "triello") {
-      const squad = teams.find((t) => t.id === match.team_a_id);
-      if (!squad) {
-        toast.error("Squadra campione non trovata per il triello.");
-        return;
-      }
-      entries = buildInitiativeEntriesForTriello(squad);
+
+    await persistTorneoMatchInitiative(campaignId, match.id, initiativeState, liveSyncEnabled);
+    onLoadMatch(station, match.id, initiativeState);
+    toast.success(
+      `Incontro avviato su tavolo ${station} · ${initiativeState.entries.length} PG in initiative.`
+    );
+    if (setupRes.success && setupRes.data) {
+      applySetup(setupRes.data.teams, setupRes.data.matches);
     } else {
-      entries = buildInitiativeEntriesForMatch(match, teams);
+      void refresh({ silent: true });
     }
-    const state = sanitizeInitiativeTrackerState({ entries });
-    await persistTorneoMatchInitiative(campaignId, match.id, state, liveSyncEnabled);
-    onLoadMatch(station, match.id, state);
-    toast.success(`Incontro avviato su tavolo ${station}.`);
-    void refresh({ silent: true });
   };
 
   const resumeMatch = async (match: TorneoMatchWithTeams, station: 1 | 2) => {
     if (station === 1) persistActiveMatch(match.id);
     const restored = await loadMatchState(match);
-    if (restored) {
+    if (restored?.entries.length) {
       onLoadMatch(station, match.id, restored);
       toast.message(`Incontro ripreso su tavolo ${station}.`);
       return;

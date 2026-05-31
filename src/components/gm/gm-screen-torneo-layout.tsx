@@ -273,19 +273,23 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
               <TorneoMatchTracker
                 campaignId={campaignId}
                 match={station1Match}
+                teams={teams}
                 liveSyncEnabled={liveSyncEnabled}
                 characterTeamMap={characterTeamMap}
                 stationLabel="Tavolo 1"
                 initiativeHandleRef={station1Ref}
+                syncState={station1State}
                 onStateChange={setStation1State}
               />
               <TorneoMatchTracker
                 campaignId={campaignId}
                 match={station2Match}
+                teams={teams}
                 liveSyncEnabled={liveSyncEnabled}
                 characterTeamMap={characterTeamMap}
                 stationLabel="Tavolo 2"
                 initiativeHandleRef={station2Ref}
+                syncState={station2State}
                 onStateChange={setStation2State}
               />
             </div>

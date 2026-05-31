@@ -37,6 +37,7 @@ export function TorneoTableOperatorClient({ campaignId, livePublicId, match, tea
         <TorneoMatchTracker
           campaignId={campaignId}
           match={match}
+          teams={teams}
           liveSyncEnabled
           characterTeamMap={characterTeamMap}
           stationLabel={`Live ${livePublicId.slice(0, 8)}…`}

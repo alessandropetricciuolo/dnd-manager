@@ -1,4 +1,8 @@
-import type { InitiativeEntry } from "@/components/gm/initiative-tracker";
+import {
+  sanitizeInitiativeTrackerState,
+  type InitiativeEntry,
+  type InitiativeTrackerState,
+} from "@/components/gm/initiative-tracker";
 import type { TorneoMatchWithTeams, TorneoTeamWithMembers } from "@/lib/torneo/types";
 
 export type TorneoCharacterTeamInfo = {
@@ -54,41 +58,72 @@ export function buildInitiativeEntriesForTriello(team: TorneoTeamWithMembers): I
   });
 }
 
+function appendSquadMembers(
+  entries: InitiativeEntry[],
+  squad: TorneoTeamWithMembers,
+  stamp: number
+): void {
+  for (const m of squad.members) {
+    const hp = Math.max(0, m.hit_points ?? 0);
+    entries.push({
+      id: `init-${stamp}-${m.character_id}`,
+      name: m.name,
+      type: "pc",
+      characterClass: m.character_class,
+      armorClass: Math.max(0, m.armor_class ?? 0),
+      hp,
+      maxHp: hp,
+      initiative: 0,
+      playerId: m.character_id,
+      damageDealt: 0,
+      teamId: squad.id,
+      teamName: squad.name,
+      teamColor: squad.color,
+    });
+  }
+}
+
+/** PG delle squadre già definite nell'incontro (ignora slot ancora placeholder). */
 export function buildInitiativeEntriesForMatch(
   match: TorneoMatchWithTeams,
   teams: TorneoTeamWithMembers[]
 ): InitiativeEntry[] {
   const teamMap = new Map(teams.map((t) => [t.id, t]));
-  if (!match.team_a_id || !match.team_b_id) return [];
-  const squadA = teamMap.get(match.team_a_id);
-  const squadB = teamMap.get(match.team_b_id);
-  if (!squadA || !squadB) return [];
-
   const entries: InitiativeEntry[] = [];
   const stamp = Date.now();
 
-  for (const squad of [squadA, squadB]) {
-    for (const m of squad.members) {
-      const hp = Math.max(0, m.hit_points ?? 0);
-      entries.push({
-        id: `init-${stamp}-${m.character_id}`,
-        name: m.name,
-        type: "pc",
-        characterClass: m.character_class,
-        armorClass: Math.max(0, m.armor_class ?? 0),
-        hp,
-        maxHp: hp,
-        initiative: 0,
-        playerId: m.character_id,
-        damageDealt: 0,
-        teamId: squad.id,
-        teamName: squad.name,
-        teamColor: squad.color,
-      });
-    }
+  const sides = [
+    { teamId: match.team_a_id, isPlaceholder: match.team_a.isPlaceholder },
+    { teamId: match.team_b_id, isPlaceholder: match.team_b.isPlaceholder },
+  ] as const;
+
+  for (const side of sides) {
+    if (!side.teamId || side.isPlaceholder) continue;
+    const squad = teamMap.get(side.teamId);
+    if (!squad) continue;
+    appendSquadMembers(entries, squad, stamp);
   }
 
   return entries;
+}
+
+/** Stato initiative iniziale per un incontro (tutti i PG delle squadre coinvolte). */
+export function buildMatchInitiativeState(
+  match: TorneoMatchWithTeams,
+  teams: TorneoTeamWithMembers[]
+): InitiativeTrackerState {
+  let entries: InitiativeEntry[] = [];
+
+  if (match.match_kind === "triello") {
+    const squad = match.team_a_id && !match.team_a.isPlaceholder
+      ? teams.find((t) => t.id === match.team_a_id)
+      : null;
+    if (squad) entries = buildInitiativeEntriesForTriello(squad);
+  } else {
+    entries = buildInitiativeEntriesForMatch(match, teams);
+  }
+
+  return sanitizeInitiativeTrackerState({ entries });
 }
 
 export function sumDamageByTeam(

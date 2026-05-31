@@ -10,7 +10,8 @@ import {
 } from "@/components/gm/initiative-tracker";
 import { useTorneoMatchInitiativeSync } from "@/hooks/use-torneo-match-initiative-sync";
 import { saveTorneoMatchInitiativeAction } from "@/app/campaigns/torneo-live-actions";
-import { torneoInitiativeStorageKey } from "@/lib/torneo/initiative";
+import { buildMatchInitiativeState, torneoInitiativeStorageKey } from "@/lib/torneo/initiative";
+import type { TorneoTeamWithMembers } from "@/lib/torneo/types";
 import { computeMatchDamageTotals } from "@/lib/torneo/compute-match-damage";
 import type { TorneoCharacterTeamInfo } from "@/lib/torneo/initiative";
 import type { TorneoMatchWithTeams } from "@/lib/torneo/types";
@@ -25,6 +26,9 @@ type Props = {
   className?: string;
   onStateChange?: (state: InitiativeTrackerState) => void;
   initiativeHandleRef?: React.RefObject<InitiativeTrackerHandle>;
+  /** Stato del tavolo gestito dal GM screen (evita sovrascrittura con snapshot vuoto). */
+  syncState?: InitiativeTrackerState;
+  teams?: TorneoTeamWithMembers[];
 };
 
 export function TorneoMatchTracker({
@@ -36,14 +40,28 @@ export function TorneoMatchTracker({
   className,
   onStateChange,
   initiativeHandleRef,
+  syncState,
+  teams = [],
 }: Props) {
-  const [state, setState] = useState<InitiativeTrackerState>(emptyInitiativeTrackerState());
+  const isControlled = syncState !== undefined;
+  const [internalState, setInternalState] = useState<InitiativeTrackerState>(emptyInitiativeTrackerState());
+  const state = isControlled ? syncState : internalState;
   const matchId = match?.id ?? null;
 
-  const onStateFromRemote = useCallback((next: InitiativeTrackerState) => {
-    setState(next);
-    onStateChange?.(next);
-  }, [onStateChange]);
+  const applyState = useCallback(
+    (next: InitiativeTrackerState) => {
+      if (!isControlled) setInternalState(next);
+      onStateChange?.(next);
+    },
+    [isControlled, onStateChange]
+  );
+
+  const onStateFromRemote = useCallback(
+    (next: InitiativeTrackerState) => {
+      applyState(next);
+    },
+    [applyState]
+  );
 
   const { loadInitial } = useTorneoMatchInitiativeSync({
     campaignId,
@@ -55,44 +73,59 @@ export function TorneoMatchTracker({
 
   useEffect(() => {
     if (!matchId) {
-      setState(emptyInitiativeTrackerState());
+      if (!isControlled) applyState(emptyInitiativeTrackerState());
       return;
     }
 
+    if (isControlled) return;
+
     let cancelled = false;
     void (async () => {
+      let loaded: InitiativeTrackerState | null = null;
+
       if (liveSyncEnabled) {
-        const fromDb = await loadInitial();
+        loaded = await loadInitial();
         if (cancelled) return;
-        if (fromDb) {
-          setState(fromDb);
-          onStateChange?.(fromDb);
-          return;
+      }
+
+      if (!loaded?.entries.length) {
+        try {
+          const raw = localStorage.getItem(torneoInitiativeStorageKey(campaignId, matchId));
+          if (raw) {
+            loaded = sanitizeInitiativeTrackerState(JSON.parse(raw) as Partial<InitiativeTrackerState>);
+          }
+        } catch {
+          /* ignore */
         }
       }
-      try {
-        const raw = localStorage.getItem(torneoInitiativeStorageKey(campaignId, matchId));
-        if (raw) {
-          const restored = sanitizeInitiativeTrackerState(JSON.parse(raw) as Partial<InitiativeTrackerState>);
-          if (!cancelled) {
-            setState(restored);
-            onStateChange?.(restored);
+
+      if (!loaded?.entries.length && match && teams.length > 0) {
+        const seeded = buildMatchInitiativeState(match, teams);
+        if (seeded.entries.length > 0) {
+          loaded = seeded;
+          if (liveSyncEnabled) {
+            await saveTorneoMatchInitiativeAction(campaignId, matchId, seeded);
+          }
+          try {
+            localStorage.setItem(torneoInitiativeStorageKey(campaignId, matchId), JSON.stringify(seeded));
+          } catch {
+            /* ignore */
           }
         }
-      } catch {
-        /* ignore */
       }
+
+      if (cancelled || !loaded) return;
+      applyState(loaded);
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [campaignId, matchId, liveSyncEnabled, loadInitial, onStateChange]);
+  }, [campaignId, matchId, liveSyncEnabled, loadInitial, isControlled, match, teams, applyState]);
 
   const handleChange = useCallback(
     (next: InitiativeTrackerState) => {
-      setState(next);
-      onStateChange?.(next);
+      applyState(next);
       if (matchId && !liveSyncEnabled) {
         try {
           localStorage.setItem(torneoInitiativeStorageKey(campaignId, matchId), JSON.stringify(next));
@@ -101,7 +134,7 @@ export function TorneoMatchTracker({
         }
       }
     },
-    [campaignId, matchId, liveSyncEnabled, onStateChange]
+    [campaignId, matchId, liveSyncEnabled, applyState]
   );
 
   const torneoScoreboard = match
