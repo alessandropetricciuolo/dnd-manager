@@ -59,6 +59,7 @@ export function buildInitiativeEntriesForMatch(
   teams: TorneoTeamWithMembers[]
 ): InitiativeEntry[] {
   const teamMap = new Map(teams.map((t) => [t.id, t]));
+  if (!match.team_a_id || !match.team_b_id) return [];
   const squadA = teamMap.get(match.team_a_id);
   const squadB = teamMap.get(match.team_b_id);
   if (!squadA || !squadB) return [];

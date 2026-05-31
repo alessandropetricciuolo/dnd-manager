@@ -12,7 +12,7 @@ export function computeMatchDamageTotals(
   match: Pick<TorneoMatchWithTeams, "team_a_id" | "team_b_id">
 ): MatchDamageTotals {
   return {
-    teamA: sumDamageByTeam(entries, match.team_a_id),
-    teamB: sumDamageByTeam(entries, match.team_b_id),
+    teamA: match.team_a_id ? sumDamageByTeam(entries, match.team_a_id) : 0,
+    teamB: match.team_b_id ? sumDamageByTeam(entries, match.team_b_id) : 0,
   };
 }

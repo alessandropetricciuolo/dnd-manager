@@ -107,13 +107,13 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
     const totals = computeMatchDamageTotals(station1State.entries, station1Match);
     return {
       teamA: {
-        id: station1Match.team_a_id,
+        id: station1Match.team_a_id ?? "",
         name: station1Match.team_a.name,
         color: station1Match.team_a.color,
         total: totals.teamA,
       },
       teamB: {
-        id: station1Match.team_b_id,
+        id: station1Match.team_b_id ?? "",
         name: station1Match.team_b.name,
         color: station1Match.team_b.color,
         total: totals.teamB,
@@ -167,13 +167,13 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
     const totals = computeMatchDamageTotals(station2State.entries, station2Match);
     return {
       teamA: {
-        id: station2Match.team_a_id,
+        id: station2Match.team_a_id ?? "",
         name: station2Match.team_a.name,
         color: station2Match.team_a.color,
         total: totals.teamA,
       },
       teamB: {
-        id: station2Match.team_b_id,
+        id: station2Match.team_b_id ?? "",
         name: station2Match.team_b.name,
         color: station2Match.team_b.color,
         total: totals.teamB,

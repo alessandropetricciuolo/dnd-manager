@@ -79,13 +79,13 @@ export async function POST(request: Request, context: RouteContext) {
               const totals = computeMatchDamageTotals(state.entries, match);
               return {
                 teamA: {
-                  id: match.team_a_id,
+                  id: match.team_a_id ?? "",
                   name: match.team_a.name,
                   color: match.team_a.color,
                   damageTotal: totals.teamA,
                 },
                 teamB: {
-                  id: match.team_b_id,
+                  id: match.team_b_id ?? "",
                   name: match.team_b.name,
                   color: match.team_b.color,
                   damageTotal: totals.teamB,

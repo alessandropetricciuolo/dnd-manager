@@ -15,6 +15,8 @@ export type BracketSeedSlot = {
   matchKind: "bracket" | "triello";
   teamAId: string | null;
   teamBId: string | null;
+  teamAPlaceholder: string | null;
+  teamBPlaceholder: string | null;
   advancesToMatchIndex: number | null;
   advancesToSlot: "a" | "b" | null;
 };
@@ -27,49 +29,40 @@ const QF_PAIRINGS: Array<[number, number]> = [
   [2, 5],
 ];
 
-/** Indici squadre che possono qualificarsi alla semifinale `semiIndex` dai quarti collegati. */
-export function semiFeederTeamIndices(semiIndex: number): number[] {
-  if (semiIndex === 0) return [0, 7, 3, 4];
-  return [1, 6, 2, 5];
-}
-
-/** Dopo l'avanzamento di un vincitore, garantisce team_a_id ≠ team_b_id (tranne triello). */
+/** Dopo l'avanzamento di un vincitore, aggiorna lo slot e rimuove il placeholder corrispondente. */
 export function resolveBracketSlotAfterAdvance(
-  currentTeamA: string,
-  currentTeamB: string,
+  currentTeamA: string | null,
+  currentTeamB: string | null,
+  currentPlaceholderA: string | null,
+  currentPlaceholderB: string | null,
   slot: "a" | "b",
-  winnerTeamId: string,
-  matchKind: "bracket" | "triello",
-  distinctFallbackTeamId: string
-): { teamAId: string; teamBId: string } {
+  winnerTeamId: string
+): {
+  teamAId: string | null;
+  teamBId: string | null;
+  teamAPlaceholder: string | null;
+  teamBPlaceholder: string | null;
+} {
   let teamAId = currentTeamA;
   let teamBId = currentTeamB;
-  if (slot === "a") teamAId = winnerTeamId;
-  else teamBId = winnerTeamId;
+  let teamAPlaceholder = currentPlaceholderA;
+  let teamBPlaceholder = currentPlaceholderB;
 
-  if (matchKind !== "triello" && teamAId === teamBId) {
-    if (slot === "a") teamBId = distinctFallbackTeamId;
-    else teamAId = distinctFallbackTeamId;
+  if (slot === "a") {
+    teamAId = winnerTeamId;
+    teamAPlaceholder = null;
+  } else {
+    teamBId = winnerTeamId;
+    teamBPlaceholder = null;
   }
 
-  return { teamAId, teamBId };
-}
-
-function pickPlaceholderPair(
-  ordered: TorneoTeamWithMembers[],
-  excludeIndices: number[]
-): [string, string] {
-  const exclude = new Set(excludeIndices);
-  const candidates = ordered.filter((_, idx) => !exclude.has(idx));
-  if (candidates.length >= 2) {
-    return [candidates[0]!.id, candidates[1]!.id];
-  }
-  return [ordered[0]!.id, ordered[1]!.id];
+  return { teamAId, teamBId, teamAPlaceholder, teamBPlaceholder };
 }
 
 /**
- * Genera 7 incontri bracket + 1 triello (shell senza squadre fino all'avanzamento per SF/F/Triello).
- * `teams` deve avere esattamente 8 elementi (sort_order).
+ * Genera 7 incontri bracket + 1 triello.
+ * Solo i quarti hanno squadre reali; i turni successivi usano placeholder testuali
+ * finché i vincitori non avanzano.
  */
 export function buildEightTeamBracketPlan(teams: TorneoTeamWithMembers[]): BracketSeedSlot[] {
   if (teams.length !== 8) {
@@ -88,33 +81,48 @@ export function buildEightTeamBracketPlan(teams: TorneoTeamWithMembers[]): Brack
       matchKind: "bracket",
       teamAId: ordered[ai]!.id,
       teamBId: ordered[bi]!.id,
+      teamAPlaceholder: null,
+      teamBPlaceholder: null,
       advancesToMatchIndex: 4 + Math.floor(i / 2),
       advancesToSlot: i % 2 === 0 ? "a" : "b",
     });
   }
 
-  for (let i = 0; i < 2; i += 1) {
-    const [phA, phB] = pickPlaceholderPair(ordered, semiFeederTeamIndices(i));
-    plan.push({
-      round: BRACKET_ROUND.SEMI,
-      slot: i,
-      label: `Semifinale ${i + 1}`,
-      matchKind: "bracket",
-      teamAId: phA,
-      teamBId: phB,
-      advancesToMatchIndex: 6,
-      advancesToSlot: i === 0 ? "a" : "b",
-    });
-  }
+  plan.push({
+    round: BRACKET_ROUND.SEMI,
+    slot: 0,
+    label: "Semifinale 1",
+    matchKind: "bracket",
+    teamAId: null,
+    teamBId: null,
+    teamAPlaceholder: "Vincitore quarto 1",
+    teamBPlaceholder: "Vincitore quarto 2",
+    advancesToMatchIndex: 6,
+    advancesToSlot: "a",
+  });
 
-  const [finalPhA, finalPhB] = pickPlaceholderPair(ordered, []);
+  plan.push({
+    round: BRACKET_ROUND.SEMI,
+    slot: 1,
+    label: "Semifinale 2",
+    matchKind: "bracket",
+    teamAId: null,
+    teamBId: null,
+    teamAPlaceholder: "Vincitore quarto 3",
+    teamBPlaceholder: "Vincitore quarto 4",
+    advancesToMatchIndex: 6,
+    advancesToSlot: "b",
+  });
+
   plan.push({
     round: BRACKET_ROUND.FINAL,
     slot: 0,
     label: "Finale",
     matchKind: "bracket",
-    teamAId: finalPhA,
-    teamBId: finalPhB,
+    teamAId: null,
+    teamBId: null,
+    teamAPlaceholder: "Vincitore semifinale 1",
+    teamBPlaceholder: "Vincitore semifinale 2",
     advancesToMatchIndex: 7,
     advancesToSlot: "a",
   });
@@ -124,8 +132,10 @@ export function buildEightTeamBracketPlan(teams: TorneoTeamWithMembers[]): Brack
     slot: 0,
     label: "Triello · campione squadra",
     matchKind: "triello",
-    teamAId: ordered[0]!.id,
-    teamBId: ordered[0]!.id,
+    teamAId: null,
+    teamBId: null,
+    teamAPlaceholder: "Squadra campione",
+    teamBPlaceholder: "Squadra campione",
     advancesToMatchIndex: null,
     advancesToSlot: null,
   });

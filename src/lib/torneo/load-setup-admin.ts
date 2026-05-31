@@ -1,5 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { mapTorneoMatchRow } from "@/lib/torneo/map-match-row";
 import type { TorneoMatchWithTeams, TorneoTeamWithMembers } from "@/lib/torneo/types";
+
+const TORNEO_MATCH_SELECT =
+  "id, campaign_id, team_a_id, team_b_id, team_a_placeholder, team_b_placeholder, label, sort_order, status, match_kind, bracket_round, bracket_slot, advances_to_match_id, advances_to_slot, winner_team_id, winner_character_id, team_a_damage_total, team_b_damage_total, completed_at, notes, initiative_updated_at, timer_round_label, timer_duration_sec, timer_started_at, timer_paused_at";
 
 /** Caricamento torneo via service role (API telecomando / display). */
 export async function loadTorneoSetupAdmin(
@@ -30,9 +34,7 @@ export async function loadTorneoSetupAdmin(
 
   const { data: matchesRaw } = await admin
     .from("torneo_matches")
-    .select(
-      "id, campaign_id, team_a_id, team_b_id, label, sort_order, status, match_kind, bracket_round, bracket_slot, advances_to_match_id, advances_to_slot, winner_team_id, winner_character_id, team_a_damage_total, team_b_damage_total, completed_at, notes, initiative_updated_at, timer_round_label, timer_duration_sec, timer_started_at, timer_paused_at"
-    )
+    .select(TORNEO_MATCH_SELECT)
     .eq("campaign_id", campaignId)
     .order("sort_order", { ascending: true });
 
@@ -61,40 +63,7 @@ export async function loadTorneoSetupAdmin(
       }),
   }));
 
-  const matches: TorneoMatchWithTeams[] = matchesRaw.flatMap((row) => {
-    const teamA = teamById.get(row.team_a_id);
-    const teamB = teamById.get(row.team_b_id);
-    if (!teamA || !teamB) return [];
-    return [
-      {
-        id: row.id,
-        campaign_id: row.campaign_id,
-        team_a_id: row.team_a_id,
-        team_b_id: row.team_b_id,
-        label: row.label ?? null,
-        sort_order: row.sort_order,
-        status: row.status,
-        match_kind: row.match_kind ?? "bracket",
-        bracket_round: row.bracket_round ?? null,
-        bracket_slot: row.bracket_slot ?? null,
-        advances_to_match_id: row.advances_to_match_id ?? null,
-        advances_to_slot: row.advances_to_slot ?? null,
-        winner_team_id: row.winner_team_id ?? null,
-        winner_character_id: row.winner_character_id ?? null,
-        team_a_damage_total: row.team_a_damage_total,
-        team_b_damage_total: row.team_b_damage_total,
-        completed_at: row.completed_at ?? null,
-        notes: row.notes ?? null,
-        initiative_updated_at: row.initiative_updated_at ?? null,
-        timer_round_label: row.timer_round_label ?? null,
-        timer_duration_sec: row.timer_duration_sec ?? null,
-        timer_started_at: row.timer_started_at ?? null,
-        timer_paused_at: row.timer_paused_at ?? null,
-        team_a: { id: teamA.id, name: teamA.name, color: teamA.color },
-        team_b: { id: teamB.id, name: teamB.name, color: teamB.color },
-      },
-    ];
-  });
+  const matches: TorneoMatchWithTeams[] = matchesRaw.map((row) => mapTorneoMatchRow(row, teamById));
 
   return { teams, matches };
 }

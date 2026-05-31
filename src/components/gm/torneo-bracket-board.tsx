@@ -29,6 +29,13 @@ function MatchNode({ m, display }: { m: TorneoMatchWithTeams; display: boolean }
           : m.team_b.name
         : null;
 
+  const renderSide = (side: TorneoMatchWithTeams["team_a"]) =>
+    side.isPlaceholder ? (
+      <span className="italic text-zinc-500">{side.name}</span>
+    ) : (
+      <span style={{ color: side.color }}>{side.name}</span>
+    );
+
   return (
     <div
       className={cn(
@@ -42,13 +49,13 @@ function MatchNode({ m, display }: { m: TorneoMatchWithTeams; display: boolean }
       <p className={cn("font-semibold text-zinc-100", display && "text-base")}>{matchTitle(m)}</p>
       {m.match_kind !== "triello" ? (
         <p className={cn("mt-1 truncate text-zinc-400", display ? "text-sm" : "mt-0.5 text-zinc-500")}>
-          <span style={{ color: m.team_a.color }}>{m.team_a.name}</span>
+          {renderSide(m.team_a)}
           {" vs "}
-          <span style={{ color: m.team_b.color }}>{m.team_b.name}</span>
+          {renderSide(m.team_b)}
         </p>
       ) : (
         <p className={cn("text-zinc-400", display ? "mt-1 text-sm" : "mt-0.5 text-zinc-500")}>
-          Squadra {m.team_a.name}
+          {m.team_a.isPlaceholder ? renderSide(m.team_a) : <>Squadra {renderSide(m.team_a)}</>}
         </p>
       )}
       {done && winnerName ? (

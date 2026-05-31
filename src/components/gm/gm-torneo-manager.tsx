@@ -27,6 +27,7 @@ import {
 import { getCampaignCharacters } from "@/app/campaigns/character-actions";
 import type { InitiativeTrackerState } from "@/components/gm/initiative-tracker";
 import { computeMatchDamageTotals } from "@/lib/torneo/compute-match-damage";
+import { isTorneoMatchPlayable } from "@/lib/torneo/map-match-row";
 import {
   buildInitiativeEntriesForMatch,
   buildInitiativeEntriesForTriello,
@@ -380,7 +381,7 @@ export function GmTorneoManager({
       toast.error(res.error);
       return;
     }
-    toast.success(`Tabellone creato (${res.data?.matchCount ?? 8} incontri).`);
+    toast.success("Tabellone creato: quarti pronti, i turni successivi si sbloccano con i risultati.");
     void refresh({ silent: true });
   };
 
@@ -555,6 +556,7 @@ export function GmTorneoManager({
             const isActive = m.id === activeMatchId;
             const onStation2 = m.id === station2MatchId;
             const isDone = m.status === "completed";
+            const playable = isTorneoMatchPlayable(m);
             const matchDamage = damageForMatch(m);
             return (
               <li
@@ -575,10 +577,15 @@ export function GmTorneoManager({
                   {m.label || "Incontro"}{" "}
                   <span className="text-zinc-500">
                     {m.match_kind === "triello"
-                      ? `· Triello ${m.team_a.name}`
+                      ? m.team_a.isPlaceholder
+                        ? `· ${m.team_a.name}`
+                        : `· Triello ${m.team_a.name}`
                       : `· ${m.team_a.name} vs ${m.team_b.name}`}
                   </span>
                 </p>
+                {!playable && !isDone ? (
+                  <p className="mt-1 text-[10px] italic text-zinc-500">In attesa dei vincitori del turno precedente</p>
+                ) : null}
                 {isDone && (m.winner_team_id || m.winner_character_id) ? (
                   <p className="mt-1 flex items-center gap-1 text-emerald-400">
                     <Trophy className="h-3 w-3" />
@@ -596,7 +603,7 @@ export function GmTorneoManager({
                         size="sm"
                         variant="outline"
                         className="h-7 text-[10px]"
-                        disabled={busy}
+                        disabled={busy || !playable}
                         onClick={() => void (isActive ? resumeMatch(m, 1) : startMatch(m, 1))}
                       >
                         {isActive ? "T1 Riprendi" : "T1 Avvia"}
@@ -606,7 +613,7 @@ export function GmTorneoManager({
                         size="sm"
                         variant="outline"
                         className="h-7 text-[10px]"
-                        disabled={busy}
+                        disabled={busy || !playable}
                         onClick={() => void (onStation2 ? resumeMatch(m, 2) : startMatch(m, 2))}
                       >
                         {onStation2 ? "T2 Riprendi" : "T2 Avvia"}
@@ -624,7 +631,7 @@ export function GmTorneoManager({
                             Vince {mem.name}
                           </Button>
                         ))
-                      ) : matchDamage ? (
+                      ) : matchDamage && m.team_a_id && m.team_b_id ? (
                         <>
                           <Button
                             type="button"
@@ -632,7 +639,7 @@ export function GmTorneoManager({
                             className="h-7 text-[10px]"
                             style={{ borderColor: m.team_a.color }}
                             disabled={busy}
-                            onClick={() => void declareWinner(m, m.team_a_id)}
+                            onClick={() => void declareWinner(m, m.team_a_id!)}
                           >
                             Vince {m.team_a.name}
                           </Button>
@@ -642,7 +649,7 @@ export function GmTorneoManager({
                             className="h-7 text-[10px]"
                             style={{ borderColor: m.team_b.color }}
                             disabled={busy}
-                            onClick={() => void declareWinner(m, m.team_b_id)}
+                            onClick={() => void declareWinner(m, m.team_b_id!)}
                           >
                             Vince {m.team_b.name}
                           </Button>

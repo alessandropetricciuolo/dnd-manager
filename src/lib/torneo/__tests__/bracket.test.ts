@@ -4,7 +4,6 @@ import {
   BRACKET_ROUND,
   buildEightTeamBracketPlan,
   resolveBracketSlotAfterAdvance,
-  semiFeederTeamIndices,
 } from "@/lib/torneo/bracket";
 import type { TorneoTeamWithMembers } from "@/lib/torneo/types";
 
@@ -19,84 +18,95 @@ function mockTeams(): TorneoTeamWithMembers[] {
   }));
 }
 
-test("placeholder semifinali fuori dai possibili vincitori dei quarti collegati", () => {
-  const ordered = mockTeams();
-  const plan = buildEightTeamBracketPlan(ordered);
+test("genera tabellone: quarti con squadre reali, turni successivi con placeholder", () => {
+  const plan = buildEightTeamBracketPlan(mockTeams());
+
+  assert.equal(plan.length, 8);
+
+  const quarters = plan.filter((p) => p.round === BRACKET_ROUND.QUARTER);
+  assert.equal(quarters.length, 4);
+  for (const q of quarters) {
+    assert.ok(q.teamAId);
+    assert.ok(q.teamBId);
+    assert.equal(q.teamAPlaceholder, null);
+    assert.equal(q.teamBPlaceholder, null);
+  }
 
   const semi0 = plan.find((p) => p.round === BRACKET_ROUND.SEMI && p.slot === 0)!;
   const semi1 = plan.find((p) => p.round === BRACKET_ROUND.SEMI && p.slot === 1)!;
-  const feeder0 = new Set(semiFeederTeamIndices(0).map((i) => ordered[i]!.id));
-  const feeder1 = new Set(semiFeederTeamIndices(1).map((i) => ordered[i]!.id));
+  const final = plan.find((p) => p.round === BRACKET_ROUND.FINAL)!;
+  const triello = plan.find((p) => p.round === BRACKET_ROUND.TRIO)!;
 
-  assert.notEqual(semi0.teamAId, semi0.teamBId);
-  assert.notEqual(semi1.teamAId, semi1.teamBId);
-  assert.equal(feeder0.has(semi0.teamAId!), false);
-  assert.equal(feeder0.has(semi0.teamBId!), false);
-  assert.equal(feeder1.has(semi1.teamAId!), false);
-  assert.equal(feeder1.has(semi1.teamBId!), false);
+  assert.equal(semi0.teamAId, null);
+  assert.equal(semi0.teamBId, null);
+  assert.equal(semi0.teamAPlaceholder, "Vincitore quarto 1");
+  assert.equal(semi0.teamBPlaceholder, "Vincitore quarto 2");
+
+  assert.equal(semi1.teamAPlaceholder, "Vincitore quarto 3");
+  assert.equal(semi1.teamBPlaceholder, "Vincitore quarto 4");
+
+  assert.equal(final.teamAPlaceholder, "Vincitore semifinale 1");
+  assert.equal(final.teamBPlaceholder, "Vincitore semifinale 2");
+
+  assert.equal(triello.teamAId, null);
+  assert.equal(triello.teamAPlaceholder, "Squadra campione");
 });
 
-test("resolveBracketSlotAfterAdvance: caso Q3 vince team-1 → SF2", () => {
-  const ordered = mockTeams();
-  const plan = buildEightTeamBracketPlan(ordered);
-  const semi2 = plan.find((p) => p.round === BRACKET_ROUND.SEMI && p.slot === 1)!;
-
-  const winnerQ3 = ordered[1]!.id;
-  const fallback = ordered[0]!.id;
+test("resolveBracketSlotAfterAdvance: vincitore Q1 popola semifinale 1 slot A", () => {
+  const winnerQ1 = "team-0";
   const next = resolveBracketSlotAfterAdvance(
-    semi2.teamAId!,
-    semi2.teamBId!,
+    null,
+    null,
+    "Vincitore quarto 1",
+    "Vincitore quarto 2",
     "a",
-    winnerQ3,
-    "bracket",
-    fallback
+    winnerQ1
   );
 
-  assert.equal(next.teamAId, winnerQ3);
-  assert.notEqual(next.teamBId, winnerQ3);
-  assert.notEqual(next.teamAId, next.teamBId);
+  assert.equal(next.teamAId, winnerQ1);
+  assert.equal(next.teamAPlaceholder, null);
+  assert.equal(next.teamBId, null);
+  assert.equal(next.teamBPlaceholder, "Vincitore quarto 2");
 });
 
-const QF_PAIRINGS: Array<[number, number]> = [
-  [0, 7],
-  [3, 4],
-  [1, 6],
-  [2, 5],
-];
-
-test("semifinali con squadre distinte per tutti i 16 esiti dei quarti", () => {
+test("simulazione avanzamento: tutti i quarti riempiono le semifinali", () => {
   const ordered = mockTeams();
   const plan = buildEightTeamBracketPlan(ordered);
+  const qfWinners = ["team-0", "team-3", "team-1", "team-2"];
 
-  const qfWinnerChoices = QF_PAIRINGS.map(([a, b]) => [ordered[a]!.id, ordered[b]!.id] as const);
+  type SlotState = {
+    teamAId: string | null;
+    teamBId: string | null;
+    teamAPlaceholder: string | null;
+    teamBPlaceholder: string | null;
+  };
 
-  for (let mask = 0; mask < 16; mask += 1) {
-    const state = plan.map((p) => ({
-      teamA: p.teamAId!,
-      teamB: p.teamBId!,
-      kind: p.matchKind,
-    }));
+  const state: SlotState[] = plan.map((p) => ({
+    teamAId: p.teamAId,
+    teamBId: p.teamBId,
+    teamAPlaceholder: p.teamAPlaceholder,
+    teamBPlaceholder: p.teamBPlaceholder,
+  }));
 
-    for (let q = 0; q < 4; q += 1) {
-      const pickB = (mask >> q) & 1;
-      const winnerId = qfWinnerChoices[q]![pickB]!;
-      const slot = plan[q]!;
-      const targetIdx = slot.advancesToMatchIndex!;
-      const advSlot = slot.advancesToSlot!;
-      const target = state[targetIdx]!;
-      const fallback = ordered.find((t) => t.id !== winnerId)!.id;
-      const next = resolveBracketSlotAfterAdvance(
-        target.teamA,
-        target.teamB,
-        advSlot,
-        winnerId,
-        target.kind,
-        fallback
-      );
-      state[targetIdx] = { ...target, teamA: next.teamAId, teamB: next.teamBId };
-    }
-
-    assert.notEqual(state[4]!.teamA, state[4]!.teamB, `semi0 mask=${mask}`);
-    assert.notEqual(state[5]!.teamA, state[5]!.teamB, `semi1 mask=${mask}`);
+  for (let q = 0; q < 4; q += 1) {
+    const slot = plan[q]!;
+    const targetIdx = slot.advancesToMatchIndex!;
+    const target = state[targetIdx]!;
+    const next = resolveBracketSlotAfterAdvance(
+      target.teamAId,
+      target.teamBId,
+      target.teamAPlaceholder,
+      target.teamBPlaceholder,
+      slot.advancesToSlot!,
+      qfWinners[q]!
+    );
+    state[targetIdx] = next;
   }
+
+  assert.equal(state[4]!.teamAId, "team-0");
+  assert.equal(state[4]!.teamBId, "team-3");
+  assert.equal(state[5]!.teamAId, "team-1");
+  assert.equal(state[5]!.teamBId, "team-2");
+  assert.equal(state[4]!.teamAPlaceholder, null);
+  assert.equal(state[5]!.teamBPlaceholder, null);
 });

@@ -29,8 +29,10 @@ export type TorneoTeamWithMembers = TorneoTeamRow & {
 export type TorneoMatchRow = {
   id: string;
   campaign_id: string;
-  team_a_id: string;
-  team_b_id: string;
+  team_a_id: string | null;
+  team_b_id: string | null;
+  team_a_placeholder: string | null;
+  team_b_placeholder: string | null;
   label: string | null;
   sort_order: number;
   status: TorneoMatchStatus;
@@ -53,8 +55,8 @@ export type TorneoMatchRow = {
 };
 
 export type TorneoMatchWithTeams = TorneoMatchRow & {
-  team_a: { id: string; name: string; color: string };
-  team_b: { id: string; name: string; color: string };
+  team_a: { id: string; name: string; color: string; isPlaceholder: boolean };
+  team_b: { id: string; name: string; color: string; isPlaceholder: boolean };
   winner?: { id: string; name: string; color: string } | null;
 };
 
