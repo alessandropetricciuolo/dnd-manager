@@ -315,6 +315,8 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
         skipControlledEchoRef.current = false;
         return;
       }
+      // Evita di azzerare lo stato del parent prima che value sia sincronizzato su entries.
+      if (entries.length === 0 && (value?.entries.length ?? 0) > 0) return;
       onChange?.(state);
       return;
     }
@@ -337,8 +339,9 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
   ]);
 
   useEffect(() => {
+    if (isControlled && entries.length === 0 && (value?.entries.length ?? 0) > 0) return;
     onTrackerStateChange?.(buildTrackerState());
-  }, [buildTrackerState, onTrackerStateChange]);
+  }, [buildTrackerState, onTrackerStateChange, isControlled, value, entries.length]);
 
   useEffect(() => {
     if (!isTurnTimerRunning || entries.length === 0) return;

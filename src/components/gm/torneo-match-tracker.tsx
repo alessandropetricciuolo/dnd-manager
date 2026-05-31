@@ -70,10 +70,38 @@ export function TorneoMatchTracker({
     state,
     ignoreEmptyRemoteOverwrite: isControlled,
     onStateFromRemote: (next) => {
-      if (isControlled && next.entries.length === 0 && state.entries.length > 0) return;
+      if (isControlled && next.entries.length === 0) return;
       onStateFromRemote(next);
     },
   });
+
+  const seedFromTeams = useCallback(
+    (targetMatch: TorneoMatchWithTeams) => {
+      if (teams.length === 0) return null;
+      const seeded = buildMatchInitiativeState(targetMatch, teams);
+      if (seeded.entries.length === 0) return null;
+      return seeded;
+    },
+    [teams]
+  );
+
+  useEffect(() => {
+    if (!matchId || !match || !isControlled) return;
+    if (state.entries.length > 0) return;
+    const seeded = seedFromTeams(match);
+    if (!seeded) return;
+    onStateChange?.(seeded);
+    void persistTorneoMatchInitiative(campaignId, matchId, seeded, liveSyncEnabled);
+  }, [
+    campaignId,
+    isControlled,
+    liveSyncEnabled,
+    match,
+    matchId,
+    onStateChange,
+    seedFromTeams,
+    state.entries.length,
+  ]);
 
   useEffect(() => {
     if (!matchId) {

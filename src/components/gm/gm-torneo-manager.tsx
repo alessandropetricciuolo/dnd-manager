@@ -344,6 +344,25 @@ export function GmTorneoManager({
       toast.message(`Incontro ripreso su tavolo ${station}.`);
       return;
     }
+
+    const setupRes = await getTorneoSetupAction(campaignId);
+    const freshTeams = setupRes.success && setupRes.data ? setupRes.data.teams : teams;
+    const freshMatch = setupRes.success && setupRes.data
+      ? setupRes.data.matches.find((m) => m.id === match.id) ?? match
+      : match;
+    const seeded = buildMatchInitiativeState(freshMatch, freshTeams);
+    if (seeded.entries.length > 0) {
+      await persistTorneoMatchInitiative(campaignId, match.id, seeded, liveSyncEnabled);
+      onLoadMatch(station, match.id, seeded);
+      toast.success(`Initiative caricata (${seeded.entries.length} PG) su tavolo ${station}.`);
+      if (setupRes.success && setupRes.data) applySetup(setupRes.data.teams, setupRes.data.matches);
+      return;
+    }
+
+    if (match.status === "active") {
+      toast.error("Assegna almeno un PG a ciascuna squadra dell'incontro, poi salva le assegnazioni.");
+      return;
+    }
     await startMatch(match, station);
   };
 
