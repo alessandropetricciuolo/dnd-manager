@@ -417,9 +417,11 @@ export async function setTorneoMatchStatusAction(
   if (status === "active") {
     const loaded = await loadMatchReadiness(check.supabase, campaignId, matchId);
     if (!loaded.success) return loaded;
-    const readiness = getBracketMatchReadiness(loaded.data.match, loaded.data.matches);
+    const readinessData = loaded.data;
+    if (!readinessData) return { success: false, error: "Incontro non trovato." };
+    const readiness = getBracketMatchReadiness(readinessData.match, readinessData.matches);
     if (!readiness.ready) return { success: false, error: readiness.reason };
-    if (loaded.data.match.status === "completed") {
+    if (readinessData.match.status === "completed") {
       return { success: false, error: "Incontro già completato." };
     }
   }
@@ -535,9 +537,11 @@ export async function completeTorneoMatchAction(
 
   const loaded = await loadMatchReadiness(check.supabase, campaignId, matchId);
   if (!loaded.success) return loaded;
-  const { match } = loaded.data;
+  const readinessData = loaded.data;
+  if (!readinessData) return { success: false, error: "Incontro non trovato." };
+  const { match } = readinessData;
   if (match.status === "completed") return { success: false, error: "Incontro già completato." };
-  const readiness = getBracketMatchReadiness(match, loaded.data.matches);
+  const readiness = getBracketMatchReadiness(match, readinessData.matches);
   if (!readiness.ready) return { success: false, error: readiness.reason };
 
   const isTriello = match.match_kind === "triello";
