@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   InitiativeTracker,
   emptyInitiativeTrackerState,
+  initiativeStatesSyncEqual,
   sanitizeInitiativeTrackerState,
   type InitiativeTrackerHandle,
   type InitiativeTrackerState,
@@ -47,6 +48,7 @@ export function TorneoMatchTracker({
   const [internalState, setInternalState] = useState<InitiativeTrackerState>(emptyInitiativeTrackerState());
   const state = isControlled ? syncState : internalState;
   const matchId = match?.id ?? null;
+  const seededMatchRef = useRef<string | null>(null);
 
   const applyState = useCallback(
     (next: InitiativeTrackerState) => {
@@ -71,9 +73,14 @@ export function TorneoMatchTracker({
     ignoreEmptyRemoteOverwrite: isControlled,
     onStateFromRemote: (next) => {
       if (isControlled && next.entries.length === 0) return;
+      if (isControlled && initiativeStatesSyncEqual(state, next)) return;
       onStateFromRemote(next);
     },
   });
+
+  useEffect(() => {
+    seededMatchRef.current = null;
+  }, [matchId]);
 
   const seedFromTeams = useCallback(
     (targetMatch: TorneoMatchWithTeams) => {
@@ -87,9 +94,14 @@ export function TorneoMatchTracker({
 
   useEffect(() => {
     if (!matchId || !match || !isControlled) return;
-    if (state.entries.length > 0) return;
+    if (state.entries.length > 0) {
+      seededMatchRef.current = matchId;
+      return;
+    }
+    if (seededMatchRef.current === matchId) return;
     const seeded = seedFromTeams(match);
     if (!seeded) return;
+    seededMatchRef.current = matchId;
     onStateChange?.(seeded);
     void persistTorneoMatchInitiative(campaignId, matchId, seeded, liveSyncEnabled);
   }, [
@@ -216,7 +228,6 @@ export function TorneoMatchTracker({
           campaignType="torneo"
           value={state}
           onChange={handleChange}
-          onTrackerStateChange={handleChange}
           storageKeyOverride={
             liveSyncEnabled ? `torneo-live-db-${campaignId}-${match.id}` : torneoInitiativeStorageKey(campaignId, match.id)
           }

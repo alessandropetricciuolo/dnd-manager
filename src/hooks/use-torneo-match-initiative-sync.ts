@@ -8,6 +8,8 @@ import {
 } from "@/app/campaigns/torneo-live-actions";
 import {
   emptyInitiativeTrackerState,
+  initiativeStateSyncSignature,
+  initiativeStatesSyncEqual,
   sanitizeInitiativeTrackerState,
   type InitiativeTrackerState,
 } from "@/components/gm/initiative-tracker";
@@ -33,8 +35,11 @@ export function useTorneoMatchInitiativeSync({
   ignoreEmptyRemoteOverwrite = false,
 }: Options) {
   const lastSavedRef = useRef<string>("");
+  const lastSavedSigRef = useRef<string>("");
   const lastRemoteAtRef = useRef<string | null>(null);
   const selfSaveUntilRef = useRef(0);
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
   const loadInitial = useCallback(async () => {
     if (!matchId || !liveSyncEnabled) return null;
@@ -43,6 +48,7 @@ export function useTorneoMatchInitiativeSync({
     if (res.data?.state) {
       lastRemoteAtRef.current = res.data.updatedAt;
       lastSavedRef.current = JSON.stringify(res.data.state);
+      lastSavedSigRef.current = initiativeStateSyncSignature(res.data.state);
       return res.data.state;
     }
     return null;
@@ -88,8 +94,10 @@ export function useTorneoMatchInitiativeSync({
                   : (snap as Partial<InitiativeTrackerState>);
               const next = sanitizeInitiativeTrackerState(parsed);
               if (ignoreEmptyRemoteOverwrite && next.entries.length === 0) return;
+              if (initiativeStatesSyncEqual(stateRef.current, next)) return;
               lastRemoteAtRef.current = updatedAt;
               lastSavedRef.current = JSON.stringify(next);
+              lastSavedSigRef.current = initiativeStateSyncSignature(next);
               onStateFromRemote(next);
             } catch {
               /* ignore */
@@ -108,16 +116,17 @@ export function useTorneoMatchInitiativeSync({
   useEffect(() => {
     if (!matchId || !liveSyncEnabled) return;
 
-    const serialized = JSON.stringify(state);
-    if (serialized === lastSavedRef.current) return;
-    if (state.entries.length === 0 && lastSavedRef.current === JSON.stringify(emptyInitiativeTrackerState())) {
+    const syncSig = initiativeStateSyncSignature(state);
+    if (syncSig === lastSavedSigRef.current) return;
+    if (state.entries.length === 0 && lastSavedSigRef.current === initiativeStateSyncSignature(emptyInitiativeTrackerState())) {
       return;
     }
 
     const timer = window.setTimeout(() => {
       void saveTorneoMatchInitiativeAction(campaignId, matchId, state).then((res) => {
         if (res.success && res.data?.updatedAt) {
-          lastSavedRef.current = serialized;
+          lastSavedRef.current = JSON.stringify(state);
+          lastSavedSigRef.current = syncSig;
           lastRemoteAtRef.current = res.data.updatedAt;
           selfSaveUntilRef.current = Date.now() + 800;
         }

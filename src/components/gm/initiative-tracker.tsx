@@ -128,6 +128,31 @@ function formatTurnElapsed(seconds: number): string {
 
 const STORAGE_KEY_PREFIX = "gm-screen-initiative-";
 
+/** Signature per sync parent/DB: esclude turnElapsedSeconds (tick ogni secondo). */
+export function initiativeStateSyncSignature(state: InitiativeTrackerState): string {
+  return JSON.stringify({
+    entries: state.entries.map((e) => ({
+      id: e.id,
+      hp: e.hp,
+      maxHp: e.maxHp,
+      initiative: e.initiative,
+      damageDealt: e.damageDealt ?? 0,
+      damageTaken: e.damageTaken ?? 0,
+      isDead: e.isDead,
+    })),
+    currentTurnIndex: state.currentTurnIndex,
+    roundNumber: state.roundNumber,
+    isTurnTimerRunning: state.isTurnTimerRunning,
+  });
+}
+
+export function initiativeStatesSyncEqual(
+  a: InitiativeTrackerState,
+  b: InitiativeTrackerState
+): boolean {
+  return initiativeStateSyncSignature(a) === initiativeStateSyncSignature(b);
+}
+
 function areInitiativeEntriesEqual(a: InitiativeEntry[], b: InitiativeEntry[]) {
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i += 1) {
@@ -249,6 +274,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
   );
   const trackerRef = useRef<InitiativeTrackerState>(emptyInitiativeTrackerState());
   const skipControlledEchoRef = useRef(false);
+  const lastControlledParentSigRef = useRef<string>("");
 
   const buildTrackerState = useCallback(
     (overrides?: Partial<InitiativeTrackerState>): InitiativeTrackerState => ({
@@ -277,6 +303,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       prev.isTurnTimerRunning !== next.isTurnTimerRunning;
     if (!entriesChanged && !metaChanged) return;
     skipControlledEchoRef.current = true;
+    lastControlledParentSigRef.current = initiativeStateSyncSignature(next);
     if (entriesChanged) setEntries(next.entries);
     if (metaChanged || entriesChanged) {
       setCurrentTurnIndex(next.currentTurnIndex);
@@ -317,6 +344,9 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       }
       // Evita di azzerare lo stato del parent prima che value sia sincronizzato su entries.
       if (entries.length === 0 && (value?.entries.length ?? 0) > 0) return;
+      const sig = initiativeStateSyncSignature(state);
+      if (sig === lastControlledParentSigRef.current) return;
+      lastControlledParentSigRef.current = sig;
       onChange?.(state);
       return;
     }
@@ -339,9 +369,9 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
   ]);
 
   useEffect(() => {
-    if (isControlled && entries.length === 0 && (value?.entries.length ?? 0) > 0) return;
+    if (isControlled) return;
     onTrackerStateChange?.(buildTrackerState());
-  }, [buildTrackerState, onTrackerStateChange, isControlled, value, entries.length]);
+  }, [buildTrackerState, onTrackerStateChange, isControlled]);
 
   useEffect(() => {
     if (!isTurnTimerRunning || entries.length === 0) return;

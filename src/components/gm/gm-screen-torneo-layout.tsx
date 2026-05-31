@@ -200,6 +200,14 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
   const prevTurnIndex2 = useRef<number | null>(null);
 
   useEffect(() => {
+    prevTurnIndex1.current = null;
+  }, [station1MatchId]);
+
+  useEffect(() => {
+    prevTurnIndex2.current = null;
+  }, [station2MatchId]);
+
+  useEffect(() => {
     if (!liveSyncEnabled || !station1MatchId || station1State.entries.length === 0) return;
     const idx = station1State.currentTurnIndex;
     if (prevTurnIndex1.current === null) {
