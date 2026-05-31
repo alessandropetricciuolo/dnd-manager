@@ -1,7 +1,7 @@
-import archiver from "archiver";
 import { PassThrough } from "stream";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
+import { createZipArchiver } from "@/lib/zip/create-zip-archiver";
 import {
   CHARACTER_SHEETS_BUCKET,
   normalizeCharacterSheetStoragePath,
@@ -63,7 +63,7 @@ export async function buildCampaignCharacterSheetsZip(
   const filename = `barber-and-dragons-schede_${label}_${stamp}.zip`;
 
   const passThrough = new PassThrough();
-  const archive = archiver("zip", { zlib: { level: 6 } });
+  const archive = createZipArchiver({ zlib: { level: 6 } });
   archive.pipe(passThrough);
 
   const usedNames = new Set<string>();

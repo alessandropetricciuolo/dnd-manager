@@ -1,7 +1,8 @@
-import archiver from "archiver";
+import type archiver from "archiver";
 import { PassThrough } from "stream";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
+import { createZipArchiver } from "@/lib/zip/create-zip-archiver";
 import { collectSiteImages } from "./collect-images";
 import { downloadGmAttachment, downloadStorageObject, fetchImageForExport } from "./fetch-image";
 import type { CollectImagesOptions } from "./types";
@@ -48,7 +49,7 @@ export async function buildImagesZipStream(
   const filename = `barber-and-dragons-immagini_${scope}_${stamp}.zip`;
 
   const passThrough = new PassThrough();
-  const archive = archiver("zip", { zlib: { level: 6 } });
+  const archive = createZipArchiver({ zlib: { level: 6 } });
   archive.pipe(passThrough);
 
   archive.append(
