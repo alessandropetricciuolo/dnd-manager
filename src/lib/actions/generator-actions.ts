@@ -1,6 +1,7 @@
 'use server';
 
 import { buildGeneratedCharacterSheet } from "@/lib/sheet-generator/build-engine";
+import { buildQuickManualSections, type QuickManualSection } from "@/lib/sheet-generator/quick-manual-builder";
 import { mapGeneratedSheetToPdfFields } from "@/lib/sheet-generator/sheet-mapper";
 import type { CharacterGeneratorInput, GeneratedCharacterSheet } from "@/lib/sheet-generator/types";
 import { headers } from "next/headers";
@@ -10,6 +11,7 @@ export type GenerateSheetResult = {
   message: string;
   sheet?: GeneratedCharacterSheet;
   sheetData?: Record<string, unknown>;
+  quickManualSections?: QuickManualSection[];
   warnings?: string[];
 };
 
@@ -30,6 +32,7 @@ function parseInput(formData: FormData): CharacterGeneratorInput {
     weight: (formData.get("weight") as string | null)?.trim() || null,
     sex: (formData.get("sex") as string | null)?.trim() || null,
     powerPlayer: formData.get("powerPlayer") === "1" || formData.get("powerPlayer") === "on",
+    torneoMode: formData.get("torneoMode") === "1" || formData.get("torneoMode") === "on",
   };
 }
 
@@ -46,11 +49,15 @@ export async function generateSheetAction(formData: FormData): Promise<GenerateS
     const requestOrigin = host ? `${proto}://${host}` : null;
     const built = await buildGeneratedCharacterSheet(input, requestOrigin);
     const sheetData = mapGeneratedSheetToPdfFields(built.sheet);
+    const quickManualSections = input.torneoMode
+      ? await buildQuickManualSections(built.sheet)
+      : undefined;
     return {
       success: true,
       message: `Scheda generata: ${built.sheet.classLabel} lvl ${built.sheet.level}.`,
       sheet: built.sheet,
       sheetData,
+      quickManualSections,
       warnings: built.warnings,
     };
   } catch (error) {

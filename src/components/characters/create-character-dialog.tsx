@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { createCharacter } from "@/app/campaigns/character-actions";
 import { CharacterBuildFormFields } from "@/components/characters/character-build-form-fields";
 import { backgroundBySlug } from "@/lib/character-build-catalog";
+import type { QuickManualSection } from "@/lib/sheet-generator/quick-manual-builder";
 
 const MAX_TOTAL_MB = 4;
 const MAX_TOTAL_BYTES = MAX_TOTAL_MB * 1024 * 1024;
@@ -49,6 +50,7 @@ type StoredGeneratedSheet = {
   hitPoints: number;
   /** Presente se salvato dal generatore recente: consente di rigenerare il PDF con lo story in creazione PG. */
   sheetData?: Record<string, unknown>;
+  quickManualSections?: QuickManualSection[];
 };
 
 function parseStoredGeneratedSheet(raw: string | null): StoredGeneratedSheet | null {
@@ -60,6 +62,7 @@ function parseStoredGeneratedSheet(raw: string | null): StoredGeneratedSheet | n
       armorClass?: number;
       hitPoints?: number;
       sheetData?: unknown;
+      quickManualSections?: unknown;
     };
     if (
       typeof parsed.pdfBase64 === "string" &&
@@ -74,12 +77,16 @@ function parseStoredGeneratedSheet(raw: string | null): StoredGeneratedSheet | n
         !Array.isArray(parsed.sheetData)
           ? (parsed.sheetData as Record<string, unknown>)
           : undefined;
+      const quickManualSections = Array.isArray(parsed.quickManualSections)
+        ? (parsed.quickManualSections as QuickManualSection[])
+        : undefined;
       return {
         pdfBase64: parsed.pdfBase64,
         fileName: parsed.fileName,
         armorClass: parsed.armorClass,
         hitPoints: parsed.hitPoints,
         sheetData,
+        quickManualSections,
       };
     }
   } catch {
@@ -211,6 +218,9 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
               body: JSON.stringify({
                 fields: gen.sheetData,
                 fileName: gen.fileName,
+                ...(gen.quickManualSections?.length
+                  ? { quickManualSections: gen.quickManualSections }
+                  : {}),
                 storyText: background,
                 storyContextLine: buildStoryContextLineFromForm(formData),
               }),

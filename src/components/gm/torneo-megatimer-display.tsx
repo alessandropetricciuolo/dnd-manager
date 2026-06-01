@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createSupabaseBrowserClient } from "@/utils/supabase/client";
+import { loadTorneoMatchInitiativeAction } from "@/app/campaigns/torneo-live-actions";
 import { computeMatchTimerView, formatTimerMmSs } from "@/lib/torneo/match-timer";
 import { parseTorneoInitiativeSnapshot } from "@/lib/torneo/initiative-snapshot";
 import type { TorneoMatchTimerPayload } from "@/app/campaigns/torneo-live-actions";
@@ -26,15 +27,35 @@ export function TorneoMegatimerDisplay({
   className,
 }: Props) {
   const [fields, setFields] = useState(initialTimer);
-  const [initiativeSnapshot, setInitiativeSnapshot] = useState<ReturnType<typeof parseTorneoInitiativeSnapshot>>(
+  const [initiativeSnapshot, setInitiativeSnapshot] = useState<InitiativeTrackerState | null>(
     initialInitiative
   );
   const [now, setNow] = useState(Date.now());
+
+  const applyInitiative = useCallback((raw: unknown) => {
+    const parsed = parseTorneoInitiativeSnapshot(raw);
+    if (parsed?.entries.length) setInitiativeSnapshot(parsed);
+  }, []);
 
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 250);
     return () => window.clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const poll = async () => {
+      const res = await loadTorneoMatchInitiativeAction(campaignId, matchId);
+      if (cancelled || !res.success || !res.data?.state?.entries.length) return;
+      setInitiativeSnapshot(res.data.state);
+    };
+    void poll();
+    const id = window.setInterval(() => void poll(), 1500);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [campaignId, matchId]);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -63,10 +84,7 @@ export function TorneoMegatimerDisplay({
               timer_started_at: typeof row.timer_started_at === "string" ? row.timer_started_at : null,
               timer_paused_at: typeof row.timer_paused_at === "string" ? row.timer_paused_at : null,
             });
-            const snap = row.initiative_snapshot;
-            if (snap != null) {
-              setInitiativeSnapshot(parseTorneoInitiativeSnapshot(snap));
-            }
+            if (row.initiative_snapshot != null) applyInitiative(row.initiative_snapshot);
           }
         )
         .subscribe();
@@ -76,17 +94,22 @@ export function TorneoMegatimerDisplay({
       cancelled = true;
       if (channel) void supabase.removeChannel(channel);
     };
-  }, [campaignId, matchId]);
+  }, [campaignId, matchId, applyInitiative]);
 
   const view = computeMatchTimerView(fields, now);
   const pct =
     view.durationSec > 0 ? Math.min(100, (view.elapsedSec / view.durationSec) * 100) : 0;
 
-  const activePlayer = useMemo(() => {
+  const activeEntry = useMemo(() => {
     if (!initiativeSnapshot?.entries.length) return null;
-    const entry = initiativeSnapshot.entries[initiativeSnapshot.currentTurnIndex];
-    return entry?.name?.trim() || null;
+    return initiativeSnapshot.entries[initiativeSnapshot.currentTurnIndex] ?? null;
   }, [initiativeSnapshot]);
+
+  const roundNumber = initiativeSnapshot?.roundNumber ?? 1;
+  const turnPosition =
+    initiativeSnapshot && initiativeSnapshot.entries.length > 0
+      ? `${initiativeSnapshot.currentTurnIndex + 1}/${initiativeSnapshot.entries.length}`
+      : null;
 
   const showExpired = view.isExpired && view.durationSec > 0;
 
@@ -97,19 +120,32 @@ export function TorneoMegatimerDisplay({
         className
       )}
     >
-      <p className="mb-2 text-sm uppercase tracking-[0.3em] text-violet-400/80">Torneo · Timer turno</p>
-      <h1 className="mb-4 max-w-4xl text-xl font-semibold text-zinc-400 md:text-2xl">{matchLabel}</h1>
+      <p className="mb-2 text-sm uppercase tracking-[0.3em] text-violet-400/80">Torneo · Countdown turno</p>
+      <h1 className="mb-6 max-w-4xl text-lg font-medium text-zinc-500 md:text-xl">{matchLabel}</h1>
 
-      {activePlayer ? (
-        <div className="mb-8 max-w-3xl rounded-2xl border border-amber-500/40 bg-amber-950/30 px-8 py-5">
-          <p className="text-sm uppercase tracking-[0.25em] text-amber-200/70">Sta giocando</p>
-          <p className="mt-2 text-4xl font-bold leading-tight text-amber-50 md:text-5xl">{activePlayer}</p>
+      <p className="mb-2 text-sm uppercase tracking-[0.35em] text-violet-300/80">Round</p>
+      <p className="mb-6 font-mono text-[min(14vw,5rem)] font-black tabular-nums leading-none text-violet-200">
+        {roundNumber}
+      </p>
+
+      {activeEntry ? (
+        <div className="mb-8 w-full max-w-3xl rounded-2xl border border-amber-500/45 bg-amber-950/35 px-8 py-6">
+          <p className="text-sm uppercase tracking-[0.25em] text-amber-200/70">Personaggio in turno</p>
+          <p className="mt-3 text-[min(8vw,3.5rem)] font-bold leading-tight text-amber-50">{activeEntry.name}</p>
+          {activeEntry.teamName ? (
+            <p className="mt-2 text-lg text-amber-200/60">{activeEntry.teamName}</p>
+          ) : null}
         </div>
       ) : (
-        <p className="mb-8 text-sm text-zinc-600">In attesa dell&apos;initiative tracker…</p>
+        <p className="mb-8 text-base text-zinc-600">In attesa dell&apos;initiative tracker…</p>
       )}
 
-      <p className="mb-3 text-lg uppercase tracking-widest text-amber-300/90 md:text-xl">{view.roundLabel}</p>
+      {turnPosition ? (
+        <p className="mb-4 text-base uppercase tracking-widest text-zinc-400">
+          Turno {turnPosition}
+          {view.roundLabel && view.roundLabel !== "Round" ? ` · ${view.roundLabel}` : ""}
+        </p>
+      ) : null}
 
       {showExpired ? (
         <p className="font-mono text-[min(18vw,7rem)] font-black uppercase leading-none tracking-tight text-red-400">
@@ -138,7 +174,7 @@ export function TorneoMegatimerDisplay({
 
       <p className="mt-6 text-sm text-zinc-500">
         {showExpired
-          ? "Avanza il turno dal GM screen per ripartire"
+          ? "Avanza il turno dal GM screen o telecomando per ripartire"
           : view.isPaused
             ? "In pausa"
             : view.isRunning

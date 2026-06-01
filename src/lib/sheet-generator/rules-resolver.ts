@@ -17,6 +17,10 @@ import {
   preloadPhbMarkdown,
 } from "@/lib/server/phb-spell-excerpt";
 import { collapseRandomDiceTablesInBackgroundMarkdown } from "@/lib/sheet-generator/background-dice-table-roll";
+import {
+  pickCantripsSlotAware,
+  pickLeveledSpellsSlotAware,
+} from "@/lib/sheet-generator/spell-slot-picker";
 import type { AbilityKey, GeneratedSpell } from "@/lib/sheet-generator/types";
 import {
   detectThirdCasterSubclass,
@@ -1259,12 +1263,15 @@ export async function resolveGeneratorRules(
     const maxOnSheet = tcWizard ? tcWizard.maxSpellLevelOnList : maxSpellLevelOnSheet(classDef, input.level);
     const listByLevel = extractSpellListByMaxLevel(listRaw, maxOnSheet);
     const entries = parseSpellsWithLevelFromList(listByLevel);
-    const cantripEntries = input.powerPlayer
-      ? pickCantripsPowerTier(entries, cantripsKnown)
-      : pickRandomUnique(entries.filter((e) => e.level === 0), cantripsKnown);
-    const leveledEntries = input.powerPlayer
-      ? pickLeveledSpellsPowerTier(entries, spellsPrepared, maxOnSheet)
-      : pickLeveledSpellsBalanced(entries, spellsPrepared, maxOnSheet);
+    const cantripEntries = pickCantripsSlotAware(entries, cantripsKnown, !!input.powerPlayer);
+    const leveledEntries = pickLeveledSpellsSlotAware(
+      entries,
+      spellsPrepared,
+      maxOnSheet,
+      spellSlots,
+      input.classLabel,
+      !!input.powerPlayer
+    );
     const picked = [...cantripEntries, ...leveledEntries];
     await preloadPhbMarkdown(requestOrigin);
     for (const pickedSpell of picked) {
@@ -1280,6 +1287,7 @@ export async function resolveGeneratorRules(
         verbal: flags.verbal,
         somatic: flags.somatic,
         material: flags.material,
+        fullTextMd: mdSpell ? cleanRulesExcerpt(mdSpell) : null,
       });
     }
   }

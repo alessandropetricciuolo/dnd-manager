@@ -6,6 +6,7 @@ import {
   MAX_CHARACTER_STORY_PDF_CHARS,
   storyInputToPdfPlainText,
 } from "@/lib/pdf/append-character-story-page";
+import { appendPdfTextSections, type PdfTextSection } from "@/lib/pdf/pdf-text-sections";
 import { sanitizePdfAttachmentFileName } from "@/lib/security/pdf-filename";
 
 function resolveTemplatePath(): string | null {
@@ -94,6 +95,8 @@ export async function POST(req: Request): Promise<Response> {
       narrativeText?: string | null;
       /** Riga contestuale sotto il titolo (es. nome · classe · background). */
       storyContextLine?: string | null;
+      /** Manuale rapido (modalità torneo): inserito dopo la scheda, prima della storia. */
+      quickManualSections?: PdfTextSection[] | null;
     };
     const fields = enrichFieldsFromSpellList(body?.fields ?? {});
     const templateBytes = await resolveTemplateBytes(req);
@@ -132,6 +135,23 @@ export async function POST(req: Request): Promise<Response> {
     }
 
     form.updateFieldAppearances();
+
+    const quickManual = Array.isArray(body?.quickManualSections)
+      ? (body.quickManualSections as PdfTextSection[]).filter(
+          (s) => s && typeof s.title === "string" && typeof s.body === "string"
+        )
+      : [];
+    if (quickManual.length) {
+      const characterName =
+        typeof fields.CharacterName === "string"
+          ? fields.CharacterName
+          : valueToString(fields.CharacterName);
+      await appendPdfTextSections(pdfDoc, quickManual, {
+        documentTitle: characterName
+          ? `Manuale rapido — ${characterName}`
+          : "Manuale rapido",
+      });
+    }
 
     const rawStory =
       typeof body?.storyText === "string"

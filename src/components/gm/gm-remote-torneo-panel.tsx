@@ -1,12 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Pause, Play, RotateCcw, Timer } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { computeMatchTimerView, formatTimerMmSs } from "@/lib/torneo/match-timer";
-import { TORNEO_MATCH_COUNTDOWN_SEC } from "@/lib/torneo/timer-patch";
-import type { InitiativeRemoteSnapshot } from "@/lib/gm-remote/initiative-commands";
 import { GmRemoteInitiativePanel } from "./gm-remote-initiative-panel";
 
 type TorneoMatchRow = {
@@ -43,27 +40,6 @@ async function fetchTorneoMatches(publicId: string, token: string) {
   return { matches: j.matches, focusedMatchId: j.focusedMatchId ?? null };
 }
 
-async function fetchMatchState(publicId: string, token: string, matchId: string) {
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const res = await fetch(`${origin}/api/gm-remote/${publicId}/match-state`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ token, match_id: matchId }),
-  });
-  const j = (await res.json().catch(() => ({}))) as {
-    ok?: boolean;
-    snapshot?: InitiativeRemoteSnapshot | null;
-    timer?: {
-      timer_round_label: string | null;
-      timer_duration_sec: number | null;
-      timer_started_at: string | null;
-      timer_paused_at: string | null;
-    };
-  };
-  if (!res.ok || !j.ok) return null;
-  return { snapshot: j.snapshot ?? null, timer: j.timer ?? null };
-}
-
 function matchRowLabel(m: TorneoMatchRow): string {
   if (m.label) return m.label;
   if (m.matchKind === "triello") return `Triello · ${m.teamAName}`;
@@ -73,14 +49,7 @@ function matchRowLabel(m: TorneoMatchRow): string {
 export function GmRemoteTorneoPanel({ publicId, token, sending, onSend }: Props) {
   const [matches, setMatches] = useState<TorneoMatchRow[]>([]);
   const [focusedMatchId, setFocusedMatchId] = useState<string | null>(null);
-  const [timerFields, setTimerFields] = useState<{
-    timer_round_label: string | null;
-    timer_duration_sec: number | null;
-    timer_started_at: string | null;
-    timer_paused_at: string | null;
-  } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [now, setNow] = useState(Date.now());
 
   const refreshMeta = useCallback(async () => {
     const data = await fetchTorneoMatches(publicId, token);
@@ -97,33 +66,6 @@ export function GmRemoteTorneoPanel({ publicId, token, sending, onSend }: Props)
     return () => window.clearInterval(id);
   }, [refreshMeta]);
 
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), 500);
-    return () => window.clearInterval(id);
-  }, []);
-
-  useEffect(() => {
-    if (!focusedMatchId) {
-      setTimerFields(null);
-      return;
-    }
-    let cancelled = false;
-    void (async () => {
-      const data = await fetchMatchState(publicId, token, focusedMatchId);
-      if (cancelled || !data?.timer) return;
-      setTimerFields(data.timer);
-    })();
-    const id = window.setInterval(() => {
-      void fetchMatchState(publicId, token, focusedMatchId).then((data) => {
-        if (!cancelled && data?.timer) setTimerFields(data.timer);
-      });
-    }, 1000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(id);
-    };
-  }, [publicId, token, focusedMatchId]);
-
   const focusMatch = async (matchId: string) => {
     setFocusedMatchId(matchId);
     await onSend("torneo.focus_match", { match_id: matchId });
@@ -133,8 +75,6 @@ export function GmRemoteTorneoPanel({ publicId, token, sending, onSend }: Props)
     ...payload,
     match_id: focusedMatchId ?? undefined,
   });
-
-  const timerView = timerFields ? computeMatchTimerView(timerFields, now) : null;
 
   if (loading) {
     return (
@@ -180,63 +120,6 @@ export function GmRemoteTorneoPanel({ publicId, token, sending, onSend }: Props)
         </ul>
       </section>
 
-      {focusedMatchId && timerView ? (
-        <section className="rounded-xl border border-amber-900/40 bg-zinc-900/50 p-4">
-          <p className="mb-2 flex items-center justify-center gap-2 text-center text-xs font-medium uppercase tracking-wide text-amber-200/90">
-            <Timer className="h-3.5 w-3.5" />
-            Megatimer incontro
-          </p>
-          <p className="text-center font-mono text-3xl font-bold tabular-nums text-amber-100">
-            {timerView.isExpired ? "Tempo scaduto" : formatTimerMmSs(timerView.remainingSec)}
-          </p>
-          <p className="mt-1 text-center text-[10px] text-zinc-500">{timerView.roundLabel}</p>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <Button
-              type="button"
-              size="sm"
-              className="h-11 touch-manipulation"
-              disabled={sending}
-              onClick={() =>
-                void onSend(
-                  "torneo.timer_start",
-                  withMatch({ duration_sec: TORNEO_MATCH_COUNTDOWN_SEC, round_label: "Turno 1" })
-                )
-              }
-            >
-              <Play className="mr-1.5 h-4 w-4" />
-              Avvia 2 min
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="h-11 touch-manipulation"
-              disabled={sending}
-              onClick={() => void onSend("torneo.timer_pause", withMatch())}
-            >
-              <Pause className="mr-1.5 h-4 w-4" />
-              Pausa
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              className="h-10 col-span-2 touch-manipulation"
-              disabled={sending}
-              onClick={() =>
-                void onSend(
-                  "torneo.timer_reset",
-                  withMatch({ duration_sec: TORNEO_MATCH_COUNTDOWN_SEC, round_label: "Turno 1" })
-                )
-              }
-            >
-              <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-              Reset timer
-            </Button>
-          </div>
-        </section>
-      ) : null}
-
       <GmRemoteInitiativePanel
         publicId={publicId}
         token={token}
@@ -244,6 +127,7 @@ export function GmRemoteTorneoPanel({ publicId, token, sending, onSend }: Props)
         focusedMatchId={focusedMatchId}
         onSend={onSend}
         commandPayload={withMatch}
+        torneoMode
       />
     </div>
   );

@@ -22,6 +22,8 @@ type Props = {
   /** Incontro torneo: snapshot da match-state invece che sessione globale. */
   focusedMatchId?: string | null;
   commandPayload?: (base?: Record<string, unknown>) => Record<string, unknown>;
+  /** Torneo: solo controlli initiative tracker (niente timer locale). */
+  torneoMode?: boolean;
 };
 
 function formatTurnElapsed(seconds: number): string {
@@ -71,6 +73,7 @@ export function GmRemoteInitiativePanel({
   onSend,
   focusedMatchId,
   commandPayload,
+  torneoMode = false,
 }: Props) {
   const [snapshot, setSnapshot] = useState<InitiativeRemoteSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
@@ -134,11 +137,12 @@ export function GmRemoteInitiativePanel({
             </div>
           ) : null}
 
-          <div className="mb-4 grid grid-cols-2 gap-2 rounded-lg border border-orange-800/30 bg-zinc-950/50 p-3 text-center">
+          <div className={cn("mb-4 rounded-lg border border-orange-800/30 bg-zinc-950/50 p-3 text-center", torneoMode ? "" : "grid grid-cols-2 gap-2")}>
             <div>
-              <p className="text-[10px] uppercase text-zinc-500">Giro</p>
-              <p className="text-2xl font-bold tabular-nums text-orange-100">{snapshot.roundNumber}</p>
+              <p className="text-[10px] uppercase text-zinc-500">Round</p>
+              <p className="text-3xl font-bold tabular-nums text-orange-100">{snapshot.roundNumber}</p>
             </div>
+            {!torneoMode ? (
             <div>
               <p className="text-[10px] uppercase text-zinc-500">Timer turno</p>
               <p className="flex items-center justify-center gap-1 text-xl font-mono tabular-nums text-amber-100">
@@ -149,26 +153,32 @@ export function GmRemoteInitiativePanel({
                 {snapshot.isTurnTimerRunning ? "In corso" : "In pausa"}
               </p>
             </div>
+            ) : null}
           </div>
 
           {activeEntry ? (
-            <div className="mb-3 rounded-lg border border-amber-600/35 bg-amber-950/25 px-3 py-2 text-center">
-              <p className="text-[10px] uppercase text-amber-200/70">In turno</p>
-              <p className="truncate text-sm font-semibold text-amber-50">{activeEntry.name}</p>
+            <div className="mb-4 rounded-lg border border-amber-600/35 bg-amber-950/25 px-3 py-3 text-center">
+              <p className="text-[10px] uppercase text-amber-200/70">In turno ora</p>
+              <p className="truncate text-lg font-semibold text-amber-50">{activeEntry.name}</p>
+              {activeEntry.teamName ? (
+                <p className="truncate text-xs text-amber-200/60">{activeEntry.teamName}</p>
+              ) : null}
             </div>
           ) : null}
 
+          <Button
+            type="button"
+            size="lg"
+            className="mb-4 h-16 w-full touch-manipulation bg-amber-700 text-lg text-white hover:bg-amber-600"
+            disabled={sending}
+            onClick={() => void sendCmd("initiative.next_turn")}
+          >
+            <SkipForward className="mr-2 h-6 w-6" />
+            Prossimo turno
+          </Button>
+
+          {!torneoMode ? (
           <div className="mb-4 grid grid-cols-2 gap-2">
-            <Button
-              type="button"
-              size="lg"
-              className="h-14 touch-manipulation bg-amber-700 text-white hover:bg-amber-600"
-              disabled={sending}
-              onClick={() => void sendCmd("initiative.next_turn")}
-            >
-              <SkipForward className="mr-2 h-5 w-5" />
-              Turno
-            </Button>
             <Button
               type="button"
               size="lg"
@@ -206,6 +216,7 @@ export function GmRemoteInitiativePanel({
               Reset giro
             </Button>
           </div>
+          ) : null}
 
           <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-zinc-500">
             Ordine · danni fatti e subiti

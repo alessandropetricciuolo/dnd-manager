@@ -1,12 +1,14 @@
 "use client";
 
 import type { GeneratedCharacterSheet } from "@/lib/sheet-generator/types";
+import type { QuickManualSection } from "@/lib/sheet-generator/quick-manual-builder";
 
 type Props = {
   sheet: GeneratedCharacterSheet;
   sheetData?: Record<string, unknown> | null;
-  /** Narrazione PG (campo «Background / Storia» sulla card): aggiunta come pagina dopo la Scheda_Base nel PDF compilato. */
+  /** Narrazione PG: pagina extra dopo Manuale rapido (se presente). */
   storyText?: string | null;
+  quickManualSections?: QuickManualSection[];
 };
 
 function pdfStoryContextLine(sheet: GeneratedCharacterSheet): string {
@@ -32,7 +34,7 @@ function inventoryPreviewText(lines: string[]): string {
   return cleaned.map((s) => `• ${s}`).join("\n");
 }
 
-export function GeneratedSheetView({ sheet, sheetData, storyText }: Props) {
+export function GeneratedSheetView({ sheet, sheetData, storyText, quickManualSections = [] }: Props) {
   const storyPdf = typeof storyText === "string" ? storyText : "";
   const storyTrim = storyPdf.trim();
 
@@ -44,6 +46,7 @@ export function GeneratedSheetView({ sheet, sheetData, storyText }: Props) {
       body: JSON.stringify({
         fields: sheetData,
         fileName: `${sheet.characterName || "scheda"}-compilata.pdf`,
+        ...(quickManualSections.length ? { quickManualSections } : {}),
         ...(storyTrim
           ? { storyText: storyTrim, storyContextLine: pdfStoryContextLine(sheet) }
           : {}),

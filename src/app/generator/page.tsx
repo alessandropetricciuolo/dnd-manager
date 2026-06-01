@@ -9,6 +9,7 @@ import { subclassCatalogSourceSuffix, supplementSubclassesForClass } from "@/lib
 import { GeneratedSheetView } from "@/components/sheet-generator/generated-sheet-view";
 import { Textarea } from "@/components/ui/textarea";
 import type { GeneratedCharacterSheet } from "@/lib/sheet-generator/types";
+import type { QuickManualSection } from "@/lib/sheet-generator/quick-manual-builder";
 import { useSearchParams } from "next/navigation";
 import { saveGeneratedSheetToCharacter } from "@/app/campaigns/character-actions";
 
@@ -37,6 +38,7 @@ function GeneratorPageContent() {
       returnTo: searchParams.get("returnTo") ?? "",
       autogen: searchParams.get("autogen") === "1",
       powerPlayer: searchParams.get("powerPlayer") === "1",
+      torneoMode: searchParams.get("torneoMode") === "1",
     }),
     [searchParams]
   );
@@ -46,6 +48,7 @@ function GeneratorPageContent() {
   const [resultMessage, setResultMessage] = useState<string | null>(null);
   const [resultJson, setResultJson] = useState<string | null>(null);
   const [sheetDataObj, setSheetDataObj] = useState<Record<string, unknown> | null>(null);
+  const [quickManualSections, setQuickManualSections] = useState<QuickManualSection[]>([]);
   const [sheet, setSheet] = useState<GeneratedCharacterSheet | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [isSavingSheet, setIsSavingSheet] = useState(false);
@@ -119,6 +122,7 @@ function GeneratorPageContent() {
         body: JSON.stringify({
           fields: sheetDataObj,
           fileName: `${sheet.characterName || "scheda"}-compilata.pdf`,
+          ...(quickManualSections.length ? { quickManualSections } : {}),
           ...(characterStory.trim()
             ? {
                 storyText: characterStory.trim(),
@@ -179,6 +183,7 @@ function GeneratorPageContent() {
               armorClass: sheet.armorClass,
               hitPoints: sheet.hpMax,
               sheetData: sheetDataObj,
+              quickManualSections,
             })
           );
         } catch (e) {
@@ -219,6 +224,7 @@ function GeneratorPageContent() {
     setResultMessage(null);
     setResultJson(null);
     setSheetDataObj(null);
+    setQuickManualSections([]);
     setSheet(null);
     setWarnings([]);
     startTransition(async () => {
@@ -228,6 +234,7 @@ function GeneratorPageContent() {
       if (result.success && result.sheet) setSheet(result.sheet);
       if (result.success && result.sheetData) {
         setSheetDataObj(result.sheetData);
+        setQuickManualSections(result.quickManualSections ?? []);
         setResultJson(JSON.stringify(result.sheetData, null, 2));
       }
     });
@@ -255,6 +262,7 @@ function GeneratorPageContent() {
       weight: initial.weight,
       sex: initial.sex,
       powerPlayer: initial.powerPlayer,
+      torneoMode: initial.torneoMode,
     });
     if (autogenKeyRef.current === autogenKey) return;
     autogenKeyRef.current = autogenKey;
@@ -272,6 +280,7 @@ function GeneratorPageContent() {
     if (initial.weight) fd.set("weight", initial.weight);
     if (initial.sex) fd.set("sex", initial.sex);
     if (initial.powerPlayer) fd.set("powerPlayer", "1");
+    if (initial.torneoMode) fd.set("torneoMode", "1");
 
     startTransition(async () => {
       const result = await generateSheetAction(fd);
@@ -280,6 +289,7 @@ function GeneratorPageContent() {
       if (result.success && result.sheet) setSheet(result.sheet);
       if (result.success && result.sheetData) {
         setSheetDataObj(result.sheetData);
+        setQuickManualSections(result.quickManualSections ?? []);
         setResultJson(JSON.stringify(result.sheetData, null, 2));
       }
     });
@@ -496,6 +506,26 @@ function GeneratorPageContent() {
             <label className="flex cursor-pointer items-start gap-3 rounded-md border border-barber-gold/25 bg-barber-dark/50 px-4 py-3 text-sm text-barber-paper">
               <input
                 type="checkbox"
+                name="torneoMode"
+                value="1"
+                defaultChecked={initial.torneoMode}
+                disabled={isPending}
+                className="mt-1 h-4 w-4 shrink-0 rounded border-barber-gold/40 text-barber-red focus:ring-barber-gold"
+              />
+              <span>
+                <span className="font-medium text-barber-gold">Modalità torneo</span>
+                <span className="mt-1 block text-barber-paper/75">
+                  Aggiunge al PDF un Manuale rapido (dopo la scheda, prima della storia) con tratti razziali,
+                  privilegi di classe/sottoclasse e testo completo degli incantesimi scelti.
+                </span>
+              </span>
+            </label>
+          </div>
+
+          <div className="space-y-2">
+            <label className="flex cursor-pointer items-start gap-3 rounded-md border border-barber-gold/25 bg-barber-dark/50 px-4 py-3 text-sm text-barber-paper">
+              <input
+                type="checkbox"
                 name="powerPlayer"
                 value="1"
                 defaultChecked={initial.powerPlayer}
@@ -505,8 +535,8 @@ function GeneratorPageContent() {
               <span>
                 <span className="font-medium text-barber-gold">Power player (scheda)</span>
                 <span className="mt-1 block text-barber-paper/75">
-                  Trucchetti e incantesimi scelti da una tier list orientata al combattimento (nomi italiani del manuale),
-                  invece che casuali. Non cambia CA/PF né i punteggi.
+                  Trucchetti e incantesimi scelti da una tier list orientata al combattimento, rispettando
+                  gli slot disponibili per livello (niente liste piene solo di incantesimi al massimo livello).
                 </span>
               </span>
             </label>
@@ -553,7 +583,12 @@ function GeneratorPageContent() {
           </div>
         )}
         {sheet && (
-          <GeneratedSheetView sheet={sheet} sheetData={sheetDataObj} storyText={characterStory || null} />
+          <GeneratedSheetView
+            sheet={sheet}
+            sheetData={sheetDataObj}
+            storyText={characterStory || null}
+            quickManualSections={quickManualSections}
+          />
         )}
         {resultJson && (
           <div className="mt-5 rounded-md border border-barber-gold/25 bg-black/30 p-4">

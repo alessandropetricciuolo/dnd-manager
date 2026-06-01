@@ -1,4 +1,5 @@
 import { backgroundBySlug, backgroundStartingInventoryLines, raceBySlug } from "@/lib/character-build-catalog";
+import { computeRealisticArmorClass } from "@/lib/sheet-generator/armor-class";
 import { resolveGeneratorRules } from "@/lib/sheet-generator/rules-resolver";
 import { detectWildMagicBarbarianPath } from "@/lib/sheet-generator/third-caster-subclass";
 import type {
@@ -453,7 +454,8 @@ function computeCoreFromAbilities(
 
   const passivePerception = 10 + skills.perception.value;
   const initiative = abilityMods.dex;
-  const armorClass = Math.max(10 + abilityMods.dex, cfg.armorClassBase + Math.min(2, abilityMods.dex));
+  const armor = computeRealisticArmorClass(classLabel, abilityMods);
+  const armorClass = armor.ac;
   const hpMax = computeHpMax(lvl, cfg.hitDie, abilityMods.con);
   const weaponRows = cfg.weaponSet.map((w) => ({
     name: w.name,

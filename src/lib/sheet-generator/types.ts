@@ -35,6 +35,8 @@ export type CharacterGeneratorInput = {
   sex: string | null;
   /** Se true, gli incantesimi sulla scheda privilegiano una tier list orientata al combattimento. */
   powerPlayer?: boolean;
+  /** Modalità torneo: aggiunge Manuale rapido nel PDF (sezioni testo manuale). */
+  torneoMode?: boolean;
 };
 
 export type GeneratedSpell = {
@@ -46,6 +48,8 @@ export type GeneratedSpell = {
   verbal: boolean;
   somatic: boolean;
   material: boolean;
+  /** Testo completo dal manuale (per Manuale rapido torneo). */
+  fullTextMd?: string | null;
 };
 
 export type GeneratedCharacterSheet = {
