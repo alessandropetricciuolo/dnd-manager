@@ -2,13 +2,32 @@ import type { AbilityKey } from "@/lib/sheet-generator/types";
 
 export type ArmorClassResult = {
   ac: number;
-  /** Breve nota per inventario / debug (es. equipaggiamento presunto). */
+  /** Nota tecnica CA (campo breakdown legacy). */
   breakdown: string;
+  /** Voce inventario, es. «cotta di maglia». */
+  armorItem: string | null;
+  /** Voce inventario scudo, se presente. */
+  shieldItem: string | null;
 };
+
+type ArmorLoadout = {
+  ac: number;
+  breakdown: string;
+  armorItem: string | null;
+  shieldItem: string | null;
+};
+
+function loadout(
+  ac: number,
+  armorItem: string | null,
+  shieldItem: string | null,
+  breakdown: string
+): ArmorLoadout {
+  return { ac, armorItem, shieldItem, breakdown };
+}
 
 /**
  * CA da equipaggiamento tipico di 1° livello + difese senza armatura (PHB).
- * Non include incantesimi attivi (es. Armatura Magica) salvo dove è l'unica difesa plausibile.
  */
 export function computeRealisticArmorClass(
   classLabel: string,
@@ -20,58 +39,48 @@ export function computeRealisticArmorClass(
 
   switch (classLabel) {
     case "Barbaro":
-      return {
-        ac: 10 + dex + con,
-        breakdown: "Senza armatura (Forza del Barb.): 10 + DES + COS",
-      };
+      return loadout(
+        10 + dex + con,
+        null,
+        null,
+        `Senza armatura (Forza del Barb.): 10 + DES + COS`
+      );
     case "Monaco":
-      return {
-        ac: 10 + dex + wis,
-        breakdown: "Difesa senz'armatura: 10 + DES + SAG",
-      };
+      return loadout(10 + dex + wis, null, null, `Difesa senz'armatura: 10 + DES + SAG`);
     case "Mago":
     case "Stregone":
-      return {
-        ac: 10 + dex,
-        breakdown: "Nessuna armatura indossata (10 + DES)",
-      };
+      return loadout(10 + dex, null, null, "Nessuna armatura (10 + DES)");
     case "Warlock":
-      return {
-        ac: 11 + dex,
-        breakdown: "Armatura di cuoio (11 + DES)",
-      };
+      return loadout(11 + dex, "armatura di cuoio", null, "Armatura di cuoio (11 + DES)");
     case "Ladro":
     case "Bardo":
-      return {
-        ac: 11 + dex,
-        breakdown: "Armatura di cuoio (11 + DES)",
-      };
+      return loadout(11 + dex, "armatura di cuoio", null, "Armatura di cuoio (11 + DES)");
     case "Ranger":
-      return {
-        ac: 14 + Math.min(dex, 2),
-        breakdown: "Armatura di scaglie (14 + DES, max +2)",
-      };
+      return loadout(
+        14 + Math.min(dex, 2),
+        "armatura di scaglie",
+        null,
+        "Armatura di scaglie (14 + DES, max +2)"
+      );
     case "Druido":
-      return {
-        ac: 12 + Math.min(dex, 2),
-        breakdown: "Armatura di pelli (12 + DES, max +2, non metallica)",
-      };
+      return loadout(
+        12 + Math.min(dex, 2),
+        "armatura di pelli",
+        null,
+        "Armatura di pelli (12 + DES, max +2, non metallica)"
+      );
     case "Chierico":
     case "Paladino":
     case "Guerriero":
-      return {
-        ac: 18,
-        breakdown: "Cotta di maglia (16) + scudo (+2)",
-      };
+      return loadout(18, "cotta di maglia", "scudo", "Cotta di maglia (16) + scudo (+2)");
     case "Artefice":
-      return {
-        ac: 16 + Math.min(dex, 2),
-        breakdown: "Armatura di scaglie (14) + scudo (+2) + DES (max +2)",
-      };
+      return loadout(
+        16 + Math.min(dex, 2),
+        "armatura di scaglie",
+        "scudo",
+        "Armatura di scaglie (14) + scudo (+2) + DES (max +2)"
+      );
     default:
-      return {
-        ac: 10 + dex,
-        breakdown: "10 + DES",
-      };
+      return loadout(10 + dex, null, null, "10 + DES");
   }
 }

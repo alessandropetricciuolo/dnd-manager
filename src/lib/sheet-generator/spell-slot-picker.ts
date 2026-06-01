@@ -28,8 +28,8 @@ export function spellCapPerLevel(
       // Es. lv 5 con 2 slot L3 → al massimo 2 incantesimi L3 conosciuti.
       caps.set(lvl, Math.max(1, slots));
     } else {
-      // Preparati: più flessibilità, ma non tutti al massimo livello.
-      caps.set(lvl, Math.max(2, slots + 1));
+      // Preparati (paladino, chierico, …): il numero preparato può superare gli slot di un singolo livello.
+      caps.set(lvl, Math.max(slots + 2, 6));
     }
   }
 

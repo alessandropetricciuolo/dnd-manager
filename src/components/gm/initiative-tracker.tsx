@@ -44,6 +44,17 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { CHALLENGE_RATING_OPTIONS } from "@/lib/dnd-constants";
+import type { CombatSpellSlots } from "@/lib/combat-spell-slots";
+import {
+  combatSpellSlotsEqual,
+  normalizeCombatSpellSlots,
+  resetCombatSpellSlots,
+  restoreCombatSpellSlot,
+  spendCombatSpellSlot,
+  spellSlotsForCharacter,
+} from "@/lib/combat-spell-slots";
+import { SpellSlotsCell } from "@/components/gm/spell-slots-cell";
+import type { Json } from "@/types/database.types";
 
 export type InitiativeEntry = {
   id: string;
@@ -72,6 +83,8 @@ export type InitiativeEntry = {
   teamId?: string;
   teamName?: string;
   teamColor?: string;
+  /** Slot incantesimo in combattimento (caster). */
+  spellSlots?: CombatSpellSlots;
 };
 
 export type InitiativeTrackerState = {
@@ -95,10 +108,12 @@ export function emptyInitiativeTrackerState(): InitiativeTrackerState {
 }
 
 function normalizeInitiativeEntry(entry: InitiativeEntry): InitiativeEntry {
+  const spellSlots = normalizeCombatSpellSlots(entry.spellSlots);
   return {
     ...entry,
     damageDealt: Math.max(0, Math.trunc(entry.damageDealt ?? 0)),
     damageTaken: Math.max(0, Math.trunc(entry.damageTaken ?? 0)),
+    ...(spellSlots ? { spellSlots } : { spellSlots: undefined }),
   };
 }
 
@@ -139,6 +154,7 @@ export function initiativeStateSyncSignature(state: InitiativeTrackerState): str
       damageDealt: e.damageDealt ?? 0,
       damageTaken: e.damageTaken ?? 0,
       isDead: e.isDead,
+      spellSlots: e.spellSlots?.remaining,
     })),
     currentTurnIndex: state.currentTurnIndex,
     roundNumber: state.roundNumber,
@@ -177,7 +193,8 @@ function areInitiativeEntriesEqual(a: InitiativeEntry[], b: InitiativeEntry[]) {
       (left.damageTaken ?? 0) !== (right.damageTaken ?? 0) ||
       left.teamId !== right.teamId ||
       left.teamName !== right.teamName ||
-      left.teamColor !== right.teamColor
+      left.teamColor !== right.teamColor ||
+      !combatSpellSlotsEqual(left.spellSlots, right.spellSlots)
     ) {
       return false;
     }
@@ -205,8 +222,11 @@ type InitiativeTrackerProps = {
     id: string;
     name: string;
     character_class: string | null;
+    class_subclass?: string | null;
+    level?: number;
     armor_class?: number | null;
     hit_points?: number | null;
+    rules_snapshot?: Json | null;
   }>;
   value?: InitiativeTrackerState;
   onChange?: (state: InitiativeTrackerState) => void;
@@ -257,7 +277,18 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
   const [editingCell, setEditingCell] = useState<{ id: string; field: "name" | "hp" | "initiative" | "armorClass" } | null>(null);
   const [addPcOpen, setAddPcOpen] = useState(false);
   const [addMonsterOpen, setAddMonsterOpen] = useState(false);
-  const [pcList, setPcList] = useState<Array<{ id: string; name: string; characterClass: string | null; armorClass: number | null; hitPoints: number | null }>>([]);
+  const [pcList, setPcList] = useState<
+    Array<{
+      id: string;
+      name: string;
+      characterClass: string | null;
+      classSubclass: string | null;
+      level: number;
+      armorClass: number | null;
+      hitPoints: number | null;
+      rulesSnapshot: Json | null;
+    }>
+  >([]);
   const [selectedPcIds, setSelectedPcIds] = useState<Set<string>>(new Set());
   const [monsterList, setMonsterList] = useState<MonsterForInitiative[]>([]);
   const [selectedMonsterIds, setSelectedMonsterIds] = useState<Set<string>>(new Set());
@@ -420,6 +451,9 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
         id: generateId(),
         name: newName,
         damageDealt: 0,
+        ...(entry.spellSlots
+          ? { spellSlots: resetCombatSpellSlots(entry.spellSlots) }
+          : {}),
       },
     ]);
   }, [entries, getNextDuplicateName]);
@@ -476,6 +510,36 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       prev.map((e) =>
         e.id === entryId
           ? { ...e, damageTaken: Math.max(0, (e.damageTaken ?? 0) + delta) }
+          : e
+      )
+    );
+  }, []);
+
+  const spendSpellSlot = useCallback((entryId: string, level: number) => {
+    setEntries((prev) =>
+      prev.map((e) => {
+        if (e.id !== entryId || !e.spellSlots) return e;
+        const next = spendCombatSpellSlot(e.spellSlots, level);
+        return next ? { ...e, spellSlots: next } : e;
+      })
+    );
+  }, []);
+
+  const restoreSpellSlot = useCallback((entryId: string, level: number) => {
+    setEntries((prev) =>
+      prev.map((e) => {
+        if (e.id !== entryId || !e.spellSlots) return e;
+        const next = restoreCombatSpellSlot(e.spellSlots, level);
+        return next ? { ...e, spellSlots: next } : e;
+      })
+    );
+  }, []);
+
+  const resetEntrySpellSlots = useCallback((entryId: string) => {
+    setEntries((prev) =>
+      prev.map((e) =>
+        e.id === entryId && e.spellSlots
+          ? { ...e, spellSlots: resetCombatSpellSlots(e.spellSlots) }
           : e
       )
     );
@@ -546,8 +610,11 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
           id: character.id,
           name: character.name,
           characterClass: character.character_class ?? null,
+          classSubclass: character.class_subclass ?? null,
+          level: character.level ?? 1,
           armorClass: character.armor_class ?? null,
           hitPoints: character.hit_points ?? null,
+          rulesSnapshot: character.rules_snapshot ?? null,
         }))
       );
       return;
@@ -559,8 +626,11 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
           id: c.id,
           name: c.name,
           characterClass: c.character_class ?? null,
+          classSubclass: c.class_subclass ?? null,
+          level: c.level ?? 1,
           armorClass: c.armor_class ?? null,
           hitPoints: c.hit_points ?? null,
+          rulesSnapshot: c.rules_snapshot ?? null,
         }))
       );
     } else {
@@ -569,9 +639,26 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
   }, [availableCharacters, campaignId]);
 
   const addPcEntry = useCallback(
-    (characterId: string, name: string, characterClass: string | null, armorClass: number | null, hitPoints: number | null) => {
+    (
+      characterId: string,
+      name: string,
+      characterClass: string | null,
+      armorClass: number | null,
+      hitPoints: number | null,
+      spellSlotInput?: {
+        rules_snapshot?: Json | null;
+        class_subclass?: string | null;
+        level?: number;
+      }
+    ) => {
       const hp = Math.max(0, hitPoints ?? 0);
       const team = characterTeamMap?.[characterId];
+      const spellSlots = spellSlotsForCharacter({
+        rules_snapshot: spellSlotInput?.rules_snapshot ?? null,
+        character_class: characterClass,
+        class_subclass: spellSlotInput?.class_subclass ?? null,
+        level: spellSlotInput?.level ?? 1,
+      });
       setEntries((prev) => [
         ...prev,
         {
@@ -585,6 +672,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
           initiative: 0,
           playerId: characterId,
           damageDealt: 0,
+          ...(spellSlots ? { spellSlots } : {}),
           ...(team
             ? { teamId: team.teamId, teamName: team.teamName, teamColor: team.teamColor }
             : {}),
@@ -604,7 +692,11 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     for (const id of ids) {
       const player = map.get(id);
       if (player) {
-        addPcEntry(id, player.name, player.characterClass, player.armorClass, player.hitPoints);
+        addPcEntry(id, player.name, player.characterClass, player.armorClass, player.hitPoints, {
+          rules_snapshot: player.rulesSnapshot,
+          class_subclass: player.classSubclass,
+          level: player.level,
+        });
       }
     }
     setAddPcOpen(false);
@@ -810,6 +902,10 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     return "text-red-400";
   };
 
+  const showSpellSlotsColumn = entries.some((e) => (e.spellSlots?.max.length ?? 0) > 0);
+  const tableColSpan =
+    7 + (showTeamColumn ? 1 : 0) + (showSpellSlotsColumn ? 1 : 0);
+
   return (
     <div className="flex h-full w-full flex-col p-3 text-zinc-100">
       <header className="mb-2 space-y-2 border-b border-amber-600/30 pb-2">
@@ -827,7 +923,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
             <ArrowDownUp className="mr-1 h-3 w-3" />
             Ordina
           </Button>
-          {entries.length > 0 && (
+          {entries.length > 0 ? (
             <>
               <Button
                 variant="outline"
@@ -849,8 +945,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
                 Reset
               </Button>
             </>
-          )}
-          {entries.length === 0 && lastResetState && (
+          ) : lastResetState ? (
             <Button
               variant="outline"
               size="sm"
@@ -860,54 +955,118 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
             >
               Annulla Reset
             </Button>
-          )}
+          ) : null}
+          <span className="mx-0.5 h-4 w-px bg-amber-600/30" aria-hidden />
+          <Button
+            size="sm"
+            className="h-7 bg-amber-700 px-2 text-xs text-white hover:bg-amber-600"
+            onClick={openAddPc}
+          >
+            <UserPlus className="mr-1 h-3 w-3" />
+            PG
+          </Button>
+          <Button
+            size="sm"
+            className="h-7 bg-amber-700 px-2 text-xs text-white hover:bg-amber-600"
+            onClick={openAddMonster}
+          >
+            <Swords className="mr-1 h-3 w-3" />
+            Mostro
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 border-amber-600/40 px-2 text-xs text-amber-200 hover:bg-amber-600/20"
+            onClick={openAddCustom}
+          >
+            <Edit3 className="mr-1 h-3 w-3" />
+            Manuale
+          </Button>
         </div>
         </div>
 
-        {entries.length > 0 ? (
-          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-600/25 bg-zinc-900/60 px-2.5 py-2">
-            <span className="text-xs font-semibold text-amber-300/90">
-              Giro <span className="tabular-nums text-amber-100">{roundNumber}</span>
-            </span>
-            <span className="h-4 w-px bg-amber-600/30" aria-hidden />
-            <span className="inline-flex items-center gap-1 text-xs text-zinc-300">
-              <Timer className="h-3.5 w-3.5 text-amber-400/80" />
-              <span className="font-mono tabular-nums text-sm text-amber-100">
-                {formatTurnElapsed(turnElapsedSeconds)}
-              </span>
-            </span>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-7 w-7 border-amber-600/40 text-amber-200 hover:bg-amber-600/20"
-              onClick={toggleTurnTimer}
-              title={isTurnTimerRunning ? "Pausa timer turno" : "Avvia timer turno"}
-              aria-label={isTurnTimerRunning ? "Pausa timer turno" : "Avvia timer turno"}
-            >
-              {isTurnTimerRunning ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-7 border-amber-600/40 px-2 text-[10px] text-amber-200 hover:bg-amber-600/20"
-              onClick={resetTurnTimer}
-              title="Azzera il timer del turno corrente"
-            >
-              Azzera timer
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2 text-[10px] text-zinc-400 hover:bg-zinc-800 hover:text-amber-200"
-              onClick={resetRoundCounter}
-              title="Riporta a giro 1 e primo in lista"
-            >
-              Reset giro
-            </Button>
-            {entries[currentTurnIndex] ? (
+        {entries.length > 0 || torneoScoreboard ? (
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-amber-600/25 bg-zinc-900/60 px-2.5 py-1.5">
+            {entries.length > 0 ? (
+              <>
+                <span className="text-xs font-semibold text-amber-300/90">
+                  Giro <span className="tabular-nums text-amber-100">{roundNumber}</span>
+                </span>
+                <span className="h-4 w-px bg-amber-600/30" aria-hidden />
+                <span className="inline-flex items-center gap-1 text-xs text-zinc-300">
+                  <Timer className="h-3.5 w-3.5 text-amber-400/80" />
+                  <span className="font-mono tabular-nums text-sm text-amber-100">
+                    {formatTurnElapsed(turnElapsedSeconds)}
+                  </span>
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-7 w-7 border-amber-600/40 text-amber-200 hover:bg-amber-600/20"
+                  onClick={toggleTurnTimer}
+                  title={isTurnTimerRunning ? "Pausa timer turno" : "Avvia timer turno"}
+                  aria-label={isTurnTimerRunning ? "Pausa timer turno" : "Avvia timer turno"}
+                >
+                  {isTurnTimerRunning ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 border-amber-600/40 px-2 text-[10px] text-amber-200 hover:bg-amber-600/20"
+                  onClick={resetTurnTimer}
+                  title="Azzera il timer del turno corrente"
+                >
+                  Azzera timer
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-[10px] text-zinc-400 hover:bg-zinc-800 hover:text-amber-200"
+                  onClick={resetRoundCounter}
+                  title="Riporta a giro 1 e primo in lista"
+                >
+                  Reset giro
+                </Button>
+              </>
+            ) : null}
+            {torneoScoreboard ? (
+              <>
+                {entries.length > 0 ? (
+                  <span className="h-4 w-px bg-amber-600/30" aria-hidden />
+                ) : null}
+                <div className="flex flex-wrap items-center gap-2">
+                  <div
+                    className="flex items-center gap-1.5 rounded px-1.5 py-0.5"
+                    style={{ borderLeft: `2px solid ${torneoScoreboard.teamA.color}` }}
+                    title="Danni inflitti (squadra)"
+                  >
+                    <span className="max-w-[5.5rem] truncate text-[10px] font-medium uppercase tracking-wide text-zinc-500">
+                      {torneoScoreboard.teamA.name}
+                    </span>
+                    <span className="text-sm font-bold tabular-nums text-orange-300">
+                      {torneoScoreboard.teamA.total}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-zinc-600">vs</span>
+                  <div
+                    className="flex items-center gap-1.5 rounded px-1.5 py-0.5"
+                    style={{ borderLeft: `2px solid ${torneoScoreboard.teamB.color}` }}
+                    title="Danni inflitti (squadra)"
+                  >
+                    <span className="max-w-[5.5rem] truncate text-[10px] font-medium uppercase tracking-wide text-zinc-500">
+                      {torneoScoreboard.teamB.name}
+                    </span>
+                    <span className="text-sm font-bold tabular-nums text-orange-300">
+                      {torneoScoreboard.teamB.total}
+                    </span>
+                  </div>
+                </div>
+              </>
+            ) : null}
+            {entries.length > 0 && entries[currentTurnIndex] ? (
               <span className="ml-auto truncate text-[10px] text-zinc-500">
                 In turno:{" "}
                 <span className="font-medium text-amber-200/90">{entries[currentTurnIndex].name}</span>
@@ -916,59 +1075,6 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
           </div>
         ) : null}
       </header>
-
-      <div className="mb-2 flex flex-wrap gap-1.5">
-        <Button
-          size="sm"
-          className="h-7 bg-amber-700 px-2 text-xs text-white hover:bg-amber-600"
-          onClick={openAddPc}
-        >
-          <UserPlus className="mr-1 h-3 w-3" />
-          PG
-        </Button>
-        <Button
-          size="sm"
-          className="h-7 bg-amber-700 px-2 text-xs text-white hover:bg-amber-600"
-          onClick={openAddMonster}
-        >
-          <Swords className="mr-1 h-3 w-3" />
-          Mostro
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-7 border-amber-600/40 px-2 text-xs text-amber-200 hover:bg-amber-600/20"
-          onClick={openAddCustom}
-        >
-          <Edit3 className="mr-1 h-3 w-3" />
-          Manuale
-        </Button>
-      </div>
-
-      {torneoScoreboard ? (
-        <div className="mb-2 grid grid-cols-2 gap-2 rounded-lg border border-violet-900/40 bg-zinc-900/90 p-2">
-          <div
-            className="rounded-md px-2 py-1.5 text-center"
-            style={{ borderLeft: `3px solid ${torneoScoreboard.teamA.color}` }}
-          >
-            <p className="truncate text-[10px] font-medium uppercase tracking-wide text-zinc-500">
-              {torneoScoreboard.teamA.name}
-            </p>
-            <p className="text-lg font-bold tabular-nums text-orange-300">{torneoScoreboard.teamA.total}</p>
-            <p className="text-[9px] text-zinc-600">danni inflitti (squadra)</p>
-          </div>
-          <div
-            className="rounded-md px-2 py-1.5 text-center"
-            style={{ borderLeft: `3px solid ${torneoScoreboard.teamB.color}` }}
-          >
-            <p className="truncate text-[10px] font-medium uppercase tracking-wide text-zinc-500">
-              {torneoScoreboard.teamB.name}
-            </p>
-            <p className="text-lg font-bold tabular-nums text-orange-300">{torneoScoreboard.teamB.total}</p>
-            <p className="text-[9px] text-zinc-600">danni inflitti (squadra)</p>
-          </div>
-        </div>
-      ) : null}
 
       <div className="min-h-0 flex-1 overflow-auto rounded border border-amber-600/30 bg-zinc-900/80">
         <Table>
@@ -995,6 +1101,11 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
               <TableHead className="h-8 px-2 text-xs font-semibold text-amber-400">
                 Danni
               </TableHead>
+              {showSpellSlotsColumn ? (
+                <TableHead className="h-8 min-w-[7rem] px-2 text-xs font-semibold text-violet-300">
+                  Slot
+                </TableHead>
+              ) : null}
               <TableHead className="h-8 w-12 px-1 text-xs font-semibold text-amber-400">
                 Azioni
               </TableHead>
@@ -1004,7 +1115,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
             {entries.length === 0 ? (
               <TableRow className="border-amber-600/20">
                 <TableCell
-                  colSpan={showTeamColumn ? 8 : 7}
+                  colSpan={tableColSpan}
                   className="py-6 text-center text-xs text-zinc-500"
                 >
                   Nessun partecipante.
@@ -1296,6 +1407,20 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
                       ) : null}
                     </div>
                   </TableCell>
+                  {showSpellSlotsColumn ? (
+                    <TableCell className="px-2 py-1.5 align-top">
+                      {entry.spellSlots ? (
+                        <SpellSlotsCell
+                          slots={entry.spellSlots}
+                          onSpend={(level) => spendSpellSlot(entry.id, level)}
+                          onRestore={(level) => restoreSpellSlot(entry.id, level)}
+                          onReset={() => resetEntrySpellSlots(entry.id)}
+                        />
+                      ) : (
+                        <span className="text-[10px] text-zinc-600">—</span>
+                      )}
+                    </TableCell>
+                  ) : null}
                   <TableCell className="px-1 py-1.5">
                     <div className="flex items-center gap-0.5">
                       {(entry.type === "monster" || entry.type === "custom") && (

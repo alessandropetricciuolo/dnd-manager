@@ -42,7 +42,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { forceCharacterTimeSync, setCharacterCalendarOverride } from "@/app/campaigns/character-actions";
-import { parseRulesSnapshot } from "@/lib/character-rules-snapshot";
+import { formatSpellSlotsLabel, parseRulesSnapshot } from "@/lib/character-rules-snapshot";
 import { backgroundBySlug, backgroundRulesTooltipPrefix, raceBySlug } from "@/lib/character-build-catalog";
 import { sanitizeRaceTraitsMarkdown } from "@/lib/race-traits-sanitizer";
 
@@ -316,6 +316,9 @@ export function CharacterCardGm({
     ? character.background
     : null;
   const snap = parseRulesSnapshot(character.rules_snapshot ?? null);
+  const spellSlotsLabel = formatSpellSlotsLabel(snap?.spellSlots);
+  const cantripsLabel =
+    snap?.cantripsKnown != null && snap.cantripsKnown > 0 ? `${snap.cantripsKnown} trucchetti` : null;
   const raceDef = raceBySlug(character.race_slug ?? null);
   const raceLabel = raceDef?.label ?? null;
   const subraceLabel = raceDef?.subraces?.find((s) => s.slug === character.subclass_slug)?.label ?? null;
@@ -468,6 +471,14 @@ export function CharacterCardGm({
         <dt className="text-muted-foreground">Lv</dt>
         <dd className="font-medium tabular-nums text-barber-paper">{storedLevel}</dd>
       </div>
+      {(spellSlotsLabel || cantripsLabel) && (
+        <div className="col-span-2 flex justify-between gap-1">
+          <dt className="text-muted-foreground">Slot</dt>
+          <dd className="truncate text-right font-medium text-barber-paper">
+            {[spellSlotsLabel, cantripsLabel].filter(Boolean).join(" · ")}
+          </dd>
+        </div>
+      )}
     </dl>
   );
 

@@ -3,7 +3,37 @@ import {
   type InitiativeEntry,
   type InitiativeTrackerState,
 } from "@/components/gm/initiative-tracker";
+import { spellSlotsForCharacter } from "@/lib/combat-spell-slots";
 import type { TorneoMatchWithTeams, TorneoTeamWithMembers } from "@/lib/torneo/types";
+
+type TorneoMemberForInitiative = TorneoTeamWithMembers["members"][number];
+
+function basePcInitiativeFields(
+  m: TorneoMemberForInitiative,
+  stamp: number
+): Omit<InitiativeEntry, "teamId" | "teamName" | "teamColor"> {
+  const hp = Math.max(0, m.hit_points ?? 0);
+  const spellSlots = spellSlotsForCharacter({
+    rules_snapshot: m.rules_snapshot,
+    character_class: m.character_class,
+    class_subclass: m.class_subclass,
+    level: m.level,
+  });
+  return {
+    id: `init-${stamp}-${m.character_id}`,
+    name: m.name,
+    type: "pc",
+    characterClass: m.character_class,
+    armorClass: Math.max(0, m.armor_class ?? 0),
+    hp,
+    maxHp: hp,
+    initiative: 0,
+    playerId: m.character_id,
+    damageDealt: 0,
+    damageTaken: 0,
+    ...(spellSlots ? { spellSlots } : {}),
+  };
+}
 
 export type TorneoCharacterTeamInfo = {
   teamId: string;
@@ -38,25 +68,12 @@ export function applyTeamToEntry(
 /** Triello: tutti i PG della squadra vincitrice (FFA). */
 export function buildInitiativeEntriesForTriello(team: TorneoTeamWithMembers): InitiativeEntry[] {
   const stamp = Date.now();
-  return team.members.map((m) => {
-    const hp = Math.max(0, m.hit_points ?? 0);
-    return {
-      id: `init-${stamp}-${m.character_id}`,
-      name: m.name,
-      type: "pc" as const,
-      characterClass: m.character_class,
-      armorClass: Math.max(0, m.armor_class ?? 0),
-      hp,
-      maxHp: hp,
-      initiative: 0,
-      playerId: m.character_id,
-      damageDealt: 0,
-      damageTaken: 0,
-      teamId: team.id,
-      teamName: team.name,
-      teamColor: team.color,
-    };
-  });
+  return team.members.map((m) => ({
+    ...basePcInitiativeFields(m, stamp),
+    teamId: team.id,
+    teamName: team.name,
+    teamColor: team.color,
+  }));
 }
 
 function appendSquadMembers(
@@ -65,19 +82,8 @@ function appendSquadMembers(
   stamp: number
 ): void {
   for (const m of squad.members) {
-    const hp = Math.max(0, m.hit_points ?? 0);
     entries.push({
-      id: `init-${stamp}-${m.character_id}`,
-      name: m.name,
-      type: "pc",
-      characterClass: m.character_class,
-      armorClass: Math.max(0, m.armor_class ?? 0),
-      hp,
-      maxHp: hp,
-      initiative: 0,
-      playerId: m.character_id,
-      damageDealt: 0,
-      damageTaken: 0,
+      ...basePcInitiativeFields(m, stamp),
       teamId: squad.id,
       teamName: squad.name,
       teamColor: squad.color,

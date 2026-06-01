@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { listMissionEncountersAction, type MissionEncounterConfig } from "@/lib/actions/mission-actions";
 import { useGmScreenLongState } from "@/components/gm/gm-screen-long-state";
+import { spellSlotsForCharacter } from "@/lib/combat-spell-slots";
 
 function generateInitiativeId() {
   return `mission-init-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -84,6 +85,12 @@ export function GmMissionEncounterLoader({ campaignId }: { campaignId: string })
 
       const pcEntries = sessionCharacters.map((character) => {
         const hp = Math.max(0, character.hit_points ?? 0);
+        const spellSlots = spellSlotsForCharacter({
+          rules_snapshot: character.rules_snapshot,
+          character_class: character.character_class,
+          class_subclass: character.class_subclass,
+          level: character.level,
+        });
         return {
           id: generateInitiativeId(),
           name: character.name,
@@ -94,6 +101,7 @@ export function GmMissionEncounterLoader({ campaignId }: { campaignId: string })
           maxHp: hp,
           initiative: 0,
           playerId: character.id,
+          ...(spellSlots ? { spellSlots } : {}),
         };
       });
 

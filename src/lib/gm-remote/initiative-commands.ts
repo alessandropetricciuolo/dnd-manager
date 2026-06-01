@@ -36,6 +36,7 @@ export type InitiativeRemoteSnapshot = {
     teamId?: string;
     teamName?: string;
     teamColor?: string;
+    spellSlotsRemaining?: Array<{ level: number; count: number }>;
   }>;
   activeMatch?: {
     teamA: { id: string; name: string; color: string; damageTotal: number };
@@ -64,6 +65,9 @@ export function toInitiativeRemoteSnapshot(
     initiative: e.initiative,
     isDead: e.isDead,
     ...(e.teamId ? { teamId: e.teamId, teamName: e.teamName, teamColor: e.teamColor } : {}),
+    ...(e.spellSlots?.remaining?.length
+      ? { spellSlotsRemaining: e.spellSlots.remaining }
+      : {}),
   }));
 
   let matchSummary = activeMatch ?? null;

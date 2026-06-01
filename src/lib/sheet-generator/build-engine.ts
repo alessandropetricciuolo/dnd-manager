@@ -1,5 +1,6 @@
 import { backgroundBySlug, backgroundStartingInventoryLines, raceBySlug } from "@/lib/character-build-catalog";
 import { computeRealisticArmorClass } from "@/lib/sheet-generator/armor-class";
+import { armorInventoryLines } from "@/lib/sheet-generator/inventory-armor";
 import { resolveGeneratorRules } from "@/lib/sheet-generator/rules-resolver";
 import { detectWildMagicBarbarianPath } from "@/lib/sheet-generator/third-caster-subclass";
 import type {
@@ -482,7 +483,10 @@ function computeCoreFromAbilities(
     armorProficiencies: cfg.armorProficiencies,
     weaponProficiencies: cfg.weaponProficiencies,
     toolProficiencies: cfg.toolProficiencies,
-    inventory: backgroundStartingInventoryLines(backgroundSlug),
+    inventory: [
+      ...armorInventoryLines(armor),
+      ...backgroundStartingInventoryLines(backgroundSlug),
+    ],
     languages: ["Comune"],
   };
 }
@@ -653,6 +657,7 @@ export async function buildGeneratedCharacterSheet(
       level: input.level,
       characterName: input.characterName,
       powerPlayer: input.powerPlayer,
+      torneoMode: input.torneoMode,
     },
     core.abilityMods,
     core.proficiencyBonus,

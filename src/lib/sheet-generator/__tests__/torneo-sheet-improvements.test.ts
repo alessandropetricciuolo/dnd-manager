@@ -13,6 +13,8 @@ test("CA Barbaro: 10 + DES + COS senza armatura fissa", () => {
 
 test("CA Guerriero: cotta di maglia + scudo", () => {
   const r = computeRealisticArmorClass("Guerriero", { str: 2, dex: 0, con: 1, int: 0, wis: 0, cha: 0 });
+  assert.equal(r.armorItem, "cotta di maglia");
+  assert.equal(r.shieldItem, "scudo");
   assert.equal(r.ac, 18);
 });
 

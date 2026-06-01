@@ -10,7 +10,13 @@ import { uploadToTelegram } from "@/lib/telegram-storage";
 import { parseSafeExternalUrl } from "@/lib/security/url";
 import type { Json } from "@/types/database.types";
 import { backgroundBySlug, raceBySlug } from "@/lib/character-build-catalog";
+import {
+  mergeSpellcastingIntoSnapshot,
+  parseRulesSnapshot,
+  parseSpellcastingMetaFromJson,
+} from "@/lib/character-rules-snapshot";
 import { recomputeCharacterRulesSnapshot } from "@/lib/character-rules-snapshot.server";
+import type { CharacterSpellcastingMeta } from "@/lib/sheet-generator/spell-slots";
 import {
   DEFAULT_FANTASY_BASE_DATE,
   DEFAULT_FANTASY_CALENDAR_CONFIG,
@@ -356,6 +362,8 @@ export async function createCharacter(
     (formData.get("generated_sheet_file_name") as string | null)?.trim() || "scheda-generata.pdf";
   const generatedArmorClassRaw = (formData.get("generated_sheet_armor_class") as string | null)?.trim() || "";
   const generatedHitPointsRaw = (formData.get("generated_sheet_hit_points") as string | null)?.trim() || "";
+  const generatedSpellcastingRaw =
+    (formData.get("generated_sheet_spellcasting") as string | null)?.trim() || "";
 
   if (!name) return { success: false, error: "Il nome del personaggio è obbligatorio." };
   const armorClass = armorClassRaw !== "" ? Number.parseInt(armorClassRaw, 10) : null;
@@ -440,7 +448,7 @@ export async function createCharacter(
     if (Number.isFinite(parsed) && parsed >= 0) finalHitPoints = parsed;
   }
 
-  const rules_snapshot = await recomputeCharacterRulesSnapshot({
+  let rules_snapshot = await recomputeCharacterRulesSnapshot({
     campaignId,
     level: 1,
     characterClass: characterClass,
@@ -449,6 +457,10 @@ export async function createCharacter(
     subclassSlug: subclass_slug,
     backgroundSlug: background_slug,
   });
+  const generatedSpellcasting = parseSpellcastingMetaFromJson(generatedSpellcastingRaw);
+  if (generatedSpellcasting) {
+    rules_snapshot = mergeSpellcastingIntoSnapshot(rules_snapshot, generatedSpellcasting);
+  }
 
   const { data: row, error } = await supabase
     .from("campaign_characters")
@@ -1226,7 +1238,8 @@ export async function saveGeneratedSheetToCharacter(
   characterId: string,
   pdfBase64: string,
   fileName: string,
-  combatFromSheet?: { armorClass: number; hitPoints: number } | null
+  combatFromSheet?: { armorClass: number; hitPoints: number } | null,
+  spellcastingFromSheet?: CharacterSpellcastingMeta | null
 ): Promise<CharResult<void>> {
   const ctx = await getCurrentUserAndRole();
   if (!ctx) return { success: false, error: "Non autenticato." };
@@ -1240,7 +1253,7 @@ export async function saveGeneratedSheetToCharacter(
 
   const { data: row, error: fetchErr } = await supabase
     .from("campaign_characters")
-    .select("id, campaign_id, sheet_file_path")
+    .select("id, campaign_id, sheet_file_path, rules_snapshot")
     .eq("id", chid)
     .eq("campaign_id", cid)
     .single();
@@ -1264,7 +1277,13 @@ export async function saveGeneratedSheetToCharacter(
   const prevPath = row.sheet_file_path;
   const ac = combatFromSheet?.armorClass;
   const hp = combatFromSheet?.hitPoints;
-  const updateRow: { sheet_file_path: string; armor_class?: number; hit_points?: number; updated_at: string } = {
+  const updateRow: {
+    sheet_file_path: string;
+    armor_class?: number;
+    hit_points?: number;
+    rules_snapshot?: Json;
+    updated_at: string;
+  } = {
     sheet_file_path: path,
     updated_at: new Date().toISOString(),
   };
@@ -1273,6 +1292,15 @@ export async function saveGeneratedSheetToCharacter(
   }
   if (typeof hp === "number" && Number.isFinite(hp) && hp >= 0) {
     updateRow.hit_points = Math.trunc(hp);
+  }
+  if (spellcastingFromSheet) {
+    const prevSnap = parseRulesSnapshot((row as { rules_snapshot?: Json | null }).rules_snapshot ?? null);
+    if (prevSnap) {
+      updateRow.rules_snapshot = mergeSpellcastingIntoSnapshot(
+        prevSnap,
+        spellcastingFromSheet
+      ) as unknown as Json;
+    }
   }
   const { error: updateErr } = await supabase.from("campaign_characters").update(updateRow).eq("id", chid);
   if (updateErr) {

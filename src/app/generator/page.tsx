@@ -12,6 +12,7 @@ import type { GeneratedCharacterSheet } from "@/lib/sheet-generator/types";
 import type { QuickManualSection } from "@/lib/sheet-generator/quick-manual-builder";
 import { useSearchParams } from "next/navigation";
 import { saveGeneratedSheetToCharacter } from "@/app/campaigns/character-actions";
+import { spellcastingMetaFromGeneratedSheet } from "@/lib/sheet-generator/spell-slots";
 
 const CREATE_CHARACTER_DRAFT_KEY_PREFIX = "create-character-draft";
 const CREATE_CHARACTER_GENERATED_SHEET_KEY_PREFIX = "create-character-generated-sheet";
@@ -152,7 +153,8 @@ function GeneratorPageContent() {
           initial.characterId,
           base64,
           `${sheet.characterName || "scheda"}-compilata.pdf`,
-          { armorClass: sheet.armorClass, hitPoints: sheet.hpMax }
+          { armorClass: sheet.armorClass, hitPoints: sheet.hpMax },
+          spellcastingMetaFromGeneratedSheet(sheet)
         );
         if (saved.success) {
           const msg = "Scheda PDF salvata nella scheda tecnica del personaggio.";
@@ -184,6 +186,7 @@ function GeneratorPageContent() {
               hitPoints: sheet.hpMax,
               sheetData: sheetDataObj,
               quickManualSections,
+              spellcasting: spellcastingMetaFromGeneratedSheet(sheet),
             })
           );
         } catch (e) {

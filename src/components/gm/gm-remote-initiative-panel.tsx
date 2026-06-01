@@ -253,6 +253,14 @@ export function GmRemoteInitiativePanel({
                             ? ` · HP ${entry.hp}`
                             : ""}
                       </p>
+                      {entry.spellSlotsRemaining?.length ? (
+                        <p className="text-[10px] text-violet-300/90">
+                          Slot:{" "}
+                          {entry.spellSlotsRemaining
+                            .map((s) => `${s.count}×${s.level}°`)
+                            .join(", ")}
+                        </p>
+                      ) : null}
                     </div>
                     <div className="shrink-0 text-right text-[10px]">
                       <p className="text-orange-300">

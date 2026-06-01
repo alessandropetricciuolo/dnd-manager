@@ -43,6 +43,12 @@ function parseDraftStrings(raw: string | null): Record<string, string> {
   }
 }
 
+type StoredSpellcastingMeta = {
+  spellSlots: Array<{ level: number; count: number }>;
+  cantripsKnown: number;
+  spellcastingAbility: string | null;
+};
+
 type StoredGeneratedSheet = {
   pdfBase64: string;
   fileName: string;
@@ -51,6 +57,7 @@ type StoredGeneratedSheet = {
   /** Presente se salvato dal generatore recente: consente di rigenerare il PDF con lo story in creazione PG. */
   sheetData?: Record<string, unknown>;
   quickManualSections?: QuickManualSection[];
+  spellcasting?: StoredSpellcastingMeta | null;
 };
 
 function parseStoredGeneratedSheet(raw: string | null): StoredGeneratedSheet | null {
@@ -63,6 +70,7 @@ function parseStoredGeneratedSheet(raw: string | null): StoredGeneratedSheet | n
       hitPoints?: number;
       sheetData?: unknown;
       quickManualSections?: unknown;
+      spellcasting?: unknown;
     };
     if (
       typeof parsed.pdfBase64 === "string" &&
@@ -80,6 +88,13 @@ function parseStoredGeneratedSheet(raw: string | null): StoredGeneratedSheet | n
       const quickManualSections = Array.isArray(parsed.quickManualSections)
         ? (parsed.quickManualSections as QuickManualSection[])
         : undefined;
+      let spellcasting: StoredSpellcastingMeta | null | undefined;
+      if (parsed.spellcasting != null && typeof parsed.spellcasting === "object") {
+        const sc = parsed.spellcasting as StoredSpellcastingMeta;
+        if (Array.isArray(sc.spellSlots)) {
+          spellcasting = sc;
+        }
+      }
       return {
         pdfBase64: parsed.pdfBase64,
         fileName: parsed.fileName,
@@ -87,6 +102,7 @@ function parseStoredGeneratedSheet(raw: string | null): StoredGeneratedSheet | n
         hitPoints: parsed.hitPoints,
         sheetData,
         quickManualSections,
+        spellcasting,
       };
     }
   } catch {
@@ -242,6 +258,9 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
         formData.set("generated_sheet_file_name", gen.fileName);
         formData.set("generated_sheet_armor_class", String(gen.armorClass));
         formData.set("generated_sheet_hit_points", String(gen.hitPoints));
+        if (gen.spellcasting) {
+          formData.set("generated_sheet_spellcasting", JSON.stringify(gen.spellcasting));
+        }
       }
       const result = await createCharacter(campaignId, formData);
       if (result.success) {

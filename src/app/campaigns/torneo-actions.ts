@@ -77,7 +77,9 @@ export async function getTorneoSetupAction(campaignId: string): Promise<
   if (teamIds.length > 0) {
     const { data: memData } = await supabase
       .from("torneo_team_members")
-      .select("id, team_id, character_id, campaign_characters(name, character_class, armor_class, hit_points)")
+      .select(
+        "id, team_id, character_id, campaign_characters(name, character_class, class_subclass, armor_class, hit_points, level, rules_snapshot)"
+      )
       .in("team_id", teamIds);
     membersRaw = (memData ?? []) as typeof membersRaw;
   }
@@ -98,8 +100,24 @@ export async function getTorneoSetupAction(campaignId: string): Promise<
       .filter((m) => m.team_id === t.id)
       .map((m) => {
         const ch = m.campaign_characters as
-          | { name: string; character_class: string | null; armor_class: number | null; hit_points: number | null }
-          | { name: string; character_class: string | null; armor_class: number | null; hit_points: number | null }[]
+          | {
+              name: string;
+              character_class: string | null;
+              class_subclass: string | null;
+              armor_class: number | null;
+              hit_points: number | null;
+              level: number | null;
+              rules_snapshot: unknown;
+            }
+          | {
+              name: string;
+              character_class: string | null;
+              class_subclass: string | null;
+              armor_class: number | null;
+              hit_points: number | null;
+              level: number | null;
+              rules_snapshot: unknown;
+            }[]
           | null;
         const c = Array.isArray(ch) ? ch[0] : ch;
         return {
@@ -107,8 +125,11 @@ export async function getTorneoSetupAction(campaignId: string): Promise<
           character_id: m.character_id,
           name: c?.name ?? "—",
           character_class: c?.character_class ?? null,
+          class_subclass: c?.class_subclass ?? null,
+          level: typeof c?.level === "number" && c.level > 0 ? c.level : 1,
           armor_class: c?.armor_class ?? null,
           hit_points: c?.hit_points ?? null,
+          rules_snapshot: (c?.rules_snapshot ?? null) as import("@/types/database.types").Json | null,
         };
       }),
   }));

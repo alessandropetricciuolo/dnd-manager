@@ -17,16 +17,22 @@ function mockTeamsWithMembers(): TorneoTeamWithMembers[] {
           character_id: "char-1",
           name: "Tharok",
           character_class: "Guerriero",
+          class_subclass: null,
+          level: 5,
           armor_class: 16,
           hit_points: 30,
+          rules_snapshot: null,
         },
         {
           id: "m2",
           character_id: "char-2",
           name: "Lyra",
           character_class: "Mago",
+          class_subclass: null,
+          level: 5,
           armor_class: 12,
           hit_points: 22,
+          rules_snapshot: null,
         },
       ],
     },
@@ -42,8 +48,11 @@ function mockTeamsWithMembers(): TorneoTeamWithMembers[] {
           character_id: "char-3",
           name: "Gorum",
           character_class: "Barbaro",
+          class_subclass: null,
+          level: 5,
           armor_class: 14,
           hit_points: 40,
+          rules_snapshot: null,
         },
       ],
     },
@@ -101,4 +110,11 @@ test("buildInitiativeEntriesForMatch ignora slot placeholder", () => {
 test("buildMatchInitiativeState restituisce entries non vuote per quarto", () => {
   const state = buildMatchInitiativeState(quarterMatch, mockTeamsWithMembers());
   assert.equal(state.entries.length, 3);
+});
+
+test("buildInitiativeEntriesForMatch assegna slot incantesimo ai caster", () => {
+  const entries = buildInitiativeEntriesForMatch(quarterMatch, mockTeamsWithMembers());
+  const mage = entries.find((e) => e.playerId === "char-2");
+  assert.ok(mage?.spellSlots?.max.length);
+  assert.ok((mage?.spellSlots?.remaining.length ?? 0) > 0);
 });

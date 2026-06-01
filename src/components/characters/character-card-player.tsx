@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { CampaignCharacterRow } from "@/app/campaigns/character-actions";
 import { ImageMediaActions } from "@/components/media/image-media-actions";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { parseRulesSnapshot } from "@/lib/character-rules-snapshot";
+import { formatSpellSlotsLabel, parseRulesSnapshot } from "@/lib/character-rules-snapshot";
 import type { CharacterRulesSnapshotV1 } from "@/lib/character-rules-snapshot";
 import { backgroundBySlug, backgroundRulesTooltipPrefix, raceBySlug } from "@/lib/character-build-catalog";
 import { sanitizeRaceTraitsMarkdown } from "@/lib/race-traits-sanitizer";
@@ -265,6 +265,9 @@ export function CharacterCardPlayer({
   const bgRulesLabel = bgEntry?.label ?? null;
   const bgRulesBookPrefix = backgroundRulesTooltipPrefix(bgEntry ?? null);
   const snap = parseRulesSnapshot(character.rules_snapshot ?? null);
+  const spellSlotsLabel = formatSpellSlotsLabel(snap?.spellSlots);
+  const cantripsLabel =
+    snap?.cantripsKnown != null && snap.cantripsKnown > 0 ? `${snap.cantripsKnown} trucchetti` : null;
 
   const hasBuild = !!(
     character.race_slug ||
@@ -326,6 +329,11 @@ export function CharacterCardPlayer({
                   </>
                 ) : null}
                 {" · "}Livello {storedLevel}
+                {(spellSlotsLabel || cantripsLabel) && (
+                  <>
+                    {" · "}Slot: {[spellSlotsLabel, cantripsLabel].filter(Boolean).join(" · ")}
+                  </>
+                )}
                 {spellsBody ? (
                   <>
                     {" · "}

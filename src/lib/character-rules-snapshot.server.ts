@@ -3,6 +3,11 @@ import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { readExcludedManualBookKeysFromAiContextJson } from "@/lib/campaign-ai-context";
 import type { Json } from "@/types/database.types";
 import {
+  mergeSpellcastingIntoSnapshot,
+  type CharacterRulesSnapshotV1,
+} from "@/lib/character-rules-snapshot";
+import { computeCharacterSpellcastingMeta } from "@/lib/sheet-generator/spell-slots";
+import {
   CLASS_OPTIONS,
   PHB_BOOK_KEY,
   PHB_MD_FILE,
@@ -11,7 +16,6 @@ import {
   maxSpellLevelOnSheet,
   raceBySlug,
 } from "@/lib/character-build-catalog";
-import type { CharacterRulesSnapshotV1 } from "@/lib/character-rules-snapshot";
 import { wikiManualBookLabel } from "@/lib/manual-book-catalog";
 import { matchSupplementSubclass, supplementSubclassesForClass } from "@/lib/character-subclass-catalog";
 import {
@@ -1176,7 +1180,7 @@ export async function recomputeCharacterRulesSnapshot(input: {
     if (!backgroundRulesMd?.trim()) warnings.push(`Regole background «${bgDef.label}»: estratto non trovato.`);
   }
 
-  return {
+  const base: CharacterRulesSnapshotV1 = {
     version: 1,
     computedAt: new Date().toISOString(),
     level,
@@ -1195,4 +1199,11 @@ export async function recomputeCharacterRulesSnapshot(input: {
     backgroundRulesMd,
     warnings,
   };
+
+  const spellcastingMeta = computeCharacterSpellcastingMeta({
+    classLabel: input.characterClass,
+    classSubclass: input.classSubclass,
+    level,
+  });
+  return mergeSpellcastingIntoSnapshot(base, spellcastingMeta);
 }

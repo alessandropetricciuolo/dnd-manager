@@ -29,6 +29,15 @@ import {
   spellSlotsRecordFromThirdCasterTiers,
 } from "@/lib/sheet-generator/third-caster-subclass";
 import { getSpellCombatTierScore } from "@/lib/sheet-generator/spell-combat-tier";
+import {
+  ensurePaladinPunishmentSpell,
+  filterTorneoCombatSpells,
+} from "@/lib/sheet-generator/spell-torneo-combat";
+import {
+  cantripsKnownForClass,
+  slotsForClassLevel,
+  SPELLCASTING_ABILITY_BY_CLASS,
+} from "@/lib/sheet-generator/spell-slots";
 
 function headingLevel(line: string): number | null {
   const m = line.match(/^(\s*#{1,6})\s+.+$/);
@@ -920,137 +929,6 @@ function pickLeveledSpellsBalanced(
   return picked;
 }
 
-const SPELLCASTING_ABILITY_BY_CLASS: Record<string, AbilityKey | null> = {
-  Barbaro: null,
-  Bardo: "cha",
-  Chierico: "wis",
-  Druido: "wis",
-  Guerriero: null,
-  Ladro: null,
-  Mago: "int",
-  Monaco: null,
-  Paladino: "cha",
-  Ranger: "wis",
-  Stregone: "cha",
-  Warlock: "cha",
-  Artefice: "int",
-};
-
-const CANTRIPS_BY_CLASS_LEVEL: Partial<Record<string, number[]>> = {
-  Bardo: [2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
-  Chierico: [3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
-  Druido: [2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
-  Mago: [3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
-  Stregone: [4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
-  Warlock: [2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
-  Artefice: [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
-};
-
-function cantripsKnownForClass(classLabel: string, level: number): number {
-  const table = CANTRIPS_BY_CLASS_LEVEL[classLabel];
-  if (!table) return 0;
-  const idx = Math.min(table.length - 1, Math.max(0, Math.max(1, level) - 1));
-  return table[idx] ?? table[table.length - 1] ?? 0;
-}
-
-function slotsForClassLevel(classDef: ClassCatalogEntry | null, level: number): Record<1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9, number> {
-  const out = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 };
-  if (!classDef?.spellList) return out;
-  const lvl = Math.max(1, Math.min(20, level));
-  const full: Array<[number, number, number, number, number, number, number, number, number]> = [
-    [2, 0, 0, 0, 0, 0, 0, 0, 0],
-    [3, 0, 0, 0, 0, 0, 0, 0, 0],
-    [4, 2, 0, 0, 0, 0, 0, 0, 0],
-    [4, 3, 0, 0, 0, 0, 0, 0, 0],
-    [4, 3, 2, 0, 0, 0, 0, 0, 0],
-    [4, 3, 3, 0, 0, 0, 0, 0, 0],
-    [4, 3, 3, 1, 0, 0, 0, 0, 0],
-    [4, 3, 3, 2, 0, 0, 0, 0, 0],
-    [4, 3, 3, 3, 1, 0, 0, 0, 0],
-    [4, 3, 3, 3, 2, 0, 0, 0, 0],
-    [4, 3, 3, 3, 2, 1, 0, 0, 0],
-    [4, 3, 3, 3, 2, 1, 0, 0, 0],
-    [4, 3, 3, 3, 2, 1, 1, 0, 0],
-    [4, 3, 3, 3, 2, 1, 1, 0, 0],
-    [4, 3, 3, 3, 2, 1, 1, 1, 0],
-    [4, 3, 3, 3, 2, 1, 1, 1, 0],
-    [4, 3, 3, 3, 2, 1, 1, 1, 1],
-    [4, 3, 3, 3, 3, 1, 1, 1, 1],
-    [4, 3, 3, 3, 3, 2, 1, 1, 1],
-    [4, 3, 3, 3, 3, 2, 2, 1, 1],
-  ];
-  const row = full[lvl - 1] ?? full[full.length - 1];
-  if (classDef.spellProgression === "full") {
-    row.forEach((v, i) => {
-      out[(i + 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9] = v;
-    });
-    return out;
-  }
-  const half: Array<[number, number, number, number, number]> = [
-    [0, 0, 0, 0, 0],
-    [2, 0, 0, 0, 0],
-    [3, 0, 0, 0, 0],
-    [3, 0, 0, 0, 0],
-    [4, 2, 0, 0, 0],
-    [4, 2, 0, 0, 0],
-    [4, 3, 0, 0, 0],
-    [4, 3, 0, 0, 0],
-    [4, 3, 2, 0, 0],
-    [4, 3, 2, 0, 0],
-    [4, 3, 3, 0, 0],
-    [4, 3, 3, 0, 0],
-    [4, 3, 3, 1, 0],
-    [4, 3, 3, 1, 0],
-    [4, 3, 3, 2, 0],
-    [4, 3, 3, 2, 0],
-    [4, 3, 3, 3, 1],
-    [4, 3, 3, 3, 1],
-    [4, 3, 3, 3, 2],
-    [4, 3, 3, 3, 2],
-  ];
-  const halfUp: Array<[number, number, number, number, number]> = [
-    [2, 0, 0, 0, 0],
-    [2, 0, 0, 0, 0],
-    [3, 0, 0, 0, 0],
-    [3, 0, 0, 0, 0],
-    [4, 2, 0, 0, 0],
-    [4, 2, 0, 0, 0],
-    [4, 3, 0, 0, 0],
-    [4, 3, 0, 0, 0],
-    [4, 3, 2, 0, 0],
-    [4, 3, 2, 0, 0],
-    [4, 3, 3, 0, 0],
-    [4, 3, 3, 0, 0],
-    [4, 3, 3, 1, 0],
-    [4, 3, 3, 1, 0],
-    [4, 3, 3, 2, 0],
-    [4, 3, 3, 2, 0],
-    [4, 3, 3, 3, 1],
-    [4, 3, 3, 3, 1],
-    [4, 3, 3, 3, 2],
-    [4, 3, 3, 3, 2],
-  ];
-  const pactSlots = [1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4];
-  const pactSlotLevel = [1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5];
-  if (classDef.spellProgression === "half") {
-    const r = half[lvl - 1];
-    if (r) r.forEach((v, i) => (out[(i + 1) as 1 | 2 | 3 | 4 | 5] = v));
-    return out;
-  }
-  if (classDef.spellProgression === "half_up") {
-    const r = halfUp[lvl - 1];
-    if (r) r.forEach((v, i) => (out[(i + 1) as 1 | 2 | 3 | 4 | 5] = v));
-    return out;
-  }
-  if (classDef.spellProgression === "pact") {
-    const slots = pactSlots[lvl - 1] ?? 0;
-    const slotLevel = pactSlotLevel[lvl - 1] ?? 1;
-    out[slotLevel as 1 | 2 | 3 | 4 | 5] = slots;
-    return out;
-  }
-  return out;
-}
-
 function spellSelectionCount(classLabel: string, level: number, castingMod: number): number {
   const lvl = Math.max(1, Math.min(20, level));
   if (classLabel === "Chierico" || classLabel === "Druido") return Math.max(1, lvl + castingMod);
@@ -1095,6 +973,8 @@ export async function resolveGeneratorRules(
     characterName?: string | null;
     /** Incantesimi scelti con priorità tier combat invece che casuali/bilanciati. */
     powerPlayer?: boolean;
+    /** Solo incantesimi utili in combattimento (torneo). */
+    torneoMode?: boolean;
   },
   abilityModByKey: Record<AbilityKey, number>,
   proficiencyBonus: number,
@@ -1263,15 +1143,35 @@ export async function resolveGeneratorRules(
     const maxOnSheet = tcWizard ? tcWizard.maxSpellLevelOnList : maxSpellLevelOnSheet(classDef, input.level);
     const listByLevel = extractSpellListByMaxLevel(listRaw, maxOnSheet);
     const entries = parseSpellsWithLevelFromList(listByLevel);
-    const cantripEntries = pickCantripsSlotAware(entries, cantripsKnown, !!input.powerPlayer);
-    const leveledEntries = pickLeveledSpellsSlotAware(
-      entries,
+    const torneoCombatPool = input.torneoMode ? filterTorneoCombatSpells(entries) : entries;
+    const spellPool = torneoCombatPool.length ? torneoCombatPool : entries;
+    const combatPriority = !!input.powerPlayer || !!input.torneoMode;
+    const cantripEntries = pickCantripsSlotAware(spellPool, cantripsKnown, combatPriority);
+    let leveledEntries = pickLeveledSpellsSlotAware(
+      spellPool,
       spellsPrepared,
       maxOnSheet,
       spellSlots,
       input.classLabel,
-      !!input.powerPlayer
+      combatPriority
     );
+    if (leveledEntries.length < spellsPrepared) {
+      const fillPool = input.torneoMode ? filterTorneoCombatSpells(entries) : entries;
+      if (fillPool.length > leveledEntries.length) {
+        leveledEntries = pickLeveledSpellsSlotAware(
+          fillPool,
+          spellsPrepared,
+          maxOnSheet,
+          spellSlots,
+          input.classLabel,
+          combatPriority
+        );
+      }
+    }
+    if (input.classLabel === "Paladino") {
+      leveledEntries = ensurePaladinPunishmentSpell(leveledEntries, entries, maxOnSheet);
+    }
+    leveledEntries = leveledEntries.slice(0, spellsPrepared);
     const picked = [...cantripEntries, ...leveledEntries];
     await preloadPhbMarkdown(requestOrigin);
     for (const pickedSpell of picked) {
