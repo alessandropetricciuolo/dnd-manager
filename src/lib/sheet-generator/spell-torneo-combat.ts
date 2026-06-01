@@ -68,6 +68,7 @@ const TORNEO_NON_COMBAT = new Set(
     "Identificare",
     "Leggere Lingue",
     "Comprendere Lingue",
+    "Scassinare",
   ].map(normalizeSpellNameForTier)
 );
 
@@ -105,6 +106,11 @@ const TORNEO_COMBAT_EXTRA = new Set(
 /** Incantesimi paladino «Punizione …» (colpi fulminanti). */
 export function isPaladinPunishmentSpell(spellName: string): boolean {
   return normalizeSpellNameForTier(spellName).includes("punizione");
+}
+
+/** Escluso esplicitamente in torneo (anche se ha tier list alta). */
+export function isTorneoHardBlockedSpell(spellName: string): boolean {
+  return TORNEO_NON_COMBAT.has(normalizeSpellNameForTier(spellName));
 }
 
 /** True se l'incantesimo è adatto a un combattimento in torneo. */

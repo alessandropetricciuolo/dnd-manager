@@ -17,6 +17,8 @@ import {
 } from "@/lib/character-rules-snapshot";
 import { recomputeCharacterRulesSnapshot } from "@/lib/character-rules-snapshot.server";
 import type { CharacterSpellcastingMeta } from "@/lib/sheet-generator/spell-slots";
+import { formatSheetSaveError } from "@/lib/sheet-save-errors";
+import type { CharacterRulesSnapshotV1 } from "@/lib/character-rules-snapshot";
 import {
   DEFAULT_FANTASY_BASE_DATE,
   DEFAULT_FANTASY_CALENDAR_CONFIG,
@@ -1251,6 +1253,31 @@ export async function saveGeneratedSheetToCharacter(
   spellcastingFromSheet?: CharacterSpellcastingMeta | null,
   buildFromSheet?: GeneratedSheetBuildMeta | null
 ): Promise<CharResult<void>> {
+  try {
+    return await saveGeneratedSheetToCharacterInner(
+      campaignId,
+      characterId,
+      pdfBase64,
+      fileName,
+      combatFromSheet,
+      spellcastingFromSheet,
+      buildFromSheet
+    );
+  } catch (err) {
+    console.error("[saveGeneratedSheetToCharacter]", err);
+    return { success: false, error: formatSheetSaveError(err) };
+  }
+}
+
+async function saveGeneratedSheetToCharacterInner(
+  campaignId: string,
+  characterId: string,
+  pdfBase64: string,
+  fileName: string,
+  combatFromSheet?: { armorClass: number; hitPoints: number } | null,
+  spellcastingFromSheet?: CharacterSpellcastingMeta | null,
+  buildFromSheet?: GeneratedSheetBuildMeta | null
+): Promise<CharResult<void>> {
   const ctx = await getCurrentUserAndRole();
   if (!ctx) return { success: false, error: "Non autenticato." };
   if (!ctx.isGmOrAdmin) return { success: false, error: "Solo il Master può salvare schede tecniche." };
@@ -1283,6 +1310,41 @@ export async function saveGeneratedSheetToCharacter(
     return { success: false, error: "Impossibile decodificare il PDF." };
   }
   if (!bytes.length) return { success: false, error: "PDF vuoto." };
+
+  let precomputedRulesSnapshot: CharacterRulesSnapshotV1 | null = null;
+  if (buildFromSheet) {
+    const race_slug = raceBySlug(buildFromSheet.raceSlug) ? buildFromSheet.raceSlug.trim() : null;
+    const subclass_slug = normalizeSubraceForRace(race_slug, buildFromSheet.subclassSlug);
+    const background_slug = backgroundBySlug(buildFromSheet.backgroundSlug)
+      ? buildFromSheet.backgroundSlug.trim()
+      : null;
+    const character_class = buildFromSheet.characterClass.trim() || null;
+    const classSubclass = buildFromSheet.classSubclass?.trim() || null;
+    const genLevel = Math.trunc(buildFromSheet.level);
+    const nextLevel =
+      genLevel >= 1 && genLevel <= 20 ? Math.max(prevLevel, genLevel) : prevLevel;
+
+    if (nextLevel >= 3 && !classSubclass) {
+      return {
+        success: false,
+        error: "Dal livello 3 in poi seleziona una sottoclasse nel generatore prima di salvare.",
+      };
+    }
+
+    let rules_snapshot = await recomputeCharacterRulesSnapshot({
+      campaignId: cid,
+      level: nextLevel,
+      characterClass: character_class,
+      classSubclass,
+      raceSlug: race_slug,
+      subclassSlug: subclass_slug,
+      backgroundSlug: background_slug,
+    });
+    if (spellcastingFromSheet) {
+      rules_snapshot = mergeSpellcastingIntoSnapshot(rules_snapshot, spellcastingFromSheet);
+    }
+    precomputedRulesSnapshot = rules_snapshot;
+  }
 
   const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80) || "scheda-generata.pdf";
   const path = `${cid}/${randomUUID()}-${safeName}`;
@@ -1328,13 +1390,6 @@ export async function saveGeneratedSheetToCharacter(
     const nextLevel =
       genLevel >= 1 && genLevel <= 20 ? Math.max(prevLevel, genLevel) : prevLevel;
 
-    if (nextLevel >= 3 && !classSubclass) {
-      return {
-        success: false,
-        error: "Dal livello 3 in poi seleziona una sottoclasse nel generatore prima di salvare.",
-      };
-    }
-
     if (race_slug) updateRow.race_slug = race_slug;
     updateRow.subclass_slug = subclass_slug;
     if (character_class) updateRow.character_class = character_class;
@@ -1342,19 +1397,9 @@ export async function saveGeneratedSheetToCharacter(
     if (background_slug) updateRow.background_slug = background_slug;
     updateRow.level = nextLevel;
 
-    let rules_snapshot = await recomputeCharacterRulesSnapshot({
-      campaignId: cid,
-      level: nextLevel,
-      characterClass: character_class,
-      classSubclass,
-      raceSlug: race_slug,
-      subclassSlug: subclass_slug,
-      backgroundSlug: background_slug,
-    });
-    if (spellcastingFromSheet) {
-      rules_snapshot = mergeSpellcastingIntoSnapshot(rules_snapshot, spellcastingFromSheet);
+    if (precomputedRulesSnapshot) {
+      updateRow.rules_snapshot = precomputedRulesSnapshot as unknown as Json;
     }
-    updateRow.rules_snapshot = rules_snapshot as unknown as Json;
   } else if (spellcastingFromSheet) {
     const prevSnap = parseRulesSnapshot((row as { rules_snapshot?: Json | null }).rules_snapshot ?? null);
     if (prevSnap) {

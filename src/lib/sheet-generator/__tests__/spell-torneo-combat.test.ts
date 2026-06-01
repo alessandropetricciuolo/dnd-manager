@@ -17,6 +17,10 @@ test("esclude Luce diurna in torneo (illuminazione, non combattimento)", () => {
   assert.equal(isTorneoCombatSpell("Luce Diurna"), false);
 });
 
+test("esclude Scassinare in torneo (utilità fuori combattimento)", () => {
+  assert.equal(isTorneoCombatSpell("Scassinare"), false);
+});
+
 test("include danni e controllo da combattimento", () => {
   assert.equal(isTorneoCombatSpell("Palla di Fuoco"), true);
   assert.equal(isTorneoCombatSpell("Fulmine"), true);

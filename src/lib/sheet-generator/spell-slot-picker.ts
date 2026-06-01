@@ -1,4 +1,8 @@
 import { getSpellCombatTierScore } from "@/lib/sheet-generator/spell-combat-tier";
+import {
+  filterTorneoCombatSpells,
+  isTorneoHardBlockedSpell,
+} from "@/lib/sheet-generator/spell-torneo-combat";
 import { sortKeyForPick } from "@/lib/sheet-generator/wizard-arcane-school";
 
 export type SpellPickEntry = { name: string; level: number };
@@ -193,4 +197,50 @@ export function pickCantripsSlotAware(
     picked.push(e);
   }
   return picked;
+}
+
+function mergeCantripPicks(primary: SpellPickEntry[], extra: SpellPickEntry[], count: number): SpellPickEntry[] {
+  const seen = new Set(primary.map((e) => e.name.toLocaleLowerCase("it")));
+  const out = [...primary];
+  for (const e of extra) {
+    if (out.length >= count) break;
+    const key = e.name.toLocaleLowerCase("it");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(e);
+  }
+  return out;
+}
+
+/**
+ * Seleziona i trucchetti richiesti dalla classe. In torneo privilegia il pool combattimento;
+ * se non bastano, completa con trucchetti orientati al combattimento dall’intera lista.
+ */
+export function pickCantripsForSheet(
+  allEntries: SpellPickEntry[],
+  count: number,
+  torneoMode: boolean,
+  combatPriority: boolean,
+  pickOptions?: SpellPickOptions
+): SpellPickEntry[] {
+  if (count <= 0) return [];
+  const allCantrips = allEntries.filter((e) => e.level === 0);
+  if (!allCantrips.length) return [];
+
+  if (!torneoMode) {
+    return pickCantripsSlotAware(allCantrips, count, combatPriority, pickOptions);
+  }
+
+  const torneoCantrips = filterTorneoCombatSpells(allCantrips);
+  const fromTorneo = pickCantripsSlotAware(
+    torneoCantrips.length ? torneoCantrips : allCantrips,
+    count,
+    combatPriority,
+    pickOptions
+  );
+  if (fromTorneo.length >= count) return fromTorneo;
+
+  const fillPool = allCantrips.filter((e) => !isTorneoHardBlockedSpell(e.name));
+  const fill = pickCantripsSlotAware(fillPool, count, true, pickOptions);
+  return mergeCantripPicks(fromTorneo, fill, count);
 }

@@ -18,7 +18,7 @@ import {
 } from "@/lib/server/phb-spell-excerpt";
 import { collapseRandomDiceTablesInBackgroundMarkdown } from "@/lib/sheet-generator/background-dice-table-roll";
 import {
-  pickCantripsSlotAware,
+  pickCantripsForSheet,
   pickLeveledSpellsSlotAware,
 } from "@/lib/sheet-generator/spell-slot-picker";
 import type { AbilityKey, GeneratedSpell } from "@/lib/sheet-generator/types";
@@ -1160,7 +1160,13 @@ export async function resolveGeneratorRules(
         ? { wizardSchoolKey, getSpellSchool: schoolLookup.getSpellSchool }
         : undefined;
 
-    const cantripEntries = pickCantripsSlotAware(spellPool, cantripsKnown, combatPriority, pickOptions);
+    const cantripEntries = pickCantripsForSheet(
+      entries,
+      cantripsKnown,
+      !!input.torneoMode,
+      combatPriority,
+      pickOptions
+    );
     let leveledEntries = pickLeveledSpellsSlotAware(
       spellPool,
       spellsPrepared,

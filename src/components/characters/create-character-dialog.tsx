@@ -24,6 +24,7 @@ import { CharacterBuildFormFields } from "@/components/characters/character-buil
 import { backgroundBySlug } from "@/lib/character-build-catalog";
 import type { QuickManualSection } from "@/lib/sheet-generator/quick-manual-builder";
 import type { CharacterFormBuildDraft } from "@/lib/character-sheet-build-meta";
+import { arrayBufferToBase64 } from "@/lib/utils/array-buffer-base64";
 
 const MAX_TOTAL_MB = 4;
 const MAX_TOTAL_BYTES = MAX_TOTAL_MB * 1024 * 1024;
@@ -128,15 +129,6 @@ function parseStoredGeneratedSheet(raw: string | null): StoredGeneratedSheet | n
     // ignore
   }
   return null;
-}
-
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]!);
-  }
-  return btoa(binary);
 }
 
 /** Allineato al generatore scheda (nome · classe liv. 1 · Background: …). */

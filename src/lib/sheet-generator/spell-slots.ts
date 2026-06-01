@@ -199,15 +199,21 @@ export function computeCharacterSpellcastingMeta(input: {
 
 /** Metadati incantesimi dalla scheda generata (per salvataggio su PG). */
 export function spellcastingMetaFromGeneratedSheet(sheet: {
-  spellSlots: Record<number, number>;
-  cantripsKnown: number;
-  spellcastingAbility: AbilityKey | null;
+  spellSlots?: Record<number, number> | null;
+  cantripsKnown?: number | null;
+  spellcastingAbility?: AbilityKey | null;
 }): CharacterSpellcastingMeta | null {
-  const spellSlots = spellSlotsRecordToEntries(sheet.spellSlots);
-  if (!spellSlots.length && sheet.cantripsKnown <= 0 && !sheet.spellcastingAbility) return null;
+  const slotsRecord =
+    sheet.spellSlots && typeof sheet.spellSlots === "object" ? sheet.spellSlots : {};
+  const spellSlots = spellSlotsRecordToEntries(slotsRecord);
+  const cantripsKnown =
+    typeof sheet.cantripsKnown === "number" && Number.isFinite(sheet.cantripsKnown)
+      ? sheet.cantripsKnown
+      : 0;
+  if (!spellSlots.length && cantripsKnown <= 0 && !sheet.spellcastingAbility) return null;
   return {
     spellSlots,
-    cantripsKnown: sheet.cantripsKnown,
-    spellcastingAbility: sheet.spellcastingAbility,
+    cantripsKnown,
+    spellcastingAbility: sheet.spellcastingAbility ?? null,
   };
 }

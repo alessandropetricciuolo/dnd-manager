@@ -1,4 +1,5 @@
 import { PDFDocument, type PDFFont, type PDFPage, rgb, StandardFonts } from "pdf-lib";
+import { sanitizeTextForStandardPdfFont } from "@/lib/pdf/winansi-text";
 
 /** Limite sicurezza: testo incluso nell’endpoint PDF. */
 export const MAX_CHARACTER_STORY_PDF_CHARS = 48_000;
@@ -26,7 +27,7 @@ export function storyInputToPdfPlainText(raw: string): string {
     .replace(/\t/g, " ");
   t = t.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n");
   t = t.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uD800-\uDFFF]/g, "");
-  return t.trim();
+  return sanitizeTextForStandardPdfFont(t.trim());
 }
 
 function clampStoryLength(s: string): string {

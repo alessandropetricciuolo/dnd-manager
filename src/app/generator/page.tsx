@@ -17,6 +17,8 @@ import {
   parseGeneratedSheetBuildMeta,
 } from "@/lib/character-sheet-build-meta";
 import { spellcastingMetaFromGeneratedSheet } from "@/lib/sheet-generator/spell-slots";
+import { formatSheetSaveError } from "@/lib/sheet-save-errors";
+import { arrayBufferToBase64 } from "@/lib/utils/array-buffer-base64";
 
 const CREATE_CHARACTER_DRAFT_KEY_PREFIX = "create-character-draft";
 const CREATE_CHARACTER_GENERATED_SHEET_KEY_PREFIX = "create-character-generated-sheet";
@@ -74,13 +76,6 @@ function GeneratorPageContent() {
     }
     return "Torna ai personaggi";
   }, [initial.returnTo]);
-
-  function arrayBufferToBase64(buffer: ArrayBuffer): string {
-    const bytes = new Uint8Array(buffer);
-    let binary = "";
-    for (const b of bytes) binary += String.fromCharCode(b);
-    return btoa(binary);
-  }
 
   function persistCreateDraftFromGeneratorForm() {
     if (!formRef.current || !initial.campaignId) return;
@@ -212,8 +207,9 @@ function GeneratorPageContent() {
       const msg = "Per salvare la scheda apri il generatore dalla creazione/modifica PG.";
       setResultMessage(msg);
       toast.error(msg);
-    } catch {
-      const msg = "Errore imprevisto durante il salvataggio della scheda PDF.";
+    } catch (err) {
+      console.error("[handleSaveToCharacterSheet]", err);
+      const msg = formatSheetSaveError(err);
       setResultMessage(msg);
       toast.error(msg);
     } finally {
