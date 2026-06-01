@@ -22,6 +22,7 @@ import {
 } from "@/lib/server/phb-spell-excerpt";
 import { collapseRandomDiceTablesInBackgroundMarkdown } from "@/lib/sheet-generator/background-dice-table-roll";
 import {
+  ensureLeveledSpellPicked,
   pickCantripsForSheet,
   pickLeveledSpellsSlotAware,
 } from "@/lib/sheet-generator/spell-slot-picker";
@@ -1317,6 +1318,17 @@ export async function resolveGeneratorRules(
       leveledEntries = ensurePaladinPunishmentSpell(leveledEntries, entries, maxOnSheet);
       leveledEntries = enforceSpellLevelCaps(
         leveledEntries,
+        spellSlots,
+        input.classLabel,
+        spellsPrepared
+      );
+    }
+    if (input.classLabel === "Chierico") {
+      leveledEntries = ensureLeveledSpellPicked(
+        leveledEntries,
+        entries,
+        "Cura Ferite",
+        maxOnSheet,
         spellSlots,
         input.classLabel,
         spellsPrepared
