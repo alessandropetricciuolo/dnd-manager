@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { buildGeneratedCharacterSheet } from "@/lib/sheet-generator/build-engine";
+import { mapGeneratedSheetToPdfFields } from "@/lib/sheet-generator/sheet-mapper";
 import {
   createSpellSchoolLookup,
   parseSpellSchoolKeyFromMarkdown,
@@ -62,6 +63,8 @@ test("mago L5 invocazione: solo incantesimi della scuola scelta, max 3 spell L3"
   const schoolKey = "invocazione";
   const spellsWithOtherSchool = res.sheet.spells.filter((s) => getSpellSchool(s.name) !== schoolKey);
   const fullText = res.sheet.spells.map((s) => `${s.name}\n${s.fullTextMd ?? ""}`).join("\n\n");
+  const fields = mapGeneratedSheetToPdfFields(res.sheet);
+  const featuresMain = String(fields.Features_Main ?? "");
 
   assert.equal(targetSchool, leveled.length, "tutti gli incantesimi di livello devono essere della scuola scelta");
   assert.equal(targetOther, 0, "non devono esserci incantesimi di altre scuole");
@@ -73,6 +76,8 @@ test("mago L5 invocazione: solo incantesimi della scuola scelta, max 3 spell L3"
   assert.match(res.sheet.subclassFeaturesMd ?? "", /scuola di invocazione/i);
   assert.doesNotMatch(res.sheet.subclassFeaturesMd ?? "", /scuola di necromanzia/i);
   assert.doesNotMatch(fullText, /Necromanzia/i);
+  assert.match(featuresMain, /invocatore sapiente|plasmare incantesimi/i);
+  assert.doesNotMatch(featuresMain, /necromanzia|negromanzia|necromante sapiente|raccolto macabro/i);
 });
 
 test("Chiaroveggenza è divinazione nel manuale", async () => {
