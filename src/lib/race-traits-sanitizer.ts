@@ -24,7 +24,7 @@ export function stripTrailingPhbRaceChapterFooterAfterLinguaggi(md: string): str
 function normalizeHeadingForMatch(s: string): string {
   return s
     .normalize("NFD")
-    .replace(/\p{M}/gu, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .replace(/\s+/g, " ")
     .trim()
     .toUpperCase();
