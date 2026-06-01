@@ -18,10 +18,10 @@ test("CA Guerriero: cotta di maglia + scudo", () => {
   assert.equal(r.ac, 18);
 });
 
-test("cap incantesimi conosciuti: lv5 con 2 slot L3 → max 2 spell L3", () => {
+test("cap per livello: 2 slot L3 → max 3 incantesimi L3 in scheda", () => {
   const slots = { 1: 4, 2: 3, 3: 2, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 };
   const caps = spellCapPerLevel(slots, "Stregone");
-  assert.equal(caps.get(3), 2);
+  assert.equal(caps.get(3), 3);
 });
 
 test("pick slot-aware: stregone lv5 non riempie tutto di L3", () => {
@@ -38,6 +38,6 @@ test("pick slot-aware: stregone lv5 non riempie tutto di L3", () => {
   const slots = { 1: 4, 2: 3, 3: 2, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 };
   const picked = pickLeveledSpellsSlotAware(entries, 6, 3, slots, "Stregone", true);
   const l3 = picked.filter((p) => p.level === 3).length;
-  assert.ok(l3 <= 2, `attesi max 2 incantesimi L3, trovati ${l3}`);
+  assert.ok(l3 <= 3, `attesi max 3 incantesimi L3 (2 slot + 1), trovati ${l3}`);
   assert.ok(picked.some((p) => p.level === 1));
 });

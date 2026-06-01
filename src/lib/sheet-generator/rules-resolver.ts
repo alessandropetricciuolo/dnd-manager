@@ -38,6 +38,12 @@ import {
   slotsForClassLevel,
   SPELLCASTING_ABILITY_BY_CLASS,
 } from "@/lib/sheet-generator/spell-slots";
+import {
+  balanceWizardArcaneSchoolSpells,
+  createSpellSchoolLookup,
+  parseWizardArcaneSchoolKey,
+} from "@/lib/sheet-generator/wizard-arcane-school";
+import { enforceSpellLevelCaps, type SpellPickOptions } from "@/lib/sheet-generator/spell-slot-picker";
 
 function headingLevel(line: string): number | null {
   const m = line.match(/^(\s*#{1,6})\s+.+$/);
@@ -1146,14 +1152,23 @@ export async function resolveGeneratorRules(
     const torneoCombatPool = input.torneoMode ? filterTorneoCombatSpells(entries) : entries;
     const spellPool = torneoCombatPool.length ? torneoCombatPool : entries;
     const combatPriority = !!input.powerPlayer || !!input.torneoMode;
-    const cantripEntries = pickCantripsSlotAware(spellPool, cantripsKnown, combatPriority);
+    const wizardSchoolKey =
+      input.classLabel === "Mago" ? parseWizardArcaneSchoolKey(input.classSubclass) : null;
+    const schoolLookup = wizardSchoolKey ? createSpellSchoolLookup() : null;
+    const pickOptions: SpellPickOptions | undefined =
+      wizardSchoolKey && schoolLookup
+        ? { wizardSchoolKey, getSpellSchool: schoolLookup.getSpellSchool }
+        : undefined;
+
+    const cantripEntries = pickCantripsSlotAware(spellPool, cantripsKnown, combatPriority, pickOptions);
     let leveledEntries = pickLeveledSpellsSlotAware(
       spellPool,
       spellsPrepared,
       maxOnSheet,
       spellSlots,
       input.classLabel,
-      combatPriority
+      combatPriority,
+      pickOptions
     );
     if (leveledEntries.length < spellsPrepared) {
       const fillPool = input.torneoMode ? filterTorneoCombatSpells(entries) : entries;
@@ -1164,14 +1179,44 @@ export async function resolveGeneratorRules(
           maxOnSheet,
           spellSlots,
           input.classLabel,
-          combatPriority
+          combatPriority,
+          pickOptions
         );
       }
     }
+    leveledEntries = enforceSpellLevelCaps(
+      leveledEntries,
+      spellSlots,
+      input.classLabel,
+      spellsPrepared
+    );
+    if (wizardSchoolKey && schoolLookup) {
+      leveledEntries = balanceWizardArcaneSchoolSpells(
+        leveledEntries,
+        entries,
+        wizardSchoolKey,
+        spellsPrepared,
+        schoolLookup.getSpellSchool,
+        combatPriority,
+        spellSlots,
+        input.classLabel
+      );
+      leveledEntries = enforceSpellLevelCaps(
+        leveledEntries,
+        spellSlots,
+        input.classLabel,
+        spellsPrepared
+      );
+    }
     if (input.classLabel === "Paladino") {
       leveledEntries = ensurePaladinPunishmentSpell(leveledEntries, entries, maxOnSheet);
+      leveledEntries = enforceSpellLevelCaps(
+        leveledEntries,
+        spellSlots,
+        input.classLabel,
+        spellsPrepared
+      );
     }
-    leveledEntries = leveledEntries.slice(0, spellsPrepared);
     const picked = [...cantripEntries, ...leveledEntries];
     await preloadPhbMarkdown(requestOrigin);
     for (const pickedSpell of picked) {

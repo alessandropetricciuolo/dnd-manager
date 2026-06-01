@@ -1,6 +1,12 @@
 import { getSpellCombatTierScore } from "@/lib/sheet-generator/spell-combat-tier";
+import { sortKeyForPick } from "@/lib/sheet-generator/wizard-arcane-school";
 
 export type SpellPickEntry = { name: string; level: number };
+
+export type SpellPickOptions = {
+  wizardSchoolKey?: string | null;
+  getSpellSchool?: (name: string) => string | null;
+};
 
 /** Classi che «conoscono» un numero fisso di incantesimi (non preparati giornalmente). */
 const KNOWN_SPELL_CLASSES = new Set(["Bardo", "Stregone", "Warlock", "Ranger"]);
@@ -22,14 +28,10 @@ export function spellCapPerLevel(
     if (slots <= 0) continue;
 
     if (classLabel === "Warlock") {
-      // Conosciuti al livello del patto: non riempire tutta la lista col massimo livello slot.
       caps.set(lvl, Math.max(1, Math.min(slots + 1, 4)));
-    } else if (isKnown) {
-      // Es. lv 5 con 2 slot L3 → al massimo 2 incantesimi L3 conosciuti.
-      caps.set(lvl, Math.max(1, slots));
     } else {
-      // Preparati (paladino, chierico, …): il numero preparato può superare gli slot di un singolo livello.
-      caps.set(lvl, Math.max(slots + 2, 6));
+      // Regola generale: al massimo 1 incantesimo in più degli slot di quel livello (2 slot L3 → max 3 spell L3).
+      caps.set(lvl, Math.max(1, slots + 1));
     }
   }
 
@@ -38,15 +40,22 @@ export function spellCapPerLevel(
 
 function sortCandidates(
   pool: SpellPickEntry[],
-  powerPlayer: boolean
+  powerPlayer: boolean,
+  pickOptions?: SpellPickOptions
 ): SpellPickEntry[] {
+  const schoolKey = pickOptions?.wizardSchoolKey ?? null;
+  const getSpellSchool = pickOptions?.getSpellSchool ?? (() => null);
   return [...pool].sort((a, b) => {
-    if (powerPlayer) {
+    if (schoolKey) {
+      const sa = sortKeyForPick(a, powerPlayer, schoolKey, getSpellSchool);
+      const sb = sortKeyForPick(b, powerPlayer, schoolKey, getSpellSchool);
+      if (sb !== sa) return sb - sa;
+    } else if (powerPlayer) {
       const ta = getSpellCombatTierScore(a.name);
       const tb = getSpellCombatTierScore(b.name);
       if (tb !== ta) return tb - ta;
-    } else {
-      if (a.level !== b.level) return a.level - b.level;
+    } else if (a.level !== b.level) {
+      return a.level - b.level;
     }
     if (a.level !== b.level) return b.level - a.level;
     return a.name.localeCompare(b.name, "it");
@@ -66,7 +75,8 @@ export function pickLeveledSpellsSlotAware(
   maxLevel: number,
   spellSlots: Record<number, number>,
   classLabel: string,
-  powerPlayer: boolean
+  powerPlayer: boolean,
+  pickOptions?: SpellPickOptions
 ): SpellPickEntry[] {
   if (count <= 0) return [];
 
@@ -92,7 +102,8 @@ export function pickLeveledSpellsSlotAware(
     if (!caps.has(lvl) || picked.length >= count) continue;
     const atLevel = sortCandidates(
       pool.filter((e) => e.level === lvl && !seen.has(spellKey(e))),
-      powerPlayer
+      powerPlayer,
+      pickOptions
     );
     for (const e of atLevel) {
       if (tryAdd(e)) break;
@@ -110,33 +121,68 @@ export function pickLeveledSpellsSlotAware(
       return countAtLevel(picked, e.level) < cap;
     });
     if (!eligible.length) break;
-    const sorted = sortCandidates(eligible, powerPlayer);
+    const sorted = sortCandidates(eligible, powerPlayer, pickOptions);
     if (!tryAdd(sorted[0]!)) break;
   }
 
-  // 3) Se mancano slot (liste corte), rilassa i cap del livello più basso disponibile.
+  // 3) Se la lista è ancora corta, riempi rispettando i cap per livello.
   if (picked.length < count) {
-    for (const e of sortCandidates(pool.filter((x) => !seen.has(spellKey(x))), powerPlayer)) {
+    for (const e of sortCandidates(
+      pool.filter((x) => !seen.has(spellKey(x))),
+      powerPlayer,
+      pickOptions
+    )) {
       if (picked.length >= count) break;
-      const key = spellKey(e);
-      if (seen.has(key)) continue;
-      seen.add(key);
-      picked.push(e);
+      tryAdd(e);
     }
   }
 
   return picked.slice(0, count);
 }
 
+/** Rimuove incantesimi in eccesso rispetto al cap per livello (tier più bassi per primi). */
+export function enforceSpellLevelCaps(
+  picked: SpellPickEntry[],
+  spellSlots: Record<number, number>,
+  classLabel: string,
+  maxTotal: number
+): SpellPickEntry[] {
+  const caps = spellCapPerLevel(spellSlots, classLabel);
+  let out = [...picked];
+
+  const trimLevel = (lvl: number) => {
+    const cap = caps.get(lvl);
+    if (cap == null) return;
+    while (out.filter((e) => e.level === lvl).length > cap) {
+      let worstIdx = -1;
+      let worst = Infinity;
+      for (let i = 0; i < out.length; i += 1) {
+        if (out[i]!.level !== lvl) continue;
+        const tier = getSpellCombatTierScore(out[i]!.name);
+        if (tier < worst) {
+          worst = tier;
+          worstIdx = i;
+        }
+      }
+      if (worstIdx < 0) break;
+      out = out.filter((_, i) => i !== worstIdx);
+    }
+  };
+
+  for (let lvl = 1; lvl <= 9; lvl += 1) trimLevel(lvl);
+  return out.slice(0, maxTotal);
+}
+
 export function pickCantripsSlotAware(
   entries: SpellPickEntry[],
   count: number,
-  powerPlayer: boolean
+  powerPlayer: boolean,
+  pickOptions?: SpellPickOptions
 ): SpellPickEntry[] {
   if (count <= 0) return [];
   const pool = entries.filter((e) => e.level === 0);
   if (!pool.length) return [];
-  const sorted = sortCandidates(pool, powerPlayer);
+  const sorted = sortCandidates(pool, powerPlayer, pickOptions);
   const picked: SpellPickEntry[] = [];
   const seen = new Set<string>();
   for (const e of sorted) {
