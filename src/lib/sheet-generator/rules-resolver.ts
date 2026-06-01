@@ -1240,9 +1240,6 @@ export async function resolveGeneratorRules(
     const maxOnSheet = tcWizard ? tcWizard.maxSpellLevelOnList : maxSpellLevelOnSheet(classDef, input.level);
     const listByLevel = extractSpellListByMaxLevel(listRaw, maxOnSheet);
     const entries = parseSpellsWithLevelFromList(listByLevel);
-    const torneoCombatPool = input.torneoMode ? filterTorneoCombatSpells(entries) : entries;
-    const spellPool = torneoCombatPool.length ? torneoCombatPool : entries;
-    const combatPriority = !!input.powerPlayer || !!input.torneoMode;
     const wizardSchoolKey =
       input.classLabel === "Mago" ? parseWizardArcaneSchoolKey(input.classSubclass) : null;
     const schoolLookup = wizardSchoolKey ? createSpellSchoolLookup() : null;
@@ -1250,9 +1247,20 @@ export async function resolveGeneratorRules(
       wizardSchoolKey && schoolLookup
         ? { wizardSchoolKey, getSpellSchool: schoolLookup.getSpellSchool }
         : undefined;
+    const wizardScopedEntries =
+      wizardSchoolKey && schoolLookup
+        ? entries.filter((e) => schoolLookup.getSpellSchool(e.name) === wizardSchoolKey)
+        : entries;
+    if (wizardSchoolKey && schoolLookup && !wizardScopedEntries.length) {
+      warnings.push(`Incantesimi della scuola ${input.classSubclass ?? wizardSchoolKey} non trovati nella lista del mago.`);
+    }
+    const selectableEntries = wizardSchoolKey && schoolLookup ? wizardScopedEntries : entries;
+    const torneoCombatPool = input.torneoMode ? filterTorneoCombatSpells(selectableEntries) : selectableEntries;
+    const spellPool = torneoCombatPool.length ? torneoCombatPool : selectableEntries;
+    const combatPriority = !!input.powerPlayer || !!input.torneoMode;
 
     const cantripEntries = pickCantripsForSheet(
-      entries,
+      selectableEntries,
       cantripsKnown,
       !!input.torneoMode,
       combatPriority,
@@ -1268,7 +1276,7 @@ export async function resolveGeneratorRules(
       pickOptions
     );
     if (leveledEntries.length < spellsPrepared) {
-      const fillPool = input.torneoMode ? filterTorneoCombatSpells(entries) : entries;
+      const fillPool = input.torneoMode ? filterTorneoCombatSpells(selectableEntries) : selectableEntries;
       if (fillPool.length > leveledEntries.length) {
         leveledEntries = pickLeveledSpellsSlotAware(
           fillPool,
@@ -1290,7 +1298,7 @@ export async function resolveGeneratorRules(
     if (wizardSchoolKey && schoolLookup) {
       leveledEntries = balanceWizardArcaneSchoolSpells(
         leveledEntries,
-        entries,
+        selectableEntries,
         wizardSchoolKey,
         spellsPrepared,
         schoolLookup.getSpellSchool,

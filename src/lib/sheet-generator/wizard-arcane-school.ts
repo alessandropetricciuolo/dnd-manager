@@ -13,13 +13,23 @@ export function normalizeArcaneSchoolKey(raw: string): string {
     .replace(/\s+/g, " ");
 }
 
+const WIZARD_ARCANE_SCHOOL_KEYS = new Set([
+  "abiurazione",
+  "ammaliamento",
+  "divinazione",
+  "evocazione",
+  "illusione",
+  "invocazione",
+  "necromanzia",
+  "trasmutazione",
+]);
+
 /** Da sottoclasse mago PHB («Scuola di Divinazione»). */
 export function parseWizardArcaneSchoolKey(classSubclass: string | null | undefined): string | null {
   const sub = (classSubclass ?? "").trim();
   if (!sub) return null;
-  const m = sub.match(/^scuola\s+di\s+(.+)$/i);
-  if (m?.[1]) return normalizeArcaneSchoolKey(m[1]);
-  return null;
+  const normalized = normalizeArcaneSchoolKey(sub);
+  return WIZARD_ARCANE_SCHOOL_KEYS.has(normalized) ? normalized : null;
 }
 
 /** Estrae la scuola dal sottotitolo PHB (*Divinazione di 3° livello*). */
@@ -27,18 +37,17 @@ export function parseSpellSchoolKeyFromMarkdown(md: string): string | null {
   if (!md.trim()) return null;
   const head = md.replace(/\r/g, "").split("\n").slice(0, 12).join("\n");
   const m =
+    head.match(/\*\s*trucchetto\s+di\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s]*?)\s*\*/i) ??
     head.match(/\*\s*([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s]*?)\s+di\s+\d+°\s+livello\s*\*/i) ??
     head.match(/(?:^|\n)\s*\*([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s]*?)\s+di\s+\d+°\s+livello/i);
   if (!m?.[1]) return null;
   return normalizeArcaneSchoolKey(m[1]);
 }
 
-/** 60% scuola scelta (arrotondato per eccesso), 40% altre scuole. */
+/** Il generatore deve usare solo la scuola scelta nel wizard. */
 export function wizardSchoolSpellTargets(total: number): { school: number; other: number } {
   const safe = Math.max(0, Math.floor(total));
-  if (safe === 0) return { school: 0, other: 0 };
-  const school = Math.min(safe, Math.ceil(safe * 0.6));
-  return { school, other: safe - school };
+  return { school: safe, other: 0 };
 }
 
 export function createSpellSchoolLookup(): {
@@ -115,7 +124,8 @@ function bestCandidate(
 }
 
 /**
- * Bilancia il grimorio: ~60% scuola scelta (ceil), ~40% altre scuole.
+ * Mantiene nel grimorio solo incantesimi della scuola scelta, sostituendo eventuali
+ * scelte di altre scuole con candidate della tradizione arcana selezionata.
  */
 function canAddAtLevel(
   spells: SpellPickEntry[],
@@ -154,13 +164,11 @@ export function balanceWizardArcaneSchoolSpells(
   };
 
   while (out.length < targetCount) {
-    const insert =
-      bestCandidate(pool, seen, true, wizardSchoolKey, getSpellSchool, powerPlayer) ??
-      bestCandidate(pool, seen, false, wizardSchoolKey, getSpellSchool, powerPlayer);
+    const insert = bestCandidate(pool, seen, true, wizardSchoolKey, getSpellSchool, powerPlayer);
     if (!tryInsert(out, insert)) break;
   }
 
-  const { school: targetSchool, other: targetOther } = wizardSchoolSpellTargets(out.length);
+  const { school: targetSchool } = wizardSchoolSpellTargets(out.length);
 
   const isSchoolSpell = (e: SpellPickEntry) => getSpellSchool(e.name) === wizardSchoolKey;
   const schoolCount = () => out.filter(isSchoolSpell).length;
@@ -221,7 +229,7 @@ export function balanceWizardArcaneSchoolSpells(
     const needSchool = schoolCount() < targetSchool;
     const options = candidatesOfSchool(needSchool);
     let added = false;
-    for (const insert of options.length ? options : candidatesOfSchool(!needSchool)) {
+    for (const insert of options) {
       if (tryInsert(out, insert)) {
         added = true;
         break;
@@ -230,7 +238,7 @@ export function balanceWizardArcaneSchoolSpells(
     if (!added) break;
   }
 
-  return out.slice(0, targetCount);
+  return out.filter(isSchoolSpell).slice(0, targetCount);
 }
 
 /** @deprecated Usa balanceWizardArcaneSchoolSpells */
