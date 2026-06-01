@@ -32,6 +32,8 @@ const TORNEO_NON_COMBAT = new Set(
     "Comunicare con Animali",
     "Comunicare con Piante",
     "Luce",
+    "Luce diurna",
+    "Luce Diurna",
     "Mano del Mago",
     "Ritirata Rapida",
     "Vita Falsata",
@@ -87,7 +89,7 @@ const TORNEO_TIER_80_COMBAT_OK = new Set(
 );
 
 const NON_COMBAT_NAME_RE =
-  /\b(individuazione|chiaroveggenza|scrutare|divinazione|verita|anticipare|presagio|guida|allarme|famiglio|inosservato|messaggio|amicizia|prestidigitar|comprensione|localizza|comunicare|teletrasporto|portale|buco portatile|invisibil|morte apparente|forma eter|forma gass|volare|leggere lingue|identificare|ristorare|invio|inviare|cacciare memorie)\b/i;
+  /\b(individuazione|chiaroveggenza|scrutare|divinazione|verita|anticipare|presagio|guida|allarme|famiglio|inosservato|messaggio|amicizia|prestidigitar|comprensione|localizza|comunicare|teletrasporto|portale|buco portatile|invisibil|morte apparente|forma eter|forma gass|volare|leggere lingue|identificare|ristorare|invio|inviare|cacciare memorie|luce diurna)\b/i;
 
 /** Nomi PHB con varianti di traduzione, utili in combattimento ma fuori dalla tier list. */
 const TORNEO_COMBAT_EXTRA = new Set(

@@ -12,6 +12,11 @@ test("esclude utilità/divinazione forti ma non da combattimento", () => {
   assert.equal(isTorneoCombatSpell("Chiaroveggenza"), false);
 });
 
+test("esclude Luce diurna in torneo (illuminazione, non combattimento)", () => {
+  assert.equal(isTorneoCombatSpell("Luce diurna"), false);
+  assert.equal(isTorneoCombatSpell("Luce Diurna"), false);
+});
+
 test("include danni e controllo da combattimento", () => {
   assert.equal(isTorneoCombatSpell("Palla di Fuoco"), true);
   assert.equal(isTorneoCombatSpell("Fulmine"), true);

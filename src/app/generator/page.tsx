@@ -12,6 +12,10 @@ import type { GeneratedCharacterSheet } from "@/lib/sheet-generator/types";
 import type { QuickManualSection } from "@/lib/sheet-generator/quick-manual-builder";
 import { useSearchParams } from "next/navigation";
 import { saveGeneratedSheetToCharacter } from "@/app/campaigns/character-actions";
+import {
+  mapGeneratorFormToCharacterBuildDraft,
+  parseGeneratedSheetBuildMeta,
+} from "@/lib/character-sheet-build-meta";
 import { spellcastingMetaFromGeneratedSheet } from "@/lib/sheet-generator/spell-slots";
 
 const CREATE_CHARACTER_DRAFT_KEY_PREFIX = "create-character-draft";
@@ -82,24 +86,13 @@ function GeneratorPageContent() {
     if (!formRef.current || !initial.campaignId) return;
     try {
       const draftKey = `${CREATE_CHARACTER_DRAFT_KEY_PREFIX}:${initial.campaignId}`;
-      const fd = new FormData(formRef.current);
       const existingRaw = localStorage.getItem(draftKey);
       const existing = existingRaw ? (JSON.parse(existingRaw) as Record<string, string>) : {};
-
-      // Il form del generatore usa chiavi diverse dal dialog "Nuovo personaggio":
-      // mappiamo solo i campi comuni e facciamo merge per non perdere i dati già inseriti nel dialog.
-      const mapped: Record<string, string> = {
-        name: (fd.get("characterName") as string | null)?.trim() ?? "",
-        race_slug: (fd.get("raceSlug") as string | null)?.trim() ?? "",
-        subclass_slug: (fd.get("subraceSlug") as string | null)?.trim() ?? "",
-        character_class: (fd.get("classLabel") as string | null)?.trim() ?? "",
-        class_subclass: (fd.get("classSubclass") as string | null)?.trim() ?? "",
-        background_slug: (fd.get("backgroundSlug") as string | null)?.trim() ?? "",
-      };
+      const mapped = mapGeneratorFormToCharacterBuildDraft(formRef.current, sheet);
 
       const merged: Record<string, string> = { ...existing };
       for (const [k, v] of Object.entries(mapped)) {
-        if (v) merged[k] = v;
+        if (typeof v === "string" && v) merged[k] = v;
       }
 
       localStorage.setItem(draftKey, JSON.stringify(merged));
@@ -147,6 +140,7 @@ function GeneratorPageContent() {
       }
       const ab = await pdfRes.arrayBuffer();
       const base64 = arrayBufferToBase64(ab);
+      const buildMeta = parseGeneratedSheetBuildMeta(formRef.current, sheet);
       if (initial.campaignId && initial.characterId) {
         const saved = await saveGeneratedSheetToCharacter(
           initial.campaignId,
@@ -154,7 +148,8 @@ function GeneratorPageContent() {
           base64,
           `${sheet.characterName || "scheda"}-compilata.pdf`,
           { armorClass: sheet.armorClass, hitPoints: sheet.hpMax },
-          spellcastingMetaFromGeneratedSheet(sheet)
+          spellcastingMetaFromGeneratedSheet(sheet),
+          buildMeta
         );
         if (saved.success) {
           const msg = "Scheda PDF salvata nella scheda tecnica del personaggio.";
@@ -176,6 +171,7 @@ function GeneratorPageContent() {
 
       if (initial.campaignId && initial.returnTo) {
         persistCreateDraftFromGeneratorForm();
+        const buildDraft = mapGeneratorFormToCharacterBuildDraft(formRef.current, sheet);
         try {
           localStorage.setItem(
             `${CREATE_CHARACTER_GENERATED_SHEET_KEY_PREFIX}:${initial.campaignId}`,
@@ -187,6 +183,14 @@ function GeneratorPageContent() {
               sheetData: sheetDataObj,
               quickManualSections,
               spellcasting: spellcastingMetaFromGeneratedSheet(sheet),
+              build: {
+                race_slug: buildDraft.race_slug,
+                subclass_slug: buildDraft.subclass_slug,
+                character_class: buildDraft.character_class,
+                class_subclass: buildDraft.class_subclass,
+                background_slug: buildDraft.background_slug,
+                level: buildDraft.level,
+              },
             })
           );
         } catch (e) {

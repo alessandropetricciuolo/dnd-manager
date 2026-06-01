@@ -165,7 +165,12 @@ export function EditCharacterDialog({
             Modifica nome, classe, statistiche di combattimento, avatar, scheda PDF e background. L&apos;assegnazione al giocatore si gestisce dalla card.
           </DialogDescription>
         </DialogHeader>
-        <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
+        <form
+          ref={formRef}
+          key={`${character.id}-${character.updated_at}-${character.race_slug ?? ""}-${character.level}`}
+          onSubmit={handleSubmit}
+          className="space-y-4"
+        >
           <div className="space-y-2">
             <Label htmlFor="edit-char-name">
               <User className="mr-1.5 inline h-4 w-4" />

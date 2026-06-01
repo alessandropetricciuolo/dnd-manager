@@ -35,6 +35,7 @@ import {
   CHARACTER_SHEETS_BUCKET,
   normalizeCharacterSheetStoragePath,
 } from "@/lib/character-sheets/storage-path";
+import type { GeneratedSheetBuildMeta } from "@/lib/character-sheet-build-meta";
 
 const SIGNED_URL_EXPIRY_SEC = 3600;
 
@@ -348,6 +349,13 @@ export async function createCharacter(
   const subclass_slug = normalizeSubraceForRace(race_slug, formSlug(formData, "subclass_slug"));
   const bgRaw = formSlug(formData, "background_slug");
   const background_slug = backgroundBySlug(bgRaw) ? bgRaw : null;
+  const levelRaw = (formData.get("level") as string | null)?.trim() || "1";
+  const parsedLevel = Number.parseInt(levelRaw, 10);
+  const level =
+    Number.isFinite(parsedLevel) && parsedLevel >= 1 && parsedLevel <= 20 ? parsedLevel : 1;
+  if (level >= 3 && !classSubclass) {
+    return { success: false, error: "Dal livello 3 in poi seleziona una sottoclasse." };
+  }
   const imageFile = formData.get("image") as File | null;
   const imageUrlFromFormRaw = (formData.get("image_url") as string | null)?.trim() || null;
   const imageUrlFromForm =
@@ -450,7 +458,7 @@ export async function createCharacter(
 
   let rules_snapshot = await recomputeCharacterRulesSnapshot({
     campaignId,
-    level: 1,
+    level,
     characterClass: characterClass,
     classSubclass,
     raceSlug: race_slug,
@@ -472,6 +480,7 @@ export async function createCharacter(
       class_subclass: classSubclass,
       armor_class: finalArmorClass,
       hit_points: finalHitPoints,
+      level,
       sheet_file_path,
       background,
       race_slug,
@@ -1232,14 +1241,15 @@ export async function updateCharactersGridPositionAction(
   return { success: true };
 }
 
-/** Solo GM/Admin. Salva un PDF generato come scheda tecnica del PG. Opzionalmente aggiorna CA/PF con i valori dell’anteprima generata. */
+/** Solo GM/Admin. Salva un PDF generato come scheda tecnica del PG. Opzionalmente aggiorna CA/PF e build (razza, classe, …) dall’anteprima. */
 export async function saveGeneratedSheetToCharacter(
   campaignId: string,
   characterId: string,
   pdfBase64: string,
   fileName: string,
   combatFromSheet?: { armorClass: number; hitPoints: number } | null,
-  spellcastingFromSheet?: CharacterSpellcastingMeta | null
+  spellcastingFromSheet?: CharacterSpellcastingMeta | null,
+  buildFromSheet?: GeneratedSheetBuildMeta | null
 ): Promise<CharResult<void>> {
   const ctx = await getCurrentUserAndRole();
   if (!ctx) return { success: false, error: "Non autenticato." };
@@ -1253,11 +1263,18 @@ export async function saveGeneratedSheetToCharacter(
 
   const { data: row, error: fetchErr } = await supabase
     .from("campaign_characters")
-    .select("id, campaign_id, sheet_file_path, rules_snapshot")
+    .select(
+      "id, campaign_id, sheet_file_path, rules_snapshot, level, character_class, class_subclass, race_slug, subclass_slug, background_slug"
+    )
     .eq("id", chid)
     .eq("campaign_id", cid)
     .single();
   if (fetchErr || !row) return { success: false, error: "Personaggio non trovato." };
+
+  const prevLevel =
+    typeof (row as { level?: number }).level === "number" && Number.isFinite((row as { level: number }).level)
+      ? Math.trunc((row as { level: number }).level)
+      : 1;
 
   let bytes: Buffer;
   try {
@@ -1282,6 +1299,12 @@ export async function saveGeneratedSheetToCharacter(
     armor_class?: number;
     hit_points?: number;
     rules_snapshot?: Json;
+    race_slug?: string | null;
+    subclass_slug?: string | null;
+    character_class?: string | null;
+    class_subclass?: string | null;
+    background_slug?: string | null;
+    level?: number;
     updated_at: string;
   } = {
     sheet_file_path: path,
@@ -1293,7 +1316,46 @@ export async function saveGeneratedSheetToCharacter(
   if (typeof hp === "number" && Number.isFinite(hp) && hp >= 0) {
     updateRow.hit_points = Math.trunc(hp);
   }
-  if (spellcastingFromSheet) {
+  if (buildFromSheet) {
+    const race_slug = raceBySlug(buildFromSheet.raceSlug) ? buildFromSheet.raceSlug.trim() : null;
+    const subclass_slug = normalizeSubraceForRace(race_slug, buildFromSheet.subclassSlug);
+    const background_slug = backgroundBySlug(buildFromSheet.backgroundSlug)
+      ? buildFromSheet.backgroundSlug.trim()
+      : null;
+    const character_class = buildFromSheet.characterClass.trim() || null;
+    const classSubclass = buildFromSheet.classSubclass?.trim() || null;
+    const genLevel = Math.trunc(buildFromSheet.level);
+    const nextLevel =
+      genLevel >= 1 && genLevel <= 20 ? Math.max(prevLevel, genLevel) : prevLevel;
+
+    if (nextLevel >= 3 && !classSubclass) {
+      return {
+        success: false,
+        error: "Dal livello 3 in poi seleziona una sottoclasse nel generatore prima di salvare.",
+      };
+    }
+
+    if (race_slug) updateRow.race_slug = race_slug;
+    updateRow.subclass_slug = subclass_slug;
+    if (character_class) updateRow.character_class = character_class;
+    updateRow.class_subclass = classSubclass;
+    if (background_slug) updateRow.background_slug = background_slug;
+    updateRow.level = nextLevel;
+
+    let rules_snapshot = await recomputeCharacterRulesSnapshot({
+      campaignId: cid,
+      level: nextLevel,
+      characterClass: character_class,
+      classSubclass,
+      raceSlug: race_slug,
+      subclassSlug: subclass_slug,
+      backgroundSlug: background_slug,
+    });
+    if (spellcastingFromSheet) {
+      rules_snapshot = mergeSpellcastingIntoSnapshot(rules_snapshot, spellcastingFromSheet);
+    }
+    updateRow.rules_snapshot = rules_snapshot as unknown as Json;
+  } else if (spellcastingFromSheet) {
     const prevSnap = parseRulesSnapshot((row as { rules_snapshot?: Json | null }).rules_snapshot ?? null);
     if (prevSnap) {
       updateRow.rules_snapshot = mergeSpellcastingIntoSnapshot(

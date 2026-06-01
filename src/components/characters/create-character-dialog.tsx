@@ -23,6 +23,7 @@ import { createCharacter } from "@/app/campaigns/character-actions";
 import { CharacterBuildFormFields } from "@/components/characters/character-build-form-fields";
 import { backgroundBySlug } from "@/lib/character-build-catalog";
 import type { QuickManualSection } from "@/lib/sheet-generator/quick-manual-builder";
+import type { CharacterFormBuildDraft } from "@/lib/character-sheet-build-meta";
 
 const MAX_TOTAL_MB = 4;
 const MAX_TOTAL_BYTES = MAX_TOTAL_MB * 1024 * 1024;
@@ -58,7 +59,19 @@ type StoredGeneratedSheet = {
   sheetData?: Record<string, unknown>;
   quickManualSections?: QuickManualSection[];
   spellcasting?: StoredSpellcastingMeta | null;
+  build?: CharacterFormBuildDraft;
 };
+
+function pickBuildField(
+  generated: StoredGeneratedSheet | null,
+  draft: Record<string, string>,
+  key: keyof CharacterFormBuildDraft
+): string | null {
+  const fromGenerated = generated?.build?.[key]?.trim();
+  if (fromGenerated) return fromGenerated;
+  const fromDraft = draft[key]?.trim();
+  return fromDraft || null;
+}
 
 function parseStoredGeneratedSheet(raw: string | null): StoredGeneratedSheet | null {
   if (!raw) return null;
@@ -71,6 +84,7 @@ function parseStoredGeneratedSheet(raw: string | null): StoredGeneratedSheet | n
       sheetData?: unknown;
       quickManualSections?: unknown;
       spellcasting?: unknown;
+      build?: unknown;
     };
     if (
       typeof parsed.pdfBase64 === "string" &&
@@ -95,6 +109,10 @@ function parseStoredGeneratedSheet(raw: string | null): StoredGeneratedSheet | n
           spellcasting = sc;
         }
       }
+      const build =
+        parsed.build != null && typeof parsed.build === "object" && !Array.isArray(parsed.build)
+          ? (parsed.build as CharacterFormBuildDraft)
+          : undefined;
       return {
         pdfBase64: parsed.pdfBase64,
         fileName: parsed.fileName,
@@ -103,6 +121,7 @@ function parseStoredGeneratedSheet(raw: string | null): StoredGeneratedSheet | n
         sheetData,
         quickManualSections,
         spellcasting,
+        build,
       };
     }
   } catch {
@@ -357,12 +376,28 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
 
           <CharacterBuildFormFields
             disabled={isLoading}
-            initialRaceSlug={formSeed?.draft.race_slug?.trim() || null}
-            initialSubclassSlug={formSeed?.draft.subclass_slug?.trim() || null}
-            initialClassLabel={formSeed?.draft.character_class?.trim() || null}
-            initialClassSubclass={formSeed?.draft.class_subclass?.trim() || null}
-            initialBackgroundSlug={formSeed?.draft.background_slug?.trim() || null}
+            initialRaceSlug={pickBuildField(formSeed?.generated ?? null, formSeed?.draft ?? {}, "race_slug")}
+            initialSubclassSlug={pickBuildField(formSeed?.generated ?? null, formSeed?.draft ?? {}, "subclass_slug")}
+            initialClassLabel={pickBuildField(formSeed?.generated ?? null, formSeed?.draft ?? {}, "character_class")}
+            initialClassSubclass={pickBuildField(formSeed?.generated ?? null, formSeed?.draft ?? {}, "class_subclass")}
+            initialBackgroundSlug={pickBuildField(formSeed?.generated ?? null, formSeed?.draft ?? {}, "background_slug")}
           />
+
+          <div className="space-y-2">
+            <Label htmlFor="char-level">Livello</Label>
+            <Input
+              id="char-level"
+              name="level"
+              type="number"
+              min={1}
+              max={20}
+              defaultValue={
+                pickBuildField(formSeed?.generated ?? null, formSeed?.draft ?? {}, "level") ?? "1"
+              }
+              className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
+              disabled={isLoading}
+            />
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
