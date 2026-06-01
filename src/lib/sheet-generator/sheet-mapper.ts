@@ -1,4 +1,5 @@
 import type { GeneratedCharacterSheet, SkillKey } from "@/lib/sheet-generator/types";
+import { kiPointsClassFeatureLine } from "@/lib/sheet-generator/monk-meta";
 import { sorceryPointsClassFeatureLine } from "@/lib/sheet-generator/sorcerer-meta";
 
 function fmt(n: number): string {
@@ -111,6 +112,7 @@ const RACIAL_FLAVOR_ONLY_HEADINGS = new Set([
   "ALLINEAMENTO",
   "NOMI",
   "NOMI GNOMESCHI",
+  "SOTTORAZZE",
 ]);
 
 function isPdfTemplateGarbage(heading: string, body: string): boolean {
@@ -367,6 +369,8 @@ function summarizeClassFeaturesForPdf(classMd: string, subclassMd: string | null
   const out: string[] = [];
   const spLine = sorceryPointsClassFeatureLine(level);
   if (spLine && /stregone/i.test(classOnly)) out.push(spLine);
+  const kiLine = kiPointsClassFeatureLine(level);
+  if (kiLine && /monaco/i.test(classOnly)) out.push(kiLine);
   for (const b of prioritized) {
     const headingNorm = normalizeHeading(b.heading);
     if (isSpellLikeFeatureBlock(b.heading, b.body)) continue;

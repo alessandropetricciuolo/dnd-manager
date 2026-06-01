@@ -1,6 +1,7 @@
 import type { GeneratedCharacterSheet, GeneratedSpell } from "@/lib/sheet-generator/types";
 import { extractPhbSpellMarkdown } from "@/lib/server/phb-spell-excerpt";
 import { raceTraitsForQuickManual } from "@/lib/sheet-generator/sheet-mapper";
+import { kiPointsClassFeatureLine } from "@/lib/sheet-generator/monk-meta";
 import { sorceryPointsClassFeatureLine } from "@/lib/sheet-generator/sorcerer-meta";
 import { buildWarlockInvocationsManualBody } from "@/lib/sheet-generator/warlock-invocation-phb";
 
@@ -88,9 +89,14 @@ export async function buildQuickManualSections(
   }
 
   if (sheet.classFeaturesMd.trim()) {
-    const spLine = sheet.classLabel === "Stregone" ? sorceryPointsClassFeatureLine(sheet.level) : null;
+    const resourceLine =
+      sheet.classLabel === "Stregone"
+        ? sorceryPointsClassFeatureLine(sheet.level)
+        : sheet.classLabel === "Monaco"
+          ? kiPointsClassFeatureLine(sheet.level)
+          : null;
     const classBody = [
-      spLine,
+      resourceLine,
       mdToPlainSections(sheet.classFeaturesMd),
     ]
       .filter(Boolean)

@@ -8,7 +8,11 @@ import {
   type ClassCatalogEntry,
 } from "@/lib/character-build-catalog";
 import { matchSupplementSubclass, supplementSubclassesForClass } from "@/lib/character-subclass-catalog";
-import { sanitizeRaceTraitsMarkdown } from "@/lib/race-traits-sanitizer";
+import {
+  sanitizeRaceTraitsMarkdown,
+  stripSubraceSectionsFromRaceTraits,
+} from "@/lib/race-traits-sanitizer";
+import { kiPointsClassFeatureLine } from "@/lib/sheet-generator/monk-meta";
 import { extractClassPrivilegesMarkdown } from "@/lib/server/phb-class-privileges-excerpt";
 import {
   extractPhbSpellMarkdown,
@@ -1086,6 +1090,10 @@ export async function resolveGeneratorRules(
     if (raceDef.subraces?.length && input.subraceSlug) {
       const sr = raceDef.subraces.find((s) => s.slug === input.subraceSlug);
       if (sr) subraceTraitsMd = extractSectionByHeadingsMarkdown(md, [sr.sectionHeading]) || null;
+      raceTraitsMd = stripSubraceSectionsFromRaceTraits(
+        raceTraitsMd,
+        raceDef.subraces.map((s) => s.sectionHeading)
+      );
     }
     if (!raceTraitsMd.trim()) {
       raceTraitsMd = extractSectionByHeadingsMarkdown(md, [raceDef.label.toUpperCase()]);
@@ -1330,6 +1338,10 @@ export async function resolveGeneratorRules(
   if (input.classLabel === "Stregone") {
     const spLine = sorceryPointsClassFeatureLine(input.level);
     if (spLine) filteredClassMd = [spLine, filteredClassMd].filter(Boolean).join("\n\n");
+  }
+  if (input.classLabel === "Monaco") {
+    const kiLine = kiPointsClassFeatureLine(input.level);
+    if (kiLine) filteredClassMd = [kiLine, filteredClassMd].filter(Boolean).join("\n\n");
   }
   if (CLASSES_WITH_PHB_FIGHTING_STYLE_COLLAPSE.has(input.classLabel)) {
     filteredClassMd = collapsePhbFightingStyleOptions(filteredClassMd, fightingStyleSheetSeed(input));

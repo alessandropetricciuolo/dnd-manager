@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   sanitizeRaceTraitsMarkdown,
+  stripSubraceSectionsFromRaceTraits,
   stripTrailingPhbRaceChapterFooterAfterLinguaggi,
 } from "@/lib/race-traits-sanitizer";
 
@@ -38,6 +39,34 @@ test("non taglia dopo Linguaggi se segue Sottorazze (elfo)", () => {
 
   const out = stripTrailingPhbRaceChapterFooterAfterLinguaggi(md);
   assert.equal(out, md.replace(/\r/g, ""));
+});
+
+test("stripSubraceSectionsFromRaceTraits rimuove sottorazze non scelte dal blocco base", () => {
+  const md = [
+    "# TRATTI DEI NANI",
+    "",
+    "**Linguaggi.** Comune e Nanico.",
+    "",
+    "**Sottorazze.** Scegli una sottorazza.",
+    "",
+    "## NANO DELLE COLLINE",
+    "",
+    "**Robustezza Nanica.** +1 PF per livello.",
+    "",
+    "## NANO DELLE MONTAGNE",
+    "",
+    "**Addestramento nelle Armature Naniche.** Armature leggere e medie.",
+  ].join("\n");
+
+  const out = stripSubraceSectionsFromRaceTraits(md, [
+    "NANO DELLE COLLINE",
+    "NANO DELLE MONTAGNE",
+  ]);
+  assert.ok(out.includes("Linguaggi"));
+  assert.ok(!out.includes("NANO DELLE COLLINE"));
+  assert.ok(!out.includes("Robustezza Nanica"));
+  assert.ok(!out.includes("NANO DELLE MONTAGNE"));
+  assert.ok(!out.includes("Armature Naniche"));
 });
 
 test("sanitizeRaceTraitsMarkdown applica strip footer per qualsiasi slug", () => {

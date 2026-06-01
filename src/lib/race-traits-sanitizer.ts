@@ -21,6 +21,61 @@ export function stripTrailingPhbRaceChapterFooterAfterLinguaggi(md: string): str
   return text.slice(0, afterParaAbs).trimEnd();
 }
 
+function normalizeHeadingForMatch(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+}
+
+function markdownHeadingLevel(line: string): number | null {
+  const m = line.match(/^(#{1,6})\s+/);
+  return m ? m[1].length : null;
+}
+
+function markdownHeadingText(line: string): string | null {
+  const m = line.match(/^#{1,6}\s+(.+?)\s*$/);
+  return m ? m[1].trim() : null;
+}
+
+/**
+ * Nel PHB i tratti base di una razza con sottorazze includono spesso tutte le ## sottorazze.
+ * Quando il PG ha una sottorazza scelta, il testo dedicato va in `subraceTraitsMd`:
+ * rimuoviamo ogni blocco ## elencato in `subraceSectionHeadings` dal markdown razza base.
+ */
+export function stripSubraceSectionsFromRaceTraits(
+  raceTraitsMd: string,
+  subraceSectionHeadings: string[]
+): string {
+  const text = (raceTraitsMd ?? "").replace(/\r/g, "");
+  if (!text.trim() || !subraceSectionHeadings.length) return text.trim();
+
+  const subraceNorms = new Set(
+    subraceSectionHeadings.map(normalizeHeadingForMatch).filter(Boolean)
+  );
+  if (!subraceNorms.size) return text.trim();
+
+  const lines = text.split("\n");
+  const out: string[] = [];
+  let skipping = false;
+  for (const line of lines) {
+    const lv = markdownHeadingLevel(line);
+    const ht = markdownHeadingText(line);
+    if (lv === 2 && ht) {
+      const n = normalizeHeadingForMatch(ht);
+      if (subraceNorms.has(n)) {
+        skipping = true;
+        continue;
+      }
+      skipping = false;
+    }
+    if (!skipping) out.push(line);
+  }
+  return out.join("\n").trim();
+}
+
 export function sanitizeRaceTraitsMarkdown(raceSlug: string | null | undefined, md: string): string {
   const slug = (raceSlug ?? "").trim().toLowerCase();
   let text = (md ?? "").replace(/\r/g, "");
