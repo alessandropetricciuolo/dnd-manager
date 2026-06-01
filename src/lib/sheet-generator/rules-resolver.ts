@@ -21,6 +21,7 @@ import {
   pickCantripsForSheet,
   pickLeveledSpellsSlotAware,
 } from "@/lib/sheet-generator/spell-slot-picker";
+import { sorceryPointsClassFeatureLine } from "@/lib/sheet-generator/sorcerer-meta";
 import type { AbilityKey, GeneratedSpell } from "@/lib/sheet-generator/types";
 import {
   detectThirdCasterSubclass,
@@ -116,6 +117,36 @@ function phbClassChapterH1StopNorms(excludeParentClassLabel: string | null | und
   return set;
 }
 
+function findParentClassChapterLineRange(
+  lines: string[],
+  parentClassLabel: string | null | undefined
+): { start: number; end: number } {
+  if (!parentClassLabel?.trim()) return { start: 0, end: lines.length };
+  const labelNorm = normalizeHeadingForMatch(parentClassLabel);
+  const classH1s = new Set(CLASS_OPTIONS.map((c) => normalizeHeadingForMatch(c.label)));
+  let start = 0;
+  let end = lines.length;
+  let inChapter = false;
+  for (let i = 0; i < lines.length; i += 1) {
+    const ht = headingTextRaw(lines[i]);
+    const lv = headingLevel(lines[i]);
+    if (lv !== 1 || !ht) continue;
+    const n = normalizeHeadingForMatch(ht);
+    if (!inChapter) {
+      if (n === labelNorm) {
+        start = i;
+        inChapter = true;
+      }
+      continue;
+    }
+    if (classH1s.has(n) && n !== labelNorm) {
+      end = i;
+      break;
+    }
+  }
+  return { start, end };
+}
+
 function extractSubclassSectionMarkdown(
   raw: string,
   sectionHeadings: string[],
@@ -129,10 +160,12 @@ function extractSubclassSectionMarkdown(
   const stops = new Set(stopHeadingNorms.map(normalizeHeadingForMatch).filter(Boolean));
   const classChapterStops = phbClassChapterH1StopNorms(parentClassLabel);
   const lines = txt.split("\n");
+  const chapter = findParentClassChapterLineRange(lines, parentClassLabel);
   let startIdx = -1;
-  for (let i = 0; i < lines.length; i++) {
+  for (let i = chapter.start; i < chapter.end; i += 1) {
     const ht = headingTextRaw(lines[i]);
-    if (!ht) continue;
+    const lv = headingLevel(lines[i]);
+    if (!ht || !lv || lv > 2) continue;
     if (!targets.includes(normalizeHeadingForMatch(ht))) continue;
     if (startIdx < 0 || i < startIdx) startIdx = i;
   }
@@ -579,6 +612,8 @@ function filterClassFeaturesByLevel(md: string, level: number): string {
     "FOCUS ARCANO",
     "FOCUS DRUIDICO",
     "FOCUS SACRO",
+    "ORIGINE STREGONESCA",
+    "ORIGINI STREGONESCHE",
   ]);
   /** Titolo dell’H1/H2 d’introduzione: non è un privilegio numerato. */
   const skippedIntroHeadings = new Set(["PRIVILEGI DI CLASSE"]);
@@ -1292,6 +1327,10 @@ export async function resolveGeneratorRules(
   }
 
   let filteredClassMd = filterClassFeaturesByLevel(classFeaturesMd, input.level);
+  if (input.classLabel === "Stregone") {
+    const spLine = sorceryPointsClassFeatureLine(input.level);
+    if (spLine) filteredClassMd = [spLine, filteredClassMd].filter(Boolean).join("\n\n");
+  }
   if (CLASSES_WITH_PHB_FIGHTING_STYLE_COLLAPSE.has(input.classLabel)) {
     filteredClassMd = collapsePhbFightingStyleOptions(filteredClassMd, fightingStyleSheetSeed(input));
   }

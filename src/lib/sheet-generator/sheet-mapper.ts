@@ -1,4 +1,5 @@
 import type { GeneratedCharacterSheet, SkillKey } from "@/lib/sheet-generator/types";
+import { sorceryPointsClassFeatureLine } from "@/lib/sheet-generator/sorcerer-meta";
 
 function fmt(n: number): string {
   return n >= 0 ? `+${n}` : `${n}`;
@@ -308,6 +309,10 @@ function summarizeWarlockClassFeaturesForPdf(
   return compactPdfText(out.join("\n"), maxLen);
 }
 
+export function raceTraitsForQuickManual(raceMd: string, subraceMd: string, maxLen = 4_000): string {
+  return summarizeRaceTraitsForPdf(raceMd, subraceMd, maxLen);
+}
+
 function summarizeClassFeaturesForPdf(classMd: string, subclassMd: string | null | undefined, level: number, maxLen: number): string {
   const classOnly = (classMd ?? "").trim();
   const isWarlockSheet =
@@ -360,6 +365,8 @@ function summarizeClassFeaturesForPdf(classMd: string, subclassMd: string | null
   });
 
   const out: string[] = [];
+  const spLine = sorceryPointsClassFeatureLine(level);
+  if (spLine && /stregone/i.test(classOnly)) out.push(spLine);
   for (const b of prioritized) {
     const headingNorm = normalizeHeading(b.heading);
     if (isSpellLikeFeatureBlock(b.heading, b.body)) continue;

@@ -1,5 +1,7 @@
 import type { GeneratedCharacterSheet, GeneratedSpell } from "@/lib/sheet-generator/types";
 import { extractPhbSpellMarkdown } from "@/lib/server/phb-spell-excerpt";
+import { raceTraitsForQuickManual } from "@/lib/sheet-generator/sheet-mapper";
+import { sorceryPointsClassFeatureLine } from "@/lib/sheet-generator/sorcerer-meta";
 import { buildWarlockInvocationsManualBody } from "@/lib/sheet-generator/warlock-invocation-phb";
 
 export type QuickManualSection = {
@@ -75,20 +77,27 @@ export async function buildQuickManualSections(
 ): Promise<QuickManualSection[]> {
   const sections: QuickManualSection[] = [];
 
-  const raceParts = [sheet.raceTraitsMd, sheet.subraceTraitsMd].filter(Boolean).join("\n\n");
-  if (raceParts.trim()) {
+  const raceBody = raceTraitsForQuickManual(sheet.raceTraitsMd, sheet.subraceTraitsMd ?? "");
+  if (raceBody.trim()) {
     sections.push({
       title: sheet.subraceLabel
         ? `Tratti razziali — ${sheet.raceLabel} (${sheet.subraceLabel})`
         : `Tratti razziali — ${sheet.raceLabel}`,
-      body: trimSection(mdToPlainSections(raceParts), MAX_SECTION_CHARS),
+      body: trimSection(raceBody, MAX_SECTION_CHARS),
     });
   }
 
   if (sheet.classFeaturesMd.trim()) {
+    const spLine = sheet.classLabel === "Stregone" ? sorceryPointsClassFeatureLine(sheet.level) : null;
+    const classBody = [
+      spLine,
+      mdToPlainSections(sheet.classFeaturesMd),
+    ]
+      .filter(Boolean)
+      .join("\n\n");
     sections.push({
       title: `Privilegi di classe — ${sheet.classLabel} (livello ${sheet.level})`,
-      body: trimSection(mdToPlainSections(sheet.classFeaturesMd), MAX_SECTION_CHARS),
+      body: trimSection(classBody, MAX_SECTION_CHARS),
     });
   }
 
