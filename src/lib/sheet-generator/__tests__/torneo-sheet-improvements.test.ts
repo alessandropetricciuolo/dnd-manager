@@ -29,6 +29,7 @@ test("pick slot-aware: stregone lv5 non riempie tutto di L3", () => {
     { name: "Palla di Fuoco", level: 3 },
     { name: "Fulmine", level: 3 },
     { name: "Velocità", level: 3 },
+    { name: "Dardo Incantato", level: 1 },
     { name: "Scudo", level: 1 },
     { name: "Sonno", level: 1 },
     { name: "Armatura Magica", level: 1 },
@@ -38,6 +39,7 @@ test("pick slot-aware: stregone lv5 non riempie tutto di L3", () => {
   const slots = { 1: 4, 2: 3, 3: 2, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 };
   const picked = pickLeveledSpellsSlotAware(entries, 6, 3, slots, "Stregone", true);
   const l3 = picked.filter((p) => p.level === 3).length;
+  const l1 = picked.filter((p) => p.level === 1).length;
   assert.ok(l3 <= 3, `attesi max 3 incantesimi L3 (2 slot + 1), trovati ${l3}`);
-  assert.ok(picked.some((p) => p.level === 1));
+  assert.ok(l1 >= 2, `attesi almeno 2 incantesimi L1, trovati ${l1}`);
 });

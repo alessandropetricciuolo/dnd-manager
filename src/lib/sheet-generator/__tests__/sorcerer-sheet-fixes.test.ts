@@ -50,3 +50,26 @@ test("stregone livello 5: privilegi classe indicano punti stregoneria", async ()
   const cls = res.sheet.classFeaturesMd.toLowerCase();
   assert.match(cls, /punti stregoneria.*\b5\b/);
 });
+
+test("stregone livello 5: almeno 2 incantesimi di 1° livello", async () => {
+  const res = await buildGeneratedCharacterSheet({
+    characterName: "Edric Valemont",
+    raceSlug: "umano",
+    subraceSlug: null,
+    classLabel: "Stregone",
+    classSubclass: "Discendenza draconica",
+    backgroundSlug: "sapiente",
+    level: 5,
+    torneoMode: true,
+    powerPlayer: true,
+    alignment: "N",
+    age: "35",
+    height: "1,80 m",
+    weight: "70 kg",
+    sex: "M",
+  });
+  const leveled = res.sheet.spells.filter((s) => s.level >= 1);
+  const level1 = leveled.filter((s) => s.level === 1);
+  assert.equal(leveled.length, res.sheet.spellsPrepared);
+  assert.ok(level1.length >= 2, `attesi almeno 2 incantesimi L1, trovati ${level1.length}: ${leveled.map((s) => `${s.name} L${s.level}`).join(", ")}`);
+});

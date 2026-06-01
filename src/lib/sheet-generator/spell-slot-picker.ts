@@ -101,9 +101,24 @@ export function pickLeveledSpellsSlotAware(
     return true;
   };
 
-  // 1) Almeno un incantesimo per ogni livello con slot (dal più basso al più alto per varietà).
+  // Regola fissa Stregone: mantieni sempre una base di almeno 2 incantesimi di 1° livello.
+  if (classLabel === "Stregone") {
+    const firstLevelTarget = Math.min(2, count);
+    const firstLevelSpells = sortCandidates(
+      pool.filter((e) => e.level === 1),
+      powerPlayer,
+      pickOptions
+    );
+    for (const e of firstLevelSpells) {
+      if (countAtLevel(picked, 1) >= firstLevelTarget) break;
+      tryAdd(e);
+    }
+  }
+
+  // 1) Almeno un incantesimo per ogni altro livello con slot (dal più basso al più alto per varietà).
   for (let lvl = 1; lvl <= maxLevel; lvl += 1) {
     if (!caps.has(lvl) || picked.length >= count) continue;
+    if (countAtLevel(picked, lvl) > 0) continue;
     const atLevel = sortCandidates(
       pool.filter((e) => e.level === lvl && !seen.has(spellKey(e))),
       powerPlayer,
