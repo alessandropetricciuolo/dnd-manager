@@ -22,6 +22,10 @@ test("golden: Chierico 3 Inganno", async () => {
   assert.equal(res.sheet.level, 3);
   assert.ok(res.sheet.spellsPrepared >= 1);
   assert.ok(res.sheet.classFeaturesMd.length > 0);
+  assert.ok(
+    res.sheet.spells.some((s) => s.level >= 1 && s.name.toLocaleLowerCase("it") === "cura ferite"),
+    `Cura Ferite deve essere sempre preparato: ${res.sheet.spells.map((s) => `${s.name} L${s.level}`).join(", ")}`
+  );
 });
 
 test("golden: Bardo 5 Sussurri", async () => {

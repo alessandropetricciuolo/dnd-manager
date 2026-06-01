@@ -101,9 +101,24 @@ export function pickLeveledSpellsSlotAware(
     return true;
   };
 
-  // 1) Almeno un incantesimo per ogni livello con slot (dal più basso al più alto per varietà).
+  // Regola fissa Stregone: mantieni sempre una base di almeno 2 incantesimi di 1° livello.
+  if (classLabel === "Stregone") {
+    const firstLevelTarget = Math.min(2, count);
+    const firstLevelSpells = sortCandidates(
+      pool.filter((e) => e.level === 1),
+      powerPlayer,
+      pickOptions
+    );
+    for (const e of firstLevelSpells) {
+      if (countAtLevel(picked, 1) >= firstLevelTarget) break;
+      tryAdd(e);
+    }
+  }
+
+  // 1) Almeno un incantesimo per ogni altro livello con slot (dal più basso al più alto per varietà).
   for (let lvl = 1; lvl <= maxLevel; lvl += 1) {
     if (!caps.has(lvl) || picked.length >= count) continue;
+    if (countAtLevel(picked, lvl) > 0) continue;
     const atLevel = sortCandidates(
       pool.filter((e) => e.level === lvl && !seen.has(spellKey(e))),
       powerPlayer,
@@ -175,6 +190,51 @@ export function enforceSpellLevelCaps(
 
   for (let lvl = 1; lvl <= 9; lvl += 1) trimLevel(lvl);
   return out.slice(0, maxTotal);
+}
+
+export function ensureLeveledSpellPicked(
+  picked: SpellPickEntry[],
+  pool: SpellPickEntry[],
+  spellName: string,
+  maxLevel: number,
+  spellSlots: Record<number, number>,
+  classLabel: string,
+  maxTotal: number
+): SpellPickEntry[] {
+  const targetKey = spellName.trim().toLocaleLowerCase("it");
+  const out = picked.slice(0, maxTotal);
+  if (out.some((e) => e.name.toLocaleLowerCase("it") === targetKey)) return out;
+
+  const insert = pool.find(
+    (e) => e.level >= 1 && e.level <= maxLevel && e.name.toLocaleLowerCase("it") === targetKey
+  );
+  if (!insert) return out;
+
+  const caps = spellCapPerLevel(spellSlots, classLabel);
+  const cap = caps.get(insert.level);
+  const countAtInsertLevel = () => countAtLevel(out, insert.level);
+  if (out.length < maxTotal && (cap == null || countAtInsertLevel() < cap)) {
+    return [...out, insert].slice(0, maxTotal);
+  }
+
+  let replaceIdx = -1;
+  let worstScore = Infinity;
+  const mustReplaceSameLevel = cap != null && countAtInsertLevel() >= cap;
+  for (let i = 0; i < out.length; i += 1) {
+    const candidate = out[i]!;
+    if (candidate.name.toLocaleLowerCase("it") === targetKey) continue;
+    if (mustReplaceSameLevel && candidate.level !== insert.level) continue;
+    const score = getSpellCombatTierScore(candidate.name);
+    if (score < worstScore) {
+      worstScore = score;
+      replaceIdx = i;
+    }
+  }
+
+  if (replaceIdx < 0) return out;
+  const next = [...out];
+  next[replaceIdx] = insert;
+  return next.slice(0, maxTotal);
 }
 
 export function pickCantripsSlotAware(
