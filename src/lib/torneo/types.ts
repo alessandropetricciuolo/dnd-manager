@@ -25,6 +25,7 @@ export type TorneoTeamWithMembers = TorneoTeamRow & {
     level: number;
     armor_class: number | null;
     hit_points: number | null;
+    image_url: string | null;
     rules_snapshot: import("@/types/database.types").Json | null;
   }>;
 };

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { createSupabaseBrowserClient } from "@/utils/supabase/client";
 import { loadTorneoMatchInitiativeAction } from "@/app/campaigns/torneo-live-actions";
 import { computeMatchTimerView, formatTimerMmSs } from "@/lib/torneo/match-timer";
@@ -9,12 +10,17 @@ import type { TorneoMatchTimerPayload } from "@/app/campaigns/torneo-live-action
 import type { InitiativeTrackerState } from "@/components/gm/initiative-tracker";
 import { cn } from "@/lib/utils";
 
+const PLACEHOLDER_PORTRAIT =
+  "https://placehold.co/480x640/1c1917/fbbf24/png?text=PG";
+
 type Props = {
   campaignId: string;
   matchId: string;
   matchLabel: string;
   initialTimer: TorneoMatchTimerPayload;
   initialInitiative?: InitiativeTrackerState | null;
+  /** Fallback ritratto per PG (character_id → image_url). */
+  characterPortraits?: Record<string, string | null>;
   className?: string;
 };
 
@@ -24,6 +30,7 @@ export function TorneoMegatimerDisplay({
   matchLabel,
   initialTimer,
   initialInitiative = null,
+  characterPortraits = {},
   className,
 }: Props) {
   const [fields, setFields] = useState(initialTimer);
@@ -31,6 +38,7 @@ export function TorneoMegatimerDisplay({
     initialInitiative
   );
   const [now, setNow] = useState(Date.now());
+  const [portraitError, setPortraitError] = useState(false);
 
   const applyInitiative = useCallback((raw: unknown) => {
     const parsed = parseTorneoInitiativeSnapshot(raw);
@@ -105,6 +113,21 @@ export function TorneoMegatimerDisplay({
     return initiativeSnapshot.entries[initiativeSnapshot.currentTurnIndex] ?? null;
   }, [initiativeSnapshot]);
 
+  const portraitUrl = useMemo(() => {
+    if (!activeEntry) return null;
+    const fromEntry = activeEntry.portraitUrl?.trim();
+    if (fromEntry) return fromEntry;
+    if (activeEntry.playerId) {
+      const fromMap = characterPortraits[activeEntry.playerId]?.trim();
+      if (fromMap) return fromMap;
+    }
+    return null;
+  }, [activeEntry, characterPortraits]);
+
+  useEffect(() => {
+    setPortraitError(false);
+  }, [portraitUrl, activeEntry?.id]);
+
   const roundNumber = initiativeSnapshot?.roundNumber ?? 1;
   const turnPosition =
     initiativeSnapshot && initiativeSnapshot.entries.length > 0
@@ -112,6 +135,7 @@ export function TorneoMegatimerDisplay({
       : null;
 
   const showExpired = view.isExpired && view.durationSec > 0;
+  const imageSrc = portraitError || !portraitUrl ? PLACEHOLDER_PORTRAIT : portraitUrl;
 
   return (
     <div
@@ -129,11 +153,38 @@ export function TorneoMegatimerDisplay({
       </p>
 
       {activeEntry ? (
-        <div className="mb-8 w-full max-w-3xl rounded-2xl border border-amber-500/45 bg-amber-950/35 px-8 py-6">
+        <div className="mb-8 flex w-full max-w-3xl flex-col items-center rounded-2xl border border-amber-500/45 bg-amber-950/35 px-6 py-6 md:px-8 md:py-7">
+          <div
+            className="relative mb-5 h-40 w-32 shrink-0 overflow-hidden rounded-xl border-2 border-amber-500/50 shadow-lg shadow-black/40 sm:h-48 sm:w-36 md:mb-6 md:h-56 md:w-44"
+            style={
+              activeEntry.teamColor
+                ? { boxShadow: `0 0 0 1px ${activeEntry.teamColor}55, 0 12px 40px #00000066` }
+                : undefined
+            }
+          >
+            <Image
+              src={imageSrc}
+              alt={activeEntry.name}
+              fill
+              className="object-cover object-top"
+              sizes="(max-width: 768px) 176px, 220px"
+              unoptimized
+              onError={() => setPortraitError(true)}
+              priority
+            />
+          </div>
           <p className="text-sm uppercase tracking-[0.25em] text-amber-200/70">Personaggio in turno</p>
-          <p className="mt-3 text-[min(8vw,3.5rem)] font-bold leading-tight text-amber-50">{activeEntry.name}</p>
+          <p className="mt-2 text-[min(8vw,3.5rem)] font-bold leading-tight text-amber-50">{activeEntry.name}</p>
+          {activeEntry.characterClass ? (
+            <p className="mt-1 text-lg text-amber-200/50">{activeEntry.characterClass}</p>
+          ) : null}
           {activeEntry.teamName ? (
-            <p className="mt-2 text-lg text-amber-200/60">{activeEntry.teamName}</p>
+            <p
+              className="mt-2 text-base font-medium uppercase tracking-wide md:text-lg"
+              style={activeEntry.teamColor ? { color: activeEntry.teamColor } : undefined}
+            >
+              {activeEntry.teamName}
+            </p>
           ) : null}
         </div>
       ) : (

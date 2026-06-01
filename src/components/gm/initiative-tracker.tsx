@@ -66,6 +66,8 @@ export type InitiativeEntry = {
   maxHp: number;
   initiative: number;
   playerId?: string;
+  /** Ritratto PG (URL immagine scheda). */
+  portraitUrl?: string | null;
   /** Wiki entity id quando aggiunto da lista mostri (campagne Long: per aggiornare global_status). */
   entityId?: string;
   isCore?: boolean;
@@ -227,6 +229,7 @@ type InitiativeTrackerProps = {
     armor_class?: number | null;
     hit_points?: number | null;
     rules_snapshot?: Json | null;
+    image_url?: string | null;
   }>;
   value?: InitiativeTrackerState;
   onChange?: (state: InitiativeTrackerState) => void;
@@ -287,6 +290,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       armorClass: number | null;
       hitPoints: number | null;
       rulesSnapshot: Json | null;
+      portraitUrl: string | null;
     }>
   >([]);
   const [selectedPcIds, setSelectedPcIds] = useState<Set<string>>(new Set());
@@ -615,6 +619,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
           armorClass: character.armor_class ?? null,
           hitPoints: character.hit_points ?? null,
           rulesSnapshot: character.rules_snapshot ?? null,
+          portraitUrl: character.image_url ?? null,
         }))
       );
       return;
@@ -631,6 +636,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
           armorClass: c.armor_class ?? null,
           hitPoints: c.hit_points ?? null,
           rulesSnapshot: c.rules_snapshot ?? null,
+          portraitUrl: c.image_url ?? null,
         }))
       );
     } else {
@@ -649,6 +655,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
         rules_snapshot?: Json | null;
         class_subclass?: string | null;
         level?: number;
+        portrait_url?: string | null;
       }
     ) => {
       const hp = Math.max(0, hitPoints ?? 0);
@@ -671,6 +678,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
           maxHp: hp,
           initiative: 0,
           playerId: characterId,
+          portraitUrl: spellSlotInput?.portrait_url ?? null,
           damageDealt: 0,
           ...(spellSlots ? { spellSlots } : {}),
           ...(team
@@ -696,6 +704,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
           rules_snapshot: player.rulesSnapshot,
           class_subclass: player.classSubclass,
           level: player.level,
+          portrait_url: player.portraitUrl,
         });
       }
     }

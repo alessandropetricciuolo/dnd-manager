@@ -29,6 +29,7 @@ function basePcInitiativeFields(
     maxHp: hp,
     initiative: 0,
     playerId: m.character_id,
+    portraitUrl: m.image_url ?? null,
     damageDealt: 0,
     damageTaken: 0,
     ...(spellSlots ? { spellSlots } : {}),
@@ -40,6 +41,18 @@ export type TorneoCharacterTeamInfo = {
   teamName: string;
   teamColor: string;
 };
+
+export function buildCharacterPortraitMap(
+  teams: TorneoTeamWithMembers[]
+): Record<string, string | null> {
+  const map: Record<string, string | null> = {};
+  for (const team of teams) {
+    for (const m of team.members) {
+      map[m.character_id] = m.image_url ?? null;
+    }
+  }
+  return map;
+}
 
 export function buildCharacterTeamMap(teams: TorneoTeamWithMembers[]): Record<string, TorneoCharacterTeamInfo> {
   const map: Record<string, TorneoCharacterTeamInfo> = {};

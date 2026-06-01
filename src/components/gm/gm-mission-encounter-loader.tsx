@@ -101,6 +101,7 @@ export function GmMissionEncounterLoader({ campaignId }: { campaignId: string })
           maxHp: hp,
           initiative: 0,
           playerId: character.id,
+          portraitUrl: character.image_url ?? null,
           ...(spellSlots ? { spellSlots } : {}),
         };
       });

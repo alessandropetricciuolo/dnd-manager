@@ -21,6 +21,7 @@ function mockTeamsWithMembers(): TorneoTeamWithMembers[] {
           level: 5,
           armor_class: 16,
           hit_points: 30,
+          image_url: null,
           rules_snapshot: null,
         },
         {
@@ -32,6 +33,7 @@ function mockTeamsWithMembers(): TorneoTeamWithMembers[] {
           level: 5,
           armor_class: 12,
           hit_points: 22,
+          image_url: null,
           rules_snapshot: null,
         },
       ],
@@ -52,6 +54,7 @@ function mockTeamsWithMembers(): TorneoTeamWithMembers[] {
           level: 5,
           armor_class: 14,
           hit_points: 40,
+          image_url: null,
           rules_snapshot: null,
         },
       ],

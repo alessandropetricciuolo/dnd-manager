@@ -78,7 +78,7 @@ export async function getTorneoSetupAction(campaignId: string): Promise<
     const { data: memData } = await supabase
       .from("torneo_team_members")
       .select(
-        "id, team_id, character_id, campaign_characters(name, character_class, class_subclass, armor_class, hit_points, level, rules_snapshot)"
+        "id, team_id, character_id, campaign_characters(name, character_class, class_subclass, armor_class, hit_points, level, image_url, rules_snapshot)"
       )
       .in("team_id", teamIds);
     membersRaw = (memData ?? []) as typeof membersRaw;
@@ -107,6 +107,7 @@ export async function getTorneoSetupAction(campaignId: string): Promise<
               armor_class: number | null;
               hit_points: number | null;
               level: number | null;
+              image_url: string | null;
               rules_snapshot: unknown;
             }
           | {
@@ -116,6 +117,7 @@ export async function getTorneoSetupAction(campaignId: string): Promise<
               armor_class: number | null;
               hit_points: number | null;
               level: number | null;
+              image_url: string | null;
               rules_snapshot: unknown;
             }[]
           | null;
@@ -129,6 +131,7 @@ export async function getTorneoSetupAction(campaignId: string): Promise<
           level: typeof c?.level === "number" && c.level > 0 ? c.level : 1,
           armor_class: c?.armor_class ?? null,
           hit_points: c?.hit_points ?? null,
+          image_url: c?.image_url ?? null,
           rules_snapshot: (c?.rules_snapshot ?? null) as import("@/types/database.types").Json | null,
         };
       }),

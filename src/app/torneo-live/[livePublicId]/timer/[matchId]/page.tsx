@@ -7,6 +7,7 @@ import {
 } from "@/app/campaigns/torneo-live-actions";
 import { getTorneoSetupAction } from "@/app/campaigns/torneo-actions";
 import { TorneoMegatimerDisplay } from "@/components/gm/torneo-megatimer-display";
+import { buildCharacterPortraitMap } from "@/lib/torneo/initiative";
 
 type PageProps = {
   params: Promise<{ livePublicId: string; matchId: string }>;
@@ -53,6 +54,8 @@ export default async function TorneoMegatimerPage({ params }: PageProps) {
     match.label ??
     (match.match_kind === "triello" ? `Triello · ${match.team_a.name}` : `${match.team_a.name} vs ${match.team_b.name}`);
 
+  const characterPortraits = buildCharacterPortraitMap(setupRes.data.teams);
+
   return (
     <TorneoMegatimerDisplay
       campaignId={live.campaignId}
@@ -60,6 +63,7 @@ export default async function TorneoMegatimerPage({ params }: PageProps) {
       matchLabel={matchLabel}
       initialTimer={initialTimer}
       initialInitiative={initialInitiative}
+      characterPortraits={characterPortraits}
     />
   );
 }
