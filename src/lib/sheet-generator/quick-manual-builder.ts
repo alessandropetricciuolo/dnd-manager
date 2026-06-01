@@ -1,5 +1,6 @@
 import type { GeneratedCharacterSheet, GeneratedSpell } from "@/lib/sheet-generator/types";
 import { extractPhbSpellMarkdown } from "@/lib/server/phb-spell-excerpt";
+import { buildWarlockInvocationsManualBody } from "@/lib/sheet-generator/warlock-invocation-phb";
 
 export type QuickManualSection = {
   title: string;
@@ -44,37 +45,6 @@ function mdToPlainSections(md: string): string {
     .replace(/\[([^\]]+)]\([^)]+\)/g, "$1")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
-}
-
-function extractWarlockInvocations(classFeaturesMd: string): string | null {
-  if (!/suppliche occulte|dono del patto/i.test(classFeaturesMd)) return null;
-  const lines = classFeaturesMd.split("\n");
-  const blocks: string[] = [];
-  let capture = false;
-  let buf: string[] = [];
-
-  const flush = () => {
-    if (buf.length) blocks.push(buf.join("\n").trim());
-    buf = [];
-  };
-
-  for (const line of lines) {
-    const h = line.match(/^#{1,3}\s+(.+)$/i);
-    if (h) {
-      flush();
-      const title = h[1].trim();
-      capture = /suppliche occulte|dono del patto|invocazione/i.test(title);
-      if (capture) {
-        buf.push(title);
-      }
-      continue;
-    }
-    if (capture) buf.push(line);
-  }
-  flush();
-
-  const merged = blocks.filter(Boolean).join("\n\n");
-  return merged.trim() || null;
 }
 
 function formatSpellBlock(spell: GeneratedSpell): string {
@@ -153,11 +123,11 @@ export async function buildQuickManualSections(
   }
 
   if (sheet.classLabel === "Warlock") {
-    const inv = extractWarlockInvocations(sheet.classFeaturesMd);
-    if (inv) {
+    const invManual = buildWarlockInvocationsManualBody(sheet.classFeaturesMd);
+    if (invManual) {
       sections.push({
         title: "Suppliche occulte e doni del patto",
-        body: trimSection(mdToPlainSections(inv), MAX_SECTION_CHARS),
+        body: trimSection(mdToPlainSections(invManual), MAX_SECTION_CHARS),
       });
     }
   }

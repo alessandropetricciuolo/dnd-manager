@@ -392,21 +392,69 @@ const WARLOCK_PACT_OPTIONS: WarlockPactOption[] = [
 ];
 
 const WARLOCK_INVOCATION_OPTIONS: WarlockInvocationOption[] = [
-  { name: "Agonizing Blast", summary: "Aggiungi il modificatore di Carisma ai danni di Deflagrazione Occulta." },
-  { name: "Armatura delle Ombre", summary: "Puoi lanciare Armatura Magica su te stesso a volontà, senza spendere slot." },
-  { name: "Vista del Diavolo", summary: "Vedi normalmente nel buio, inclusa l'oscurità magica, entro 36 metri." },
-  { name: "Impulso Repellente", summary: "Quando colpisci con Deflagrazione Occulta, puoi spingere il bersaglio di 3 metri." },
-  { name: "Lance of Lethargy", summary: "Una volta per turno riduci la velocità di un bersaglio colpito da Deflagrazione Occulta." },
-  { name: "Mille Volti", summary: "Puoi lanciare Camuffare Se Stesso a volontà, senza spendere slot." },
-  { name: "Maschera di Molti Volti", summary: "Puoi alterare il tuo aspetto in modo illusorio con facilità tra un incontro e l'altro." },
-  { name: "Sussurri della Tomba", summary: "Puoi lanciare Parlare con i Morti a volontà, senza spendere slot." },
-  { name: "Mire della Strega", summary: "Individui più facilmente bersagli protetti da invisibilità e occultamento magico." },
-  { name: "Libro dei Segreti Antichi", summary: "Aggiungi rituali al tuo Libro delle Ombre e li lanci come rituali.", requiresPact: "Patto del Tomo" },
-  { name: "Voce del Signore della Catena", summary: "Percepisci attraverso i sensi del famiglio e puoi parlarne tramite lui.", requiresPact: "Patto della Catena" },
-  { name: "Sete della Lama", summary: "Attacchi due volte quando usi l'azione Attacco con l'arma del patto.", minLevel: 5, requiresPact: "Patto della Lama" },
-  { name: "Catene di Carceri", summary: "Puoi lanciare Blocca Mostri su celestiali, immondi ed elementali.", minLevel: 15, requiresPact: "Patto della Catena" },
-  { name: "Maestro di Miriadi Forme", summary: "Puoi lanciare Alterare Se Stesso a volontà, senza spendere slot.", minLevel: 15 },
-  { name: "Sguardo di Due Menti", summary: "Puoi percepire il mondo attraverso i sensi di una creatura consenziente." },
+  {
+    name: "Deflagrazione Agonizzante",
+    summary: "Aggiungi il modificatore di Carisma ai danni di Deflagrazione Occulta.",
+  },
+  {
+    name: "Armatura delle Ombre",
+    summary: "Puoi lanciare Armatura Magica su te stesso a volontà, senza spendere slot.",
+  },
+  {
+    name: "Vista del Diavolo",
+    summary: "Vedi normalmente nel buio, inclusa l'oscurità magica, entro 36 metri.",
+  },
+  {
+    name: "Deflagrazione Respingente",
+    summary: "Quando colpisci con Deflagrazione Occulta, puoi spingere il bersaglio di 3 metri.",
+  },
+  {
+    name: "Lancia della Letargia",
+    summary: "Una volta per turno riduci la velocità di un bersaglio colpito da Deflagrazione Occulta.",
+  },
+  {
+    name: "Maschera dei Molti Volti",
+    summary: "Puoi lanciare Camuffare Se Stesso a volontà, senza spendere slot.",
+  },
+  {
+    name: "Sussurri dalla Tomba",
+    summary: "Puoi lanciare Parlare con i Morti a volontà, senza spendere slot.",
+  },
+  {
+    name: "Vista dell'Occulto",
+    summary: "Puoi lanciare Individuazione del Magico a volontà, senza spendere slot.",
+  },
+  {
+    name: "Libro degli Antichi Segreti",
+    summary: "Aggiungi rituali al tuo Libro delle Ombre e li lanci come rituali.",
+    requiresPact: "Patto del Tomo",
+  },
+  {
+    name: "Voce del Signore delle Catene",
+    summary: "Percepisci attraverso i sensi del famiglio e puoi parlarne tramite lui.",
+    requiresPact: "Patto della Catena",
+  },
+  {
+    name: "Lama Assetata",
+    summary: "Attacchi due volte quando usi l'azione Attacco con l'arma del patto.",
+    minLevel: 5,
+    requiresPact: "Patto della Lama",
+  },
+  {
+    name: "Catene di Carceri",
+    summary: "Puoi lanciare Blocca Mostri su celestiali, immondi ed elementali.",
+    minLevel: 15,
+    requiresPact: "Patto della Catena",
+  },
+  {
+    name: "Maestro di Mille Forme",
+    summary: "Puoi lanciare Alterare Se Stesso a volontà, senza spendere slot.",
+    minLevel: 15,
+  },
+  {
+    name: "Sguardo delle Due Menti",
+    summary: "Puoi percepire il mondo attraverso i sensi di una creatura consenziente.",
+  },
 ];
 
 function warlockInvocationsKnown(level: number): number {
@@ -486,7 +534,7 @@ function buildWarlockPactAndInvocationsMarkdown(input: {
           "",
           intro,
           "Suppliche selezionate:",
-          ...picked.map((opt) => `- **${opt.name}**: ${opt.summary}`),
+          ...picked.map((opt) => `- **${opt.name}**`),
           unlockNote,
         ].join("\n")
       );
