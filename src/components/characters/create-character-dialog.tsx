@@ -23,6 +23,8 @@ import { createCharacter } from "@/app/campaigns/character-actions";
 import { CharacterBuildFormFields } from "@/components/characters/character-build-form-fields";
 import { backgroundBySlug } from "@/lib/character-build-catalog";
 import type { QuickManualSection } from "@/lib/sheet-generator/quick-manual-builder";
+import { buildCompiledSheetPdfRequestBody } from "@/lib/sheet-generator/sheet-pdf-payload";
+import type { GeneratedCharacterSheet } from "@/lib/sheet-generator/types";
 import type { CharacterFormBuildDraft } from "@/lib/character-sheet-build-meta";
 import { arrayBufferToBase64 } from "@/lib/utils/array-buffer-base64";
 
@@ -59,6 +61,9 @@ type StoredGeneratedSheet = {
   /** Presente se salvato dal generatore recente: consente di rigenerare il PDF con lo story in creazione PG. */
   sheetData?: Record<string, unknown>;
   quickManualSections?: QuickManualSection[];
+  backgroundPdfSections?: QuickManualSection[];
+  includeBackgroundStoryInPdf?: boolean;
+  characterStory?: string | null;
   spellcasting?: StoredSpellcastingMeta | null;
   build?: CharacterFormBuildDraft;
 };
@@ -84,6 +89,9 @@ function parseStoredGeneratedSheet(raw: string | null): StoredGeneratedSheet | n
       hitPoints?: number;
       sheetData?: unknown;
       quickManualSections?: unknown;
+      backgroundPdfSections?: unknown;
+      includeBackgroundStoryInPdf?: boolean;
+      characterStory?: string | null;
       spellcasting?: unknown;
       build?: unknown;
     };
@@ -103,6 +111,9 @@ function parseStoredGeneratedSheet(raw: string | null): StoredGeneratedSheet | n
       const quickManualSections = Array.isArray(parsed.quickManualSections)
         ? (parsed.quickManualSections as QuickManualSection[])
         : undefined;
+      const backgroundPdfSections = Array.isArray(parsed.backgroundPdfSections)
+        ? (parsed.backgroundPdfSections as QuickManualSection[])
+        : undefined;
       let spellcasting: StoredSpellcastingMeta | null | undefined;
       if (parsed.spellcasting != null && typeof parsed.spellcasting === "object") {
         const sc = parsed.spellcasting as StoredSpellcastingMeta;
@@ -121,6 +132,10 @@ function parseStoredGeneratedSheet(raw: string | null): StoredGeneratedSheet | n
         hitPoints: parsed.hitPoints,
         sheetData,
         quickManualSections,
+        backgroundPdfSections,
+        includeBackgroundStoryInPdf: parsed.includeBackgroundStoryInPdf === true,
+        characterStory:
+          typeof parsed.characterStory === "string" ? parsed.characterStory : undefined,
         spellcasting,
         build,
       };
@@ -129,17 +144,6 @@ function parseStoredGeneratedSheet(raw: string | null): StoredGeneratedSheet | n
     // ignore
   }
   return null;
-}
-
-/** Allineato al generatore scheda (nome · classe liv. 1 · Background: …). */
-function buildStoryContextLineFromForm(fd: FormData): string {
-  const characterName = (fd.get("name") as string | null)?.trim() ?? "";
-  const classLabel = (fd.get("character_class") as string | null)?.trim() ?? "";
-  const bgSlug = (fd.get("background_slug") as string | null)?.trim() ?? "";
-  const bgEntry = backgroundBySlug(bgSlug);
-  const classPart = [classLabel, "liv. 1"].filter(Boolean).join(" ");
-  const bgLine = bgEntry?.label?.trim() ? `Background: ${bgEntry.label}` : "";
-  return [characterName, classPart, bgLine].filter(Boolean).join(" · ");
 }
 
 type CreateCharacterDialogProps = {
@@ -237,20 +241,39 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
       const gen = formSeed?.generated;
       if (gen && (!sheetFile || sheetFile.size === 0) && !sheetUrl) {
         let pdfBase64 = gen.pdfBase64;
-        if (gen.sheetData && background) {
+        const includeBgStory = gen.includeBackgroundStoryInPdf ?? !!background;
+        const storyForPdf = includeBgStory ? background || gen.characterStory || "" : "";
+        if (gen.sheetData && (includeBgStory || gen.quickManualSections?.length)) {
           try {
+            const classLabel =
+              (formData.get("character_class") as string | null)?.trim() ||
+              gen.build?.character_class?.trim() ||
+              "";
+            const levelRaw = Number.parseInt(
+              (formData.get("level") as string | null)?.trim() || gen.build?.level || "1",
+              10
+            );
+            const bgSlug = (formData.get("background_slug") as string | null)?.trim() || "";
+            const sheetStub = {
+              characterName: name,
+              classLabel,
+              level: Number.isFinite(levelRaw) ? levelRaw : 1,
+              backgroundLabel: backgroundBySlug(bgSlug)?.label ?? bgSlug,
+            } as GeneratedCharacterSheet;
             const pdfRes = await fetch("/api/sheet-pdf", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                fields: gen.sheetData,
-                fileName: gen.fileName,
-                ...(gen.quickManualSections?.length
-                  ? { quickManualSections: gen.quickManualSections }
-                  : {}),
-                storyText: background,
-                storyContextLine: buildStoryContextLineFromForm(formData),
-              }),
+              body: JSON.stringify(
+                buildCompiledSheetPdfRequestBody({
+                  sheetData: gen.sheetData,
+                  sheet: sheetStub,
+                  fileName: gen.fileName,
+                  quickManualSections: gen.quickManualSections,
+                  backgroundPdfSections: includeBgStory ? gen.backgroundPdfSections : undefined,
+                  includeBackgroundStoryInPdf: includeBgStory,
+                  characterStory: storyForPdf,
+                })
+              ),
             });
             if (pdfRes.ok) {
               const ab = await pdfRes.arrayBuffer();

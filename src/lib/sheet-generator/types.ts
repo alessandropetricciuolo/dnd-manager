@@ -37,6 +37,10 @@ export type CharacterGeneratorInput = {
   powerPlayer?: boolean;
   /** Modalità torneo: aggiunge Manuale rapido nel PDF (sezioni testo manuale). */
   torneoMode?: boolean;
+  /** Aggiunge al PDF il testo del background PHB e/o la storia narrativa del PG. */
+  includeBackgroundStoryInPdf?: boolean;
+  /** Storia narrativa del PG (pagina «Storia del personaggio» se includeBackgroundStoryInPdf). */
+  characterStory?: string | null;
 };
 
 export type GeneratedSpell = {

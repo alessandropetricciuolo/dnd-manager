@@ -149,3 +149,15 @@ export async function buildQuickManualSections(
 
   return sections;
 }
+
+/** Sezione testo background PHB per il PDF (opzione «background e storia»). */
+export function buildBackgroundPdfSections(sheet: GeneratedCharacterSheet): QuickManualSection[] {
+  const md = sheet.backgroundMd?.trim();
+  if (!md) return [];
+  return [
+    {
+      title: `Background — ${sheet.backgroundLabel}`,
+      body: trimSection(mdToPlainSections(md), MAX_SECTION_CHARS),
+    },
+  ];
+}

@@ -2,21 +2,17 @@
 
 import type { GeneratedCharacterSheet } from "@/lib/sheet-generator/types";
 import type { QuickManualSection } from "@/lib/sheet-generator/quick-manual-builder";
+import { buildCompiledSheetPdfRequestBody } from "@/lib/sheet-generator/sheet-pdf-payload";
 
 type Props = {
   sheet: GeneratedCharacterSheet;
   sheetData?: Record<string, unknown> | null;
-  /** Narrazione PG: pagina extra dopo Manuale rapido (se presente). */
-  storyText?: string | null;
+  /** Narrazione PG: pagina extra se includeBackgroundStoryInPdf. */
+  characterStory?: string | null;
+  includeBackgroundStoryInPdf?: boolean;
   quickManualSections?: QuickManualSection[];
+  backgroundPdfSections?: QuickManualSection[];
 };
-
-function pdfStoryContextLine(sheet: GeneratedCharacterSheet): string {
-  const name = sheet.characterName?.trim();
-  const cls = [sheet.classLabel, sheet.level ? `liv. ${sheet.level}` : ""].filter(Boolean).join(" ");
-  const bg = sheet.backgroundLabel?.trim() ?? "";
-  return [name, cls, bg ? `Background: ${bg}` : ""].filter(Boolean).join(" · ");
-}
 
 function block(title: string, body: string | null | undefined) {
   if (!body?.trim()) return null;
@@ -34,23 +30,32 @@ function inventoryPreviewText(lines: string[]): string {
   return cleaned.map((s) => `• ${s}`).join("\n");
 }
 
-export function GeneratedSheetView({ sheet, sheetData, storyText, quickManualSections = [] }: Props) {
-  const storyPdf = typeof storyText === "string" ? storyText : "";
-  const storyTrim = storyPdf.trim();
+export function GeneratedSheetView({
+  sheet,
+  sheetData,
+  characterStory,
+  includeBackgroundStoryInPdf = false,
+  quickManualSections = [],
+  backgroundPdfSections = [],
+}: Props) {
+  const storyTrim = (characterStory ?? "").trim();
+  const storyInPdf = includeBackgroundStoryInPdf && !!storyTrim;
 
   async function downloadCompiledPdf() {
     if (!sheetData) return;
     const res = await fetch("/api/sheet-pdf", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        fields: sheetData,
-        fileName: `${sheet.characterName || "scheda"}-compilata.pdf`,
-        ...(quickManualSections.length ? { quickManualSections } : {}),
-        ...(storyTrim
-          ? { storyText: storyTrim, storyContextLine: pdfStoryContextLine(sheet) }
-          : {}),
-      }),
+      body: JSON.stringify(
+        buildCompiledSheetPdfRequestBody({
+          sheetData,
+          sheet,
+          quickManualSections,
+          backgroundPdfSections,
+          includeBackgroundStoryInPdf,
+          characterStory,
+        })
+      ),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -95,6 +100,15 @@ export function GeneratedSheetView({ sheet, sheetData, storyText, quickManualSec
           <div><b>Età/Sesso:</b> {sheet.age ?? "-"} / {sheet.sex ?? "-"}</div>
         </header>
 
+        {(quickManualSections.length > 0 || backgroundPdfSections.length > 0 || storyInPdf) && (
+          <p className="mb-4 text-xs text-barber-paper/65 print:hidden">
+            PDF compilato: scheda
+            {quickManualSections.length ? " + manuale rapido" : ""}
+            {backgroundPdfSections.length ? " + background (manuale)" : ""}
+            {storyInPdf ? " + storia del personaggio" : ""}
+          </p>
+        )}
+
         <section className="mb-4 grid gap-3 md:grid-cols-3">
           {(["str", "dex", "con", "int", "wis", "cha"] as const).map((a) => (
             <div key={a} className="rounded border border-barber-gold/20 p-2 text-sm">
@@ -138,7 +152,9 @@ export function GeneratedSheetView({ sheet, sheetData, storyText, quickManualSec
 
         {storyTrim ? (
           <section className="mb-4 rounded border border-barber-gold/25 bg-black/15 p-3 print:break-before-page">
-            <h3 className="mb-2 text-sm font-semibold text-barber-paper">Storia del personaggio (anche in PDF)</h3>
+            <h3 className="mb-2 text-sm font-semibold text-barber-paper">
+              Storia del personaggio{storyInPdf ? " (inclusa nel PDF)" : ""}
+            </h3>
             <pre className="whitespace-pre-wrap text-sm text-barber-paper/90">{storyTrim}</pre>
           </section>
         ) : null}

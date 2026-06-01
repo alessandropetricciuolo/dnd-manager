@@ -17,6 +17,7 @@ import {
   parseGeneratedSheetBuildMeta,
 } from "@/lib/character-sheet-build-meta";
 import { spellcastingMetaFromGeneratedSheet } from "@/lib/sheet-generator/spell-slots";
+import { buildCompiledSheetPdfRequestBody } from "@/lib/sheet-generator/sheet-pdf-payload";
 import { formatSheetSaveError } from "@/lib/sheet-save-errors";
 import { arrayBufferToBase64 } from "@/lib/utils/array-buffer-base64";
 
@@ -46,6 +47,8 @@ function GeneratorPageContent() {
       autogen: searchParams.get("autogen") === "1",
       powerPlayer: searchParams.get("powerPlayer") === "1",
       torneoMode: searchParams.get("torneoMode") === "1",
+      includeBackgroundStoryInPdf: searchParams.get("includeBackgroundStoryInPdf") === "1",
+      characterStory: searchParams.get("characterStory") ?? "",
     }),
     [searchParams]
   );
@@ -56,10 +59,14 @@ function GeneratorPageContent() {
   const [resultJson, setResultJson] = useState<string | null>(null);
   const [sheetDataObj, setSheetDataObj] = useState<Record<string, unknown> | null>(null);
   const [quickManualSections, setQuickManualSections] = useState<QuickManualSection[]>([]);
+  const [backgroundPdfSections, setBackgroundPdfSections] = useState<QuickManualSection[]>([]);
+  const [includeBackgroundStoryInPdf, setIncludeBackgroundStoryInPdf] = useState(
+    initial.includeBackgroundStoryInPdf
+  );
   const [sheet, setSheet] = useState<GeneratedCharacterSheet | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [isSavingSheet, setIsSavingSheet] = useState(false);
-  const [characterStory, setCharacterStory] = useState("");
+  const [characterStory, setCharacterStory] = useState(initial.characterStory);
   const autogenKeyRef = useRef<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -108,23 +115,16 @@ function GeneratorPageContent() {
       const pdfRes = await fetch("/api/sheet-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fields: sheetDataObj,
-          fileName: `${sheet.characterName || "scheda"}-compilata.pdf`,
-          ...(quickManualSections.length ? { quickManualSections } : {}),
-          ...(characterStory.trim()
-            ? {
-                storyText: characterStory.trim(),
-                storyContextLine: [
-                  sheet.characterName,
-                  [sheet.classLabel, sheet.level ? `liv. ${sheet.level}` : ""].filter(Boolean).join(" "),
-                  sheet.backgroundLabel?.trim() ? `Background: ${sheet.backgroundLabel}` : "",
-                ]
-                  .filter(Boolean)
-                  .join(" · "),
-              }
-            : {}),
-        }),
+        body: JSON.stringify(
+          buildCompiledSheetPdfRequestBody({
+            sheetData: sheetDataObj,
+            sheet,
+            quickManualSections,
+            backgroundPdfSections,
+            includeBackgroundStoryInPdf,
+            characterStory,
+          })
+        ),
       });
       if (!pdfRes.ok) {
         const err = await pdfRes.json().catch(() => ({}));
@@ -177,6 +177,9 @@ function GeneratorPageContent() {
               hitPoints: sheet.hpMax,
               sheetData: sheetDataObj,
               quickManualSections,
+              backgroundPdfSections,
+              includeBackgroundStoryInPdf,
+              characterStory,
               spellcasting: spellcastingMetaFromGeneratedSheet(sheet),
               build: {
                 race_slug: buildDraft.race_slug,
@@ -228,8 +231,15 @@ function GeneratorPageContent() {
     setResultJson(null);
     setSheetDataObj(null);
     setQuickManualSections([]);
+    setBackgroundPdfSections([]);
     setSheet(null);
     setWarnings([]);
+    const storyFromForm = (formData.get("characterStory") as string | null)?.trim() ?? "";
+    setCharacterStory(storyFromForm);
+    setIncludeBackgroundStoryInPdf(
+      formData.get("includeBackgroundStoryInPdf") === "1" ||
+        formData.get("includeBackgroundStoryInPdf") === "on"
+    );
     startTransition(async () => {
       const result = await generateSheetAction(formData);
       setResultMessage(result.message);
@@ -238,6 +248,9 @@ function GeneratorPageContent() {
       if (result.success && result.sheetData) {
         setSheetDataObj(result.sheetData);
         setQuickManualSections(result.quickManualSections ?? []);
+        setBackgroundPdfSections(result.backgroundPdfSections ?? []);
+        setIncludeBackgroundStoryInPdf(!!result.includeBackgroundStoryInPdf);
+        if (result.characterStory != null) setCharacterStory(result.characterStory);
         setResultJson(JSON.stringify(result.sheetData, null, 2));
       }
     });
@@ -266,6 +279,8 @@ function GeneratorPageContent() {
       sex: initial.sex,
       powerPlayer: initial.powerPlayer,
       torneoMode: initial.torneoMode,
+      includeBackgroundStoryInPdf: initial.includeBackgroundStoryInPdf,
+      characterStory: initial.characterStory,
     });
     if (autogenKeyRef.current === autogenKey) return;
     autogenKeyRef.current = autogenKey;
@@ -284,6 +299,8 @@ function GeneratorPageContent() {
     if (initial.sex) fd.set("sex", initial.sex);
     if (initial.powerPlayer) fd.set("powerPlayer", "1");
     if (initial.torneoMode) fd.set("torneoMode", "1");
+    if (initial.includeBackgroundStoryInPdf) fd.set("includeBackgroundStoryInPdf", "1");
+    if (initial.characterStory) fd.set("characterStory", initial.characterStory);
 
     startTransition(async () => {
       const result = await generateSheetAction(fd);
@@ -293,6 +310,9 @@ function GeneratorPageContent() {
       if (result.success && result.sheetData) {
         setSheetDataObj(result.sheetData);
         setQuickManualSections(result.quickManualSections ?? []);
+        setBackgroundPdfSections(result.backgroundPdfSections ?? []);
+        setIncludeBackgroundStoryInPdf(!!result.includeBackgroundStoryInPdf);
+        if (result.characterStory != null) setCharacterStory(result.characterStory);
         setResultJson(JSON.stringify(result.sheetData, null, 2));
       }
     });
@@ -506,6 +526,23 @@ function GeneratorPageContent() {
           </div>
 
           <div className="space-y-2">
+            <label htmlFor="generator-character-story" className="text-sm font-medium text-barber-paper">
+              Storia del personaggio (opzionale)
+            </label>
+            <Textarea
+              id="generator-character-story"
+              name="characterStory"
+              rows={6}
+              value={characterStory}
+              onChange={(e) => setCharacterStory(e.target.value)}
+              disabled={isPending}
+              placeholder="Narrazione, legami, obiettivi… come nella sezione Background / Storia della card PG."
+              maxLength={50_000}
+              className="min-h-[100px] border-barber-gold/30 bg-barber-dark/80 text-barber-paper placeholder:text-barber-paper/35"
+            />
+          </div>
+
+          <div className="space-y-2">
             <label className="flex cursor-pointer items-start gap-3 rounded-md border border-barber-gold/25 bg-barber-dark/50 px-4 py-3 text-sm text-barber-paper">
               <input
                 type="checkbox"
@@ -518,8 +555,28 @@ function GeneratorPageContent() {
               <span>
                 <span className="font-medium text-barber-gold">Modalità torneo</span>
                 <span className="mt-1 block text-barber-paper/75">
-                  Aggiunge al PDF un Manuale rapido (dopo la scheda, prima della storia) con tratti razziali,
-                  privilegi di classe/sottoclasse e testo completo degli incantesimi scelti.
+                  Aggiunge al PDF un Manuale rapido (dopo la scheda) con tratti razziali, privilegi di
+                  classe/sottoclasse e testo completo degli incantesimi scelti.
+                </span>
+              </span>
+            </label>
+          </div>
+
+          <div className="space-y-2">
+            <label className="flex cursor-pointer items-start gap-3 rounded-md border border-barber-gold/25 bg-barber-dark/50 px-4 py-3 text-sm text-barber-paper">
+              <input
+                type="checkbox"
+                name="includeBackgroundStoryInPdf"
+                value="1"
+                defaultChecked={initial.includeBackgroundStoryInPdf}
+                disabled={isPending}
+                className="mt-1 h-4 w-4 shrink-0 rounded border-barber-gold/40 text-barber-red focus:ring-barber-gold"
+              />
+              <span>
+                <span className="font-medium text-barber-gold">Background e storia nel PDF</span>
+                <span className="mt-1 block text-barber-paper/75">
+                  Dopo la scheda (e dopo il manuale rapido, se attivo): testo del background scelto dal
+                  manuale e, se hai scritto la storia sopra, una pagina «Storia del personaggio».
                 </span>
               </span>
             </label>
@@ -567,30 +624,13 @@ function GeneratorPageContent() {
           </div>
         )}
         {sheet && (
-          <div className="mt-6 space-y-2 print:hidden">
-            <label htmlFor="generator-character-story" className="block text-sm font-medium text-barber-paper">
-              Storia del personaggio (opzionale, pagina extra nel PDF compilato)
-            </label>
-            <Textarea
-              id="generator-character-story"
-              rows={8}
-              value={characterStory}
-              onChange={(e) => setCharacterStory(e.target.value)}
-              placeholder="Narrazione, legami, obiettivi… identica a ciò che inserisci sulla card nella sezione Background / Storia."
-              maxLength={50_000}
-              className="min-h-[120px] border-barber-gold/30 bg-barber-dark/80 text-barber-paper placeholder:text-barber-paper/35"
-            />
-            <p className="text-xs text-barber-paper/60">
-              Vuoto → il PDF resta sulla sola Scheda_Base. Con testo → dopo la prima pagina viene aggiunta una o più pagine con titolo «Storia del personaggio».
-            </p>
-          </div>
-        )}
-        {sheet && (
           <GeneratedSheetView
             sheet={sheet}
             sheetData={sheetDataObj}
-            storyText={characterStory || null}
+            characterStory={characterStory || null}
+            includeBackgroundStoryInPdf={includeBackgroundStoryInPdf}
             quickManualSections={quickManualSections}
+            backgroundPdfSections={backgroundPdfSections}
           />
         )}
         {resultJson && (

@@ -97,6 +97,8 @@ export async function POST(req: Request): Promise<Response> {
       storyContextLine?: string | null;
       /** Manuale rapido (modalità torneo): inserito dopo la scheda, prima della storia. */
       quickManualSections?: PdfTextSection[] | null;
+      /** Testo background PHB: dopo il manuale rapido, prima della storia narrativa. */
+      backgroundPdfSections?: PdfTextSection[] | null;
     };
     const fields = enrichFieldsFromSpellList(body?.fields ?? {});
     const templateBytes = await resolveTemplateBytes(req);
@@ -141,15 +143,29 @@ export async function POST(req: Request): Promise<Response> {
           (s) => s && typeof s.title === "string" && typeof s.body === "string"
         )
       : [];
+    const characterName =
+      typeof fields.CharacterName === "string"
+        ? fields.CharacterName
+        : valueToString(fields.CharacterName);
+
     if (quickManual.length) {
-      const characterName =
-        typeof fields.CharacterName === "string"
-          ? fields.CharacterName
-          : valueToString(fields.CharacterName);
       await appendPdfTextSections(pdfDoc, quickManual, {
         documentTitle: characterName
           ? `Manuale rapido — ${characterName}`
           : "Manuale rapido",
+      });
+    }
+
+    const backgroundSections = Array.isArray(body?.backgroundPdfSections)
+      ? (body.backgroundPdfSections as PdfTextSection[]).filter(
+          (s) => s && typeof s.title === "string" && typeof s.body === "string"
+        )
+      : [];
+    if (backgroundSections.length) {
+      await appendPdfTextSections(pdfDoc, backgroundSections, {
+        documentTitle: characterName
+          ? `Background — ${characterName}`
+          : "Background",
       });
     }
 

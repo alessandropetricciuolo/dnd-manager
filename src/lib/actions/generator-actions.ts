@@ -1,7 +1,11 @@
 'use server';
 
 import { buildGeneratedCharacterSheet } from "@/lib/sheet-generator/build-engine";
-import { buildQuickManualSections, type QuickManualSection } from "@/lib/sheet-generator/quick-manual-builder";
+import {
+  buildBackgroundPdfSections,
+  buildQuickManualSections,
+  type QuickManualSection,
+} from "@/lib/sheet-generator/quick-manual-builder";
 import { mapGeneratedSheetToPdfFields } from "@/lib/sheet-generator/sheet-mapper";
 import type { CharacterGeneratorInput, GeneratedCharacterSheet } from "@/lib/sheet-generator/types";
 import { headers } from "next/headers";
@@ -12,6 +16,9 @@ export type GenerateSheetResult = {
   sheet?: GeneratedCharacterSheet;
   sheetData?: Record<string, unknown>;
   quickManualSections?: QuickManualSection[];
+  backgroundPdfSections?: QuickManualSection[];
+  includeBackgroundStoryInPdf?: boolean;
+  characterStory?: string | null;
   warnings?: string[];
 };
 
@@ -33,6 +40,10 @@ function parseInput(formData: FormData): CharacterGeneratorInput {
     sex: (formData.get("sex") as string | null)?.trim() || null,
     powerPlayer: formData.get("powerPlayer") === "1" || formData.get("powerPlayer") === "on",
     torneoMode: formData.get("torneoMode") === "1" || formData.get("torneoMode") === "on",
+    includeBackgroundStoryInPdf:
+      formData.get("includeBackgroundStoryInPdf") === "1" ||
+      formData.get("includeBackgroundStoryInPdf") === "on",
+    characterStory: (formData.get("characterStory") as string | null)?.trim() || null,
   };
 }
 
@@ -52,12 +63,18 @@ export async function generateSheetAction(formData: FormData): Promise<GenerateS
     const quickManualSections = input.torneoMode
       ? await buildQuickManualSections(built.sheet)
       : undefined;
+    const backgroundPdfSections = input.includeBackgroundStoryInPdf
+      ? buildBackgroundPdfSections(built.sheet)
+      : undefined;
     return {
       success: true,
       message: `Scheda generata: ${built.sheet.classLabel} lvl ${built.sheet.level}.`,
       sheet: built.sheet,
       sheetData,
       quickManualSections,
+      backgroundPdfSections,
+      includeBackgroundStoryInPdf: !!input.includeBackgroundStoryInPdf,
+      characterStory: input.characterStory ?? null,
       warnings: built.warnings,
     };
   } catch (error) {
