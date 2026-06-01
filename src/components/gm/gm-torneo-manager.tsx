@@ -34,9 +34,12 @@ import {
   torneoActiveMatchStorageKey,
   torneoInitiativeStorageKey,
 } from "@/lib/torneo/initiative";
+import {
+  hasTorneoInitiativeEntries,
+  preferRestorableTorneoInitiativeState,
+} from "@/lib/torneo/initiative-persistence";
 import { TORNEO_TEAM_COLORS, type TorneoMatchWithTeams, type TorneoTeamWithMembers } from "@/lib/torneo/types";
 import { cn } from "@/lib/utils";
-import { sanitizeInitiativeTrackerState } from "@/components/gm/initiative-tracker";
 import { persistTorneoMatchInitiative } from "@/components/gm/torneo-match-tracker";
 import {
   loadTorneoMatchInitiativeAction,
@@ -269,13 +272,15 @@ export function GmTorneoManager({
   };
 
   const loadMatchState = async (match: TorneoMatchWithTeams): Promise<InitiativeTrackerState | null> => {
+    let remoteState: InitiativeTrackerState | null = null;
     if (liveSyncEnabled) {
       const res = await loadTorneoMatchInitiativeAction(campaignId, match.id);
-      if (res.success && res.data?.state) return res.data.state;
+      remoteState = res.success ? res.data?.state ?? null : null;
+      if (hasTorneoInitiativeEntries(remoteState)) return remoteState;
     }
     try {
       const raw = localStorage.getItem(torneoInitiativeStorageKey(campaignId, match.id));
-      if (raw) return sanitizeInitiativeTrackerState(JSON.parse(raw) as Partial<InitiativeTrackerState>);
+      return preferRestorableTorneoInitiativeState(remoteState, raw);
     } catch {
       /* ignore */
     }
