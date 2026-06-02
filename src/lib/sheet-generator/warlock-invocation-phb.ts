@@ -131,30 +131,104 @@ const WARLOCK_PACT_PHB_HEADING: Record<string, string> = {
   [normalizeSpellNameForTier("Patto del Tomo")]: "PATTO DEL TOMO",
 };
 
-/** Testo completo del Dono del Patto scelto (sezione #### nel PHB). */
+/** Testo completo del Dono del Patto scelto (#### o ### nel PHB IT). */
 export function extractPhbWarlockPactMarkdown(pactName: string): string {
   const phb = getPhbMarkdownText();
   if (!phb) return "";
   const heading = WARLOCK_PACT_PHB_HEADING[normalizeSpellNameForTier(pactName)];
   if (!heading) return "";
-  return extractHeadingBlock(phb, heading, 4);
+  return (
+    extractHeadingBlock(phb, heading, 4) ||
+    extractHeadingBlock(phb, heading, 3)
+  );
 }
 
-/** Corpo manuale rapido: patto + suppliche selezionate, testo integrale. */
-export function buildWarlockInvocationsManualBody(classFeaturesMd: string): string | null {
-  const parts: string[] = [];
+/** Introduzione «### Dono del Patto» dal PHB (solo paragrafi prima delle opzioni). */
+export function extractPhbDonoDelPattoIntroMarkdown(): string {
+  const phb = getPhbMarkdownText();
+  if (!phb) return "";
+  const txt = phb.replace(/\r/g, "");
+  const startRe = /^###\s+Dono del Patto\s*$/im;
+  const startMatch = startRe.exec(txt);
+  if (startMatch?.index == null || startMatch.index < 0) return "";
 
-  const pact = parseWarlockPactChoice(classFeaturesMd);
-  if (pact) {
-    const pactMd = extractPhbWarlockPactMarkdown(pact);
-    if (pactMd) parts.push(pactMd);
+  const afterTitle = txt.slice(startMatch.index + startMatch[0].length);
+  const introLines: string[] = [];
+  for (const line of afterTitle.split("\n")) {
+    if (/^####\s+PATTO\s+/i.test(line)) break;
+    if (/^###\s+PATTO\s+DEL\s+/i.test(line)) break;
+    if (/^###\s+[A-ZÀ-Ú]/i.test(line.trim())) break;
+    introLines.push(line);
   }
+  const body = introLines.join("\n").trim();
+  if (!body) return "";
+  return cleanInvocationExcerpt(`### Dono del Patto\n\n${body}`);
+}
 
+/** Sezione «### I doni del patto» (note sul patrono per ogni patto). */
+export function extractPhbIDoniDelPattoMarkdown(): string {
+  const phb = getPhbMarkdownText();
+  if (!phb) return "";
+  return (
+    extractHeadingBlock(phb, "I DONI DEL PATTO", 3) ||
+    extractHeadingBlock(phb, "I Doni del Patto", 3)
+  );
+}
+
+/**
+ * Blocco manuale rapido completo per il Dono del Patto scelto:
+ * intro PHB + regole del patto + doni legati al patrono.
+ */
+export function buildPhbWarlockPactManualBlock(pactName: string): string {
+  const parts: string[] = [];
+  const intro = extractPhbDonoDelPattoIntroMarkdown();
+  if (intro) parts.push(intro);
+  const pact = extractPhbWarlockPactMarkdown(pactName);
+  if (pact) parts.push(pact);
+  const gifts = extractPhbIDoniDelPattoMarkdown();
+  if (gifts) parts.push(gifts);
+  return parts.join("\n\n").trim();
+}
+
+/** Rimuove blocchi generati (riassunto) mostrati altrove con testo PHB integrale. */
+export function stripWarlockPactAndInvocationsFromClassMd(classFeaturesMd: string): string {
+  return classFeaturesMd
+    .replace(
+      /###\s+Dono del Patto\s*\n[\s\S]*?(?=\n###\s+|\n##\s+|$)/i,
+      ""
+    )
+    .replace(
+      /###\s+Suppliche Occulte\s*\n[\s\S]*?(?=\n###\s+|\n##\s+|$)/i,
+      ""
+    )
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+/** Manuale rapido: Dono del Patto (testo PHB integrale). */
+export function buildWarlockPactManualBody(classFeaturesMd: string): string | null {
+  const pact = parseWarlockPactChoice(classFeaturesMd);
+  if (!pact) return null;
+  const block = buildPhbWarlockPactManualBlock(pact);
+  return block || null;
+}
+
+/** Manuale rapido: suppliche occulte selezionate (testo PHB integrale). */
+export function buildWarlockInvocationsOnlyManualBody(classFeaturesMd: string): string | null {
+  const parts: string[] = [];
   for (const name of parseWarlockSelectedInvocationNames(classFeaturesMd)) {
     const md = extractWarlockInvocationMarkdown(name);
     if (md) parts.push(md);
   }
-
   const merged = parts.join("\n\n").trim();
   return merged || null;
+}
+
+/** Patto + suppliche (compatibilità test e chiamate legacy). */
+export function buildWarlockInvocationsManualBody(classFeaturesMd: string): string | null {
+  const parts = [
+    buildWarlockPactManualBody(classFeaturesMd),
+    buildWarlockInvocationsOnlyManualBody(classFeaturesMd),
+  ].filter(Boolean) as string[];
+  return parts.length ? parts.join("\n\n").trim() : null;
 }

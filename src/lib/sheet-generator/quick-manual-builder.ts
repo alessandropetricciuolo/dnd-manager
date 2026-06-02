@@ -3,7 +3,13 @@ import { extractPhbSpellMarkdown } from "@/lib/server/phb-spell-excerpt";
 import { raceTraitsForQuickManual } from "@/lib/sheet-generator/sheet-mapper";
 import { kiPointsClassFeatureLine } from "@/lib/sheet-generator/monk-meta";
 import { sorceryPointsClassFeatureLine } from "@/lib/sheet-generator/sorcerer-meta";
-import { buildWarlockInvocationsManualBody } from "@/lib/sheet-generator/warlock-invocation-phb";
+import { buildDruidWildShapeManualBody } from "@/lib/sheet-generator/druid-wild-shape";
+import { buildMonkKiManualBody } from "@/lib/sheet-generator/monk-ki-phb";
+import {
+  buildWarlockInvocationsOnlyManualBody,
+  buildWarlockPactManualBody,
+  stripWarlockPactAndInvocationsFromClassMd,
+} from "@/lib/sheet-generator/warlock-invocation-phb";
 
 export type QuickManualSection = {
   title: string;
@@ -89,15 +95,20 @@ export async function buildQuickManualSections(
   }
 
   if (sheet.classFeaturesMd.trim()) {
+    const classMdHasKiLine = /punti ki disponibili/i.test(sheet.classFeaturesMd);
     const resourceLine =
       sheet.classLabel === "Stregone"
         ? sorceryPointsClassFeatureLine(sheet.level)
-        : sheet.classLabel === "Monaco"
+        : sheet.classLabel === "Monaco" && !classMdHasKiLine
           ? kiPointsClassFeatureLine(sheet.level)
           : null;
+    const classMdForManual =
+      sheet.classLabel === "Warlock"
+        ? stripWarlockPactAndInvocationsFromClassMd(sheet.classFeaturesMd)
+        : sheet.classFeaturesMd;
     const classBody = [
       resourceLine,
-      mdToPlainSections(sheet.classFeaturesMd),
+      mdToPlainSections(classMdForManual),
     ]
       .filter(Boolean)
       .join("\n\n");
@@ -138,11 +149,41 @@ export async function buildQuickManualSections(
   }
 
   if (sheet.classLabel === "Warlock") {
-    const invManual = buildWarlockInvocationsManualBody(sheet.classFeaturesMd);
+    const pactManual = buildWarlockPactManualBody(sheet.classFeaturesMd);
+    if (pactManual) {
+      sections.push({
+        title: "Dono del patto",
+        body: trimSection(mdToPlainSections(pactManual), MAX_SECTION_CHARS),
+      });
+    }
+    const invManual = buildWarlockInvocationsOnlyManualBody(sheet.classFeaturesMd);
     if (invManual) {
       sections.push({
-        title: "Suppliche occulte e doni del patto",
+        title: "Suppliche occulte",
         body: trimSection(mdToPlainSections(invManual), MAX_SECTION_CHARS),
+      });
+    }
+  }
+
+  if (sheet.classLabel === "Monaco" && sheet.level >= 2) {
+    const kiManual = buildMonkKiManualBody(sheet.level);
+    if (kiManual) {
+      sections.push({
+        title: "Privilegi del Ki",
+        body: trimSection(mdToPlainSections(kiManual), MAX_SECTION_CHARS),
+      });
+    }
+  }
+
+  if (sheet.classLabel === "Druido" && sheet.level >= 2) {
+    const wildShapeManual = await buildDruidWildShapeManualBody(
+      sheet.level,
+      sheet.classSubclass
+    );
+    if (wildShapeManual) {
+      sections.push({
+        title: "Forme bestiali — Forma selvatica",
+        body: trimSection(wildShapeManual, MAX_SECTION_CHARS),
       });
     }
   }

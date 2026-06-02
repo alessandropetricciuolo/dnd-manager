@@ -252,7 +252,8 @@ export const CLASS_OPTIONS: ClassCatalogEntry[] = [
     slug: "druido",
     label: "Druido",
     privilegesAnchor: "Un druido ottiene i seguenti privilegi di classe",
-    privilegesExcerptStopPattern: "^##\\s+FORMA SELVATICA",
+    /** Include Forma selvatica; ferma prima dei circoli (Terra / Luna). */
+    privilegesExcerptStopPattern: "^##\\s+CIRCOLO DRUIDICO\\s*$",
     spellcastingAnchor: "Un druido attinge all'essenza divina della natura",
     spellProgression: "full",
     spellList: { style: "h1", chapter: "INCANTESIMI DA DRUIDO" },
@@ -287,7 +288,8 @@ export const CLASS_OPTIONS: ClassCatalogEntry[] = [
     slug: "monaco",
     label: "Monaco",
     privilegesAnchor: "Un monaco ottiene i seguenti privilegi di classe",
-    privilegesExcerptStopPattern: "^##\\s+KI\\s*$",
+    /** Ferma prima delle tradizioni (Via della Mano Aperta, …), non prima dei privilegi del ki. */
+    privilegesExcerptStopPattern: "^##\\s+TRADIZIONI MONASTICHE\\s*$",
     spellProgression: "none",
     spellList: null,
   },
