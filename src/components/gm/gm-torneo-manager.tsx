@@ -330,13 +330,18 @@ export function GmTorneoManager({
 
     const { state: initiativeState } = resolved;
     setBusy(true);
-    await persistTorneoMatchInitiative(campaignId, match.id, initiativeState, liveSyncEnabled);
-    setBusy(false);
-    onLoadMatch(station, match.id, initiativeState);
-    toast.success(
-      `Caricato su tavolo ${station} (${initiativeState.entries.length} in lista). Avvia dall'initiative tracker.`
-    );
-    void refresh({ silent: true });
+    try {
+      onLoadMatch(station, match.id, initiativeState);
+      toast.success(
+        `Caricato su tavolo ${station} (${initiativeState.entries.length} in lista). Avvia dall'initiative tracker.`
+      );
+      void persistTorneoMatchInitiative(campaignId, match.id, initiativeState, liveSyncEnabled).catch(
+        () => toast.error("Salvataggio initiative su server non riuscito.")
+      );
+      void refresh({ silent: true });
+    } finally {
+      setBusy(false);
+    }
   };
 
   /** Avvia incontro già caricato sul tavolo (timer live + stato active). */
@@ -358,38 +363,43 @@ export function GmTorneoManager({
     };
 
     setBusy(true);
-    const res = await setTorneoMatchStatusAction(campaignId, match.id, "active");
-    if (!res.success) {
-      setBusy(false);
-      toast.error(res.error);
-      return;
-    }
-    if (station === 1) persistActiveMatch(match.id);
-
-    await persistTorneoMatchInitiative(campaignId, match.id, startedState, liveSyncEnabled);
-    onLoadMatch(station, match.id, startedState);
-
-    if (liveSyncEnabled) {
-      await patchTorneoMatchTimerAction(
-        campaignId,
-        match.id,
-        buildTorneoTurnTimerStartPatch(
-          startedState.roundNumber,
-          startedState.currentTurnIndex,
-          startedState.entries.length
-        )
-      );
-      if (remoteSessionPublicId) {
-        await setGmRemoteFocusedMatchAction(remoteSessionPublicId, match.id);
+    try {
+      const res = await setTorneoMatchStatusAction(campaignId, match.id, "active");
+      if (!res.success) {
+        toast.error(res.error);
+        return;
       }
-    }
-    onMatchStarted?.(match.id, station);
-    setBusy(false);
+      if (station === 1) persistActiveMatch(match.id);
 
-    toast.success(
-      `Incontro avviato su tavolo ${station} · ${startedState.entries.length} in initiative.`
-    );
-    void refresh({ silent: true });
+      onLoadMatch(station, match.id, startedState);
+
+      if (liveSyncEnabled) {
+        await patchTorneoMatchTimerAction(
+          campaignId,
+          match.id,
+          buildTorneoTurnTimerStartPatch(
+            startedState.roundNumber,
+            startedState.currentTurnIndex,
+            startedState.entries.length
+          )
+        );
+        if (remoteSessionPublicId) {
+          await setGmRemoteFocusedMatchAction(remoteSessionPublicId, match.id);
+        }
+      }
+      onMatchStarted?.(match.id, station);
+
+      void persistTorneoMatchInitiative(campaignId, match.id, startedState, liveSyncEnabled).catch(
+        () => toast.error("Salvataggio initiative su server non riuscito.")
+      );
+
+      toast.success(
+        `Incontro avviato su tavolo ${station} · ${startedState.entries.length} in initiative.`
+      );
+      void refresh({ silent: true });
+    } finally {
+      setBusy(false);
+    }
   };
 
   const endPreparedMatch = async (match: TorneoMatchWithTeams, station: 1 | 2) => {

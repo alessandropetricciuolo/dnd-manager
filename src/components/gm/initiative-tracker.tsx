@@ -397,6 +397,13 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       // Evita di azzerare lo stato del parent prima che value sia sincronizzato su entries.
       if (entries.length === 0 && (value?.entries.length ?? 0) > 0) return;
       const sig = initiativeStateSyncSignature(state);
+      const parentSig = initiativeStateSyncSignature(
+        sanitizeInitiativeTrackerState(value ?? undefined)
+      );
+      if (sig === parentSig) {
+        lastControlledParentSigRef.current = parentSig;
+        return;
+      }
       if (sig === lastControlledParentSigRef.current) return;
       lastControlledParentSigRef.current = sig;
       if (entries.length > 0) {
@@ -425,6 +432,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     roundNumber,
     storageKey,
     turnElapsedSeconds,
+    value,
   ]);
 
   useEffect(() => {

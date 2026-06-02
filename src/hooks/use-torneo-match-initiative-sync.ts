@@ -41,6 +41,15 @@ export function useTorneoMatchInitiativeSync({
   const selfSaveUntilRef = useRef(0);
   const stateRef = useRef(state);
   stateRef.current = state;
+  const onStateFromRemoteRef = useRef(onStateFromRemote);
+  onStateFromRemoteRef.current = onStateFromRemote;
+
+  useEffect(() => {
+    lastSavedRef.current = "";
+    lastSavedSigRef.current = "";
+    lastRemoteAtRef.current = null;
+    selfSaveUntilRef.current = 0;
+  }, [matchId]);
 
   const loadInitial = useCallback(async () => {
     if (!matchId || !liveSyncEnabled) return null;
@@ -99,7 +108,7 @@ export function useTorneoMatchInitiativeSync({
               lastRemoteAtRef.current = updatedAt;
               lastSavedRef.current = JSON.stringify(next);
               lastSavedSigRef.current = initiativeStateSyncSignature(next);
-              onStateFromRemote(next);
+              onStateFromRemoteRef.current(next);
             } catch {
               /* ignore */
             }
@@ -112,28 +121,29 @@ export function useTorneoMatchInitiativeSync({
       cancelled = true;
       if (channel) void supabase.removeChannel(channel);
     };
-  }, [campaignId, matchId, liveSyncEnabled, onStateFromRemote]);
+  }, [campaignId, matchId, liveSyncEnabled, ignoreEmptyRemoteOverwrite]);
+
+  const stateSig = initiativeStateSyncSignature(state);
 
   useEffect(() => {
     if (!matchId || !liveSyncEnabled) return;
 
-    const syncSig = initiativeStateSyncSignature(state);
-    if (syncSig === lastSavedSigRef.current) return;
+    if (stateSig === lastSavedSigRef.current) return;
     if (state.entries.length === 0 && lastSavedSigRef.current === initiativeStateSyncSignature(emptyInitiativeTrackerState())) {
       return;
     }
 
     const timer = window.setTimeout(() => {
-      void saveTorneoMatchInitiativeAction(campaignId, matchId, state).then((res) => {
+      void saveTorneoMatchInitiativeAction(campaignId, matchId, stateRef.current).then((res) => {
         if (res.success && res.data?.updatedAt) {
-          lastSavedRef.current = JSON.stringify(state);
-          lastSavedSigRef.current = syncSig;
+          lastSavedRef.current = JSON.stringify(stateRef.current);
+          lastSavedSigRef.current = stateSig;
           lastRemoteAtRef.current = res.data.updatedAt;
           selfSaveUntilRef.current = Date.now() + 800;
           try {
             localStorage.setItem(
               torneoLiveDbInitiativeStorageKey(campaignId, matchId),
-              JSON.stringify(state)
+              JSON.stringify(stateRef.current)
             );
           } catch {
             /* ignore */
@@ -143,7 +153,7 @@ export function useTorneoMatchInitiativeSync({
     }, SAVE_DEBOUNCE_MS);
 
     return () => window.clearTimeout(timer);
-  }, [campaignId, matchId, liveSyncEnabled, state]);
+  }, [campaignId, matchId, liveSyncEnabled, stateSig]);
 
   return { loadInitial };
 }

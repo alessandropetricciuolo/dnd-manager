@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   InitiativeTracker,
   emptyInitiativeTrackerState,
@@ -70,10 +70,12 @@ export function TorneoMatchTracker({
   const state = isControlled ? syncState : internalState;
   const matchId = match?.id ?? null;
   const seededMatchRef = useRef<string | null>(null);
+  const suppressRemoteApplyUntilRef = useRef(0);
 
   const applyState = useCallback(
     (next: InitiativeTrackerState) => {
       if (!isControlled) setInternalState(next);
+      suppressRemoteApplyUntilRef.current = Date.now() + 1200;
       onStateChange?.(next);
     },
     [isControlled, onStateChange]
@@ -81,9 +83,22 @@ export function TorneoMatchTracker({
 
   const onStateFromRemote = useCallback(
     (next: InitiativeTrackerState) => {
+      if (Date.now() < suppressRemoteApplyUntilRef.current) return;
       applyState(next);
     },
     [applyState]
+  );
+
+  const onStateFromRemoteRef = useRef(onStateFromRemote);
+  onStateFromRemoteRef.current = onStateFromRemote;
+
+  const handleRemoteInitiative = useCallback(
+    (next: InitiativeTrackerState) => {
+      if (isControlled && next.entries.length === 0) return;
+      if (isControlled && initiativeStatesSyncEqual(state, next)) return;
+      onStateFromRemoteRef.current(next);
+    },
+    [isControlled, state]
   );
 
   const { loadInitial } = useTorneoMatchInitiativeSync({
@@ -92,11 +107,7 @@ export function TorneoMatchTracker({
     liveSyncEnabled,
     state,
     ignoreEmptyRemoteOverwrite: isControlled,
-    onStateFromRemote: (next) => {
-      if (isControlled && next.entries.length === 0) return;
-      if (isControlled && initiativeStatesSyncEqual(state, next)) return;
-      onStateFromRemote(next);
-    },
+    onStateFromRemote: handleRemoteInitiative,
   });
 
   const megatimerSync = useTorneoMatchTimerSync({
@@ -108,22 +119,36 @@ export function TorneoMatchTracker({
     entryCount: state.entries.length,
   });
 
-  const torneoMegatimer =
-    megatimerSync.enabled && match?.status === "active"
-      ? {
-          enabled: true,
-          remainingSec: megatimerSync.view.remainingSec,
-          roundLabel: megatimerSync.view.roundLabel,
-          isRunning: megatimerSync.view.isRunning,
-          isPaused: megatimerSync.view.isPaused,
-          isExpired: megatimerSync.view.isExpired,
-          onTogglePause: megatimerSync.togglePause,
-          onRestartTurn: megatimerSync.restartCurrentTurn,
-        }
-      : null;
+  const torneoMegatimer = useMemo(
+    () =>
+      megatimerSync.enabled && match?.status === "active"
+        ? {
+            enabled: true as const,
+            remainingSec: megatimerSync.view.remainingSec,
+            roundLabel: megatimerSync.view.roundLabel,
+            isRunning: megatimerSync.view.isRunning,
+            isPaused: megatimerSync.view.isPaused,
+            isExpired: megatimerSync.view.isExpired,
+            onTogglePause: megatimerSync.togglePause,
+            onRestartTurn: megatimerSync.restartCurrentTurn,
+          }
+        : null,
+    [
+      match?.status,
+      megatimerSync.enabled,
+      megatimerSync.restartCurrentTurn,
+      megatimerSync.togglePause,
+      megatimerSync.view.isExpired,
+      megatimerSync.view.isPaused,
+      megatimerSync.view.isRunning,
+      megatimerSync.view.remainingSec,
+      megatimerSync.view.roundLabel,
+    ]
+  );
 
   useEffect(() => {
     seededMatchRef.current = null;
+    suppressRemoteApplyUntilRef.current = 0;
   }, [matchId]);
 
   const seedFromTeams = useCallback(
@@ -144,10 +169,12 @@ export function TorneoMatchTracker({
     }
     if (seededMatchRef.current === matchId) return;
     const seeded = seedFromTeams(match);
-    if (!seeded) return;
+    if (!seeded) {
+      seededMatchRef.current = matchId;
+      return;
+    }
     seededMatchRef.current = matchId;
     onStateChange?.(seeded);
-    void persistTorneoMatchInitiative(campaignId, matchId, seeded, liveSyncEnabled);
   }, [
     campaignId,
     isControlled,
