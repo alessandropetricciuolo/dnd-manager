@@ -27,6 +27,7 @@ import {
   torneoTabelloneUrl,
 } from "@/lib/torneo/live-links";
 import type { TorneoMatchWithTeams } from "@/lib/torneo/types";
+import { cn } from "@/lib/utils";
 
 const REMOTE_TOKEN_STORAGE_PREFIX = "torneo-live-remote-token-";
 
@@ -305,41 +306,48 @@ export function GmTorneoLiveBar({
                   ) : null}
                 </div>
 
-                {liveId && (station1Match || station2Match) ? (
-                  <div className="space-y-3 rounded-lg border border-amber-900/35 bg-zinc-900/40 p-3">
-                    <p className="text-[10px] font-semibold uppercase text-amber-200/90">Tavoli attivi ora</p>
-                    {station1Match ? (
-                      <div className="space-y-2 rounded border border-zinc-800 bg-zinc-950/60 p-2">
-                        <p className="text-xs font-medium text-zinc-200">Tavolo 1 · {matchListLabel(station1Match)}</p>
-                        <LinkRow
-                          label="PC tavolo 1 (initiative)"
-                          url={torneoLiveTableUrl(liveId, station1Match.id)}
-                          onCopy={copyText}
-                        />
-                        <LinkRow
-                          label="Proiettore timer 1 (countdown + giocatore)"
-                          url={torneoLiveTimerUrl(liveId, station1Match.id)}
-                          onCopy={copyText}
-                        />
+                <div className="space-y-3 rounded-lg border border-amber-900/35 bg-zinc-900/40 p-3">
+                  <p className="text-[10px] font-semibold uppercase text-amber-200/90">
+                    Megatimer · 2 proiettori indipendenti
+                  </p>
+                  <p className="text-[11px] leading-snug text-zinc-500">
+                    Apri un link timer su ciascun monitor. Ogni URL è legato a un solo incontro e non
+                    interferisce con l&apos;altro tavolo.
+                  </p>
+                  {([1, 2] as const).map((station) => {
+                    const stationMatch = station === 1 ? station1Match : station2Match;
+                    const accent =
+                      station === 1
+                        ? "border-violet-800/50 bg-violet-950/20"
+                        : "border-amber-800/50 bg-amber-950/20";
+                    return (
+                      <div key={station} className={cn("space-y-2 rounded border p-2", accent)}>
+                        <p className="text-xs font-medium text-zinc-200">
+                          Tavolo {station}
+                          {stationMatch ? ` · ${matchListLabel(stationMatch)}` : " · nessun incontro caricato"}
+                        </p>
+                        {liveId && stationMatch ? (
+                          <>
+                            <LinkRow
+                              label={`PC tavolo ${station} (initiative)`}
+                              url={torneoLiveTableUrl(liveId, stationMatch.id)}
+                              onCopy={copyText}
+                            />
+                            <LinkRow
+                              label={`Megatimer ${station} (countdown + giocatore)`}
+                              url={torneoLiveTimerUrl(liveId, stationMatch.id)}
+                              onCopy={copyText}
+                            />
+                          </>
+                        ) : (
+                          <p className="text-[11px] text-zinc-600">
+                            Carica un incontro su tavolo {station} dal GM screen per generare i link.
+                          </p>
+                        )}
                       </div>
-                    ) : null}
-                    {station2Match ? (
-                      <div className="space-y-2 rounded border border-zinc-800 bg-zinc-950/60 p-2">
-                        <p className="text-xs font-medium text-zinc-200">Tavolo 2 · {matchListLabel(station2Match)}</p>
-                        <LinkRow
-                          label="PC tavolo 2 (initiative)"
-                          url={torneoLiveTableUrl(liveId, station2Match.id)}
-                          onCopy={copyText}
-                        />
-                        <LinkRow
-                          label="Proiettore timer 2 (countdown + giocatore)"
-                          url={torneoLiveTimerUrl(liveId, station2Match.id)}
-                          onCopy={copyText}
-                        />
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
+                    );
+                  })}
+                </div>
 
                 {liveId && matches.length > 0 ? (
                   <div className="space-y-2">

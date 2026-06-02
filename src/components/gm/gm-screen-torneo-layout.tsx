@@ -21,6 +21,7 @@ import {
   getTorneoMatchTimerAction,
   patchTorneoMatchTimerAction,
   setGmRemoteFocusedMatchAction,
+  updateTorneoLiveStationsAction,
   type TorneoLiveSessionInfo,
 } from "@/app/campaigns/torneo-live-actions";
 import type { TorneoRemoteHandlers } from "@/lib/gm-remote/apply-torneo-remote";
@@ -73,6 +74,11 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
   useEffect(() => {
     void refreshTorneoMeta();
   }, [refreshTorneoMeta]);
+
+  useEffect(() => {
+    if (!liveSyncEnabled || !liveSession?.id) return;
+    void updateTorneoLiveStationsAction(campaignId, station1MatchId, station2MatchId);
+  }, [campaignId, liveSyncEnabled, liveSession?.id, station1MatchId, station2MatchId]);
 
   const handleLiveSessionChange = useCallback((session: TorneoLiveSessionInfo | null) => {
     setLiveSession(session);
@@ -359,6 +365,8 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
                 match={station1Match}
                 teams={teams}
                 liveSyncEnabled={liveSyncEnabled}
+                livePublicId={liveSession?.publicId ?? null}
+                stationNumber={1}
                 characterTeamMap={characterTeamMap}
                 stationLabel="Tavolo 1"
                 initiativeHandleRef={station1Ref}
@@ -375,6 +383,8 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
                 match={station2Match}
                 teams={teams}
                 liveSyncEnabled={liveSyncEnabled}
+                livePublicId={liveSession?.publicId ?? null}
+                stationNumber={2}
                 characterTeamMap={characterTeamMap}
                 stationLabel="Tavolo 2"
                 initiativeHandleRef={station2Ref}

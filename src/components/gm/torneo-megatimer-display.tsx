@@ -29,6 +29,8 @@ type Props = {
   characterPortraits?: Record<string, string | null>;
   /** PG dell'incontro corrente: filtra snapshot initiative obsoleti. */
   rosterCharacterIds?: string[];
+  /** Tavolo 1 o 2: identità visiva del megatimer. */
+  stationNumber?: 1 | 2;
   className?: string;
 };
 
@@ -56,6 +58,7 @@ export function TorneoMegatimerDisplay({
   initialInitiative = null,
   characterPortraits = {},
   rosterCharacterIds = [],
+  stationNumber,
   className,
 }: Props) {
   const [fields, setFields] = useState(initialTimer);
@@ -239,6 +242,29 @@ export function TorneoMegatimerDisplay({
   const showExpired = view.isExpired && view.durationSec > 0;
   const imageSrc = portraitError || !portraitUrl ? PLACEHOLDER_PORTRAIT : portraitUrl;
 
+  const stationAccent =
+    stationNumber === 2
+      ? {
+          badge: "Tavolo 2",
+          heading: "text-amber-400/80",
+          border: "border-amber-500/40",
+          portraitBorder: "border-amber-500/55",
+          cardBg: "from-amber-950/50 to-zinc-950/80",
+          name: "text-amber-50",
+          round: "text-amber-200",
+          timer: "text-amber-300",
+        }
+      : {
+          badge: stationNumber === 1 ? "Tavolo 1" : null,
+          heading: "text-violet-400/80",
+          border: "border-violet-500/40",
+          portraitBorder: "border-violet-500/55",
+          cardBg: "from-violet-950/50 to-zinc-950/80",
+          name: "text-violet-50",
+          round: "text-violet-200",
+          timer: "text-violet-300",
+        };
+
   return (
     <div
       className={cn(
@@ -246,14 +272,28 @@ export function TorneoMegatimerDisplay({
         className
       )}
     >
-      <p className="mb-2 text-sm uppercase tracking-[0.3em] text-violet-400/80">Torneo · Countdown turno</p>
+      {stationAccent.badge ? (
+        <p className={cn("mb-1 text-xs font-bold uppercase tracking-[0.35em]", stationAccent.heading)}>
+          Megatimer · {stationAccent.badge}
+        </p>
+      ) : null}
+      <p className="mb-2 text-sm uppercase tracking-[0.3em] text-zinc-500">Torneo · Countdown turno</p>
       <h1 className="mb-4 max-w-4xl text-lg font-medium text-zinc-500 md:text-xl">{matchLabel}</h1>
 
       <div className="flex w-full max-w-6xl flex-col items-stretch gap-8 lg:flex-row lg:items-center lg:justify-center lg:gap-12">
         {activeEntry ? (
-          <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-amber-500/40 bg-gradient-to-b from-amber-950/50 to-zinc-950/80 px-6 py-8 lg:max-w-md">
+          <div
+            className={cn(
+              "flex flex-1 flex-col items-center justify-center rounded-2xl border bg-gradient-to-b px-6 py-8 lg:max-w-md",
+              stationAccent.border,
+              stationAccent.cardBg
+            )}
+          >
             <div
-              className="relative mb-5 aspect-[3/4] w-full max-w-[280px] overflow-hidden rounded-2xl border-2 border-amber-500/55 shadow-2xl shadow-black/50 sm:max-w-[320px]"
+              className={cn(
+                "relative mb-5 aspect-[3/4] w-full max-w-[280px] overflow-hidden rounded-2xl border-2 shadow-2xl shadow-black/50 sm:max-w-[320px]",
+                stationAccent.portraitBorder
+              )}
               style={
                 activeEntry.teamColor
                   ? { boxShadow: `0 0 24px ${activeEntry.teamColor}44, 0 16px 48px #00000088` }
@@ -272,8 +312,8 @@ export function TorneoMegatimerDisplay({
               />
             </div>
             <p className="text-xs uppercase tracking-[0.3em] text-amber-200/60">Personaggio in turno</p>
-            <p className="mt-3 text-3xl font-bold leading-tight text-amber-50 sm:text-4xl md:text-5xl">
-              {activeEntry.name}
+            <p className="mt-3 text-3xl font-bold leading-tight sm:text-4xl md:text-5xl">
+              <span className={stationAccent.name}>{activeEntry.name}</span>
             </p>
             {activeEntry.characterClass ? (
               <p className="mt-2 text-lg text-amber-200/55 md:text-xl">{activeEntry.characterClass}</p>
@@ -305,8 +345,8 @@ export function TorneoMegatimerDisplay({
         )}
 
         <div className="flex flex-1 flex-col items-center justify-center">
-          <p className="mb-2 text-sm uppercase tracking-[0.35em] text-violet-300/80">Round</p>
-          <p className="mb-6 font-mono text-[min(14vw,5rem)] font-black tabular-nums leading-none text-violet-200">
+          <p className="mb-2 text-sm uppercase tracking-[0.35em] text-zinc-500">Round</p>
+          <p className={cn("mb-6 font-mono text-[min(14vw,5rem)] font-black tabular-nums leading-none", stationAccent.round)}>
             {roundNumber}
           </p>
 

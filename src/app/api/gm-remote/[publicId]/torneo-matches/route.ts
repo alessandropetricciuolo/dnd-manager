@@ -37,9 +37,26 @@ export async function POST(request: Request, context: RouteContext) {
   const admin = createSupabaseAdminClient();
   const { data: sess } = await admin
     .from("gm_remote_sessions")
-    .select("focused_match_id, campaign_id")
+    .select("focused_match_id, campaign_id, torneo_live_session_id")
     .eq("public_id", publicId)
     .maybeSingle();
+
+  let station1MatchId: string | null = null;
+  let station2MatchId: string | null = null;
+  const liveSessionId = (sess as { torneo_live_session_id?: string | null } | null)?.torneo_live_session_id;
+  if (liveSessionId) {
+    const { data: liveRowRaw } = await admin
+      .from("torneo_live_sessions")
+      .select("station1_match_id, station2_match_id")
+      .eq("id", liveSessionId)
+      .maybeSingle();
+    const liveRow = liveRowRaw as {
+      station1_match_id?: string | null;
+      station2_match_id?: string | null;
+    } | null;
+    station1MatchId = liveRow?.station1_match_id ?? null;
+    station2MatchId = liveRow?.station2_match_id ?? null;
+  }
 
   const setup = await loadTorneoSetupAdmin(admin, v.session.campaign_id);
   if (!setup) {
@@ -60,5 +77,7 @@ export async function POST(request: Request, context: RouteContext) {
     ok: true,
     matches,
     focusedMatchId: (sess as { focused_match_id?: string | null } | null)?.focused_match_id ?? null,
+    station1MatchId,
+    station2MatchId,
   });
 }

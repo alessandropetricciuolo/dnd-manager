@@ -65,6 +65,9 @@ export default async function TorneoMegatimerPage({ params }: PageProps) {
 
   const characterPortraits = buildCharacterPortraitMap(setupRes.data.teams);
 
+  const stationNumber =
+    live.station1MatchId === match.id ? 1 : live.station2MatchId === match.id ? 2 : undefined;
+
   return (
     <TorneoMegatimerDisplay
       campaignId={live.campaignId}
@@ -74,6 +77,7 @@ export default async function TorneoMegatimerPage({ params }: PageProps) {
       initialInitiative={initialInitiative}
       characterPortraits={characterPortraits}
       rosterCharacterIds={rosterCharacterIds}
+      stationNumber={stationNumber}
     />
   );
 }

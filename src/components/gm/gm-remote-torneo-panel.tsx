@@ -1,10 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { GmRemoteInitiativePanel } from "./gm-remote-initiative-panel";
+import { cn } from "@/lib/utils";
 
 type TorneoMatchRow = {
   id: string;
@@ -34,10 +33,17 @@ async function fetchTorneoMatches(publicId: string, token: string) {
     ok?: boolean;
     matches?: TorneoMatchRow[];
     focusedMatchId?: string | null;
+    station1MatchId?: string | null;
+    station2MatchId?: string | null;
     error?: string;
   };
   if (!res.ok || !j.ok || !Array.isArray(j.matches)) return null;
-  return { matches: j.matches, focusedMatchId: j.focusedMatchId ?? null };
+  return {
+    matches: j.matches,
+    focusedMatchId: j.focusedMatchId ?? null,
+    station1MatchId: j.station1MatchId ?? null,
+    station2MatchId: j.station2MatchId ?? null,
+  };
 }
 
 function matchRowLabel(m: TorneoMatchRow): string {
@@ -46,16 +52,96 @@ function matchRowLabel(m: TorneoMatchRow): string {
   return `${m.teamAName} vs ${m.teamBName}`;
 }
 
+function TorneoStationRemote({
+  station,
+  match,
+  publicId,
+  token,
+  sending,
+  onSend,
+}: {
+  station: 1 | 2;
+  match: TorneoMatchRow | null;
+  publicId: string;
+  token: string;
+  sending: boolean;
+  onSend: (type: string, payload?: Record<string, unknown>) => Promise<void>;
+}) {
+  const commandPayload = useCallback(
+    (base?: Record<string, unknown>) => ({
+      ...base,
+      match_id: match?.id,
+    }),
+    [match?.id]
+  );
+
+  if (!match) {
+    return (
+      <section
+        className={cn(
+          "rounded-xl border border-dashed p-4 text-center",
+          station === 1 ? "border-violet-900/40 bg-zinc-900/30" : "border-amber-900/40 bg-zinc-900/30"
+        )}
+      >
+        <p
+          className={cn(
+            "text-xs font-semibold uppercase tracking-wide",
+            station === 1 ? "text-violet-300/80" : "text-amber-300/80"
+          )}
+        >
+          Tavolo {station}
+        </p>
+        <p className="mt-2 text-xs text-zinc-500">Nessun incontro caricato sul GM screen.</p>
+      </section>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <div
+        className={cn(
+          "rounded-lg border px-3 py-2 text-center",
+          station === 1 ? "border-violet-800/50 bg-violet-950/25" : "border-amber-800/50 bg-amber-950/25"
+        )}
+      >
+        <p
+          className={cn(
+            "text-[10px] font-semibold uppercase tracking-widest",
+            station === 1 ? "text-violet-300/90" : "text-amber-300/90"
+          )}
+        >
+          Tavolo {station} · Megatimer dedicato
+        </p>
+        <p className="mt-1 truncate text-sm font-medium text-zinc-100">{matchRowLabel(match)}</p>
+        <p className="text-[10px] text-zinc-500">
+          {match.status === "active" ? "In corso" : match.status === "completed" ? "Completato" : "In preparazione"}
+        </p>
+      </div>
+      <GmRemoteInitiativePanel
+        publicId={publicId}
+        token={token}
+        sending={sending}
+        focusedMatchId={match.id}
+        onSend={onSend}
+        commandPayload={commandPayload}
+        torneoMode
+      />
+    </div>
+  );
+}
+
 export function GmRemoteTorneoPanel({ publicId, token, sending, onSend }: Props) {
   const [matches, setMatches] = useState<TorneoMatchRow[]>([]);
-  const [focusedMatchId, setFocusedMatchId] = useState<string | null>(null);
+  const [station1MatchId, setStation1MatchId] = useState<string | null>(null);
+  const [station2MatchId, setStation2MatchId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const refreshMeta = useCallback(async () => {
     const data = await fetchTorneoMatches(publicId, token);
     if (data) {
       setMatches(data.matches);
-      setFocusedMatchId((prev) => data.focusedMatchId ?? prev ?? data.matches[0]?.id ?? null);
+      setStation1MatchId(data.station1MatchId);
+      setStation2MatchId(data.station2MatchId);
     }
     setLoading(false);
   }, [publicId, token]);
@@ -66,15 +152,14 @@ export function GmRemoteTorneoPanel({ publicId, token, sending, onSend }: Props)
     return () => window.clearInterval(id);
   }, [refreshMeta]);
 
-  const focusMatch = async (matchId: string) => {
-    setFocusedMatchId(matchId);
-    await onSend("torneo.focus_match", { match_id: matchId });
-  };
-
-  const withMatch = (payload: Record<string, unknown> = {}) => ({
-    ...payload,
-    match_id: focusedMatchId ?? undefined,
-  });
+  const station1Match = useMemo(
+    () => (station1MatchId ? matches.find((m) => m.id === station1MatchId) ?? null : null),
+    [matches, station1MatchId]
+  );
+  const station2Match = useMemo(
+    () => (station2MatchId ? matches.find((m) => m.id === station2MatchId) ?? null : null),
+    [matches, station2MatchId]
+  );
 
   if (loading) {
     return (
@@ -90,44 +175,24 @@ export function GmRemoteTorneoPanel({ publicId, token, sending, onSend }: Props)
 
   return (
     <div className="space-y-4">
-      <section className="rounded-xl border border-violet-900/45 bg-zinc-900/50 p-4">
-        <p className="mb-3 text-center text-xs font-medium uppercase tracking-wide text-violet-300/90">
-          Incontro controllato
-        </p>
-        <ul className="max-h-40 space-y-1.5 overflow-y-auto">
-          {matches.map((m) => {
-            const active = m.id === focusedMatchId;
-            return (
-              <li key={m.id}>
-                <Button
-                  type="button"
-                  variant={active ? "default" : "outline"}
-                  className={cn(
-                    "h-auto min-h-10 w-full touch-manipulation flex-col items-start gap-0 py-2 text-left",
-                    active && "bg-violet-700 hover:bg-violet-600"
-                  )}
-                  disabled={sending}
-                  onClick={() => void focusMatch(m.id)}
-                >
-                  <span className="w-full truncate text-sm">{matchRowLabel(m)}</span>
-                  <span className="w-full truncate text-[10px] opacity-70">
-                    {m.status === "active" ? "In corso" : m.status === "completed" ? "Completato" : "In attesa"}
-                  </span>
-                </Button>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
-
-      <GmRemoteInitiativePanel
+      <p className="text-center text-[11px] text-zinc-500">
+        Due tavoli indipendenti: ogni sezione controlla il proprio incontro e il proprio megatimer.
+      </p>
+      <TorneoStationRemote
+        station={1}
+        match={station1Match}
         publicId={publicId}
         token={token}
         sending={sending}
-        focusedMatchId={focusedMatchId}
         onSend={onSend}
-        commandPayload={withMatch}
-        torneoMode
+      />
+      <TorneoStationRemote
+        station={2}
+        match={station2Match}
+        publicId={publicId}
+        token={token}
+        sending={sending}
+        onSend={onSend}
       />
     </div>
   );

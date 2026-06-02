@@ -22,12 +22,16 @@ import type { TorneoCharacterTeamInfo } from "@/lib/torneo/initiative";
 import type { TorneoMatchWithTeams } from "@/lib/torneo/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Loader2, Play } from "lucide-react";
+import { ExternalLink, Loader2, Monitor, Play } from "lucide-react";
+import { torneoLiveTimerUrl } from "@/lib/torneo/live-links";
 
 type Props = {
   campaignId: string;
   match: TorneoMatchWithTeams | null;
   liveSyncEnabled: boolean;
+  /** Sessione live: link megatimer dedicato per questo tavolo. */
+  livePublicId?: string | null;
+  stationNumber?: 1 | 2;
   characterTeamMap: Record<string, TorneoCharacterTeamInfo>;
   stationLabel?: string;
   className?: string;
@@ -44,6 +48,8 @@ export function TorneoMatchTracker({
   campaignId,
   match,
   liveSyncEnabled,
+  livePublicId = null,
+  stationNumber,
   characterTeamMap,
   stationLabel,
   className,
@@ -242,6 +248,9 @@ export function TorneoMatchTracker({
     );
   }
 
+  const megatimerUrl =
+    livePublicId && match ? torneoLiveTimerUrl(livePublicId, match.id) : null;
+
   return (
     <div className={cn("flex min-h-0 min-w-0 flex-1 flex-col gap-1", className)}>
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 px-1">
@@ -257,6 +266,26 @@ export function TorneoMatchTracker({
             <span className="rounded bg-emerald-900/50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-300">
               In corso
             </span>
+          ) : null}
+          {megatimerUrl ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className={cn(
+                "h-7 gap-1 px-2.5 text-[11px]",
+                stationNumber === 2
+                  ? "border-amber-700/50 text-amber-200 hover:bg-amber-950/40"
+                  : "border-violet-700/50 text-violet-200 hover:bg-violet-950/40"
+              )}
+              asChild
+            >
+              <a href={megatimerUrl} target="_blank" rel="noopener noreferrer">
+                <Monitor className="h-3.5 w-3.5" />
+                Megatimer {stationNumber ?? ""}
+                <ExternalLink className="h-3 w-3 opacity-60" />
+              </a>
+            </Button>
           ) : null}
           {canStartEncounter ? (
             <Button

@@ -53,12 +53,41 @@ export type TorneoLiveSessionInfo = {
   remoteSessionPublicId: string | null;
   startedAt: string;
   endedAt: string | null;
+  station1MatchId: string | null;
+  station2MatchId: string | null;
 };
 
 export type TorneoLiveSessionStarted = TorneoLiveSessionInfo & {
   remotePlainToken: string;
   remoteExpiresAt: string;
 };
+
+function mapTorneoLiveSessionRow(data: {
+  id: string;
+  public_id: string;
+  campaign_id: string;
+  status: string;
+  remote_session_public_id?: string | null;
+  started_at: string;
+  ended_at?: string | null;
+  station1_match_id?: string | null;
+  station2_match_id?: string | null;
+}): TorneoLiveSessionInfo {
+  return {
+    id: data.id,
+    publicId: data.public_id,
+    campaignId: data.campaign_id,
+    status: data.status as "live" | "ended",
+    remoteSessionPublicId: data.remote_session_public_id ?? null,
+    startedAt: data.started_at,
+    endedAt: data.ended_at ?? null,
+    station1MatchId: data.station1_match_id ?? null,
+    station2MatchId: data.station2_match_id ?? null,
+  };
+}
+
+const TORNEO_LIVE_SESSION_SELECT =
+  "id, public_id, campaign_id, status, remote_session_public_id, started_at, ended_at, station1_match_id, station2_match_id";
 
 export async function getActiveTorneoLiveSessionAction(
   campaignId: string
@@ -68,7 +97,7 @@ export async function getActiveTorneoLiveSessionAction(
 
   const { data, error } = await check.supabase
     .from("torneo_live_sessions")
-    .select("id, public_id, campaign_id, status, remote_session_public_id, started_at, ended_at")
+    .select(TORNEO_LIVE_SESSION_SELECT)
     .eq("campaign_id", campaignId)
     .eq("status", "live")
     .maybeSingle();
@@ -78,15 +107,7 @@ export async function getActiveTorneoLiveSessionAction(
 
   return {
     success: true,
-    data: {
-      id: data.id,
-      publicId: data.public_id,
-      campaignId: data.campaign_id,
-      status: data.status as "live" | "ended",
-      remoteSessionPublicId: data.remote_session_public_id ?? null,
-      startedAt: data.started_at,
-      endedAt: data.ended_at ?? null,
-    },
+    data: mapTorneoLiveSessionRow(data),
   };
 }
 
@@ -101,7 +122,7 @@ export async function getTorneoLiveSessionByPublicIdAction(
 
   const { data, error } = await supabase
     .from("torneo_live_sessions")
-    .select("id, public_id, campaign_id, status, remote_session_public_id, started_at, ended_at")
+    .select(TORNEO_LIVE_SESSION_SELECT)
     .eq("public_id", livePublicId.trim())
     .maybeSingle();
 
@@ -114,15 +135,7 @@ export async function getTorneoLiveSessionByPublicIdAction(
 
   return {
     success: true,
-    data: {
-      id: data.id,
-      publicId: data.public_id,
-      campaignId: data.campaign_id,
-      status: "live",
-      remoteSessionPublicId: data.remote_session_public_id ?? null,
-      startedAt: data.started_at,
-      endedAt: data.ended_at ?? null,
-    },
+    data: mapTorneoLiveSessionRow(data),
   };
 }
 
@@ -189,13 +202,14 @@ export async function startTorneoLiveSessionAction(
   return {
     success: true,
     data: {
-      id: liveRow.id,
-      publicId: liveRow.public_id,
-      campaignId: liveRow.campaign_id,
-      status: "live",
-      remoteSessionPublicId: remoteRow.public_id,
-      startedAt: liveRow.started_at,
-      endedAt: null,
+      ...mapTorneoLiveSessionRow({
+        ...liveRow,
+        status: "live",
+        remote_session_public_id: remoteRow.public_id,
+        ended_at: null,
+        station1_match_id: null,
+        station2_match_id: null,
+      }),
       remotePlainToken: plainToken,
       remoteExpiresAt: remoteRow.expires_at,
     },
@@ -323,6 +337,28 @@ export async function patchTorneoMatchTimerAction(
     .update(patch)
     .eq("id", matchId)
     .eq("campaign_id", campaignId);
+
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+/** Sincronizza incontri sui due tavoli paralleli (megatimer e link dedicati). */
+export async function updateTorneoLiveStationsAction(
+  campaignId: string,
+  station1MatchId: string | null,
+  station2MatchId: string | null
+): Promise<Result> {
+  const check = await ensureTorneoGm(campaignId);
+  if (!check.ok) return { success: false, error: check.error };
+
+  const { error } = await check.supabase
+    .from("torneo_live_sessions")
+    .update({
+      station1_match_id: station1MatchId,
+      station2_match_id: station2MatchId,
+    })
+    .eq("campaign_id", campaignId)
+    .eq("status", "live");
 
   if (error) return { success: false, error: error.message };
   return { success: true };
