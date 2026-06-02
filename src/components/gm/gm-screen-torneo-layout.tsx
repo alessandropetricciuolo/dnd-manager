@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { LayoutGrid, Trophy } from "lucide-react";
+import { LayoutGrid, Octagon, Trophy } from "lucide-react";
+import { toast } from "sonner";
 import {
   emptyInitiativeTrackerState,
   type InitiativeTrackerHandle,
@@ -10,13 +11,17 @@ import {
 import { GmRemoteIntegration } from "./gm-remote-integration";
 import { GmRemoteInitiativePublisher } from "./gm-remote-initiative-publisher";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { GmTorneoLiveBar } from "./gm-torneo-live-bar";
 import { GmTorneoManager } from "./gm-torneo-manager";
 import { TorneoBracketLiveView } from "./torneo-bracket-live-view";
 import { TorneoMatchTracker } from "./torneo-match-tracker";
 import { computeMatchDamageTotals } from "@/lib/torneo/compute-match-damage";
-import { buildCharacterTeamMap } from "@/lib/torneo/initiative";
-import { getTorneoSetupAction } from "@/app/campaigns/torneo-actions";
+import { buildCharacterTeamMap, clearTorneoBrowserStorage } from "@/lib/torneo/initiative";
+import {
+  emergencyResetTorneoCampaignAction,
+  getTorneoSetupAction,
+} from "@/app/campaigns/torneo-actions";
 import {
   getTorneoMatchTimerAction,
   patchTorneoMatchTimerAction,
@@ -57,6 +62,7 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
   const [teams, setTeams] = useState<TorneoTeamWithMembers[]>([]);
   const [matches, setMatches] = useState<TorneoMatchWithTeams[]>([]);
   const [screenTab, setScreenTab] = useState<"gestione" | "tabellone">("gestione");
+  const [killSwitchBusy, setKillSwitchBusy] = useState(false);
 
   const liveSyncEnabled = liveSession?.status === "live";
 
@@ -285,6 +291,54 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
     [remoteSessionPublicId]
   );
 
+  const handleEmergencyKillSwitch = useCallback(async () => {
+    const lines = [
+      "ARRESTO TOTALE del torneo:",
+      "",
+      "• Termina la sessione live e revoca tutti i telecomandi",
+      "• Ferma tutti gli incontri, timer e megatimer",
+      "• Cancella initiative e danni salvati",
+      matches.some((m) => m.bracket_round != null) && teams.length === 8
+        ? "• Ripristina il tabellone allo stato iniziale (solo quarti con squadre)"
+        : "• Riporta ogni incontro a «in attesa»",
+      "",
+      "Operazione irreversibile. Continuare?",
+    ].filter(Boolean);
+
+    if (!confirm(lines.join("\n"))) return;
+
+    setKillSwitchBusy(true);
+    const res = await emergencyResetTorneoCampaignAction(campaignId);
+    setKillSwitchBusy(false);
+
+    if (!res.success) {
+      toast.error(res.error);
+      return;
+    }
+
+    clearTorneoBrowserStorage(
+      campaignId,
+      matches.map((m) => m.id)
+    );
+
+    setLiveSession(null);
+    setRemoteSessionPublicId(null);
+    setFocusedRemoteMatchId(null);
+    setStation1MatchId(null);
+    setStation2MatchId(null);
+    setStation1State(emptyInitiativeTrackerState());
+    setStation2State(emptyInitiativeTrackerState());
+    prevTurnIndex1.current = null;
+    prevTurnIndex2.current = null;
+
+    await refreshTorneoMeta();
+
+    const detail = res.data?.bracketRestored
+      ? "Tabellone ripristinato."
+      : `${res.data?.matchesReset ?? 0} incontri azzerati.`;
+    toast.success(`Arresto totale completato. ${detail}`);
+  }, [campaignId, matches, teams.length, refreshTorneoMeta]);
+
   return (
     <div className="relative flex h-screen w-screen flex-col overflow-hidden bg-zinc-950">
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-amber-600/20 px-4 py-2.5">
@@ -327,6 +381,22 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
             station2MatchId={station2MatchId}
             onLiveSessionChange={handleLiveSessionChange}
           />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-7 gap-1 border-red-800/60 bg-red-950/30 text-[11px] text-red-300 hover:bg-red-950/60 hover:text-red-200"
+            disabled={killSwitchBusy}
+            onClick={() => void handleEmergencyKillSwitch()}
+            title="Ferma live, timer, incontri e ripristina il torneo"
+          >
+            {killSwitchBusy ? (
+              <span className="h-3.5 w-3.5 animate-pulse rounded-full bg-red-400/80" />
+            ) : (
+              <Octagon className="h-3.5 w-3.5" />
+            )}
+            Kill switch
+          </Button>
           <GmRemoteIntegration
             campaignId={campaignId}
             initiativeHandleRef={station1Ref as RefObject<InitiativeTrackerHandle | null>}

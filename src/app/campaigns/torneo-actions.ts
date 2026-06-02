@@ -6,7 +6,15 @@ import {
   buildEightTeamBracketPlan,
   BRACKET_ROUND,
   resolveBracketSlotAfterAdvance,
+  type BracketSeedSlot,
 } from "@/lib/torneo/bracket";
+import {
+  baseTorneoMatchResetPatch,
+  bracketSlotKey,
+  bracketSlotResetPatch,
+  planSlotsByKey,
+} from "@/lib/torneo/reset-torneo-state";
+import { endTorneoLiveSessionAction } from "@/app/campaigns/torneo-live-actions";
 import { isTorneoMatchPlayable, mapTorneoMatchRow } from "@/lib/torneo/map-match-row";
 import type {
   TorneoMatchStatus,
@@ -647,4 +655,62 @@ export async function deleteTorneoMatchAction(campaignId: string, matchId: strin
   if (error) return { success: false, error: error.message };
   revalidateTorneo(campaignId);
   return { success: true };
+}
+
+/**
+ * Kill switch: termina live, revoca telecomandi, ferma timer/initiative,
+ * riporta incontri a pending (tabellone 8 squadre → seed iniziale).
+ */
+export async function emergencyResetTorneoCampaignAction(
+  campaignId: string
+): Promise<Result<{ matchesReset: number; bracketRestored: boolean }>> {
+  const check = await ensureCampaignGm(campaignId);
+  if (!check.ok) return { success: false, error: check.error };
+
+  const liveEnd = await endTorneoLiveSessionAction(campaignId);
+  if (!liveEnd.success) return { success: false, error: liveEnd.error };
+
+  const now = new Date().toISOString();
+  await check.supabase
+    .from("gm_remote_sessions")
+    .update({ revoked_at: now, focused_match_id: null })
+    .eq("campaign_id", campaignId)
+    .is("revoked_at", null);
+
+  const setup = await getTorneoSetupAction(campaignId);
+  if (!setup.success || !setup.data) {
+    return { success: false, error: "error" in setup ? setup.error : "Errore caricamento torneo." };
+  }
+
+  let planByKey: Map<string, BracketSeedSlot> | null = null;
+  let bracketRestored = false;
+
+  if (setup.data.teams.length === 8 && setup.data.matches.some((m) => m.bracket_round != null)) {
+    try {
+      planByKey = planSlotsByKey(buildEightTeamBracketPlan(setup.data.teams));
+      bracketRestored = true;
+    } catch {
+      planByKey = null;
+    }
+  }
+
+  let matchesReset = 0;
+  for (const match of setup.data.matches) {
+    const key = bracketSlotKey(match.match_kind, match.bracket_round, match.bracket_slot);
+    const slot = key && planByKey ? planByKey.get(key) : undefined;
+    const patch = slot ? bracketSlotResetPatch(slot) : baseTorneoMatchResetPatch();
+
+    const { error } = await check.supabase
+      .from("torneo_matches")
+      .update(patch)
+      .eq("id", match.id)
+      .eq("campaign_id", campaignId);
+
+    if (error) return { success: false, error: error.message };
+    matchesReset += 1;
+  }
+
+  revalidateTorneo(campaignId);
+  revalidatePath(`/torneo-live`);
+  return { success: true, data: { matchesReset, bracketRestored } };
 }

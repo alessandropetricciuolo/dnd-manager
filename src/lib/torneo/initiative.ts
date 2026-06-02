@@ -175,3 +175,17 @@ export const TORNEO_ACTIVE_MATCH_KEY_PREFIX = "torneo-active-match-";
 export function torneoActiveMatchStorageKey(campaignId: string): string {
   return `${TORNEO_ACTIVE_MATCH_KEY_PREFIX}${campaignId}`;
 }
+
+/** Pulisce cache locale initiative/timer dopo arresto totale torneo. */
+export function clearTorneoBrowserStorage(campaignId: string, matchIds: string[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(torneoActiveMatchStorageKey(campaignId));
+    for (const matchId of matchIds) {
+      localStorage.removeItem(torneoInitiativeStorageKey(campaignId, matchId));
+      localStorage.removeItem(`torneo-live-db-${campaignId}-${matchId}`);
+    }
+  } catch {
+    /* ignore */
+  }
+}
