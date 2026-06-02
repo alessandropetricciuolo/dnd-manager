@@ -289,6 +289,26 @@ export function GmTorneoManager({
       ? setupRes.data.matches.find((m) => m.id === match.id) ?? match
       : match;
 
+    const restored = await loadMatchState(freshMatch);
+    if (restored?.entries.length) {
+      setBusy(true);
+      const res = await setTorneoMatchStatusAction(campaignId, match.id, "active");
+      setBusy(false);
+      if (!res.success) {
+        toast.error(res.error);
+        return;
+      }
+      if (station === 1) persistActiveMatch(match.id);
+      onLoadMatch(station, match.id, restored);
+      if (liveSyncEnabled && remoteSessionPublicId) {
+        await setGmRemoteFocusedMatchAction(remoteSessionPublicId, match.id);
+      }
+      onMatchStarted?.(match.id, station);
+      toast.message(`Incontro ripreso su tavolo ${station}.`);
+      if (setupRes.success && setupRes.data) applySetup(setupRes.data.teams, setupRes.data.matches);
+      return;
+    }
+
     const initiativeState = buildMatchInitiativeState(freshMatch, freshTeams);
     if (initiativeState.entries.length === 0) {
       const missingSides = [freshMatch.team_a, freshMatch.team_b]
