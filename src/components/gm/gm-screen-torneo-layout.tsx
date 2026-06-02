@@ -43,6 +43,7 @@ type GmScreenTorneoLayoutProps = {
 export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) {
   const station1Ref = useRef<InitiativeTrackerHandle>(null!);
   const station2Ref = useRef<InitiativeTrackerHandle>(null!);
+  const startMatchAtStationRef = useRef<(station: 1 | 2) => Promise<void>>(async () => {});
   const [liveSession, setLiveSession] = useState<TorneoLiveSessionInfo | null>(null);
   const [focusedRemoteMatchId, setFocusedRemoteMatchId] = useState<string | null>(null);
   const [remoteSessionPublicId, setRemoteSessionPublicId] = useState<string | null>(null);
@@ -347,6 +348,9 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
                   if (matchId === station2MatchId) return station2State;
                   return null;
                 }}
+                onRegisterStartMatch={(fn) => {
+                  startMatchAtStationRef.current = fn;
+                }}
               />
             </aside>
             <div className="grid min-h-0 min-w-0 flex-1 grid-rows-2 gap-2 overflow-hidden p-2 md:grid-cols-1 md:grid-rows-2 md:p-3">
@@ -360,6 +364,11 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
                 initiativeHandleRef={station1Ref}
                 syncState={station1State}
                 onStateChange={setStation1State}
+                onStartEncounter={
+                  station1Match
+                    ? () => startMatchAtStationRef.current(1)
+                    : undefined
+                }
               />
               <TorneoMatchTracker
                 campaignId={campaignId}
@@ -371,6 +380,11 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
                 initiativeHandleRef={station2Ref}
                 syncState={station2State}
                 onStateChange={setStation2State}
+                onStartEncounter={
+                  station2Match
+                    ? () => startMatchAtStationRef.current(2)
+                    : undefined
+                }
               />
             </div>
           </div>

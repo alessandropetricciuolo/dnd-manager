@@ -42,6 +42,16 @@ export type TorneoCharacterTeamInfo = {
   teamColor: string;
 };
 
+/** PG ammessi nell'incontro (entrambe le squadre), per validare snapshot initiative. */
+export function rosterCharacterIdsForMatch(
+  match: TorneoMatchWithTeams,
+  teams: TorneoTeamWithMembers[]
+): string[] {
+  return buildInitiativeEntriesForMatch(match, teams)
+    .map((e) => e.playerId)
+    .filter((id): id is string => typeof id === "string" && id.length > 0);
+}
+
 export function buildCharacterPortraitMap(
   teams: TorneoTeamWithMembers[]
 ): Record<string, string | null> {

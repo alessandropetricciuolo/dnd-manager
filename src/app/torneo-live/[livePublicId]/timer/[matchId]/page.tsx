@@ -7,7 +7,8 @@ import {
 } from "@/app/campaigns/torneo-live-actions";
 import { getTorneoSetupAction } from "@/app/campaigns/torneo-actions";
 import { TorneoMegatimerDisplay } from "@/components/gm/torneo-megatimer-display";
-import { buildCharacterPortraitMap } from "@/lib/torneo/initiative";
+import { buildCharacterPortraitMap, rosterCharacterIdsForMatch } from "@/lib/torneo/initiative";
+import { initiativeMatchesMatchRoster } from "@/lib/torneo/megatimer-initiative";
 
 type PageProps = {
   params: Promise<{ livePublicId: string; matchId: string }>;
@@ -40,7 +41,15 @@ export default async function TorneoMegatimerPage({ params }: PageProps) {
     getTorneoMatchTimerAction(live.campaignId, matchId),
     loadTorneoMatchInitiativeAction(live.campaignId, matchId),
   ]);
-  const initialInitiative = initRes.success ? initRes.data?.state ?? null : null;
+  const rosterCharacterIds = rosterCharacterIdsForMatch(match, setupRes.data.teams);
+  let initialInitiative = initRes.success ? initRes.data?.state ?? null : null;
+  if (
+    initialInitiative?.entries.length &&
+    rosterCharacterIds.length &&
+    !initiativeMatchesMatchRoster(initialInitiative, rosterCharacterIds)
+  ) {
+    initialInitiative = null;
+  }
   const initialTimer = timerRes.success && timerRes.data
     ? timerRes.data
     : {
@@ -64,6 +73,7 @@ export default async function TorneoMegatimerPage({ params }: PageProps) {
       initialTimer={initialTimer}
       initialInitiative={initialInitiative}
       characterPortraits={characterPortraits}
+      rosterCharacterIds={rosterCharacterIds}
     />
   );
 }

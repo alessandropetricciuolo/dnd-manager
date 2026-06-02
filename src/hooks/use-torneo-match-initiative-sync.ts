@@ -13,6 +13,7 @@ import {
   sanitizeInitiativeTrackerState,
   type InitiativeTrackerState,
 } from "@/components/gm/initiative-tracker";
+import { torneoLiveDbInitiativeStorageKey } from "@/lib/torneo/megatimer-initiative";
 
 type Options = {
   campaignId: string;
@@ -129,6 +130,14 @@ export function useTorneoMatchInitiativeSync({
           lastSavedSigRef.current = syncSig;
           lastRemoteAtRef.current = res.data.updatedAt;
           selfSaveUntilRef.current = Date.now() + 800;
+          try {
+            localStorage.setItem(
+              torneoLiveDbInitiativeStorageKey(campaignId, matchId),
+              JSON.stringify(state)
+            );
+          } catch {
+            /* ignore */
+          }
         }
       });
     }, SAVE_DEBOUNCE_MS);

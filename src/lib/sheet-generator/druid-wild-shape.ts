@@ -1,7 +1,9 @@
+import { preloadPhbMarkdown } from "@/lib/server/phb-spell-excerpt";
 import {
-  getManualMarkdownByFileName,
-  preloadManualMarkdownFile,
-} from "@/lib/server/phb-spell-excerpt";
+  formatAppendixDStatBlockForManual,
+  getPhbAppendixDBeasts,
+  type PhbAppendixDBeast,
+} from "@/lib/sheet-generator/phb-appendix-d-statblocks";
 
 export type WildShapeBeast = {
   name: string;
@@ -11,6 +13,7 @@ export type WildShapeBeast = {
   hasSwim: boolean;
   hasFly: boolean;
   environments: string[];
+  statBlock?: string;
 };
 
 export type WildShapeLimits = {
@@ -46,71 +49,30 @@ function formatCrLabel(cr: number): string {
   return Number.isInteger(cr) ? String(cr) : String(cr);
 }
 
-function movementFlags(note: string): { hasSwim: boolean; hasFly: boolean } {
-  const n = note.trim().toLowerCase();
+function movementNoteFromBeast(beast: PhbAppendixDBeast): string {
+  if (beast.hasFly && beast.hasSwim) return "Nuotare, Volare";
+  if (beast.hasFly) return "Volare";
+  if (beast.hasSwim) return "Nuotare";
+  return "";
+}
+
+function toWildShapeBeast(beast: PhbAppendixDBeast): WildShapeBeast {
+  const note = movementNoteFromBeast(beast);
   return {
-    hasSwim: n.includes("nuotare"),
-    hasFly: n.includes("volare"),
+    name: beast.name,
+    cr: beast.cr,
+    crLabel: beast.crLabel,
+    movementNote: note,
+    hasSwim: beast.hasSwim,
+    hasFly: beast.hasFly,
+    environments: [],
+    statBlock: beast.statBlock,
   };
 }
 
-let cachedBeasts: WildShapeBeast[] | null = null;
-
-/** Bestie dalle tabelle Xanathar «Apprendere forme bestiali». */
-export function parseXanatharWildShapeBeasts(markdown: string): WildShapeBeast[] {
-  const txt = markdown.replace(/\r/g, "");
-  const start = txt.search(/^##\s+APPRENDERE\s+FORME\s+BESTIALI\s*$/im);
-  if (start < 0) return [];
-
-  const slice = txt.slice(start);
-  const end = slice.search(/^#\s+GUERRIERO\s*$/im);
-  const section = end > 0 ? slice.slice(0, end) : slice;
-
-  const byName = new Map<string, WildShapeBeast>();
-  let currentEnv: string | null = null;
-
-  for (const line of section.split("\n")) {
-    const envMatch = line.match(/^##\s+(.+?)\s*$/);
-    if (envMatch) {
-      const env = envMatch[1]!.trim();
-      if (!/^APPRENDERE/i.test(env)) currentEnv = env;
-      continue;
-    }
-
-    const row = line.match(/^\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|/);
-    if (!row || !currentEnv) continue;
-    const crRaw = row[1]!.trim();
-    const name = row[2]!.trim();
-    const move = row[3]!.trim();
-    if (!name || /^-+$/.test(crRaw) || /^gs$/i.test(crRaw) || /^bestia$/i.test(name)) continue;
-
-    const cr = parseChallengeRating(crRaw);
-    const { hasSwim, hasFly } = movementFlags(move);
-    const key = name.toLocaleLowerCase("it");
-    const existing = byName.get(key);
-    if (existing) {
-      if (!existing.environments.includes(currentEnv)) existing.environments.push(currentEnv);
-      continue;
-    }
-    byName.set(key, {
-      name,
-      cr,
-      crLabel: crRaw,
-      movementNote: move === "—" || move === "-" ? "" : move,
-      hasSwim,
-      hasFly,
-      environments: [currentEnv],
-    });
-  }
-
-  return [...byName.values()];
-}
-
-export function getXanatharWildShapeBeasts(): WildShapeBeast[] {
-  if (cachedBeasts) return cachedBeasts;
-  const md = getManualMarkdownByFileName("xanathar.md");
-  cachedBeasts = md ? parseXanatharWildShapeBeasts(md) : [];
-  return cachedBeasts;
+/** Bestie dall'Appendice D del manuale base (solo tipo Bestia). */
+export function getPhbWildShapeBeasts(): WildShapeBeast[] {
+  return getPhbAppendixDBeasts().map(toWildShapeBeast);
 }
 
 /** Limiti PHB tabella «Forme bestiali» (+ Circolo della Luna). */
@@ -175,49 +137,53 @@ function limitsSummary(limits: WildShapeLimits, level: number): string {
   return parts.join("; ");
 }
 
+function buildWildShapeIntro(level: number, limits: WildShapeLimits): string[] {
+  return [
+    `Forme bestiali disponibili al livello ${level} (${limitsSummary(limits, level)}).`,
+    "Devi aver già visto la bestia (PHB). Elenco e statistiche dall'Appendice D del manuale base.",
+    "",
+  ];
+}
+
 /**
- * Elenco forme bestiali utilizzabili in Forma selvatica (tabelle Xanathar, filtrate per livello).
+ * Stat block Appendice D PHB per le forme bestiali ammissibili (solo manuale base).
  */
+export async function buildDruidWildShapeStatBlocksManualBody(
+  level: number,
+  classSubclass: string | null | undefined,
+  requestOrigin?: string | null
+): Promise<string | null> {
+  await preloadPhbMarkdown(requestOrigin);
+  const all = getPhbWildShapeBeasts();
+  if (!all.length) return null;
+
+  const filtered = filterWildShapeBeastsForDruid(all, level, classSubclass);
+  if (!filtered?.beasts.length) return null;
+
+  const parts: string[] = buildWildShapeIntro(level, filtered.limits);
+
+  for (const beast of filtered.beasts) {
+    if (!beast.statBlock) continue;
+    parts.push("—".repeat(40));
+    parts.push(`${beast.name.toUpperCase()} (GS ${beast.crLabel})`);
+    parts.push("");
+    parts.push(formatAppendixDStatBlockForManual(beast.statBlock));
+    parts.push("");
+  }
+
+  return parts.join("\n").trim();
+}
+
+/** @deprecated Usa buildDruidWildShapeStatBlocksManualBody (solo Appendice D PHB). */
 export async function buildDruidWildShapeManualBody(
   level: number,
   classSubclass: string | null | undefined,
   requestOrigin?: string | null
 ): Promise<string | null> {
-  await preloadManualMarkdownFile("xanathar.md", requestOrigin);
-  const all = getXanatharWildShapeBeasts();
-  if (!all.length) return null;
-
-  const filtered = filterWildShapeBeastsForDruid(all, level, classSubclass);
-  if (!filtered || filtered.beasts.length === 0) return null;
-
-  const { limits, beasts } = filtered;
-  const lines: string[] = [
-    `Forme bestiali disponibili al livello ${level} (${limitsSummary(limits, level)}).`,
-    "Devi aver già visto la bestia (PHB). Elenco da Xanathar — Apprendere forme bestiali.",
-    "",
-  ];
-
-  let lastCr: string | null = null;
-  for (const b of beasts) {
-    if (b.crLabel !== lastCr) {
-      lastCr = b.crLabel;
-      lines.push(`GS ${b.crLabel}`);
-    }
-    const move =
-      b.movementNote && b.movementNote !== "—"
-        ? ` (${b.movementNote})`
-        : b.hasFly
-          ? " (Volare)"
-          : b.hasSwim
-            ? " (Nuotare)"
-            : "";
-    lines.push(`• ${b.name}${move}`);
-  }
-
-  return lines.join("\n").trim();
+  return buildDruidWildShapeStatBlocksManualBody(level, classSubclass, requestOrigin);
 }
 
 /** Invalida cache (test). */
 export function clearWildShapeBeastsCache(): void {
-  cachedBeasts = null;
+  // Le bestie sono in cache condivisa con phb-appendix-d-statblocks.
 }

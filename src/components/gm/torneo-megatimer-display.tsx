@@ -1,12 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { createSupabaseBrowserClient } from "@/utils/supabase/client";
 import { computeMatchTimerView, formatTimerMmSs } from "@/lib/torneo/match-timer";
 import {
+  initiativeSyncSignature,
   parseInitiativeSnapshotField,
-  readInitiativeFromBrowserStorage,
+  pickInitiativeForMegatimer,
+  readLegacyInitiativeFromBrowserStorage,
+  readLiveInitiativeFromBrowserStorage,
+  torneoLiveDbInitiativeStorageKey,
 } from "@/lib/torneo/megatimer-initiative";
 import type { TorneoMatchTimerPayload } from "@/app/campaigns/torneo-live-actions";
 import type { InitiativeEntry, InitiativeTrackerState } from "@/components/gm/initiative-tracker";
@@ -23,6 +27,8 @@ type Props = {
   initialInitiative?: InitiativeTrackerState | null;
   /** Fallback ritratto per PG (character_id → image_url). */
   characterPortraits?: Record<string, string | null>;
+  /** PG dell'incontro corrente: filtra snapshot initiative obsoleti. */
+  rosterCharacterIds?: string[];
   className?: string;
 };
 
@@ -49,6 +55,7 @@ export function TorneoMegatimerDisplay({
   initialTimer,
   initialInitiative = null,
   characterPortraits = {},
+  rosterCharacterIds = [],
   className,
 }: Props) {
   const [fields, setFields] = useState(initialTimer);
@@ -59,33 +66,73 @@ export function TorneoMegatimerDisplay({
   );
   const [now, setNow] = useState(Date.now());
   const [portraitError, setPortraitError] = useState(false);
+  const lastAppliedSigRef = useRef(initiativeSyncSignature(initialInitiative ?? null));
+  const fieldsRef = useRef(fields);
+  fieldsRef.current = fields;
 
-  const applyInitiative = useCallback(
-    (raw: unknown) => {
-      const parsed = parseInitiativeSnapshotField(raw);
-      if (parsed) setInitiativeSnapshot(enrichEntryPortraits(parsed, characterPortraits));
+  const applyInitiativeState = useCallback(
+    (next: InitiativeTrackerState | null) => {
+      if (!next) return;
+      const enriched = enrichEntryPortraits(next, characterPortraits);
+      const sig = initiativeSyncSignature(enriched);
+      if (sig === lastAppliedSigRef.current) return;
+      lastAppliedSigRef.current = sig;
+      setInitiativeSnapshot(enriched);
     },
     [characterPortraits]
   );
 
   const syncInitiativeSources = useCallback(async () => {
-    const fromStorage = readInitiativeFromBrowserStorage(campaignId, matchId);
-    if (fromStorage) {
-      setInitiativeSnapshot(enrichEntryPortraits(fromStorage, characterPortraits));
-    }
+    const sources: Array<{
+      state: InitiativeTrackerState;
+      updatedAt: string | null;
+      priority: number;
+    }> = [];
 
     const supabase = createSupabaseBrowserClient();
     const { data, error } = await supabase
       .from("torneo_matches")
-      .select("initiative_snapshot")
+      .select("initiative_snapshot, initiative_updated_at")
       .eq("id", matchId)
       .eq("campaign_id", campaignId)
       .maybeSingle();
 
     if (!error && data?.initiative_snapshot != null) {
-      applyInitiative(data.initiative_snapshot);
+      const fromDb = parseInitiativeSnapshotField(data.initiative_snapshot);
+      if (fromDb) {
+        sources.push({
+          state: fromDb,
+          updatedAt: data.initiative_updated_at ?? null,
+          priority: 100,
+        });
+      }
     }
-  }, [applyInitiative, campaignId, matchId, characterPortraits]);
+
+    const fromLiveStorage = readLiveInitiativeFromBrowserStorage(campaignId, matchId);
+    if (fromLiveStorage) {
+      sources.push({
+        state: fromLiveStorage,
+        updatedAt: null,
+        priority: 110,
+      });
+    }
+
+    const fromLegacyStorage = readLegacyInitiativeFromBrowserStorage(campaignId, matchId);
+    if (fromLegacyStorage) {
+      sources.push({
+        state: fromLegacyStorage,
+        updatedAt: null,
+        priority: 10,
+      });
+    }
+
+    const picked = pickInitiativeForMegatimer(
+      sources,
+      rosterCharacterIds,
+      fieldsRef.current.timer_round_label
+    );
+    if (picked) applyInitiativeState(picked);
+  }, [applyInitiativeState, campaignId, matchId, rosterCharacterIds]);
 
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 250);
@@ -94,9 +141,24 @@ export function TorneoMegatimerDisplay({
 
   useEffect(() => {
     void syncInitiativeSources();
-    const id = window.setInterval(() => void syncInitiativeSources(), 1200);
+    const id = window.setInterval(() => void syncInitiativeSources(), 800);
     return () => window.clearInterval(id);
   }, [syncInitiativeSources]);
+
+  useEffect(() => {
+    const storageKey = torneoLiveDbInitiativeStorageKey(campaignId, matchId);
+    const onStorage = (ev: StorageEvent) => {
+      if (ev.key !== storageKey || !ev.newValue) return;
+      try {
+        const parsed = parseInitiativeSnapshotField(JSON.parse(ev.newValue));
+        if (parsed) applyInitiativeState(parsed);
+      } catch {
+        /* ignore */
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [applyInitiativeState, campaignId, matchId]);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -125,7 +187,10 @@ export function TorneoMegatimerDisplay({
               timer_started_at: typeof row.timer_started_at === "string" ? row.timer_started_at : null,
               timer_paused_at: typeof row.timer_paused_at === "string" ? row.timer_paused_at : null,
             });
-            if (row.initiative_snapshot != null) applyInitiative(row.initiative_snapshot);
+            if (row.initiative_snapshot != null) {
+              const fromDb = parseInitiativeSnapshotField(row.initiative_snapshot);
+              if (fromDb) applyInitiativeState(fromDb);
+            }
           }
         )
         .subscribe();
@@ -135,7 +200,7 @@ export function TorneoMegatimerDisplay({
       cancelled = true;
       if (channel) void supabase.removeChannel(channel);
     };
-  }, [campaignId, matchId, applyInitiative]);
+  }, [campaignId, matchId, applyInitiativeState]);
 
   const view = computeMatchTimerView(fields, now);
   const pct =
@@ -143,7 +208,11 @@ export function TorneoMegatimerDisplay({
 
   const activeEntry: InitiativeEntry | null = useMemo(() => {
     if (!initiativeSnapshot?.entries.length) return null;
-    return initiativeSnapshot.entries[initiativeSnapshot.currentTurnIndex] ?? null;
+    const idx = Math.min(
+      Math.max(0, initiativeSnapshot.currentTurnIndex),
+      initiativeSnapshot.entries.length - 1
+    );
+    return initiativeSnapshot.entries[idx] ?? null;
   }, [initiativeSnapshot]);
 
   const portraitUrl = useMemo(() => {
@@ -220,7 +289,7 @@ export function TorneoMegatimerDisplay({
             {turnPosition ? (
               <p className="mt-4 text-sm uppercase tracking-widest text-zinc-400">
                 Turno {turnPosition}
-                {view.roundLabel && view.roundLabel !== "Round" ? ` · ${view.roundLabel}` : ""}
+                {roundNumber > 1 ? ` · Giro ${roundNumber}` : ""}
               </p>
             ) : null}
           </div>
@@ -230,7 +299,7 @@ export function TorneoMegatimerDisplay({
               In attesa dell&apos;initiative tracker…
             </p>
             <p className="mt-2 max-w-xs text-sm text-zinc-700">
-              Avvia l&apos;incontro dal GM screen (sessione live) sullo stesso PC o attendi la sincronizzazione.
+              Apri il megatimer sullo stesso browser del GM screen con sessione live attiva.
             </p>
           </div>
         )}

@@ -3,7 +3,7 @@ import { extractPhbSpellMarkdown } from "@/lib/server/phb-spell-excerpt";
 import { raceTraitsForQuickManual } from "@/lib/sheet-generator/sheet-mapper";
 import { kiPointsClassFeatureLine } from "@/lib/sheet-generator/monk-meta";
 import { sorceryPointsClassFeatureLine } from "@/lib/sheet-generator/sorcerer-meta";
-import { buildDruidWildShapeManualBody } from "@/lib/sheet-generator/druid-wild-shape";
+import { buildDruidWildShapeStatBlocksManualBody } from "@/lib/sheet-generator/druid-wild-shape";
 import { buildMonkKiManualBody } from "@/lib/sheet-generator/monk-ki-phb";
 import {
   buildWarlockInvocationsOnlyManualBody,
@@ -176,13 +176,13 @@ export async function buildQuickManualSections(
   }
 
   if (sheet.classLabel === "Druido" && sheet.level >= 2) {
-    const wildShapeManual = await buildDruidWildShapeManualBody(
+    const wildShapeManual = await buildDruidWildShapeStatBlocksManualBody(
       sheet.level,
       sheet.classSubclass
     );
     if (wildShapeManual) {
       sections.push({
-        title: "Forme bestiali — Forma selvatica",
+        title: "Forme bestiali — Forma selvatica (Appendice D)",
         body: trimSection(wildShapeManual, MAX_SECTION_CHARS),
       });
     }

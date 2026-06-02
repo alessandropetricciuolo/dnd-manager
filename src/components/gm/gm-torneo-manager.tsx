@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Plus, Save, Swords, Trophy, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -57,6 +57,8 @@ type Props = {
   remoteSessionPublicId?: string | null;
   onMatchStarted?: (matchId: string, station: 1 | 2) => void;
   getTrackerStateForMatch?: (matchId: string) => InitiativeTrackerState | null;
+  /** Espone avvio incontro su tavolo già caricato (pulsante nell'initiative tracker). */
+  onRegisterStartMatch?: (startAtStation: (station: 1 | 2) => Promise<void>) => void;
   className?: string;
 };
 
@@ -87,6 +89,7 @@ export function GmTorneoManager({
   remoteSessionPublicId = null,
   onMatchStarted,
   getTrackerStateForMatch,
+  onRegisterStartMatch,
   className,
 }: Props) {
   const [initialLoading, setInitialLoading] = useState(true);
@@ -282,15 +285,26 @@ export function GmTorneoManager({
     return null;
   };
 
-  const startMatch = async (match: TorneoMatchWithTeams, station: 1 | 2) => {
+  const resolveInitiativeForMatch = async (
+    match: TorneoMatchWithTeams,
+    preferLoadedState?: InitiativeTrackerState | null
+  ): Promise<{ state: InitiativeTrackerState; freshMatch: TorneoMatchWithTeams } | null> => {
+    if (preferLoadedState?.entries.length) {
+      return { state: preferLoadedState, freshMatch: match };
+    }
+
+    const restored = await loadMatchState(match);
+    if (restored?.entries.length) {
+      return { state: restored, freshMatch: match };
+    }
+
     const setupRes = await getTorneoSetupAction(campaignId);
     const freshTeams = setupRes.success && setupRes.data ? setupRes.data.teams : teams;
     const freshMatch = setupRes.success && setupRes.data
       ? setupRes.data.matches.find((m) => m.id === match.id) ?? match
       : match;
-
-    const initiativeState = buildMatchInitiativeState(freshMatch, freshTeams);
-    if (initiativeState.entries.length === 0) {
+    const seeded = buildMatchInitiativeState(freshMatch, freshTeams);
+    if (seeded.entries.length === 0) {
       const missingSides = [freshMatch.team_a, freshMatch.team_b]
         .filter((s) => s.isPlaceholder)
         .map((s) => s.name);
@@ -299,13 +313,45 @@ export function GmTorneoManager({
       } else {
         toast.error("Assegna almeno un PG a ciascuna squadra dell'incontro, poi salva le assegnazioni.");
       }
+      return null;
+    }
+    return { state: seeded, freshMatch };
+  };
+
+  /** Carica PG/iniziativa sul tavolo senza avviare timer né stato «in corso». */
+  const prepareMatchOnStation = async (match: TorneoMatchWithTeams, station: 1 | 2) => {
+    const loaded = getTrackerStateForMatch?.(match.id);
+    const resolved = await resolveInitiativeForMatch(match, loaded);
+    if (!resolved) return;
+
+    const { state: initiativeState } = resolved;
+    setBusy(true);
+    await persistTorneoMatchInitiative(campaignId, match.id, initiativeState, liveSyncEnabled);
+    setBusy(false);
+    onLoadMatch(station, match.id, initiativeState);
+    toast.success(
+      `Caricato su tavolo ${station} (${initiativeState.entries.length} in lista). Avvia dall'initiative tracker.`
+    );
+    void refresh({ silent: true });
+  };
+
+  /** Avvia incontro già caricato sul tavolo (timer live + stato active). */
+  const startPreparedMatch = async (match: TorneoMatchWithTeams, station: 1 | 2) => {
+    if (match.status === "completed") {
+      toast.error("Questo incontro è già concluso.");
       return;
     }
 
+    const loaded = getTrackerStateForMatch?.(match.id);
+    const resolved = await resolveInitiativeForMatch(match, loaded);
+    if (!resolved) return;
+
+    const { state: initiativeState } = resolved;
+
     setBusy(true);
     const res = await setTorneoMatchStatusAction(campaignId, match.id, "active");
-    setBusy(false);
     if (!res.success) {
+      setBusy(false);
       toast.error(res.error);
       return;
     }
@@ -325,46 +371,37 @@ export function GmTorneoManager({
       }
     }
     onMatchStarted?.(match.id, station);
+    setBusy(false);
 
     toast.success(
-      `Incontro avviato su tavolo ${station} · ${initiativeState.entries.length} PG in initiative.`
+      `Incontro avviato su tavolo ${station} · ${initiativeState.entries.length} in initiative.`
     );
-    if (setupRes.success && setupRes.data) {
-      applySetup(setupRes.data.teams, setupRes.data.matches);
-    } else {
-      void refresh({ silent: true });
-    }
+    void refresh({ silent: true });
   };
 
-  const resumeMatch = async (match: TorneoMatchWithTeams, station: 1 | 2) => {
-    if (station === 1) persistActiveMatch(match.id);
-    const restored = await loadMatchState(match);
-    if (restored?.entries.length) {
-      onLoadMatch(station, match.id, restored);
-      toast.message(`Incontro ripreso su tavolo ${station}.`);
-      return;
-    }
+  const startPreparedRef = useRef(startPreparedMatch);
+  startPreparedRef.current = startPreparedMatch;
 
-    const setupRes = await getTorneoSetupAction(campaignId);
-    const freshTeams = setupRes.success && setupRes.data ? setupRes.data.teams : teams;
-    const freshMatch = setupRes.success && setupRes.data
-      ? setupRes.data.matches.find((m) => m.id === match.id) ?? match
-      : match;
-    const seeded = buildMatchInitiativeState(freshMatch, freshTeams);
-    if (seeded.entries.length > 0) {
-      await persistTorneoMatchInitiative(campaignId, match.id, seeded, liveSyncEnabled);
-      onLoadMatch(station, match.id, seeded);
-      toast.success(`Initiative caricata (${seeded.entries.length} PG) su tavolo ${station}.`);
-      if (setupRes.success && setupRes.data) applySetup(setupRes.data.teams, setupRes.data.matches);
-      return;
-    }
+  const startMatchAtStation = useCallback(
+    async (station: 1 | 2) => {
+      const matchId = station === 1 ? activeMatchId : station2MatchId;
+      if (!matchId) {
+        toast.error(`Nessun incontro caricato su tavolo ${station}. Usa «Carica T${station}» dalla lista.`);
+        return;
+      }
+      const match = matches.find((m) => m.id === matchId);
+      if (!match) {
+        toast.error("Incontro non trovato. Ricarica dalla lista.");
+        return;
+      }
+      await startPreparedRef.current(match, station);
+    },
+    [activeMatchId, station2MatchId, matches]
+  );
 
-    if (match.status === "active") {
-      toast.error("Assegna almeno un PG a ciascuna squadra dell'incontro, poi salva le assegnazioni.");
-      return;
-    }
-    await startMatch(match, station);
-  };
+  useEffect(() => {
+    onRegisterStartMatch?.(startMatchAtStation);
+  }, [onRegisterStartMatch, startMatchAtStation]);
 
   const declareTrielloWinner = async (match: TorneoMatchWithTeams, characterId: string) => {
     const state = getTrackerStateForMatch?.(match.id) ?? null;
@@ -663,9 +700,9 @@ export function GmTorneoManager({
                         variant="outline"
                         className="h-7 text-[10px]"
                         disabled={busy || !playable}
-                        onClick={() => void (isActive ? resumeMatch(m, 1) : startMatch(m, 1))}
+                        onClick={() => void prepareMatchOnStation(m, 1)}
                       >
-                        {isActive ? "T1 Riprendi" : "T1 Avvia"}
+                        {isActive ? "T1 Ricarica" : "Carica T1"}
                       </Button>
                       <Button
                         type="button"
@@ -673,9 +710,9 @@ export function GmTorneoManager({
                         variant="outline"
                         className="h-7 text-[10px]"
                         disabled={busy || !playable}
-                        onClick={() => void (onStation2 ? resumeMatch(m, 2) : startMatch(m, 2))}
+                        onClick={() => void prepareMatchOnStation(m, 2)}
                       >
-                        {onStation2 ? "T2 Riprendi" : "T2 Avvia"}
+                        {onStation2 ? "T2 Ricarica" : "Carica T2"}
                       </Button>
                       {m.match_kind === "triello" && trielloTeam ? (
                         trielloTeam.members.map((mem) => (

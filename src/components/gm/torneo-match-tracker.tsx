@@ -11,12 +11,18 @@ import {
 } from "@/components/gm/initiative-tracker";
 import { useTorneoMatchInitiativeSync } from "@/hooks/use-torneo-match-initiative-sync";
 import { saveTorneoMatchInitiativeAction } from "@/app/campaigns/torneo-live-actions";
-import { buildMatchInitiativeState, torneoInitiativeStorageKey } from "@/lib/torneo/initiative";
+import {
+  buildMatchInitiativeState,
+  torneoInitiativeStorageKey,
+} from "@/lib/torneo/initiative";
+import { torneoLiveDbInitiativeStorageKey } from "@/lib/torneo/megatimer-initiative";
 import type { TorneoTeamWithMembers } from "@/lib/torneo/types";
 import { computeMatchDamageTotals } from "@/lib/torneo/compute-match-damage";
 import type { TorneoCharacterTeamInfo } from "@/lib/torneo/initiative";
 import type { TorneoMatchWithTeams } from "@/lib/torneo/types";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Loader2, Play } from "lucide-react";
 
 type Props = {
   campaignId: string;
@@ -30,6 +36,8 @@ type Props = {
   /** Stato del tavolo gestito dal GM screen (evita sovrascrittura con snapshot vuoto). */
   syncState?: InitiativeTrackerState;
   teams?: TorneoTeamWithMembers[];
+  /** Avvia incontro (stato active + timer live) dopo il caricamento dalla sidebar. */
+  onStartEncounter?: () => void | Promise<void>;
 };
 
 export function TorneoMatchTracker({
@@ -43,7 +51,9 @@ export function TorneoMatchTracker({
   initiativeHandleRef,
   syncState,
   teams = [],
+  onStartEncounter,
 }: Props) {
+  const [startingEncounter, setStartingEncounter] = useState(false);
   const isControlled = syncState !== undefined;
   const [internalState, setInternalState] = useState<InitiativeTrackerState>(emptyInitiativeTrackerState());
   const state = isControlled ? syncState : internalState;
@@ -170,12 +180,14 @@ export function TorneoMatchTracker({
   const handleChange = useCallback(
     (next: InitiativeTrackerState) => {
       applyState(next);
-      if (matchId && !liveSyncEnabled) {
-        try {
-          localStorage.setItem(torneoInitiativeStorageKey(campaignId, matchId), JSON.stringify(next));
-        } catch {
-          /* ignore */
-        }
+      if (!matchId || next.entries.length === 0) return;
+      const key = liveSyncEnabled
+        ? torneoLiveDbInitiativeStorageKey(campaignId, matchId)
+        : torneoInitiativeStorageKey(campaignId, matchId);
+      try {
+        localStorage.setItem(key, JSON.stringify(next));
+      } catch {
+        /* ignore */
       }
     },
     [campaignId, matchId, liveSyncEnabled, applyState]
@@ -201,6 +213,22 @@ export function TorneoMatchTracker({
       })()
     : null;
 
+  const canStartEncounter =
+    !!onStartEncounter &&
+    match?.status !== "completed" &&
+    match?.status !== "active" &&
+    state.entries.length > 0;
+
+  const handleStartEncounter = async () => {
+    if (!onStartEncounter) return;
+    setStartingEncounter(true);
+    try {
+      await onStartEncounter();
+    } finally {
+      setStartingEncounter(false);
+    }
+  };
+
   if (!match) {
     return (
       <div
@@ -216,11 +244,38 @@ export function TorneoMatchTracker({
 
   return (
     <div className={cn("flex min-h-0 min-w-0 flex-1 flex-col gap-1", className)}>
-      {stationLabel ? (
-        <p className="shrink-0 px-1 text-[11px] font-semibold uppercase tracking-wide text-violet-300/80">
-          {stationLabel} · {match.label ?? `${match.team_a.name} vs ${match.team_b.name}`}
-        </p>
-      ) : null}
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 px-1">
+        {stationLabel ? (
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-violet-300/80">
+            {stationLabel} · {match.label ?? `${match.team_a.name} vs ${match.team_b.name}`}
+          </p>
+        ) : (
+          <span />
+        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {match.status === "active" ? (
+            <span className="rounded bg-emerald-900/50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-300">
+              In corso
+            </span>
+          ) : null}
+          {canStartEncounter ? (
+            <Button
+              type="button"
+              size="sm"
+              className="h-7 gap-1 bg-emerald-700 px-2.5 text-[11px] text-white hover:bg-emerald-600"
+              disabled={startingEncounter}
+              onClick={() => void handleStartEncounter()}
+            >
+              {startingEncounter ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Play className="h-3.5 w-3.5" />
+              )}
+              Avvia incontro
+            </Button>
+          ) : null}
+        </div>
+      </div>
       <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
         <InitiativeTracker
           {...(initiativeHandleRef ? { ref: initiativeHandleRef } : {})}
