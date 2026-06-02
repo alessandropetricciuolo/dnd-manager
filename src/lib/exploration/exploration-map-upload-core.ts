@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { uploadToTelegram } from "@/lib/telegram-storage";
+import { uploadImageToTelegram } from "@/lib/telegram-storage";
 import { uploadToTelegram as uploadUrlToTelegramCdn } from "@/lib/telegram-cdn";
 import { parseSafeExternalUrl } from "@/lib/security/url";
 import { normalizeImageUrl } from "@/lib/image-url";
@@ -92,7 +92,7 @@ export async function createExplorationMapFromFormData(
             : "map.jpg";
     const file = new File([blob], uploadName, { type: contentType });
     try {
-      fileId = await uploadToTelegram(file, floorLabel || undefined, "photo");
+      fileId = await uploadImageToTelegram(file, floorLabel || undefined);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Upload Telegram fallito.";
       return { success: false, error: msg };

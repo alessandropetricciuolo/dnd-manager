@@ -99,3 +99,23 @@ export async function uploadToTelegram(
   }
   throw new Error("Risposta Telegram non riconosciuta");
 }
+
+/** Errori sendPhoto per cui conviene ritentare come document (stesso file_id via getFile). */
+const TELEGRAM_PHOTO_PROCESSING_ERRORS = /PHOTO_INVALID_DIMENSIONS|IMAGE_PROCESS_FAILED/i;
+
+/**
+ * Carica un'immagine su Telegram: prima sendPhoto, poi sendDocument se Telegram rifiuta
+ * dimensioni/proporzioni (w+h > 10000 o rapporto > 20:1).
+ */
+export async function uploadImageToTelegram(
+  file: File | Blob,
+  caption?: string
+): Promise<string> {
+  try {
+    return await uploadToTelegram(file, caption, "photo");
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "";
+    if (!TELEGRAM_PHOTO_PROCESSING_ERRORS.test(msg)) throw e;
+    return uploadToTelegram(file, caption, "document");
+  }
+}

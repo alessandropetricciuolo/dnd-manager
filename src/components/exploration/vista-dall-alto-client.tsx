@@ -37,10 +37,13 @@ import {
 } from "@/components/ui/select";
 import { ExternalLink, Trash2, Undo2 } from "lucide-react";
 
-/** Mappe grandi: limite sotto 4 MB per la route API; output WebP come CompressedImageUpload. */
+/**
+ * Mappe FoW: sotto 4 MB per la route API.
+ * Telegram sendPhoto: w+h ≤ 10000 e rapporto ≤ 20:1 — 8192px su entrambi i lati supera il limite.
+ */
 const MAP_UPLOAD_COMPRESSION = {
   maxSizeMB: 3.5,
-  maxWidthOrHeight: 8192,
+  maxWidthOrHeight: 4096,
   useWebWorker: true,
   fileType: "image/webp" as const,
 };
