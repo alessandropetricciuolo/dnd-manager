@@ -25,6 +25,7 @@ import {
   pickCantripsForSheet,
   pickLeveledSpellsSlotAware,
 } from "@/lib/sheet-generator/spell-slot-picker";
+import { injectRangerPrescelteChoices } from "@/lib/sheet-generator/ranger-meta";
 import { sorceryPointsClassFeatureLine } from "@/lib/sheet-generator/sorcerer-meta";
 import type { AbilityKey, GeneratedSpell } from "@/lib/sheet-generator/types";
 import {
@@ -35,6 +36,7 @@ import {
 } from "@/lib/sheet-generator/third-caster-subclass";
 import { getSpellCombatTierScore } from "@/lib/sheet-generator/spell-combat-tier";
 import {
+  ensureClericCureWoundsSpell,
   ensurePaladinPunishmentSpell,
   filterTorneoCombatSpells,
 } from "@/lib/sheet-generator/spell-torneo-combat";
@@ -47,8 +49,14 @@ import {
   balanceWizardArcaneSchoolSpells,
   createSpellSchoolLookup,
   parseWizardArcaneSchoolKey,
+  stripOtherWizardArcaneSchoolSections,
+  wizardArcaneSchoolSectionHeadingNorm,
 } from "@/lib/sheet-generator/wizard-arcane-school";
-import { enforceSpellLevelCaps, type SpellPickOptions } from "@/lib/sheet-generator/spell-slot-picker";
+import {
+  ensureSorcererMinLevel1Spells,
+  enforceSpellLevelCaps,
+  type SpellPickOptions,
+} from "@/lib/sheet-generator/spell-slot-picker";
 
 function headingLevel(line: string): number | null {
   const m = line.match(/^(\s*#{1,6})\s+.+$/);
@@ -175,12 +183,19 @@ function extractSubclassSectionMarkdown(
   }
   if (startIdx < 0) return "";
 
+  const wizardKeepSchoolNorm =
+    parentClassLabel?.trim() === "Mago" && targets.length === 1 ? targets[0]! : null;
+
   let endIdx = lines.length;
   for (let i = startIdx + 1; i < lines.length; i++) {
     const ht = headingTextRaw(lines[i]);
     const lv = headingLevel(lines[i]);
     if (!lv || !ht) continue;
     const n = normalizeHeadingForMatch(ht);
+    if (wizardKeepSchoolNorm && lv <= 2 && /^SCUOLA\s+DI\s+/i.test(ht) && n !== wizardKeepSchoolNorm) {
+      endIdx = i;
+      break;
+    }
     if (stops.has(n)) {
       endIdx = i;
       break;
@@ -241,7 +256,8 @@ function cleanRulesExcerpt(md: string): string {
 }
 
 function featureUnlockLevel(text: string): number | null {
-  const t = text.replace(/\r/g, "");
+  /** Solo il primo paragrafo: evita falsi positivi da testo «al 6° livello» su scelte successive. */
+  const t = (text.replace(/\r/g, "").split(/\n\n+/)[0] ?? text).trim();
   const patterns = [
     /\ba partire dal\s+(\d+)[°º]?\s+livello\b/i,
     /\bal\s+(\d+)[°º]?\s+livello\b/i,
@@ -581,7 +597,7 @@ function buildWarlockPactAndInvocationsMarkdown(input: {
   return sections.join("\n\n").trim();
 }
 
-const CLASSES_WITH_PHB_FIGHTING_STYLE_COLLAPSE = new Set(["Guerriero", "Paladino"]);
+const CLASSES_WITH_PHB_FIGHTING_STYLE_COLLAPSE = new Set(["Guerriero", "Paladino", "Ranger"]);
 
 function filterClassFeaturesByLevel(md: string, level: number): string {
   const txt = cleanRulesExcerpt(md)
@@ -1153,6 +1169,9 @@ export async function resolveGeneratorRules(
     }
   }
   if (!classFeaturesMd.trim()) warnings.push("Privilegi di classe non trovati nel manuale sorgente.");
+  if (input.classLabel === "Mago" && classFeaturesMd.trim()) {
+    classFeaturesMd = stripOtherWizardArcaneSchoolSections(classFeaturesMd, input.classSubclass);
+  }
 
   let subclassFeaturesMd: string | null = null;
   if (input.classSubclass?.trim()) {
@@ -1178,6 +1197,16 @@ export async function resolveGeneratorRules(
         extractSubclassSectionMarkdown(md, [input.classSubclass.trim().toUpperCase()], subclassStops, input.classLabel) ||
         extractSectionByHeadingsMarkdown(md, [input.classSubclass.toUpperCase()]) ||
         null;
+    }
+  }
+  if (input.classLabel === "Mago" && subclassFeaturesMd?.trim()) {
+    subclassFeaturesMd = stripOtherWizardArcaneSchoolSections(
+      subclassFeaturesMd,
+      input.classSubclass
+    );
+    if (!subclassFeaturesMd.trim()) {
+      const schoolNorm = wizardArcaneSchoolSectionHeadingNorm(input.classSubclass);
+      if (schoolNorm) warnings.push(`Privilegi scuola arcana non trovati per «${input.classSubclass}».`);
     }
   }
 
@@ -1305,8 +1334,34 @@ export async function resolveGeneratorRules(
         spellsPrepared
       );
     }
+    if (input.classLabel === "Chierico") {
+      leveledEntries = ensureClericCureWoundsSpell(leveledEntries, entries, maxOnSheet);
+      leveledEntries = enforceSpellLevelCaps(
+        leveledEntries,
+        spellSlots,
+        input.classLabel,
+        spellsPrepared
+      );
+    }
     if (input.classLabel === "Paladino") {
       leveledEntries = ensurePaladinPunishmentSpell(leveledEntries, entries, maxOnSheet);
+      leveledEntries = enforceSpellLevelCaps(
+        leveledEntries,
+        spellSlots,
+        input.classLabel,
+        spellsPrepared
+      );
+    }
+    if (input.classLabel === "Stregone") {
+      leveledEntries = ensureSorcererMinLevel1Spells(
+        leveledEntries,
+        entries,
+        maxOnSheet,
+        spellSlots,
+        spellsPrepared,
+        combatPriority,
+        pickOptions
+      );
       leveledEntries = enforceSpellLevelCaps(
         leveledEntries,
         spellSlots,
@@ -1342,6 +1397,13 @@ export async function resolveGeneratorRules(
   if (input.classLabel === "Monaco") {
     const kiLine = kiPointsClassFeatureLine(input.level);
     if (kiLine) filteredClassMd = [kiLine, filteredClassMd].filter(Boolean).join("\n\n");
+  }
+  if (input.classLabel === "Ranger") {
+    filteredClassMd = injectRangerPrescelteChoices(
+      filteredClassMd,
+      fightingStyleSheetSeed(input),
+      input.level
+    );
   }
   if (CLASSES_WITH_PHB_FIGHTING_STYLE_COLLAPSE.has(input.classLabel)) {
     filteredClassMd = collapsePhbFightingStyleOptions(filteredClassMd, fightingStyleSheetSeed(input));

@@ -15,6 +15,9 @@ export type SpellPickOptions = {
 /** Classi che «conoscono» un numero fisso di incantesimi (non preparati giornalmente). */
 const KNOWN_SPELL_CLASSES = new Set(["Bardo", "Stregone", "Warlock", "Ranger"]);
 
+/** Minimo di incantesimi di 1° livello sulla scheda stregone (PHB: pool L1 ampio, utile in torneo). */
+export const SORCERER_MIN_LEVEL1_SPELLS = 2;
+
 function spellKey(e: SpellPickEntry): string {
   return `${e.level}:${e.name.toLocaleLowerCase("it")}`;
 }
@@ -142,6 +145,66 @@ export function pickLeveledSpellsSlotAware(
   }
 
   return picked.slice(0, count);
+}
+
+/**
+ * Garantisce almeno {@link SORCERER_MIN_LEVEL1_SPELLS} incantesimi di 1° livello per lo stregone.
+ */
+export function ensureSorcererMinLevel1Spells(
+  picked: SpellPickEntry[],
+  pool: SpellPickEntry[],
+  maxLevel: number,
+  spellSlots: Record<number, number>,
+  maxTotal: number,
+  powerPlayer: boolean,
+  pickOptions?: SpellPickOptions
+): SpellPickEntry[] {
+  if (maxTotal <= 0) return picked;
+
+  const caps = spellCapPerLevel(spellSlots, "Stregone");
+  const capL1 = caps.get(1) ?? maxTotal;
+  const goal = Math.min(SORCERER_MIN_LEVEL1_SPELLS, capL1, maxTotal);
+
+  const poolL1 = pool.filter((e) => e.level === 1 && e.level <= maxLevel);
+  if (poolL1.length < goal) return picked;
+
+  let out = [...picked];
+
+  const tryAddL1 = (insert: SpellPickEntry): boolean => {
+    if (out.some((p) => spellKey(p) === spellKey(insert))) return false;
+    if (countAtLevel(out, 1) >= capL1) return false;
+    if (out.filter((e) => e.level >= 1).length >= maxTotal) return false;
+    out.push(insert);
+    return true;
+  };
+
+  while (countAtLevel(out, 1) < goal) {
+    const candidates = sortCandidates(
+      poolL1.filter((e) => !out.some((p) => spellKey(p) === spellKey(e))),
+      powerPlayer,
+      pickOptions
+    );
+    if (!candidates.length) break;
+    const insert = candidates[0]!;
+    if (tryAddL1(insert)) continue;
+
+    let replaceIdx = -1;
+    let replaceRank = -1;
+    for (let i = 0; i < out.length; i += 1) {
+      const e = out[i]!;
+      if (e.level < 2) continue;
+      const tier = getSpellCombatTierScore(e.name);
+      const rank = e.level * 100 - tier;
+      if (rank > replaceRank) {
+        replaceRank = rank;
+        replaceIdx = i;
+      }
+    }
+    if (replaceIdx < 0) break;
+    out[replaceIdx] = insert;
+  }
+
+  return out;
 }
 
 /** Rimuove incantesimi in eccesso rispetto al cap per livello (tier più bassi per primi). */

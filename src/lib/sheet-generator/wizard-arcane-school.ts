@@ -13,6 +13,58 @@ export function normalizeArcaneSchoolKey(raw: string): string {
     .replace(/\s+/g, " ");
 }
 
+function normalizeWizardHeadingForMatch(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[*_`>#]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+}
+
+/** Heading PHB normalizzato per la scuola scelta (es. «SCUOLA DI INVOCAZIONE»). */
+export function wizardArcaneSchoolSectionHeadingNorm(
+  classSubclass: string | null | undefined
+): string | null {
+  const key = parseWizardArcaneSchoolKey(classSubclass);
+  if (!key) return null;
+  const schoolTitle = key
+    .split(/\s+/)
+    .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : ""))
+    .join(" ");
+  return normalizeWizardHeadingForMatch(`SCUOLA DI ${schoolTitle}`);
+}
+
+/**
+ * Nel PHB IT le scuole arcane sono blocchi #/## «SCUOLA DI …».
+ * Tieni solo la scuola del PG e rimuovi le altre (es. necromanzia dopo invocazione).
+ */
+export function stripOtherWizardArcaneSchoolSections(
+  md: string,
+  classSubclass: string | null | undefined
+): string {
+  const keepNorm = wizardArcaneSchoolSectionHeadingNorm(classSubclass);
+  if (!keepNorm) return md.trim();
+
+  const lines = md.replace(/\r/g, "").split("\n");
+  const out: string[] = [];
+  let skipping = false;
+  for (const line of lines) {
+    const h = line.match(/^(#{1,2})\s+(.+?)\s*$/);
+    if (h) {
+      const title = h[2].trim();
+      if (/^SCUOLA\s+DI\s+/i.test(title)) {
+        skipping = normalizeWizardHeadingForMatch(title) !== keepNorm;
+        if (!skipping) out.push(line);
+        continue;
+      }
+    }
+    if (!skipping) out.push(line);
+  }
+  return out.join("\n").trim();
+}
+
 /** Da sottoclasse mago PHB («Scuola di Divinazione»). */
 export function parseWizardArcaneSchoolKey(classSubclass: string | null | undefined): string | null {
   const sub = (classSubclass ?? "").trim();

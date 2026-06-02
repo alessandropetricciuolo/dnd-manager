@@ -5,6 +5,7 @@ import {
   createSpellSchoolLookup,
   parseSpellSchoolKeyFromMarkdown,
   parseWizardArcaneSchoolKey,
+  stripOtherWizardArcaneSchoolSections,
   wizardSchoolSpellTargets,
 } from "@/lib/sheet-generator/wizard-arcane-school";
 import { spellCapPerLevel } from "@/lib/sheet-generator/spell-slot-picker";
@@ -63,6 +64,24 @@ test("mago L5 invocazione: 60% invocazione, max 3 spell L3", async () => {
   assert.equal(schoolCount, targetSchool, `attesi ${targetSchool} incantesimi di invocazione`);
   assert.equal(otherCount, targetOther, `attesi ${targetOther} incantesimi di altre scuole`);
   assert.ok(schoolCount >= otherCount, "la scuola scelta deve essere la maggioranza");
+});
+
+test("stripOtherWizardArcaneSchoolSections rimuove altre scuole", () => {
+  const md = [
+    "# SCUOLA DI INVOCAZIONE",
+    "",
+    "## INVOCATORE SAPIENTE",
+    "",
+    "Testo invocazione.",
+    "",
+    "# SCUOLA DI NEGROMANZIA",
+    "",
+    "## NECROMANTE SAPIENTE",
+  ].join("\n");
+  const out = stripOtherWizardArcaneSchoolSections(md, "Scuola di Invocazione");
+  assert.ok(out.includes("INVOCATORE"));
+  assert.ok(!out.includes("NECROMANTE"));
+  assert.ok(!out.includes("NEGROMANZIA"));
 });
 
 test("Chiaroveggenza è divinazione nel manuale", async () => {

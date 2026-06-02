@@ -1,5 +1,6 @@
 import type { GeneratedCharacterSheet, SkillKey } from "@/lib/sheet-generator/types";
 import { kiPointsClassFeatureLine } from "@/lib/sheet-generator/monk-meta";
+import { summarizeRangerPrescelteFromBody } from "@/lib/sheet-generator/ranger-meta";
 import { sorceryPointsClassFeatureLine } from "@/lib/sheet-generator/sorcerer-meta";
 
 function fmt(n: number): string {
@@ -205,6 +206,16 @@ function isSpellLikeFeatureBlock(heading: string, body: string): boolean {
   return false;
 }
 
+/** Opzioni stile di combattimento PHB: non sono privilegi separati in Features_Main. */
+const PHB_FIGHTING_STYLE_OPTION_HEADINGS = new Set([
+  "COMBATTERE CON ARMI POSSENTI",
+  "COMBATTERE CON DUE ARMI",
+  "DIFESA",
+  "DUELLARE",
+  "PROTEZIONE",
+  "TIRO",
+]);
+
 const WARLOCK_OMIT_CLASS_HEADINGS = new Set([
   "PATRONO ULTRATERRENO",
   "MAGIA DEL PATTO",
@@ -373,8 +384,17 @@ function summarizeClassFeaturesForPdf(classMd: string, subclassMd: string | null
   if (kiLine && /monaco/i.test(classOnly)) out.push(kiLine);
   for (const b of prioritized) {
     const headingNorm = normalizeHeading(b.heading);
+    if (PHB_FIGHTING_STYLE_OPTION_HEADINGS.has(headingNorm)) continue;
     if (isSpellLikeFeatureBlock(b.heading, b.body)) continue;
     if (isPdfTemplateGarbage(b.heading, b.body)) continue;
+    const rangerChoice = summarizeRangerPrescelteFromBody(b.body);
+    if (
+      (headingNorm === "NEMICO PRESCELTO" || headingNorm === "ESPLORATORE NATO") &&
+      rangerChoice
+    ) {
+      out.push(`• ${b.unlock ? `[Lv ${b.unlock}] ` : ""}${b.heading}: ${rangerChoice}`);
+      continue;
+    }
     const summary = summarizeFeatureBlock(b.body);
     if (!summary) continue;
     out.push(`• ${b.unlock ? `[Lv ${b.unlock}] ` : ""}${b.heading}: ${summary}`);

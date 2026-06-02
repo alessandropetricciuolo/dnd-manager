@@ -135,6 +135,44 @@ export function filterTorneoCombatSpells<T extends { name: string }>(entries: T[
 export type SpellPickEntry = { name: string; level: number };
 
 /** Garantisce almeno un incantesimo «Punizione …» per il paladino. */
+export function isCureWoundsSpell(spellName: string): boolean {
+  return normalizeSpellNameForTier(spellName) === "cura ferite";
+}
+
+/** Garantisce *Cura ferite* per ogni chierico (scheda e torneo). */
+export function ensureClericCureWoundsSpell(
+  picked: SpellPickEntry[],
+  pool: SpellPickEntry[],
+  maxLevel: number
+): SpellPickEntry[] {
+  if (picked.some((e) => isCureWoundsSpell(e.name))) return picked;
+
+  const cures = pool
+    .filter((e) => e.level >= 1 && e.level <= maxLevel && isCureWoundsSpell(e.name))
+    .sort((a, b) => a.level - b.level);
+  if (!cures.length) return picked;
+
+  const insert = cures[0]!;
+  const leveledIdx = picked.findIndex((e) => e.level >= 1);
+  if (leveledIdx < 0) return [...picked, insert];
+
+  let replaceIdx = leveledIdx;
+  let worstScore = getSpellCombatTierScore(picked[leveledIdx]!.name);
+  for (let i = 0; i < picked.length; i += 1) {
+    const e = picked[i]!;
+    if (e.level < 1) continue;
+    const score = getSpellCombatTierScore(e.name);
+    if (score < worstScore) {
+      worstScore = score;
+      replaceIdx = i;
+    }
+  }
+
+  const out = [...picked];
+  out[replaceIdx] = insert;
+  return out;
+}
+
 export function ensurePaladinPunishmentSpell(
   picked: SpellPickEntry[],
   pool: SpellPickEntry[],

@@ -104,14 +104,53 @@ test("golden: Ranger 7 Cacciatore", async () => {
     sex: "M",
   });
   assert.equal(res.sheet.classLabel, "Ranger");
-  const cls = res.sheet.classFeaturesMd.toLowerCase();
-  assert.ok(cls.includes("nemico") || cls.includes("esploratore"), "privilegi core ranger");
-  assert.ok(cls.includes("stile") || cls.includes("incantesim"), "privilegi classe fino al 7");
+  const cls = res.sheet.classFeaturesMd;
+  const clsLower = cls.toLowerCase();
+  assert.ok(clsLower.includes("nemico") && clsLower.includes("esploratore"), "privilegi core ranger");
+  assert.ok(/\*\*scelta:\*\*/i.test(cls), "nemico e terreno prescelti assegnati");
+  assert.ok(clsLower.includes("stile") || clsLower.includes("incantesim"), "privilegi classe fino al 7");
+  const styleHeadingRe =
+    /^### (COMBATTERE CON ARMI POSSENTI|COMBATTERE CON DUE ARMI|DIFESA|DUELLARE|PROTEZIONE|TIRO)\s*$/gim;
+  assert.equal([...cls.matchAll(styleHeadingRe)].length, 1, "un solo stile di combattimento");
+  const fields = mapGeneratedSheetToPdfFields(res.sheet);
+  const featuresMain = String(fields.Features_Main ?? "");
+  assert.match(featuresMain, /NEMICO PRESCELTO:/i, "Features_Main con nemico assegnato");
+  assert.ok(
+    !/^• (DIFESA|DUELLARE|TIRO|COMBATTERE CON DUE ARMI|COMBATTERE CON ARMI POSSENTI|PROTEZIONE):/im.test(featuresMain),
+    "Features_Main senza elenco completo stili"
+  );
   const sub = res.sheet.subclassFeaturesMd ?? "";
   assert.ok(sub.length > 400, "blocco sottoclasse non troncato");
   assert.ok(/preda del cacciatore/i.test(sub));
   assert.ok(/tattiche difensive/i.test(sub));
   assert.ok(!sub.toLowerCase().includes("signore delle bestie"), "fine blocco prima dell'altro archetipo");
+});
+
+test("golden: Ranger 5 Cael — nemico prescelto e un solo stile", async () => {
+  const input = {
+    characterName: "Cael Ravenshade",
+    raceSlug: "elfo",
+    subraceSlug: null,
+    classLabel: "Ranger",
+    classSubclass: "Cacciatore",
+    backgroundSlug: "forestiero",
+    level: 5,
+    alignment: "Neutrale Buono",
+    age: "30",
+    height: null,
+    weight: null,
+    sex: "M",
+  } as const;
+  const res = await buildGeneratedCharacterSheet(input);
+  const cls = res.sheet.classFeaturesMd;
+  assert.match(cls, /\*\*Scelta:\*\* \*\*[^*]+\*\*/i, "nemico prescelto assegnato");
+  assert.match(cls, /### ESPLORATORE NATO/i, "terreno prescelto presente");
+  const styleRe =
+    /^### (COMBATTERE CON DUE ARMI|DIFESA|DUELLARE|TIRO|COMBATTERE CON ARMI POSSENTI|PROTEZIONE)\s*$/gim;
+  assert.equal([...cls.matchAll(styleRe)].length, 1);
+  const featuresMain = String(mapGeneratedSheetToPdfFields(res.sheet).Features_Main ?? "");
+  assert.match(featuresMain, /NEMICO PRESCELTO:/i);
+  assert.ok(!/^• (DIFESA|DUELLARE|TIRO|COMBATTERE CON DUE ARMI):/im.test(featuresMain));
 });
 
 test("golden: Guerriero 1 — un solo stile di combattimento nei privilegi di classe", async () => {
