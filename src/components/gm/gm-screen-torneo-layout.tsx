@@ -414,7 +414,7 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
       <Tabs value={screenTab} className="flex min-h-0 flex-1 flex-col">
         <TabsContent value="gestione" className="mt-0 flex min-h-0 flex-1 data-[state=inactive]:hidden">
           <div className="flex min-h-0 w-full flex-1">
-            <aside className="flex w-[min(100%,320px)] shrink-0 flex-col border-r border-violet-900/30 bg-zinc-950/80 lg:w-80">
+            <aside className="relative z-30 flex w-[min(100%,320px)] shrink-0 flex-col border-r border-violet-900/30 bg-zinc-950/80 lg:w-80">
               <GmTorneoManager
                 className="min-h-0 flex-1"
                 campaignId={campaignId}

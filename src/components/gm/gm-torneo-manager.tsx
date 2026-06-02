@@ -174,7 +174,9 @@ export function GmTorneoManager({
 
   useEffect(() => {
     void refresh({ silent: true });
-  }, [refresh]);
+    // Solo al mount / cambio campagna — evita refresh loop che tengono busy=true
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [campaignId]);
 
   useEffect(() => {
     try {
@@ -198,8 +200,13 @@ export function GmTorneoManager({
   const damageForMatch = useCallback(
     (match: TorneoMatchWithTeams) => {
       const state = getTrackerStateForMatch?.(match.id) ?? null;
-      if (!state) return null;
-      return computeMatchDamageTotals(state.entries, match);
+      if (state?.entries.length) {
+        return computeMatchDamageTotals(state.entries, match);
+      }
+      return {
+        teamA: match.team_a_damage_total ?? 0,
+        teamB: match.team_b_damage_total ?? 0,
+      };
     },
     [getTrackerStateForMatch]
   );
@@ -505,10 +512,6 @@ export function GmTorneoManager({
 
   const declareWinner = async (match: TorneoMatchWithTeams, winnerTeamId: string) => {
     const dmg = damageForMatch(match);
-    if (!dmg) {
-      toast.error("Apri l'incontro su un tavolo per registrare i danni.");
-      return;
-    }
     setBusy(true);
     const res = await completeTorneoMatchAction(campaignId, match.id, {
       winnerTeamId,
@@ -803,7 +806,7 @@ export function GmTorneoManager({
                             Vince {mem.name}
                           </Button>
                         ))
-                      ) : matchDamage && m.team_a_id && m.team_b_id ? (
+                      ) : m.team_a_id && m.team_b_id ? (
                         <>
                           <Button
                             type="button"

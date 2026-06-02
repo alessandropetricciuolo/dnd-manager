@@ -29,12 +29,17 @@ const DialogOverlay = React.forwardRef<
 ))
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 
+type DialogContentProps = React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
+  /** When false, no full-screen overlay — page stays clickable (use with Dialog modal={false}). */
+  withOverlay?: boolean;
+};
+
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
+  DialogContentProps
+>(({ className, children, withOverlay = true, ...props }, ref) => (
   <DialogPortal>
-    <DialogOverlay />
+    {withOverlay ? <DialogOverlay /> : null}
     <DialogPrimitive.Content
       ref={ref}
       className={cn(

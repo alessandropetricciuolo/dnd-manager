@@ -174,8 +174,9 @@ export function GmTorneoLiveBar({
       /* ignore */
     }
     onLiveSessionChange(data, data.remotePlainToken);
-    setLinksOpen(true);
-    toast.success("Sessione live avviata. Condividi QR o link con telecomandi e PC tavolo.");
+    toast.success(
+      "Sessione live avviata. Usa «Link e QR» per i megatimer; la sidebar resta utilizzabile."
+    );
   };
 
   const handleEnd = async () => {
@@ -265,13 +266,16 @@ export function GmTorneoLiveBar({
         )}
       </div>
 
-      <Dialog open={linksOpen} onOpenChange={setLinksOpen}>
-        <DialogContent className="max-h-[90vh] w-[min(96vw,52rem)] max-w-none overflow-y-auto border-violet-900/40 bg-zinc-950 text-zinc-100">
+      <Dialog open={linksOpen} onOpenChange={setLinksOpen} modal={false}>
+        <DialogContent
+          withOverlay={false}
+          className="max-h-[90vh] w-[min(96vw,52rem)] max-w-none overflow-y-auto border-violet-900/40 bg-zinc-950 text-zinc-100 shadow-2xl"
+        >
           <DialogHeader>
             <DialogTitle className="text-amber-400">Collegamenti sessione live</DialogTitle>
             <DialogDescription className="text-zinc-400">
-              Telecomando unico per tutti. Fino a 2 incontri in parallelo: un PC tavolo e un proiettore timer per
-              ciascun tavolo attivo.
+              Puoi lasciare questa finestra aperta e continuare a usare la sidebar (incontri, vincitori, squadre).
+              Fino a 2 incontri in parallelo: un PC tavolo e un megatimer per ciascun tavolo attivo.
             </DialogDescription>
           </DialogHeader>
           {remoteUrl ? (
