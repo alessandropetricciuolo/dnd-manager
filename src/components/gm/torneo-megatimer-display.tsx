@@ -3,11 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { createSupabaseBrowserClient } from "@/utils/supabase/client";
-import { loadTorneoMatchInitiativeAction } from "@/app/campaigns/torneo-live-actions";
 import { computeMatchTimerView, formatTimerMmSs } from "@/lib/torneo/match-timer";
-import { parseTorneoInitiativeSnapshot } from "@/lib/torneo/initiative-snapshot";
+import {
+  parseInitiativeSnapshotField,
+  readInitiativeFromBrowserStorage,
+} from "@/lib/torneo/megatimer-initiative";
 import type { TorneoMatchTimerPayload } from "@/app/campaigns/torneo-live-actions";
-import type { InitiativeTrackerState } from "@/components/gm/initiative-tracker";
+import type { InitiativeEntry, InitiativeTrackerState } from "@/components/gm/initiative-tracker";
 import { cn } from "@/lib/utils";
 
 const PLACEHOLDER_PORTRAIT =
@@ -24,6 +26,22 @@ type Props = {
   className?: string;
 };
 
+function enrichEntryPortraits(
+  state: InitiativeTrackerState,
+  characterPortraits: Record<string, string | null>
+): InitiativeTrackerState {
+  if (!Object.keys(characterPortraits).length) return state;
+  return {
+    ...state,
+    entries: state.entries.map((e) => {
+      if (e.portraitUrl?.trim()) return e;
+      if (!e.playerId) return e;
+      const url = characterPortraits[e.playerId]?.trim();
+      return url ? { ...e, portraitUrl: url } : e;
+    }),
+  };
+}
+
 export function TorneoMegatimerDisplay({
   campaignId,
   matchId,
@@ -35,15 +53,39 @@ export function TorneoMegatimerDisplay({
 }: Props) {
   const [fields, setFields] = useState(initialTimer);
   const [initiativeSnapshot, setInitiativeSnapshot] = useState<InitiativeTrackerState | null>(
-    initialInitiative
+    initialInitiative?.entries.length
+      ? enrichEntryPortraits(initialInitiative, characterPortraits)
+      : null
   );
   const [now, setNow] = useState(Date.now());
   const [portraitError, setPortraitError] = useState(false);
 
-  const applyInitiative = useCallback((raw: unknown) => {
-    const parsed = parseTorneoInitiativeSnapshot(raw);
-    if (parsed?.entries.length) setInitiativeSnapshot(parsed);
-  }, []);
+  const applyInitiative = useCallback(
+    (raw: unknown) => {
+      const parsed = parseInitiativeSnapshotField(raw);
+      if (parsed) setInitiativeSnapshot(enrichEntryPortraits(parsed, characterPortraits));
+    },
+    [characterPortraits]
+  );
+
+  const syncInitiativeSources = useCallback(async () => {
+    const fromStorage = readInitiativeFromBrowserStorage(campaignId, matchId);
+    if (fromStorage) {
+      setInitiativeSnapshot(enrichEntryPortraits(fromStorage, characterPortraits));
+    }
+
+    const supabase = createSupabaseBrowserClient();
+    const { data, error } = await supabase
+      .from("torneo_matches")
+      .select("initiative_snapshot")
+      .eq("id", matchId)
+      .eq("campaign_id", campaignId)
+      .maybeSingle();
+
+    if (!error && data?.initiative_snapshot != null) {
+      applyInitiative(data.initiative_snapshot);
+    }
+  }, [applyInitiative, campaignId, matchId, characterPortraits]);
 
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 250);
@@ -51,19 +93,10 @@ export function TorneoMegatimerDisplay({
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    const poll = async () => {
-      const res = await loadTorneoMatchInitiativeAction(campaignId, matchId);
-      if (cancelled || !res.success || !res.data?.state?.entries.length) return;
-      setInitiativeSnapshot(res.data.state);
-    };
-    void poll();
-    const id = window.setInterval(() => void poll(), 1500);
-    return () => {
-      cancelled = true;
-      window.clearInterval(id);
-    };
-  }, [campaignId, matchId]);
+    void syncInitiativeSources();
+    const id = window.setInterval(() => void syncInitiativeSources(), 1200);
+    return () => window.clearInterval(id);
+  }, [syncInitiativeSources]);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -108,7 +141,7 @@ export function TorneoMegatimerDisplay({
   const pct =
     view.durationSec > 0 ? Math.min(100, (view.elapsedSec / view.durationSec) * 100) : 0;
 
-  const activeEntry = useMemo(() => {
+  const activeEntry: InitiativeEntry | null = useMemo(() => {
     if (!initiativeSnapshot?.entries.length) return null;
     return initiativeSnapshot.entries[initiativeSnapshot.currentTurnIndex] ?? null;
   }, [initiativeSnapshot]);
@@ -140,99 +173,111 @@ export function TorneoMegatimerDisplay({
   return (
     <div
       className={cn(
-        "flex h-screen w-screen flex-col items-center justify-center bg-zinc-950 px-6 text-center",
+        "flex min-h-screen w-screen flex-col items-center justify-center bg-zinc-950 px-4 py-8 text-center sm:px-8",
         className
       )}
     >
       <p className="mb-2 text-sm uppercase tracking-[0.3em] text-violet-400/80">Torneo · Countdown turno</p>
-      <h1 className="mb-6 max-w-4xl text-lg font-medium text-zinc-500 md:text-xl">{matchLabel}</h1>
+      <h1 className="mb-4 max-w-4xl text-lg font-medium text-zinc-500 md:text-xl">{matchLabel}</h1>
 
-      <p className="mb-2 text-sm uppercase tracking-[0.35em] text-violet-300/80">Round</p>
-      <p className="mb-6 font-mono text-[min(14vw,5rem)] font-black tabular-nums leading-none text-violet-200">
-        {roundNumber}
-      </p>
+      <div className="flex w-full max-w-6xl flex-col items-stretch gap-8 lg:flex-row lg:items-center lg:justify-center lg:gap-12">
+        {activeEntry ? (
+          <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-amber-500/40 bg-gradient-to-b from-amber-950/50 to-zinc-950/80 px-6 py-8 lg:max-w-md">
+            <div
+              className="relative mb-5 aspect-[3/4] w-full max-w-[280px] overflow-hidden rounded-2xl border-2 border-amber-500/55 shadow-2xl shadow-black/50 sm:max-w-[320px]"
+              style={
+                activeEntry.teamColor
+                  ? { boxShadow: `0 0 24px ${activeEntry.teamColor}44, 0 16px 48px #00000088` }
+                  : undefined
+              }
+            >
+              <Image
+                src={imageSrc}
+                alt={activeEntry.name}
+                fill
+                className="object-cover object-top"
+                sizes="(max-width: 1024px) 90vw, 320px"
+                unoptimized
+                onError={() => setPortraitError(true)}
+                priority
+              />
+            </div>
+            <p className="text-xs uppercase tracking-[0.3em] text-amber-200/60">Personaggio in turno</p>
+            <p className="mt-3 text-3xl font-bold leading-tight text-amber-50 sm:text-4xl md:text-5xl">
+              {activeEntry.name}
+            </p>
+            {activeEntry.characterClass ? (
+              <p className="mt-2 text-lg text-amber-200/55 md:text-xl">{activeEntry.characterClass}</p>
+            ) : null}
+            {activeEntry.teamName ? (
+              <p
+                className="mt-3 text-base font-semibold uppercase tracking-wide md:text-lg"
+                style={activeEntry.teamColor ? { color: activeEntry.teamColor } : undefined}
+              >
+                {activeEntry.teamName}
+              </p>
+            ) : null}
+            {turnPosition ? (
+              <p className="mt-4 text-sm uppercase tracking-widest text-zinc-400">
+                Turno {turnPosition}
+                {view.roundLabel && view.roundLabel !== "Round" ? ` · ${view.roundLabel}` : ""}
+              </p>
+            ) : null}
+          </div>
+        ) : (
+          <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-800 px-6 py-12 lg:max-w-md">
+            <p className="text-base text-zinc-600 md:text-lg">
+              In attesa dell&apos;initiative tracker…
+            </p>
+            <p className="mt-2 max-w-xs text-sm text-zinc-700">
+              Avvia l&apos;incontro dal GM screen (sessione live) sullo stesso PC o attendi la sincronizzazione.
+            </p>
+          </div>
+        )}
 
-      {activeEntry ? (
-        <div className="mb-8 flex w-full max-w-3xl flex-col items-center rounded-2xl border border-amber-500/45 bg-amber-950/35 px-6 py-6 md:px-8 md:py-7">
-          <div
-            className="relative mb-5 h-40 w-32 shrink-0 overflow-hidden rounded-xl border-2 border-amber-500/50 shadow-lg shadow-black/40 sm:h-48 sm:w-36 md:mb-6 md:h-56 md:w-44"
-            style={
-              activeEntry.teamColor
-                ? { boxShadow: `0 0 0 1px ${activeEntry.teamColor}55, 0 12px 40px #00000066` }
-                : undefined
-            }
-          >
-            <Image
-              src={imageSrc}
-              alt={activeEntry.name}
-              fill
-              className="object-cover object-top"
-              sizes="(max-width: 768px) 176px, 220px"
-              unoptimized
-              onError={() => setPortraitError(true)}
-              priority
+        <div className="flex flex-1 flex-col items-center justify-center">
+          <p className="mb-2 text-sm uppercase tracking-[0.35em] text-violet-300/80">Round</p>
+          <p className="mb-6 font-mono text-[min(14vw,5rem)] font-black tabular-nums leading-none text-violet-200">
+            {roundNumber}
+          </p>
+
+          {showExpired ? (
+            <p className="font-mono text-[min(14vw,6rem)] font-black uppercase leading-none tracking-tight text-red-400 lg:text-[min(10vw,5.5rem)]">
+              Tempo Scaduto
+            </p>
+          ) : (
+            <p
+              className={cn(
+                "font-mono text-[min(22vw,10rem)] font-bold tabular-nums leading-none tracking-tight lg:text-[min(16vw,8rem)]",
+                view.isPaused ? "text-amber-400" : "text-emerald-300"
+              )}
+            >
+              {formatTimerMmSs(view.remainingSec)}
+            </p>
+          )}
+
+          <div className="mt-8 h-3 w-full max-w-md overflow-hidden rounded-full bg-zinc-800 lg:max-w-lg">
+            <div
+              className={cn(
+                "h-full transition-all duration-300",
+                showExpired ? "bg-red-500" : view.isPaused ? "bg-amber-600" : "bg-emerald-500"
+              )}
+              style={{ width: `${showExpired ? 100 : 100 - pct}%` }}
             />
           </div>
-          <p className="text-sm uppercase tracking-[0.25em] text-amber-200/70">Personaggio in turno</p>
-          <p className="mt-2 text-[min(8vw,3.5rem)] font-bold leading-tight text-amber-50">{activeEntry.name}</p>
-          {activeEntry.characterClass ? (
-            <p className="mt-1 text-lg text-amber-200/50">{activeEntry.characterClass}</p>
-          ) : null}
-          {activeEntry.teamName ? (
-            <p
-              className="mt-2 text-base font-medium uppercase tracking-wide md:text-lg"
-              style={activeEntry.teamColor ? { color: activeEntry.teamColor } : undefined}
-            >
-              {activeEntry.teamName}
-            </p>
-          ) : null}
+
+          <p className="mt-6 max-w-md text-sm text-zinc-500">
+            {showExpired
+              ? "Avanza il turno dal GM screen o telecomando per ripartire"
+              : view.isPaused
+                ? "In pausa"
+                : view.isRunning
+                  ? "Countdown in corso"
+                  : "Non avviato"}
+            {view.durationSec > 0 ? ` · ${formatTimerMmSs(view.durationSec)} per turno` : ""}
+          </p>
         </div>
-      ) : (
-        <p className="mb-8 text-base text-zinc-600">In attesa dell&apos;initiative tracker…</p>
-      )}
-
-      {turnPosition ? (
-        <p className="mb-4 text-base uppercase tracking-widest text-zinc-400">
-          Turno {turnPosition}
-          {view.roundLabel && view.roundLabel !== "Round" ? ` · ${view.roundLabel}` : ""}
-        </p>
-      ) : null}
-
-      {showExpired ? (
-        <p className="font-mono text-[min(18vw,7rem)] font-black uppercase leading-none tracking-tight text-red-400">
-          Tempo Scaduto
-        </p>
-      ) : (
-        <p
-          className={cn(
-            "font-mono text-[min(28vw,12rem)] font-bold tabular-nums leading-none tracking-tight",
-            view.isPaused ? "text-amber-400" : "text-emerald-300"
-          )}
-        >
-          {formatTimerMmSs(view.remainingSec)}
-        </p>
-      )}
-
-      <div className="mt-10 h-3 w-full max-w-2xl overflow-hidden rounded-full bg-zinc-800">
-        <div
-          className={cn(
-            "h-full transition-all duration-300",
-            showExpired ? "bg-red-500" : view.isPaused ? "bg-amber-600" : "bg-emerald-500"
-          )}
-          style={{ width: `${showExpired ? 100 : 100 - pct}%` }}
-        />
       </div>
-
-      <p className="mt-6 text-sm text-zinc-500">
-        {showExpired
-          ? "Avanza il turno dal GM screen o telecomando per ripartire"
-          : view.isPaused
-            ? "In pausa"
-            : view.isRunning
-              ? "Countdown in corso"
-              : "Non avviato"}
-        {view.durationSec > 0 ? ` · ${formatTimerMmSs(view.durationSec)} per turno` : ""}
-      </p>
     </div>
   );
 }
