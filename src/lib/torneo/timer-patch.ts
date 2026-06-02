@@ -49,3 +49,27 @@ export function buildTimerResetPatch(
     timer_paused_at: null,
   };
 }
+
+/** Label megatimer allineato al turno corrente (es. "Turno 1 · 2/6"). */
+export function buildTorneoTurnTimerLabel(
+  roundNumber: number,
+  currentTurnIndex: number,
+  entryCount: number
+): string {
+  const round = Math.max(1, Math.trunc(roundNumber));
+  const total = Math.max(1, Math.trunc(entryCount));
+  const pos = Math.min(Math.max(0, Math.trunc(currentTurnIndex)) + 1, total);
+  return `Turno ${round} · ${pos}/${total}`;
+}
+
+export function buildTorneoTurnTimerStartPatch(
+  roundNumber: number,
+  currentTurnIndex: number,
+  entryCount: number,
+  durationSec = TORNEO_MATCH_COUNTDOWN_SEC
+): TorneoMatchTimerPayload {
+  return buildTimerStartPatch(
+    durationSec,
+    buildTorneoTurnTimerLabel(roundNumber, currentTurnIndex, entryCount)
+  );
+}

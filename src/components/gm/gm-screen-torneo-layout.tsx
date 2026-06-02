@@ -30,6 +30,7 @@ import {
   buildTimerResetPatch,
   buildTimerResumePatch,
   buildTimerStartPatch,
+  buildTorneoTurnTimerStartPatch,
   TORNEO_MATCH_COUNTDOWN_SEC,
 } from "@/lib/torneo/timer-patch";
 import type { TorneoMatchWithTeams, TorneoTeamWithMembers } from "@/lib/torneo/types";
@@ -45,6 +46,7 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
   const station1Ref = useRef<InitiativeTrackerHandle>(null!);
   const station2Ref = useRef<InitiativeTrackerHandle>(null!);
   const startMatchAtStationRef = useRef<(station: 1 | 2) => Promise<void>>(async () => {});
+  const endMatchAtStationRef = useRef<(station: 1 | 2) => Promise<void>>(async () => {});
   const [liveSession, setLiveSession] = useState<TorneoLiveSessionInfo | null>(null);
   const [focusedRemoteMatchId, setFocusedRemoteMatchId] = useState<string | null>(null);
   const [remoteSessionPublicId, setRemoteSessionPublicId] = useState<string | null>(null);
@@ -223,11 +225,14 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
     }
     if (prevTurnIndex1.current === idx) return;
     prevTurnIndex1.current = idx;
-    const label = `Turno ${station1State.roundNumber} · ${station1State.currentTurnIndex + 1}/${station1State.entries.length}`;
     void patchTorneoMatchTimerAction(
       campaignId,
       station1MatchId,
-      buildTimerStartPatch(TORNEO_MATCH_COUNTDOWN_SEC, label)
+      buildTorneoTurnTimerStartPatch(
+        station1State.roundNumber,
+        station1State.currentTurnIndex,
+        station1State.entries.length
+      )
     );
   }, [
     campaignId,
@@ -247,11 +252,14 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
     }
     if (prevTurnIndex2.current === idx) return;
     prevTurnIndex2.current = idx;
-    const label = `Turno ${station2State.roundNumber} · ${station2State.currentTurnIndex + 1}/${station2State.entries.length}`;
     void patchTorneoMatchTimerAction(
       campaignId,
       station2MatchId,
-      buildTimerStartPatch(TORNEO_MATCH_COUNTDOWN_SEC, label)
+      buildTorneoTurnTimerStartPatch(
+        station2State.roundNumber,
+        station2State.currentTurnIndex,
+        station2State.entries.length
+      )
     );
   }, [
     campaignId,
@@ -357,6 +365,9 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
                 onRegisterStartMatch={(fn) => {
                   startMatchAtStationRef.current = fn;
                 }}
+                onRegisterEndMatch={(fn) => {
+                  endMatchAtStationRef.current = fn;
+                }}
               />
             </aside>
             <div className="grid min-h-0 min-w-0 flex-1 grid-rows-2 gap-2 overflow-hidden p-2 md:grid-cols-1 md:grid-rows-2 md:p-3">
@@ -377,6 +388,11 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
                     ? () => startMatchAtStationRef.current(1)
                     : undefined
                 }
+                onEndEncounter={
+                  station1Match?.status === "active"
+                    ? () => endMatchAtStationRef.current(1)
+                    : undefined
+                }
               />
               <TorneoMatchTracker
                 campaignId={campaignId}
@@ -393,6 +409,11 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
                 onStartEncounter={
                   station2Match
                     ? () => startMatchAtStationRef.current(2)
+                    : undefined
+                }
+                onEndEncounter={
+                  station2Match?.status === "active"
+                    ? () => endMatchAtStationRef.current(2)
                     : undefined
                 }
               />

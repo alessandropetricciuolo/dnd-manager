@@ -34,6 +34,7 @@ import {
   Trash2,
   ArrowDownUp,
   SkipForward,
+  SkipBack,
   Copy,
   RotateCcw,
   Skull,
@@ -55,6 +56,18 @@ import {
 } from "@/lib/combat-spell-slots";
 import { SpellSlotsCell } from "@/components/gm/spell-slots-cell";
 import type { Json } from "@/types/database.types";
+import { formatTimerMmSs } from "@/lib/torneo/match-timer";
+
+export type TorneoMegatimerControls = {
+  enabled: boolean;
+  remainingSec: number;
+  roundLabel: string;
+  isRunning: boolean;
+  isPaused: boolean;
+  isExpired: boolean;
+  onTogglePause: () => void | Promise<void>;
+  onRestartTurn: () => void | Promise<void>;
+};
 
 export type InitiativeEntry = {
   id: string;
@@ -246,6 +259,8 @@ type InitiativeTrackerProps = {
     teamA: { id: string; name: string; color: string; total: number };
     teamB: { id: string; name: string; color: string; total: number };
   } | null;
+  /** Sync controlli timer con megatimer torneo (countdown su DB). */
+  torneoMegatimer?: TorneoMegatimerControls | null;
 };
 
 export type InitiativeTrackerHandle = InitiativeRemoteCommandHandlers & {
@@ -265,9 +280,11 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       characterTeamMap,
       showTeamColumn = false,
       torneoScoreboard = null,
+      torneoMegatimer = null,
     },
     ref
   ) {
+  const megatimerActive = Boolean(torneoMegatimer?.enabled);
   const storageKey = storageKeyOverride ?? `${STORAGE_KEY_PREFIX}${campaignId}`;
   const isLongCampaign = campaignType === "long";
   const isControlled = typeof onChange === "function" && value != null;
@@ -416,12 +433,12 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
   }, [buildTrackerState, onTrackerStateChange, isControlled]);
 
   useEffect(() => {
-    if (!isTurnTimerRunning || entries.length === 0) return;
+    if (megatimerActive || !isTurnTimerRunning || entries.length === 0) return;
     const id = window.setInterval(() => {
       setTurnElapsedSeconds((s) => s + 1);
     }, 1000);
     return () => window.clearInterval(id);
-  }, [entries.length, isTurnTimerRunning]);
+  }, [entries.length, isTurnTimerRunning, megatimerActive]);
 
   const updateEntry = useCallback(
     (id: string, updates: Partial<InitiativeEntry>) => {
@@ -487,18 +504,43 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       }
       return next;
     });
-    setTurnElapsedSeconds(0);
-    setIsTurnTimerRunning(true);
-  }, [entries.length]);
+    if (!megatimerActive) {
+      setTurnElapsedSeconds(0);
+      setIsTurnTimerRunning(true);
+    }
+  }, [entries.length, megatimerActive]);
+
+  const prevTurn = useCallback(() => {
+    if (entries.length === 0) return;
+    setCurrentTurnIndex((i) => {
+      const prev = i === 0 ? entries.length - 1 : i - 1;
+      if (i === 0) {
+        setRoundNumber((r) => Math.max(1, r - 1));
+      }
+      return prev;
+    });
+    if (!megatimerActive) {
+      setTurnElapsedSeconds(0);
+      setIsTurnTimerRunning(true);
+    }
+  }, [entries.length, megatimerActive]);
 
   const toggleTurnTimer = useCallback(() => {
     if (entries.length === 0) return;
+    if (megatimerActive && torneoMegatimer) {
+      void torneoMegatimer.onTogglePause();
+      return;
+    }
     setIsTurnTimerRunning((running) => !running);
-  }, [entries.length]);
+  }, [entries.length, megatimerActive, torneoMegatimer]);
 
   const resetTurnTimer = useCallback(() => {
+    if (megatimerActive && torneoMegatimer) {
+      void torneoMegatimer.onRestartTurn();
+      return;
+    }
     setTurnElapsedSeconds(0);
-  }, []);
+  }, [megatimerActive, torneoMegatimer]);
 
   const resetRoundCounter = useCallback(() => {
     setRoundNumber(1);
@@ -560,6 +602,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     ref,
     () => ({
       nextTurn,
+      prevTurn,
       toggleTurnTimer,
       resetTurnTimer,
       resetRound: resetRoundCounter,
@@ -572,6 +615,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       adjustDamageTaken,
       buildTrackerState,
       nextTurn,
+      prevTurn,
       resetRoundCounter,
       resetTurnTimer,
       toggleTurnTimer,
@@ -945,6 +989,16 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
                 variant="outline"
                 size="sm"
                 className="h-7 border-amber-600/40 px-2 text-xs text-amber-200 hover:bg-amber-600/20"
+                onClick={prevTurn}
+                title="Turno precedente"
+              >
+                <SkipBack className="mr-1 h-3 w-3" />
+                Indietro
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 border-amber-600/40 px-2 text-xs text-amber-200 hover:bg-amber-600/20"
                 onClick={nextTurn}
               >
                 <SkipForward className="mr-1 h-3 w-3" />
@@ -1011,9 +1065,23 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
                 <span className="h-4 w-px bg-amber-600/30" aria-hidden />
                 <span className="inline-flex items-center gap-1 text-xs text-zinc-300">
                   <Timer className="h-3.5 w-3.5 text-amber-400/80" />
-                  <span className="font-mono tabular-nums text-sm text-amber-100">
-                    {formatTurnElapsed(turnElapsedSeconds)}
+                  <span
+                    className={cn(
+                      "font-mono tabular-nums text-sm",
+                      megatimerActive && torneoMegatimer?.isExpired
+                        ? "text-red-400"
+                        : "text-amber-100"
+                    )}
+                  >
+                    {megatimerActive && torneoMegatimer
+                      ? formatTimerMmSs(torneoMegatimer.remainingSec)
+                      : formatTurnElapsed(turnElapsedSeconds)}
                   </span>
+                  {megatimerActive && torneoMegatimer?.roundLabel ? (
+                    <span className="hidden text-[10px] text-zinc-500 sm:inline">
+                      · {torneoMegatimer.roundLabel}
+                    </span>
+                  ) : null}
                 </span>
                 <Button
                   type="button"
@@ -1021,10 +1089,30 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
                   size="icon"
                   className="h-7 w-7 border-amber-600/40 text-amber-200 hover:bg-amber-600/20"
                   onClick={toggleTurnTimer}
-                  title={isTurnTimerRunning ? "Pausa timer turno" : "Avvia timer turno"}
-                  aria-label={isTurnTimerRunning ? "Pausa timer turno" : "Avvia timer turno"}
+                  title={
+                    megatimerActive && torneoMegatimer
+                      ? torneoMegatimer.isRunning
+                        ? "Pausa megatimer"
+                        : torneoMegatimer.isPaused
+                          ? "Riprendi megatimer"
+                          : "Avvia megatimer turno"
+                      : isTurnTimerRunning
+                        ? "Pausa timer turno"
+                        : "Avvia timer turno"
+                  }
+                  aria-label={
+                    megatimerActive && torneoMegatimer?.isRunning
+                      ? "Pausa megatimer"
+                      : "Avvia megatimer"
+                  }
                 >
-                  {isTurnTimerRunning ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                  {megatimerActive && torneoMegatimer
+                    ? torneoMegatimer.isRunning
+                      ? <Pause className="h-3.5 w-3.5" />
+                      : <Play className="h-3.5 w-3.5" />
+                    : isTurnTimerRunning
+                      ? <Pause className="h-3.5 w-3.5" />
+                      : <Play className="h-3.5 w-3.5" />}
                 </Button>
                 <Button
                   type="button"
@@ -1032,9 +1120,9 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
                   size="sm"
                   className="h-7 border-amber-600/40 px-2 text-[10px] text-amber-200 hover:bg-amber-600/20"
                   onClick={resetTurnTimer}
-                  title="Azzera il timer del turno corrente"
+                  title={megatimerActive ? "Riavvia countdown turno corrente" : "Azzera il timer del turno corrente"}
                 >
-                  Azzera timer
+                  {megatimerActive ? "Riavvia turno" : "Azzera timer"}
                 </Button>
                 <Button
                   type="button"

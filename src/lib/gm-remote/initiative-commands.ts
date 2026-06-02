@@ -2,6 +2,7 @@ import type { InitiativeTrackerState } from "@/components/gm/initiative-tracker"
 
 export const GM_REMOTE_INITIATIVE_TYPES = [
   "initiative.next_turn",
+  "initiative.prev_turn",
   "initiative.toggle_timer",
   "initiative.reset_turn_timer",
   "initiative.reset_round",
@@ -185,6 +186,7 @@ export function parseInitiativeRemoteSnapshot(raw: unknown): InitiativeRemoteSna
 
 export type InitiativeRemoteCommandHandlers = {
   nextTurn: () => void;
+  prevTurn: () => void;
   toggleTurnTimer: () => void;
   resetTurnTimer: () => void;
   resetRound: () => void;
@@ -201,6 +203,9 @@ export function applyInitiativeRemoteCommand(
   switch (type) {
     case "initiative.next_turn":
       handlers.nextTurn();
+      return true;
+    case "initiative.prev_turn":
+      handlers.prevTurn();
       return true;
     case "initiative.toggle_timer":
       handlers.toggleTurnTimer();

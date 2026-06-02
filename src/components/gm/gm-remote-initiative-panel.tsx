@@ -7,6 +7,7 @@ import {
   Play,
   RotateCcw,
   SkipForward,
+  SkipBack,
   Swords,
   Timer,
 } from "lucide-react";
@@ -169,6 +170,17 @@ export function GmRemoteInitiativePanel({
           <Button
             type="button"
             size="lg"
+            className="mb-2 h-14 w-full touch-manipulation bg-amber-700 text-base text-white hover:bg-amber-600"
+            disabled={sending}
+            onClick={() => void sendCmd("initiative.prev_turn")}
+          >
+            <SkipBack className="mr-2 h-5 w-5" />
+            Turno precedente
+          </Button>
+
+          <Button
+            type="button"
+            size="lg"
             className="mb-4 h-16 w-full touch-manipulation bg-amber-700 text-lg text-white hover:bg-amber-600"
             disabled={sending}
             onClick={() => void sendCmd("initiative.next_turn")}
@@ -177,7 +189,6 @@ export function GmRemoteInitiativePanel({
             Prossimo turno
           </Button>
 
-          {!torneoMode ? (
           <div className="mb-4 grid grid-cols-2 gap-2">
             <Button
               type="button"
@@ -202,7 +213,7 @@ export function GmRemoteInitiativePanel({
               disabled={sending}
               onClick={() => void sendCmd("initiative.reset_turn_timer")}
             >
-              Azzera timer
+              {torneoMode ? "Riavvia turno" : "Azzera timer"}
             </Button>
             <Button
               type="button"
@@ -216,7 +227,6 @@ export function GmRemoteInitiativePanel({
               Reset giro
             </Button>
           </div>
-          ) : null}
 
           <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-zinc-500">
             Ordine · danni fatti e subiti

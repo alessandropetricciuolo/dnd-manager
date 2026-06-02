@@ -42,8 +42,9 @@ import {
   loadTorneoMatchInitiativeAction,
   patchTorneoMatchTimerAction,
   setGmRemoteFocusedMatchAction,
+  stopTorneoMatchEncounterAction,
 } from "@/app/campaigns/torneo-live-actions";
-import { buildTimerStartPatch, TORNEO_MATCH_COUNTDOWN_SEC } from "@/lib/torneo/timer-patch";
+import { buildTorneoTurnTimerStartPatch } from "@/lib/torneo/timer-patch";
 
 type Props = {
   campaignId: string;
@@ -59,6 +60,8 @@ type Props = {
   getTrackerStateForMatch?: (matchId: string) => InitiativeTrackerState | null;
   /** Espone avvio incontro su tavolo già caricato (pulsante nell'initiative tracker). */
   onRegisterStartMatch?: (startAtStation: (station: 1 | 2) => Promise<void>) => void;
+  /** Espone termine incontro attivo (pulsante nell'initiative tracker). */
+  onRegisterEndMatch?: (endAtStation: (station: 1 | 2) => Promise<void>) => void;
   className?: string;
 };
 
@@ -90,6 +93,7 @@ export function GmTorneoManager({
   onMatchStarted,
   getTrackerStateForMatch,
   onRegisterStartMatch,
+  onRegisterEndMatch,
   className,
 }: Props) {
   const [initialLoading, setInitialLoading] = useState(true);
@@ -347,6 +351,11 @@ export function GmTorneoManager({
     if (!resolved) return;
 
     const { state: initiativeState } = resolved;
+    const startedState: InitiativeTrackerState = {
+      ...initiativeState,
+      turnElapsedSeconds: 0,
+      isTurnTimerRunning: true,
+    };
 
     setBusy(true);
     const res = await setTorneoMatchStatusAction(campaignId, match.id, "active");
@@ -357,14 +366,18 @@ export function GmTorneoManager({
     }
     if (station === 1) persistActiveMatch(match.id);
 
-    await persistTorneoMatchInitiative(campaignId, match.id, initiativeState, liveSyncEnabled);
-    onLoadMatch(station, match.id, initiativeState);
+    await persistTorneoMatchInitiative(campaignId, match.id, startedState, liveSyncEnabled);
+    onLoadMatch(station, match.id, startedState);
 
     if (liveSyncEnabled) {
       await patchTorneoMatchTimerAction(
         campaignId,
         match.id,
-        buildTimerStartPatch(TORNEO_MATCH_COUNTDOWN_SEC, "Turno 1")
+        buildTorneoTurnTimerStartPatch(
+          startedState.roundNumber,
+          startedState.currentTurnIndex,
+          startedState.entries.length
+        )
       );
       if (remoteSessionPublicId) {
         await setGmRemoteFocusedMatchAction(remoteSessionPublicId, match.id);
@@ -374,13 +387,45 @@ export function GmTorneoManager({
     setBusy(false);
 
     toast.success(
-      `Incontro avviato su tavolo ${station} · ${initiativeState.entries.length} in initiative.`
+      `Incontro avviato su tavolo ${station} · ${startedState.entries.length} in initiative.`
     );
+    void refresh({ silent: true });
+  };
+
+  const endPreparedMatch = async (match: TorneoMatchWithTeams, station: 1 | 2) => {
+    if (match.status !== "active") {
+      toast.error("L'incontro non è in corso.");
+      return;
+    }
+
+    setBusy(true);
+    const res = await stopTorneoMatchEncounterAction(campaignId, match.id);
+    if (!res.success) {
+      setBusy(false);
+      toast.error(res.error);
+      return;
+    }
+
+    const loaded = getTrackerStateForMatch?.(match.id);
+    if (loaded) {
+      const stoppedState: InitiativeTrackerState = {
+        ...loaded,
+        isTurnTimerRunning: false,
+        turnElapsedSeconds: 0,
+      };
+      await persistTorneoMatchInitiative(campaignId, match.id, stoppedState, liveSyncEnabled);
+      onLoadMatch(station, match.id, stoppedState);
+    }
+
+    setBusy(false);
+    toast.success(`Incontro terminato su tavolo ${station}.`);
     void refresh({ silent: true });
   };
 
   const startPreparedRef = useRef(startPreparedMatch);
   startPreparedRef.current = startPreparedMatch;
+  const endPreparedRef = useRef(endPreparedMatch);
+  endPreparedRef.current = endPreparedMatch;
 
   const startMatchAtStation = useCallback(
     async (station: 1 | 2) => {
@@ -402,6 +447,27 @@ export function GmTorneoManager({
   useEffect(() => {
     onRegisterStartMatch?.(startMatchAtStation);
   }, [onRegisterStartMatch, startMatchAtStation]);
+
+  const endMatchAtStation = useCallback(
+    async (station: 1 | 2) => {
+      const matchId = station === 1 ? activeMatchId : station2MatchId;
+      if (!matchId) {
+        toast.error(`Nessun incontro su tavolo ${station}.`);
+        return;
+      }
+      const match = matches.find((m) => m.id === matchId);
+      if (!match) {
+        toast.error("Incontro non trovato. Ricarica dalla lista.");
+        return;
+      }
+      await endPreparedRef.current(match, station);
+    },
+    [activeMatchId, station2MatchId, matches]
+  );
+
+  useEffect(() => {
+    onRegisterEndMatch?.(endMatchAtStation);
+  }, [onRegisterEndMatch, endMatchAtStation]);
 
   const declareTrielloWinner = async (match: TorneoMatchWithTeams, characterId: string) => {
     const state = getTrackerStateForMatch?.(match.id) ?? null;

@@ -10,6 +10,7 @@ import {
   type InitiativeTrackerState,
 } from "@/components/gm/initiative-tracker";
 import { useTorneoMatchInitiativeSync } from "@/hooks/use-torneo-match-initiative-sync";
+import { useTorneoMatchTimerSync } from "@/hooks/use-torneo-match-timer-sync";
 import { saveTorneoMatchInitiativeAction } from "@/app/campaigns/torneo-live-actions";
 import {
   buildMatchInitiativeState,
@@ -22,7 +23,7 @@ import type { TorneoCharacterTeamInfo } from "@/lib/torneo/initiative";
 import type { TorneoMatchWithTeams } from "@/lib/torneo/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Loader2, Monitor, Play } from "lucide-react";
+import { ExternalLink, Loader2, Monitor, Play, Square } from "lucide-react";
 import { torneoLiveTimerUrl } from "@/lib/torneo/live-links";
 
 type Props = {
@@ -42,6 +43,8 @@ type Props = {
   teams?: TorneoTeamWithMembers[];
   /** Avvia incontro (stato active + timer live) dopo il caricamento dalla sidebar. */
   onStartEncounter?: () => void | Promise<void>;
+  /** Termina incontro attivo (ferma megatimer, stato pending). */
+  onEndEncounter?: () => void | Promise<void>;
 };
 
 export function TorneoMatchTracker({
@@ -58,8 +61,10 @@ export function TorneoMatchTracker({
   syncState,
   teams = [],
   onStartEncounter,
+  onEndEncounter,
 }: Props) {
   const [startingEncounter, setStartingEncounter] = useState(false);
+  const [endingEncounter, setEndingEncounter] = useState(false);
   const isControlled = syncState !== undefined;
   const [internalState, setInternalState] = useState<InitiativeTrackerState>(emptyInitiativeTrackerState());
   const state = isControlled ? syncState : internalState;
@@ -93,6 +98,29 @@ export function TorneoMatchTracker({
       onStateFromRemote(next);
     },
   });
+
+  const megatimerSync = useTorneoMatchTimerSync({
+    campaignId,
+    matchId,
+    enabled: liveSyncEnabled && match?.status === "active",
+    roundNumber: state.roundNumber,
+    currentTurnIndex: state.currentTurnIndex,
+    entryCount: state.entries.length,
+  });
+
+  const torneoMegatimer =
+    megatimerSync.enabled && match?.status === "active"
+      ? {
+          enabled: true,
+          remainingSec: megatimerSync.view.remainingSec,
+          roundLabel: megatimerSync.view.roundLabel,
+          isRunning: megatimerSync.view.isRunning,
+          isPaused: megatimerSync.view.isPaused,
+          isExpired: megatimerSync.view.isExpired,
+          onTogglePause: megatimerSync.togglePause,
+          onRestartTurn: megatimerSync.restartCurrentTurn,
+        }
+      : null;
 
   useEffect(() => {
     seededMatchRef.current = null;
@@ -235,6 +263,17 @@ export function TorneoMatchTracker({
     }
   };
 
+  const handleEndEncounter = async () => {
+    if (!onEndEncounter) return;
+    if (!confirm("Terminare l'incontro? Il megatimer si ferma; i danni restano registrati.")) return;
+    setEndingEncounter(true);
+    try {
+      await onEndEncounter();
+    } finally {
+      setEndingEncounter(false);
+    }
+  };
+
   if (!match) {
     return (
       <div
@@ -303,6 +342,23 @@ export function TorneoMatchTracker({
               Avvia incontro
             </Button>
           ) : null}
+          {onEndEncounter && match.status === "active" ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-7 gap-1 border-red-700/50 px-2.5 text-[11px] text-red-300 hover:bg-red-950/40"
+              disabled={endingEncounter}
+              onClick={() => void handleEndEncounter()}
+            >
+              {endingEncounter ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Square className="h-3.5 w-3.5" />
+              )}
+              Termina incontro
+            </Button>
+          ) : null}
         </div>
       </div>
       <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
@@ -318,6 +374,7 @@ export function TorneoMatchTracker({
           characterTeamMap={characterTeamMap}
           showTeamColumn
           torneoScoreboard={torneoScoreboard}
+          torneoMegatimer={torneoMegatimer}
         />
       </div>
     </div>

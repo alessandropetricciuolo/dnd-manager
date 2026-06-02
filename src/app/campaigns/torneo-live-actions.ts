@@ -342,6 +342,31 @@ export async function patchTorneoMatchTimerAction(
   return { success: true };
 }
 
+/** Termina incontro attivo: ferma megatimer e riporta a pending senza azzerare danni/vincitore. */
+export async function stopTorneoMatchEncounterAction(
+  campaignId: string,
+  matchId: string
+): Promise<Result> {
+  const check = await ensureTorneoGm(campaignId);
+  if (!check.ok) return { success: false, error: check.error };
+
+  const { error } = await check.supabase
+    .from("torneo_matches")
+    .update({
+      status: "pending",
+      timer_started_at: null,
+      timer_paused_at: null,
+      timer_duration_sec: null,
+      timer_round_label: null,
+    })
+    .eq("id", matchId)
+    .eq("campaign_id", campaignId);
+
+  if (error) return { success: false, error: error.message };
+  revalidateTorneoLive(campaignId);
+  return { success: true };
+}
+
 /** Sincronizza incontri sui due tavoli paralleli (megatimer e link dedicati). */
 export async function updateTorneoLiveStationsAction(
   campaignId: string,
