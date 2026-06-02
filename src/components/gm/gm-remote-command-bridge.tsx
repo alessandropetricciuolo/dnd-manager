@@ -6,6 +6,7 @@ import { applyRemoteAudioCommand } from "@/lib/gm-remote/apply-audio-command";
 import { applyInitiativeRemoteCommand, isInitiativeRemoteType } from "@/lib/gm-remote/initiative-commands";
 import { applyTorneoRemoteCommand, type TorneoRemoteHandlers } from "@/lib/gm-remote/apply-torneo-remote";
 import { isRecord } from "@/lib/gm-remote/protocol";
+import { resolveRemoteInitiativeTarget } from "@/lib/gm-remote/initiative-target";
 import type { GmAudioForgeControls } from "@/lib/gm-audio-forge/use-gm-audio-forge";
 import type { InitiativeTrackerHandle } from "@/components/gm/initiative-tracker";
 
@@ -33,23 +34,6 @@ function parsePayloadCell(raw: unknown): Record<string, unknown> {
     }
   }
   return {};
-}
-
-function resolveInitiativeHandle(
-  payload: Record<string, unknown>,
-  station1MatchId: string | null | undefined,
-  station2MatchId: string | null | undefined,
-  ref1: React.RefObject<InitiativeTrackerHandle | null> | undefined,
-  ref2: React.RefObject<InitiativeTrackerHandle | null> | undefined
-): InitiativeTrackerHandle | null {
-  const matchId = typeof payload.match_id === "string" ? payload.match_id.trim() : "";
-  if (matchId && station2MatchId && matchId === station2MatchId) {
-    return ref2?.current ?? null;
-  }
-  if (matchId && station1MatchId && matchId === station1MatchId) {
-    return ref1?.current ?? null;
-  }
-  return ref1?.current ?? ref2?.current ?? null;
 }
 
 export function GmRemoteCommandBridge({
@@ -126,13 +110,13 @@ export function GmRemoteCommandBridge({
             }
 
             if (isInitiativeRemoteType(type)) {
-              const handle = resolveInitiativeHandle(
-                pl,
-                station1Ref.current,
-                station2Ref.current,
-                ref1.current,
-                ref2.current
-              );
+              const handle = resolveRemoteInitiativeTarget({
+                payloadMatchId: pl.match_id,
+                station1MatchId: station1Ref.current,
+                station2MatchId: station2Ref.current,
+                station1: ref1.current?.current,
+                station2: ref2.current?.current,
+              });
               if (handle) {
                 applyInitiativeRemoteCommand(handle, type, pl);
               }

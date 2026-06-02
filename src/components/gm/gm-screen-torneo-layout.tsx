@@ -16,6 +16,7 @@ import { TorneoBracketLiveView } from "./torneo-bracket-live-view";
 import { TorneoMatchTracker } from "./torneo-match-tracker";
 import { computeMatchDamageTotals } from "@/lib/torneo/compute-match-damage";
 import { buildCharacterTeamMap } from "@/lib/torneo/initiative";
+import { selectTorneoRemotePublicationTarget } from "@/lib/torneo/remote-publication";
 import { getTorneoSetupAction } from "@/app/campaigns/torneo-actions";
 import {
   getTorneoMatchTimerAction,
@@ -55,6 +56,7 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
   const [screenTab, setScreenTab] = useState<"gestione" | "tabellone">("gestione");
 
   const liveSyncEnabled = liveSession?.status === "live";
+  const emptyPublishState = useMemo(() => emptyInitiativeTrackerState(), []);
 
   const handleTorneoSetupChange = useCallback((t: TorneoTeamWithMembers[], m: TorneoMatchWithTeams[]) => {
     setTeams(t);
@@ -182,19 +184,24 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
     };
   }, [station2Match, station2State.entries]);
 
-  const publishMatchId = focusedRemoteMatchId ?? station1MatchId;
+  const publishTarget = selectTorneoRemotePublicationTarget({
+    focusedRemoteMatchId,
+    station1MatchId,
+    station2MatchId,
+  });
+  const publishMatchId = publishTarget.matchId;
   const publishState =
-    publishMatchId === station2MatchId
+    publishTarget.station === 2
       ? station2State
-      : publishMatchId === station1MatchId
+      : publishTarget.station === 1
         ? station1State
-        : station1State;
+        : emptyPublishState;
   const publishScoreboard =
-    publishMatchId === station2MatchId
+    publishTarget.station === 2
       ? station2Scoreboard
-      : publishMatchId === station1MatchId
+      : publishTarget.station === 1
         ? torneoScoreboard
-        : torneoScoreboard;
+        : null;
 
   const prevTurnIndex1 = useRef<number | null>(null);
   const prevTurnIndex2 = useRef<number | null>(null);
