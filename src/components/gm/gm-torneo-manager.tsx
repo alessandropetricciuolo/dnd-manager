@@ -511,8 +511,11 @@ export function GmTorneoManager({
   };
 
   const declareWinner = async (match: TorneoMatchWithTeams, winnerTeamId: string) => {
-    const dmg = damageForMatch(match);
     setBusy(true);
+    const loadedState = getTrackerStateForMatch?.(match.id) ?? (await loadMatchState(match));
+    const dmg = loadedState?.entries.length
+      ? computeMatchDamageTotals(loadedState.entries, match)
+      : damageForMatch(match);
     const res = await completeTorneoMatchAction(campaignId, match.id, {
       winnerTeamId,
       teamADamageTotal: dmg.teamA,
