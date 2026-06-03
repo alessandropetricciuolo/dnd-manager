@@ -5,6 +5,8 @@ import Image from "next/image";
 import { createSupabaseBrowserClient } from "@/utils/supabase/client";
 import { computeMatchTimerView, formatTimerMmSs } from "@/lib/torneo/match-timer";
 import {
+  clearMegatimerInitiativeBrowserStorage,
+  isAuthoritativeMegatimerInitiativeClear,
   initiativeSyncSignature,
   parseInitiativeSnapshotField,
   pickInitiativeForMegatimer,
@@ -75,7 +77,12 @@ export function TorneoMegatimerDisplay({
 
   const applyInitiativeState = useCallback(
     (next: InitiativeTrackerState | null) => {
-      if (!next) return;
+      if (!next) {
+        if (lastAppliedSigRef.current === "") return;
+        lastAppliedSigRef.current = "";
+        setInitiativeSnapshot(null);
+        return;
+      }
       const enriched = enrichEntryPortraits(next, characterPortraits);
       const sig = initiativeSyncSignature(enriched);
       if (sig === lastAppliedSigRef.current) return;
@@ -95,10 +102,20 @@ export function TorneoMegatimerDisplay({
     const supabase = createSupabaseBrowserClient();
     const { data, error } = await supabase
       .from("torneo_matches")
-      .select("initiative_snapshot, initiative_updated_at")
+      .select("initiative_snapshot, initiative_updated_at, status")
       .eq("id", matchId)
       .eq("campaign_id", campaignId)
       .maybeSingle();
+
+    if (
+      !error &&
+      data &&
+      isAuthoritativeMegatimerInitiativeClear(data.initiative_snapshot, data.status)
+    ) {
+      clearMegatimerInitiativeBrowserStorage(campaignId, matchId);
+      applyInitiativeState(null);
+      return;
+    }
 
     if (!error && data?.initiative_snapshot != null) {
       const fromDb = parseInitiativeSnapshotField(data.initiative_snapshot);
@@ -151,7 +168,11 @@ export function TorneoMegatimerDisplay({
   useEffect(() => {
     const storageKey = torneoLiveDbInitiativeStorageKey(campaignId, matchId);
     const onStorage = (ev: StorageEvent) => {
-      if (ev.key !== storageKey || !ev.newValue) return;
+      if (ev.key !== storageKey) return;
+      if (!ev.newValue) {
+        applyInitiativeState(null);
+        return;
+      }
       try {
         const parsed = parseInitiativeSnapshotField(JSON.parse(ev.newValue));
         if (parsed) applyInitiativeState(parsed);
@@ -190,7 +211,10 @@ export function TorneoMegatimerDisplay({
               timer_started_at: typeof row.timer_started_at === "string" ? row.timer_started_at : null,
               timer_paused_at: typeof row.timer_paused_at === "string" ? row.timer_paused_at : null,
             });
-            if (row.initiative_snapshot != null) {
+            if (isAuthoritativeMegatimerInitiativeClear(row.initiative_snapshot, row.status as string | null | undefined)) {
+              clearMegatimerInitiativeBrowserStorage(campaignId, matchId);
+              applyInitiativeState(null);
+            } else if (row.initiative_snapshot != null) {
               const fromDb = parseInitiativeSnapshotField(row.initiative_snapshot);
               if (fromDb) applyInitiativeState(fromDb);
             }
