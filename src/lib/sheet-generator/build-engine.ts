@@ -386,11 +386,43 @@ function computeHpMax(level: number, hitDie: number, conMod: number): number {
   return lvl * hitDie + lvl * conMod;
 }
 
+export function getClassSkillPool(classLabel: string): SkillKey[] {
+  const cfg = CLASS_CONFIG[classLabel] ?? CLASS_CONFIG.Guerriero;
+  return [...cfg.skillPicks];
+}
+
+export function pickDefaultClassSkills(
+  classLabel: string,
+  backgroundSlug: string | null | undefined,
+  abilityMods: Record<AbilityKey, number>
+): SkillKey[] {
+  const backgroundSkills = new Set<SkillKey>(BACKGROUND_SKILLS[backgroundSlug?.trim() ?? ""] ?? []);
+  const selectable = getClassSkillPool(classLabel);
+  selectable.sort((a, b) => {
+    const ad = abilityMods[SKILL_ABILITY[a]];
+    const bd = abilityMods[SKILL_ABILITY[b]];
+    if (bd !== ad) return bd - ad;
+    return a.localeCompare(b);
+  });
+  const classChosen: SkillKey[] = [];
+  for (const s of selectable) {
+    if (classChosen.length >= 2) break;
+    if (backgroundSkills.has(s)) continue;
+    classChosen.push(s);
+  }
+  for (const s of selectable) {
+    if (classChosen.length >= 2) break;
+    if (!classChosen.includes(s)) classChosen.push(s);
+  }
+  return classChosen;
+}
+
 function computeCoreFromAbilities(
   classLabel: string,
   level: number,
   abilities: Record<AbilityKey, number>,
-  backgroundSlug?: string | null
+  backgroundSlug?: string | null,
+  classSkillOverride?: SkillKey[]
 ): Pick<
   GeneratedCharacterSheet,
   | "abilities"
@@ -428,23 +460,10 @@ function computeCoreFromAbilities(
   }, {} as Record<AbilityKey, { value: number; proficient: boolean }>);
 
   const backgroundSkills = new Set<SkillKey>(BACKGROUND_SKILLS[backgroundSlug?.trim() ?? ""] ?? []);
-  const selectable = [...cfg.skillPicks];
-  selectable.sort((a, b) => {
-    const ad = abilityMods[SKILL_ABILITY[a]];
-    const bd = abilityMods[SKILL_ABILITY[b]];
-    if (bd !== ad) return bd - ad;
-    return a.localeCompare(b);
-  });
-  const classChosen: SkillKey[] = [];
-  for (const s of selectable) {
-    if (classChosen.length >= 2) break;
-    if (backgroundSkills.has(s)) continue;
-    classChosen.push(s);
-  }
-  for (const s of selectable) {
-    if (classChosen.length >= 2) break;
-    if (!classChosen.includes(s)) classChosen.push(s);
-  }
+  const classChosen =
+    classSkillOverride?.length === 2
+      ? classSkillOverride.slice(0, 2)
+      : pickDefaultClassSkills(classLabel, backgroundSlug, abilityMods);
   const skillSet = new Set<SkillKey>([...classChosen, ...backgroundSkills]);
   const skills = (Object.keys(SKILL_ABILITY) as SkillKey[]).reduce((acc, k) => {
     const proficient = skillSet.has(k);
@@ -645,7 +664,8 @@ export async function buildGeneratedCharacterSheet(
     input.classLabel,
     input.level,
     boostedAbilities,
-    input.backgroundSlug
+    input.backgroundSlug,
+    input.buildOverrides?.classSkills
   );
   const rules = await resolveGeneratorRules(
     {
@@ -658,6 +678,7 @@ export async function buildGeneratedCharacterSheet(
       characterName: input.characterName,
       powerPlayer: input.powerPlayer,
       torneoMode: input.torneoMode,
+      buildOverrides: input.buildOverrides,
     },
     core.abilityMods,
     core.proficiencyBonus,

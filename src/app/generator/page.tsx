@@ -3,11 +3,13 @@
 import { Suspense, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { generateSheetAction } from "@/lib/actions/generator-actions";
+import { generateSheetAction, previewBuildChoicesAction } from "@/lib/actions/generator-actions";
 import { BACKGROUND_OPTIONS, CLASS_OPTIONS, RACE_OPTIONS } from "@/lib/character-build-catalog";
 import { subclassCatalogSourceSuffix, supplementSubclassesForClass } from "@/lib/character-subclass-catalog";
 import { GeneratedSheetView } from "@/components/sheet-generator/generated-sheet-view";
+import { SheetBuildChoicesPanel } from "@/components/sheet-generator/sheet-build-choices-panel";
 import { Textarea } from "@/components/ui/textarea";
+import type { BuildChoicesPreview, CharacterBuildOverrides } from "@/lib/sheet-generator/build-choices-types";
 import type { GeneratedCharacterSheet } from "@/lib/sheet-generator/types";
 import type { QuickManualSection } from "@/lib/sheet-generator/quick-manual-builder";
 import { useSearchParams } from "next/navigation";
@@ -67,6 +69,10 @@ function GeneratorPageContent() {
   const [warnings, setWarnings] = useState<string[]>([]);
   const [isSavingSheet, setIsSavingSheet] = useState(false);
   const [characterStory, setCharacterStory] = useState(initial.characterStory);
+  const [phase, setPhase] = useState<"form" | "choices" | "done">("form");
+  const [choicesPreview, setChoicesPreview] = useState<BuildChoicesPreview | null>(null);
+  const [buildOverrides, setBuildOverrides] = useState<CharacterBuildOverrides | null>(null);
+  const [formLevel, setFormLevel] = useState(Number.parseInt(initial.level, 10) || 1);
   const autogenKeyRef = useRef<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -220,12 +226,12 @@ function GeneratorPageContent() {
     }
   }
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (isPending) return;
-
-    const form = e.currentTarget;
-    const formData = new FormData(form);
+  async function runGenerateSheet(formData: FormData, overrides?: CharacterBuildOverrides | null) {
+    if (overrides && Object.keys(overrides).length > 0) {
+      formData.set("buildOverridesJson", JSON.stringify(overrides));
+    } else {
+      formData.delete("buildOverridesJson");
+    }
 
     setResultMessage(null);
     setResultJson(null);
@@ -234,26 +240,73 @@ function GeneratorPageContent() {
     setBackgroundPdfSections([]);
     setSheet(null);
     setWarnings([]);
+
+    const result = await generateSheetAction(formData);
+    setResultMessage(result.message);
+    setWarnings(result.warnings ?? []);
+    if (result.success && result.sheet) setSheet(result.sheet);
+    if (result.success && result.sheetData) {
+      setSheetDataObj(result.sheetData);
+      setQuickManualSections(result.quickManualSections ?? []);
+      setBackgroundPdfSections(result.backgroundPdfSections ?? []);
+      setIncludeBackgroundStoryInPdf(!!result.includeBackgroundStoryInPdf);
+      if (result.characterStory != null) setCharacterStory(result.characterStory);
+      setResultJson(JSON.stringify(result.sheetData, null, 2));
+      setPhase("done");
+    }
+    return result;
+  }
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (isPending) return;
+
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+
     const storyFromForm = (formData.get("characterStory") as string | null)?.trim() ?? "";
     setCharacterStory(storyFromForm);
     setIncludeBackgroundStoryInPdf(
       formData.get("includeBackgroundStoryInPdf") === "1" ||
         formData.get("includeBackgroundStoryInPdf") === "on"
     );
+    const levelRaw = (formData.get("level") as string | null)?.trim() ?? "1";
+    setFormLevel(Number.parseInt(levelRaw, 10) || 1);
+
     startTransition(async () => {
-      const result = await generateSheetAction(formData);
-      setResultMessage(result.message);
-      setWarnings(result.warnings ?? []);
-      if (result.success && result.sheet) setSheet(result.sheet);
-      if (result.success && result.sheetData) {
-        setSheetDataObj(result.sheetData);
-        setQuickManualSections(result.quickManualSections ?? []);
-        setBackgroundPdfSections(result.backgroundPdfSections ?? []);
-        setIncludeBackgroundStoryInPdf(!!result.includeBackgroundStoryInPdf);
-        if (result.characterStory != null) setCharacterStory(result.characterStory);
-        setResultJson(JSON.stringify(result.sheetData, null, 2));
+      const previewResult = await previewBuildChoicesAction(formData);
+      if (!previewResult.success) {
+        setResultMessage(previewResult.message);
+        return;
       }
+      if (previewResult.preview?.slots.length) {
+        setChoicesPreview(previewResult.preview);
+        setBuildOverrides(previewResult.preview.overrides);
+        setPhase("choices");
+        setResultMessage(previewResult.message);
+        setSheet(null);
+        setSheetDataObj(null);
+        setResultJson(null);
+        return;
+      }
+      await runGenerateSheet(formData, null);
     });
+  }
+
+  function handleConfirmChoices() {
+    if (!formRef.current || isPending) return;
+    const formData = new FormData(formRef.current);
+    formData.set("characterStory", characterStory);
+    startTransition(async () => {
+      await runGenerateSheet(formData, buildOverrides);
+    });
+  }
+
+  function handleBackToForm() {
+    setPhase("form");
+    setChoicesPreview(null);
+    setBuildOverrides(null);
+    setResultMessage(null);
   }
 
   useEffect(() => {
@@ -303,18 +356,20 @@ function GeneratorPageContent() {
     if (initial.characterStory) fd.set("characterStory", initial.characterStory);
 
     startTransition(async () => {
-      const result = await generateSheetAction(fd);
-      setResultMessage(result.message);
-      setWarnings(result.warnings ?? []);
-      if (result.success && result.sheet) setSheet(result.sheet);
-      if (result.success && result.sheetData) {
-        setSheetDataObj(result.sheetData);
-        setQuickManualSections(result.quickManualSections ?? []);
-        setBackgroundPdfSections(result.backgroundPdfSections ?? []);
-        setIncludeBackgroundStoryInPdf(!!result.includeBackgroundStoryInPdf);
-        if (result.characterStory != null) setCharacterStory(result.characterStory);
-        setResultJson(JSON.stringify(result.sheetData, null, 2));
+      setFormLevel(Number.parseInt(initial.level, 10) || 1);
+      const previewResult = await previewBuildChoicesAction(fd);
+      if (!previewResult.success) {
+        setResultMessage(previewResult.message);
+        return;
       }
+      if (previewResult.preview?.slots.length) {
+        setChoicesPreview(previewResult.preview);
+        setBuildOverrides(previewResult.preview.overrides);
+        setPhase("choices");
+        setResultMessage(previewResult.message);
+        return;
+      }
+      await runGenerateSheet(fd, null);
     });
   }, [initial, startTransition]);
 
@@ -350,7 +405,8 @@ function GeneratorPageContent() {
             Generatore Schede D&D (HTML)
           </h1>
           <p className="text-sm text-barber-paper/70">
-            Flusso deterministico: point-buy, abilita, privilegi, equipaggiamento e incantesimi da manuali catalogati.
+            Flusso deterministico con revisione delle scelte: competenze, incantesimi, stile di
+            combattimento e opzioni di classe prima del PDF.
           </p>
         </header>
 
@@ -604,12 +660,42 @@ function GeneratorPageContent() {
 
           <button
             type="submit"
-            disabled={isPending}
+            disabled={isPending || phase === "choices"}
             className="inline-flex h-11 items-center justify-center rounded-md bg-barber-red px-5 text-sm font-medium text-barber-paper transition hover:bg-barber-red/90 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {isPending ? "Generazione scheda in corso..." : "Genera Scheda"}
+            {isPending ? "Caricamento scelte..." : "Genera Scheda"}
           </button>
         </form>
+
+        {phase === "choices" && choicesPreview && (
+          <>
+            <SheetBuildChoicesPanel
+              key={`choices-${formLevel}-${choicesPreview.slots.length}`}
+              preview={choicesPreview}
+              level={formLevel}
+              disabled={isPending}
+              onChange={(_slots, overrides) => setBuildOverrides(overrides)}
+            />
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={handleBackToForm}
+                className="inline-flex h-10 items-center rounded-md border border-barber-gold/40 px-4 text-sm text-barber-gold hover:bg-barber-gold/10 disabled:opacity-60"
+              >
+                Torna al form
+              </button>
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={handleConfirmChoices}
+                className="inline-flex h-10 items-center rounded-md bg-barber-red px-5 text-sm font-medium text-barber-paper hover:bg-barber-red/90 disabled:opacity-60"
+              >
+                {isPending ? "Generazione PDF in corso..." : "Conferma e genera PDF"}
+              </button>
+            </div>
+          </>
+        )}
 
         {resultMessage && (
           <p className="mt-5 rounded-md border border-barber-gold/25 bg-barber-dark/70 px-4 py-3 text-sm text-barber-paper/90">

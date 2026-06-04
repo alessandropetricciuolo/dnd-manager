@@ -124,12 +124,23 @@ const ESPLORATORE_HEADING = normalizeHeading("ESPLORATORE NATO");
 /**
  * Inserisce le scelte deterministiche di nemico e terreno prescelto nei blocchi privilegi ranger.
  */
-export function injectRangerPrescelteChoices(md: string, seed: string, level: number): string {
+export function injectRangerPrescelteChoices(
+  md: string,
+  seed: string,
+  level: number,
+  overrides?: { favoredEnemies?: string[]; favoredTerrains?: string[] }
+): string {
   const trimmed = md.trim();
   if (!trimmed) return trimmed;
 
-  const enemies = pickRangerFavoredEnemies(seed, level);
-  const terrains = pickRangerFavoredTerrains(seed, level);
+  const enemies =
+    overrides?.favoredEnemies?.length
+      ? overrides.favoredEnemies
+      : pickRangerFavoredEnemies(seed, level);
+  const terrains =
+    overrides?.favoredTerrains?.length
+      ? overrides.favoredTerrains
+      : pickRangerFavoredTerrains(seed, level);
   if (!enemies.length && !terrains.length) return trimmed;
 
   const sections = splitMarkdownH3Sections(trimmed);

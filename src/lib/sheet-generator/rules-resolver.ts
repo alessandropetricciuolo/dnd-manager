@@ -13,6 +13,7 @@ import {
   stripSubraceSectionsFromRaceTraits,
 } from "@/lib/race-traits-sanitizer";
 import { kiPointsClassFeatureLine } from "@/lib/sheet-generator/monk-meta";
+import { sneakAttackClassFeatureLine } from "@/lib/sheet-generator/rogue-meta";
 import { extractClassPrivilegesMarkdown } from "@/lib/server/phb-class-privileges-excerpt";
 import {
   extractPhbSpellMarkdown,
@@ -21,6 +22,19 @@ import {
   preloadPhbMarkdown,
 } from "@/lib/server/phb-spell-excerpt";
 import { collapseRandomDiceTablesInBackgroundMarkdown } from "@/lib/sheet-generator/background-dice-table-roll";
+import type { CharacterBuildOverrides } from "@/lib/sheet-generator/build-choices-types";
+import {
+  fightingStyleSheetSeed,
+  pickDeterministic,
+  pickDeterministicMany,
+  warlockBuildSeed,
+} from "@/lib/sheet-generator/build-choice-defaults";
+import {
+  filterWarlockInvocationsForLevel,
+  warlockInvocationsKnown,
+  WARLOCK_PACT_OPTIONS,
+  type WarlockInvocationDef,
+} from "@/lib/sheet-generator/class-choice-catalog";
 import {
   pickCantripsForSheet,
   pickLeveledSpellsSlotAware,
@@ -346,7 +360,11 @@ function joinMarkdownH3Sections(sections: MarkdownH3Section[]): string {
  * Guerriero e Paladino scelgono un solo stile tra quelli offerti dal PHB: in scheda restano l’introduzione e una sola opzione «### …»,
  * scelta in modo deterministico dal seed (classe + nome pg + build).
  */
-function collapsePhbFightingStyleOptions(md: string, seed: string): string {
+function collapsePhbFightingStyleOptions(
+  md: string,
+  seed: string,
+  forcedStyleHeading?: string | null
+): string {
   const trimmed = md.trim();
   if (!trimmed) return trimmed;
 
@@ -364,8 +382,15 @@ function collapsePhbFightingStyleOptions(md: string, seed: string): string {
   }
   if (styleIndices.length === 0) return trimmed;
 
-  const pick = stableHashNonNegative(`${seed}|phb-stile-combattimento`) % styleIndices.length;
-  const chosenIdx = styleIndices[pick];
+  let chosenIdx: number;
+  if (forcedStyleHeading?.trim()) {
+    const forcedNorm = normalizeTitleForMatch(forcedStyleHeading);
+    const found = styleIndices.find((j) => sections[j]!.headingNorm === forcedNorm);
+    chosenIdx = found ?? styleIndices[0]!;
+  } else {
+    const pick = stableHashNonNegative(`${seed}|phb-stile-combattimento`) % styleIndices.length;
+    chosenIdx = styleIndices[pick]!;
+  }
   const chosen = sections[chosenIdx];
 
   const mergedIntro =
@@ -378,173 +403,18 @@ function collapsePhbFightingStyleOptions(md: string, seed: string): string {
   return joinMarkdownH3Sections(nextSections);
 }
 
-function fightingStyleSheetSeed(input: {
-  characterName?: string | null;
-  classLabel: string;
-  raceSlug: string;
-  subraceSlug: string | null;
-  backgroundSlug: string;
-  classSubclass: string | null;
-  level: number;
-}): string {
-  return [
-    input.classLabel,
-    input.characterName?.trim() ?? "",
-    input.raceSlug,
-    input.subraceSlug ?? "",
-    input.backgroundSlug,
-    input.classSubclass ?? "",
-    String(input.level),
-  ].join("|");
-}
-
-function warlockBuildSeed(input: {
-  characterName?: string | null;
-  raceSlug: string;
-  subraceSlug: string | null;
-  backgroundSlug: string;
-  classSubclass: string | null;
-  level: number;
-}): string {
-  return [
-    "Warlock",
-    input.characterName?.trim() ?? "",
-    input.raceSlug,
-    input.subraceSlug ?? "",
-    input.backgroundSlug,
-    input.classSubclass ?? "",
-    String(input.level),
-  ].join("|");
-}
-
-type WarlockPactOption = {
-  name: string;
-  summary: string;
-};
-
-type WarlockInvocationOption = {
-  name: string;
-  summary: string;
-  minLevel?: number;
-  requiresPact?: "Patto della Catena" | "Patto della Lama" | "Patto del Tomo";
-};
-
-const WARLOCK_PACT_OPTIONS: WarlockPactOption[] = [
-  {
-    name: "Patto della Catena",
-    summary: "Ottieni l'incantesimo Trova Famiglio e puoi evocare un famiglio speciale più potente.",
-  },
-  {
-    name: "Patto della Lama",
-    summary: "Puoi evocare un'arma del patto magica e usarla come focus per i tuoi poteri da warlock.",
-  },
-  {
-    name: "Patto del Tomo",
-    summary: "Ricevi il Libro delle Ombre con trucchetti aggiuntivi scelti da qualsiasi lista di classe.",
-  },
-];
-
-const WARLOCK_INVOCATION_OPTIONS: WarlockInvocationOption[] = [
-  {
-    name: "Deflagrazione Agonizzante",
-    summary: "Aggiungi il modificatore di Carisma ai danni di Deflagrazione Occulta.",
-  },
-  {
-    name: "Armatura delle Ombre",
-    summary: "Puoi lanciare Armatura Magica su te stesso a volontà, senza spendere slot.",
-  },
-  {
-    name: "Vista del Diavolo",
-    summary: "Vedi normalmente nel buio, inclusa l'oscurità magica, entro 36 metri.",
-  },
-  {
-    name: "Deflagrazione Respingente",
-    summary: "Quando colpisci con Deflagrazione Occulta, puoi spingere il bersaglio di 3 metri.",
-  },
-  {
-    name: "Lancia della Letargia",
-    summary: "Una volta per turno riduci la velocità di un bersaglio colpito da Deflagrazione Occulta.",
-  },
-  {
-    name: "Maschera dei Molti Volti",
-    summary: "Puoi lanciare Camuffare Se Stesso a volontà, senza spendere slot.",
-  },
-  {
-    name: "Sussurri dalla Tomba",
-    summary: "Puoi lanciare Parlare con i Morti a volontà, senza spendere slot.",
-  },
-  {
-    name: "Vista dell'Occulto",
-    summary: "Puoi lanciare Individuazione del Magico a volontà, senza spendere slot.",
-  },
-  {
-    name: "Libro degli Antichi Segreti",
-    summary: "Aggiungi rituali al tuo Libro delle Ombre e li lanci come rituali.",
-    requiresPact: "Patto del Tomo",
-  },
-  {
-    name: "Voce del Signore delle Catene",
-    summary: "Percepisci attraverso i sensi del famiglio e puoi parlarne tramite lui.",
-    requiresPact: "Patto della Catena",
-  },
-  {
-    name: "Lama Assetata",
-    summary: "Attacchi due volte quando usi l'azione Attacco con l'arma del patto.",
-    minLevel: 5,
-    requiresPact: "Patto della Lama",
-  },
-  {
-    name: "Catene di Carceri",
-    summary: "Puoi lanciare Blocca Mostri su celestiali, immondi ed elementali.",
-    minLevel: 15,
-    requiresPact: "Patto della Catena",
-  },
-  {
-    name: "Maestro di Mille Forme",
-    summary: "Puoi lanciare Alterare Se Stesso a volontà, senza spendere slot.",
-    minLevel: 15,
-  },
-  {
-    name: "Sguardo delle Due Menti",
-    summary: "Puoi percepire il mondo attraverso i sensi di una creatura consenziente.",
-  },
-];
-
-function warlockInvocationsKnown(level: number): number {
-  const lvl = Math.max(1, Math.min(20, level));
-  if (lvl < 2) return 0;
-  if (lvl < 5) return 2;
-  if (lvl < 7) return 3;
-  if (lvl < 9) return 4;
-  if (lvl < 12) return 5;
-  if (lvl < 15) return 6;
-  if (lvl < 18) return 7;
-  return 8;
-}
-
-function pickDeterministic<T>(items: T[], seed: string): T | null {
-  if (!items.length) return null;
-  const idx = stableHashNonNegative(seed) % items.length;
-  return items[idx] ?? null;
-}
-
-function pickDeterministicMany<T>(items: T[], count: number, seed: string): T[] {
-  if (count <= 0 || !items.length) return [];
-  const out: T[] = [];
-  const start = stableHashNonNegative(seed) % items.length;
-  for (let i = 0; i < items.length && out.length < count; i += 1) {
-    const idx = (start + i) % items.length;
-    out.push(items[idx]);
-  }
-  return out;
-}
-
 function buildWarlockPactAndInvocationsMarkdown(input: {
   level: number;
   seed: string;
+  pactName?: string | null;
+  invocationNames?: string[] | null;
 }): string {
   const sections: string[] = [];
-  const pact = pickDeterministic(WARLOCK_PACT_OPTIONS, `${input.seed}|pact`);
+  const autoPact = pickDeterministic([...WARLOCK_PACT_OPTIONS], `${input.seed}|pact`);
+  const pactName = input.pactName?.trim() || autoPact?.name || null;
+  const pact =
+    WARLOCK_PACT_OPTIONS.find((p) => p.name === pactName) ?? autoPact ?? null;
+
   if (pact) {
     const intro =
       input.level >= 3
@@ -568,12 +438,21 @@ function buildWarlockPactAndInvocationsMarkdown(input: {
   const targetCount = Math.max(2, known);
   if (targetCount > 0) {
     const effectiveLevel = Math.max(2, input.level);
-    const available = WARLOCK_INVOCATION_OPTIONS.filter((opt) => {
-      if ((opt.minLevel ?? 1) > effectiveLevel) return false;
-      if (opt.requiresPact && opt.requiresPact !== pact?.name) return false;
-      return true;
-    });
-    const picked = pickDeterministicMany(available, targetCount, `${input.seed}|invocations`);
+    const available = filterWarlockInvocationsForLevel(effectiveLevel, pact?.name);
+    let picked: WarlockInvocationDef[] = [];
+    if (input.invocationNames?.length) {
+      picked = input.invocationNames
+        .map((name) => available.find((o) => o.name === name))
+        .filter((o): o is WarlockInvocationDef => !!o)
+        .slice(0, targetCount);
+    }
+    if (picked.length < targetCount) {
+      const auto = pickDeterministicMany(available, targetCount, `${input.seed}|invocations`);
+      for (const opt of auto) {
+        if (picked.length >= targetCount) break;
+        if (!picked.some((p) => p.name === opt.name)) picked.push(opt);
+      }
+    }
     if (picked.length > 0) {
       const intro =
         input.level >= 2
@@ -819,7 +698,7 @@ function extractSectionByContentAnchorMarkdown(raw: string, anchor: string): str
   return lines.slice(startIdx, endIdx).join("\n").trim();
 }
 
-function extractSpellListByMaxLevel(raw: string, maxSpellLevel: number): string {
+export function extractSpellListByMaxLevel(raw: string, maxSpellLevel: number): string {
   if (maxSpellLevel < 0 || !raw.trim()) return "";
   const lines = raw.replace(/\r/g, "").split("\n");
   const out: string[] = [];
@@ -844,7 +723,7 @@ function extractSpellListByMaxLevel(raw: string, maxSpellLevel: number): string 
   return out.join("\n").trim();
 }
 
-function parseSpellsWithLevelFromList(md: string): Array<{ name: string; level: number }> {
+export function parseSpellsWithLevelFromList(md: string): Array<{ name: string; level: number }> {
   if (!md.trim()) return [];
   const out: Array<{ name: string; level: number }> = [];
   const seen = new Set<string>();
@@ -876,6 +755,157 @@ function parseSpellsWithLevelFromList(md: string): Array<{ name: string; level: 
     out.push({ name: core, level: currentLevel });
   }
   return out;
+}
+
+export function resolveSpellEntriesByNames(
+  pool: Array<{ name: string; level: number }>,
+  names: string[],
+  minLevel: number
+): Array<{ name: string; level: number }> {
+  const out: Array<{ name: string; level: number }> = [];
+  const seen = new Set<string>();
+  for (const name of names) {
+    const key = name.toLocaleLowerCase("it");
+    if (seen.has(key)) continue;
+    const match = pool.find((e) => e.name.toLocaleLowerCase("it") === key);
+    if (!match || match.level < minLevel) continue;
+    seen.add(key);
+    out.push(match);
+  }
+  return out;
+}
+
+export async function loadClassSpellPool(
+  input: {
+    classLabel: string;
+    classSubclass: string | null;
+    level: number;
+    torneoMode?: boolean;
+    tcWizard: boolean;
+  },
+  maxOnSheet: number,
+  requestOrigin?: string | null
+): Promise<{ entries: Array<{ name: string; level: number }>; torneoPool: Array<{ name: string; level: number }> }> {
+  const classDef = classByLabel(input.classLabel);
+  let listRaw = "";
+  if (input.tcWizard) {
+    await preloadPhbMarkdown(requestOrigin);
+    const mdPhb = getManualMarkdownByFileName(PHB_MD_FILE);
+    listRaw = extractSectionByHeadingsMarkdown(mdPhb, ["INCANTESIMI DA MAGO"]) ?? "";
+  } else if (classDef?.spellList) {
+    const mdFile = classDef.supplementRulesSource?.markdownFile ?? PHB_MD_FILE;
+    await preloadManualMarkdownFile(mdFile, requestOrigin);
+    const md = getManualMarkdownByFileName(mdFile);
+    listRaw =
+      classDef.spellList.style === "h1"
+        ? extractSectionByHeadingsMarkdown(md, [classDef.spellList.chapter]) ?? ""
+        : extractSectionByHeadingsMarkdown(md, [classDef.spellList.sectionHeading]) ?? "";
+  }
+  const listByLevel = extractSpellListByMaxLevel(listRaw, maxOnSheet);
+  const entries = parseSpellsWithLevelFromList(listByLevel);
+  const torneoPool = input.torneoMode ? filterTorneoCombatSpells(entries) : entries;
+  return { entries, torneoPool };
+}
+
+export function pickDefaultCantrips(
+  entries: Array<{ name: string; level: number }>,
+  cantripsKnown: number,
+  torneoMode: boolean,
+  combatPriority: boolean,
+  classLabel: string,
+  classSubclass: string | null
+): Array<{ name: string; level: number }> {
+  const wizardSchoolKey = classLabel === "Mago" ? parseWizardArcaneSchoolKey(classSubclass) : null;
+  const schoolLookup = wizardSchoolKey ? createSpellSchoolLookup() : null;
+  const pickOptions =
+    wizardSchoolKey && schoolLookup
+      ? { wizardSchoolKey, getSpellSchool: schoolLookup.getSpellSchool }
+      : undefined;
+  return pickCantripsForSheet(
+    entries,
+    cantripsKnown,
+    torneoMode,
+    combatPriority,
+    pickOptions
+  );
+}
+
+export function pickDefaultLeveledSpells(
+  spellPool: Array<{ name: string; level: number }>,
+  fullEntries: Array<{ name: string; level: number }>,
+  spellsPrepared: number,
+  maxOnSheet: number,
+  spellSlots: Record<number, number>,
+  classLabel: string,
+  combatPriority: boolean,
+  torneoMode: boolean | undefined,
+  classSubclass: string | null
+): Array<{ name: string; level: number }> {
+  const wizardSchoolKey = classLabel === "Mago" ? parseWizardArcaneSchoolKey(classSubclass) : null;
+  const schoolLookup = wizardSchoolKey ? createSpellSchoolLookup() : null;
+  const pickOptions =
+    wizardSchoolKey && schoolLookup
+      ? { wizardSchoolKey, getSpellSchool: schoolLookup.getSpellSchool }
+      : undefined;
+
+  let leveledEntries = pickLeveledSpellsSlotAware(
+    spellPool,
+    spellsPrepared,
+    maxOnSheet,
+    spellSlots,
+    classLabel,
+    combatPriority,
+    pickOptions
+  );
+  if (leveledEntries.length < spellsPrepared) {
+    const fillPool = torneoMode ? filterTorneoCombatSpells(fullEntries) : fullEntries;
+    if (fillPool.length > leveledEntries.length) {
+      leveledEntries = pickLeveledSpellsSlotAware(
+        fillPool,
+        spellsPrepared,
+        maxOnSheet,
+        spellSlots,
+        classLabel,
+        combatPriority,
+        pickOptions
+      );
+    }
+  }
+  leveledEntries = enforceSpellLevelCaps(leveledEntries, spellSlots, classLabel, spellsPrepared);
+  if (wizardSchoolKey && schoolLookup) {
+    leveledEntries = balanceWizardArcaneSchoolSpells(
+      leveledEntries,
+      fullEntries,
+      wizardSchoolKey,
+      spellsPrepared,
+      schoolLookup.getSpellSchool,
+      combatPriority,
+      spellSlots,
+      classLabel
+    );
+    leveledEntries = enforceSpellLevelCaps(leveledEntries, spellSlots, classLabel, spellsPrepared);
+  }
+  if (classLabel === "Chierico") {
+    leveledEntries = ensureClericCureWoundsSpell(leveledEntries, fullEntries, maxOnSheet);
+    leveledEntries = enforceSpellLevelCaps(leveledEntries, spellSlots, classLabel, spellsPrepared);
+  }
+  if (classLabel === "Paladino") {
+    leveledEntries = ensurePaladinPunishmentSpell(leveledEntries, fullEntries, maxOnSheet);
+    leveledEntries = enforceSpellLevelCaps(leveledEntries, spellSlots, classLabel, spellsPrepared);
+  }
+  if (classLabel === "Stregone") {
+    leveledEntries = ensureSorcererMinLevel1Spells(
+      leveledEntries,
+      fullEntries,
+      maxOnSheet,
+      spellSlots,
+      spellsPrepared,
+      combatPriority,
+      pickOptions
+    );
+    leveledEntries = enforceSpellLevelCaps(leveledEntries, spellSlots, classLabel, spellsPrepared);
+  }
+  return leveledEntries;
 }
 
 function pickRandomUnique<T>(items: T[], count: number): T[] {
@@ -1038,7 +1068,7 @@ function pickLeveledSpellsBalanced(
   return picked;
 }
 
-function spellSelectionCount(classLabel: string, level: number, castingMod: number): number {
+export function spellSelectionCount(classLabel: string, level: number, castingMod: number): number {
   const lvl = Math.max(1, Math.min(20, level));
   if (classLabel === "Chierico" || classLabel === "Druido") return Math.max(1, lvl + castingMod);
   if (classLabel === "Paladino") return Math.max(1, Math.floor(lvl / 2) + castingMod);
@@ -1084,6 +1114,8 @@ export async function resolveGeneratorRules(
     powerPlayer?: boolean;
     /** Solo incantesimi utili in combattimento (torneo). */
     torneoMode?: boolean;
+    /** Scelte manuali del giocatore. */
+    buildOverrides?: CharacterBuildOverrides;
   },
   abilityModByKey: Record<AbilityKey, number>,
   proficiencyBonus: number,
@@ -1272,103 +1304,63 @@ export async function resolveGeneratorRules(
     const torneoCombatPool = input.torneoMode ? filterTorneoCombatSpells(entries) : entries;
     const spellPool = torneoCombatPool.length ? torneoCombatPool : entries;
     const combatPriority = !!input.powerPlayer || !!input.torneoMode;
-    const wizardSchoolKey =
-      input.classLabel === "Mago" ? parseWizardArcaneSchoolKey(input.classSubclass) : null;
-    const schoolLookup = wizardSchoolKey ? createSpellSchoolLookup() : null;
-    const pickOptions: SpellPickOptions | undefined =
-      wizardSchoolKey && schoolLookup
-        ? { wizardSchoolKey, getSpellSchool: schoolLookup.getSpellSchool }
-        : undefined;
+    const overrides = input.buildOverrides;
 
-    const cantripEntries = pickCantripsForSheet(
-      entries,
-      cantripsKnown,
-      !!input.torneoMode,
-      combatPriority,
-      pickOptions
-    );
-    let leveledEntries = pickLeveledSpellsSlotAware(
-      spellPool,
-      spellsPrepared,
-      maxOnSheet,
-      spellSlots,
-      input.classLabel,
-      combatPriority,
-      pickOptions
-    );
-    if (leveledEntries.length < spellsPrepared) {
-      const fillPool = input.torneoMode ? filterTorneoCombatSpells(entries) : entries;
-      if (fillPool.length > leveledEntries.length) {
-        leveledEntries = pickLeveledSpellsSlotAware(
-          fillPool,
-          spellsPrepared,
-          maxOnSheet,
-          spellSlots,
-          input.classLabel,
-          combatPriority,
-          pickOptions
-        );
-      }
-    }
-    leveledEntries = enforceSpellLevelCaps(
-      leveledEntries,
-      spellSlots,
-      input.classLabel,
-      spellsPrepared
-    );
-    if (wizardSchoolKey && schoolLookup) {
-      leveledEntries = balanceWizardArcaneSchoolSpells(
+    let cantripEntries: Array<{ name: string; level: number }>;
+    let leveledEntries: Array<{ name: string; level: number }>;
+
+    if (overrides?.cantrips?.length || overrides?.spells?.length) {
+      cantripEntries = overrides.cantrips?.length
+        ? resolveSpellEntriesByNames(entries, overrides.cantrips, 0).slice(0, cantripsKnown)
+        : pickDefaultCantrips(
+            entries,
+            cantripsKnown,
+            !!input.torneoMode,
+            combatPriority,
+            input.classLabel,
+            input.classSubclass
+          );
+      leveledEntries = overrides.spells?.length
+        ? resolveSpellEntriesByNames(entries, overrides.spells, 1).slice(0, spellsPrepared)
+        : pickDefaultLeveledSpells(
+            spellPool,
+            entries,
+            spellsPrepared,
+            maxOnSheet,
+            spellSlots,
+            input.classLabel,
+            combatPriority,
+            input.torneoMode,
+            input.classSubclass
+          );
+      leveledEntries = enforceSpellLevelCaps(
         leveledEntries,
+        spellSlots,
+        input.classLabel,
+        spellsPrepared
+      );
+    } else {
+      cantripEntries = pickDefaultCantrips(
         entries,
-        wizardSchoolKey,
-        spellsPrepared,
-        schoolLookup.getSpellSchool,
+        cantripsKnown,
+        !!input.torneoMode,
         combatPriority,
-        spellSlots,
-        input.classLabel
-      );
-      leveledEntries = enforceSpellLevelCaps(
-        leveledEntries,
-        spellSlots,
         input.classLabel,
-        spellsPrepared
+        input.classSubclass
       );
-    }
-    if (input.classLabel === "Chierico") {
-      leveledEntries = ensureClericCureWoundsSpell(leveledEntries, entries, maxOnSheet);
-      leveledEntries = enforceSpellLevelCaps(
-        leveledEntries,
-        spellSlots,
-        input.classLabel,
-        spellsPrepared
-      );
-    }
-    if (input.classLabel === "Paladino") {
-      leveledEntries = ensurePaladinPunishmentSpell(leveledEntries, entries, maxOnSheet);
-      leveledEntries = enforceSpellLevelCaps(
-        leveledEntries,
-        spellSlots,
-        input.classLabel,
-        spellsPrepared
-      );
-    }
-    if (input.classLabel === "Stregone") {
-      leveledEntries = ensureSorcererMinLevel1Spells(
-        leveledEntries,
+      leveledEntries = pickDefaultLeveledSpells(
+        spellPool,
         entries,
+        spellsPrepared,
         maxOnSheet,
         spellSlots,
-        spellsPrepared,
-        combatPriority,
-        pickOptions
-      );
-      leveledEntries = enforceSpellLevelCaps(
-        leveledEntries,
-        spellSlots,
         input.classLabel,
-        spellsPrepared
+        combatPriority,
+        input.torneoMode,
+        input.classSubclass
       );
     }
+
     const picked = [...cantripEntries, ...leveledEntries];
     await preloadPhbMarkdown(requestOrigin);
     for (const pickedSpell of picked) {
@@ -1398,20 +1390,34 @@ export async function resolveGeneratorRules(
     const kiLine = kiPointsClassFeatureLine(input.level);
     if (kiLine) filteredClassMd = [kiLine, filteredClassMd].filter(Boolean).join("\n\n");
   }
+  if (input.classLabel === "Ladro") {
+    const saLine = sneakAttackClassFeatureLine(input.level);
+    if (saLine) filteredClassMd = [saLine, filteredClassMd].filter(Boolean).join("\n\n");
+  }
   if (input.classLabel === "Ranger") {
     filteredClassMd = injectRangerPrescelteChoices(
       filteredClassMd,
       fightingStyleSheetSeed(input),
-      input.level
+      input.level,
+      {
+        favoredEnemies: input.buildOverrides?.favoredEnemies,
+        favoredTerrains: input.buildOverrides?.favoredTerrains,
+      }
     );
   }
   if (CLASSES_WITH_PHB_FIGHTING_STYLE_COLLAPSE.has(input.classLabel)) {
-    filteredClassMd = collapsePhbFightingStyleOptions(filteredClassMd, fightingStyleSheetSeed(input));
+    filteredClassMd = collapsePhbFightingStyleOptions(
+      filteredClassMd,
+      fightingStyleSheetSeed(input),
+      input.buildOverrides?.fightingStyle
+    );
   }
   if (input.classLabel === "Warlock") {
     const warlockExtras = buildWarlockPactAndInvocationsMarkdown({
       level: input.level,
       seed: warlockBuildSeed(input),
+      pactName: input.buildOverrides?.warlockPact,
+      invocationNames: input.buildOverrides?.warlockInvocations,
     });
     if (warlockExtras) {
       filteredClassMd = [filteredClassMd, warlockExtras].filter(Boolean).join("\n\n");

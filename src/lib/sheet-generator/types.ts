@@ -41,6 +41,8 @@ export type CharacterGeneratorInput = {
   includeBackgroundStoryInPdf?: boolean;
   /** Storia narrativa del PG (pagina «Storia del personaggio» se includeBackgroundStoryInPdf). */
   characterStory?: string | null;
+  /** Scelte manuali (incantesimi, stile di combattimento, ecc.). */
+  buildOverrides?: import("@/lib/sheet-generator/build-choices-types").CharacterBuildOverrides;
 };
 
 export type GeneratedSpell = {

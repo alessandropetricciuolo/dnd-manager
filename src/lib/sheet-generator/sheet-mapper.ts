@@ -1,5 +1,6 @@
 import type { GeneratedCharacterSheet, SkillKey } from "@/lib/sheet-generator/types";
 import { kiPointsClassFeatureLine } from "@/lib/sheet-generator/monk-meta";
+import { sneakAttackClassFeatureLine } from "@/lib/sheet-generator/rogue-meta";
 import { summarizeRangerPrescelteFromBody } from "@/lib/sheet-generator/ranger-meta";
 import { sorceryPointsClassFeatureLine } from "@/lib/sheet-generator/sorcerer-meta";
 
@@ -382,6 +383,8 @@ function summarizeClassFeaturesForPdf(classMd: string, subclassMd: string | null
   if (spLine && /stregone/i.test(classOnly)) out.push(spLine);
   const kiLine = kiPointsClassFeatureLine(level);
   if (kiLine && /monaco/i.test(classOnly)) out.push(kiLine);
+  const saLine = sneakAttackClassFeatureLine(level);
+  if (saLine && /ladro/i.test(classOnly)) out.push(saLine);
   for (const b of prioritized) {
     const headingNorm = normalizeHeading(b.heading);
     if (PHB_FIGHTING_STYLE_OPTION_HEADINGS.has(headingNorm)) continue;
