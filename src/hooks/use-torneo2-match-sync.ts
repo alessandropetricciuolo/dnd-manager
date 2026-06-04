@@ -87,8 +87,12 @@ export function useTorneo2MatchSync({
       if (cancelled) return;
       if (combatRes.success && combatRes.data) {
         appliedSeqRef.current = combatRes.data.seq;
-        lastSavedSigRef.current = torneo2CombatSignature(combatRes.data.state);
-        onRemoteCombatRef.current(combatRes.data.state);
+        // Se il DB non ha ancora combattenti (incontro non avviato), non sovrascrivere
+        // l'eventuale anteprima del roster caricata localmente.
+        if (combatRes.data.state.combatants.length > 0) {
+          lastSavedSigRef.current = torneo2CombatSignature(combatRes.data.state);
+          onRemoteCombatRef.current(combatRes.data.state);
+        }
       }
       if (timerRes.success && timerRes.data) {
         onTimerRef.current?.(timerRes.data);

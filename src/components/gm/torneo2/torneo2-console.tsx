@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
-import { LayoutGrid, Octagon, Trophy } from "lucide-react";
+import { ArrowLeft, ListChecks, Octagon, Swords, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 import { Torneo2SetupPanel } from "./torneo2-setup-panel";
 import { Torneo2MatchStation } from "./torneo2-match-station";
 import { Torneo2LiveBar } from "./torneo2-live-bar";
@@ -25,24 +26,27 @@ import {
   emptyTorneo2CombatState,
   type Torneo2CombatState,
 } from "@/lib/torneo2/combat-state";
+import { buildTorneo2CombatSeed } from "@/lib/torneo2/seed";
 import {
   emptyTorneo2TimerState,
   startTimerPatch,
   togglePauseTimerPatch,
 } from "@/lib/torneo2/timer";
 import { torneo2TableUrl, torneo2TimerUrl } from "@/lib/torneo2/live-links";
-import type { Torneo2LiveSession, Torneo2Setup } from "@/lib/torneo2/types";
+import type { Torneo2LiveSession, Torneo2Match, Torneo2Setup } from "@/lib/torneo2/types";
 
-type Props = { campaignId: string };
+type Props = { campaignId: string; campaignName?: string | null };
+
+type Section = "setup" | "live" | "classifica";
 
 function emptyTimerColumns(): Torneo2TimerColumns {
   return emptyTorneo2TimerState();
 }
 
-export function Torneo2Console({ campaignId }: Props) {
+export function Torneo2Console({ campaignId, campaignName }: Props) {
   const [setup, setSetup] = useState<Torneo2Setup>({ teams: [], matches: [], participantsByMatch: {} });
   const [liveSession, setLiveSession] = useState<Torneo2LiveSession | null>(null);
-  const [innerTab, setInnerTab] = useState<"live" | "classifica">("live");
+  const [section, setSection] = useState<Section>("setup");
   const [busy, setBusy] = useState(false);
   const [killBusy, setKillBusy] = useState(false);
 
@@ -68,6 +72,7 @@ export function Torneo2Console({ campaignId }: Props) {
         setLiveSession(res.data);
         setS1MatchId(res.data.station1MatchId);
         setS2MatchId(res.data.station2MatchId);
+        setSection("live");
       }
     })();
   }, [campaignId, refreshSetup]);
@@ -97,7 +102,6 @@ export function Torneo2Console({ campaignId }: Props) {
     onTimer: setS2Timer,
   });
 
-  // Auto-riavvio timer del turno al cambio turno (modalità turn/both).
   const prevTurn1 = useRef<number | null>(null);
   const prevTurn2 = useRef<number | null>(null);
 
@@ -144,25 +148,50 @@ export function Torneo2Console({ campaignId }: Props) {
     }
   }, [s2Active, s2MatchId, s2Combat.currentTurnIndex, s2Combat.roundNumber, s2Timer.timer_mode, applyTimerPatch]);
 
+  const buildPreview = useCallback(
+    (matchId: string): Torneo2CombatState => {
+      const match = setup.matches.find((m) => m.id === matchId);
+      if (!match) return emptyTorneo2CombatState();
+      return buildTorneo2CombatSeed(match, setup.teams, setup.participantsByMatch[matchId] ?? []);
+    },
+    [setup]
+  );
+
   const loadToStation = useCallback(
     (matchId: string, station: 1 | 2) => {
-      if (station === 1) {
-        if (s1MatchId === matchId) {
-          setS1MatchId(null);
-          setS1Combat(emptyTorneo2CombatState());
-        } else {
-          setS1MatchId(matchId);
-        }
-      } else {
-        if (s2MatchId === matchId) {
-          setS2MatchId(null);
-          setS2Combat(emptyTorneo2CombatState());
-        } else {
-          setS2MatchId(matchId);
-        }
+      const otherId = station === 1 ? s2MatchId : s1MatchId;
+      if (otherId === matchId) {
+        toast.error("Incontro già caricato sull'altro tavolo.");
+        return;
       }
+      const target = setup.matches.find((m) => m.id === matchId) ?? null;
+      const currentId = station === 1 ? s1MatchId : s2MatchId;
+      const clearing = currentId === matchId;
+
+      if (station === 1) {
+        setS1MatchId(clearing ? null : matchId);
+        setS1Combat(
+          clearing
+            ? emptyTorneo2CombatState()
+            : target?.combatState && target.combatState.combatants.length > 0
+              ? target.combatState
+              : buildPreview(matchId)
+        );
+        prevTurn1.current = null;
+      } else {
+        setS2MatchId(clearing ? null : matchId);
+        setS2Combat(
+          clearing
+            ? emptyTorneo2CombatState()
+            : target?.combatState && target.combatState.combatants.length > 0
+              ? target.combatState
+              : buildPreview(matchId)
+        );
+        prevTurn2.current = null;
+      }
+      if (!clearing) setSection("live");
     },
-    [s1MatchId, s2MatchId]
+    [s1MatchId, s2MatchId, setup.matches, buildPreview]
   );
 
   const startStation = useCallback(
@@ -175,7 +204,10 @@ export function Torneo2Console({ campaignId }: Props) {
       }
       setBusy(true);
       const origin = station === 1 ? sync1.origin : sync2.origin;
-      const res = await startTorneo2MatchOnStationAction(campaignId, matchId, station, origin);
+      const seedState = station === 1 ? s1Combat : s2Combat;
+      const res = await startTorneo2MatchOnStationAction(campaignId, matchId, station, origin, {
+        seedState,
+      });
       setBusy(false);
       if (!res.success || !res.data) {
         toast.error(res.success ? "Errore avvio." : res.error);
@@ -192,7 +224,6 @@ export function Torneo2Console({ campaignId }: Props) {
         sync2.noteExternalSave(match.combatSeq, seeded);
         prevTurn2.current = seeded.currentTurnIndex;
       }
-      // Avvia il timer del turno se previsto.
       if (match.timerMode === "turn" || match.timerMode === "both") {
         applyTimerPatch(station, matchId, startTimerPatch("Turno 1", new Date().toISOString()));
       } else if (match.timerMode === "match") {
@@ -201,7 +232,7 @@ export function Torneo2Console({ campaignId }: Props) {
       await refreshSetup();
       toast.success(`Incontro avviato su Tavolo ${station}.`);
     },
-    [campaignId, isLive, s1MatchId, s2MatchId, sync1, sync2, applyTimerPatch, refreshSetup]
+    [campaignId, isLive, s1MatchId, s2MatchId, s1Combat, s2Combat, sync1, sync2, applyTimerPatch, refreshSetup]
   );
 
   const endStation = useCallback(
@@ -232,11 +263,7 @@ export function Torneo2Console({ campaignId }: Props) {
       const matchId = station === 1 ? s1MatchId : s2MatchId;
       if (!matchId) return;
       const timer = station === 1 ? s1Timer : s2Timer;
-      applyTimerPatch(
-        station,
-        matchId,
-        togglePauseTimerPatch(timer, Date.now(), new Date().toISOString())
-      );
+      applyTimerPatch(station, matchId, togglePauseTimerPatch(timer, Date.now(), new Date().toISOString()));
     },
     [s1MatchId, s2MatchId, s1Timer, s2Timer, applyTimerPatch]
   );
@@ -246,18 +273,16 @@ export function Torneo2Console({ campaignId }: Props) {
       const matchId = station === 1 ? s1MatchId : s2MatchId;
       if (!matchId) return;
       const combat = station === 1 ? s1Combat : s2Combat;
-      applyTimerPatch(
-        station,
-        matchId,
-        startTimerPatch(`Turno ${combat.roundNumber}`, new Date().toISOString())
-      );
+      applyTimerPatch(station, matchId, startTimerPatch(`Turno ${combat.roundNumber}`, new Date().toISOString()));
     },
     [s1MatchId, s2MatchId, s1Combat, s2Combat, applyTimerPatch]
   );
 
-  const handleLiveChange = useCallback((session: Torneo2LiveSession | null) => {
-    setLiveSession(session);
-    if (!session) {
+  const handleLiveChange = useCallback((s: Torneo2LiveSession | null) => {
+    setLiveSession(s);
+    if (s) {
+      setSection("live");
+    } else {
       setS1MatchId(null);
       setS2MatchId(null);
       setS1Combat(emptyTorneo2CombatState());
@@ -294,19 +319,51 @@ export function Torneo2Console({ campaignId }: Props) {
   const timerUrl2 = liveSession && s2MatchId ? torneo2TimerUrl(liveSession.publicId, s2MatchId) : null;
   const tableUrl2 = liveSession && s2MatchId ? torneo2TableUrl(liveSession.publicId, s2MatchId) : null;
 
+  const queue = setup.matches.filter((m) => m.status !== "completed");
+
   return (
-    <div className="flex min-h-0 w-full flex-1 flex-col">
-      <div className="flex flex-wrap items-center gap-2 border-b border-violet-900/30 px-3 py-2">
-        <Tabs value={innerTab} onValueChange={(v) => setInnerTab(v as "live" | "classifica")}>
-          <TabsList className="h-8 border border-violet-900/40 bg-zinc-900/80 p-0.5">
-            <TabsTrigger value="live" className="h-7 gap-1.5 px-3 text-xs">
-              <LayoutGrid className="h-3.5 w-3.5" /> Live
-            </TabsTrigger>
-            <TabsTrigger value="classifica" className="h-7 gap-1.5 px-3 text-xs">
-              <Trophy className="h-3.5 w-3.5" /> Classifica
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+    <div className="flex h-screen w-screen flex-col overflow-hidden bg-gradient-to-b from-zinc-950 to-zinc-900 text-zinc-100">
+      {/* Top bar */}
+      <header className="flex shrink-0 flex-wrap items-center gap-3 border-b border-emerald-900/30 bg-zinc-950/70 px-4 py-2.5">
+        <Link
+          href={`/campaigns/${campaignId}/gm-screen`}
+          className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300"
+        >
+          <ArrowLeft className="h-4 w-4" /> GM Screen
+        </Link>
+        <div className="mr-2">
+          <h1 className="flex items-center gap-1.5 text-sm font-bold tracking-tight text-emerald-300">
+            <Swords className="h-4 w-4" /> Torneo 2.0
+          </h1>
+          {campaignName ? <p className="text-[11px] text-zinc-500">{campaignName}</p> : null}
+        </div>
+
+        {/* Section switcher */}
+        <nav className="flex items-center gap-1 rounded-full border border-zinc-800 bg-zinc-900/70 p-1">
+          {(
+            [
+              { id: "setup", label: "Setup", icon: ListChecks },
+              { id: "live", label: "Live", icon: Swords },
+              { id: "classifica", label: "Classifica", icon: Trophy },
+            ] as const
+          ).map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setSection(tab.id)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+                section === tab.id
+                  ? "bg-emerald-600 text-zinc-950"
+                  : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+              )}
+            >
+              <tab.icon className="h-3.5 w-3.5" />
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+
         <div className="ml-auto flex items-center gap-2">
           <Torneo2LiveBar campaignId={campaignId} liveSession={liveSession} onLiveChange={handleLiveChange} />
           <Button
@@ -320,22 +377,49 @@ export function Torneo2Console({ campaignId }: Props) {
             <Octagon className="h-3.5 w-3.5" /> Kill switch
           </Button>
         </div>
-      </div>
+      </header>
 
-      {innerTab === "live" ? (
-        <div className="flex min-h-0 w-full flex-1">
-          <aside className="flex w-[min(100%,340px)] shrink-0 flex-col border-r border-violet-900/30 bg-zinc-950/80 lg:w-[360px]">
-            <Torneo2SetupPanel
-              campaignId={campaignId}
-              setup={setup}
-              onChanged={refreshSetup}
-              onLoadToStation={loadToStation}
-              station1MatchId={s1MatchId}
-              station2MatchId={s2MatchId}
-              className="min-h-0 flex-1"
-            />
-          </aside>
-          <div className="grid min-h-0 min-w-0 flex-1 grid-rows-2 gap-2 overflow-hidden p-2">
+      {/* Body */}
+      {section === "setup" ? (
+        <Torneo2SetupPanel
+          campaignId={campaignId}
+          setup={setup}
+          onChanged={refreshSetup}
+          className="min-h-0 flex-1"
+        />
+      ) : section === "live" ? (
+        <div className="flex min-h-0 flex-1 flex-col">
+          {/* Coda incontri */}
+          <div className="shrink-0 border-b border-zinc-800/80 bg-zinc-950/50 px-4 py-2">
+            {!isLive ? (
+              <p className="text-xs text-amber-400/80">
+                Avvia la sessione live per assegnare gli incontri ai tavoli.
+              </p>
+            ) : queue.length === 0 ? (
+              <p className="text-xs text-zinc-500">
+                Nessun incontro in coda. Creane nella sezione Setup.
+              </p>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+                  Coda
+                </span>
+                {queue.map((m) => (
+                  <Torneo2QueueChip
+                    key={m.id}
+                    match={m}
+                    teams={setup.teams}
+                    onLoad={loadToStation}
+                    s1MatchId={s1MatchId}
+                    s2MatchId={s2MatchId}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Tavoli affiancati */}
+          <div className="grid min-h-0 flex-1 gap-3 overflow-hidden p-3 xl:grid-cols-2">
             <Torneo2MatchStation
               stationNumber={1}
               match={s1Match}
@@ -379,6 +463,63 @@ export function Torneo2Console({ campaignId }: Props) {
           className="min-h-0 flex-1"
         />
       )}
+    </div>
+  );
+}
+
+function Torneo2QueueChip({
+  match,
+  teams,
+  onLoad,
+  s1MatchId,
+  s2MatchId,
+}: {
+  match: Torneo2Match;
+  teams: Torneo2Setup["teams"];
+  onLoad: (matchId: string, station: 1 | 2) => void;
+  s1MatchId: string | null;
+  s2MatchId: string | null;
+}) {
+  const label =
+    match.label ??
+    (match.kind === "final_ffa"
+      ? "Finale"
+      : `${teams.find((t) => t.id === match.teamAId)?.name ?? "?"} vs ${
+          teams.find((t) => t.id === match.teamBId)?.name ?? "?"
+        }`);
+  const onT1 = s1MatchId === match.id;
+  const onT2 = s2MatchId === match.id;
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-1 rounded-full border bg-zinc-900/70 py-0.5 pl-3 pr-1",
+        onT1 || onT2 ? "border-emerald-700/60" : "border-zinc-700",
+        match.status === "active" && "ring-1 ring-amber-500/40"
+      )}
+    >
+      <span className="max-w-[14rem] truncate text-xs text-zinc-200">{label}</span>
+      <button
+        type="button"
+        onClick={() => onLoad(match.id, 1)}
+        className={cn(
+          "rounded-full px-2 py-0.5 text-[10px] font-bold",
+          onT1 ? "bg-emerald-600 text-zinc-950" : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+        )}
+        title="Carica su Tavolo 1"
+      >
+        T1
+      </button>
+      <button
+        type="button"
+        onClick={() => onLoad(match.id, 2)}
+        className={cn(
+          "rounded-full px-2 py-0.5 text-[10px] font-bold",
+          onT2 ? "bg-emerald-600 text-zinc-950" : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+        )}
+        title="Carica su Tavolo 2"
+      >
+        T2
+      </button>
     </div>
   );
 }

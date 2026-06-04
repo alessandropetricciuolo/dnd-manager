@@ -348,7 +348,7 @@ export async function startTorneo2MatchOnStationAction(
   matchId: string,
   station: 1 | 2,
   originId: string,
-  options?: { reseed?: boolean }
+  options?: { reseed?: boolean; seedState?: Torneo2CombatState }
 ): Promise<Result<{ match: Torneo2Match }>> {
   const check = await ensureTorneo2Gm(campaignId);
   if (!check.ok) return { success: false, error: check.error };
@@ -361,12 +361,22 @@ export async function startTorneo2MatchOnStationAction(
   const match = setup.data.matches.find((m) => m.id === matchId);
   if (!match) return { success: false, error: "Incontro non trovato." };
 
-  const hasState = !options?.reseed && match.combatState && match.combatState.combatants.length > 0;
-  const seed = hasState
-    ? match.combatState!
-    : buildTorneo2CombatSeed(match, setup.data.teams, setup.data.participantsByMatch[matchId] ?? []);
+  // Priorità: stato preparato dal client (preview con iniziativa/HP già impostati) →
+  // stato già persistito → seed dalle squadre/partecipanti.
+  const providedSeed =
+    !options?.reseed && options?.seedState && options.seedState.combatants.length > 0
+      ? sanitizeTorneo2CombatState(options.seedState)
+      : null;
+  const persistedSeed =
+    !options?.reseed && match.combatState && match.combatState.combatants.length > 0
+      ? match.combatState
+      : null;
+  const seed =
+    providedSeed ??
+    persistedSeed ??
+    buildTorneo2CombatSeed(match, setup.data.teams, setup.data.participantsByMatch[matchId] ?? []);
 
-  if (!hasState && seed.combatants.length === 0) {
+  if (seed.combatants.length === 0) {
     return { success: false, error: "Nessun combattente: configura squadre o partecipanti." };
   }
 
