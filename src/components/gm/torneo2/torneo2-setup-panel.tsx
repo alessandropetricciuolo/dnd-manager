@@ -35,6 +35,9 @@ type Props = {
   setup: Torneo2Setup;
   onChanged: () => void;
   className?: string;
+  onLoadToStation?: (matchId: string, station: 1 | 2) => void;
+  station1MatchId?: string | null;
+  station2MatchId?: string | null;
 };
 
 function matchTitle(m: Torneo2Match, teams: Torneo2Team[]): string {
@@ -45,7 +48,15 @@ function matchTitle(m: Torneo2Match, teams: Torneo2Team[]): string {
   return `${a} vs ${b}`;
 }
 
-export function Torneo2SetupPanel({ campaignId, setup, onChanged, className }: Props) {
+export function Torneo2SetupPanel({
+  campaignId,
+  setup,
+  onChanged,
+  className,
+  onLoadToStation,
+  station1MatchId,
+  station2MatchId,
+}: Props) {
   const { teams, matches } = setup;
   const [characters, setCharacters] = useState<CampaignCharacterRow[]>([]);
   const [busy, setBusy] = useState(false);
@@ -386,6 +397,40 @@ export function Torneo2SetupPanel({ campaignId, setup, onChanged, className }: P
                     </button>
                   ) : null}
                 </div>
+
+                {m.status !== "completed" && onLoadToStation ? (
+                  <div className="mt-2 flex items-center gap-1.5">
+                    <span className="mr-1 text-[10px] uppercase tracking-wide text-zinc-600">
+                      Carica su:
+                    </span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className={cn(
+                        "h-7 px-2.5 text-[11px]",
+                        station1MatchId === m.id && "border-emerald-600 bg-emerald-950/50 text-emerald-200"
+                      )}
+                      disabled={busy}
+                      onClick={() => onLoadToStation(m.id, 1)}
+                    >
+                      Tavolo 1
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className={cn(
+                        "h-7 px-2.5 text-[11px]",
+                        station2MatchId === m.id && "border-emerald-600 bg-emerald-950/50 text-emerald-200"
+                      )}
+                      disabled={busy}
+                      onClick={() => onLoadToStation(m.id, 2)}
+                    >
+                      Tavolo 2
+                    </Button>
+                  </div>
+                ) : null}
 
                 {m.status === "completed" ? (
                   <div className="mt-2 flex items-center justify-between">

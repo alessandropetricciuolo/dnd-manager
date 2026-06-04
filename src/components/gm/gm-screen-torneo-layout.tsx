@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { LayoutGrid, Octagon, Sparkles, Trophy } from "lucide-react";
+import { LayoutGrid, Octagon, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import {
   emptyInitiativeTrackerState,
@@ -372,18 +371,6 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
               </TabsTrigger>
             </TabsList>
           </Tabs>
-          <Link href={`/campaigns/${campaignId}/torneo2`} target="_blank" rel="noopener noreferrer">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-8 gap-1.5 border-emerald-800/50 bg-emerald-950/30 px-3 text-xs text-emerald-300 hover:bg-emerald-950/60"
-              title="Apri Torneo 2.0 (pagina separata)"
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              Torneo 2.0
-            </Button>
-          </Link>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <GmTorneoLiveBar

@@ -322,7 +322,7 @@ export function Torneo2Console({ campaignId, campaignName }: Props) {
   const queue = setup.matches.filter((m) => m.status !== "completed");
 
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-gradient-to-b from-zinc-950 to-zinc-900 text-zinc-100">
+    <div className="flex h-[calc(100dvh-3.5rem)] w-full flex-col overflow-hidden bg-gradient-to-b from-zinc-950 to-zinc-900 text-zinc-100 sm:h-[calc(100vh-4rem)]">
       {/* Top bar */}
       <header className="flex shrink-0 flex-wrap items-center gap-3 border-b border-emerald-900/30 bg-zinc-950/70 px-4 py-2.5">
         <Link
@@ -385,6 +385,9 @@ export function Torneo2Console({ campaignId, campaignName }: Props) {
           campaignId={campaignId}
           setup={setup}
           onChanged={refreshSetup}
+          onLoadToStation={loadToStation}
+          station1MatchId={s1MatchId}
+          station2MatchId={s2MatchId}
           className="min-h-0 flex-1"
         />
       ) : section === "live" ? (

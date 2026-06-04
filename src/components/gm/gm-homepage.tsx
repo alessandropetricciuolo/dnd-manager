@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { BookOpen, Layers, Mail, Map, Palette, Sparkles } from "lucide-react";
+import { BookOpen, Layers, Mail, Map, Palette, Sparkles, Swords } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -71,6 +71,19 @@ export function GmHomepage({
             campaignId={campaignId}
             className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
           />
+          {isTorneo ? (
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="border-emerald-500/50 text-emerald-200 hover:bg-emerald-500/20"
+            >
+              <Link href={`/campaigns/${campaignId}/torneo2`}>
+                <Swords className="mr-2 h-4 w-4" />
+                Torneo 2.0
+              </Link>
+            </Button>
+          ) : null}
           {!isTorneo ? (
             <>
               <Button
