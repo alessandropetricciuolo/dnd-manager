@@ -104,11 +104,34 @@ export async function startTorneo2LiveSessionAction(
   if (!check.ok) return { success: false, error: check.error };
   const supabase = check.supabase;
 
-  await supabase
+  const now = new Date().toISOString();
+  const { data: staleLiveRows, error: staleLiveErr } = await supabase
     .from("torneo2_live_sessions")
-    .update({ status: "ended", ended_at: new Date().toISOString() })
+    .select("remote_session_public_id")
     .eq("campaign_id", campaignId)
     .eq("status", "live");
+
+  if (staleLiveErr) return { success: false, error: staleLiveErr.message };
+
+  const { error: endErr } = await supabase
+    .from("torneo2_live_sessions")
+    .update({ status: "ended", ended_at: now })
+    .eq("campaign_id", campaignId)
+    .eq("status", "live");
+
+  if (endErr) return { success: false, error: endErr.message };
+
+  const staleRemoteIds = (staleLiveRows ?? [])
+    .map((row) => row.remote_session_public_id)
+    .filter((publicId): publicId is string => Boolean(publicId));
+  if (staleRemoteIds.length > 0) {
+    const { error: revokeErr } = await supabase
+      .from("gm_remote_sessions")
+      .update({ revoked_at: now })
+      .in("public_id", staleRemoteIds)
+      .is("revoked_at", null);
+    if (revokeErr) return { success: false, error: revokeErr.message };
+  }
 
   const { data: liveRow, error: liveErr } = await supabase
     .from("torneo2_live_sessions")
@@ -428,6 +451,7 @@ export async function endTorneo2MatchOnStationAction(
   const { error } = await supabase
     .from("torneo2_matches")
     .update({
+      status: "pending",
       timer_running: false,
       timer_started_at: null,
       timer_paused_elapsed_ms: 0,
