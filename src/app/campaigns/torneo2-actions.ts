@@ -355,12 +355,28 @@ export async function deleteTorneo2MatchAction(campaignId: string, matchId: stri
   const check = await ensureTorneo2Gm(campaignId);
   if (!check.ok) return { success: false, error: check.error };
 
-  const { error } = await check.supabase
+  const { data: deleted, error } = await check.supabase
     .from("torneo2_matches")
     .delete()
     .eq("id", matchId)
-    .eq("campaign_id", campaignId);
+    .eq("campaign_id", campaignId)
+    .neq("status", "active")
+    .select("id")
+    .maybeSingle();
   if (error) return { success: false, error: error.message };
+  if (!deleted) {
+    const { data: existing, error: lookupError } = await check.supabase
+      .from("torneo2_matches")
+      .select("status")
+      .eq("id", matchId)
+      .eq("campaign_id", campaignId)
+      .maybeSingle();
+    if (lookupError) return { success: false, error: lookupError.message };
+    if (existing?.status === "active") {
+      return { success: false, error: "Non puoi eliminare un incontro attivo: termina prima il tavolo live." };
+    }
+    return { success: false, error: "Incontro non trovato." };
+  }
   revalidateTorneo2(campaignId);
   return { success: true };
 }
@@ -471,13 +487,27 @@ export async function generateTorneo2FinalAction(
     return { success: false, error: "Servono almeno 2 vincitori per generare la finale." };
   }
 
-  // Rimuove eventuale finale esistente non completata.
-  await check.supabase
+  const { data: activeFinal, error: activeFinalErr } = await check.supabase
+    .from("torneo2_matches")
+    .select("id")
+    .eq("campaign_id", campaignId)
+    .eq("kind", "final_ffa")
+    .eq("status", "active")
+    .limit(1)
+    .maybeSingle();
+  if (activeFinalErr) return { success: false, error: activeFinalErr.message };
+  if (activeFinal) {
+    return { success: false, error: "Finale live in corso: termina il tavolo prima di rigenerarla." };
+  }
+
+  // Rimuove solo eventuali finali ancora in preparazione: una finale live non va mai cancellata.
+  const { error: deletePendingFinalErr } = await check.supabase
     .from("torneo2_matches")
     .delete()
     .eq("campaign_id", campaignId)
     .eq("kind", "final_ffa")
-    .neq("status", "completed");
+    .eq("status", "pending");
+  if (deletePendingFinalErr) return { success: false, error: deletePendingFinalErr.message };
 
   const { data: maxRow } = await check.supabase
     .from("torneo2_matches")
