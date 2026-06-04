@@ -10,6 +10,7 @@
     "test:sheet-generator": "tsx --test src/lib/sheet-generator/__tests__/*.test.ts",
     "test:manual-search": "tsx --test src/lib/actions/__tests__/*.test.ts",
     "test:security": "tsx --test --test-concurrency=1 src/lib/security/__tests__/*.test.ts",
+    "test:torneo2": "tsx --test src/lib/torneo2/__tests__/*.test.ts",
     "security:smoke-remote": "tsx scripts/security-smoke-remote.ts",
     "test:r2-env": "tsx scripts/test-r2-env.ts",
     "export:dungeonedraghi": "node scripts/export-dungeonedraghi-compendio.mjs",

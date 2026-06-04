@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { LayoutGrid, Octagon, Trophy } from "lucide-react";
+import { LayoutGrid, Octagon, Sparkles, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import {
   emptyInitiativeTrackerState,
@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { GmTorneoLiveBar } from "./gm-torneo-live-bar";
 import { GmTorneoManager } from "./gm-torneo-manager";
+import { Torneo2Console } from "./torneo2/torneo2-console";
 import { TorneoBracketLiveView } from "./torneo-bracket-live-view";
 import { TorneoMatchTracker } from "./torneo-match-tracker";
 import { computeMatchDamageTotals } from "@/lib/torneo/compute-match-damage";
@@ -61,7 +62,7 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
   const [station2State, setStation2State] = useState<InitiativeTrackerState>(emptyInitiativeTrackerState());
   const [teams, setTeams] = useState<TorneoTeamWithMembers[]>([]);
   const [matches, setMatches] = useState<TorneoMatchWithTeams[]>([]);
-  const [screenTab, setScreenTab] = useState<"gestione" | "tabellone">("gestione");
+  const [screenTab, setScreenTab] = useState<"gestione" | "tabellone" | "torneo2">("gestione");
   const [killSwitchBusy, setKillSwitchBusy] = useState(false);
 
   const liveSyncEnabled = liveSession?.status === "live";
@@ -351,7 +352,7 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
           </div>
           <Tabs
             value={screenTab}
-            onValueChange={(v) => setScreenTab(v as "gestione" | "tabellone")}
+            onValueChange={(v) => setScreenTab(v as "gestione" | "tabellone" | "torneo2")}
             className="shrink-0"
           >
             <TabsList className="h-8 border border-violet-900/40 bg-zinc-900/80 p-0.5">
@@ -368,6 +369,13 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
               >
                 <Trophy className="h-3.5 w-3.5" />
                 Tabellone
+              </TabsTrigger>
+              <TabsTrigger
+                value="torneo2"
+                className="h-7 gap-1.5 px-3 text-xs data-[state=active]:bg-emerald-950/60 data-[state=active]:text-emerald-200"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                Torneo 2.0
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -499,6 +507,10 @@ export function GmScreenTorneoLayout({ campaignId }: GmScreenTorneoLayoutProps) 
             showToolbar
             className="w-full"
           />
+        </TabsContent>
+
+        <TabsContent value="torneo2" className="mt-0 flex min-h-0 flex-1 data-[state=inactive]:hidden">
+          <Torneo2Console campaignId={campaignId} />
         </TabsContent>
       </Tabs>
 

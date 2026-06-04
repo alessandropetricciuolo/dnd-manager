@@ -1,0 +1,384 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { LayoutGrid, Octagon, Trophy } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Torneo2SetupPanel } from "./torneo2-setup-panel";
+import { Torneo2MatchStation } from "./torneo2-match-station";
+import { Torneo2LiveBar } from "./torneo2-live-bar";
+import { Torneo2Standings } from "./torneo2-standings";
+import { useTorneo2MatchSync } from "@/hooks/use-torneo2-match-sync";
+import {
+  emergencyResetTorneo2Action,
+  getTorneo2SetupAction,
+} from "@/app/campaigns/torneo2-actions";
+import {
+  endTorneo2MatchOnStationAction,
+  getActiveTorneo2LiveSessionAction,
+  patchTorneo2TimerAction,
+  startTorneo2MatchOnStationAction,
+  type Torneo2TimerColumns,
+} from "@/app/campaigns/torneo2-live-actions";
+import {
+  emptyTorneo2CombatState,
+  type Torneo2CombatState,
+} from "@/lib/torneo2/combat-state";
+import {
+  emptyTorneo2TimerState,
+  startTimerPatch,
+  togglePauseTimerPatch,
+} from "@/lib/torneo2/timer";
+import { torneo2TableUrl, torneo2TimerUrl } from "@/lib/torneo2/live-links";
+import type { Torneo2LiveSession, Torneo2Setup } from "@/lib/torneo2/types";
+
+type Props = { campaignId: string };
+
+function emptyTimerColumns(): Torneo2TimerColumns {
+  return emptyTorneo2TimerState();
+}
+
+export function Torneo2Console({ campaignId }: Props) {
+  const [setup, setSetup] = useState<Torneo2Setup>({ teams: [], matches: [], participantsByMatch: {} });
+  const [liveSession, setLiveSession] = useState<Torneo2LiveSession | null>(null);
+  const [innerTab, setInnerTab] = useState<"live" | "classifica">("live");
+  const [busy, setBusy] = useState(false);
+  const [killBusy, setKillBusy] = useState(false);
+
+  const [s1MatchId, setS1MatchId] = useState<string | null>(null);
+  const [s2MatchId, setS2MatchId] = useState<string | null>(null);
+  const [s1Combat, setS1Combat] = useState<Torneo2CombatState>(emptyTorneo2CombatState());
+  const [s2Combat, setS2Combat] = useState<Torneo2CombatState>(emptyTorneo2CombatState());
+  const [s1Timer, setS1Timer] = useState<Torneo2TimerColumns>(emptyTimerColumns());
+  const [s2Timer, setS2Timer] = useState<Torneo2TimerColumns>(emptyTimerColumns());
+
+  const isLive = liveSession?.status === "live";
+
+  const refreshSetup = useCallback(async () => {
+    const res = await getTorneo2SetupAction(campaignId);
+    if (res.success && res.data) setSetup(res.data);
+  }, [campaignId]);
+
+  useEffect(() => {
+    void refreshSetup();
+    void (async () => {
+      const res = await getActiveTorneo2LiveSessionAction(campaignId);
+      if (res.success && res.data) {
+        setLiveSession(res.data);
+        setS1MatchId(res.data.station1MatchId);
+        setS2MatchId(res.data.station2MatchId);
+      }
+    })();
+  }, [campaignId, refreshSetup]);
+
+  const s1Match = setup.matches.find((m) => m.id === s1MatchId) ?? null;
+  const s2Match = setup.matches.find((m) => m.id === s2MatchId) ?? null;
+
+  const s1Active = isLive && s1Match?.status === "active";
+  const s2Active = isLive && s2Match?.status === "active";
+
+  const sync1 = useTorneo2MatchSync({
+    campaignId,
+    matchId: s1MatchId,
+    enabled: isLive && !!s1MatchId,
+    readOnly: !s1Active,
+    state: s1Combat,
+    onRemoteCombat: setS1Combat,
+    onTimer: setS1Timer,
+  });
+  const sync2 = useTorneo2MatchSync({
+    campaignId,
+    matchId: s2MatchId,
+    enabled: isLive && !!s2MatchId,
+    readOnly: !s2Active,
+    state: s2Combat,
+    onRemoteCombat: setS2Combat,
+    onTimer: setS2Timer,
+  });
+
+  // Auto-riavvio timer del turno al cambio turno (modalità turn/both).
+  const prevTurn1 = useRef<number | null>(null);
+  const prevTurn2 = useRef<number | null>(null);
+
+  const applyTimerPatch = useCallback(
+    (station: 1 | 2, matchId: string, patch: Partial<Torneo2TimerColumns>) => {
+      if (station === 1) setS1Timer((t) => ({ ...t, ...patch }));
+      else setS2Timer((t) => ({ ...t, ...patch }));
+      void patchTorneo2TimerAction(campaignId, matchId, patch);
+    },
+    [campaignId]
+  );
+
+  useEffect(() => {
+    if (!s1Active || !s1MatchId) {
+      prevTurn1.current = null;
+      return;
+    }
+    const idx = s1Combat.currentTurnIndex;
+    if (prevTurn1.current === null) {
+      prevTurn1.current = idx;
+      return;
+    }
+    if (prevTurn1.current === idx) return;
+    prevTurn1.current = idx;
+    if (s1Timer.timer_mode === "turn" || s1Timer.timer_mode === "both") {
+      applyTimerPatch(1, s1MatchId, startTimerPatch(`Turno ${s1Combat.roundNumber}`, new Date().toISOString()));
+    }
+  }, [s1Active, s1MatchId, s1Combat.currentTurnIndex, s1Combat.roundNumber, s1Timer.timer_mode, applyTimerPatch]);
+
+  useEffect(() => {
+    if (!s2Active || !s2MatchId) {
+      prevTurn2.current = null;
+      return;
+    }
+    const idx = s2Combat.currentTurnIndex;
+    if (prevTurn2.current === null) {
+      prevTurn2.current = idx;
+      return;
+    }
+    if (prevTurn2.current === idx) return;
+    prevTurn2.current = idx;
+    if (s2Timer.timer_mode === "turn" || s2Timer.timer_mode === "both") {
+      applyTimerPatch(2, s2MatchId, startTimerPatch(`Turno ${s2Combat.roundNumber}`, new Date().toISOString()));
+    }
+  }, [s2Active, s2MatchId, s2Combat.currentTurnIndex, s2Combat.roundNumber, s2Timer.timer_mode, applyTimerPatch]);
+
+  const loadToStation = useCallback(
+    (matchId: string, station: 1 | 2) => {
+      if (station === 1) {
+        if (s1MatchId === matchId) {
+          setS1MatchId(null);
+          setS1Combat(emptyTorneo2CombatState());
+        } else {
+          setS1MatchId(matchId);
+        }
+      } else {
+        if (s2MatchId === matchId) {
+          setS2MatchId(null);
+          setS2Combat(emptyTorneo2CombatState());
+        } else {
+          setS2MatchId(matchId);
+        }
+      }
+    },
+    [s1MatchId, s2MatchId]
+  );
+
+  const startStation = useCallback(
+    async (station: 1 | 2) => {
+      const matchId = station === 1 ? s1MatchId : s2MatchId;
+      if (!matchId) return;
+      if (!isLive) {
+        toast.error("Avvia prima la sessione live.");
+        return;
+      }
+      setBusy(true);
+      const origin = station === 1 ? sync1.origin : sync2.origin;
+      const res = await startTorneo2MatchOnStationAction(campaignId, matchId, station, origin);
+      setBusy(false);
+      if (!res.success || !res.data) {
+        toast.error(res.success ? "Errore avvio." : res.error);
+        return;
+      }
+      const match = res.data.match;
+      const seeded = match.combatState ?? emptyTorneo2CombatState();
+      if (station === 1) {
+        setS1Combat(seeded);
+        sync1.noteExternalSave(match.combatSeq, seeded);
+        prevTurn1.current = seeded.currentTurnIndex;
+      } else {
+        setS2Combat(seeded);
+        sync2.noteExternalSave(match.combatSeq, seeded);
+        prevTurn2.current = seeded.currentTurnIndex;
+      }
+      // Avvia il timer del turno se previsto.
+      if (match.timerMode === "turn" || match.timerMode === "both") {
+        applyTimerPatch(station, matchId, startTimerPatch("Turno 1", new Date().toISOString()));
+      } else if (match.timerMode === "match") {
+        applyTimerPatch(station, matchId, startTimerPatch(match.label ?? "Incontro", new Date().toISOString()));
+      }
+      await refreshSetup();
+      toast.success(`Incontro avviato su Tavolo ${station}.`);
+    },
+    [campaignId, isLive, s1MatchId, s2MatchId, sync1, sync2, applyTimerPatch, refreshSetup]
+  );
+
+  const endStation = useCallback(
+    async (station: 1 | 2) => {
+      const matchId = station === 1 ? s1MatchId : s2MatchId;
+      if (!matchId) return;
+      setBusy(true);
+      const res = await endTorneo2MatchOnStationAction(campaignId, matchId);
+      setBusy(false);
+      if (!res.success) {
+        toast.error(res.error);
+        return;
+      }
+      if (station === 1) {
+        setS1MatchId(null);
+        setS1Combat(emptyTorneo2CombatState());
+      } else {
+        setS2MatchId(null);
+        setS2Combat(emptyTorneo2CombatState());
+      }
+      await refreshSetup();
+    },
+    [campaignId, s1MatchId, s2MatchId, refreshSetup]
+  );
+
+  const toggleTimer = useCallback(
+    (station: 1 | 2) => {
+      const matchId = station === 1 ? s1MatchId : s2MatchId;
+      if (!matchId) return;
+      const timer = station === 1 ? s1Timer : s2Timer;
+      applyTimerPatch(
+        station,
+        matchId,
+        togglePauseTimerPatch(timer, Date.now(), new Date().toISOString())
+      );
+    },
+    [s1MatchId, s2MatchId, s1Timer, s2Timer, applyTimerPatch]
+  );
+
+  const restartTurn = useCallback(
+    (station: 1 | 2) => {
+      const matchId = station === 1 ? s1MatchId : s2MatchId;
+      if (!matchId) return;
+      const combat = station === 1 ? s1Combat : s2Combat;
+      applyTimerPatch(
+        station,
+        matchId,
+        startTimerPatch(`Turno ${combat.roundNumber}`, new Date().toISOString())
+      );
+    },
+    [s1MatchId, s2MatchId, s1Combat, s2Combat, applyTimerPatch]
+  );
+
+  const handleLiveChange = useCallback((session: Torneo2LiveSession | null) => {
+    setLiveSession(session);
+    if (!session) {
+      setS1MatchId(null);
+      setS2MatchId(null);
+      setS1Combat(emptyTorneo2CombatState());
+      setS2Combat(emptyTorneo2CombatState());
+    }
+  }, []);
+
+  const handleKillSwitch = useCallback(async () => {
+    if (
+      !confirm(
+        "Arresto totale Torneo 2.0: termina la live, revoca i telecomandi e azzera tutti gli incontri. Continuare?"
+      )
+    ) {
+      return;
+    }
+    setKillBusy(true);
+    const res = await emergencyResetTorneo2Action(campaignId);
+    setKillBusy(false);
+    if (!res.success) {
+      toast.error(res.error);
+      return;
+    }
+    setLiveSession(null);
+    setS1MatchId(null);
+    setS2MatchId(null);
+    setS1Combat(emptyTorneo2CombatState());
+    setS2Combat(emptyTorneo2CombatState());
+    await refreshSetup();
+    toast.success(`Arresto completato. ${res.data?.matchesReset ?? 0} incontri azzerati.`);
+  }, [campaignId, refreshSetup]);
+
+  const timerUrl1 = liveSession && s1MatchId ? torneo2TimerUrl(liveSession.publicId, s1MatchId) : null;
+  const tableUrl1 = liveSession && s1MatchId ? torneo2TableUrl(liveSession.publicId, s1MatchId) : null;
+  const timerUrl2 = liveSession && s2MatchId ? torneo2TimerUrl(liveSession.publicId, s2MatchId) : null;
+  const tableUrl2 = liveSession && s2MatchId ? torneo2TableUrl(liveSession.publicId, s2MatchId) : null;
+
+  return (
+    <div className="flex min-h-0 w-full flex-1 flex-col">
+      <div className="flex flex-wrap items-center gap-2 border-b border-violet-900/30 px-3 py-2">
+        <Tabs value={innerTab} onValueChange={(v) => setInnerTab(v as "live" | "classifica")}>
+          <TabsList className="h-8 border border-violet-900/40 bg-zinc-900/80 p-0.5">
+            <TabsTrigger value="live" className="h-7 gap-1.5 px-3 text-xs">
+              <LayoutGrid className="h-3.5 w-3.5" /> Live
+            </TabsTrigger>
+            <TabsTrigger value="classifica" className="h-7 gap-1.5 px-3 text-xs">
+              <Trophy className="h-3.5 w-3.5" /> Classifica
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <div className="ml-auto flex items-center gap-2">
+          <Torneo2LiveBar campaignId={campaignId} liveSession={liveSession} onLiveChange={handleLiveChange} />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-7 gap-1 border-red-800/60 bg-red-950/30 text-[11px] text-red-300 hover:bg-red-950/60"
+            disabled={killBusy}
+            onClick={() => void handleKillSwitch()}
+          >
+            <Octagon className="h-3.5 w-3.5" /> Kill switch
+          </Button>
+        </div>
+      </div>
+
+      {innerTab === "live" ? (
+        <div className="flex min-h-0 w-full flex-1">
+          <aside className="flex w-[min(100%,340px)] shrink-0 flex-col border-r border-violet-900/30 bg-zinc-950/80 lg:w-[360px]">
+            <Torneo2SetupPanel
+              campaignId={campaignId}
+              setup={setup}
+              onChanged={refreshSetup}
+              onLoadToStation={loadToStation}
+              station1MatchId={s1MatchId}
+              station2MatchId={s2MatchId}
+              className="min-h-0 flex-1"
+            />
+          </aside>
+          <div className="grid min-h-0 min-w-0 flex-1 grid-rows-2 gap-2 overflow-hidden p-2">
+            <Torneo2MatchStation
+              stationNumber={1}
+              match={s1Match}
+              teams={setup.teams}
+              combat={s1Combat}
+              onCombatChange={setS1Combat}
+              timer={s1Timer}
+              onToggleTimer={() => toggleTimer(1)}
+              onRestartTurn={() => restartTurn(1)}
+              onStart={() => void startStation(1)}
+              onEnd={() => void endStation(1)}
+              busy={busy}
+              liveEnabled={isLive}
+              timerUrl={timerUrl1}
+              tableUrl={tableUrl1}
+            />
+            <Torneo2MatchStation
+              stationNumber={2}
+              match={s2Match}
+              teams={setup.teams}
+              combat={s2Combat}
+              onCombatChange={setS2Combat}
+              timer={s2Timer}
+              onToggleTimer={() => toggleTimer(2)}
+              onRestartTurn={() => restartTurn(2)}
+              onStart={() => void startStation(2)}
+              onEnd={() => void endStation(2)}
+              busy={busy}
+              liveEnabled={isLive}
+              timerUrl={timerUrl2}
+              tableUrl={tableUrl2}
+            />
+          </div>
+        </div>
+      ) : (
+        <Torneo2Standings
+          campaignId={campaignId}
+          setup={setup}
+          onChanged={refreshSetup}
+          canManage
+          className="min-h-0 flex-1"
+        />
+      )}
+    </div>
+  );
+}
