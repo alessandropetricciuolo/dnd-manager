@@ -4,6 +4,7 @@ import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { gmRemoteRateLimit } from "@/lib/gm-remote/rate-limit";
 import { isRecord } from "@/lib/gm-remote/protocol";
 import { validateGmRemoteSession } from "@/lib/gm-remote/validate-remote-session";
+import { canTorneo2RemoteMutateMatch } from "@/lib/torneo2/remote-access";
 
 type RouteContext = { params: Promise<{ publicId: string }> };
 
@@ -52,14 +53,48 @@ export async function POST(request: Request, context: RouteContext) {
   }
 
   const admin = createSupabaseAdminClient() as unknown as SupabaseClient;
-  const { error } = await admin
+  const { data: live, error: liveError } = await admin
+    .from("torneo2_live_sessions")
+    .select("station1_match_id, station2_match_id")
+    .eq("campaign_id", v.session.campaign_id)
+    .eq("status", "live")
+    .maybeSingle();
+
+  if (liveError) {
+    return NextResponse.json({ ok: false, error: liveError.message }, { status: 500 });
+  }
+
+  const { data: match, error: matchError } = await admin
+    .from("torneo2_matches")
+    .select("id, status")
+    .eq("id", matchId)
+    .eq("campaign_id", v.session.campaign_id)
+    .maybeSingle();
+
+  if (matchError) {
+    return NextResponse.json({ ok: false, error: matchError.message }, { status: 500 });
+  }
+  if (!match) {
+    return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
+  }
+  if (!canTorneo2RemoteMutateMatch(live, match)) {
+    return NextResponse.json({ ok: false, error: "match_not_on_station" }, { status: 403 });
+  }
+
+  const { data: updated, error } = await admin
     .from("torneo2_matches")
     .update(patch)
     .eq("id", matchId)
-    .eq("campaign_id", v.session.campaign_id);
+    .eq("campaign_id", v.session.campaign_id)
+    .eq("status", "active")
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+  }
+  if (!updated) {
+    return NextResponse.json({ ok: false, error: "match_not_active" }, { status: 409 });
   }
 
   return NextResponse.json({ ok: true });

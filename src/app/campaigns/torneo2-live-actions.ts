@@ -425,9 +425,10 @@ export async function endTorneo2MatchOnStationAction(
   if (!check.ok) return { success: false, error: check.error };
   const supabase = check.supabase;
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("torneo2_matches")
     .update({
+      status: "pending",
       timer_running: false,
       timer_started_at: null,
       timer_paused_elapsed_ms: 0,
@@ -435,9 +436,12 @@ export async function endTorneo2MatchOnStationAction(
     })
     .eq("id", matchId)
     .eq("campaign_id", campaignId)
-    .eq("status", "active");
+    .eq("status", "active")
+    .select("id")
+    .maybeSingle();
 
   if (error) return { success: false, error: error.message };
+  if (!updated) return { success: false, error: "Incontro attivo non trovato." };
 
   const { data: live } = await supabase
     .from("torneo2_live_sessions")
