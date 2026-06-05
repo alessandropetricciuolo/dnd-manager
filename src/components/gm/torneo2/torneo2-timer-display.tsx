@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTorneo2MatchSync } from "@/hooks/use-torneo2-match-sync";
+import { playTimerExpiredBeep } from "@/lib/torneo2/beep";
 import {
   computeTorneo2TimerView,
   formatTorneo2Time,
@@ -44,65 +45,94 @@ export function Torneo2TimerDisplay({ campaignId, matchId, matchLabel, initialCo
   const view = computeTorneo2TimerView(timer, now);
   const active = combat.combatants[combat.currentTurnIndex] ?? null;
 
+  const expiredRef = useRef(false);
+  useEffect(() => {
+    if (timer.timer_mode === "none") {
+      expiredRef.current = false;
+      return;
+    }
+    if (view.expired) {
+      if (!expiredRef.current) {
+        expiredRef.current = true;
+        playTimerExpiredBeep();
+      }
+    } else {
+      expiredRef.current = false;
+    }
+  }, [view.expired, timer.timer_mode]);
+
+  const accent = active?.teamColor ?? "#f59e0b";
+
   return (
-    <div className="flex h-screen w-screen flex-col items-center justify-center bg-zinc-950 p-6 text-zinc-100">
-      <p className="mb-2 text-center text-lg font-semibold text-amber-400/90">{matchLabel}</p>
-      <p className="mb-6 text-sm uppercase tracking-widest text-zinc-500">
-        Round {combat.roundNumber}
-        {view.label ? ` · ${view.label}` : ""}
-      </p>
-
-      {active ? (
-        <div className="mb-8 flex flex-col items-center gap-3">
-          {active.portraitUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={active.portraitUrl}
-              alt={active.name}
-              className="h-40 w-40 rounded-full border-4 object-cover"
-              style={{ borderColor: active.teamColor ?? "#f59e0b" }}
-            />
-          ) : (
-            <div
-              className="flex h-40 w-40 items-center justify-center rounded-full border-4 text-5xl font-bold"
-              style={{ borderColor: active.teamColor ?? "#f59e0b" }}
-            >
-              {active.name.slice(0, 1)}
+    <div className="flex h-screen w-screen bg-zinc-950 text-zinc-100">
+      {/* Colonna sinistra: ritratto grande in un rettangolo */}
+      <div className="flex w-[40%] max-w-[46rem] shrink-0 items-stretch p-6">
+        {active ? (
+          <div
+            className="relative h-full w-full overflow-hidden rounded-3xl border-4 bg-zinc-900 shadow-2xl"
+            style={{ borderColor: accent }}
+          >
+            {active.portraitUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={active.portraitUrl} alt={active.name} className="h-full w-full object-cover" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-[16rem] font-black text-zinc-700">
+                {active.name.slice(0, 1)}
+              </div>
+            )}
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent p-8">
+              <p className="text-5xl font-black leading-tight drop-shadow-lg">{active.name}</p>
+              {active.teamName ? (
+                <p className="mt-1 text-2xl font-semibold" style={{ color: accent }}>
+                  {active.teamName}
+                </p>
+              ) : null}
             </div>
-          )}
-          <p className="text-3xl font-bold">{active.name}</p>
-          {active.teamName ? <p className="text-lg text-zinc-400">{active.teamName}</p> : null}
-        </div>
-      ) : null}
+          </div>
+        ) : (
+          <div className="flex h-full w-full items-center justify-center rounded-3xl border-4 border-zinc-800 text-2xl text-zinc-600">
+            In attesa…
+          </div>
+        )}
+      </div>
 
-      {timer.timer_mode !== "none" ? (
-        <div
-          className={cn(
-            "rounded-3xl px-16 py-8 text-[12rem] font-black leading-none tabular-nums",
-            view.expired ? "text-red-500" : view.running ? "text-amber-300" : "text-zinc-300"
-          )}
-        >
-          {formatTorneo2Time(view.remainingSec)}
-        </div>
-      ) : null}
+      {/* Colonna destra: timer e info */}
+      <div className="flex min-w-0 flex-1 flex-col items-center justify-center p-6">
+        <p className="mb-2 text-center text-2xl font-semibold text-amber-400/90">{matchLabel}</p>
+        <p className="mb-8 text-base uppercase tracking-widest text-zinc-500">
+          Round {combat.roundNumber}
+          {view.label ? ` · ${view.label}` : ""}
+        </p>
 
-      {/* Ordine iniziativa compatto */}
-      <div className="mt-8 flex max-w-5xl flex-wrap items-center justify-center gap-2">
-        {combat.combatants.map((c, idx) => (
-          <span
-            key={c.id}
+        {timer.timer_mode !== "none" ? (
+          <div
             className={cn(
-              "rounded-full px-3 py-1 text-sm",
-              idx === combat.currentTurnIndex
-                ? "bg-amber-600 font-bold text-zinc-950"
-                : c.isDead || c.hp <= 0
-                  ? "bg-zinc-900 text-zinc-600 line-through"
-                  : "bg-zinc-800 text-zinc-300"
+              "text-[14vw] font-black leading-none tabular-nums xl:text-[12rem]",
+              view.expired ? "text-red-500" : view.running ? "text-amber-300" : "text-zinc-300"
             )}
           >
-            {c.name}
-          </span>
-        ))}
+            {formatTorneo2Time(view.remainingSec)}
+          </div>
+        ) : null}
+
+        {/* Ordine iniziativa compatto */}
+        <div className="mt-10 flex max-w-3xl flex-wrap items-center justify-center gap-2">
+          {combat.combatants.map((c, idx) => (
+            <span
+              key={c.id}
+              className={cn(
+                "rounded-full px-3 py-1 text-sm",
+                idx === combat.currentTurnIndex
+                  ? "bg-amber-600 font-bold text-zinc-950"
+                  : c.isDead || c.hp <= 0
+                    ? "bg-zinc-900 text-zinc-600 line-through"
+                    : "bg-zinc-800 text-zinc-300"
+              )}
+            >
+              {c.name}
+            </span>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -29,6 +29,7 @@ import {
 import { buildTorneo2CombatSeed } from "@/lib/torneo2/seed";
 import {
   emptyTorneo2TimerState,
+  primeTimerPatch,
   startTimerPatch,
   togglePauseTimerPatch,
 } from "@/lib/torneo2/timer";
@@ -127,6 +128,7 @@ export function Torneo2Console({ campaignId, campaignName }: Props) {
     if (prevTurn1.current === idx) return;
     prevTurn1.current = idx;
     if (s1Timer.timer_mode === "turn" || s1Timer.timer_mode === "both") {
+      // Turni successivi al primo: il timer riparte automaticamente.
       applyTimerPatch(1, s1MatchId, startTimerPatch(`Turno ${s1Combat.roundNumber}`, new Date().toISOString()));
     }
   }, [s1Active, s1MatchId, s1Combat.currentTurnIndex, s1Combat.roundNumber, s1Timer.timer_mode, applyTimerPatch]);
@@ -144,6 +146,7 @@ export function Torneo2Console({ campaignId, campaignName }: Props) {
     if (prevTurn2.current === idx) return;
     prevTurn2.current = idx;
     if (s2Timer.timer_mode === "turn" || s2Timer.timer_mode === "both") {
+      // Turni successivi al primo: il timer riparte automaticamente.
       applyTimerPatch(2, s2MatchId, startTimerPatch(`Turno ${s2Combat.roundNumber}`, new Date().toISOString()));
     }
   }, [s2Active, s2MatchId, s2Combat.currentTurnIndex, s2Combat.roundNumber, s2Timer.timer_mode, applyTimerPatch]);
@@ -224,10 +227,11 @@ export function Torneo2Console({ campaignId, campaignName }: Props) {
         sync2.noteExternalSave(match.combatSeq, seeded);
         prevTurn2.current = seeded.currentTurnIndex;
       }
+      // Timer preparato in pausa: il GM lo avvia manualmente quando il tavolo è pronto.
       if (match.timerMode === "turn" || match.timerMode === "both") {
-        applyTimerPatch(station, matchId, startTimerPatch("Turno 1", new Date().toISOString()));
+        applyTimerPatch(station, matchId, primeTimerPatch("Turno 1"));
       } else if (match.timerMode === "match") {
-        applyTimerPatch(station, matchId, startTimerPatch(match.label ?? "Incontro", new Date().toISOString()));
+        applyTimerPatch(station, matchId, primeTimerPatch(match.label ?? "Incontro"));
       }
       await refreshSetup();
       toast.success(`Incontro avviato su Tavolo ${station}.`);

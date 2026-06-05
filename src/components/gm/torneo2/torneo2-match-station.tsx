@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ExternalLink, Monitor, Pause, Play, Power, RotateCcw, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Torneo2CombatTracker } from "./torneo2-combat-tracker";
+import { playTimerExpiredBeep } from "@/lib/torneo2/beep";
 import {
   computeTorneo2TimerView,
   formatTorneo2Time,
@@ -64,6 +65,22 @@ export function Torneo2MatchStation({
     },
     now
   );
+
+  const expiredRef = useRef(false);
+  useEffect(() => {
+    if (timer.timer_mode === "none") {
+      expiredRef.current = false;
+      return;
+    }
+    if (view.expired) {
+      if (!expiredRef.current) {
+        expiredRef.current = true;
+        playTimerExpiredBeep();
+      }
+    } else {
+      expiredRef.current = false;
+    }
+  }, [view.expired, timer.timer_mode]);
 
   const teamAName = match?.teamAId ? teams.find((t) => t.id === match.teamAId)?.name ?? null : null;
   const teamBName = match?.teamBId ? teams.find((t) => t.id === match.teamBId)?.name ?? null : null;

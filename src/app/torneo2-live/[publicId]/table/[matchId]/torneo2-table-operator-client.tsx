@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pause, Play, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Torneo2CombatTracker } from "@/components/gm/torneo2/torneo2-combat-tracker";
+import { playTimerExpiredBeep } from "@/lib/torneo2/beep";
 import { useTorneo2MatchSync } from "@/hooks/use-torneo2-match-sync";
 import { patchTorneo2TimerAction, type Torneo2TimerColumns } from "@/app/campaigns/torneo2-live-actions";
 import {
@@ -55,6 +56,22 @@ export function Torneo2TableOperatorClient({
   }, [timer.timer_running]);
 
   const view = computeTorneo2TimerView(timer, now);
+
+  const expiredRef = useRef(false);
+  useEffect(() => {
+    if (timer.timer_mode === "none") {
+      expiredRef.current = false;
+      return;
+    }
+    if (view.expired) {
+      if (!expiredRef.current) {
+        expiredRef.current = true;
+        playTimerExpiredBeep();
+      }
+    } else {
+      expiredRef.current = false;
+    }
+  }, [view.expired, timer.timer_mode]);
 
   const applyPatch = (patch: Partial<Torneo2TimerColumns>) => {
     setTimer((t) => ({ ...t, ...patch }));

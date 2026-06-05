@@ -105,6 +105,19 @@ export function startTimerPatch(label: string | null, nowIso: string): Torneo2Ti
   };
 }
 
+/**
+ * Prepara il countdown a tempo pieno ma in PAUSA: il GM lo fa partire manualmente.
+ * Usato all'avvio incontro e a ogni cambio turno per non far partire il timer da solo.
+ */
+export function primeTimerPatch(label: string | null): Torneo2TimerPatch {
+  return {
+    timer_running: false,
+    timer_started_at: null,
+    timer_paused_elapsed_ms: 0,
+    timer_label: label,
+  };
+}
+
 /** Mette in pausa: congela l'elapsed corrente. */
 export function pauseTimerPatch(state: Torneo2TimerState, nowMs: number): Torneo2TimerPatch {
   return {

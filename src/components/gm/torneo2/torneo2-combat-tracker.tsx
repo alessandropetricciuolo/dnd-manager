@@ -126,7 +126,15 @@ export function Torneo2CombatTracker({
         idx = state.combatants.length - 1;
         round = Math.max(1, round - 1);
       }
-      onChange({ ...state, currentTurnIndex: idx, roundNumber: round });
+      // Reazione e azione bonus si resettano a ogni cambio turno.
+      onChange({
+        ...state,
+        currentTurnIndex: idx,
+        roundNumber: round,
+        combatants: state.combatants.map((c) =>
+          c.usedReaction || c.usedBonus ? { ...c, usedReaction: false, usedBonus: false } : c
+        ),
+      });
     },
     [onChange, state]
   );
