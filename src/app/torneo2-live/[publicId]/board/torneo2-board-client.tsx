@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/utils/supabase/client";
 import { getTorneo2SetupAction } from "@/app/campaigns/torneo2-actions";
 import { Torneo2Standings } from "@/components/gm/torneo2/torneo2-standings";
+import { Torneo2Bracket } from "@/components/gm/torneo2/torneo2-bracket";
+import { groupBracketRounds } from "@/lib/torneo2/bracket";
 import type { Torneo2Setup } from "@/lib/torneo2/types";
 
 type Props = {
@@ -51,8 +53,11 @@ export function Torneo2BoardClient({ campaignId, initialSetup }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [campaignId]);
 
+  const hasBracket = groupBracketRounds(setup.matches).length > 0;
+
   return (
     <div className="min-h-screen w-screen bg-zinc-950 text-zinc-100">
+      {hasBracket ? <Torneo2Bracket campaignId={campaignId} setup={setup} /> : null}
       <Torneo2Standings campaignId={campaignId} setup={setup} className="mx-auto max-w-3xl" />
     </div>
   );

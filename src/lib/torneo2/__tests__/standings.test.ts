@@ -54,6 +54,11 @@ function match(over: Partial<Torneo2Match>): Torneo2Match {
     winnerCharacterId: null,
     completedAt: null,
     notes: null,
+    bracketRound: null,
+    bracketPosition: 0,
+    roundLabel: null,
+    feedsMatchId: null,
+    feedsSlot: null,
     ...over,
   };
 }

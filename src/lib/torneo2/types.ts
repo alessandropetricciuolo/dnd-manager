@@ -59,6 +59,12 @@ export type Torneo2Match = {
   winnerCharacterId: string | null;
   completedAt: string | null;
   notes: string | null;
+  // Bracket / tabellone
+  bracketRound: number | null;
+  bracketPosition: number;
+  roundLabel: string | null;
+  feedsMatchId: string | null;
+  feedsSlot: "a" | "b" | null;
 };
 
 export type Torneo2LiveSession = {

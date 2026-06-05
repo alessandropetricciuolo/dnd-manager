@@ -3,13 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { ArrowLeft, ListChecks, Octagon, Swords, Trophy } from "lucide-react";
+import { ArrowLeft, ListChecks, Network, Octagon, Swords, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Torneo2SetupPanel } from "./torneo2-setup-panel";
 import { Torneo2MatchStation } from "./torneo2-match-station";
 import { Torneo2LiveBar } from "./torneo2-live-bar";
 import { Torneo2Standings } from "./torneo2-standings";
+import { Torneo2Bracket } from "./torneo2-bracket";
 import { useTorneo2MatchSync } from "@/hooks/use-torneo2-match-sync";
 import {
   emergencyResetTorneo2Action,
@@ -38,7 +39,7 @@ import type { Torneo2LiveSession, Torneo2Match, Torneo2Setup } from "@/lib/torne
 
 type Props = { campaignId: string; campaignName?: string | null };
 
-type Section = "setup" | "live" | "classifica";
+type Section = "setup" | "live" | "bracket" | "classifica";
 
 function emptyTimerColumns(): Torneo2TimerColumns {
   return emptyTorneo2TimerState();
@@ -348,6 +349,7 @@ export function Torneo2Console({ campaignId, campaignName }: Props) {
             [
               { id: "setup", label: "Setup", icon: ListChecks },
               { id: "live", label: "Live", icon: Swords },
+              { id: "bracket", label: "Tabellone", icon: Network },
               { id: "classifica", label: "Classifica", icon: Trophy },
             ] as const
           ).map((tab) => (
@@ -461,6 +463,14 @@ export function Torneo2Console({ campaignId, campaignName }: Props) {
             />
           </div>
         </div>
+      ) : section === "bracket" ? (
+        <Torneo2Bracket
+          campaignId={campaignId}
+          setup={setup}
+          onChanged={refreshSetup}
+          canManage
+          className="min-h-0 flex-1"
+        />
       ) : (
         <Torneo2Standings
           campaignId={campaignId}

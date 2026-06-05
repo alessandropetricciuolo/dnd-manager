@@ -12,7 +12,7 @@ import type {
 import type { Torneo2TimerMode } from "@/lib/torneo2/timer";
 
 export const TORNEO2_MATCH_SELECT =
-  "id, campaign_id, label, sort_order, kind, status, team_a_id, team_b_id, timer_mode, turn_seconds, match_seconds, timer_running, timer_started_at, timer_paused_elapsed_ms, timer_label, combat_state, combat_seq, combat_origin, combat_updated_at, winner_team_id, winner_character_id, completed_at, notes";
+  "id, campaign_id, label, sort_order, kind, status, team_a_id, team_b_id, timer_mode, turn_seconds, match_seconds, timer_running, timer_started_at, timer_paused_elapsed_ms, timer_label, combat_state, combat_seq, combat_origin, combat_updated_at, winner_team_id, winner_character_id, completed_at, notes, bracket_round, bracket_position, round_label, feeds_match_id, feeds_slot";
 
 export const TORNEO2_LIVE_SELECT =
   "id, public_id, campaign_id, status, station1_match_id, station2_match_id, remote_session_public_id, started_at, ended_at";
@@ -41,6 +41,11 @@ export type Torneo2MatchRow = {
   winner_character_id: string | null;
   completed_at: string | null;
   notes: string | null;
+  bracket_round: number | null;
+  bracket_position: number | null;
+  round_label: string | null;
+  feeds_match_id: string | null;
+  feeds_slot: string | null;
 };
 
 export function mapTorneo2MatchRow(row: Torneo2MatchRow): Torneo2Match {
@@ -68,6 +73,11 @@ export function mapTorneo2MatchRow(row: Torneo2MatchRow): Torneo2Match {
     winnerCharacterId: row.winner_character_id,
     completedAt: row.completed_at,
     notes: row.notes,
+    bracketRound: row.bracket_round ?? null,
+    bracketPosition: row.bracket_position ?? 0,
+    roundLabel: row.round_label ?? null,
+    feedsMatchId: row.feeds_match_id ?? null,
+    feedsSlot: row.feeds_slot === "a" || row.feeds_slot === "b" ? row.feeds_slot : null,
   };
 }
 

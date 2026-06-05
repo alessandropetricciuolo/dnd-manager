@@ -11,6 +11,7 @@ import {
   TORNEO2_MATCH_SELECT,
 } from "@/lib/torneo2/map-rows";
 import { finalistCharacterIds } from "@/lib/torneo2/standings";
+import { buildBracketPlan, isPowerOfTwo } from "@/lib/torneo2/bracket";
 import type { Torneo2MatchStatus, Torneo2Participant, Torneo2Setup, Torneo2Team } from "@/lib/torneo2/types";
 import type { Torneo2TimerMode } from "@/lib/torneo2/timer";
 
@@ -384,6 +385,24 @@ export async function setTorneo2MatchStatusAction(
     patch.timer_label = null;
   }
 
+  // Se riapro un incontro collegato nel tabellone, ritiro l'avanzamento dallo slot a valle.
+  if (status === "pending") {
+    const { data: m } = await check.supabase
+      .from("torneo2_matches")
+      .select("feeds_match_id, feeds_slot")
+      .eq("id", matchId)
+      .eq("campaign_id", campaignId)
+      .maybeSingle();
+    if (m?.feeds_match_id) {
+      await withdrawWinnerFromBracket(
+        check.supabase,
+        campaignId,
+        m.feeds_match_id as string,
+        (m.feeds_slot as "a" | "b" | null) ?? "a"
+      );
+    }
+  }
+
   const { error } = await check.supabase
     .from("torneo2_matches")
     .update(patch)
@@ -392,6 +411,39 @@ export async function setTorneo2MatchStatusAction(
   if (error) return { success: false, error: error.message };
   revalidateTorneo2(campaignId);
   return { success: true };
+}
+
+/** Annulla l'avanzamento a valle quando un incontro viene riaperto. */
+async function withdrawWinnerFromBracket(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  campaignId: string,
+  targetMatchId: string,
+  slot: "a" | "b"
+): Promise<void> {
+  const { data: target } = await supabase
+    .from("torneo2_matches")
+    .select("id, kind, status")
+    .eq("id", targetMatchId)
+    .eq("campaign_id", campaignId)
+    .maybeSingle();
+  if (!target || target.status === "completed") return;
+
+  const resetCombat = {
+    combat_state: null,
+    combat_seq: 0,
+    combat_origin: null,
+    combat_updated_at: null,
+  };
+
+  if (target.kind === "final_ffa") {
+    await supabase.from("torneo2_match_participants").delete().eq("match_id", targetMatchId);
+    await supabase.from("torneo2_matches").update(resetCombat).eq("id", targetMatchId);
+  } else {
+    await supabase
+      .from("torneo2_matches")
+      .update({ [slot === "b" ? "team_b_id" : "team_a_id"]: null, ...resetCombat })
+      .eq("id", targetMatchId);
+  }
 }
 
 /** Dichiarazione manuale del vincitore. Per team: winnerTeamId; per FFA: winnerCharacterId. */
@@ -405,7 +457,7 @@ export async function declareTorneo2WinnerAction(
 
   const { data: match } = await check.supabase
     .from("torneo2_matches")
-    .select("kind, team_a_id, team_b_id")
+    .select("kind, team_a_id, team_b_id, feeds_match_id, feeds_slot")
     .eq("id", matchId)
     .eq("campaign_id", campaignId)
     .maybeSingle();
@@ -418,6 +470,8 @@ export async function declareTorneo2WinnerAction(
     timer_running: false,
     timer_started_at: null,
   };
+
+  let winnerTeamForAdvance: string | null = null;
 
   if (match.kind === "final_ffa") {
     const winnerCharacterId = payload.winnerCharacterId?.trim() || null;
@@ -439,6 +493,7 @@ export async function declareTorneo2WinnerAction(
     }
     patch.winner_team_id = winnerTeamId;
     patch.winner_character_id = null;
+    winnerTeamForAdvance = winnerTeamId;
   }
 
   const { error } = await check.supabase
@@ -447,8 +502,75 @@ export async function declareTorneo2WinnerAction(
     .eq("id", matchId)
     .eq("campaign_id", campaignId);
   if (error) return { success: false, error: error.message };
+
+  // Avanzamento automatico nel tabellone.
+  if (winnerTeamForAdvance && match.feeds_match_id) {
+    await advanceWinnerInBracket(
+      check.supabase,
+      campaignId,
+      match.feeds_match_id as string,
+      (match.feeds_slot as "a" | "b" | null) ?? "a",
+      winnerTeamForAdvance
+    );
+  }
+
   revalidateTorneo2(campaignId);
   return { success: true };
+}
+
+/**
+ * Propaga la squadra vincente nell'incontro successivo del tabellone.
+ * - Target squadra: riempie lo slot a/b indicato.
+ * - Target triello/FFA: sostituisce i partecipanti con i membri della squadra vincente.
+ * In entrambi i casi azzera lo stato combattimento del target (verra' riseminato).
+ */
+async function advanceWinnerInBracket(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  campaignId: string,
+  targetMatchId: string,
+  slot: "a" | "b",
+  winnerTeamId: string
+): Promise<void> {
+  const { data: target } = await supabase
+    .from("torneo2_matches")
+    .select("id, kind, status")
+    .eq("id", targetMatchId)
+    .eq("campaign_id", campaignId)
+    .maybeSingle();
+  if (!target) return;
+  if (target.status === "completed") return;
+
+  const resetCombat = {
+    combat_state: null,
+    combat_seq: 0,
+    combat_origin: null,
+    combat_updated_at: null,
+  };
+
+  if (target.kind === "final_ffa") {
+    const { data: members } = await supabase
+      .from("torneo2_team_members")
+      .select("character_id, sort_order")
+      .eq("team_id", winnerTeamId)
+      .order("sort_order", { ascending: true });
+    await supabase.from("torneo2_match_participants").delete().eq("match_id", targetMatchId);
+    const rows = (members ?? []).map((m, i) => ({
+      match_id: targetMatchId,
+      side: "ffa" as const,
+      team_id: winnerTeamId,
+      character_id: m.character_id,
+      sort_order: i,
+    }));
+    if (rows.length > 0) {
+      await supabase.from("torneo2_match_participants").insert(rows);
+    }
+    await supabase.from("torneo2_matches").update(resetCombat).eq("id", targetMatchId);
+  } else {
+    await supabase
+      .from("torneo2_matches")
+      .update({ [slot === "b" ? "team_b_id" : "team_a_id"]: winnerTeamId, ...resetCombat })
+      .eq("id", targetMatchId);
+  }
 }
 
 /** Genera la finale free-for-all individuale con i PG delle squadre vincitrici. */
@@ -527,6 +649,184 @@ export async function generateTorneo2FinalAction(
 
   revalidateTorneo2(campaignId);
   return { success: true, data: { matchId: match.id, participantCount: rows.length } };
+}
+
+// ============================================================
+// Tabellone (bracket)
+// ============================================================
+
+/** Modifica manuale dei dati bracket di un incontro (round, etichetta, collegamento vincitore). */
+export async function updateTorneo2MatchBracketAction(
+  campaignId: string,
+  matchId: string,
+  payload: {
+    bracketRound?: number | null;
+    bracketPosition?: number;
+    roundLabel?: string | null;
+    feedsMatchId?: string | null;
+    feedsSlot?: "a" | "b" | null;
+  }
+): Promise<Result> {
+  const check = await ensureTorneo2Gm(campaignId);
+  if (!check.ok) return { success: false, error: check.error };
+
+  if (payload.feedsMatchId && payload.feedsMatchId === matchId) {
+    return { success: false, error: "Un incontro non puo' alimentare se stesso." };
+  }
+
+  const patch: Record<string, unknown> = {};
+  if (payload.bracketRound !== undefined) patch.bracket_round = payload.bracketRound;
+  if (payload.bracketPosition !== undefined) patch.bracket_position = payload.bracketPosition;
+  if (payload.roundLabel !== undefined) patch.round_label = payload.roundLabel?.trim() || null;
+  if (payload.feedsMatchId !== undefined) patch.feeds_match_id = payload.feedsMatchId || null;
+  if (payload.feedsSlot !== undefined) patch.feeds_slot = payload.feedsSlot ?? null;
+  if (Object.keys(patch).length === 0) return { success: true };
+
+  const { error } = await check.supabase
+    .from("torneo2_matches")
+    .update(patch)
+    .eq("id", matchId)
+    .eq("campaign_id", campaignId);
+  if (error) return { success: false, error: error.message };
+  revalidateTorneo2(campaignId);
+  return { success: true };
+}
+
+/** Elimina tutti gli incontri del tabellone (quelli con bracket_round valorizzato). */
+export async function clearTorneo2BracketAction(campaignId: string): Promise<Result<{ removed: number }>> {
+  const check = await ensureTorneo2Gm(campaignId);
+  if (!check.ok) return { success: false, error: check.error };
+
+  const { data, error } = await check.supabase
+    .from("torneo2_matches")
+    .delete()
+    .eq("campaign_id", campaignId)
+    .not("bracket_round", "is", null)
+    .select("id");
+  if (error) return { success: false, error: error.message };
+  revalidateTorneo2(campaignId);
+  return { success: true, data: { removed: (data ?? []).length } };
+}
+
+/**
+ * Genera un tabellone a eliminazione diretta dalle squadre selezionate (potenza di due),
+ * con avanzamento automatico e, opzionalmente, un triello finale tra i membri della
+ * squadra vincitrice della finale.
+ */
+export async function generateTorneo2BracketAction(
+  campaignId: string,
+  payload: { teamIds: string[]; timer?: TimerConfig; withTriello?: boolean; replaceExisting?: boolean }
+): Promise<Result<{ matchesCreated: number }>> {
+  const check = await ensureTorneo2Gm(campaignId);
+  if (!check.ok) return { success: false, error: check.error };
+  const supabase = check.supabase;
+
+  const teamIds = [...new Set((payload.teamIds ?? []).filter(Boolean))];
+  if (teamIds.length < 2) return { success: false, error: "Seleziona almeno 2 squadre." };
+  if (!isPowerOfTwo(teamIds.length)) {
+    return {
+      success: false,
+      error: "Per la generazione automatica servono 2, 4, 8 o 16 squadre. Usa l'editor manuale per altri numeri.",
+    };
+  }
+
+  const plan = buildBracketPlan(teamIds);
+  if (plan.length === 0) return { success: false, error: "Impossibile costruire il tabellone." };
+
+  if (payload.replaceExisting) {
+    await supabase
+      .from("torneo2_matches")
+      .delete()
+      .eq("campaign_id", campaignId)
+      .not("bracket_round", "is", null);
+  }
+
+  const { data: maxRow } = await supabase
+    .from("torneo2_matches")
+    .select("sort_order")
+    .eq("campaign_id", campaignId)
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  let nextSort = (maxRow?.sort_order ?? -1) + 1;
+
+  const timer = sanitizeTimerConfig(payload.timer);
+  const maxRound = plan.reduce((acc, m) => Math.max(acc, m.round), 0);
+
+  // Inserimento in due fasi: prima i match (senza feeds), poi i collegamenti.
+  const idGrid: Record<string, string> = {}; // `${round}:${position}` -> id
+  for (const m of plan) {
+    const { data, error } = await supabase
+      .from("torneo2_matches")
+      .insert({
+        campaign_id: campaignId,
+        kind: "team",
+        team_a_id: m.teamAId,
+        team_b_id: m.teamBId,
+        label: null,
+        round_label: m.label,
+        bracket_round: m.round,
+        bracket_position: m.position,
+        sort_order: nextSort,
+        status: "pending",
+        ...timer,
+      })
+      .select("id")
+      .single();
+    if (error || !data) {
+      return { success: false, error: error?.message ?? "Errore creazione incontri." };
+    }
+    idGrid[`${m.round}:${m.position}`] = data.id;
+    nextSort += 1;
+  }
+
+  let trielloId: string | null = null;
+  if (payload.withTriello) {
+    const { data: triello, error: triErr } = await supabase
+      .from("torneo2_matches")
+      .insert({
+        campaign_id: campaignId,
+        kind: "final_ffa",
+        label: "Triello",
+        round_label: "Triello",
+        bracket_round: maxRound + 1,
+        bracket_position: 0,
+        sort_order: nextSort,
+        status: "pending",
+        ...timer,
+      })
+      .select("id")
+      .single();
+    if (triErr || !triello) {
+      return { success: false, error: triErr?.message ?? "Errore creazione triello." };
+    }
+    trielloId = triello.id;
+    nextSort += 1;
+  }
+
+  // Collegamenti vincitore.
+  for (const m of plan) {
+    const id = idGrid[`${m.round}:${m.position}`];
+    if (!id) continue;
+    if (m.feedsTo) {
+      const targetId = idGrid[`${m.feedsTo.round}:${m.feedsTo.position}`];
+      if (targetId) {
+        await supabase
+          .from("torneo2_matches")
+          .update({ feeds_match_id: targetId, feeds_slot: m.feedsTo.slot })
+          .eq("id", id);
+      }
+    } else if (trielloId) {
+      // La finale alimenta il triello (espansione membri squadra vincente).
+      await supabase
+        .from("torneo2_matches")
+        .update({ feeds_match_id: trielloId, feeds_slot: null })
+        .eq("id", id);
+    }
+  }
+
+  revalidateTorneo2(campaignId);
+  return { success: true, data: { matchesCreated: plan.length + (trielloId ? 1 : 0) } };
 }
 
 /** Kill switch Torneo 2.0: termina live, revoca telecomandi, azzera incontri. */
