@@ -9,6 +9,7 @@ import { subclassCatalogSourceSuffix, supplementSubclassesForClass } from "@/lib
 import { GeneratedSheetView } from "@/components/sheet-generator/generated-sheet-view";
 import { SheetBuildChoicesPanel } from "@/components/sheet-generator/sheet-build-choices-panel";
 import { Textarea } from "@/components/ui/textarea";
+import { defaultOverridesForPreview } from "@/lib/sheet-generator/build-choices-client";
 import type { BuildChoicesPreview, CharacterBuildOverrides } from "@/lib/sheet-generator/build-choices-types";
 import type { GeneratedCharacterSheet } from "@/lib/sheet-generator/types";
 import type { QuickManualSection } from "@/lib/sheet-generator/quick-manual-builder";
@@ -362,14 +363,7 @@ function GeneratorPageContent() {
         setResultMessage(previewResult.message);
         return;
       }
-      if (previewResult.preview?.slots.length) {
-        setChoicesPreview(previewResult.preview);
-        setBuildOverrides(previewResult.preview.overrides);
-        setPhase("choices");
-        setResultMessage(previewResult.message);
-        return;
-      }
-      await runGenerateSheet(fd, null);
+      await runGenerateSheet(fd, defaultOverridesForPreview(previewResult.preview));
     });
   }, [initial, startTransition]);
 
