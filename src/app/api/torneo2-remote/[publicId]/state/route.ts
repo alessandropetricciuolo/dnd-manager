@@ -61,6 +61,7 @@ export async function POST(request: Request, context: RouteContext) {
     .select(
       "id, label, kind, status, team_a_id, team_b_id, combat_state, combat_seq, timer_mode, turn_seconds, match_seconds, timer_running, timer_started_at, timer_paused_elapsed_ms, timer_label"
     )
+    .eq("campaign_id", v.session.campaign_id)
     .in("id", matchIds);
 
   const { data: teams } = await admin
