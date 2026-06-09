@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 
 export type WikiEntityForGraph = {
@@ -147,6 +148,7 @@ export async function createWikiRelationship(
       if (error.code === "23505") return { success: false, error: "Questa relazione esiste già." };
       return { success: false, error: error.message };
     }
+    revalidatePath(`/campaigns/${campaignId}/gm-only/concept-map`);
     return { success: true };
   } catch (err) {
     console.error("[createWikiRelationship]", err);

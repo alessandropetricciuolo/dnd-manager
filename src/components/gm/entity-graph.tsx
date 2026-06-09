@@ -38,6 +38,7 @@ import {
   Map,
   Pencil,
   Trash2,
+  Link2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -94,17 +95,19 @@ function EntityNode({ data, selected }: NodeProps<Node<EntityNodeData>>) {
   const Icon = TYPE_ICONS[(data as EntityNodeData).type] ?? BookOpen;
   const d = data as EntityNodeData;
   return (
-    <div className="flex flex-col items-center gap-1 px-1 pb-0.5">
+    <div className="group flex flex-col items-center gap-1 px-1 pb-0.5">
       <div className="relative flex flex-col items-center">
         <Handle
           type="target"
           position={Position.Left}
-          className="!absolute !left-0 !top-1/2 !h-2 !w-2 !-translate-x-px !-translate-y-1/2 !border-0 !bg-zinc-400/85 !opacity-80"
+          isConnectable
+          className="!absolute !left-0 !top-1/2 !h-3.5 !w-3.5 !-translate-x-1/2 !-translate-y-1/2 !rounded-full !border-2 !border-[#0c0c0e] !bg-amber-400/90 !opacity-40 transition-opacity group-hover:!opacity-100"
         />
         <Handle
           type="source"
           position={Position.Right}
-          className="!absolute !right-0 !top-1/2 !h-2 !w-2 !translate-x-px !-translate-y-1/2 !border-0 !bg-zinc-400/85 !opacity-80"
+          isConnectable
+          className="!absolute !right-0 !top-1/2 !h-3.5 !w-3.5 !translate-x-1/2 !-translate-y-1/2 !rounded-full !border-2 !border-[#0c0c0e] !bg-amber-400/90 !opacity-40 transition-opacity group-hover:!opacity-100"
         />
         <div
           className={cn(
@@ -126,17 +129,19 @@ function EntityNode({ data, selected }: NodeProps<Node<EntityNodeData>>) {
 function MapNode({ data, selected }: NodeProps<Node<MapNodeData>>) {
   const d = data as MapNodeData;
   return (
-    <div className="flex flex-col items-center gap-1 px-1 pb-0.5">
+    <div className="group flex flex-col items-center gap-1 px-1 pb-0.5">
       <div className="relative flex flex-col items-center">
         <Handle
           type="target"
           position={Position.Left}
-          className="!absolute !left-0 !top-[26px] !h-2 !w-2 !-translate-x-px !-translate-y-1/2 !border-0 !bg-orange-400/90 !opacity-90"
+          isConnectable
+          className="!absolute !left-0 !top-[26px] !h-3.5 !w-3.5 !-translate-x-1/2 !-translate-y-1/2 !rounded-full !border-2 !border-[#0c0c0e] !bg-orange-400 !opacity-50 transition-opacity group-hover:!opacity-100"
         />
         <Handle
           type="source"
           position={Position.Right}
-          className="!absolute !right-0 !top-[26px] !h-2 !w-2 !translate-x-px !-translate-y-1/2 !border-0 !bg-orange-400/90 !opacity-90"
+          isConnectable
+          className="!absolute !right-0 !top-[26px] !h-3.5 !w-3.5 !translate-x-1/2 !-translate-y-1/2 !rounded-full !border-2 !border-[#0c0c0e] !bg-orange-400 !opacity-50 transition-opacity group-hover:!opacity-100"
         />
         <div
           className={cn(
@@ -263,7 +268,50 @@ function EntityGraphInner({ campaignId }: EntityGraphProps) {
   const [editLabel, setEditLabel] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [linkMode, setLinkMode] = useState(false);
+  const [linkSourceNodeId, setLinkSourceNodeId] = useState<string | null>(null);
   const { screenToFlowPosition } = useReactFlow();
+
+  const openConnectModalFromNodeIds = useCallback(
+    (sourceNodeId: string, targetNodeId: string) => {
+      if (sourceNodeId === targetNodeId) return;
+      const sourceNode = nodes.find((n) => n.id === sourceNodeId);
+      const targetNode = nodes.find((n) => n.id === targetNodeId);
+      if (!sourceNode || !targetNode) return;
+
+      const isSourceMap = sourceNodeId.startsWith("map:");
+      const isTargetMap = targetNodeId.startsWith("map:");
+      if (isSourceMap && isTargetMap) {
+        toast.error("Almeno una voce wiki deve essere origine del collegamento.");
+        return;
+      }
+
+      const sourceName =
+        (sourceNode.data as EntityNodeData).label ?? (sourceNode.data as MapNodeData).label ?? "";
+      const targetName =
+        (targetNode.data as EntityNodeData).label ?? (targetNode.data as MapNodeData).label ?? "";
+
+      const wikiId = isSourceMap
+        ? targetNodeId.replace(/^wiki:/, "")
+        : sourceNodeId.replace(/^wiki:/, "");
+      const mapId = isSourceMap
+        ? sourceNodeId.replace(/^map:/, "")
+        : isTargetMap
+          ? targetNodeId.replace(/^map:/, "")
+          : null;
+      const otherWikiId = !isSourceMap && !isTargetMap ? targetNodeId.replace(/^wiki:/, "") : "";
+
+      setConnectModal({
+        sourceId: wikiId,
+        targetId: mapId ? "" : otherWikiId,
+        targetMapId: mapId,
+        sourceName: isSourceMap ? targetName : sourceName,
+        targetName: isSourceMap ? sourceName : targetName,
+      });
+      setRelationshipLabel("");
+    },
+    [nodes]
+  );
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -330,28 +378,38 @@ function EntityGraphInner({ campaignId }: EntityGraphProps) {
   const onConnect = useCallback(
     (connection: Connection) => {
       if (!connection.source || !connection.target) return;
-      const sourceNode = nodes.find((n) => n.id === connection.source);
-      const targetNode = nodes.find((n) => n.id === connection.target);
-      if (!sourceNode || !targetNode) return;
-      const sourceName = (sourceNode.data as EntityNodeData).label ?? (sourceNode.data as MapNodeData).label ?? "";
-      const targetName = (targetNode.data as EntityNodeData).label ?? (targetNode.data as MapNodeData).label ?? "";
-      const isSourceMap = String(connection.source).startsWith("map:");
-      const isTargetMap = String(connection.target).startsWith("map:");
-      // source_id deve essere sempre una voce wiki; se l'utente ha trascinato dalla mappa, invertiamo
-      const wikiId = isSourceMap ? (connection.target as string).replace(/^wiki:/, "") : (connection.source as string).replace(/^wiki:/, "");
-      const mapId = isSourceMap ? (connection.source as string).replace(/^map:/, "") : (isTargetMap ? (connection.target as string).replace(/^map:/, "") : null);
-      const otherWikiId = !isSourceMap && !isTargetMap ? (connection.target as string).replace(/^wiki:/, "") : "";
-      setConnectModal({
-        sourceId: wikiId,
-        targetId: mapId ? "" : otherWikiId,
-        targetMapId: mapId,
-        sourceName: isSourceMap ? targetName : sourceName,
-        targetName: isSourceMap ? sourceName : targetName,
-      });
-      setRelationshipLabel("");
+      openConnectModalFromNodeIds(connection.source, connection.target);
     },
-    [nodes]
+    [openConnectModalFromNodeIds]
   );
+
+  const onNodeClick = useCallback(
+    (_event: React.MouseEvent, node: Node<GraphNodeData>) => {
+      if (!linkMode) return;
+      if (!linkSourceNodeId) {
+        setLinkSourceNodeId(node.id);
+        setNodes((nds) => nds.map((n) => ({ ...n, selected: n.id === node.id })));
+        toast.message(`Origine: ${(node.data as EntityNodeData).label ?? (node.data as MapNodeData).label}. Clicca il bersaglio.`);
+        return;
+      }
+      if (linkSourceNodeId === node.id) {
+        setLinkSourceNodeId(null);
+        setNodes((nds) => nds.map((n) => ({ ...n, selected: false })));
+        return;
+      }
+      openConnectModalFromNodeIds(linkSourceNodeId, node.id);
+      setLinkSourceNodeId(null);
+      setLinkMode(false);
+      setNodes((nds) => nds.map((n) => ({ ...n, selected: false })));
+    },
+    [linkMode, linkSourceNodeId, openConnectModalFromNodeIds, setNodes]
+  );
+
+  const cancelLinkMode = useCallback(() => {
+    setLinkMode(false);
+    setLinkSourceNodeId(null);
+    setNodes((nds) => nds.map((n) => ({ ...n, selected: false })));
+  }, [setNodes]);
 
   const handleSaveRelationship = useCallback(async () => {
     if (!connectModal) return;
@@ -429,34 +487,70 @@ function EntityGraphInner({ campaignId }: EntityGraphProps) {
   }, [campaignId, editModal, loadData]);
 
   const linkedWikiIds = new Set<string>();
+  const linkedMapIds = new Set<string>();
   relationships.forEach((r) => {
     linkedWikiIds.add(r.source_id);
     if (r.target_id) linkedWikiIds.add(r.target_id);
+    if (r.target_map_id) linkedMapIds.add(r.target_map_id);
   });
   const unlinkedEntities = entities.filter((e) => {
     const onCanvas = nodes.some((n) => n.id === `wiki:${e.id}`);
     return !linkedWikiIds.has(e.id) && !onCanvas;
   });
+  const unlinkedMaps = maps.filter((m) => {
+    const onCanvas = nodes.some((n) => n.id === `map:${m.id}`);
+    return !linkedMapIds.has(m.id) && !onCanvas;
+  });
 
   const onDrop = useCallback(
     (event: React.DragEvent) => {
       event.preventDefault();
-      const payload = event.dataTransfer.getData("application/entity");
-      if (!payload) return;
-      try {
-        const entity = JSON.parse(payload) as WikiEntityForGraph;
-        const position = screenToFlowPosition({ x: event.clientX, y: event.clientY });
-        setNodes((nds) => [
-          ...nds,
-          {
-            id: `wiki:${entity.id}`,
-            type: "entity",
-            position: { x: position.x - NODE_WIDTH / 2, y: position.y - NODE_HEIGHT / 2 },
-            data: { label: entity.name, type: entity.type, entityId: entity.id },
-          },
-        ]);
-      } catch {
-        // ignore
+      const entityPayload = event.dataTransfer.getData("application/entity");
+      const mapPayload = event.dataTransfer.getData("application/map");
+      const position = screenToFlowPosition({ x: event.clientX, y: event.clientY });
+      const pos = { x: position.x - NODE_WIDTH / 2, y: position.y - NODE_HEIGHT / 2 };
+
+      if (entityPayload) {
+        try {
+          const entity = JSON.parse(entityPayload) as WikiEntityForGraph;
+          setNodes((nds) => {
+            if (nds.some((n) => n.id === `wiki:${entity.id}`)) return nds;
+            return [
+              ...nds,
+              {
+                id: `wiki:${entity.id}`,
+                type: "entity",
+                position: pos,
+                data: { label: entity.name, type: entity.type, entityId: entity.id },
+              },
+            ];
+          });
+          toast.message("Elemento aggiunto. Collegalo con i pallini o «Collega elementi».");
+        } catch {
+          // ignore
+        }
+        return;
+      }
+
+      if (mapPayload) {
+        try {
+          const map = JSON.parse(mapPayload) as MapForGraph;
+          setNodes((nds) => {
+            if (nds.some((n) => n.id === `map:${map.id}`)) return nds;
+            return [
+              ...nds,
+              {
+                id: `map:${map.id}`,
+                type: "map",
+                position: pos,
+                data: { label: map.name, mapId: map.id },
+              },
+            ];
+          });
+          toast.message("Mappa aggiunta. Collegala a una voce wiki.");
+        } catch {
+          // ignore
+        }
       }
     },
     [setNodes, screenToFlowPosition]
@@ -499,7 +593,8 @@ function EntityGraphInner({ campaignId }: EntityGraphProps) {
               </Button>
             </div>
             <p className="mb-3 px-1 text-[10px] leading-relaxed text-[#6b6b6b]">
-              Trascina nel canvas come nel graph di Obsidian.
+              Trascina nel canvas, poi collega con i pallini dorati o con «Collega elementi».
+              Nei testi wiki usa [[Nome]] o @Nome per collegamenti automatici.
             </p>
             <ul className="flex-1 space-y-1 overflow-y-auto">
               {unlinkedEntities.map((e) => {
@@ -520,7 +615,25 @@ function EntityGraphInner({ campaignId }: EntityGraphProps) {
                   </li>
                 );
               })}
-              {unlinkedEntities.length === 0 && (
+              {unlinkedMaps.map((m) => (
+                <li
+                  key={m.id}
+                  draggable
+                  onDragStart={(ev) => {
+                    ev.dataTransfer.setData(
+                      "application/map",
+                      JSON.stringify({ id: m.id, name: m.name })
+                    );
+                    ev.dataTransfer.effectAllowed = "move";
+                  }}
+                  className="flex cursor-grab items-center gap-2 rounded-lg border border-orange-900/40 bg-[#1f1f1f] px-2 py-1.5 text-orange-200/90 hover:border-orange-700/50 hover:bg-[#262626] active:cursor-grabbing"
+                >
+                  <GripVertical className="h-3 w-3 shrink-0 text-[#545454]" />
+                  <Map className="h-3.5 w-3.5 shrink-0 text-orange-400/90" />
+                  <span className="truncate text-[11px]">{m.name}</span>
+                </li>
+              ))}
+              {unlinkedEntities.length === 0 && unlinkedMaps.length === 0 && (
                 <li className="px-2 py-6 text-[11px] text-[#595959]">Tutte le voci sono collegate.</li>
               )}
             </ul>
@@ -539,17 +652,44 @@ function EntityGraphInner({ campaignId }: EntityGraphProps) {
       )}
 
       <div className="relative h-full flex-1">
+        <div className="absolute right-3 top-3 z-10 flex gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant={linkMode ? "default" : "outline"}
+            className={cn(
+              "h-8 border-[#444] text-[11px]",
+              linkMode
+                ? "bg-amber-600 text-zinc-950 hover:bg-amber-500"
+                : "bg-[#141414]/90 text-[#c6c6c6] hover:bg-[#252525]"
+            )}
+            onClick={() => {
+              if (linkMode) cancelLinkMode();
+              else {
+                setLinkMode(true);
+                toast.message("Clicca l'elemento origine, poi il bersaglio.");
+              }
+            }}
+          >
+            <Link2 className="mr-1.5 h-3.5 w-3.5" />
+            {linkMode ? "Annulla collegamento" : "Collega elementi"}
+          </Button>
+        </div>
         <ReactFlow
           nodes={nodes}
           edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onNodeClick={onNodeClick}
           onEdgeClick={onEdgeClick}
           onDrop={onDrop}
           onDragOver={onDragOver}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
+          nodesConnectable
+          elementsSelectable
+          connectionRadius={28}
           fitView
           fitViewOptions={{ padding: 0.18 }}
           defaultEdgeOptions={{

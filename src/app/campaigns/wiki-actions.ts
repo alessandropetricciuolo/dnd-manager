@@ -22,6 +22,7 @@ import {
   deleteCampaignMemorySource,
   syncWikiEntityToCampaignMemory,
 } from "@/lib/campaign-memory-indexer";
+import { mergeRelationsWithTextReferences } from "@/lib/wiki/wiki-relationship-sync";
 
 export type { WikiGeneratorEntityType, WikiAiTextGeneration } from "@/lib/ai/generator";
 
@@ -320,7 +321,16 @@ export async function createEntity(
       if (permError) console.error("[createEntity] entity_permissions", permError);
     }
 
-    for (const rel of relations) {
+    const mergedRelations = await mergeRelationsWithTextReferences(
+      supabase,
+      campaignId,
+      inserted.id,
+      relations,
+      content,
+      attributes
+    );
+
+    for (const rel of mergedRelations) {
       const payload: Record<string, unknown> = {
         campaign_id: campaignId,
         source_id: inserted.id,
@@ -349,6 +359,7 @@ export async function createEntity(
     }
 
     revalidatePath(`/campaigns/${campaignId}`);
+    revalidatePath(`/campaigns/${campaignId}/gm-only/concept-map`);
     return { success: true, message: "Entità creata!" };
   } catch (err) {
     console.error("[createEntity]", err);
@@ -579,7 +590,16 @@ export async function updateEntity(
       .eq("campaign_id", campaignId)
       .eq("source_id", entityId);
 
-    for (const rel of relations) {
+    const mergedRelations = await mergeRelationsWithTextReferences(
+      supabase,
+      campaignId,
+      entityId,
+      relations,
+      content,
+      attributes
+    );
+
+    for (const rel of mergedRelations) {
       const payload: Record<string, unknown> = {
         campaign_id: campaignId,
         source_id: entityId,
@@ -607,6 +627,7 @@ export async function updateEntity(
 
     revalidatePath(`/campaigns/${campaignId}`);
     revalidatePath(`/campaigns/${campaignId}/wiki/${entityId}`);
+    revalidatePath(`/campaigns/${campaignId}/gm-only/concept-map`);
     return { success: true, message: "Voce aggiornata!" };
   } catch (err) {
     console.error("[updateEntity]", err);
