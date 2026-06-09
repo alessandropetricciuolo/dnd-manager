@@ -1,7 +1,11 @@
-import type { Torneo2Match } from "@/lib/torneo2/types";
+import type { Torneo2Match, Torneo2MatchStatus } from "@/lib/torneo2/types";
 
 export function isPowerOfTwo(n: number): boolean {
   return Number.isInteger(n) && n >= 1 && (n & (n - 1)) === 0;
+}
+
+export function canRewriteBracketTarget(status: Torneo2MatchStatus): boolean {
+  return status === "pending";
 }
 
 /** Etichetta del round in base al numero di incontri che lo compongono. */

@@ -11,7 +11,7 @@ import {
   TORNEO2_MATCH_SELECT,
 } from "@/lib/torneo2/map-rows";
 import { finalistCharacterIds } from "@/lib/torneo2/standings";
-import { buildBracketPlan, isPowerOfTwo } from "@/lib/torneo2/bracket";
+import { buildBracketPlan, canRewriteBracketTarget, isPowerOfTwo } from "@/lib/torneo2/bracket";
 import type { Torneo2MatchStatus, Torneo2Participant, Torneo2Setup, Torneo2Team } from "@/lib/torneo2/types";
 import type { Torneo2TimerMode } from "@/lib/torneo2/timer";
 
@@ -47,6 +47,23 @@ async function ensureTorneo2Gm(campaignId: string): Promise<
 function revalidateTorneo2(campaignId: string) {
   revalidatePath(`/campaigns/${campaignId}/gm-screen`);
   revalidatePath(`/campaigns/${campaignId}`);
+}
+
+async function hasActiveTorneo2BracketMatch(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  campaignId: string
+): Promise<Result<{ blocked: boolean }>> {
+  const { data, error } = await supabase
+    .from("torneo2_matches")
+    .select("id")
+    .eq("campaign_id", campaignId)
+    .eq("status", "active")
+    .not("bracket_round", "is", null)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) return { success: false, error: error.message };
+  return { success: true, data: { blocked: Boolean(data) } };
 }
 
 export async function getTorneo2SetupAction(campaignId: string): Promise<Result<Torneo2Setup>> {
@@ -356,6 +373,17 @@ export async function deleteTorneo2MatchAction(campaignId: string, matchId: stri
   const check = await ensureTorneo2Gm(campaignId);
   if (!check.ok) return { success: false, error: check.error };
 
+  const { data: match, error: loadError } = await check.supabase
+    .from("torneo2_matches")
+    .select("status")
+    .eq("id", matchId)
+    .eq("campaign_id", campaignId)
+    .maybeSingle();
+  if (loadError) return { success: false, error: loadError.message };
+  if (match?.status === "active") {
+    return { success: false, error: "Termina l'incontro live prima di eliminarlo." };
+  }
+
   const { error } = await check.supabase
     .from("torneo2_matches")
     .delete()
@@ -426,7 +454,7 @@ async function withdrawWinnerFromBracket(
     .eq("id", targetMatchId)
     .eq("campaign_id", campaignId)
     .maybeSingle();
-  if (!target || target.status === "completed") return;
+  if (!target || !canRewriteBracketTarget(target.status as Torneo2MatchStatus)) return;
 
   const resetCombat = {
     combat_state: null,
@@ -537,8 +565,7 @@ async function advanceWinnerInBracket(
     .eq("id", targetMatchId)
     .eq("campaign_id", campaignId)
     .maybeSingle();
-  if (!target) return;
-  if (target.status === "completed") return;
+  if (!target || !canRewriteBracketTarget(target.status as Torneo2MatchStatus)) return;
 
   const resetCombat = {
     combat_state: null,
@@ -697,6 +724,12 @@ export async function clearTorneo2BracketAction(campaignId: string): Promise<Res
   const check = await ensureTorneo2Gm(campaignId);
   if (!check.ok) return { success: false, error: check.error };
 
+  const activeCheck = await hasActiveTorneo2BracketMatch(check.supabase, campaignId);
+  if (!activeCheck.success) return activeCheck;
+  if (activeCheck.data.blocked) {
+    return { success: false, error: "Termina gli incontri live del tabellone prima di svuotarlo." };
+  }
+
   const { data, error } = await check.supabase
     .from("torneo2_matches")
     .delete()
@@ -734,6 +767,12 @@ export async function generateTorneo2BracketAction(
   if (plan.length === 0) return { success: false, error: "Impossibile costruire il tabellone." };
 
   if (payload.replaceExisting) {
+    const activeCheck = await hasActiveTorneo2BracketMatch(supabase, campaignId);
+    if (!activeCheck.success) return activeCheck;
+    if (activeCheck.data.blocked) {
+      return { success: false, error: "Termina gli incontri live del tabellone prima di rigenerarlo." };
+    }
+
     await supabase
       .from("torneo2_matches")
       .delete()
