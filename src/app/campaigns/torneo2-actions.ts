@@ -725,8 +725,8 @@ export async function clearTorneo2BracketAction(campaignId: string): Promise<Res
   if (!check.ok) return { success: false, error: check.error };
 
   const activeCheck = await hasActiveTorneo2BracketMatch(check.supabase, campaignId);
-  if (!activeCheck.success) return activeCheck;
-  if (activeCheck.data.blocked) {
+  if (!activeCheck.success) return { success: false, error: activeCheck.error };
+  if (activeCheck.data?.blocked) {
     return { success: false, error: "Termina gli incontri live del tabellone prima di svuotarlo." };
   }
 
@@ -768,8 +768,8 @@ export async function generateTorneo2BracketAction(
 
   if (payload.replaceExisting) {
     const activeCheck = await hasActiveTorneo2BracketMatch(supabase, campaignId);
-    if (!activeCheck.success) return activeCheck;
-    if (activeCheck.data.blocked) {
+    if (!activeCheck.success) return { success: false, error: activeCheck.error };
+    if (activeCheck.data?.blocked) {
       return { success: false, error: "Termina gli incontri live del tabellone prima di rigenerarlo." };
     }
 
