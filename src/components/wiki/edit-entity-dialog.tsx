@@ -116,6 +116,7 @@ export function EditEntityDialog({
   const [tags, setTags] = useState<string[]>(Array.isArray(entity.tags) ? entity.tags : []);
   type RelationRow = { targetType: "wiki" | "map"; targetId: string; label: string };
   const [relations, setRelations] = useState<RelationRow[]>([]);
+  const [relationsLoaded, setRelationsLoaded] = useState(false);
   const [wikiOptions, setWikiOptions] = useState<{ id: string; name: string }[]>([]);
   const [mapOptions, setMapOptions] = useState<{ id: string; name: string }[]>([]);
   const [missionOptions, setMissionOptions] = useState<{ id: string; title: string }[]>([]);
@@ -139,9 +140,15 @@ export function EditEntityDialog({
       setGlobalStatus(entity.global_status === "dead" ? "dead" : "alive");
       setMonsterXp(entity.xp_value ?? 0);
       setIncludeInAiMemory(entity.include_in_campaign_ai_memory ?? false);
+      setRelations([]);
+      setRelationsLoaded(false);
       getWikiEntitiesForCampaign(campaignId).then((r) => r.success && setWikiOptions(r.data));
       getMapsForCampaign(campaignId).then((r) => r.success && setMapOptions(r.data));
-      getWikiRelationshipsForEntity(campaignId, entity.id).then((r) => r.success && setRelations(r.data));
+      getWikiRelationshipsForEntity(campaignId, entity.id).then((r) => {
+        if (r.success) setRelations(r.data);
+        else toast.error(r.error);
+        setRelationsLoaded(true);
+      });
       setLinkedMissionId(entity.linked_mission_id ?? "");
       if (campaignType === "long") {
         void listCampaignMissionsLiteForGm(campaignId).then((r) => {
@@ -204,6 +211,10 @@ export function EditEntityDialog({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (isLoading) return;
+    if (!relationsLoaded) {
+      toast.error("Attendi il caricamento dei collegamenti prima di salvare.");
+      return;
+    }
 
     const form = event.currentTarget;
     const formData = new FormData(form);
@@ -893,6 +904,7 @@ export function EditEntityDialog({
               pending={isLoading}
               loadingText="Salvataggio..."
               className="bg-barber-red text-barber-paper hover:bg-barber-red/90"
+              disabled={!relationsLoaded}
             >
               Salva
             </SubmitButton>

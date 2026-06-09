@@ -22,7 +22,10 @@ import {
   deleteCampaignMemorySource,
   syncWikiEntityToCampaignMemory,
 } from "@/lib/campaign-memory-indexer";
-import { mergeRelationsWithTextReferences } from "@/lib/wiki/wiki-relationship-sync";
+import {
+  mergeRelationsWithTextReferences,
+  replaceWikiRelationships,
+} from "@/lib/wiki/wiki-relationship-sync";
 
 export type { WikiGeneratorEntityType, WikiAiTextGeneration } from "@/lib/ai/generator";
 
@@ -330,25 +333,18 @@ export async function createEntity(
       attributes
     );
 
-    for (const rel of mergedRelations) {
-      const payload: Record<string, unknown> = {
-        campaign_id: campaignId,
-        source_id: inserted.id,
-        label: rel.label || "—",
+    const relationSync = await replaceWikiRelationships(
+      supabase,
+      campaignId,
+      inserted.id,
+      mergedRelations
+    );
+    if (!relationSync.success) {
+      console.error("[createEntity] relation sync", relationSync.error);
+      return {
+        success: false,
+        message: relationSync.error,
       };
-      if (rel.targetType === "wiki") {
-        if (rel.targetId !== inserted.id) {
-          payload.target_id = rel.targetId;
-          payload.target_map_id = null;
-          const { error: relErr } = await supabase.from("wiki_relationships").insert(payload);
-          if (relErr) console.error("[createEntity] relation insert", relErr);
-        }
-      } else {
-        payload.target_id = null;
-        payload.target_map_id = rel.targetId;
-        const { error: relErr } = await supabase.from("wiki_relationships").insert(payload);
-        if (relErr) console.error("[createEntity] relation insert", relErr);
-      }
     }
 
     try {
@@ -584,12 +580,6 @@ export async function updateEntity(
       if (permError) console.error("[updateEntity] entity_permissions", permError);
     }
 
-    await supabase
-      .from("wiki_relationships")
-      .delete()
-      .eq("campaign_id", campaignId)
-      .eq("source_id", entityId);
-
     const mergedRelations = await mergeRelationsWithTextReferences(
       supabase,
       campaignId,
@@ -599,23 +589,18 @@ export async function updateEntity(
       attributes
     );
 
-    for (const rel of mergedRelations) {
-      const payload: Record<string, unknown> = {
-        campaign_id: campaignId,
-        source_id: entityId,
-        label: rel.label || "—",
+    const relationSync = await replaceWikiRelationships(
+      supabase,
+      campaignId,
+      entityId,
+      mergedRelations
+    );
+    if (!relationSync.success) {
+      console.error("[updateEntity] relation sync", relationSync.error);
+      return {
+        success: false,
+        message: relationSync.error,
       };
-      if (rel.targetType === "wiki") {
-        if (rel.targetId !== entityId) {
-          payload.target_id = rel.targetId;
-          payload.target_map_id = null;
-          await supabase.from("wiki_relationships").insert(payload);
-        }
-      } else {
-        payload.target_id = null;
-        payload.target_map_id = rel.targetId;
-        await supabase.from("wiki_relationships").insert(payload);
-      }
     }
 
     try {
