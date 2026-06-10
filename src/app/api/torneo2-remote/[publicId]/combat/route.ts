@@ -5,6 +5,7 @@ import { gmRemoteRateLimit } from "@/lib/gm-remote/rate-limit";
 import { isRecord } from "@/lib/gm-remote/protocol";
 import { validateGmRemoteSession } from "@/lib/gm-remote/validate-remote-session";
 import { sanitizeTorneo2CombatState } from "@/lib/torneo2/combat-state";
+import { getTorneo2LiveStationForMatch } from "@/lib/torneo2/live-stations";
 
 type RouteContext = { params: Promise<{ publicId: string }> };
 
@@ -39,6 +40,19 @@ export async function POST(request: Request, context: RouteContext) {
   }
 
   const admin = createSupabaseAdminClient() as unknown as SupabaseClient;
+  const { data: live, error: liveErr } = await admin
+    .from("torneo2_live_sessions")
+    .select("station1_match_id, station2_match_id")
+    .eq("campaign_id", v.session.campaign_id)
+    .eq("status", "live")
+    .maybeSingle();
+  if (liveErr) {
+    return NextResponse.json({ ok: false, error: liveErr.message }, { status: 500 });
+  }
+  if (!getTorneo2LiveStationForMatch(live, matchId)) {
+    return NextResponse.json({ ok: false, error: "match_not_live" }, { status: 404 });
+  }
+
   const { data: current } = await admin
     .from("torneo2_matches")
     .select("combat_seq")
