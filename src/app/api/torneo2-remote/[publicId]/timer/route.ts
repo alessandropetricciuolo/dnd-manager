@@ -4,6 +4,7 @@ import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { gmRemoteRateLimit } from "@/lib/gm-remote/rate-limit";
 import { isRecord } from "@/lib/gm-remote/protocol";
 import { validateGmRemoteSession } from "@/lib/gm-remote/validate-remote-session";
+import { requireTorneo2RemoteStationMatch } from "@/lib/torneo2/remote-session";
 
 type RouteContext = { params: Promise<{ publicId: string }> };
 
@@ -52,6 +53,19 @@ export async function POST(request: Request, context: RouteContext) {
   }
 
   const admin = createSupabaseAdminClient() as unknown as SupabaseClient;
+  const stationCheck = await requireTorneo2RemoteStationMatch(
+    admin,
+    v.session.campaign_id,
+    publicId,
+    matchId
+  );
+  if (!stationCheck.ok) {
+    return NextResponse.json(
+      { ok: false, error: stationCheck.error },
+      { status: stationCheck.status }
+    );
+  }
+
   const { error } = await admin
     .from("torneo2_matches")
     .update(patch)

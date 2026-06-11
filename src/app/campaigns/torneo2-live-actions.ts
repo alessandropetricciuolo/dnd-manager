@@ -103,12 +103,32 @@ export async function startTorneo2LiveSessionAction(
   const check = await ensureTorneo2Gm(campaignId);
   if (!check.ok) return { success: false, error: check.error };
   const supabase = check.supabase;
+  const now = new Date().toISOString();
 
-  await supabase
+  const { data: previousLive, error: previousLiveErr } = await supabase
     .from("torneo2_live_sessions")
-    .update({ status: "ended", ended_at: new Date().toISOString() })
+    .select("remote_session_public_id")
     .eq("campaign_id", campaignId)
     .eq("status", "live");
+  if (previousLiveErr) return { success: false, error: previousLiveErr.message };
+
+  const { error: endPreviousErr } = await supabase
+    .from("torneo2_live_sessions")
+    .update({ status: "ended", ended_at: now })
+    .eq("campaign_id", campaignId)
+    .eq("status", "live");
+  if (endPreviousErr) return { success: false, error: endPreviousErr.message };
+
+  const previousRemoteIds = (previousLive ?? [])
+    .map((row) => row.remote_session_public_id)
+    .filter((id): id is string => typeof id === "string" && id.length > 0);
+  if (previousRemoteIds.length > 0) {
+    const { error: revokePreviousErr } = await supabase
+      .from("gm_remote_sessions")
+      .update({ revoked_at: now })
+      .in("public_id", previousRemoteIds);
+    if (revokePreviousErr) return { success: false, error: revokePreviousErr.message };
+  }
 
   const { data: liveRow, error: liveErr } = await supabase
     .from("torneo2_live_sessions")
@@ -428,6 +448,7 @@ export async function endTorneo2MatchOnStationAction(
   const { error } = await supabase
     .from("torneo2_matches")
     .update({
+      status: "pending",
       timer_running: false,
       timer_started_at: null,
       timer_paused_elapsed_ms: 0,
