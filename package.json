@@ -11,6 +11,12 @@
     "test:manual-search": "tsx --test src/lib/actions/__tests__/*.test.ts",
     "test:security": "tsx --test --test-concurrency=1 src/lib/security/__tests__/*.test.ts",
     "test:torneo2": "tsx --test src/lib/torneo2/__tests__/*.test.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report",
+    "e2e:provision": "tsx scripts/e2e-provision-users.ts",
+    "e2e:teardown": "tsx scripts/e2e-teardown-campaigns.ts",
+    "test:e2e:prod": "PLAYWRIGHT_SKIP_WEBSERVER=1 PLAYWRIGHT_BASE_URL=https://barberanddragons.com playwright test",
     "security:smoke-remote": "tsx scripts/security-smoke-remote.ts",
     "test:r2-env": "tsx scripts/test-r2-env.ts",
     "export:dungeonedraghi": "node scripts/export-dungeonedraghi-compendio.mjs",
@@ -64,6 +70,7 @@
     "tailwind-merge": "^2.5.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@types/archiver": "^7.0.0",
     "@types/dagre": "^0.7.54",
     "@types/node": "^20",
