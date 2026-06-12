@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { ListOrdered, Calendar, Flag, MessageCircle, Images, Headphones } from "lucide-react";
-import { GmScreenMapShortcuts } from "./gm-screen-map-shortcuts";
+import { GmScreenMapRegia } from "./gm-screen-map-regia";
 import { InitiativeTracker } from "./initiative-tracker";
 import { GmNotesGrid } from "./gm-notes-grid";
 import { PlayerSessionTracker } from "./player-session-tracker";
@@ -96,7 +96,7 @@ export function GmScreenLegacyLayout({
 
         <div className="my-1 h-px w-6 bg-amber-600/20" aria-hidden />
 
-        <GmScreenMapShortcuts campaignId={campaignId} />
+        <GmScreenMapRegia campaignId={campaignId} />
 
         <Button
           variant="ghost"

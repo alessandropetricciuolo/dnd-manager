@@ -854,3 +854,37 @@ export async function getCoreEntitiesForDebrief(
   return { success: true, data: list };
 }
 
+export type GmRegiaWikiMap = {
+  id: string;
+  name: string;
+  image_url: string;
+  map_type: string | null;
+};
+
+/** Mappe wiki per Regia Mappe nel GM Screen (solo visualizzazione). */
+export async function getGmRegiaWikiMapsAction(
+  campaignId: string
+): Promise<GmResult<GmRegiaWikiMap[]>> {
+  const auth = await ensureGmOrAdmin();
+  if (!auth.success) return auth;
+  const supabase = auth.data!;
+
+  const { data, error } = await supabase
+    .from("maps")
+    .select("id, name, image_url, map_type")
+    .eq("campaign_id", campaignId)
+    .order("name", { ascending: true });
+
+  if (error) return { success: false, error: error.message };
+
+  return {
+    success: true,
+    data: (data ?? []).map((row) => ({
+      id: row.id,
+      name: row.name,
+      image_url: row.image_url,
+      map_type: row.map_type ?? null,
+    })),
+  };
+}
+
