@@ -92,9 +92,20 @@ export function GmHomepage({
                 size="sm"
                 className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
               >
+                <Link href={`/campaigns/${campaignId}?tab=mappe`}>
+                  <Map className="mr-2 h-4 w-4" />
+                  Mappe
+                </Link>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
+              >
                 <Link href={`/campaigns/${campaignId}/gm-only/vista-dall-alto`}>
                   <Layers className="mr-2 h-4 w-4" />
-                  Vista dall&apos;alto (FoW)
+                  Esplorazione e FOW
                 </Link>
               </Button>
               <Button

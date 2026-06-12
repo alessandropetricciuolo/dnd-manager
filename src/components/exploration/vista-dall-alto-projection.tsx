@@ -140,7 +140,7 @@ export function VistaDallAltoProjection({ mapRow, initialRegions }: Props) {
           imageAlt={
             mapMeta.floor_label?.trim()
               ? `Mappa: ${mapMeta.floor_label}`
-              : "Mappa vista dall'alto"
+              : "Esplorazione e FOW"
           }
           regions={vm}
           mode="explore"

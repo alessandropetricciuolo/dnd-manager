@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, Map, Plus, Upload } from "lucide-react";
+import { BookOpen, Layers, Map, Plus, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GmScreenLauncher } from "@/components/gm/gm-screen-launcher";
 
@@ -26,6 +26,18 @@ export function GmQuickActions({ campaignId }: GmQuickActionsProps) {
           campaignId={campaignId}
           className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
         />
+        <Button asChild variant="outline" size="sm" className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20">
+          <Link href={`/campaigns/${campaignId}?tab=mappe`}>
+            <Map className="mr-2 h-4 w-4" />
+            Mappe
+          </Link>
+        </Button>
+        <Button asChild variant="outline" size="sm" className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20">
+          <Link href={`/campaigns/${campaignId}/gm-only/vista-dall-alto`}>
+            <Layers className="mr-2 h-4 w-4" />
+            Esplorazione e FOW
+          </Link>
+        </Button>
         <Button asChild variant="outline" size="sm" className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20">
           <Link href={`/campaigns/${campaignId}/gm-only/concept-map`}>
             <Map className="mr-2 h-4 w-4" />

@@ -749,7 +749,7 @@ export function VistaDallAltoClient({
           {missionOptions.length > 0 ? (
             <section className="mb-3 rounded-lg border border-barber-gold/20 bg-barber-dark/40 p-3">
               <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-barber-gold">
-                Missione mappa FoW
+                Missione mappa esplorazione
               </h4>
               <div className="flex flex-wrap items-end gap-2">
                 <Select value={selectedMapMissionId} onValueChange={setSelectedMapMissionId}>

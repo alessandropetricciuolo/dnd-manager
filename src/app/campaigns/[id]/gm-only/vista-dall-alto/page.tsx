@@ -65,13 +65,13 @@ export default async function VistaDallAltoPage({ params }: PageProps) {
     <div className="flex min-h-[calc(100vh-theme(spacing.16))] flex-col bg-gradient-to-b from-[#12100f] to-[#1d1714] text-barber-paper">
       <header className="flex shrink-0 flex-wrap items-center gap-4 border-b border-barber-gold/25 bg-barber-dark/90 px-4 py-3">
         <Button variant="ghost" size="sm" asChild className="text-barber-gold hover:bg-barber-gold/10">
-          <Link href={`/campaigns/${campaignId}?tab=gm`}>
+          <Link href={`/campaigns/${campaignId}/gm-screen`}>
             <ChevronLeft className="mr-1 h-4 w-4" />
-            Solo GM
+            GM Screen
           </Link>
         </Button>
         <Layers className="h-5 w-5 text-barber-gold" aria-hidden />
-        <h1 className="text-lg font-semibold text-barber-gold">Vista dall&apos;alto</h1>
+        <h1 className="text-lg font-semibold text-barber-gold">Esplorazione e FOW</h1>
         <span className="text-sm text-barber-paper/60">{campaign.name}</span>
       </header>
       <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">

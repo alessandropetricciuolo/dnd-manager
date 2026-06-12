@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Calendar, Flag, Headphones, Images, ListOrdered, MessageCircle, ScrollText, Users } from "lucide-react";
+import { GmScreenMapShortcuts } from "./gm-screen-map-shortcuts";
 import { GmNotesGrid } from "./gm-notes-grid";
 import { InitiativeTracker } from "./initiative-tracker";
 import { PlayerSessionTracker, computeSessionXpAwards } from "./player-session-tracker";
@@ -189,6 +190,8 @@ function LongWorkspace({
         )}
 
         <div className="my-1 h-px w-6 bg-amber-600/20" aria-hidden />
+
+        <GmScreenMapShortcuts campaignId={campaignId} />
 
         <Button
           variant="ghost"
