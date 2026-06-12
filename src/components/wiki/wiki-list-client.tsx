@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lock, BookOpen, ChevronDown, Pencil, Search } from "lucide-react";
+import { Lock, BookOpen, ChevronDown, Eye, Pencil, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WikiEntityDeleteButton } from "./wiki-entity-delete-button";
 import { WIKI_ENTITY_TYPES, WIKI_FILTER_LABELS_IT } from "@/lib/wiki/entity-types";
@@ -267,6 +267,17 @@ export function WikiListClient({
                 className="h-7 border-barber-gold/40 px-2 text-xs text-barber-paper/80 hover:bg-barber-gold/10 hover:text-barber-gold"
                 asChild
               >
+                <Link href={entityUrl}>
+                  <Eye className="mr-1 h-3.5 w-3.5 shrink-0" />
+                  Apri
+                </Link>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 border-barber-gold/40 px-2 text-xs text-barber-paper/80 hover:bg-barber-gold/10 hover:text-barber-gold"
+                asChild
+              >
                 <Link href={editUrl}>
                   <Pencil className="mr-1 h-3.5 w-3.5 shrink-0" />
                   Modifica
@@ -307,6 +318,17 @@ export function WikiListClient({
           {showLock(entity) && (
             <Lock className="h-4 w-4 shrink-0 text-barber-gold/90" aria-label="Solo GM / visibilità limitata" />
           )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 border-barber-gold/40 px-2.5 text-xs text-barber-paper/80 hover:bg-barber-gold/10 hover:text-barber-gold"
+            asChild
+          >
+            <Link href={entityUrl}>
+              <Eye className="mr-1 h-3.5 w-3.5 shrink-0" />
+              Apri
+            </Link>
+          </Button>
         </div>
       </li>
     );

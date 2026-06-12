@@ -13,7 +13,6 @@ import {
   Skull,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { MapCard } from "@/components/maps/map-card";
 import {
   buildMapTree,
@@ -227,8 +226,8 @@ export function MapGalleryTree({
 
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] lg:items-start xl:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
-      <aside className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-barber-gold/25 bg-barber-dark/50">
-        <div className="border-b border-barber-gold/20 px-3 py-2.5">
+      <aside className="flex max-h-[min(70vh,32rem)] min-h-0 flex-col overflow-hidden rounded-xl border border-barber-gold/25 bg-barber-dark/50 sm:max-h-[min(75vh,36rem)] lg:sticky lg:top-20 lg:max-h-[calc(100dvh-7rem)]">
+        <div className="shrink-0 border-b border-barber-gold/20 px-3 py-2.5">
           <p className="text-xs font-medium uppercase tracking-wide text-barber-gold/90">
             Atlante
           </p>
@@ -236,8 +235,8 @@ export function MapGalleryTree({
             {treeCount} {treeCount === 1 ? "mappa" : "mappe"} · seleziona un ramo
           </p>
         </div>
-        <ScrollArea className="h-[min(52vh,28rem)] lg:h-[min(70vh,36rem)]">
-          <div className="space-y-1 p-2">
+        <div className="scrollbar-barber-y min-h-0 flex-1 overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch]">
+          <div className="space-y-1 p-2 pb-4">
             {roots.map((node) => (
               <MapTreeRow
                 key={node.map.id}
@@ -275,10 +274,10 @@ export function MapGalleryTree({
               </div>
             ) : null}
           </div>
-        </ScrollArea>
+        </div>
       </aside>
 
-      <section className="min-w-0 lg:sticky lg:top-20">
+      <section className="min-w-0">
         {cardProps ? (
           <MapCard {...cardProps} />
         ) : (
