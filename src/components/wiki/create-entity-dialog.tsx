@@ -768,6 +768,8 @@ export function CreateEntityDialog({
         toast.success(
           "Bozza completa pronta. Controlla titolo, testo e immagine nel form sottostante, poi premi Crea."
         );
+        setMagicOpen(false);
+        formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
         return;
       }
 
@@ -784,6 +786,8 @@ export function CreateEntityDialog({
       setWikiImageUrlPreset(null);
       setMagicPortraitPreview(null);
       toast.success("Bozza testo pronta. Controlla il form sottostante e premi Crea.");
+      setMagicOpen(false);
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     } catch {
       toast.error("Errore durante la generazione.");
     } finally {

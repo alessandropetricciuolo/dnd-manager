@@ -256,15 +256,16 @@ export async function createEntity(
       insertPayload.sort_order = sortOrder;
     }
     const { data: camp } = await supabase.from("campaigns").select("type").eq("id", campaignId).single();
+    let includeInAiMemory = false;
     if (camp?.type === "long" && (type === "npc" || type === "monster")) {
       insertPayload.is_core = isCore;
       insertPayload.global_status = "alive";
     }
     if (camp?.type === "long") {
-      const includeMem =
+      includeInAiMemory =
         formData.get("include_in_campaign_ai_memory") === "on" ||
         formData.get("include_in_campaign_ai_memory") === "true";
-      insertPayload.include_in_campaign_ai_memory = includeMem;
+      insertPayload.include_in_campaign_ai_memory = includeInAiMemory;
       const rawMission = (formData.get("linked_mission_id") as string | null)?.trim() ?? "";
       const missionRes = await resolveLinkedMissionIdForLongCampaign(supabase, campaignId, rawMission);
       if ("error" in missionRes) {
@@ -351,16 +352,24 @@ export async function createEntity(
       }
     }
 
+    let memoryChunkCount = 0;
     try {
       const admin = createSupabaseAdminClient();
-      await syncWikiEntityToCampaignMemory(admin, inserted.id, { campaignId });
+      memoryChunkCount = await syncWikiEntityToCampaignMemory(admin, inserted.id, { campaignId });
     } catch (memoryErr) {
       console.error("[createEntity] campaign memory sync", memoryErr);
     }
 
     revalidatePath(`/campaigns/${campaignId}`);
     revalidatePath(`/campaigns/${campaignId}/gm-only/concept-map`);
-    return { success: true, message: "Entità creata!" };
+    let message = "Entità creata!";
+    if (camp?.type === "long" && includeInAiMemory) {
+      message +=
+        memoryChunkCount > 0
+          ? ` Indicizzata nella memoria campagna (${memoryChunkCount} chunk).`
+          : " Memoria campagna: nessun contenuto indicizzabile (testo vuoto?).";
+    }
+    return { success: true, message };
   } catch (err) {
     console.error("[createEntity]", err);
     return {
@@ -511,11 +520,12 @@ export async function updateEntity(
       updatePayload.xp_value = xpValue;
     }
 
+    let includeInAiMemory = false;
     if (campaign?.type === "long") {
-      const includeMem =
+      includeInAiMemory =
         formData.get("include_in_campaign_ai_memory") === "on" ||
         formData.get("include_in_campaign_ai_memory") === "true";
-      updatePayload.include_in_campaign_ai_memory = includeMem;
+      updatePayload.include_in_campaign_ai_memory = includeInAiMemory;
       const rawMission = (formData.get("linked_mission_id") as string | null)?.trim() ?? "";
       const missionRes = await resolveLinkedMissionIdForLongCampaign(supabase, campaignId, rawMission);
       if ("error" in missionRes) {
@@ -618,9 +628,10 @@ export async function updateEntity(
       }
     }
 
+    let memoryChunkCount = 0;
     try {
       const admin = createSupabaseAdminClient();
-      await syncWikiEntityToCampaignMemory(admin, entityId, { campaignId });
+      memoryChunkCount = await syncWikiEntityToCampaignMemory(admin, entityId, { campaignId });
     } catch (memoryErr) {
       console.error("[updateEntity] campaign memory sync", memoryErr);
     }
@@ -628,7 +639,14 @@ export async function updateEntity(
     revalidatePath(`/campaigns/${campaignId}`);
     revalidatePath(`/campaigns/${campaignId}/wiki/${entityId}`);
     revalidatePath(`/campaigns/${campaignId}/gm-only/concept-map`);
-    return { success: true, message: "Voce aggiornata!" };
+    let message = "Voce aggiornata!";
+    if (campaign?.type === "long" && includeInAiMemory) {
+      message +=
+        memoryChunkCount > 0
+          ? ` Indicizzata nella memoria campagna (${memoryChunkCount} chunk).`
+          : " Memoria campagna: nessun contenuto indicizzabile (testo vuoto?).";
+    }
+    return { success: true, message };
   } catch (err) {
     console.error("[updateEntity]", err);
     return {

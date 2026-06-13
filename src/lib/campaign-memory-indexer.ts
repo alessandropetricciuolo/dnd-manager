@@ -494,7 +494,7 @@ export async function syncWikiEntityToCampaignMemory(
   admin: AdminClient,
   entityId: string,
   options?: { campaignId?: string }
-): Promise<void> {
+): Promise<number> {
   const { data } = await admin
     .from("wiki_entities")
     .select("id, campaign_id, name, type, content, updated_at, tags, include_in_campaign_ai_memory, is_core, global_status")
@@ -503,16 +503,18 @@ export async function syncWikiEntityToCampaignMemory(
 
   if (!data) {
     if (options?.campaignId) await deleteCampaignMemorySource(admin, options.campaignId, "wiki", entityId);
-    return;
+    return 0;
   }
 
   const row = data as WikiMemoryRow;
   if (!(await isLongCampaign(admin, row.campaign_id))) {
     await deleteCampaignMemorySource(admin, row.campaign_id, "wiki", row.id);
-    return;
+    return 0;
   }
 
-  await upsertCampaignMemoryChunks(admin, row.campaign_id, "wiki", row.id, buildWikiChunks(row));
+  const chunks = buildWikiChunks(row);
+  await upsertCampaignMemoryChunks(admin, row.campaign_id, "wiki", row.id, chunks);
+  return chunks.length;
 }
 
 export async function syncCharacterBackgroundToCampaignMemory(

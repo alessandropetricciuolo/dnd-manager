@@ -28,9 +28,11 @@ import { getWikiEntitiesForCampaign, getMapsForCampaign, getWikiRelationshipsFor
 import { getEmptyAttributes } from "@/types/wiki";
 import type { WikiEntity } from "@/app/campaigns/wiki-actions";
 import { CHALLENGE_RATING_OPTIONS } from "@/lib/dnd-constants";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Loader2, Plus, Trash2, Wand2 } from "lucide-react";
 import { type WikiEntityType, WIKI_ENTITY_OPTIONS } from "@/lib/wiki/entity-types";
 import { generateContextualPortraitAction } from "@/lib/actions/ai-generator";
+import { generateWikiMarkdownAction } from "@/lib/ai/wiki-text-generator";
+import { WIKI_NPC_LEVEL_OPTIONS } from "@/lib/wiki-npc-ai-options";
 import { AiImageProviderSelect } from "@/components/ai/ai-image-provider-select";
 import { useAiImageProvider } from "@/lib/hooks/use-ai-image-provider";
 
@@ -125,9 +127,16 @@ export function EditEntityDialog({
   const [includeInAiMemory, setIncludeInAiMemory] = useState(
     () => entity.include_in_campaign_ai_memory ?? false
   );
+  const [contentValue, setContentValue] = useState(contentBody);
+  const [aiTextLoading, setAiTextLoading] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [npcAiLevel, setNpcAiLevel] = useState("");
 
   useEffect(() => {
     if (open) {
+      setContentValue(contentBody);
+      setAiPrompt("");
+      setNpcAiLevel("");
       setType((entity.type as EntityType) || "npc");
       setAttributes(mergeAttributes((entity.type as EntityType) || "npc", entity.attributes));
       setSortOrder(entity.sort_order != null ? String(entity.sort_order) : "");
@@ -165,6 +174,7 @@ export function EditEntityDialog({
     entity.include_in_campaign_ai_memory,
     entity.linked_mission_id,
     campaignType,
+    contentBody,
     initialVisibility,
     initialAllowedUserIds,
     initialAllowedPartyIds,
@@ -219,6 +229,7 @@ export function EditEntityDialog({
       formData.set("linked_mission_id", linkedMissionId.trim());
     }
     formData.set("relations", JSON.stringify(relations));
+    formData.set("content", contentValue);
 
     setIsLoading(true);
     try {
@@ -262,6 +273,75 @@ export function EditEntityDialog({
     targetInput.dispatchEvent(new Event("change", { bubbles: true }));
   }
 
+  async function handleAssistGenerateText() {
+    if (aiTextLoading || isLoading) return;
+    const formEl = formRef.current;
+    const titleField = formEl?.elements.namedItem("title");
+    const safeName =
+      titleField instanceof HTMLInputElement ? titleField.value.trim() : entity.name.trim();
+    if (!safeName) {
+      toast.error("Inserisci prima il titolo della voce.");
+      return;
+    }
+    if (type === "monster") {
+      toast.error(
+        "Per i mostri rigenera il testo dalla creazione voce con il bestiario di campagna."
+      );
+      return;
+    }
+    const raceForAi = getAttr("race").trim();
+    const classForAi = getAttr("class").trim();
+    if (type === "npc" && (!raceForAi || !classForAi || !npcAiLevel.trim())) {
+      toast.error(
+        "Per gli NPC indica razza, classe e livello nei campi scheda (o nel menu sotto) prima di generare."
+      );
+      return;
+    }
+    setAiTextLoading(true);
+    try {
+      const aiEntityType =
+        type === "item"
+          ? "item"
+          : type === "location"
+            ? "location"
+            : type === "lore"
+              ? "lore"
+              : "npc";
+      const extra =
+        type === "item"
+          ? { rarity: getAttr("loot").trim() || undefined }
+          : type === "npc"
+            ? {
+                npcRace: raceForAi,
+                npcClass: classForAi,
+                npcLevel: npcAiLevel.trim(),
+              }
+            : {};
+      const result = await generateWikiMarkdownAction(
+        campaignId,
+        aiEntityType,
+        safeName,
+        aiPrompt,
+        extra
+      );
+      if (!result.success) {
+        toast.error(result.message);
+        return;
+      }
+      setContentValue(result.description);
+      if (type === "npc" && result.npcTraits) {
+        if (result.npcTraits.race) setAttr("race", result.npcTraits.race);
+        if (result.npcTraits.class) setAttr("class", result.npcTraits.class);
+        if (result.npcTraits.age) setAttr("age", result.npcTraits.age);
+      }
+      toast.success("Contenuto AI generato: controlla il testo e premi Salva.");
+    } catch {
+      toast.error("Errore durante la generazione del testo AI.");
+    } finally {
+      setAiTextLoading(false);
+    }
+  }
+
   async function handleAssistGenerateImage() {
     if (aiImageLoading || isLoading) return;
     if (type !== "npc" && type !== "monster" && type !== "location") {
@@ -273,8 +353,7 @@ export function EditEntityDialog({
       toast.error("Form non disponibile.");
       return;
     }
-    const contentField = formEl.elements.namedItem("content");
-    const narrativeDescription = contentField instanceof HTMLTextAreaElement ? contentField.value.trim() : "";
+    const narrativeDescription = contentValue.trim();
     const titleField = formEl.elements.namedItem("title");
     const entityTitle =
       titleField instanceof HTMLInputElement ? titleField.value.trim() : entity.name.trim();
@@ -615,11 +694,73 @@ export function EditEntityDialog({
             <Textarea
               id="edit-entity-content"
               name="content"
-              defaultValue={contentBody}
+              value={contentValue}
+              onChange={(e) => setContentValue(e.target.value)}
               className="min-h-[120px] resize-y bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
-              disabled={isLoading}
+              disabled={isLoading || aiTextLoading}
             />
           </div>
+
+          {type !== "monster" ? (
+            <details className="rounded-lg border border-barber-gold/30 bg-barber-dark/50 p-3">
+              <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-medium text-barber-paper">
+                <Wand2 className="h-4 w-4 text-barber-gold" />
+                Assistente IA — rigenera testo
+              </summary>
+              <div className="mt-3 space-y-3 border-t border-barber-gold/20 pt-3">
+                <p className="text-xs text-barber-paper/65">
+                  Sostituisce il campo sopra con una nuova bozza. Per gli NPC servono razza, classe e
+                  livello.
+                </p>
+                {type === "npc" ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-npc-ai-level">Livello (per generazione)</Label>
+                    <select
+                      id="edit-npc-ai-level"
+                      value={npcAiLevel}
+                      onChange={(e) => setNpcAiLevel(e.target.value)}
+                      disabled={isLoading || aiTextLoading}
+                      className="flex h-10 w-full max-w-xs rounded-md border border-barber-gold/30 bg-barber-dark px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
+                    >
+                      <option value="">Seleziona livello…</option>
+                      {WIKI_NPC_LEVEL_OPTIONS.map((lvl) => (
+                        <option key={lvl} value={lvl}>
+                          {lvl}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : null}
+                <div className="space-y-2">
+                  <Label htmlFor="edit-ai-prompt">Prompt opzionale</Label>
+                  <Textarea
+                    id="edit-ai-prompt"
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    placeholder="Es: tono più cupo, enfatizza il legame con la fazione locale…"
+                    className="min-h-[72px] resize-y border-barber-gold/30 bg-barber-dark text-barber-paper"
+                    disabled={isLoading || aiTextLoading}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-barber-gold/40 text-barber-gold"
+                  disabled={isLoading || aiTextLoading}
+                  onClick={() => void handleAssistGenerateText()}
+                >
+                  {aiTextLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generazione testo…
+                    </>
+                  ) : (
+                    "Genera testo"
+                  )}
+                </Button>
+              </div>
+            </details>
+          ) : null}
 
           {type === "npc" && (
             <>
