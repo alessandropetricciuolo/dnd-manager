@@ -31,8 +31,20 @@ export function isProductionE2ETarget(baseURL?: string): boolean {
   if (!raw) return false;
   try {
     const host = new URL(raw).hostname.replace(/^www\./i, "").toLowerCase();
-    return host === "barberanddragons.com";
+    if (host === "barberandragons.com") return true;
+    if (host === "dnd-manager-j8h5.vercel.app") return true;
+    if (host.startsWith("dnd-manager-j8h5") && host.endsWith(".vercel.app")) return true;
+    return false;
   } catch {
     return false;
   }
+}
+
+/** URL produzione (custom domain o deployment Vercel). */
+export function resolveProductionBaseUrl(): string {
+  return (
+    process.env.PLAYWRIGHT_BASE_URL?.trim() ||
+    process.env.E2E_PRODUCTION_BASE_URL?.trim() ||
+    "https://dnd-manager-j8h5.vercel.app"
+  );
 }

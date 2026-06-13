@@ -17,3 +17,20 @@ export async function pickCalendarTomorrow(page: Page) {
   }
   await page.locator("button.rdp-day:not([disabled])").last().click();
 }
+
+/** Seleziona oggi e un orario già trascorso (per abilitare la chiusura sessione). */
+export async function pickCalendarTodayPastTime(page: Page) {
+  await page.getByRole("button", { name: "Scegli data" }).click();
+  const day = String(new Date().getDate());
+  const cell = page.getByRole("gridcell", { name: day, exact: true });
+  if (await cell.isVisible()) {
+    await cell.click();
+  } else {
+    await page.locator("button.rdp-day:not([disabled])").first().click();
+  }
+
+  const now = new Date();
+  const hour = Math.max(0, now.getHours() - 1);
+  const timeValue = `${String(hour).padStart(2, "0")}:00`;
+  await page.locator("#session-time").fill(timeValue);
+}

@@ -354,6 +354,26 @@ E2E_CAMPAIGN_TORNEO_ID=0d696961-fe0a-4b66-9f1a-856821396c29
 - [ ] GM Screen torneo: station stack su viewport stretto
 - [ ] Dashboard calendar day drawer (`NEXT_PUBLIC_DASHBOARD_CALENDAR_DAY_DRAWER`)
 
+#### AI campagna long — produzione (P2 nightly, **non** CI per-PR)
+
+Suite serial: `tests/e2e/ai/long-campaign-ai.prod.spec.ts` — `npm run test:e2e:ai-prod`.
+
+| # | Scenario | Assert chiave |
+|---|----------|---------------|
+| 1 | Architetto AI — paletti + negative prompt | DB `campaigns.ai_context` (6 campi) |
+| 2 | Wiki canonica + memoria IA | chunk `wiki` con token `E2E-AI-*` |
+| 3 | Assistente IA — genera testo NPC (create) | toast + contenuto > 80 char |
+| 4 | Sessione live — chiusura con riassunto | chunk `session_summary` |
+| 5 | Query memoria campagna | risposta cita sigillo sessione |
+| 6 | Bacchetta IA (tipo lore) | bozza testo + voce creata |
+| 7 | Generazione immagine wiki (edit) | successo + `visual_negative` in DB |
+
+**Handoff dettagliato:** [`docs/qa-ai-developer-handoff.md`](./qa-ai-developer-handoff.md) — architettura, attriti QA, fix implementati (§12).
+
+**Prerequisiti:** URL Vercel (`https://dnd-manager-j8h5.vercel.app`), campagna `E2E-QA Long`, `SUPABASE_SERVICE_ROLE_KEY`, timeout 600s. Teardown: privatizza campagne + `e2e:cleanup-artifacts`.
+
+**Fix prodotto post-QA (2026-06-13):** «Genera testo» anche in modifica wiki, Bacchetta auto-close, toast chunk memoria, cleanup artifact sandbox.
+
 ---
 
 ## 6. Dati di test richiesti
@@ -417,8 +437,8 @@ Playwright deve colmare il gap **interazione browser**, **permessi per ruolo**, 
 | Rischio | Mitigazione |
 |---------|-------------|
 | Flakiness realtime torneo | `expect.poll`, timeout 10–15s, test seriali per live session |
-| Costo AI | Escludere generazione AI da CI; test manuale o mock |
-| Dati prod sporchi | Campagne dedicate QA; cleanup automatico |
+| Costo AI | Suite `test:e2e:ai-prod` solo nightly/manuale; escludere da CI PR |
+| Dati prod sporchi | Campagne `E2E-QA*`; cleanup `e2e:cleanup-artifacts` in teardown |
 | Account unico admin per tutto | Separare GM/Player per test negativi (403/redirect) |
 | Playwright non in `package.json` | Aggiungere dipendenza e `npx playwright install` in CI |
 | Assenza `data-testid` | Aggiungere su dialog critici (login, create session, create PG) |

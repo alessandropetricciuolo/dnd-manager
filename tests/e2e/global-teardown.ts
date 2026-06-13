@@ -19,4 +19,15 @@ export default async function globalTeardown(config: FullConfig) {
       E2E_TEARDOWN_PRIVATE: "1",
     },
   });
+
+  console.log("[e2e:teardown] pulizia artifact wiki/sessioni AI sulla campagna long E2E");
+  execSync("npx tsx scripts/e2e-cleanup-long-campaign-artifacts.ts", {
+    stdio: "inherit",
+    cwd: path.join(__dirname, "../.."),
+    env: {
+      ...process.env,
+      PLAYWRIGHT_BASE_URL: baseURL ?? process.env.PLAYWRIGHT_BASE_URL ?? "",
+      E2E_CLEANUP_ARTIFACTS: "1",
+    },
+  });
 }

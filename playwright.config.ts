@@ -70,6 +70,18 @@ export default defineConfig({
       testMatch: /flows\/.*\.spec\.ts/,
       use: { ...devices["Desktop Chrome"] },
     },
+    {
+      name: "ai-prod",
+      dependencies: ["setup"],
+      testMatch: /ai\/.*\.prod\.spec\.ts/,
+      timeout: 600_000,
+      use: {
+        ...devices["Desktop Chrome"],
+        storageState: path.join(authDir, "gm.json"),
+        actionTimeout: 120_000,
+        navigationTimeout: 60_000,
+      },
+    },
   ],
   webServer: process.env.PLAYWRIGHT_SKIP_WEBSERVER
     ? undefined
