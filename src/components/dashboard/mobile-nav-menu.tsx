@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, LayoutDashboard, User, UserCog, Shield, LogOut, ImageDown, Hammer } from "lucide-react";
+import { Menu, LayoutDashboard, User, UserCog, Shield, LogOut, ImageDown, Hammer, Landmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { CreateCampaignDialog } from "@/components/create-campaign-dialog";
@@ -14,12 +14,14 @@ function NavLinks({
   isAdmin,
   isGmOrAdmin,
   hasForgeAccess = false,
+  hasVaultAccess = false,
   onNavigate,
   className,
 }: {
   isAdmin: boolean;
   isGmOrAdmin: boolean;
   hasForgeAccess?: boolean;
+  hasVaultAccess?: boolean;
   onNavigate?: () => void;
   className?: string;
 }) {
@@ -31,7 +33,11 @@ function NavLinks({
         ? pathname === path || pathname?.startsWith("/forge/")
           ? "bg-barber-gold/20 text-barber-gold"
           : "text-barber-paper/80 hover:bg-barber-gold/10 hover:text-barber-gold"
-        : pathname === path
+        : path === "/vault"
+          ? pathname === path || pathname?.startsWith("/vault/")
+            ? "bg-barber-gold/20 text-barber-gold"
+            : "text-barber-paper/80 hover:bg-barber-gold/10 hover:text-barber-gold"
+          : pathname === path
           ? "bg-barber-gold/20 text-barber-gold"
           : "text-barber-paper/80 hover:bg-barber-gold/10 hover:text-barber-gold"
     );
@@ -50,6 +56,12 @@ function NavLinks({
         <Link href="/forge" onClick={onNavigate} className={linkClass("/forge")}>
           <Hammer className="h-5 w-5 shrink-0" />
           La Forgia
+        </Link>
+      ) : null}
+      {hasVaultAccess ? (
+        <Link href="/vault" onClick={onNavigate} className={linkClass("/vault")}>
+          <Landmark className="h-5 w-5 shrink-0" />
+          Il Vault
         </Link>
       ) : null}
       {isGmOrAdmin && (
@@ -93,6 +105,7 @@ type MobileNavMenuProps = {
   isAdmin: boolean;
   isGmOrAdmin: boolean;
   hasForgeAccess?: boolean;
+  hasVaultAccess?: boolean;
   /** Se true, il trigger è solo l'icona (per inserirlo in header custom). Altrimenti mostra anche "Menu". */
   iconOnly?: boolean;
   className?: string;
@@ -102,6 +115,7 @@ export function MobileNavMenu({
   isAdmin,
   isGmOrAdmin,
   hasForgeAccess = false,
+  hasVaultAccess = false,
   iconOnly = false,
   className,
 }: MobileNavMenuProps) {
@@ -131,6 +145,7 @@ export function MobileNavMenu({
             isAdmin={isAdmin}
             isGmOrAdmin={isGmOrAdmin}
             hasForgeAccess={hasForgeAccess}
+            hasVaultAccess={hasVaultAccess}
             onNavigate={() => setSheetOpen(false)}
           />
         </div>

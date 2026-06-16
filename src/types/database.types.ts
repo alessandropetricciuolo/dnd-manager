@@ -938,6 +938,78 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["forge_account_movements"]["Insert"]>;
         Relationships: [];
       };
+      vault_access: {
+        Row: {
+          id: string;
+          user_id: string;
+          enabled: boolean;
+          granted_by: string | null;
+          granted_at: string;
+          revoked_at: string | null;
+          note: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          enabled?: boolean;
+          granted_by?: string | null;
+          granted_at?: string;
+          revoked_at?: string | null;
+          note?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["vault_access"]["Insert"]>;
+        Relationships: [];
+      };
+      vault_accounts: {
+        Row: {
+          id: string;
+          name: string;
+          type: string;
+          opening_balance: number;
+          active: boolean;
+          note: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          type?: string;
+          opening_balance?: number;
+          active?: boolean;
+          note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["vault_accounts"]["Insert"]>;
+        Relationships: [];
+      };
+      vault_account_movements: {
+        Row: {
+          id: string;
+          account_id: string;
+          type: string;
+          amount: number;
+          reason: string | null;
+          category: string | null;
+          created_by: string | null;
+          movement_date: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          account_id: string;
+          type: string;
+          amount: number;
+          reason?: string | null;
+          category?: string | null;
+          created_by?: string | null;
+          movement_date?: string;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["vault_account_movements"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: {
       forge_product_stock: {
@@ -945,6 +1017,10 @@ export interface Database {
         Relationships: [];
       };
       forge_account_balances: {
+        Row: { account_id: string; balance: number };
+        Relationships: [];
+      };
+      vault_account_balances: {
         Row: { account_id: string; balance: number };
         Relationships: [];
       };
