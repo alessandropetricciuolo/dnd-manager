@@ -104,13 +104,13 @@ export function ForgeInventoryClient({ products, initialMovements, isAdmin }: Pr
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-barber-gold">Movimenti magazzino</h1>
+        <h1 className="text-xl font-semibold text-barber-gold sm:text-2xl">Movimenti magazzino</h1>
         <p className="text-sm text-barber-paper/60">Produzione, scarti, resi e correzioni</p>
       </div>
 
       <div className="rounded-xl border border-barber-gold/25 bg-barber-dark/80 p-4">
         <h2 className="mb-3 text-sm font-semibold text-barber-gold">Nuovo movimento</h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3">
           <div className="space-y-1">
             <Label>Prodotto</Label>
             <Select value={productId} onValueChange={setProductId}>
@@ -143,21 +143,21 @@ export function ForgeInventoryClient({ products, initialMovements, isAdmin }: Pr
           </div>
           <div className="space-y-1">
             <Label>Quantità</Label>
-            <Input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+            <Input type="number" className="h-11" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
           </div>
-          <div className="space-y-1 sm:col-span-2">
+          <div className="space-y-1">
             <Label>Note</Label>
-            <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={1} />
+            <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} />
           </div>
         </div>
-        <Button className="mt-3 bg-barber-gold text-barber-dark" disabled={pending} onClick={addMovement}>
+        <Button className="mt-3 h-11 w-full bg-barber-gold text-barber-dark sm:w-auto" disabled={pending} onClick={addMovement}>
           Registra movimento
         </Button>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row">
         <Select value={productFilter} onValueChange={setProductFilter}>
-          <SelectTrigger className="w-48 border-barber-gold/30 bg-barber-dark">
+          <SelectTrigger className="h-11 w-full border-barber-gold/30 bg-barber-dark sm:w-48">
             <SelectValue placeholder="Prodotto" />
           </SelectTrigger>
           <SelectContent>
@@ -170,7 +170,7 @@ export function ForgeInventoryClient({ products, initialMovements, isAdmin }: Pr
           </SelectContent>
         </Select>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-40 border-barber-gold/30 bg-barber-dark">
+          <SelectTrigger className="h-11 w-full border-barber-gold/30 bg-barber-dark sm:w-40">
             <SelectValue placeholder="Tipo" />
           </SelectTrigger>
           <SelectContent>
@@ -184,7 +184,34 @@ export function ForgeInventoryClient({ products, initialMovements, isAdmin }: Pr
         </Select>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-barber-gold/25">
+      <div className="space-y-3 md:hidden">
+        {filtered.map((m) => (
+          <div key={m.id} className="rounded-xl border border-barber-gold/25 bg-barber-dark/80 p-3">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="font-medium">{m.product_name}</p>
+                <p className="text-xs text-barber-paper/50">
+                  {new Date(m.created_at).toLocaleString("it-IT")} · {m.type}
+                </p>
+              </div>
+              <span className="text-lg font-semibold text-barber-gold">{m.quantity}</span>
+            </div>
+            {m.note ? <p className="mt-2 text-sm text-barber-paper/60">{m.note}</p> : null}
+            {!m.sale_id || isAdmin ? (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="mt-2 h-9 text-red-300"
+                onClick={() => removeMovement(m.id, m.sale_id)}
+              >
+                Elimina
+              </Button>
+            ) : null}
+          </div>
+        ))}
+      </div>
+
+      <div className="hidden overflow-x-auto rounded-xl border border-barber-gold/25 md:block">
         <Table>
           <TableHeader>
             <TableRow>

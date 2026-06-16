@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Plus, Pencil } from "lucide-react";
+import { ArrowLeftRight, Plus, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/table";
 import {
   createForgeAccountMovementAction,
+  createForgeTransferAction,
   upsertForgeAccountAction,
 } from "@/lib/forge/actions";
 import type { ForgeAccount, ForgeAccountMovement, ForgeAccountType } from "@/lib/forge/types";
@@ -60,6 +61,7 @@ function money(n: number) {
 export function ForgeAccountsClient({ accounts, movementsByAccount }: Props) {
   const [accountOpen, setAccountOpen] = useState(false);
   const [movementOpen, setMovementOpen] = useState(false);
+  const [transferOpen, setTransferOpen] = useState(false);
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -79,6 +81,16 @@ export function ForgeAccountsClient({ accounts, movementsByAccount }: Props) {
     category: "altro",
     movement_date: new Date().toISOString().slice(0, 16),
   });
+
+  const [transferForm, setTransferForm] = useState({
+    from_account_id: "",
+    to_account_id: "",
+    amount: "",
+    note: "",
+    movement_date: new Date().toISOString().slice(0, 16),
+  });
+
+  const activeAccounts = accounts.filter((a) => a.active);
 
   function openCreateAccount() {
     setAccountForm({
@@ -136,6 +148,52 @@ export function ForgeAccountsClient({ accounts, movementsByAccount }: Props) {
     setMovementOpen(true);
   }
 
+  function openTransfer() {
+    const first = activeAccounts[0]?.id ?? "";
+    const second = activeAccounts[1]?.id ?? "";
+    setTransferForm({
+      from_account_id: first,
+      to_account_id: second,
+      amount: "",
+      note: "",
+      movement_date: new Date().toISOString().slice(0, 16),
+    });
+    setTransferOpen(true);
+  }
+
+  function saveTransfer() {
+    const raw = Number(transferForm.amount);
+    if (!raw) {
+      toast.error("Importo obbligatorio.");
+      return;
+    }
+    if (!transferForm.from_account_id || !transferForm.to_account_id) {
+      toast.error("Seleziona conto di origine e destinazione.");
+      return;
+    }
+    if (transferForm.from_account_id === transferForm.to_account_id) {
+      toast.error("I due conti devono essere diversi.");
+      return;
+    }
+
+    startTransition(async () => {
+      const res = await createForgeTransferAction({
+        from_account_id: transferForm.from_account_id,
+        to_account_id: transferForm.to_account_id,
+        amount: raw,
+        note: transferForm.note,
+        movement_date: new Date(transferForm.movement_date).toISOString(),
+      });
+      if (!res.success) {
+        toast.error(res.error);
+        return;
+      }
+      toast.success("Giroconto registrato.");
+      setTransferOpen(false);
+      window.location.reload();
+    });
+  }
+
   function saveMovement() {
     if (!selectedAccountId) return;
     const raw = Number(movForm.amount);
@@ -169,13 +227,19 @@ export function ForgeAccountsClient({ accounts, movementsByAccount }: Props) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-barber-gold">Conti</h1>
-          <p className="text-sm text-barber-paper/60">Saldi, entrate e uscite</p>
+          <h1 className="text-xl font-semibold text-barber-gold sm:text-2xl">Conti</h1>
+          <p className="text-sm text-barber-paper/60">Saldi, entrate, uscite e giroconti</p>
         </div>
-        <Button onClick={openCreateAccount} className="bg-barber-gold text-barber-dark">
-          <Plus className="mr-2 h-4 w-4" />
-          Nuovo conto
-        </Button>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          <Button variant="outline" className="h-11" onClick={openTransfer} disabled={activeAccounts.length < 2}>
+            <ArrowLeftRight className="mr-2 h-4 w-4" />
+            Giroconto
+          </Button>
+          <Button onClick={openCreateAccount} className="h-11 bg-barber-gold text-barber-dark">
+            <Plus className="mr-2 h-4 w-4" />
+            Nuovo conto
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -207,7 +271,7 @@ export function ForgeAccountsClient({ accounts, movementsByAccount }: Props) {
                   <span>Entrate: {money(inflows)}</span>
                   <span>Uscite: {money(outflows)}</span>
                 </div>
-                <Button size="sm" variant="outline" onClick={() => openMovement(a.id)}>
+                <Button size="sm" variant="outline" className="h-10 w-full sm:w-auto" onClick={() => openMovement(a.id)}>
                   Registra uscita / correzione
                 </Button>
                 {movements.length > 0 ? (
@@ -241,7 +305,7 @@ export function ForgeAccountsClient({ accounts, movementsByAccount }: Props) {
       </div>
 
       <Dialog open={accountOpen} onOpenChange={setAccountOpen}>
-        <DialogContent className="border-barber-gold/30 bg-barber-dark text-barber-paper">
+        <DialogContent className="max-h-[95dvh] w-[calc(100vw-1rem)] max-w-lg overflow-y-auto border-barber-gold/30 bg-barber-dark text-barber-paper">
           <DialogHeader>
             <DialogTitle>{accountForm.id ? "Modifica conto" : "Nuovo conto"}</DialogTitle>
           </DialogHeader>
@@ -301,8 +365,89 @@ export function ForgeAccountsClient({ accounts, movementsByAccount }: Props) {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={transferOpen} onOpenChange={setTransferOpen}>
+        <DialogContent className="max-h-[95dvh] w-[calc(100vw-1rem)] max-w-lg overflow-y-auto border-barber-gold/30 bg-barber-dark text-barber-paper">
+          <DialogHeader>
+            <DialogTitle>Giroconto tra conti</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <div className="space-y-1">
+              <Label>Da conto</Label>
+              <Select
+                value={transferForm.from_account_id}
+                onValueChange={(v) => setTransferForm({ ...transferForm, from_account_id: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleziona conto" />
+                </SelectTrigger>
+                <SelectContent>
+                  {activeAccounts.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.name} ({money(a.balance ?? 0)})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Verso conto</Label>
+              <Select
+                value={transferForm.to_account_id}
+                onValueChange={(v) => setTransferForm({ ...transferForm, to_account_id: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleziona conto" />
+                </SelectTrigger>
+                <SelectContent>
+                  {activeAccounts
+                    .filter((a) => a.id !== transferForm.from_account_id)
+                    .map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.name} ({money(a.balance ?? 0)})
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Importo</Label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0.01"
+                value={transferForm.amount}
+                onChange={(e) => setTransferForm({ ...transferForm, amount: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Note (opzionale)</Label>
+              <Input
+                value={transferForm.note}
+                onChange={(e) => setTransferForm({ ...transferForm, note: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Data</Label>
+              <Input
+                type="datetime-local"
+                value={transferForm.movement_date}
+                onChange={(e) => setTransferForm({ ...transferForm, movement_date: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTransferOpen(false)}>
+              Annulla
+            </Button>
+            <Button disabled={pending} onClick={saveTransfer} className="bg-barber-gold text-barber-dark">
+              Registra giroconto
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={movementOpen} onOpenChange={setMovementOpen}>
-        <DialogContent className="border-barber-gold/30 bg-barber-dark text-barber-paper">
+        <DialogContent className="max-h-[95dvh] w-[calc(100vw-1rem)] max-w-lg overflow-y-auto border-barber-gold/30 bg-barber-dark text-barber-paper">
           <DialogHeader>
             <DialogTitle>Movimento conto</DialogTitle>
           </DialogHeader>

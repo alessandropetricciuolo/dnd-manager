@@ -43,7 +43,46 @@ export function ForgeAccessClient({ gms }: Props) {
         <p className="text-sm text-barber-paper/60">Solo gli admin possono abilitare i GM</p>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-barber-gold/25">
+      <div className="space-y-3 md:hidden">
+        {gms.map((gm) => {
+          const enabled = gm.forge_access?.enabled === true;
+          return (
+            <div key={gm.id} className="rounded-xl border border-barber-gold/25 bg-barber-dark/80 p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="font-medium">{gm.label}</p>
+                  <p className="text-xs text-barber-paper/50">
+                    {gm.forge_access?.granted_at
+                      ? new Date(gm.forge_access.granted_at).toLocaleString("it-IT")
+                      : "Mai abilitato"}
+                  </p>
+                </div>
+                <Badge variant="outline" className={enabled ? "border-emerald-500/40 text-emerald-300" : ""}>
+                  {enabled ? "Abilitato" : "Off"}
+                </Badge>
+              </div>
+              <div className="mt-3">
+                {enabled ? (
+                  <Button className="h-11 w-full" size="sm" variant="outline" disabled={pending} onClick={() => toggle(gm, false)}>
+                    Revoca accesso
+                  </Button>
+                ) : (
+                  <Button
+                    className="h-11 w-full bg-barber-gold text-barber-dark"
+                    size="sm"
+                    disabled={pending}
+                    onClick={() => toggle(gm, true)}
+                  >
+                    Abilita
+                  </Button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="hidden overflow-x-auto rounded-xl border border-barber-gold/25 md:block">
         <Table>
           <TableHeader>
             <TableRow>

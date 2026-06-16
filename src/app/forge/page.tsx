@@ -1,4 +1,7 @@
+import Link from "next/link";
+import { ShoppingCart } from "lucide-react";
 import { fetchForgeDashboardData } from "@/lib/forge/actions";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -21,17 +24,25 @@ export default async function ForgeDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-barber-gold">Dashboard</h1>
-        <p className="text-sm text-barber-paper/60">Panoramica rapida di La Forgia</p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-barber-gold sm:text-2xl">Dashboard</h1>
+          <p className="text-sm text-barber-paper/60">Panoramica rapida di La Forgia</p>
+        </div>
+        <Button asChild className="h-11 w-full bg-barber-gold text-barber-dark hover:bg-barber-gold/90 sm:w-auto">
+          <Link href="/forge/vendite/nuova">
+            <ShoppingCart className="mr-2 h-4 w-4" />
+            Nuova vendita
+          </Link>
+        </Button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         <Card className="border-barber-gold/25 bg-barber-dark/80">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-barber-paper/70">Incasso totale</CardTitle>
           </CardHeader>
-          <CardContent className="text-2xl font-semibold text-barber-gold">
+          <CardContent className="text-xl font-semibold text-barber-gold sm:text-2xl">
             {money(data.totalRevenue)}
           </CardContent>
         </Card>
@@ -39,7 +50,7 @@ export default async function ForgeDashboardPage() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-barber-paper/70">Incasso mese</CardTitle>
           </CardHeader>
-          <CardContent className="text-2xl font-semibold text-barber-gold">
+          <CardContent className="text-xl font-semibold text-barber-gold sm:text-2xl">
             {money(data.monthRevenue)}
           </CardContent>
         </Card>
@@ -47,7 +58,7 @@ export default async function ForgeDashboardPage() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-barber-paper/70">Utile stimato</CardTitle>
           </CardHeader>
-          <CardContent className="text-2xl font-semibold text-emerald-400">
+          <CardContent className="text-xl font-semibold text-emerald-400 sm:text-2xl">
             {money(data.estimatedProfit)}
           </CardContent>
         </Card>
@@ -55,7 +66,7 @@ export default async function ForgeDashboardPage() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-barber-paper/70">Saldo conti attivi</CardTitle>
           </CardHeader>
-          <CardContent className="text-2xl font-semibold text-barber-paper">
+          <CardContent className="text-xl font-semibold text-barber-paper sm:text-2xl">
             {money(data.totalBalance)}
           </CardContent>
         </Card>

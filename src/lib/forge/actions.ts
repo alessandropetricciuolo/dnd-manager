@@ -102,6 +102,41 @@ export async function upsertForgeProductAction(input: {
   return { success: true, data: { id: data.id } };
 }
 
+export async function deleteForgeProductAction(
+  id: string
+): Promise<ActionResult<{ deactivated: boolean }>> {
+  await requireForgeAccess();
+  const supabase = await createSupabaseServerClient();
+  const now = new Date().toISOString();
+
+  const [{ count: saleCount }, { count: movementCount }] = await Promise.all([
+    supabase
+      .from("forge_sale_items")
+      .select("*", { count: "exact", head: true })
+      .eq("product_id", id),
+    supabase
+      .from("forge_inventory_movements")
+      .select("*", { count: "exact", head: true })
+      .eq("product_id", id),
+  ]);
+
+  const hasHistory = (saleCount ?? 0) > 0 || (movementCount ?? 0) > 0;
+  if (hasHistory) {
+    const { error } = await supabase
+      .from("forge_products")
+      .update({ active: false, updated_at: now })
+      .eq("id", id);
+    if (error) return { success: false, error: error.message };
+    revalidateForge();
+    return { success: true, data: { deactivated: true } };
+  }
+
+  const { error } = await supabase.from("forge_products").delete().eq("id", id);
+  if (error) return { success: false, error: error.message };
+  revalidateForge();
+  return { success: true, data: { deactivated: false } };
+}
+
 export async function uploadForgeProductImageAction(
   formData: FormData
 ): Promise<ActionResult<{ publicUrl: string }>> {
@@ -190,6 +225,67 @@ export async function createForgeAccountMovementAction(input: {
   });
 
   if (error) return { success: false, error: error.message };
+  revalidateForge();
+  return { success: true };
+}
+
+export async function createForgeTransferAction(input: {
+  from_account_id: string;
+  to_account_id: string;
+  amount: number;
+  note?: string;
+  movement_date?: string;
+}): Promise<ActionResult> {
+  await requireForgeAccess();
+  const amount = Math.abs(input.amount);
+  if (!amount) return { success: false, error: "Importo obbligatorio." };
+  if (input.from_account_id === input.to_account_id) {
+    return { success: false, error: "Seleziona due conti diversi." };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: accounts } = await supabase
+    .from("forge_accounts")
+    .select("id, name, active")
+    .in("id", [input.from_account_id, input.to_account_id]);
+
+  const fromAccount = accounts?.find((a) => a.id === input.from_account_id);
+  const toAccount = accounts?.find((a) => a.id === input.to_account_id);
+  if (!fromAccount?.active || !toAccount?.active) {
+    return { success: false, error: "Conti non validi o disattivati." };
+  }
+
+  const movementDate = input.movement_date || new Date().toISOString();
+  const note = input.note?.trim() || null;
+  const reasonOut = `Giroconto verso ${toAccount.name}`;
+  const reasonIn = `Giroconto da ${fromAccount.name}`;
+
+  const { error: outErr } = await supabase.from("forge_account_movements").insert({
+    account_id: input.from_account_id,
+    type: "uscita",
+    amount: -amount,
+    reason: note ? `${reasonOut} — ${note}` : reasonOut,
+    category: "giroconto",
+    movement_date: movementDate,
+    created_by: user?.id ?? null,
+  });
+  if (outErr) return { success: false, error: outErr.message };
+
+  const { error: inErr } = await supabase.from("forge_account_movements").insert({
+    account_id: input.to_account_id,
+    type: "entrata",
+    amount,
+    reason: note ? `${reasonIn} — ${note}` : reasonIn,
+    category: "giroconto",
+    movement_date: movementDate,
+    created_by: user?.id ?? null,
+  });
+  if (inErr) return { success: false, error: inErr.message };
+
   revalidateForge();
   return { success: true };
 }
