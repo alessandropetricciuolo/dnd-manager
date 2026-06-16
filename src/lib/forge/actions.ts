@@ -348,7 +348,10 @@ export async function fetchForgeDashboardData() {
 
   let estimatedProfit = 0;
   for (const item of saleItems ?? []) {
-    const cost = Number((item as { forge_products?: { cost_estimate: number } }).forge_products?.cost_estimate ?? 0);
+    const linked = (item as { forge_products?: { cost_estimate: number } | { cost_estimate: number }[] })
+      .forge_products;
+    const product = Array.isArray(linked) ? linked[0] : linked;
+    const cost = Number(product?.cost_estimate ?? 0);
     const revenue = Number(item.unit_price) * Number(item.quantity);
     estimatedProfit += revenue - cost * Number(item.quantity);
   }
@@ -473,18 +476,40 @@ export async function fetchForgeReportData(from: string, to: string) {
     supabase.from("forge_sale_items").select("product_id, quantity, total_price, forge_products(name)"),
   ]);
 
-  const revenue = (sales ?? []).reduce((s, r) => s + Number(r.total_amount), 0);
+  type SaleRow = {
+    id: string;
+    sale_date: string;
+    total_amount: number;
+    account_id: string;
+    event_name: string | null;
+    forge_accounts?: { name: string } | { name: string }[] | null;
+  };
+
+  const normalizedSales = (sales ?? []).map((sale) => {
+    const row = sale as SaleRow;
+    const linked = row.forge_accounts;
+    const forge_accounts = Array.isArray(linked) ? linked[0] ?? null : linked ?? null;
+    return {
+      id: row.id,
+      sale_date: row.sale_date,
+      total_amount: Number(row.total_amount),
+      account_id: row.account_id,
+      event_name: row.event_name,
+      forge_accounts,
+    };
+  });
+
+  const revenue = normalizedSales.reduce((s, r) => s + r.total_amount, 0);
   const outflowTotal = (outflows ?? [])
     .filter((m) => m.type === "uscita")
     .reduce((s, m) => s + Math.abs(Number(m.amount)), 0);
 
   const byAccount = new Map<string, { name: string; total: number }>();
-  for (const sale of sales ?? []) {
-    const acc = sale as { account_id: string; total_amount: number; forge_accounts?: { name: string } };
-    const name = acc.forge_accounts?.name ?? acc.account_id.slice(0, 8);
-    const prev = byAccount.get(acc.account_id) ?? { name, total: 0 };
-    prev.total += Number(acc.total_amount);
-    byAccount.set(acc.account_id, prev);
+  for (const sale of normalizedSales) {
+    const name = sale.forge_accounts?.name ?? sale.account_id.slice(0, 8);
+    const prev = byAccount.get(sale.account_id) ?? { name, total: 0 };
+    prev.total += sale.total_amount;
+    byAccount.set(sale.account_id, prev);
   }
 
   const productSales = new Map<string, { name: string; qty: number; revenue: number }>();
@@ -493,9 +518,11 @@ export async function fetchForgeReportData(from: string, to: string) {
       product_id: string;
       quantity: number;
       total_price: number;
-      forge_products?: { name: string };
+      forge_products?: { name: string } | { name: string }[];
     };
-    const name = row.forge_products?.name ?? row.product_id.slice(0, 8);
+    const linked = row.forge_products;
+    const product = Array.isArray(linked) ? linked[0] : linked;
+    const name = product?.name ?? row.product_id.slice(0, 8);
     const prev = productSales.get(row.product_id) ?? { name, qty: 0, revenue: 0 };
     prev.qty += Number(row.quantity);
     prev.revenue += Number(row.total_price);
@@ -505,13 +532,13 @@ export async function fetchForgeReportData(from: string, to: string) {
   const topProducts = [...productSales.values()].sort((a, b) => b.qty - a.qty).slice(0, 10);
 
   const byEvent = new Map<string, number>();
-  for (const sale of sales ?? []) {
-    const ev = (sale as { event_name: string | null }).event_name?.trim() || "Senza evento";
-    byEvent.set(ev, (byEvent.get(ev) ?? 0) + Number((sale as { total_amount: number }).total_amount));
+  for (const sale of normalizedSales) {
+    const ev = sale.event_name?.trim() || "Senza evento";
+    byEvent.set(ev, (byEvent.get(ev) ?? 0) + sale.total_amount);
   }
 
   return {
-    sales: sales ?? [],
+    sales: normalizedSales,
     revenue,
     outflowTotal,
     estimatedProfit: revenue - outflowTotal,

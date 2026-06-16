@@ -1,5 +1,12 @@
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
+import type { Database } from "@/types/database.types";
+
+type ForgeAccessRow = Database["public"]["Tables"]["forge_access"]["Row"];
+type GmProfileRow = Pick<
+  Database["public"]["Tables"]["profiles"]["Row"],
+  "id" | "first_name" | "last_name" | "display_name" | "role"
+>;
 
 export type ForgeAuthContext = {
   userId: string;
@@ -89,11 +96,15 @@ export async function listGmUsersForForgeAccess() {
     .eq("role", "gm")
     .order("first_name");
 
-  const { data: accessRows } = await admin.from("forge_access").select("*");
+  const { data: accessRows } = await admin
+    .from("forge_access")
+    .select("id, user_id, enabled, granted_by, granted_at, revoked_at, note");
 
-  const accessByUser = new Map((accessRows ?? []).map((r) => [r.user_id, r]));
+  const accessByUser = new Map(
+    ((accessRows ?? []) as ForgeAccessRow[]).map((r) => [r.user_id, r])
+  );
 
-  return (gms ?? []).map((gm) => {
+  return ((gms ?? []) as GmProfileRow[]).map((gm) => {
     const full = [gm.first_name, gm.last_name].filter(Boolean).join(" ").trim();
     const label = full || gm.display_name?.trim() || `GM ${gm.id.slice(0, 8)}`;
     return {
