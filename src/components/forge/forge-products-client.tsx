@@ -54,6 +54,7 @@ const emptyForm = {
   image_url: "",
   cost_estimate: "0",
   sale_price: "0",
+  stock: "0",
   min_stock: "0",
   active: true,
 };
@@ -120,6 +121,7 @@ export function ForgeProductsClient({ initialProducts, categories }: Props) {
       image_url: p.image_url ?? "",
       cost_estimate: String(p.cost_estimate),
       sale_price: String(p.sale_price),
+      stock: String(p.stock ?? 0),
       min_stock: String(p.min_stock),
       active: p.active,
     });
@@ -129,6 +131,11 @@ export function ForgeProductsClient({ initialProducts, categories }: Props) {
   function save() {
     if (!form.name.trim()) {
       toast.error("Il nome è obbligatorio.");
+      return;
+    }
+    const stock = Number(form.stock);
+    if (!Number.isFinite(stock) || stock < 0 || !Number.isInteger(stock)) {
+      toast.error("Lo stock attuale deve essere un numero intero ≥ 0.");
       return;
     }
     startTransition(async () => {
@@ -142,6 +149,7 @@ export function ForgeProductsClient({ initialProducts, categories }: Props) {
         sale_price: Number(form.sale_price) || 0,
         min_stock: Number(form.min_stock) || 0,
         active: form.active,
+        target_stock: stock,
       });
       if (!res.success) {
         toast.error(res.error);
@@ -395,7 +403,7 @@ export function ForgeProductsClient({ initialProducts, categories }: Props) {
                 rows={3}
               />
             </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label>Costo stim.</Label>
                 <Input
@@ -417,9 +425,25 @@ export function ForgeProductsClient({ initialProducts, categories }: Props) {
                 />
               </div>
               <div className="space-y-1">
+                <Label>Stock attuale</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step={1}
+                  className="h-11"
+                  value={form.stock}
+                  onChange={(e) => setForm({ ...form, stock: e.target.value })}
+                />
+                <p className="text-[11px] text-barber-paper/45">
+                  Al salvataggio registra una correzione se cambi la quantità.
+                </p>
+              </div>
+              <div className="space-y-1">
                 <Label>Stock min.</Label>
                 <Input
                   type="number"
+                  min={0}
+                  step={1}
                   className="h-11"
                   value={form.min_stock}
                   onChange={(e) => setForm({ ...form, min_stock: e.target.value })}

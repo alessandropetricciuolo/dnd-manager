@@ -68,9 +68,13 @@ export async function upsertForgeProductAction(input: {
   sale_price: number;
   min_stock: number;
   active: boolean;
+  target_stock?: number;
 }): Promise<ActionResult<{ id: string }>> {
   await requireForgeAccess();
   const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const now = new Date().toISOString();
   const payload = {
     name: input.name.trim(),
@@ -84,22 +88,46 @@ export async function upsertForgeProductAction(input: {
     updated_at: now,
   };
 
+  let productId = input.id;
+
   if (input.id) {
     const { error } = await supabase.from("forge_products").update(payload).eq("id", input.id);
     if (error) return { success: false, error: error.message };
-    revalidateForge();
-    return { success: true, data: { id: input.id } };
+  } else {
+    const { data, error } = await supabase
+      .from("forge_products")
+      .insert({ ...payload, created_at: now })
+      .select("id")
+      .single();
+
+    if (error) return { success: false, error: error.message };
+    productId = data.id;
   }
 
-  const { data, error } = await supabase
-    .from("forge_products")
-    .insert({ ...payload, created_at: now })
-    .select("id")
-    .single();
+  if (productId && input.target_stock !== undefined) {
+    const target = Math.max(0, Math.floor(input.target_stock));
+    const { data: stockRow } = await supabase
+      .from("forge_product_stock")
+      .select("stock")
+      .eq("product_id", productId)
+      .maybeSingle();
+    const current = Number(stockRow?.stock ?? 0);
+    const delta = target - current;
 
-  if (error) return { success: false, error: error.message };
+    if (delta !== 0) {
+      const { error: stockErr } = await supabase.from("forge_inventory_movements").insert({
+        product_id: productId,
+        type: "correzione",
+        quantity: delta,
+        note: "Stock impostato da anagrafica prodotto",
+        created_by: user?.id ?? null,
+      });
+      if (stockErr) return { success: false, error: stockErr.message };
+    }
+  }
+
   revalidateForge();
-  return { success: true, data: { id: data.id } };
+  return { success: true, data: { id: productId! } };
 }
 
 export async function deleteForgeProductAction(
