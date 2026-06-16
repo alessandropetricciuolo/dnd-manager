@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, User, UserCog, Shield, LogOut, ArrowLeft, ImageDown } from "lucide-react";
+import { LayoutDashboard, User, UserCog, Shield, LogOut, ArrowLeft, ImageDown, Hammer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MobileNavMenu } from "@/components/dashboard/mobile-nav-menu";
 import { CreateCampaignDialog } from "@/components/create-campaign-dialog";
@@ -13,6 +13,7 @@ type DashboardShellProps = {
   children: React.ReactNode;
   isAdmin: boolean;
   isGmOrAdmin: boolean;
+  hasForgeAccess?: boolean;
 };
 
 const SIDEBAR_LABEL =
@@ -21,11 +22,13 @@ const SIDEBAR_LABEL =
 function NavLinks({
   isAdmin,
   isGmOrAdmin,
+  hasForgeAccess = false,
   onNavigate,
   className,
 }: {
   isAdmin: boolean;
   isGmOrAdmin: boolean;
+  hasForgeAccess?: boolean;
   onNavigate?: () => void;
   className?: string;
 }) {
@@ -34,9 +37,13 @@ function NavLinks({
     cn(
       "flex h-10 items-center gap-0 rounded-lg text-sm font-medium transition-colors",
       "justify-center px-0 group-hover/sidebar:justify-start group-hover/sidebar:gap-3 group-hover/sidebar:px-3",
-      pathname === path
-        ? "bg-barber-gold/20 text-barber-gold"
-        : "text-barber-paper/80 hover:bg-barber-gold/10 hover:text-barber-gold"
+      path === "/forge"
+        ? pathname === path || pathname?.startsWith("/forge/")
+          ? "bg-barber-gold/20 text-barber-gold"
+          : "text-barber-paper/80 hover:bg-barber-gold/10 hover:text-barber-gold"
+        : pathname === path
+          ? "bg-barber-gold/20 text-barber-gold"
+          : "text-barber-paper/80 hover:bg-barber-gold/10 hover:text-barber-gold"
     );
 
   const isCampaignDetail = pathname?.match(/^\/campaigns\/[^/]+$/);
@@ -67,6 +74,12 @@ function NavLinks({
         <User className="h-5 w-5 shrink-0" />
         <span className={SIDEBAR_LABEL}>Profilo</span>
       </Link>
+      {hasForgeAccess ? (
+        <Link href="/forge" onClick={onNavigate} className={linkClass("/forge")} title="La Forgia">
+          <Hammer className="h-5 w-5 shrink-0" />
+          <span className={SIDEBAR_LABEL}>La Forgia</span>
+        </Link>
+      ) : null}
       {isGmOrAdmin && (
         <Link
           href="/admin/media-export"
@@ -121,7 +134,7 @@ function NavLinks({
   );
 }
 
-export function DashboardShell({ children, isAdmin, isGmOrAdmin }: DashboardShellProps) {
+export function DashboardShell({ children, isAdmin, isGmOrAdmin, hasForgeAccess = false }: DashboardShellProps) {
   const pathname = usePathname();
   const isCampaignPage = pathname?.startsWith("/campaigns");
   const isGmScreen = pathname?.includes("/gm-screen");
@@ -142,14 +155,19 @@ export function DashboardShell({ children, isAdmin, isGmOrAdmin }: DashboardShel
         )}
       >
         <div className="flex h-full min-h-0 flex-col py-3">
-          <NavLinks isAdmin={isAdmin} isGmOrAdmin={isGmOrAdmin} className="px-1.5 group-hover/sidebar:px-2" />
+          <NavLinks
+            isAdmin={isAdmin}
+            isGmOrAdmin={isGmOrAdmin}
+            hasForgeAccess={hasForgeAccess}
+            className="px-1.5 group-hover/sidebar:px-2"
+          />
         </div>
       </aside>
 
       <div className="flex flex-1 flex-col md:contents">
         {!isCampaignPage && (
           <div className="flex items-center gap-2 border-b border-barber-gold/20 bg-barber-dark/80 px-4 py-3 md:hidden">
-            <MobileNavMenu isAdmin={isAdmin} isGmOrAdmin={isGmOrAdmin} />
+            <MobileNavMenu isAdmin={isAdmin} isGmOrAdmin={isGmOrAdmin} hasForgeAccess={hasForgeAccess} />
             <span className="truncate text-sm font-medium text-barber-paper/90">Menu</span>
           </div>
         )}

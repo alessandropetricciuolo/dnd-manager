@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, LayoutDashboard, User, UserCog, Shield, LogOut, ImageDown } from "lucide-react";
+import { Menu, LayoutDashboard, User, UserCog, Shield, LogOut, ImageDown, Hammer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { CreateCampaignDialog } from "@/components/create-campaign-dialog";
@@ -13,11 +13,13 @@ import { cn } from "@/lib/utils";
 function NavLinks({
   isAdmin,
   isGmOrAdmin,
+  hasForgeAccess = false,
   onNavigate,
   className,
 }: {
   isAdmin: boolean;
   isGmOrAdmin: boolean;
+  hasForgeAccess?: boolean;
   onNavigate?: () => void;
   className?: string;
 }) {
@@ -25,9 +27,13 @@ function NavLinks({
   const linkClass = (path: string) =>
     cn(
       "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-      pathname === path
-        ? "bg-barber-gold/20 text-barber-gold"
-        : "text-barber-paper/80 hover:bg-barber-gold/10 hover:text-barber-gold"
+      path === "/forge"
+        ? pathname === path || pathname?.startsWith("/forge/")
+          ? "bg-barber-gold/20 text-barber-gold"
+          : "text-barber-paper/80 hover:bg-barber-gold/10 hover:text-barber-gold"
+        : pathname === path
+          ? "bg-barber-gold/20 text-barber-gold"
+          : "text-barber-paper/80 hover:bg-barber-gold/10 hover:text-barber-gold"
     );
 
   return (
@@ -40,6 +46,12 @@ function NavLinks({
         <User className="h-5 w-5 shrink-0" />
         Profilo
       </Link>
+      {hasForgeAccess ? (
+        <Link href="/forge" onClick={onNavigate} className={linkClass("/forge")}>
+          <Hammer className="h-5 w-5 shrink-0" />
+          La Forgia
+        </Link>
+      ) : null}
       {isGmOrAdmin && (
         <Link href="/admin/media-export" onClick={onNavigate} className={linkClass("/admin/media-export")}>
           <ImageDown className="h-5 w-5 shrink-0" />
@@ -80,12 +92,19 @@ function NavLinks({
 type MobileNavMenuProps = {
   isAdmin: boolean;
   isGmOrAdmin: boolean;
+  hasForgeAccess?: boolean;
   /** Se true, il trigger è solo l'icona (per inserirlo in header custom). Altrimenti mostra anche "Menu". */
   iconOnly?: boolean;
   className?: string;
 };
 
-export function MobileNavMenu({ isAdmin, isGmOrAdmin, iconOnly = false, className }: MobileNavMenuProps) {
+export function MobileNavMenu({
+  isAdmin,
+  isGmOrAdmin,
+  hasForgeAccess = false,
+  iconOnly = false,
+  className,
+}: MobileNavMenuProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
 
   return (
@@ -111,6 +130,7 @@ export function MobileNavMenu({ isAdmin, isGmOrAdmin, iconOnly = false, classNam
           <NavLinks
             isAdmin={isAdmin}
             isGmOrAdmin={isGmOrAdmin}
+            hasForgeAccess={hasForgeAccess}
             onNavigate={() => setSheetOpen(false)}
           />
         </div>

@@ -762,12 +762,206 @@ export interface Database {
         };
         Update: Partial<Database["public"]["Tables"]["campaign_exploration_fow_regions"]["Insert"]>;
       };
+      forge_access: {
+        Row: {
+          id: string;
+          user_id: string;
+          enabled: boolean;
+          granted_by: string | null;
+          granted_at: string;
+          revoked_at: string | null;
+          note: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          enabled?: boolean;
+          granted_by?: string | null;
+          granted_at?: string;
+          revoked_at?: string | null;
+          note?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["forge_access"]["Insert"]>;
+        Relationships: [];
+      };
+      forge_accounts: {
+        Row: {
+          id: string;
+          name: string;
+          type: string;
+          opening_balance: number;
+          active: boolean;
+          note: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          type?: string;
+          opening_balance?: number;
+          active?: boolean;
+          note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["forge_accounts"]["Insert"]>;
+        Relationships: [];
+      };
+      forge_products: {
+        Row: {
+          id: string;
+          name: string;
+          category: string | null;
+          description: string | null;
+          image_url: string | null;
+          cost_estimate: number;
+          sale_price: number;
+          min_stock: number;
+          active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          category?: string | null;
+          description?: string | null;
+          image_url?: string | null;
+          cost_estimate?: number;
+          sale_price?: number;
+          min_stock?: number;
+          active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["forge_products"]["Insert"]>;
+        Relationships: [];
+      };
+      forge_sales: {
+        Row: {
+          id: string;
+          sale_date: string;
+          payment_status: string;
+          customer_name: string | null;
+          event_name: string | null;
+          account_id: string;
+          total_amount: number;
+          note: string | null;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          sale_date?: string;
+          payment_status?: string;
+          customer_name?: string | null;
+          event_name?: string | null;
+          account_id: string;
+          total_amount?: number;
+          note?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["forge_sales"]["Insert"]>;
+        Relationships: [];
+      };
+      forge_sale_items: {
+        Row: {
+          id: string;
+          sale_id: string;
+          product_id: string;
+          quantity: number;
+          unit_price: number;
+          total_price: number;
+        };
+        Insert: {
+          id?: string;
+          sale_id: string;
+          product_id: string;
+          quantity: number;
+          unit_price: number;
+          total_price: number;
+        };
+        Update: Partial<Database["public"]["Tables"]["forge_sale_items"]["Insert"]>;
+        Relationships: [];
+      };
+      forge_inventory_movements: {
+        Row: {
+          id: string;
+          product_id: string;
+          type: string;
+          quantity: number;
+          note: string | null;
+          sale_id: string | null;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          product_id: string;
+          type: string;
+          quantity: number;
+          note?: string | null;
+          sale_id?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["forge_inventory_movements"]["Insert"]>;
+        Relationships: [];
+      };
+      forge_account_movements: {
+        Row: {
+          id: string;
+          account_id: string;
+          type: string;
+          amount: number;
+          reason: string | null;
+          category: string | null;
+          linked_sale_id: string | null;
+          created_by: string | null;
+          movement_date: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          account_id: string;
+          type: string;
+          amount: number;
+          reason?: string | null;
+          category?: string | null;
+          linked_sale_id?: string | null;
+          created_by?: string | null;
+          movement_date?: string;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["forge_account_movements"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: {
-      [_ in never]: never;
+      forge_product_stock: {
+        Row: { product_id: string; stock: number };
+        Relationships: [];
+      };
+      forge_account_balances: {
+        Row: { account_id: string; balance: number };
+        Relationships: [];
+      };
     };
     Functions: {
-      [_ in never]: never;
+      forge_create_sale: {
+        Args: {
+          p_sale_date: string;
+          p_payment_status: string;
+          p_customer_name: string | null;
+          p_event_name: string | null;
+          p_account_id: string;
+          p_note: string | null;
+          p_items: Json;
+        };
+        Returns: string;
+      };
     };
   };
 }
