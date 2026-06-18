@@ -155,6 +155,114 @@ export interface Database {
         };
         Update: Partial<Database["public"]["Tables"]["ai_image_styles"]["Insert"]>;
       };
+      image_benchmark_runs: {
+        Row: {
+          id: string;
+          title: string;
+          description: string | null;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          description?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["image_benchmark_runs"]["Insert"]>;
+        Relationships: [];
+      };
+      image_benchmark_prompts: {
+        Row: {
+          id: string;
+          run_id: string;
+          category: string;
+          prompt: string;
+          aspect_ratio: string;
+          sort_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          run_id: string;
+          category: string;
+          prompt: string;
+          aspect_ratio?: string;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["image_benchmark_prompts"]["Insert"]>;
+        Relationships: [];
+      };
+      image_benchmark_results: {
+        Row: {
+          id: string;
+          run_id: string;
+          prompt_id: string;
+          provider: string;
+          model: string;
+          prompt: string;
+          aspect_ratio: string;
+          image_url: string | null;
+          image_base64: string | null;
+          raw_response: Json | null;
+          duration_ms: number | null;
+          estimated_cost_usd: number | null;
+          status: "pending" | "success" | "error";
+          error_message: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          run_id: string;
+          prompt_id: string;
+          provider?: string;
+          model: string;
+          prompt: string;
+          aspect_ratio: string;
+          image_url?: string | null;
+          image_base64?: string | null;
+          raw_response?: Json | null;
+          duration_ms?: number | null;
+          estimated_cost_usd?: number | null;
+          status?: "pending" | "success" | "error";
+          error_message?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["image_benchmark_results"]["Insert"]>;
+        Relationships: [];
+      };
+      image_benchmark_scores: {
+        Row: {
+          id: string;
+          result_id: string;
+          aesthetic_score: number | null;
+          prompt_adherence_score: number | null;
+          text_rendering_score: number | null;
+          fantasy_usefulness_score: number | null;
+          production_ready_score: number | null;
+          notes: string | null;
+          scored_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          result_id: string;
+          aesthetic_score?: number | null;
+          prompt_adherence_score?: number | null;
+          text_rendering_score?: number | null;
+          fantasy_usefulness_score?: number | null;
+          production_ready_score?: number | null;
+          notes?: string | null;
+          scored_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["image_benchmark_scores"]["Insert"]>;
+        Relationships: [];
+      };
       admin_communications: {
         Row: {
           id: string;

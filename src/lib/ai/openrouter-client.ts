@@ -27,6 +27,32 @@ function getOpenRouterBaseUrl(): string {
   return base.replace(/\/$/, "");
 }
 
+export function getOpenRouterApiKey(): string {
+  const apiKey = process.env.OPENROUTER_API_KEY?.trim();
+  if (!apiKey) {
+    throw new Error(
+      "OPENROUTER_API_KEY non configurata. Aggiungi la chiave da openrouter.ai/keys."
+    );
+  }
+  return apiKey;
+}
+
+export function buildOpenRouterHeaders(apiKey: string): Record<string, string> {
+  const referer =
+    process.env.OPENROUTER_HTTP_REFERER?.trim() ||
+    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+    "https://localhost";
+  const title = process.env.OPENROUTER_APP_TITLE?.trim() || "Barber And Dragons";
+
+  return {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+    Accept: "application/json",
+    "HTTP-Referer": referer,
+    "X-Title": title,
+  };
+}
+
 export function getOpenRouterModelForAiText(): string {
   const m = process.env.OPENROUTER_MODEL?.trim();
   return m && m.length > 0 ? m : "openai/gpt-4o-mini";
@@ -86,19 +112,7 @@ function sleep(ms: number): Promise<void> {
 }
 
 function getOpenRouterHeaders(apiKey: string): Record<string, string> {
-  const referer =
-    process.env.OPENROUTER_HTTP_REFERER?.trim() ||
-    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-    "https://localhost";
-  const title = process.env.OPENROUTER_APP_TITLE?.trim() || "Barber And Dragons";
-
-  return {
-    Authorization: `Bearer ${apiKey}`,
-    "Content-Type": "application/json",
-    Accept: "application/json",
-    "HTTP-Referer": referer,
-    "X-Title": title,
-  };
+  return buildOpenRouterHeaders(apiKey);
 }
 
 /**
@@ -108,12 +122,7 @@ export async function generateOpenRouterChat(
   userContent: string,
   options: OpenRouterChatOptions = {}
 ): Promise<string> {
-  const apiKey = process.env.OPENROUTER_API_KEY?.trim();
-  if (!apiKey) {
-    throw new Error(
-      "OPENROUTER_API_KEY non configurata. Aggiungi la chiave da openrouter.ai/keys e imposta AI_TEXT_PROVIDER=openrouter."
-    );
-  }
+  const apiKey = getOpenRouterApiKey();
 
   const trimmed = userContent.trim();
   if (!trimmed) {
@@ -204,10 +213,7 @@ export async function generateOpenRouterEmbedding(
   text: string,
   options: OpenRouterEmbeddingOptions = {}
 ): Promise<number[]> {
-  const apiKey = process.env.OPENROUTER_API_KEY?.trim();
-  if (!apiKey) {
-    throw new Error("OPENROUTER_API_KEY non configurata. Impossibile generare embedding con OpenRouter.");
-  }
+  const apiKey = getOpenRouterApiKey();
 
   const input = text.trim();
   if (!input) {
