@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { Loader2, Search } from "lucide-react";
+import { ImageIcon, Loader2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,9 +14,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import type { ImageProviderId } from "@/lib/ai/image-provider";
+import { OPENROUTER_IMAGE_ASPECT_RATIOS } from "@/lib/ai/openrouter-image-preview";
 import type { WikiImageEntityKind } from "@/lib/ai/image-prompt-builder";
 import {
+  generateTestImageFromPromptAction,
   previewContextualImagePromptAction,
   type AdminCampaignOption,
   type PreviewImagePromptResult,
@@ -27,7 +28,8 @@ const DEFAULT_PROMPT =
 
 type Props = {
   campaigns: AdminCampaignOption[];
-  defaultProvider: ImageProviderId;
+  models: string[];
+  defaultModel: string;
 };
 
 function StatBadge({ label, value }: { label: string; value: string | number }) {
@@ -50,22 +52,37 @@ function PromptBlock({ title, text }: { title: string; text: string }) {
   );
 }
 
-export function ImagePromptDebugClient({ campaigns, defaultProvider }: Props) {
+export function ImagePromptDebugClient({ campaigns, models, defaultModel }: Props) {
   const longCampaigns = useMemo(
     () => campaigns.filter((c) => c.type === "long"),
     [campaigns]
   );
   const initialCampaignId = longCampaigns[0]?.id ?? campaigns[0]?.id ?? "";
+  const modelOptions = models.length > 0 ? models : [defaultModel];
 
   const [campaignId, setCampaignId] = useState(initialCampaignId);
   const [userPrompt, setUserPrompt] = useState(DEFAULT_PROMPT);
   const [entityType, setEntityType] = useState<WikiImageEntityKind>("npc");
   const [entityTitle, setEntityTitle] = useState("");
-  const [provider, setProvider] = useState<ImageProviderId>(defaultProvider);
+  const [model, setModel] = useState(defaultModel);
+  const [aspectRatio, setAspectRatio] = useState<string>("1:1");
   const [preview, setPreview] = useState<PreviewImagePromptResult | null>(null);
+  const [testImageSrc, setTestImageSrc] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [generating, startGenerate] = useTransition();
 
   const selectedCampaign = campaigns.find((c) => c.id === campaignId);
+
+  function buildInput() {
+    return {
+      campaignId,
+      userPrompt,
+      entityType,
+      entityTitle,
+      model,
+      aspectRatio,
+    };
+  }
 
   function handlePreview() {
     if (!campaignId) {
@@ -73,17 +90,28 @@ export function ImagePromptDebugClient({ campaigns, defaultProvider }: Props) {
       return;
     }
     startTransition(async () => {
-      const res = await previewContextualImagePromptAction({
-        campaignId,
-        userPrompt,
-        entityType,
-        entityTitle,
-        provider,
-      });
+      const res = await previewContextualImagePromptAction(buildInput());
       setPreview(res);
+      setTestImageSrc(null);
       if (!res.success) {
         toast.error(res.message);
       }
+    });
+  }
+
+  function handleGenerateTest() {
+    if (!campaignId) {
+      toast.error("Seleziona una campagna.");
+      return;
+    }
+    startGenerate(async () => {
+      const res = await generateTestImageFromPromptAction(buildInput());
+      if (!res.success) {
+        toast.error(res.message);
+        return;
+      }
+      setTestImageSrc(res.imageUrl ?? res.imageBase64 ?? null);
+      toast.success(`Immagine generata in ${res.durationMs} ms`);
     });
   }
 
@@ -128,14 +156,33 @@ export function ImagePromptDebugClient({ campaigns, defaultProvider }: Props) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="provider">Provider (payload API)</Label>
-          <Select value={provider} onValueChange={(v) => setProvider(v as ImageProviderId)}>
-            <SelectTrigger id="provider" className="border-barber-gold/30 bg-barber-dark">
+          <Label htmlFor="model">Modello OpenRouter</Label>
+          <Select value={model} onValueChange={setModel}>
+            <SelectTrigger id="model" className="border-barber-gold/30 bg-barber-dark">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="huggingface">Hugging Face (inputs unificato)</SelectItem>
-              <SelectItem value="siliconflow">SiliconFlow (prompt + negative)</SelectItem>
+              {modelOptions.map((m) => (
+                <SelectItem key={m} value={m}>
+                  {m}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="aspect-ratio">Aspect ratio</Label>
+          <Select value={aspectRatio} onValueChange={setAspectRatio}>
+            <SelectTrigger id="aspect-ratio" className="border-barber-gold/30 bg-barber-dark">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {OPENROUTER_IMAGE_ASPECT_RATIOS.map((r) => (
+                <SelectItem key={r} value={r}>
+                  {r}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -162,11 +209,11 @@ export function ImagePromptDebugClient({ campaigns, defaultProvider }: Props) {
           />
         </div>
 
-        <div className="md:col-span-2">
+        <div className="flex flex-wrap gap-2 md:col-span-2">
           <Button
             type="button"
             onClick={handlePreview}
-            disabled={pending}
+            disabled={pending || generating}
             className="bg-barber-gold text-barber-dark hover:bg-barber-gold/90"
           >
             {pending ? (
@@ -176,8 +223,30 @@ export function ImagePromptDebugClient({ campaigns, defaultProvider }: Props) {
             )}
             Anteprima prompt completo
           </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleGenerateTest}
+            disabled={pending || generating}
+            className="border-barber-gold/40 text-barber-gold hover:bg-barber-gold/10"
+          >
+            {generating ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <ImageIcon className="mr-2 h-4 w-4" />
+            )}
+            Genera immagine test (OpenRouter)
+          </Button>
         </div>
       </div>
+
+      {testImageSrc ? (
+        <div className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 p-4">
+          <h2 className="mb-3 text-base font-semibold text-barber-gold">Immagine di test</h2>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={testImageSrc} alt="" className="mx-auto max-h-[480px] rounded-lg object-contain" />
+        </div>
+      ) : null}
 
       {built && preview?.success && (
         <div className="space-y-6">
@@ -192,18 +261,18 @@ export function ImagePromptDebugClient({ campaigns, defaultProvider }: Props) {
               <StatBadge label="Output testo" value={built.totals.outputTextTokens} />
             </div>
             <p className="mt-3 text-xs text-barber-paper/55">
-              CLIP ≈ encoder immagine (0.75 token/parola). GPT ≈ confronto LLM (car./4). L&apos;output del
-              modello diffusion è un&apos;immagine, non token testo.
+              OpenRouter invia positivo + negative nel campo <code>messages[0].content</code>. Stime CLIP/GPT
+              sul payload effettivo.
             </p>
             {preview.providerPreview && (
               <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                <StatBadge label="Payload API (car.)" value={preview.providerPreview.stats.chars} />
+                <StatBadge label="Payload OpenRouter (car.)" value={preview.providerPreview.stats.chars} />
                 <StatBadge
-                  label="Payload API (CLIP est.)"
+                  label="Payload (CLIP est.)"
                   value={preview.providerPreview.stats.estimatedClipTokens}
                 />
                 <StatBadge
-                  label="Payload API (GPT est.)"
+                  label="Payload (GPT est.)"
                   value={preview.providerPreview.stats.estimatedGptTokens}
                 />
               </div>
@@ -247,11 +316,11 @@ export function ImagePromptDebugClient({ campaigns, defaultProvider }: Props) {
             )}
           </div>
 
-          <PromptBlock title="Prompt positivo (completo inviato al modello)" text={built.positivePrompt} />
+          <PromptBlock title="Prompt positivo (completo)" text={built.positivePrompt} />
           <PromptBlock title="Negative prompt (strict)" text={built.strictNegativePrompt} />
           {preview.providerPreview && (
             <PromptBlock
-              title={`Payload provider — ${preview.providerPreview.label}`}
+              title={`Payload OpenRouter — ${preview.providerPreview.label}`}
               text={preview.providerPreview.text}
             />
           )}

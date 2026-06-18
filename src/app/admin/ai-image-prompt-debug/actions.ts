@@ -4,11 +4,15 @@ import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import {
   buildContextualImagePrompts,
-  getProviderPayloadForPreview,
   type ImagePromptBuildResult,
   type WikiImageEntityKind,
 } from "@/lib/ai/image-prompt-builder";
-import { getDefaultImageProvider, type ImageProviderId } from "@/lib/ai/image-provider";
+import {
+  DEFAULT_OPENROUTER_IMAGE_MODEL,
+  getOpenRouterPayloadForPreview,
+} from "@/lib/ai/openrouter-image-preview";
+import { generateImageWithOpenRouter } from "@/lib/image-benchmark/providers/openrouter-provider";
+import { OPENROUTER_IMAGE_BENCHMARK_MODELS } from "@/lib/image-benchmark/models";
 
 export type AdminCampaignOption = {
   id: string;
@@ -21,15 +25,27 @@ export type PreviewImagePromptInput = {
   userPrompt: string;
   entityType: WikiImageEntityKind;
   entityTitle?: string;
-  provider?: ImageProviderId;
+  model?: string;
+  aspectRatio?: string;
 };
 
 export type PreviewImagePromptResult =
   | {
       success: true;
       result: ImagePromptBuildResult;
-      provider: ImageProviderId;
-      providerPreview: ReturnType<typeof getProviderPayloadForPreview>;
+      model: string;
+      aspectRatio: string;
+      providerPreview: ReturnType<typeof getOpenRouterPayloadForPreview>;
+    }
+  | { success: false; message: string };
+
+export type GenerateTestImageResult =
+  | {
+      success: true;
+      imageUrl?: string;
+      imageBase64?: string;
+      durationMs: number;
+      estimatedCostUsd?: number;
     }
   | { success: false; message: string };
 
@@ -50,7 +66,7 @@ async function ensureAdmin(): Promise<{ ok: true; admin: ReturnType<typeof creat
 }
 
 export async function listCampaignsForImagePromptDebugAction(): Promise<
-  { success: true; campaigns: AdminCampaignOption[] } | { success: false; message: string }
+  { success: true; campaigns: AdminCampaignOption[]; models: string[] } | { success: false; message: string }
 > {
   const access = await ensureAdmin();
   if (!access.ok) return { success: false, message: access.message };
@@ -70,7 +86,7 @@ export async function listCampaignsForImagePromptDebugAction(): Promise<
     type: String((row as { type?: string }).type ?? ""),
   }));
 
-  return { success: true, campaigns };
+  return { success: true, campaigns, models: [...OPENROUTER_IMAGE_BENCHMARK_MODELS] };
 }
 
 export async function previewContextualImagePromptAction(
@@ -90,13 +106,44 @@ export async function previewContextualImagePromptAction(
     return { success: false, message: built.error };
   }
 
-  const provider = input.provider ?? getDefaultImageProvider();
-  const providerPreview = getProviderPayloadForPreview(provider, built);
+  const model = input.model?.trim() || DEFAULT_OPENROUTER_IMAGE_MODEL;
+  const aspectRatio = input.aspectRatio?.trim() || "1:1";
+  const providerPreview = getOpenRouterPayloadForPreview(built, { model, aspectRatio });
 
   return {
     success: true,
     result: built,
-    provider,
+    model,
+    aspectRatio,
     providerPreview,
+  };
+}
+
+export async function generateTestImageFromPromptAction(
+  input: PreviewImagePromptInput
+): Promise<GenerateTestImageResult> {
+  const preview = await previewContextualImagePromptAction(input);
+  if (!preview.success) {
+    return { success: false, message: preview.message };
+  }
+
+  const content = preview.providerPreview.payload.messages[0]?.content ?? preview.result.positivePrompt;
+
+  const generated = await generateImageWithOpenRouter({
+    model: preview.model,
+    prompt: content,
+    aspectRatio: preview.aspectRatio,
+  });
+
+  if (!generated.success) {
+    return { success: false, message: generated.errorMessage ?? "Generazione OpenRouter fallita." };
+  }
+
+  return {
+    success: true,
+    imageUrl: generated.imageUrl,
+    imageBase64: generated.imageBase64,
+    durationMs: generated.durationMs,
+    estimatedCostUsd: generated.estimatedCostUsd,
   };
 }
