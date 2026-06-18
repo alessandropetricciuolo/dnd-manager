@@ -411,6 +411,43 @@ export async function createForgeSaleAction(input: {
   return { success: true, data: { saleId: data as string } };
 }
 
+export async function updateForgeSaleAction(input: {
+  sale_id: string;
+  sale_date?: string;
+  payment_status: ForgePaymentStatus;
+  customer_name?: string;
+  event_name?: string;
+  account_id: string;
+  note?: string;
+}): Promise<ActionResult> {
+  await requireForgeAccess();
+  const supabase = await createSupabaseServerClient();
+
+  const { error } = await supabase.rpc("forge_update_sale", {
+    p_sale_id: input.sale_id,
+    p_sale_date: input.sale_date || new Date().toISOString(),
+    p_payment_status: input.payment_status,
+    p_customer_name: input.customer_name ?? null,
+    p_event_name: input.event_name ?? null,
+    p_account_id: input.account_id,
+    p_note: input.note ?? null,
+  });
+
+  if (error) return { success: false, error: error.message };
+  revalidateForge();
+  return { success: true };
+}
+
+export async function deleteForgeSaleAction(saleId: string): Promise<ActionResult> {
+  await requireForgeAccess();
+  const supabase = await createSupabaseServerClient();
+
+  const { error } = await supabase.rpc("forge_delete_sale", { p_sale_id: saleId });
+  if (error) return { success: false, error: error.message };
+  revalidateForge();
+  return { success: true };
+}
+
 // ---------- Query helpers (server components) ----------
 
 export async function fetchForgeDashboardData() {
@@ -588,7 +625,9 @@ export async function fetchForgeReportData(from: string, to: string) {
   const [{ data: sales }, { data: outflows }, { data: saleItems }] = await Promise.all([
     supabase
       .from("forge_sales")
-      .select("id, sale_date, total_amount, account_id, event_name, forge_accounts(name)")
+      .select(
+        "id, sale_date, total_amount, account_id, event_name, customer_name, payment_status, note, forge_accounts(name)"
+      )
       .gte("sale_date", from)
       .lte("sale_date", to)
       .order("sale_date", { ascending: false }),
@@ -606,6 +645,9 @@ export async function fetchForgeReportData(from: string, to: string) {
     total_amount: number;
     account_id: string;
     event_name: string | null;
+    customer_name: string | null;
+    payment_status: string;
+    note: string | null;
     forge_accounts?: { name: string } | { name: string }[] | null;
   };
 
@@ -619,6 +661,9 @@ export async function fetchForgeReportData(from: string, to: string) {
       total_amount: Number(row.total_amount),
       account_id: row.account_id,
       event_name: row.event_name,
+      customer_name: row.customer_name,
+      payment_status: row.payment_status,
+      note: row.note,
       forge_accounts,
     };
   });
