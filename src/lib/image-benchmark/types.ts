@@ -31,7 +31,8 @@ export type ImageGenerationOutput = {
 export type RunBenchmarkInput = {
   runId: string;
   promptId: string;
-  prompt: string;
+  category: string;
+  userPrompt: string;
   aspectRatio: string;
   models: string[];
 };
@@ -80,6 +81,7 @@ export type BenchmarkScoreRow = {
   text_rendering_score: number | null;
   fantasy_usefulness_score: number | null;
   production_ready_score: number | null;
+  campaign_coherence_score: number | null;
   notes: string | null;
   scored_by: string | null;
   created_at: string;
@@ -93,6 +95,7 @@ export type BenchmarkScoreInput = {
   textRenderingScore: number;
   fantasyUsefulnessScore: number;
   productionReadyScore: number;
+  campaignCoherenceScore: number;
   notes?: string;
 };
 
@@ -103,6 +106,7 @@ export function averageScore(score: Pick<
   | "text_rendering_score"
   | "fantasy_usefulness_score"
   | "production_ready_score"
+  | "campaign_coherence_score"
 >): number | null {
   const values = [
     score.aesthetic_score,
@@ -110,6 +114,7 @@ export function averageScore(score: Pick<
     score.text_rendering_score,
     score.fantasy_usefulness_score,
     score.production_ready_score,
+    score.campaign_coherence_score,
   ].filter((v): v is number => typeof v === "number");
 
   if (values.length === 0) return null;

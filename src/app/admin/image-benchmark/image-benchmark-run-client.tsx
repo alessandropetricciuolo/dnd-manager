@@ -52,12 +52,15 @@ type ScoreRow = {
   text_rendering_score: number | null;
   fantasy_usefulness_score: number | null;
   production_ready_score: number | null;
+  campaign_coherence_score: number | null;
   notes: string | null;
 };
 
 type RunDetailClientProps = {
   runId: string;
   runTitle: string;
+  campaignName?: string;
+  campaignError?: string;
   prompts: PromptRow[];
   results: ResultRow[];
   scores: ScoreRow[];
@@ -103,12 +106,14 @@ function ScoreInput({
 function ResultCard({
   result,
   category,
+  userPrompt,
   score,
   blindMode,
   onSaved,
 }: {
   result: ResultRow;
   category: string;
+  userPrompt: string;
   score?: ScoreRow;
   blindMode: boolean;
   onSaved: () => void;
@@ -121,6 +126,7 @@ function ResultCard({
     text: score?.text_rendering_score ?? 3,
     fantasy: score?.fantasy_usefulness_score ?? 3,
     production: score?.production_ready_score ?? 3,
+    coherence: score?.campaign_coherence_score ?? 3,
     notes: score?.notes ?? "",
   });
   const [saving, setSaving] = useState(false);
@@ -139,6 +145,7 @@ function ResultCard({
         textRenderingScore: draft.text,
         fantasyUsefulnessScore: draft.fantasy,
         productionReadyScore: draft.production,
+        campaignCoherenceScore: draft.coherence,
         notes: draft.notes,
       });
       if (!res.success) toast.error(res.message);
@@ -157,7 +164,8 @@ function ResultCard({
         <div className="flex items-start justify-between gap-2">
           <div>
             <CardTitle className="text-sm text-barber-gold">{category}</CardTitle>
-            <p className="mt-1 line-clamp-2 text-xs text-barber-paper/60">{result.prompt}</p>
+            <p className="mt-1 line-clamp-2 text-xs text-barber-paper/60">{userPrompt}</p>
+            <p className="mt-1 text-[10px] text-barber-paper/40">Prompt arricchito con memoria IA + paletti campagna</p>
           </div>
           <span
             className={`shrink-0 rounded px-2 py-0.5 text-xs ${
@@ -206,6 +214,7 @@ function ResultCard({
             <ScoreInput label="Aderenza al prompt" value={draft.adherence} onChange={(v) => setDraft((d) => ({ ...d, adherence: v }))} />
             <ScoreInput label="Resa del testo" value={draft.text} onChange={(v) => setDraft((d) => ({ ...d, text: v }))} />
             <ScoreInput label="Utilità fantasy / GDR" value={draft.fantasy} onChange={(v) => setDraft((d) => ({ ...d, fantasy: v }))} />
+            <ScoreInput label="Coerenza con la campagna (Eldaria)" value={draft.coherence} onChange={(v) => setDraft((d) => ({ ...d, coherence: v }))} />
             <ScoreInput label="Pronto per produzione" value={draft.production} onChange={(v) => setDraft((d) => ({ ...d, production: v }))} />
             <Textarea
               value={draft.notes}
@@ -242,6 +251,8 @@ function ResultCard({
 export function ImageBenchmarkRunClient({
   runId,
   runTitle,
+  campaignName,
+  campaignError,
   prompts,
   results,
   scores,
@@ -260,6 +271,10 @@ export function ImageBenchmarkRunClient({
   );
   const categoryByPrompt = useMemo(
     () => new Map(prompts.map((p) => [p.id, p.category])),
+    [prompts]
+  );
+  const userPromptById = useMemo(
+    () => new Map(prompts.map((p) => [p.id, p.prompt])),
     [prompts]
   );
 
@@ -311,9 +326,18 @@ export function ImageBenchmarkRunClient({
 
   return (
     <div className="space-y-6">
-      <header className="space-y-1">
+      <header className="space-y-2">
         <h1 className="text-2xl font-semibold text-barber-paper">{runTitle}</h1>
-        <p className="text-sm text-barber-paper/60">Valutazione cieca attiva di default — il modello resta nascosto finché non voti o clicchi «Mostra modello».</p>
+        {campaignError ? (
+          <p className="text-sm text-red-400">{campaignError}</p>
+        ) : campaignName ? (
+          <p className="text-sm text-barber-gold/90">
+            Contesto campagna: <strong>{campaignName}</strong> — ogni generazione include paletti Architetto + memoria IA wiki/PG.
+          </p>
+        ) : null}
+        <p className="text-sm text-barber-paper/60">
+          Valutazione cieca attiva di default — il modello resta nascosto finché non voti o clicchi «Mostra modello».
+        </p>
       </header>
 
       <Tabs defaultValue="results">
@@ -382,6 +406,7 @@ export function ImageBenchmarkRunClient({
                 key={result.id}
                 result={result}
                 category={categoryByPrompt.get(result.prompt_id) ?? "—"}
+                userPrompt={userPromptById.get(result.prompt_id) ?? result.prompt}
                 score={scoreByResult.get(result.id)}
                 blindMode={blindMode}
                 onSaved={() => router.refresh()}

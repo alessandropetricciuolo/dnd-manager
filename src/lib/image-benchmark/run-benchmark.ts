@@ -1,5 +1,6 @@
 import { uploadToTelegram } from "@/lib/telegram-storage";
 import type { Json } from "@/types/database.types";
+import { buildBenchmarkImagePrompt } from "./build-prompt";
 import type { RunBenchmarkInput } from "./types";
 import { BENCHMARK_CONCURRENCY } from "./models";
 import { getImageGenerationProvider } from "./providers";
@@ -72,6 +73,15 @@ export async function runBenchmarkPromptAgainstModels(
   admin: AdminClient,
   input: RunBenchmarkInput
 ): Promise<{ ok: true; resultIds: string[] } | { ok: false; message: string }> {
+  const assembled = await buildBenchmarkImagePrompt(admin, {
+    category: input.category,
+    userPrompt: input.userPrompt,
+  });
+
+  if ("error" in assembled) {
+    return { ok: false, message: assembled.error };
+  }
+
   const provider = getImageGenerationProvider("openrouter");
   const pendingRows: { id: string; model: string }[] = [];
 
@@ -83,7 +93,7 @@ export async function runBenchmarkPromptAgainstModels(
         prompt_id: input.promptId,
         provider: "openrouter",
         model,
-        prompt: input.prompt,
+        prompt: assembled.assembledPrompt,
         aspect_ratio: input.aspectRatio,
         status: "pending",
       } as never)
@@ -105,7 +115,7 @@ export async function runBenchmarkPromptAgainstModels(
   const tasks = pendingRows.map(({ id, model }) => async () => {
     const generated = await provider.generateImage({
       model,
-      prompt: input.prompt,
+      prompt: assembled.assembledPrompt,
       aspectRatio: input.aspectRatio,
     });
 
@@ -115,7 +125,16 @@ export async function runBenchmarkPromptAgainstModels(
         .update({
           status: "error",
           error_message: generated.errorMessage ?? "Errore generazione",
-          raw_response: generated.rawResponse as Json,
+          raw_response: {
+            openrouter: generated.rawResponse,
+            benchmark: {
+              userPrompt: assembled.userPrompt,
+              campaignId: assembled.campaignId,
+              campaignName: assembled.campaignName,
+              loreIncluded: assembled.loreIncluded,
+              loreSkipReason: assembled.loreSkipReason,
+            },
+          } as Json,
           duration_ms: generated.durationMs,
         } as never)
         .eq("id", id);
@@ -130,7 +149,16 @@ export async function runBenchmarkPromptAgainstModels(
         status: "success",
         image_url: stored.imageUrl,
         image_base64: stored.imageBase64,
-        raw_response: generated.rawResponse as Json,
+        raw_response: {
+          openrouter: generated.rawResponse,
+          benchmark: {
+            userPrompt: assembled.userPrompt,
+            campaignId: assembled.campaignId,
+            campaignName: assembled.campaignName,
+            loreIncluded: assembled.loreIncluded,
+            loreSkipReason: assembled.loreSkipReason,
+          },
+        } as Json,
         duration_ms: generated.durationMs,
         estimated_cost_usd: generated.estimatedCostUsd ?? null,
         error_message: null,

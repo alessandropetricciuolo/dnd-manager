@@ -9,6 +9,7 @@ import {
   OPENROUTER_IMAGE_BENCHMARK_MODELS,
 } from "@/lib/image-benchmark/models";
 import { checkImageBenchmarkRateLimit } from "@/lib/image-benchmark/rate-limit";
+import { resolveBenchmarkCampaign, buildBenchmarkImagePrompt } from "@/lib/image-benchmark/build-prompt";
 import { runBenchmarkPromptAgainstModels } from "@/lib/image-benchmark/run-benchmark";
 import type { BenchmarkScoreInput } from "@/lib/image-benchmark/types";
 import { averageScore } from "@/lib/image-benchmark/types";
@@ -77,6 +78,7 @@ export async function getImageBenchmarkRunAction(runId: string) {
     scores: scores ?? [],
     models: [...OPENROUTER_IMAGE_BENCHMARK_MODELS],
     aspectRatios: [...IMAGE_BENCHMARK_ASPECT_RATIOS],
+    campaign: await resolveBenchmarkCampaign(access.admin),
   };
 }
 
@@ -165,11 +167,12 @@ export async function runImageBenchmarkPromptAction(input: {
     return { success: false as const, message: error?.message ?? "Prompt non trovato." };
   }
 
-  const row = prompt as { prompt: string; aspect_ratio: string };
+  const row = prompt as { prompt: string; aspect_ratio: string; category: string };
   const result = await runBenchmarkPromptAgainstModels(access.admin, {
     runId: input.runId,
     promptId: input.promptId,
-    prompt: row.prompt,
+    category: row.category,
+    userPrompt: row.prompt,
     aspectRatio: row.aspect_ratio,
     models,
   });
@@ -218,6 +221,7 @@ export async function saveImageBenchmarkScoreAction(input: BenchmarkScoreInput) 
     input.textRenderingScore,
     input.fantasyUsefulnessScore,
     input.productionReadyScore,
+    input.campaignCoherenceScore,
   ];
 
   if (scores.some((s) => s < 1 || s > 5)) {
@@ -232,6 +236,7 @@ export async function saveImageBenchmarkScoreAction(input: BenchmarkScoreInput) 
       text_rendering_score: input.textRenderingScore,
       fantasy_usefulness_score: input.fantasyUsefulnessScore,
       production_ready_score: input.productionReadyScore,
+      campaign_coherence_score: input.campaignCoherenceScore,
       notes: input.notes?.trim() || null,
       scored_by: access.userId,
       updated_at: new Date().toISOString(),
@@ -243,6 +248,26 @@ export async function saveImageBenchmarkScoreAction(input: BenchmarkScoreInput) 
 
   revalidatePath("/admin/image-benchmark");
   return { success: true as const };
+}
+
+export async function previewBenchmarkPromptAction(input: {
+  category: string;
+  userPrompt: string;
+}) {
+  const access = await ensureImageBenchmarkAdmin();
+  if (!access.ok) return { success: false as const, message: access.message };
+
+  const built = await buildBenchmarkImagePrompt(access.admin, input);
+  if ("error" in built) return { success: false as const, message: built.error };
+
+  return {
+    success: true as const,
+    userPrompt: built.userPrompt,
+    assembledPrompt: built.assembledPrompt,
+    campaignName: built.campaignName,
+    loreIncluded: built.loreIncluded,
+    loreSkipReason: built.loreSkipReason,
+  };
 }
 
 export type ModelReportRow = {

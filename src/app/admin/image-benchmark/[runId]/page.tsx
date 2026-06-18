@@ -21,6 +21,7 @@ export default async function AdminImageBenchmarkRunPage({ params }: PageProps) 
   }
 
   const run = loaded.run as { id: string; title: string };
+  const campaign = loaded.campaign;
 
   return (
     <div className="p-4 py-8 md:p-8">
@@ -34,6 +35,8 @@ export default async function AdminImageBenchmarkRunPage({ params }: PageProps) 
         <ImageBenchmarkRunClient
           runId={run.id}
           runTitle={run.title}
+          campaignName={"name" in campaign ? campaign.name : undefined}
+          campaignError={"error" in campaign ? campaign.error : undefined}
           prompts={loaded.prompts as Parameters<typeof ImageBenchmarkRunClient>[0]["prompts"]}
           results={loaded.results as Parameters<typeof ImageBenchmarkRunClient>[0]["results"]}
           scores={loaded.scores as Parameters<typeof ImageBenchmarkRunClient>[0]["scores"]}

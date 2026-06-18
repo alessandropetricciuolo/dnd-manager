@@ -242,6 +242,7 @@ export interface Database {
           text_rendering_score: number | null;
           fantasy_usefulness_score: number | null;
           production_ready_score: number | null;
+          campaign_coherence_score: number | null;
           notes: string | null;
           scored_by: string | null;
           created_at: string;
@@ -255,6 +256,7 @@ export interface Database {
           text_rendering_score?: number | null;
           fantasy_usefulness_score?: number | null;
           production_ready_score?: number | null;
+          campaign_coherence_score?: number | null;
           notes?: string | null;
           scored_by?: string | null;
           created_at?: string;

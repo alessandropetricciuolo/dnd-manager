@@ -20,8 +20,9 @@ export default async function AdminImageBenchmarkPage() {
             Benchmark modelli immagine
           </h1>
           <p className="text-sm text-barber-paper/70">
-            Confronta modelli OpenRouter con gli stessi prompt. Solo admin. Generazione server-side via{" "}
-            <code className="text-barber-gold">OPENROUTER_API_KEY</code>.
+            Confronta modelli OpenRouter con gli stessi prompt. Ogni generazione usa la campagna{" "}
+            <strong className="text-barber-gold">Le Cronache di Eldaria</strong>: paletti Architetto, memoria IA wiki/PG e stile visivo — come in produzione wiki.
+            Solo admin. Generazione server-side via <code className="text-barber-gold">OPENROUTER_API_KEY</code>.
           </p>
         </header>
         <ImageBenchmarkClient runs={listed.runs} />

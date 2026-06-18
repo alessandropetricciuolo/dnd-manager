@@ -161,6 +161,8 @@ export type BuildContextualImagePromptParams = {
   entityType: WikiImageEntityKind;
   entityTitle?: string | null;
   excludeWikiEntityId?: string | null;
+  /** Benchmark: include sempre memoria wiki/PG anche con descrizioni brevi. */
+  forceIncludeCampaignMemory?: boolean;
 };
 
 /**
@@ -231,6 +233,7 @@ export async function buildContextualImagePrompts(
   const campaignType =
     typeof campaign.type === "string" ? String(campaign.type).trim() : "";
   const skipLoreForNpcFocus =
+    !params.forceIncludeCampaignMemory &&
     (entityType === "npc" || entityType === "monster") &&
     trimmed.length <= SKIP_CAMPAIGN_LORE_NPC_MAX_CHARS;
 
