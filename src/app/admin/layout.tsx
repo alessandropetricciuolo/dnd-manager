@@ -3,7 +3,7 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Shield, FileJson, Trophy, BookOpen, BookText, Palette, Swords, BarChart3, Mail, Headphones, Library } from "lucide-react";
+import { ArrowLeft, Shield, FileJson, Trophy, BookOpen, BookText, Palette, Swords, BarChart3, Mail, Headphones, Library, ScanSearch } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -155,6 +155,16 @@ export default async function AdminLayout({
             >
               <Palette className="mr-2 h-4 w-4" />
               Stili AI
+            </Button>
+          </Link>
+          <Link href="/admin/ai-image-prompt-debug">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-barber-paper/80 hover:text-barber-paper"
+            >
+              <ScanSearch className="mr-2 h-4 w-4" />
+              Debug Prompt IA
             </Button>
           </Link>
         </div>
