@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Wallet } from "lucide-react";
 import { fetchVaultDashboardData } from "@/lib/vault/actions";
+import { VaultDashboardQuickActions } from "@/components/vault/vault-dashboard-actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -20,12 +21,15 @@ export default async function VaultDashboardPage() {
           <h1 className="text-xl font-semibold text-barber-gold sm:text-2xl">Il Vault</h1>
           <p className="text-sm text-barber-paper/60">Contabilità Barber And Dragons</p>
         </div>
-        <Button asChild className="h-11 w-full bg-barber-gold text-barber-dark sm:w-auto">
-          <Link href="/vault/conti">
-            <Wallet className="mr-2 h-4 w-4" />
-            Gestisci conti
-          </Link>
-        </Button>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
+          <VaultDashboardQuickActions accounts={data.accounts} />
+          <Button asChild className="h-11 w-full bg-barber-gold text-barber-dark sm:w-auto">
+            <Link href="/vault/conti">
+              <Wallet className="mr-2 h-4 w-4" />
+              Gestisci conti
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
