@@ -2,6 +2,8 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
   compressBodyToReferenceSnippet,
+  compactNameMatchesHaystack,
+  entityNameMatchVariants,
   entityNameMatchesHaystack,
   formatEntityReferenceLine,
   textMentionsEntityName,
@@ -44,6 +46,24 @@ describe("entityNameMatchesHaystack", () => {
         "il generale in capo delle forze di Riavandriel, si trova nella città di Rocca Ferrea",
         "Riavandriel"
       ),
+      true
+    );
+  });
+
+  it("matches compact place names without spaces (Roccaferrea)", () => {
+    assert.equal(
+      compactNameMatchesHaystack(
+        "si trova nella città di rocca ferrea capitale di druven",
+        "Roccaferrea"
+      ),
+      true
+    );
+  });
+
+  it("expands Riavandriel/Rianvadriel spelling variants", () => {
+    assert.deepEqual(entityNameMatchVariants("Riavandriel"), ["Riavandriel", "Rianvadriel"]);
+    assert.equal(
+      entityNameMatchesHaystack("generale dell'esercito di Rianvadriel Oropher", "Riavandriel"),
       true
     );
   });

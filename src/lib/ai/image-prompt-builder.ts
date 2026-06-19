@@ -267,6 +267,7 @@ export async function buildContextualImagePrompts(
     const diagnostics = await resolveImagePromptEntityReferences(admin, params.campaignId, {
       searchText: searchHaystack,
       excludeEntityId: params.excludeWikiEntityId?.trim() || undefined,
+      forceIncludeEntityId: params.excludeWikiEntityId?.trim() || undefined,
     });
     matchedEntityNames = diagnostics.references.map((r) => r.name);
     matchedEntityReferences = diagnostics.references.map((r) => r.referenceLine);
