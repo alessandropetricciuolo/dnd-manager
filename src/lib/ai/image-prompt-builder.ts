@@ -1,7 +1,10 @@
 import type { Json } from "@/types/database.types";
 import { parseCampaignAiContextFromDb } from "@/lib/campaign-ai-context";
-import { fetchLongCampaignWikiMemoryPromptBlock } from "@/lib/campaign-wiki-ai-memory";
-import { buildCampaignContextBlock } from "@/lib/ai/generator";
+import { buildCampaignVisualContextBlock } from "@/lib/ai/generator";
+import {
+  buildEntityReferencesPromptBlock,
+  resolveImagePromptEntityReferences,
+} from "@/lib/ai/image-prompt-entity-memory";
 import {
   estimatePromptTokens,
   formatHuggingFaceImageInputs,
@@ -15,9 +18,6 @@ export const STANDARD_VISUAL_NEGATIVES =
 
 export const MONSTER_FULL_BODY_NEGATIVE_HINT =
   "cropped torso, bust-only shot, shoulders-up framing, face-only portrait, tight facial close-up, head-and-shoulders only composition";
-
-const MAX_IMAGE_CAMPAIGN_LORE_SNIPPET_CHARS = 3000;
-const SKIP_CAMPAIGN_LORE_NPC_MAX_CHARS = 90;
 
 export type WikiImageEntityKind = "npc" | "location" | "monster";
 
@@ -51,15 +51,14 @@ export type ImagePromptBuildResult = {
     styleNegativeTemplate: string;
     loreIncluded: boolean;
     loreSkipReason: string | null;
-    rawLoreMemoryChars: number;
-    loreTruncatedToChars: number | null;
+    matchedEntityNames: string[];
+    matchedEntityReferences: string[];
     userDescription: string;
     descriptionAnchored: string;
   };
   totals: {
     positive: PromptTokenStats;
     negative: PromptTokenStats;
-    /** Output immagine: nessun token testo generato dal modello diffusion. */
     outputTextTokens: 0;
   };
 };
@@ -73,19 +72,13 @@ type CampaignVisualRow = {
   type?: string | null;
 };
 
-function truncateImageKnowledgeSnippet(raw: string, maxChars: number): string {
-  const collapsed = raw.replace(/\s+/g, " ").trim();
-  if (collapsed.length <= maxChars) return collapsed;
-  return `${collapsed.slice(0, maxChars)}…`;
-}
-
 function augmentSpeciesAnchorsForCreatureImage(description: string, kind: "npc" | "monster"): string {
   const d = description.trim();
   if (!d) return d;
   const anchors: string[] = [];
   if (/\bcobold\w*|\bkobold\w*/i.test(d)) {
     anchors.push(
-      "KOBOLD (D&D): small reptilian draconic humanoid, scaled skin, snouted reptile face, yellow or amber eyes possible — NOT an elf, NOT a human, NOT a dwarf, NOT an elderly bard unless the Italian description explicitly says so."
+      "KOBOLD (D&D): small reptilian draconic humanoid, scaled skin, snouted reptile face, yellow or amber eyes possible — NOT an elf, NOT a human, NOT a dwarf."
     );
   }
   if (/\bgoblin\b|\bgoblins\b/i.test(d)) {
@@ -98,19 +91,54 @@ function augmentSpeciesAnchorsForCreatureImage(description: string, kind: "npc" 
     anchors.push("GNOLL (D&D): hyena-like humanoid.");
   }
   if (!anchors.length) return d;
-  const framingLabel = kind === "monster" ? "full-body creature illustration" : "character portrait";
-  return `${d}\n\nMandatory species / silhouette for this ${framingLabel} (English keywords — obey strictly; overrides unrelated faces from campaign lore text): ${anchors.join(" | ")}`;
+  const framingLabel = kind === "monster" ? "full-body creature" : "character portrait";
+  return `${d}\nSpecies anchors (${framingLabel}): ${anchors.join(" | ")}`;
 }
 
-function maxLoreCharsForDescription(descriptionLength: number): number {
-  if (descriptionLength < 120) return 700;
-  if (descriptionLength < 280) return 1400;
-  if (descriptionLength < 550) return 2200;
-  return MAX_IMAGE_CAMPAIGN_LORE_SNIPPET_CHARS;
+function normalizeNegativeKey(fragment: string): string {
+  return fragment
+    .trim()
+    .toLowerCase()
+    .replace(/^no\s+/i, "")
+    .replace(/\s+/g, " ");
+}
+
+/** Unisce frammenti negative evitando duplicati (es. «jeans» vs «NO jeans»). */
+export function dedupeNegativePromptFragments(...parts: string[]): string {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const part of parts) {
+    for (const raw of part.split(",")) {
+      const trimmed = raw.trim();
+      if (!trimmed) continue;
+      const key = normalizeNegativeKey(trimmed);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      out.push(trimmed);
+    }
+  }
+  return out.join(", ");
 }
 
 function section(id: string, label: string, text: string): ImagePromptSection {
   return { id, label, text, stats: estimatePromptTokens(text) };
+}
+
+function buildTechnicalStyleLine(entityType: WikiImageEntityKind): string {
+  if (entityType === "location") {
+    return "environmental wide shot, high detail, photorealistic, cinematic lighting, fantasy location art";
+  }
+  if (entityType === "monster") {
+    return "full-body fantasy creature illustration, entire figure visible, photorealistic, cinematic lighting";
+  }
+  return "portrait, close-up, high detail, photorealistic, cinematic lighting, professional fantasy art";
+}
+
+function buildEntitySearchHaystack(description: string, entityTitle?: string | null): string {
+  const parts = [description.trim()];
+  const title = typeof entityTitle === "string" ? entityTitle.trim() : "";
+  if (title) parts.push(title);
+  return parts.filter(Boolean).join("\n");
 }
 
 async function fetchCampaignVisualRow(
@@ -161,8 +189,6 @@ export type BuildContextualImagePromptParams = {
   entityType: WikiImageEntityKind;
   entityTitle?: string | null;
   excludeWikiEntityId?: string | null;
-  /** Benchmark: include sempre memoria wiki/PG anche con descrizioni brevi. */
-  forceIncludeCampaignMemory?: boolean;
 };
 
 /**
@@ -223,139 +249,69 @@ export async function buildContextualImagePrompts(
     "";
 
   const entityType = params.entityType;
-  const technicalForced =
-    entityType === "location"
-      ? "environmental wide shot, high detail, photorealistic, cinematic lighting, 8k, masterpiece, professional fantasy location art, architectural and atmosphere focus"
-      : entityType === "monster"
-        ? "full-body illustration of ONE fantasy monster or creature, entire figure visible from head to lowest limbs or tail tip inside the frame, wide camera framing pulled back, feet or claws touching visible ground, neutral unobtrusive fantasy backdrop, high detail, photorealistic, cinematic lighting, 8k, masterpiece, professional fantasy creature art — NOT a portrait crop, NOT bust-only, NOT face-only close-up"
-        : "portrait, close-up, high detail, photorealistic, cinematic lighting, 8k, masterpiece, professional fantasy art style";
-
   const campaignType =
     typeof campaign.type === "string" ? String(campaign.type).trim() : "";
-  const skipLoreForNpcFocus =
-    !params.forceIncludeCampaignMemory &&
-    (entityType === "npc" || entityType === "monster") &&
-    trimmed.length <= SKIP_CAMPAIGN_LORE_NPC_MAX_CHARS;
 
-  let loreSnippet = "";
-  let rawLoreMemory = "";
-  let loreTruncatedToChars: number | null = null;
+  const searchHaystack = buildEntitySearchHaystack(trimmed, params.entityTitle);
+  let loreBlock = "";
   let loreSkipReason: string | null = null;
+  let matchedEntityNames: string[] = [];
+  let matchedEntityReferences: string[] = [];
 
   if (campaignType !== "long") {
     loreSkipReason = "Campagna non long — memoria wiki non inclusa.";
-  } else if (skipLoreForNpcFocus) {
-    loreSkipReason = `Descrizione breve (≤${SKIP_CAMPAIGN_LORE_NPC_MAX_CHARS} car.) — lore escluso per mantenere focus sul soggetto.`;
   } else {
-    rawLoreMemory = await fetchLongCampaignWikiMemoryPromptBlock(admin, params.campaignId, {
+    const { references } = await resolveImagePromptEntityReferences(admin, params.campaignId, {
+      searchText: searchHaystack,
       excludeEntityId: params.excludeWikiEntityId?.trim() || undefined,
     });
-    if (!rawLoreMemory.trim()) {
-      loreSkipReason = "Nessuna voce wiki/background PG con memoria IA attiva.";
-    } else {
-      const cap = maxLoreCharsForDescription(trimmed.length);
-      loreSnippet = truncateImageKnowledgeSnippet(rawLoreMemory, cap);
-      if (rawLoreMemory.length > cap) {
-        loreTruncatedToChars = cap;
-      }
+    matchedEntityNames = references.map((r) => r.name);
+    matchedEntityReferences = references.map((r) => r.referenceLine);
+    loreBlock = buildEntityReferencesPromptBlock(references);
+    if (!loreBlock) {
+      loreSkipReason =
+        "Nessuna entità citata nel testo con memoria IA attiva (match per nome voce wiki o PG).";
     }
   }
 
-  const entityTitleLine =
-    typeof params.entityTitle === "string" && params.entityTitle.trim().length > 0
-      ? `PRIMARY SUBJECT NAME (wiki title): "${params.entityTitle.trim()}". `
-      : "";
-  const subjectKind =
-    entityType === "location"
-      ? "single fantasy location / environment"
-      : entityType === "monster"
-        ? "single fantasy monster / creature (FULL BODY must appear in frame)"
-        : "single fantasy character (NPC portrait)";
   const descriptionAnchored =
     entityType === "npc" || entityType === "monster"
       ? augmentSpeciesAnchorsForCreatureImage(trimmed, entityType === "monster" ? "monster" : "npc")
       : trimmed;
-  const framingHint =
-    entityType === "monster"
-      ? "Framing rule — ALWAYS full-length shot: show the whole creature; no cropped torso or portrait framing."
-      : null;
 
-  const subjectBlock = [
-    `${entityTitleLine}Illustrate exactly ONE ${subjectKind}.`,
-    framingHint,
-    "The following wiki description is the main visual truth — match species, body shape, outfit, age cues, scars, props and mood closely:",
-    descriptionAnchored,
-  ]
-    .filter(Boolean)
-    .join("\n");
+  const subjectBlock = descriptionAnchored;
+  const campaignVisualBlock = buildCampaignVisualContextBlock(ctx);
 
-  const campaignNarrativeBlock = buildCampaignContextBlock(ctx);
-  const loreBlock =
-    loreSnippet.length > 0
-      ? [
-          "Shared campaign lore (facts, factions, places — ONLY mood / era / faction flavor.",
-          "Do NOT copy faces or species from lore unless they match the wiki description above.",
-          "Never replace the subject with a different character from lore.",
-          loreSnippet,
-        ].join("\n")
-      : "";
-
+  const technicalLine = buildTechnicalStyleLine(entityType);
   const styleTail = styleTemplate
-    ? `${styleTemplate}. Campaign visual palette: ${visualPositive}. Strictly realistic fantasy illustration, non-anime, non-cartoon.`
-    : [
-        technicalForced,
-        `Campaign visual palette: ${visualPositive}`,
-        "Strictly realistic fantasy illustration, non-anime, non-cartoon",
-      ].join(". ");
+    ? `${styleTemplate}. ${technicalLine}. Photorealistic fantasy, non-anime, non-cartoon.`
+    : `${technicalLine}. Photorealistic fantasy, non-anime, non-cartoon.`;
 
-  const subjectLockClosing = [
-    "---",
-    `FINAL CHECK — Exactly one subject. Appearance MUST match this phrase (literal identity): "${trimmed}".`,
-    entityType === "monster"
-      ? "MONSTER FRAMING — Full body only: head-to-toe (or full silhouette including tail) visible; do not output bust or facial close-up."
-      : null,
-    "If campaign lore mentions other named characters, IGNORE their faces/species for this image.",
-  ]
-    .filter(Boolean)
-    .join("\n");
-
-  const positivePrompt = [subjectBlock, campaignNarrativeBlock, loreBlock, styleTail, subjectLockClosing]
+  const positivePrompt = [subjectBlock, campaignVisualBlock, loreBlock, styleTail]
     .filter((block) => typeof block === "string" && block.trim().length > 0)
     .join("\n\n");
 
-  const negativeCombined = [
+  const negativeCombined = dedupeNegativePromptFragments(
     styleNegativeTemplate,
     visualNegative,
     STANDARD_VISUAL_NEGATIVES,
-    entityType === "monster" ? MONSTER_FULL_BODY_NEGATIVE_HINT : "",
-  ]
-    .filter(Boolean)
-    .join(", ");
-  const strictNegativePrompt = `STRICTLY FORBIDDEN: ${negativeCombined}`;
+    entityType === "monster" ? MONSTER_FULL_BODY_NEGATIVE_HINT : ""
+  );
+  const strictNegativePrompt = negativeCombined ? `STRICTLY FORBIDDEN: ${negativeCombined}` : "";
 
   const sections: ImagePromptSection[] = [
-    section("user", "Descrizione utente (input)", trimmed),
-    section("subject", "Blocco soggetto", subjectBlock),
-    section("paletti", "Paletti campagna (Architetto)", campaignNarrativeBlock),
+    section("subject", "Soggetto (descrizione wiki)", subjectBlock),
+    section("paletti", "Contesto visivo campagna", campaignVisualBlock),
   ];
 
   if (loreBlock) {
-    sections.push(section("memory", "Memoria IA campagna (wiki + PG)", loreBlock));
-  } else if (rawLoreMemory && loreSkipReason?.includes("breve")) {
-    sections.push(
-      section(
-        "memory-skipped",
-        "Memoria IA (esclusa)",
-        `[Esclusa] ${loreSkipReason}\n\nAnteprima memoria non troncata (${rawLoreMemory.length} car.):\n${rawLoreMemory.slice(0, 1200)}${rawLoreMemory.length > 1200 ? "…" : ""}`
-      )
-    );
+    sections.push(section("memory", "Memoria IA (entità citate)", loreBlock));
   } else if (loreSkipReason) {
-    sections.push(section("memory-skipped", "Memoria IA (esclusa)", loreSkipReason));
+    sections.push(section("memory-skipped", "Memoria IA (nessun match)", loreSkipReason));
   }
 
   sections.push(
-    section("style", "Stile visivo + palette", styleTail),
-    section("lock", "Verifica finale soggetto", subjectLockClosing),
+    section("style", "Stile tecnico", styleTail),
     section("negative", "Negative prompt", strictNegativePrompt)
   );
 
@@ -388,8 +344,8 @@ export async function buildContextualImagePrompts(
       styleNegativeTemplate,
       loreIncluded: loreBlock.length > 0,
       loreSkipReason: loreBlock.length > 0 ? null : loreSkipReason,
-      rawLoreMemoryChars: rawLoreMemory.length,
-      loreTruncatedToChars,
+      matchedEntityNames,
+      matchedEntityReferences,
       userDescription: trimmed,
       descriptionAnchored,
     },

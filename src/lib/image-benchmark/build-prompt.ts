@@ -85,7 +85,6 @@ export async function buildBenchmarkImagePrompt(
     campaignId: campaign.id,
     charDescription: userPrompt,
     entityType: mapBenchmarkCategoryToEntityType(input.category),
-    forceIncludeCampaignMemory: true,
   });
 
   if ("error" in built) {

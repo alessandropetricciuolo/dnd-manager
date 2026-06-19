@@ -308,10 +308,9 @@ export function ImagePromptDebugClient({ campaigns, models, defaultModel }: Prop
             {built.meta.loreSkipReason && !built.meta.loreIncluded && (
               <p className="mt-3 text-xs text-amber-400/90">Memoria IA: {built.meta.loreSkipReason}</p>
             )}
-            {built.meta.loreTruncatedToChars != null && (
+            {built.meta.matchedEntityNames.length > 0 && (
               <p className="mt-1 text-xs text-barber-paper/55">
-                Memoria troncata a {built.meta.loreTruncatedToChars} car. (originale{" "}
-                {built.meta.rawLoreMemoryChars} car.)
+                Entità matched: {built.meta.matchedEntityNames.join(", ")}
               </p>
             )}
           </div>

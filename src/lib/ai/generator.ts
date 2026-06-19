@@ -64,6 +64,18 @@ export function buildCampaignContextBlock(ctx: CampaignAiContext | null): string
   ].join("\n");
 }
 
+/** Solo informazioni visive per prompt immagine (no meccaniche 5e / gameplay). */
+export function buildCampaignVisualContextBlock(ctx: CampaignAiContext | null): string {
+  if (!ctx) {
+    return "Fantasy D&D setting, medieval-fantasy costumes and architecture, cinematic mood.";
+  }
+  return [
+    "Visual campaign context:",
+    `Mood and atmosphere: ${ctx.narrative_tone.trim()}`,
+    `Art direction and palette: ${ctx.visual_positive.trim()}`,
+  ].join("\n");
+}
+
 /**
  * Genera testo wiki strutturato (titolo, corpo markdown, hp/ca opzionali) con super-prompt blindato.
  */
