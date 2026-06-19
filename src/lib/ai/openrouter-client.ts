@@ -58,6 +58,14 @@ export function getOpenRouterModelForAiText(): string {
   return m && m.length > 0 ? m : "openai/gpt-4o-mini";
 }
 
+/** Modello OpenRouter per generazione testo wiki (bacchetta IA, assist wiki). */
+export const SITE_WIKI_TEXT_MODEL = "google/gemma-4-31b-it:free";
+
+export function getSiteWikiTextModel(): string {
+  const env = process.env.WIKI_TEXT_MODEL?.trim();
+  return env || SITE_WIKI_TEXT_MODEL;
+}
+
 export function getOpenRouterModelForEmbeddings(): string {
   const m = process.env.OPENROUTER_EMBEDDING_MODEL?.trim();
   return m && m.length > 0 ? m : "openai/text-embedding-3-small";
@@ -202,6 +210,95 @@ export async function generateOpenRouterChat(
   }
 
   throw lastErr ?? new Error("OpenRouter: errore sconosciuto.");
+}
+
+/**
+ * Generazione testo wiki: sempre OpenRouter con {@link SITE_WIKI_TEXT_MODEL}.
+ */
+export async function generateOpenRouterWikiText(
+  userContent: string,
+  options: OpenRouterChatOptions = {}
+): Promise<string> {
+  const apiKey = getOpenRouterApiKey();
+
+  const trimmed = userContent.trim();
+  if (!trimmed) {
+    throw new Error("Il prompt non può essere vuoto.");
+  }
+
+  const base = getOpenRouterBaseUrl();
+  const url = `${base}${OPENROUTER_CHAT_PATH}`;
+  const model = getSiteWikiTextModel();
+
+  let lastErr: Error | null = null;
+  const maxAttempts = 3;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120_000);
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: getOpenRouterHeaders(apiKey),
+        body: JSON.stringify({
+          model,
+          messages: [{ role: "user", content: trimmed }],
+          max_tokens: options.maxTokens ?? 1500,
+          temperature: options.temperature ?? 0.7,
+        }),
+        signal: controller.signal,
+      });
+
+      const bodyText = await res.text();
+      let data: unknown;
+      try {
+        data = JSON.parse(bodyText) as unknown;
+      } catch {
+        if (isTransientOpenRouterStatus(res.status) && attempt < maxAttempts) {
+          await sleep(500 * attempt);
+          continue;
+        }
+        throw new Error(
+          `OpenRouter wiki text: risposta non JSON (HTTP ${res.status}). ${bodyText.slice(0, 400)}`
+        );
+      }
+
+      if (!res.ok) {
+        const errObj = data && typeof data === "object" ? (data as { error?: { message?: string } }).error : null;
+        const msg = errObj?.message ?? bodyText.slice(0, 500);
+        if (isTransientOpenRouterStatus(res.status) && attempt < maxAttempts) {
+          await sleep(500 * attempt);
+          continue;
+        }
+        throw new Error(`OpenRouter wiki text HTTP ${res.status}: ${msg}`);
+      }
+
+      const out = extractOpenRouterChatContent(data);
+      if (!out) {
+        if (attempt < maxAttempts) {
+          await sleep(350 * attempt);
+          continue;
+        }
+        throw new Error("OpenRouter wiki text ha restituito contenuto vuoto.");
+      }
+      return out;
+    } catch (e) {
+      if (e instanceof Error && e.name === "AbortError") {
+        if (attempt < maxAttempts) {
+          await sleep(600 * attempt);
+          continue;
+        }
+        lastErr = new Error("Timeout della richiesta wiki text a OpenRouter (oltre 120s).");
+      } else {
+        lastErr = e instanceof Error ? e : new Error(String(e));
+      }
+      if (attempt < maxAttempts) continue;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  throw lastErr ?? new Error("OpenRouter wiki text: errore sconosciuto.");
 }
 
 /**

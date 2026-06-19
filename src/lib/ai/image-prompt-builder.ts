@@ -7,6 +7,12 @@ import {
   resolveImagePromptEntityReferences,
 } from "@/lib/ai/image-prompt-entity-memory";
 import {
+  augmentLocationVisualAnchors,
+  buildLocationTechnicalLine,
+  detectLocationSceneKind,
+  LOCATION_INTERIOR_NEGATIVE_HINT,
+} from "@/lib/ai/image-prompt-location";
+import {
   estimatePromptTokens,
   formatHuggingFaceImageInputs,
   mergeStats,
@@ -53,6 +59,7 @@ export type ImagePromptBuildResult = {
     matchedEntityNames: string[];
     matchedEntityReferences: string[];
     memorySourceCounts: { wiki: number; maps: number; characters: number };
+    locationSceneKind: string | null;
     userDescription: string;
     descriptionAnchored: string;
   };
@@ -281,14 +288,21 @@ export async function buildContextualImagePrompts(
   }
 
   const descriptionAnchored =
-    entityType === "npc" || entityType === "monster"
-      ? augmentSpeciesAnchorsForCreatureImage(trimmed, entityType === "monster" ? "monster" : "npc")
-      : trimmed;
+    entityType === "location"
+      ? augmentLocationVisualAnchors(trimmed)
+      : entityType === "npc" || entityType === "monster"
+        ? augmentSpeciesAnchorsForCreatureImage(trimmed, entityType === "monster" ? "monster" : "npc")
+        : trimmed;
 
   const subjectBlock = descriptionAnchored;
   const campaignVisualBlock = buildCampaignVisualContextBlock(ctx);
 
-  const technicalLine = buildTechnicalStyleLine(entityType);
+  const locationSceneKind =
+    entityType === "location" ? detectLocationSceneKind(searchHaystack) : null;
+  const technicalLine =
+    entityType === "location" && locationSceneKind
+      ? buildLocationTechnicalLine(locationSceneKind)
+      : buildTechnicalStyleLine(entityType);
   const styleTail = styleTemplate
     ? `${styleTemplate}. ${technicalLine}. Photorealistic fantasy, non-anime, non-cartoon.`
     : `${technicalLine}. Photorealistic fantasy, non-anime, non-cartoon.`;
@@ -301,7 +315,12 @@ export async function buildContextualImagePrompts(
     styleNegativeTemplate,
     visualNegative,
     STANDARD_VISUAL_NEGATIVES,
-    entityType === "monster" ? MONSTER_FULL_BODY_NEGATIVE_HINT : ""
+    entityType === "monster" ? MONSTER_FULL_BODY_NEGATIVE_HINT : "",
+    entityType === "location" &&
+      locationSceneKind &&
+      locationSceneKind !== "exterior"
+      ? LOCATION_INTERIOR_NEGATIVE_HINT
+      : ""
   );
   const strictNegativePrompt = negativeCombined ? `STRICTLY FORBIDDEN: ${negativeCombined}` : "";
 
@@ -353,6 +372,7 @@ export async function buildContextualImagePrompts(
       matchedEntityNames,
       matchedEntityReferences,
       memorySourceCounts,
+      locationSceneKind,
       userDescription: trimmed,
       descriptionAnchored,
     },

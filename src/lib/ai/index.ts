@@ -10,7 +10,13 @@ export {
 
 export { shouldUseOllamaForAiText, getOllamaModelForAiText } from "./ollama-client";
 
-export { shouldUseOpenRouterForAiText, getOpenRouterModelForAiText } from "./openrouter-client";
+export {
+  SITE_WIKI_TEXT_MODEL,
+  getSiteWikiTextModel,
+  shouldUseOpenRouterForAiText,
+  getOpenRouterModelForAiText,
+  generateOpenRouterWikiText,
+} from "./openrouter-client";
 
 export {
   SITE_IMAGE_MODEL,

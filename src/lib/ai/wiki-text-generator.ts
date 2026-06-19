@@ -3,7 +3,8 @@
 import type { Json } from "@/types/database.types";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
-import { generateAiText, generateRagEmbedding, HuggingFaceInferenceError } from "@/lib/ai/huggingface-client";
+import { generateRagEmbedding } from "@/lib/ai/huggingface-client";
+import { generateOpenRouterWikiText } from "@/lib/ai/openrouter-client";
 import {
   parseCampaignAiContextFromDb,
   readExcludedManualBookKeysFromAiContextJson,
@@ -234,7 +235,7 @@ async function generateAiTextWithRepair(prompt: string, maxAttempts = 2): Promis
   let lastError: unknown = null;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      return await generateAiText(prompt);
+      return await generateOpenRouterWikiText(prompt);
     } catch (e) {
       lastError = e;
       if (attempt >= maxAttempts) break;
@@ -445,12 +446,7 @@ export async function generateWikiMarkdownAction(
       try {
         narrativeRaw = (await generateAiTextWithRepair(narrativePrompt, 2)).trim();
       } catch (e) {
-        const msg =
-          e instanceof HuggingFaceInferenceError
-            ? e.message
-            : e instanceof Error
-              ? e.message
-              : "Errore generazione narrativa.";
+        const msg = e instanceof Error ? e.message : "Errore generazione narrativa.";
         return { success: false, message: msg };
       }
       narrativeRaw = narrativeRaw
@@ -679,12 +675,7 @@ export async function generateWikiMarkdownAction(
         }
       }
     } catch (err) {
-      const msg =
-        err instanceof HuggingFaceInferenceError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : "Errore generazione testo AI.";
+      const msg = err instanceof Error ? err.message : "Errore generazione testo AI.";
       return { success: false, message: msg };
     }
 

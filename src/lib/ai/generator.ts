@@ -6,7 +6,7 @@
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import type { Json } from "@/types/database.types";
-import { generateAiText, HuggingFaceInferenceError } from "@/lib/ai/huggingface-client";
+import { generateOpenRouterWikiText } from "@/lib/ai/openrouter-client";
 import {
   parseCampaignAiContextFromDb,
   type CampaignAiContext,
@@ -133,14 +133,9 @@ export async function generateContextualText(
 
     let rawText: string;
     try {
-      rawText = await generateAiText(fullPrompt);
+      rawText = await generateOpenRouterWikiText(fullPrompt);
     } catch (e) {
-      const msg =
-        e instanceof HuggingFaceInferenceError
-          ? e.message
-          : e instanceof Error
-            ? e.message
-            : "Errore durante la chiamata al modello AI.";
+      const msg = e instanceof Error ? e.message : "Errore durante la chiamata al modello AI.";
       return { ok: false, error: msg };
     }
 

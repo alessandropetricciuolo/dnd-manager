@@ -248,6 +248,16 @@ export function CreateEntityDialog({
   const [aiImagePreview, setAiImagePreview] = useState<string | null>(null);
   const [wikiImageUrlPreset, setWikiImageUrlPreset] = useState<string | null>(null);
   const [magicPortraitPreview, setMagicPortraitPreview] = useState<string | null>(null);
+  type MagicDraft = {
+    title: string;
+    content: string;
+    hp: string | null;
+    ac: string | null;
+    imageUrl: string | null;
+    imageWarning?: string;
+    entityType: WikiGeneratorEntityType;
+  };
+  const [magicDraft, setMagicDraft] = useState<MagicDraft | null>(null);
   /** Fasi UX durante la catena server (testo → immagine) per NPC/Luogo. */
   const [magicChainPhase, setMagicChainPhase] = useState<"text" | "image">("text");
   type RelationRow = { targetType: "wiki" | "map"; targetId: string; label: string };
@@ -706,14 +716,6 @@ export function CreateEntityDialog({
     void loadBestiaryList();
   }, [open, type, bestiaryGroups.length, loadBestiaryList]);
 
-  function handleMagicDialogOpenChange(next: boolean) {
-    setMagicOpen(next);
-    if (!next) {
-      setMagicPortraitPreview(null);
-      setMagicChainPhase("text");
-    }
-  }
-
   useEffect(() => {
     if (!magicLoading) return;
     const fullChain = magicEntityType === "npc" || magicEntityType === "location";
@@ -726,6 +728,38 @@ export function CreateEntityDialog({
     return () => window.clearTimeout(id);
   }, [magicLoading, magicEntityType]);
 
+  function handleMagicDialogOpenChange(next: boolean) {
+    setMagicOpen(next);
+    if (!next) {
+      setMagicPortraitPreview(null);
+      setMagicDraft(null);
+      setMagicChainPhase("text");
+    }
+  }
+
+  function applyMagicDraftToForm() {
+    if (!magicDraft) return;
+    onTypeChange(magicDraft.entityType);
+    const body = appendCombatStatsToMarkdown(magicDraft.content, magicDraft.hp, magicDraft.ac);
+    setTitleValue(magicDraft.title);
+    setContentValue(body);
+    if (magicDraft.imageUrl) {
+      setWikiImageUrlPreset(magicDraft.imageUrl);
+      setAiImagePreview(magicDraft.imageUrl);
+    } else {
+      setWikiImageUrlPreset(null);
+      setAiImagePreview(null);
+    }
+    if (magicDraft.imageWarning) {
+      toast.warning(`Immagine non generata: ${magicDraft.imageWarning}`, { duration: 8000 });
+    }
+    toast.success("Bozza applicata al form. Controlla titolo, testo e immagine, poi premi Crea.");
+    setMagicOpen(false);
+    setMagicDraft(null);
+    setMagicPortraitPreview(null);
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   async function handleMagicGenerate() {
     if (magicLoading) return;
     const p = magicPrompt.trim();
@@ -735,6 +769,8 @@ export function CreateEntityDialog({
     }
     setMagicLoading(true);
     setMagicChainPhase("text");
+    setMagicDraft(null);
+    setMagicPortraitPreview(null);
     try {
       const fullChain = magicEntityType === "npc" || magicEntityType === "location";
 
@@ -745,25 +781,17 @@ export function CreateEntityDialog({
           return;
         }
         const { title, content, hp, ac, imageUrl, imageWarning } = res.data;
-        onTypeChange(magicEntityType);
-        const body = appendCombatStatsToMarkdown(content, hp, ac);
-        setTitleValue(title);
-        setContentValue(body);
-        if (imageUrl) {
-          setWikiImageUrlPreset(imageUrl);
-          setMagicPortraitPreview(imageUrl);
-        } else {
-          setWikiImageUrlPreset(null);
-          setMagicPortraitPreview(null);
-        }
-        if (imageWarning) {
-          toast.warning(`Immagine non generata: ${imageWarning}`, { duration: 8000 });
-        }
-        toast.success(
-          "Bozza completa pronta. Controlla titolo, testo e immagine nel form sottostante, poi premi Crea."
-        );
-        setMagicOpen(false);
-        formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        setMagicDraft({
+          title,
+          content,
+          hp,
+          ac,
+          imageUrl,
+          imageWarning,
+          entityType: magicEntityType,
+        });
+        setMagicPortraitPreview(imageUrl);
+        toast.success("Bozza pronta. Controlla anteprima testo e immagine, poi applica al form.");
         return;
       }
 
@@ -1927,60 +1955,83 @@ export function CreateEntityDialog({
                       : "Tessendo la trama (generazione testo)…"}
                   </p>
                   <p className="mt-1 text-xs text-barber-paper/65">
-                    Non chiudere la finestra: al termine i campi del form si compileranno da soli.
+                    Al termine potrai rivedere testo e immagine prima di applicarli al form.
                   </p>
                 </div>
               </div>
             )}
 
-            {!magicLoading &&
-              magicPortraitPreview &&
-              (magicEntityType === "npc" || magicEntityType === "location") && (
-                <div className="space-y-2 rounded-lg border border-barber-gold/30 bg-barber-dark/60 p-3">
-                  <div className="flex items-center gap-2 text-sm font-medium text-barber-paper">
-                    <ImageIcon className="h-4 w-4 text-barber-gold" />
-                    Anteprima immagine (già nel form)
-                  </div>
-                  <div className="relative aspect-video w-full overflow-hidden rounded-md border border-barber-gold/30 bg-black/40">
-                    <Image
-                      src={magicPortraitPreview}
-                      alt="Anteprima generazione AI"
-                      fill
-                      className="object-contain"
-                      unoptimized
-                    />
-                  </div>
+            {!magicLoading && magicDraft && (
+              <div className="space-y-3 rounded-lg border border-barber-gold/30 bg-barber-dark/60 p-3">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-barber-gold">Anteprima testo</p>
+                  <p className="font-serif text-base text-barber-paper">{magicDraft.title}</p>
+                  <p className="max-h-40 overflow-auto whitespace-pre-wrap text-xs leading-relaxed text-barber-paper/80">
+                    {magicDraft.content.slice(0, 1200)}
+                    {magicDraft.content.length > 1200 ? "…" : ""}
+                  </p>
                 </div>
-              )}
+                {magicPortraitPreview ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm font-medium text-barber-paper">
+                      <ImageIcon className="h-4 w-4 text-barber-gold" />
+                      Anteprima immagine
+                    </div>
+                    <div className="relative aspect-video w-full overflow-hidden rounded-md border border-barber-gold/30 bg-black/40">
+                      <Image
+                        src={magicPortraitPreview}
+                        alt="Anteprima generazione AI"
+                        fill
+                        className="object-contain"
+                        unoptimized
+                      />
+                    </div>
+                  </div>
+                ) : magicDraft.imageWarning ? (
+                  <p className="text-xs text-amber-400/90">Immagine non generata: {magicDraft.imageWarning}</p>
+                ) : null}
+              </div>
+            )}
           </div>
           <DialogFooter className="gap-2 sm:gap-2">
             <Button
               type="button"
               variant="outline"
               className="border-barber-gold/40 text-barber-paper hover:bg-barber-gold/10"
-              onClick={() => setMagicOpen(false)}
+              onClick={() => handleMagicDialogOpenChange(false)}
               disabled={magicLoading}
             >
               Chiudi
             </Button>
-            <Button
-              type="button"
-              className="bg-barber-red text-barber-paper hover:bg-barber-red/90"
-              onClick={() => void handleMagicGenerate()}
-              disabled={magicLoading}
-            >
-              {magicLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Attendere…
-                </>
-              ) : (
-                <>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Genera
-                </>
-              )}
-            </Button>
+            {magicDraft ? (
+              <Button
+                type="button"
+                className="bg-barber-gold text-barber-dark hover:bg-barber-gold/90"
+                onClick={applyMagicDraftToForm}
+                disabled={magicLoading}
+              >
+                Applica al form
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                className="bg-barber-red text-barber-paper hover:bg-barber-red/90"
+                onClick={() => void handleMagicGenerate()}
+                disabled={magicLoading}
+              >
+                {magicLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Attendere…
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Genera
+                  </>
+                )}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

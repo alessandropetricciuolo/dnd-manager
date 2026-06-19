@@ -30,11 +30,14 @@ function stripMarkdownForImagePrompt(markdown: string): string {
     .trim();
 }
 
-/** Prompt immagine basato esclusivamente sulla descrizione narrativa (niente statistiche). */
-function buildImageDescriptionFromNarrative(narrativeDescription: string): string {
+/** Prompt immagine: richiesta utente + corpo narrativo generato (ancora il soggetto). */
+function buildImageDescriptionFromNarrative(userPrompt: string, narrativeDescription: string): string {
   const plainBody = stripMarkdownForImagePrompt(narrativeDescription);
+  const request = userPrompt.trim();
+  const parts = [request, plainBody].filter((p) => p.length > 0);
+  const combined = parts.join("\n\n");
   const max = 3500;
-  return plainBody.length <= max ? plainBody : `${plainBody.slice(0, max)}…`;
+  return combined.length <= max ? combined : `${combined.slice(0, max)}…`;
 }
 
 /**
@@ -80,7 +83,7 @@ export async function generateFullAiWikiEntity(
     }
 
     const { title, content, hp, ac } = textResult.data;
-    const imageDescription = buildImageDescriptionFromNarrative(content);
+    const imageDescription = buildImageDescriptionFromNarrative(prompt, content);
 
     const portraitResult = await generateContextualPortraitAction(
       campaignId,

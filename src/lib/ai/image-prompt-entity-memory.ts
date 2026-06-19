@@ -1,6 +1,15 @@
 import type { Json } from "@/types/database.types";
 import { extractWikiEntityMemoryText } from "@/lib/campaign-wiki-ai-memory";
 import { normalizeEntityNameKey } from "@/lib/wiki/entity-reference-parser";
+import {
+  haystackHasSpecificVenueSubject,
+  VENUE_SUBJECT_PATTERN,
+} from "@/lib/ai/image-prompt-location";
+
+export {
+  haystackHasSpecificVenueSubject,
+  VENUE_SUBJECT_PATTERN,
+} from "@/lib/ai/image-prompt-location";
 
 type AdminClient = ReturnType<typeof import("@/utils/supabase/admin").createSupabaseAdminClient>;
 
@@ -31,6 +40,8 @@ export type ImagePromptEntityReferenceDiagnostics = {
 
 const DEFAULT_MAX_REFERENCES = 4;
 const DEFAULT_SNIPPET_CHARS = 240;
+/** Snippet compatto per entità-geografia genitore quando il soggetto è un locale specifico. */
+const PARENT_PLACE_SNIPPET_CHARS = 72;
 /** Parole distintive estratte dal nome entità per match parziale (es. «Druven» in «Regno di Druven»). */
 const MIN_PARTIAL_NAME_WORD_CHARS = 4;
 
@@ -79,6 +90,40 @@ export function entityNameMatchesHaystack(haystack: string, entityName: string):
   }
   if (compactNameMatchesHaystack(haystack, entityName)) return true;
   return false;
+}
+
+/**
+ * Con soggetto «bottega/macellaio/…», evita lore generica di città/regioni genitore
+ * (es. Portico intero quando si chiede la bottega del macellaio di Portico).
+ */
+export function shouldSuppressParentPlaceMemoryReference(
+  haystack: string,
+  entityName: string,
+  entityBody: string
+): boolean {
+  if (!haystackHasSpecificVenueSubject(haystack)) return false;
+  const name = entityName.trim();
+  if (!name || VENUE_SUBJECT_PATTERN.test(name)) return false;
+  if (VENUE_SUBJECT_PATTERN.test(entityBody)) return false;
+  if (!entityNameMatchesHaystack(haystack, name)) return false;
+
+  if (textMentionsEntityName(haystack, name)) {
+    const wordCount = name.split(/\s+/).filter(Boolean).length;
+    if (wordCount === 1) return true;
+    if (/^(regno|continente|citt[aà]|regione|porto|isola|penisola|dominio)\b/i.test(name)) {
+      return true;
+    }
+    if (/\bportico\b/i.test(name) && !VENUE_SUBJECT_PATTERN.test(name)) return true;
+    return false;
+  }
+
+  const partialWords = name
+    .split(/\s+/)
+    .filter((w) => w.length >= MIN_PARTIAL_NAME_WORD_CHARS)
+    .sort((a, b) => b.length - a.length);
+  return partialWords.some(
+    (word) => textMentionsEntityName(haystack, word) && !textMentionsEntityName(haystack, name)
+  );
 }
 
 function stripMarkdownForSnippet(text: string): string {
@@ -357,10 +402,23 @@ export async function resolveImagePromptEntityReferences(
     if (matchedIds.has(candidate.id)) continue;
     if (excludeId && candidate.id === excludeId && !candidate.forceEligible) continue;
     if (!entityNameMatchesHaystack(searchHaystack, candidate.name)) continue;
+    if (
+      shouldSuppressParentPlaceMemoryReference(
+        searchHaystack,
+        candidate.name,
+        candidate.body
+      )
+    ) {
+      continue;
+    }
+
+    const snippetMaxChars = haystackHasSpecificVenueSubject(searchHaystack)
+      ? Math.min(maxSnippetChars, PARENT_PLACE_SNIPPET_CHARS)
+      : maxSnippetChars;
 
     const snippet =
-      compressBodyToReferenceSnippet(candidate.body, maxSnippetChars) ||
-      fallbackSnippetForEntity(candidate.name, candidate.kindLabel, maxSnippetChars);
+      compressBodyToReferenceSnippet(candidate.body, snippetMaxChars) ||
+      fallbackSnippetForEntity(candidate.name, candidate.kindLabel, snippetMaxChars);
     const referenceLine = formatEntityReferenceLine(candidate.name, snippet);
     if (!referenceLine) continue;
 
@@ -392,7 +450,7 @@ export async function resolveImagePromptEntityReferences(
     }
   }
 
-  if (references.length < maxReferences) {
+  if (references.length < maxReferences && !haystackHasSpecificVenueSubject(searchHaystack)) {
     const corpusBodies = [
       ...mapCandidates.map((m) => ({
         id: m.id,

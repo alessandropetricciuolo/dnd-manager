@@ -6,6 +6,7 @@ import {
   entityNameMatchVariants,
   entityNameMatchesHaystack,
   formatEntityReferenceLine,
+  shouldSuppressParentPlaceMemoryReference,
   textMentionsEntityName,
 } from "../image-prompt-entity-memory";
 
@@ -65,6 +66,54 @@ describe("entityNameMatchesHaystack", () => {
     assert.equal(
       entityNameMatchesHaystack("generale dell'esercito di Rianvadriel Oropher", "Riavandriel"),
       true
+    );
+  });
+});
+
+describe("shouldSuppressParentPlaceMemoryReference", () => {
+  const haystack = "bottega del macellaio di portico";
+
+  it("suppresses parent city Portico when depicting a shop", () => {
+    assert.equal(
+      shouldSuppressParentPlaceMemoryReference(
+        haystack,
+        "Portico",
+        "Grande città portuale con molo e indagini."
+      ),
+      true
+    );
+  });
+
+  it("suppresses Portale di Portico landmark via partial portico match", () => {
+    assert.equal(
+      shouldSuppressParentPlaceMemoryReference(
+        haystack,
+        "Portale di Portico",
+        "Antico arco d'ingresso alla città."
+      ),
+      true
+    );
+  });
+
+  it("keeps entity whose name is the venue itself", () => {
+    assert.equal(
+      shouldSuppressParentPlaceMemoryReference(
+        haystack,
+        "Locanda del Gallo di Portico",
+        "Taverna famosa nel quartiere del porto."
+      ),
+      false
+    );
+  });
+
+  it("does not suppress when haystack lacks venue subject", () => {
+    assert.equal(
+      shouldSuppressParentPlaceMemoryReference(
+        "vista panoramica di portico dal mare",
+        "Portico",
+        "Città portuale."
+      ),
+      false
     );
   });
 });
