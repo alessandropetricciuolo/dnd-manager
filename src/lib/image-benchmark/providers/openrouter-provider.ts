@@ -106,6 +106,24 @@ function extractImageFromOpenRouterResponse(data: unknown): { imageUrl?: string;
   throw new Error("Nessuna immagine trovata nella risposta OpenRouter.");
 }
 
+export async function openRouterImageOutputToBuffer(output: ImageGenerationOutput): Promise<Buffer> {
+  if (!output.success) {
+    throw new Error(output.errorMessage ?? "Generazione immagine OpenRouter fallita.");
+  }
+  if (output.imageBase64) {
+    const raw = output.imageBase64.replace(/^data:image\/[a-zA-Z0-9.+-]+;base64,/, "");
+    return Buffer.from(raw, "base64");
+  }
+  if (output.imageUrl) {
+    const res = await fetch(output.imageUrl);
+    if (!res.ok) {
+      throw new Error(`Download immagine fallito (HTTP ${res.status}).`);
+    }
+    return Buffer.from(await res.arrayBuffer());
+  }
+  throw new Error("Nessuna immagine nella risposta OpenRouter.");
+}
+
 function extractEstimatedCost(data: unknown): number | undefined {
   if (!data || typeof data !== "object") return undefined;
   const usage = (data as { usage?: { cost?: unknown; total_cost?: unknown } }).usage;

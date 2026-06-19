@@ -4,10 +4,10 @@ import { revalidatePath } from "next/cache";
 import { ensureImageBenchmarkAdmin } from "@/lib/image-benchmark/access";
 import {
   IMAGE_BENCHMARK_ASPECT_RATIOS,
-  MAX_MODELS_PER_RUN,
   MAX_PROMPTS_PER_RUN,
   OPENROUTER_IMAGE_BENCHMARK_MODELS,
 } from "@/lib/image-benchmark/models";
+import { getSiteImageModel } from "@/lib/ai/openrouter-image-preview";
 import { checkImageBenchmarkRateLimit } from "@/lib/image-benchmark/rate-limit";
 import { resolveBenchmarkCampaign, buildBenchmarkImagePrompt } from "@/lib/image-benchmark/build-prompt";
 import { runBenchmarkPromptAgainstModels } from "@/lib/image-benchmark/run-benchmark";
@@ -18,8 +18,11 @@ export type CreateBenchmarkRunInput = {
   title: string;
   description?: string;
   prompts: Array<{ category: string; prompt: string; aspectRatio: string }>;
-  models: string[];
 };
+
+function benchmarkModels(): string[] {
+  return [getSiteImageModel()];
+}
 
 export async function listImageBenchmarkRunsAction() {
   const access = await ensureImageBenchmarkAdmin();
@@ -100,14 +103,6 @@ export async function createImageBenchmarkRunAction(input: CreateBenchmarkRunInp
     return { success: false as const, message: `Massimo ${MAX_PROMPTS_PER_RUN} prompt per run.` };
   }
 
-  const models = input.models.filter(Boolean);
-  if (models.length === 0) {
-    return { success: false as const, message: "Seleziona almeno un modello." };
-  }
-  if (models.length > MAX_MODELS_PER_RUN) {
-    return { success: false as const, message: `Massimo ${MAX_MODELS_PER_RUN} modelli per run.` };
-  }
-
   const { data: run, error: runError } = await access.admin
     .from("image_benchmark_runs")
     .insert({
@@ -143,7 +138,6 @@ export async function createImageBenchmarkRunAction(input: CreateBenchmarkRunInp
 export async function runImageBenchmarkPromptAction(input: {
   runId: string;
   promptId: string;
-  models: string[];
 }) {
   const access = await ensureImageBenchmarkAdmin();
   if (!access.ok) return { success: false as const, message: access.message };
@@ -151,10 +145,7 @@ export async function runImageBenchmarkPromptAction(input: {
   const rate = checkImageBenchmarkRateLimit(access.userId);
   if (!rate.ok) return { success: false as const, message: rate.message };
 
-  const models = input.models.filter(Boolean);
-  if (models.length === 0 || models.length > MAX_MODELS_PER_RUN) {
-    return { success: false as const, message: `Seleziona da 1 a ${MAX_MODELS_PER_RUN} modelli.` };
-  }
+  const models = benchmarkModels();
 
   const { data: prompt, error } = await access.admin
     .from("image_benchmark_prompts")
@@ -183,7 +174,7 @@ export async function runImageBenchmarkPromptAction(input: {
   return { success: true as const, resultIds: result.resultIds };
 }
 
-export async function runFullImageBenchmarkAction(input: { runId: string; models: string[] }) {
+export async function runFullImageBenchmarkAction(input: { runId: string }) {
   const access = await ensureImageBenchmarkAdmin();
   if (!access.ok) return { success: false as const, message: access.message };
 
@@ -202,7 +193,6 @@ export async function runFullImageBenchmarkAction(input: { runId: string; models
     const res = await runImageBenchmarkPromptAction({
       runId: input.runId,
       promptId,
-      models: input.models,
     });
     summary.push(res.success ? `Prompt ${promptId}: ok` : `Prompt ${promptId}: ${res.message}`);
   }

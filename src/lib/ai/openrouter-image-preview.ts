@@ -1,7 +1,19 @@
-import type { ImagePromptBuildResult } from "@/lib/ai/image-prompt-builder";
+import type { ImagePromptBuildResult, WikiImageEntityKind } from "@/lib/ai/image-prompt-builder";
 import { estimatePromptTokens, type PromptTokenStats } from "@/lib/ai/prompt-token-estimate";
 
-export const DEFAULT_OPENROUTER_IMAGE_MODEL = "google/gemini-2.5-flash-image";
+/** Modello OpenRouter usato per tutte le generazioni immagine del sito. */
+export const SITE_IMAGE_MODEL = "openai/gpt-5-image-mini";
+
+export const DEFAULT_OPENROUTER_IMAGE_MODEL = SITE_IMAGE_MODEL;
+
+export function getSiteImageModel(): string {
+  const env = process.env.AI_IMAGE_MODEL?.trim();
+  return env || SITE_IMAGE_MODEL;
+}
+
+export function getDefaultImageAspectRatioForEntity(entityType: WikiImageEntityKind): string {
+  return entityType === "location" ? "16:9" : "1:1";
+}
 
 export const OPENROUTER_IMAGE_ASPECT_RATIOS = ["1:1", "16:9", "9:16", "4:3", "3:4"] as const;
 

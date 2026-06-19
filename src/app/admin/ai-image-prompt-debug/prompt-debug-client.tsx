@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { OPENROUTER_IMAGE_ASPECT_RATIOS } from "@/lib/ai/openrouter-image-preview";
+import { OPENROUTER_IMAGE_ASPECT_RATIOS, SITE_IMAGE_MODEL } from "@/lib/ai/openrouter-image-preview";
 import type { WikiImageEntityKind } from "@/lib/ai/image-prompt-builder";
 import {
   generateTestImageFromPromptAction,
@@ -28,8 +28,6 @@ const DEFAULT_PROMPT =
 
 type Props = {
   campaigns: AdminCampaignOption[];
-  models: string[];
-  defaultModel: string;
 };
 
 function StatBadge({ label, value }: { label: string; value: string | number }) {
@@ -52,19 +50,17 @@ function PromptBlock({ title, text }: { title: string; text: string }) {
   );
 }
 
-export function ImagePromptDebugClient({ campaigns, models, defaultModel }: Props) {
+export function ImagePromptDebugClient({ campaigns }: Props) {
   const longCampaigns = useMemo(
     () => campaigns.filter((c) => c.type === "long"),
     [campaigns]
   );
   const initialCampaignId = longCampaigns[0]?.id ?? campaigns[0]?.id ?? "";
-  const modelOptions = models.length > 0 ? models : [defaultModel];
 
   const [campaignId, setCampaignId] = useState(initialCampaignId);
   const [userPrompt, setUserPrompt] = useState(DEFAULT_PROMPT);
   const [entityType, setEntityType] = useState<WikiImageEntityKind>("npc");
   const [entityTitle, setEntityTitle] = useState("");
-  const [model, setModel] = useState(defaultModel);
   const [aspectRatio, setAspectRatio] = useState<string>("1:1");
   const [preview, setPreview] = useState<PreviewImagePromptResult | null>(null);
   const [testImageSrc, setTestImageSrc] = useState<string | null>(null);
@@ -79,7 +75,6 @@ export function ImagePromptDebugClient({ campaigns, models, defaultModel }: Prop
       userPrompt,
       entityType,
       entityTitle,
-      model,
       aspectRatio,
     };
   }
@@ -156,19 +151,10 @@ export function ImagePromptDebugClient({ campaigns, models, defaultModel }: Prop
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="model">Modello OpenRouter</Label>
-          <Select value={model} onValueChange={setModel}>
-            <SelectTrigger id="model" className="border-barber-gold/30 bg-barber-dark">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {modelOptions.map((m) => (
-                <SelectItem key={m} value={m}>
-                  {m}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label>Modello</Label>
+          <p className="rounded-md border border-barber-gold/30 bg-barber-dark px-3 py-2 font-mono text-xs text-barber-gold">
+            {SITE_IMAGE_MODEL}
+          </p>
         </div>
 
         <div className="space-y-2">

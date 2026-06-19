@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { averageScore } from "@/lib/image-benchmark/types";
+import { SITE_IMAGE_MODEL } from "@/lib/ai/openrouter-image-preview";
 import type { ModelReportRow } from "./actions";
 import {
   getImageBenchmarkReportAction,
@@ -259,7 +260,7 @@ export function ImageBenchmarkRunClient({
   models,
 }: RunDetailClientProps) {
   const router = useRouter();
-  const [selectedModels, setSelectedModels] = useState<string[]>(models);
+  const siteModel = models[0] ?? SITE_IMAGE_MODEL;
   const [running, setRunning] = useState(false);
   const [blindMode, setBlindMode] = useState(true);
   const [report, setReport] = useState<ModelReportRow[] | null>(null);
@@ -278,16 +279,10 @@ export function ImageBenchmarkRunClient({
     [prompts]
   );
 
-  function toggleModel(model: string) {
-    setSelectedModels((prev) =>
-      prev.includes(model) ? prev.filter((m) => m !== model) : [...prev, model]
-    );
-  }
-
   async function runAll() {
     setRunning(true);
     try {
-      const res = await runFullImageBenchmarkAction({ runId, models: selectedModels });
+      const res = await runFullImageBenchmarkAction({ runId });
       if (!res.success) {
         toast.error(res.message);
         return;
@@ -302,7 +297,7 @@ export function ImageBenchmarkRunClient({
   async function runPrompt(promptId: string) {
     setRunning(true);
     try {
-      const res = await runImageBenchmarkPromptAction({ runId, promptId, models: selectedModels });
+      const res = await runImageBenchmarkPromptAction({ runId, promptId });
       if (!res.success) toast.error(res.message);
       else {
         toast.success("Prompt eseguito.");
@@ -350,23 +345,13 @@ export function ImageBenchmarkRunClient({
         <TabsContent value="run" className="space-y-4 pt-4">
           <Card className="border-barber-gold/25 bg-barber-dark/80">
             <CardHeader>
-              <CardTitle className="text-barber-gold">Modelli selezionati</CardTitle>
+              <CardTitle className="text-barber-gold">Esecuzione benchmark</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-2 sm:grid-cols-2">
-                {models.map((model) => (
-                  <label key={model} className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={selectedModels.includes(model)}
-                      onChange={() => toggleModel(model)}
-                      className="h-4 w-4 accent-barber-gold"
-                    />
-                    <span className="font-mono text-xs">{model}</span>
-                  </label>
-                ))}
-              </div>
-              <Button type="button" disabled={running || selectedModels.length === 0} onClick={runAll}>
+              <p className="text-sm text-barber-paper/70">
+                Modello: <code className="font-mono text-xs text-barber-gold">{siteModel}</code>
+              </p>
+              <Button type="button" disabled={running} onClick={runAll}>
                 {running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
                 Avvia benchmark (tutti i prompt)
               </Button>

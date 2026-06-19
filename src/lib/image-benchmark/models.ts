@@ -1,15 +1,11 @@
 import type { ImageBenchmarkCategory } from "./types";
+import { SITE_IMAGE_MODEL } from "@/lib/ai/openrouter-image-preview";
 
-/** Modelli OpenRouter image generation — modifica qui per aggiungere/rimuovere modelli. */
-export const OPENROUTER_IMAGE_BENCHMARK_MODELS = [
-  "google/gemini-2.5-flash-image",
-  "google/gemini-3.1-flash-image-preview",
-  "google/gemini-3-pro-image-preview",
-  "black-forest-labs/flux.2-klein-4b",
-  "black-forest-labs/flux.2-pro",
-  "recraft/recraft-v3",
-  "openai/gpt-5-image-mini",
-] as const;
+/** Modello OpenRouter usato per tutte le generazioni immagine del sito. */
+export { SITE_IMAGE_MODEL };
+
+/** Alias per compatibilità benchmark (un solo modello). */
+export const OPENROUTER_IMAGE_BENCHMARK_MODELS = [SITE_IMAGE_MODEL] as const;
 
 export type OpenRouterImageBenchmarkModel = (typeof OPENROUTER_IMAGE_BENCHMARK_MODELS)[number];
 
@@ -35,7 +31,6 @@ export const IMAGE_BENCHMARK_ASPECT_RATIOS = [
 ] as const;
 
 export const MAX_PROMPTS_PER_RUN = 10;
-export const MAX_MODELS_PER_RUN = 10;
 export const BENCHMARK_CONCURRENCY = 2;
 
 export type PresetPrompt = {

@@ -12,8 +12,6 @@ import {
   mergeStats,
   type PromptTokenStats,
 } from "@/lib/ai/prompt-token-estimate";
-import type { ImageProviderId } from "@/lib/ai/image-provider";
-
 export const STANDARD_VISUAL_NEGATIVES =
   "NO modern clothing, NO jeans, NO wristwatches, NO cars, NO text, NO watermarks, NO bad anatomy, NO deformed hands, NO cartoon style, NO anime style, NO manga style, NO cel shading, NO chibi";
 
@@ -366,22 +364,3 @@ export async function buildContextualImagePrompts(
   };
 }
 
-export function getProviderPayloadForPreview(
-  provider: ImageProviderId,
-  result: ImagePromptBuildResult
-): { label: string; text: string; stats: PromptTokenStats } {
-  if (provider === "siliconflow") {
-    const { prompt, negativePrompt, stats } = result.providerPayloads.siliconflow;
-    return {
-      label: "SiliconFlow (prompt + negative_prompt separati)",
-      text: `--- prompt ---\n${prompt}\n\n--- negative_prompt ---\n${negativePrompt}`,
-      stats,
-    };
-  }
-  const { inputs, stats } = result.providerPayloads.huggingface;
-  return {
-    label: "Hugging Face FLUX (inputs unificato)",
-    text: inputs,
-    stats,
-  };
-}

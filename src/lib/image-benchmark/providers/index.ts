@@ -13,4 +13,4 @@ export function getImageGenerationProvider(id: ImageGenerationProviderId = "open
   return provider;
 }
 
-export { generateImageWithOpenRouter } from "./openrouter-provider";
+export { generateImageWithOpenRouter, openRouterImageOutputToBuffer } from "./openrouter-provider";

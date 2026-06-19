@@ -13,23 +13,13 @@ export { shouldUseOllamaForAiText, getOllamaModelForAiText } from "./ollama-clie
 export { shouldUseOpenRouterForAiText, getOpenRouterModelForAiText } from "./openrouter-client";
 
 export {
-  generateSiliconFlowImage,
-  shouldUseSiliconFlowForAiImage,
-  isSiliconFlowImageConfigured,
-  getSiliconFlowImageModel,
-  SiliconFlowImageError,
-} from "./siliconflow-image-client";
+  SITE_IMAGE_MODEL,
+  DEFAULT_OPENROUTER_IMAGE_MODEL,
+  getSiteImageModel,
+  getDefaultImageAspectRatioForEntity,
+} from "./openrouter-image-preview";
 
-export {
-  IMAGE_PROVIDER_IDS,
-  type ImageProviderId,
-  type ImageProviderDescriptor,
-  isImageProviderId,
-  getDefaultImageProvider,
-  resolveImageProvider,
-  listImageProviders,
-  generateAiImageWithProvider,
-} from "./image-provider";
+export { generateSiteImage, generateSiteImageForEntity } from "./image-provider";
 
 export { ARCHITECT_SYSTEM_PROMPT } from "./prompts";
 

@@ -34,11 +34,10 @@ declare namespace NodeJS {
     /** Nome modello Ollama (default `llama3`). */
     OLLAMA_MODEL?: string;
     /**
-     * Provider per generazione immagini server-side: `huggingface` (default, Flux via HF)
-     * oppure `siliconflow` (API OpenAI-compatible di SiliconFlow). La UI può passare un
-     * override per singola richiesta; questa variabile definisce solo il default server.
+     * Modello OpenRouter per generazione immagini (default `openai/gpt-5-image-mini`).
+     * Richiede `OPENROUTER_API_KEY`.
      */
-    AI_IMAGE_PROVIDER?: string;
+    AI_IMAGE_MODEL?: string;
     /**
      * Chiave API SiliconFlow. ⚠️ SiliconFlow ha due piattaforme separate con chiavi NON
      * intercambiabili: internazionale (`cloud.siliconflow.com`) e cinese

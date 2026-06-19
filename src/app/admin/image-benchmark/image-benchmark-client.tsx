@@ -20,9 +20,9 @@ import {
 import {
   IMAGE_BENCHMARK_ASPECT_RATIOS,
   IMAGE_BENCHMARK_CATEGORIES,
-  OPENROUTER_IMAGE_BENCHMARK_MODELS,
   PRESET_BENCHMARK_PROMPTS,
 } from "@/lib/image-benchmark/models";
+import { SITE_IMAGE_MODEL } from "@/lib/ai/openrouter-image-preview";
 import { createImageBenchmarkRunAction } from "./actions";
 
 type RunRow = {
@@ -53,14 +53,7 @@ export function ImageBenchmarkClient({ runs }: ImageBenchmarkClientProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [prompts, setPrompts] = useState<PromptDraft[]>([defaultPrompt()]);
-  const [selectedModels, setSelectedModels] = useState<string[]>([...OPENROUTER_IMAGE_BENCHMARK_MODELS]);
   const [creating, setCreating] = useState(false);
-
-  function toggleModel(model: string) {
-    setSelectedModels((prev) =>
-      prev.includes(model) ? prev.filter((m) => m !== model) : [...prev, model]
-    );
-  }
 
   function addPreset(presetId: string) {
     const preset = PRESET_BENCHMARK_PROMPTS.find((p) => p.id === presetId);
@@ -81,7 +74,6 @@ export function ImageBenchmarkClient({ runs }: ImageBenchmarkClientProps) {
         title,
         description,
         prompts,
-        models: selectedModels,
       });
       if (!result.success) {
         toast.error(result.message);
@@ -202,22 +194,9 @@ export function ImageBenchmarkClient({ runs }: ImageBenchmarkClientProps) {
             ))}
           </div>
 
-          <div className="space-y-2">
-            <Label>Modelli ({selectedModels.length}/10)</Label>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {OPENROUTER_IMAGE_BENCHMARK_MODELS.map((model) => (
-                <label key={model} className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={selectedModels.includes(model)}
-                    onChange={() => toggleModel(model)}
-                    className="h-4 w-4 accent-barber-gold"
-                  />
-                  <span className="font-mono text-xs">{model}</span>
-                </label>
-              ))}
-            </div>
-          </div>
+          <p className="text-xs text-barber-paper/60">
+            Modello: <code className="text-barber-gold">{SITE_IMAGE_MODEL}</code>
+          </p>
 
           <Button
             type="button"

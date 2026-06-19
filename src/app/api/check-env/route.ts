@@ -14,7 +14,7 @@ export async function GET() {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   const aiText = process.env.AI_TEXT_PROVIDER?.trim() || "(default huggingface)";
-  const aiImage = process.env.AI_IMAGE_PROVIDER?.trim() || "(default huggingface)";
+  const aiImageModel = process.env.AI_IMAGE_MODEL?.trim() || "openai/gpt-5-image-mini (default)";
   const ollamaUrl = process.env.OLLAMA_BASE_URL?.trim() || "http://127.0.0.1:11434 (default)";
   const ollamaModel = process.env.OLLAMA_MODEL?.trim() || "llama3 (default)";
   const hfKey = !!(process.env.HUGGINGFACE_API_KEY || process.env.HF_TOKEN);
@@ -32,7 +32,7 @@ export async function GET() {
     NEXT_PUBLIC_SUPABASE_ANON_KEY: anonKey ? "impostata" : "MANCANTE",
     ok: !!(url && anonKey),
     AI_TEXT_PROVIDER: aiText,
-    AI_IMAGE_PROVIDER: aiImage,
+    AI_IMAGE_MODEL: aiImageModel,
     OPENROUTER_API_KEY: openrouterKey ? "impostata" : "MANCANTE",
     OPENROUTER_MODEL: openrouterModel,
     OPENROUTER_EMBEDDING_MODEL: openrouterEmbeddingModel,

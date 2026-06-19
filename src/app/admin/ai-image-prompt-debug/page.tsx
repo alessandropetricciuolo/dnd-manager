@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { ScanSearch } from "lucide-react";
-import { DEFAULT_OPENROUTER_IMAGE_MODEL } from "@/lib/ai/openrouter-image-preview";
+import { SITE_IMAGE_MODEL } from "@/lib/ai/openrouter-image-preview";
 import { listCampaignsForImagePromptDebugAction } from "./actions";
 import { ImagePromptDebugClient } from "./prompt-debug-client";
 
@@ -26,7 +26,6 @@ export default async function AdminImagePromptDebugPage() {
 
   const listed = await listCampaignsForImagePromptDebugAction();
   const campaigns = listed.success ? listed.campaigns : [];
-  const models = listed.success ? listed.models : [];
 
   return (
     <div className="p-4 py-8 md:p-8">
@@ -40,7 +39,7 @@ export default async function AdminImagePromptDebugPage() {
             Anteprima del prompt assemblato (paletti Architetto, memoria IA, stile) e payload OpenRouter per{" "}
             <code className="text-barber-gold">POST /v1/chat/completions</code> con{" "}
             <code className="text-barber-gold">modalities: [&quot;image&quot;]</code>. Puoi anche generare
-            un&apos;immagine di test via OpenRouter. Solo admin.
+            un&apos;immagine di test via OpenRouter (<code className="text-barber-gold">{SITE_IMAGE_MODEL}</code>). Solo admin.
           </p>
         </header>
 
@@ -48,11 +47,7 @@ export default async function AdminImagePromptDebugPage() {
           <p className="text-sm text-red-400">Errore caricamento campagne: {listed.message}</p>
         )}
 
-        <ImagePromptDebugClient
-          campaigns={campaigns}
-          models={models}
-          defaultModel={DEFAULT_OPENROUTER_IMAGE_MODEL}
-        />
+        <ImagePromptDebugClient campaigns={campaigns} />
       </div>
     </div>
   );

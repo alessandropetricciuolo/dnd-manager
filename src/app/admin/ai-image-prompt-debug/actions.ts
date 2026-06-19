@@ -10,9 +10,9 @@ import {
 import {
   DEFAULT_OPENROUTER_IMAGE_MODEL,
   getOpenRouterPayloadForPreview,
+  getSiteImageModel,
 } from "@/lib/ai/openrouter-image-preview";
 import { generateImageWithOpenRouter } from "@/lib/image-benchmark/providers/openrouter-provider";
-import { OPENROUTER_IMAGE_BENCHMARK_MODELS } from "@/lib/image-benchmark/models";
 
 export type AdminCampaignOption = {
   id: string;
@@ -25,7 +25,6 @@ export type PreviewImagePromptInput = {
   userPrompt: string;
   entityType: WikiImageEntityKind;
   entityTitle?: string;
-  model?: string;
   aspectRatio?: string;
 };
 
@@ -66,7 +65,7 @@ async function ensureAdmin(): Promise<{ ok: true; admin: ReturnType<typeof creat
 }
 
 export async function listCampaignsForImagePromptDebugAction(): Promise<
-  { success: true; campaigns: AdminCampaignOption[]; models: string[] } | { success: false; message: string }
+  { success: true; campaigns: AdminCampaignOption[] } | { success: false; message: string }
 > {
   const access = await ensureAdmin();
   if (!access.ok) return { success: false, message: access.message };
@@ -86,7 +85,7 @@ export async function listCampaignsForImagePromptDebugAction(): Promise<
     type: String((row as { type?: string }).type ?? ""),
   }));
 
-  return { success: true, campaigns, models: [...OPENROUTER_IMAGE_BENCHMARK_MODELS] };
+  return { success: true, campaigns };
 }
 
 export async function previewContextualImagePromptAction(
@@ -106,7 +105,7 @@ export async function previewContextualImagePromptAction(
     return { success: false, message: built.error };
   }
 
-  const model = input.model?.trim() || DEFAULT_OPENROUTER_IMAGE_MODEL;
+  const model = getSiteImageModel();
   const aspectRatio = input.aspectRatio?.trim() || "1:1";
   const providerPreview = getOpenRouterPayloadForPreview(built, { model, aspectRatio });
 

@@ -33,8 +33,6 @@ import { type WikiEntityType, WIKI_ENTITY_OPTIONS } from "@/lib/wiki/entity-type
 import { generateContextualPortraitAction } from "@/lib/actions/ai-generator";
 import { generateWikiMarkdownAction } from "@/lib/ai/wiki-text-generator";
 import { WIKI_NPC_LEVEL_OPTIONS } from "@/lib/wiki-npc-ai-options";
-import { AiImageProviderSelect } from "@/components/ai/ai-image-provider-select";
-import { useAiImageProvider } from "@/lib/hooks/use-ai-image-provider";
 
 type EntityType = WikiEntityType;
 
@@ -97,7 +95,6 @@ export function EditEntityDialog({
   const formRef = useRef<HTMLFormElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [aiImageLoading, setAiImageLoading] = useState(false);
-  const { provider: aiImageProvider, setProvider: setAiImageProvider } = useAiImageProvider();
   const [type, setType] = useState<EntityType>((entity.type as EntityType) || "npc");
   const [attributes, setAttributes] = useState<Record<string, unknown>>(() =>
     mergeAttributes((entity.type as EntityType) || "npc", entity.attributes)
@@ -370,7 +367,6 @@ export function EditEntityDialog({
         narrativeDescription,
         imageEntityType,
         {
-          provider: aiImageProvider,
           entityTitle: entityTitle || entity.name.trim(),
           excludeWikiEntityId: entity.id,
         }
@@ -565,12 +561,6 @@ export function EditEntityDialog({
             )}
             {(type === "npc" || type === "monster" || type === "location") && (
               <div className="flex flex-col gap-2 sm:max-w-xs">
-                <AiImageProviderSelect
-                  id="edit-entity-image-provider"
-                  disabled={isLoading || aiImageLoading}
-                  value={aiImageProvider}
-                  onChange={setAiImageProvider}
-                />
                 <Button
                   type="button"
                   variant="outline"

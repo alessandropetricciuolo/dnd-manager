@@ -50,8 +50,6 @@ import {
 import { generateFullAiWikiEntity } from "@/lib/actions/ai-wiki-chain";
 import { generateContextualPortraitAction } from "@/lib/actions/ai-generator";
 import { generateWikiMarkdownAction } from "@/lib/ai/wiki-text-generator";
-import { AiImageProviderSelect } from "@/components/ai/ai-image-provider-select";
-import { useAiImageProvider } from "@/lib/hooks/use-ai-image-provider";
 import {
   searchBestiaryChunksAction,
   listBestiaryMonstersByCrAction,
@@ -229,7 +227,6 @@ export function CreateEntityDialog({
   const [magicPrompt, setMagicPrompt] = useState("");
   const [magicEntityType, setMagicEntityType] = useState<WikiGeneratorEntityType>("npc");
   const [magicLoading, setMagicLoading] = useState(false);
-  const { provider: aiImageProvider, setProvider: setAiImageProvider } = useAiImageProvider();
   const [aiTextLoading, setAiTextLoading] = useState(false);
   const [aiImageLoading, setAiImageLoading] = useState(false);
   const [aiCr, setAiCr] = useState("");
@@ -640,7 +637,6 @@ export function CreateEntityDialog({
         narrativeDescription,
         imageEntityType,
         {
-          provider: aiImageProvider,
           entityTitle: titleValue.trim() || null,
         }
       );
@@ -743,9 +739,7 @@ export function CreateEntityDialog({
       const fullChain = magicEntityType === "npc" || magicEntityType === "location";
 
       if (fullChain) {
-        const res = await generateFullAiWikiEntity(campaignId, p, magicEntityType, {
-          imageProvider: aiImageProvider,
-        });
+        const res = await generateFullAiWikiEntity(campaignId, p, magicEntityType);
         if (!res.success) {
           toast.error(res.message);
           return;
@@ -1566,19 +1560,12 @@ export function CreateEntityDialog({
                       </span>
                     ) : null}
                   </p>
-                  <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-                    <AiImageProviderSelect
-                      id="create-entity-image-provider"
-                      disabled={isLoading || aiImageLoading}
-                      value={aiImageProvider}
-                      onChange={setAiImageProvider}
-                    />
-                    <Button
-                      type="button"
-                      onClick={() => void handleAssistGenerateImage()}
-                      disabled={isLoading || aiImageLoading}
-                      className="bg-barber-gold text-barber-dark hover:bg-barber-gold/90"
-                    >
+                  <Button
+                    type="button"
+                    onClick={() => void handleAssistGenerateImage()}
+                    disabled={isLoading || aiImageLoading}
+                    className="bg-barber-gold text-barber-dark hover:bg-barber-gold/90"
+                  >
                       {aiImageLoading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -1591,7 +1578,6 @@ export function CreateEntityDialog({
                         </>
                       )}
                     </Button>
-                  </div>
                 </div>
               </FormSection>
 
@@ -1924,15 +1910,6 @@ export function CreateEntityDialog({
               </p>
             </div>
 
-            {(magicEntityType === "npc" || magicEntityType === "location") && (
-              <AiImageProviderSelect
-                id="magic-image-provider"
-                label="Provider immagine"
-                disabled={magicLoading}
-                value={aiImageProvider}
-                onChange={setAiImageProvider}
-              />
-            )}
 
             {magicLoading && (
               <div

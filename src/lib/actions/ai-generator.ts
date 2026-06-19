@@ -7,23 +7,15 @@ import {
   buildContextualImagePrompts,
   type WikiImageEntityKind,
 } from "@/lib/ai/image-prompt-builder";
-import {
-  generateAiImageWithProvider,
-  resolveImageProvider,
-  type ImageProviderId,
-} from "@/lib/ai/image-provider";
+import { generateSiteImageForEntity } from "@/lib/ai/image-provider";
+import { getSiteImageModel } from "@/lib/ai/openrouter-image-preview";
 import { uploadToTelegram } from "@/lib/telegram-storage";
 
 export type GenerateContextualPortraitResult =
-  | { success: true; publicUrl: string; provider: ImageProviderId }
+  | { success: true; publicUrl: string; model: string }
   | { success: false; message: string };
 
 export type GenerateContextualPortraitOptions = {
-  /**
-   * Provider immagine da usare per questa singola richiesta. Se omesso o non valido,
-   * viene applicato il default configurato via env `AI_IMAGE_PROVIDER`.
-   */
-  provider?: ImageProviderId | string | null;
   /** Titolo della voce wiki (nome PNG, luogo, ecc.) — ancoraggio forte sul soggetto. */
   entityTitle?: string | null;
   /** In campagne long, esclude questa voce dal blocco memoria (evita duplicati in modifica). */
@@ -95,14 +87,14 @@ export async function generateContextualPortraitAction(
       return fail(built.error);
     }
 
-    const provider = resolveImageProvider(options.provider ?? null);
+    const model = getSiteImageModel();
     let buffer: Buffer;
-    step = `image-generation:${provider}`;
+    step = `image-generation:${model}`;
     try {
-      buffer = await generateAiImageWithProvider(
-        provider,
+      buffer = await generateSiteImageForEntity(
         built.positivePrompt,
-        built.strictNegativePrompt
+        built.strictNegativePrompt,
+        entityType
       );
     } catch (e) {
       const msg =
@@ -118,7 +110,7 @@ export async function generateContextualPortraitAction(
 
     step = "revalidate";
     revalidatePath(`/campaigns/${campaignId}`);
-    return { success: true, publicUrl, provider };
+    return { success: true, publicUrl, model };
   } catch (err) {
     return fail(err instanceof Error ? err.message : "Si è verificato un errore imprevisto. Riprova.", err);
   }

@@ -1,9 +1,8 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/utils/supabase/server";
-import { generateContextualText, type WikiAiTextGeneration } from "@/lib/ai/generator";
+import { generateContextualText } from "@/lib/ai/generator";
 import { generateContextualPortraitAction } from "@/lib/actions/ai-generator";
-import type { ImageProviderId } from "@/lib/ai/image-provider";
 
 export type FullAiWikiEntityPayload = {
   title: string;
@@ -45,8 +44,7 @@ function buildImageDescriptionFromNarrative(narrativeDescription: string): strin
 export async function generateFullAiWikiEntity(
   campaignId: string,
   userPrompt: string,
-  entityType: "npc" | "location",
-  options: { imageProvider?: ImageProviderId | string | null } = {}
+  entityType: "npc" | "location"
 ): Promise<GenerateFullAiWikiEntityResult> {
   const prompt = userPrompt.trim();
   if (!prompt) {
@@ -88,7 +86,7 @@ export async function generateFullAiWikiEntity(
       campaignId,
       imageDescription,
       entityType,
-      { provider: options.imageProvider ?? null, entityTitle: title }
+      { entityTitle: title }
     );
 
     let imageUrl: string | null = null;
