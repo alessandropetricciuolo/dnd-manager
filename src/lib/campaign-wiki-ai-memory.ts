@@ -15,6 +15,37 @@ export function extractWikiContentBody(content: Json | null): string {
   return "";
 }
 
+/** Note GM riservate salvate in `wiki_entities.attributes.gm_notes`. */
+export function extractWikiGmNotes(
+  attributes: Json | Record<string, unknown> | null | undefined
+): string {
+  if (attributes == null || typeof attributes !== "object" || Array.isArray(attributes)) {
+    return "";
+  }
+  const raw = (attributes as Record<string, unknown>).gm_notes;
+  return typeof raw === "string" ? raw.trim() : "";
+}
+
+/** Testo canonico per memoria IA / prompt: corpo pubblico + note GM (se presenti). */
+export function combineWikiEntityMemoryText(publicBody: string, gmNotes: string): string {
+  const parts: string[] = [];
+  const body = publicBody.trim();
+  const notes = gmNotes.trim();
+  if (body) parts.push(body);
+  if (notes) parts.push(`Note GM (canon): ${notes}`);
+  return parts.join("\n\n");
+}
+
+export function extractWikiEntityMemoryText(
+  content: Json | null,
+  attributes?: Json | Record<string, unknown> | null
+): string {
+  return combineWikiEntityMemoryText(
+    extractWikiContentBody(content),
+    extractWikiGmNotes(attributes ?? null)
+  );
+}
+
 function normalizeMemoryText(text: string): string {
   return text.replace(/\r/g, "").trim();
 }
@@ -49,6 +80,7 @@ export async function fetchLongCampaignWikiMemoryPromptBlock(
     name: string;
     type: string;
     content: Json;
+    attributes?: Json | Record<string, unknown> | null;
     updated_at: string;
     include_in_campaign_ai_memory?: boolean;
   };
@@ -95,7 +127,7 @@ export async function fetchLongCampaignWikiMemoryPromptBlock(
 
   for (const row of rows) {
     if (exclude && row.id === exclude) continue;
-    const body = extractWikiContentBody(row.content as Json);
+    const body = extractWikiEntityMemoryText(row.content as Json, row.attributes ?? null);
     if (!body) continue;
     const text = truncateMemoryText(body, MAX_ENTRY_BODY_CHARS);
     const entry = `### ${row.name} (${row.type})\n${text}`;

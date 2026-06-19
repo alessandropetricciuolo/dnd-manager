@@ -1,5 +1,5 @@
 import { generateOpenRouterEmbedding } from "@/lib/ai/openrouter-client";
-import { extractWikiContentBody } from "@/lib/campaign-wiki-ai-memory";
+import { extractWikiContentBody, extractWikiEntityMemoryText, extractWikiGmNotes } from "@/lib/campaign-wiki-ai-memory";
 import type { Json } from "@/types/database.types";
 
 type AdminClient = ReturnType<typeof import("@/utils/supabase/admin").createSupabaseAdminClient>;
@@ -34,6 +34,7 @@ type WikiMemoryRow = {
   name: string;
   type: string;
   content: Json;
+  attributes?: Json | Record<string, unknown> | null;
   updated_at: string;
   tags?: string[] | null;
   include_in_campaign_ai_memory?: boolean;
@@ -239,14 +240,18 @@ async function upsertCampaignMemoryChunks(
 
 function buildWikiChunks(row: WikiMemoryRow): CampaignMemoryChunkInsert[] {
   if (row.include_in_campaign_ai_memory !== true) return [];
-  const body = extractWikiContentBody(row.content);
+  const body = extractWikiEntityMemoryText(row.content, row.attributes ?? null);
   if (!body) return [];
+
+  const publicBody = extractWikiContentBody(row.content);
+  const gmNotes = extractWikiGmNotes(row.attributes ?? null);
 
   const text = withHeader(
     `${row.name} (${row.type})`,
     [
       row.tags?.length ? `Tag: ${row.tags.join(", ")}` : null,
       row.is_core ? `Stato globale: ${row.global_status ?? "alive"}` : null,
+      !publicBody && gmNotes ? "Fonte: note GM della voce wiki (corpo pubblico vuoto)." : null,
       `Ultimo aggiornamento: ${row.updated_at}`,
       "Fonte: voce wiki canonica della campagna.",
     ],
@@ -497,7 +502,7 @@ export async function syncWikiEntityToCampaignMemory(
 ): Promise<number> {
   const { data } = await admin
     .from("wiki_entities")
-    .select("id, campaign_id, name, type, content, updated_at, tags, include_in_campaign_ai_memory, is_core, global_status")
+    .select("id, campaign_id, name, type, content, attributes, updated_at, tags, include_in_campaign_ai_memory, is_core, global_status")
     .eq("id", entityId)
     .maybeSingle();
 
@@ -727,7 +732,7 @@ export async function reindexCampaignMemory(admin: AdminClient, campaignId: stri
   ] = await Promise.all([
     admin
       .from("wiki_entities")
-      .select("id, campaign_id, name, type, content, updated_at, tags, include_in_campaign_ai_memory, is_core, global_status")
+      .select("id, campaign_id, name, type, content, attributes, updated_at, tags, include_in_campaign_ai_memory, is_core, global_status")
       .eq("campaign_id", campaignId)
       .order("updated_at", { ascending: false }),
     admin

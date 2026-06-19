@@ -313,6 +313,12 @@ export function ImagePromptDebugClient({ campaigns, models, defaultModel }: Prop
                 Entità matched: {built.meta.matchedEntityNames.join(", ")}
               </p>
             )}
+            {built.meta.loreSkipReason && !built.meta.loreIncluded && built.meta.memorySourceCounts && (
+              <p className="mt-1 text-xs text-barber-paper/45">
+                Pool memoria: {built.meta.memorySourceCounts.wiki} wiki,{" "}
+                {built.meta.memorySourceCounts.maps} mappe, {built.meta.memorySourceCounts.characters} PG
+              </p>
+            )}
           </div>
 
           <PromptBlock title="Prompt positivo (completo)" text={built.positivePrompt} />

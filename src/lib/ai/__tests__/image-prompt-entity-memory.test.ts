@@ -2,6 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
   compressBodyToReferenceSnippet,
+  entityNameMatchesHaystack,
   formatEntityReferenceLine,
   textMentionsEntityName,
 } from "../image-prompt-entity-memory";
@@ -21,6 +22,28 @@ describe("textMentionsEntityName", () => {
   it("matches multi-word entity names", () => {
     assert.equal(
       textMentionsEntityName("lavora alla Locanda del Gallo", "Locanda del Gallo"),
+      true
+    );
+  });
+});
+
+describe("entityNameMatchesHaystack", () => {
+  it("matches partial distinctive word from entity name", () => {
+    assert.equal(
+      entityNameMatchesHaystack(
+        "capitale del regno di Druven",
+        "Regno di Druven"
+      ),
+      true
+    );
+  });
+
+  it("matches full NPC name in longer sentence", () => {
+    assert.equal(
+      entityNameMatchesHaystack(
+        "il generale in capo delle forze di Riavandriel, si trova nella città di Rocca Ferrea",
+        "Riavandriel"
+      ),
       true
     );
   });

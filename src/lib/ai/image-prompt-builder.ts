@@ -3,6 +3,7 @@ import { parseCampaignAiContextFromDb } from "@/lib/campaign-ai-context";
 import { buildCampaignVisualContextBlock } from "@/lib/ai/generator";
 import {
   buildEntityReferencesPromptBlock,
+  buildEntityReferenceSkipReason,
   resolveImagePromptEntityReferences,
 } from "@/lib/ai/image-prompt-entity-memory";
 import {
@@ -53,6 +54,7 @@ export type ImagePromptBuildResult = {
     loreSkipReason: string | null;
     matchedEntityNames: string[];
     matchedEntityReferences: string[];
+    memorySourceCounts: { wiki: number; maps: number; characters: number };
     userDescription: string;
     descriptionAnchored: string;
   };
@@ -257,20 +259,25 @@ export async function buildContextualImagePrompts(
   let loreSkipReason: string | null = null;
   let matchedEntityNames: string[] = [];
   let matchedEntityReferences: string[] = [];
+  let memorySourceCounts = { wiki: 0, maps: 0, characters: 0 };
 
   if (campaignType !== "long") {
     loreSkipReason = "Campagna non long — memoria wiki non inclusa.";
   } else {
-    const { references } = await resolveImagePromptEntityReferences(admin, params.campaignId, {
+    const diagnostics = await resolveImagePromptEntityReferences(admin, params.campaignId, {
       searchText: searchHaystack,
       excludeEntityId: params.excludeWikiEntityId?.trim() || undefined,
     });
-    matchedEntityNames = references.map((r) => r.name);
-    matchedEntityReferences = references.map((r) => r.referenceLine);
-    loreBlock = buildEntityReferencesPromptBlock(references);
+    matchedEntityNames = diagnostics.references.map((r) => r.name);
+    matchedEntityReferences = diagnostics.references.map((r) => r.referenceLine);
+    memorySourceCounts = {
+      wiki: diagnostics.wikiMemoryCount,
+      maps: diagnostics.mapCount,
+      characters: diagnostics.characterCount,
+    };
+    loreBlock = buildEntityReferencesPromptBlock(diagnostics.references);
     if (!loreBlock) {
-      loreSkipReason =
-        "Nessuna entità citata nel testo con memoria IA attiva (match per nome voce wiki o PG).";
+      loreSkipReason = buildEntityReferenceSkipReason(diagnostics);
     }
   }
 
@@ -346,6 +353,7 @@ export async function buildContextualImagePrompts(
       loreSkipReason: loreBlock.length > 0 ? null : loreSkipReason,
       matchedEntityNames,
       matchedEntityReferences,
+      memorySourceCounts,
       userDescription: trimmed,
       descriptionAnchored,
     },
