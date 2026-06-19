@@ -39,7 +39,9 @@ declare namespace NodeJS {
      */
     AI_IMAGE_MODEL?: string;
     /** Modello OpenRouter per testo wiki (default `google/gemma-4-31b-it:free`). */
-    WIKI_TEXT_MODEL?: string; ⚠️ SiliconFlow ha due piattaforme separate con chiavi NON
+    WIKI_TEXT_MODEL?: string;
+    /**
+     * Chiave API SiliconFlow. SiliconFlow ha due piattaforme separate con chiavi NON
      * intercambiabili: internazionale (`cloud.siliconflow.com`) e cinese
      * (`cloud.siliconflow.cn`). Usa `SILICONFLOW_BASE_URL` per selezionare quella giusta.
      */
