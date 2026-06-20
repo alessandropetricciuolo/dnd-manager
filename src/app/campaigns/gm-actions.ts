@@ -294,11 +294,9 @@ export async function getCompletedSessionsDashboardForGmAdmin(): Promise<GmResul
     return { success: false, error: "Non autenticato." };
   }
 
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  const isAdmin = profile?.role === "admin";
   const admin = createSupabaseAdminClient();
 
-  let query = admin
+  const { data, error } = await admin
     .from("sessions")
     .select(
       "id, campaign_id, title, scheduled_at, session_summary, party_id, chapter_title, gm_private_notes, campaigns(name), campaign_parties(name, color)"
@@ -306,21 +304,6 @@ export async function getCompletedSessionsDashboardForGmAdmin(): Promise<GmResul
     .eq("status", "completed")
     .order("scheduled_at", { ascending: false })
     .limit(DASHBOARD_COMPLETED_SESSIONS_LIMIT);
-
-  if (!isAdmin) {
-    const { data: myCampaigns, error: campErr } = await admin.from("campaigns").select("id").eq("gm_id", user.id);
-    if (campErr) {
-      console.error("[getCompletedSessionsDashboardForGmAdmin] campaigns", campErr);
-      return { success: false, error: campErr.message ?? "Errore nel caricamento." };
-    }
-    const ids = (myCampaigns ?? []).map((c) => (c as { id: string }).id).filter(Boolean);
-    if (ids.length === 0) {
-      return { success: true, data: [] };
-    }
-    query = query.in("campaign_id", ids);
-  }
-
-  const { data, error } = await query;
 
   if (error) {
     console.error("[getCompletedSessionsDashboardForGmAdmin]", error);

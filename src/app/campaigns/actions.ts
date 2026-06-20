@@ -412,20 +412,8 @@ export async function listCampaignsForOpenSessionAssignment(): Promise<{
     const can = await isGmOrAdminByRole(supabase);
     if (!can) return { success: false, message: "Non autorizzato." };
 
-    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
     const admin = createSupabaseAdminClient();
-
-    if (profile?.role === "admin") {
-      const { data, error } = await admin.from("campaigns").select("id, name").order("name");
-      if (error) return { success: false, message: error.message ?? "Errore." };
-      return { success: true, data: (data ?? []) as Array<{ id: string; name: string }> };
-    }
-
-    const { data, error } = await admin
-      .from("campaigns")
-      .select("id, name")
-      .eq("gm_id", user.id)
-      .order("name");
+    const { data, error } = await admin.from("campaigns").select("id, name").order("name");
     if (error) return { success: false, message: error.message ?? "Errore." };
     return { success: true, data: (data ?? []) as Array<{ id: string; name: string }> };
   } catch (err) {
@@ -454,15 +442,11 @@ export async function assignCampaignToOpenSession(
     const can = await isGmOrAdminByRole(supabase);
     if (!can) return { success: false, message: "Solo GM e Admin possono collegare una campagna." };
 
-    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
     const admin = createSupabaseAdminClient();
 
-    const { data: campaign, error: campErr } = await admin.from("campaigns").select("id, gm_id").eq("id", cid).maybeSingle();
+    const { data: campaign, error: campErr } = await admin.from("campaigns").select("id").eq("id", cid).maybeSingle();
     if (campErr || !campaign) {
       return { success: false, message: "Campagna non trovata." };
-    }
-    if (profile?.role !== "admin" && (campaign as { gm_id: string }).gm_id !== user.id) {
-      return { success: false, message: "Puoi collegare solo campagne di cui sei il Master titolare." };
     }
 
     const { data: session, error: sessErr } = await admin
@@ -889,13 +873,12 @@ async function isGmOrAdmin(
   return campaign?.gm_id === user?.id;
 }
 
-/** Sessione senza campagna: gestibile solo da GM/Admin (guild). Con campagna: GM della campagna o guild. */
+/** Qualsiasi GM o Admin (guild) può gestire sessioni su tutte le campagne. */
 async function canManageSessionByCampaign(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
-  campaignId: string | null
+  _campaignId: string | null
 ): Promise<boolean> {
-  if (campaignId == null) return isGmOrAdminByRole(supabase);
-  return isGmOrAdmin(supabase, campaignId);
+  return isGmOrAdminByRole(supabase);
 }
 
 async function sendFeedbackRequestEmailsForSession(
@@ -1597,9 +1580,6 @@ export async function deleteSession(sessionId: string): Promise<DeleteSessionRes
       return { success: false, message: "Solo GM o Admin possono eliminare sessioni." };
     }
 
-    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-    const isAdmin = profile?.role === "admin";
-
     const admin = createSupabaseAdminClient();
     const { data: session, error: sessionError } = await admin
       .from("sessions")
@@ -1612,12 +1592,6 @@ export async function deleteSession(sessionId: string): Promise<DeleteSessionRes
 
     const sessionRow = session as { id: string; campaign_id: string | null };
     const cid = sessionRow.campaign_id;
-    if (!isAdmin && cid) {
-      const { data: camp, error: campErr } = await admin.from("campaigns").select("gm_id").eq("id", cid).maybeSingle();
-      if (campErr || !camp || (camp as { gm_id: string }).gm_id !== user.id) {
-        return { success: false, message: "Puoi eliminare solo sessioni delle tue campagne." };
-      }
-    }
 
     const { error: deleteError } = await admin.from("sessions").delete().eq("id", sessionId);
 
@@ -1957,10 +1931,6 @@ export async function getLongCampaignCalendarState(campaignId: string): Promise<
     if (error || !data) return { success: false, error: error?.message ?? "Campagna non trovata." };
     if (data.type !== "long") return { success: false, error: "Calendario disponibile solo per campagne long." };
 
-    const profileRes = await supabase.from("profiles").select("role").eq("id", user.id).single();
-    const isAdmin = profileRes.data?.role === "admin";
-    if (!isAdmin && data.gm_id !== user.id) return { success: false, error: "Non sei il Master di questa campagna." };
-
     return { success: true, data: buildLongCampaignCalendarState(data) };
   } catch (err) {
     console.error("[getLongCampaignCalendarState]", err);
@@ -1983,19 +1953,18 @@ export async function saveLongCampaignCalendarBaseDate(
     } = await supabase.auth.getUser();
     if (userErr || !user) return { success: false, error: "Non autenticato." };
 
-    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-    const isAdmin = profile?.role === "admin";
+    const allowed = await isGmOrAdminByRole(supabase);
+    if (!allowed) return { success: false, error: "Solo GM o Admin." };
 
     const admin = createSupabaseAdminClient();
     const { data: campaignRaw, error: campErr } = await admin
       .from("campaigns")
-      .select("id, gm_id, type, long_calendar_config")
+      .select("id, type, long_calendar_config")
       .eq("id", campaignId)
       .single();
-    const campaign = (campaignRaw as { id: string; gm_id: string; type: string | null; long_calendar_config?: Json | null } | null) ?? null;
+    const campaign = (campaignRaw as { id: string; type: string | null; long_calendar_config?: Json | null } | null) ?? null;
     if (campErr || !campaign) return { success: false, error: campErr?.message ?? "Campagna non trovata." };
     if (campaign.type !== "long") return { success: false, error: "Disponibile solo per campagne long." };
-    if (!isAdmin && campaign.gm_id !== user.id) return { success: false, error: "Non sei il Master di questa campagna." };
 
     const normalizedConfig = normalizeFantasyCalendarConfig(
       payload.months?.length
