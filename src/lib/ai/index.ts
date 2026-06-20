@@ -16,6 +16,8 @@ export {
   shouldUseOpenRouterForAiText,
   getOpenRouterModelForAiText,
   generateOpenRouterWikiText,
+  generateOpenRouterWikiTextMessages,
+  type OpenRouterWikiChatMessage,
 } from "./openrouter-client";
 
 export {
@@ -30,6 +32,9 @@ export { generateSiteImage, generateSiteImageForEntity } from "./image-provider"
 export { ARCHITECT_SYSTEM_PROMPT } from "./prompts";
 
 export {
+  parseStructuredWikiJson,
+  buildStructuredWikiTextSystemPrompt,
+  formatStructuredWikiDraftForChat,
   generateContextualText,
   type WikiGeneratorEntityType,
   type WikiAiTextGeneration,

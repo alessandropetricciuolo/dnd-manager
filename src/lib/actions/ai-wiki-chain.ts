@@ -117,3 +117,65 @@ export async function generateFullAiWikiEntity(
     return { success: false, message: "Errore imprevisto durante la catena AI. Riprova." };
   }
 }
+
+export type GenerateMagicDraftImageResult =
+  | { success: true; imageUrl: string }
+  | { success: false; message: string };
+
+/**
+ * Genera l'immagine per una bozza testuale già approvata in chat (NPC/Luogo).
+ */
+export async function generateMagicDraftImageAction(
+  campaignId: string,
+  entityType: "npc" | "location",
+  title: string,
+  content: string,
+  userPromptSeed: string
+): Promise<GenerateMagicDraftImageResult> {
+  if (!campaignId) {
+    return { success: false, message: "Campagna non valida." };
+  }
+  const safeTitle = title.trim();
+  const safeContent = content.trim();
+  if (!safeTitle || !safeContent) {
+    return { success: false, message: "Serve una bozza testuale prima di generare l'immagine." };
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return { success: false, message: "Devi essere autenticato." };
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    if (profile?.role !== "gm" && profile?.role !== "admin") {
+      return { success: false, message: "Solo GM e Admin possono usare la generazione AI." };
+    }
+
+    const imageDescription = buildImageDescriptionFromNarrative(userPromptSeed.trim() || safeTitle, safeContent);
+    const portraitResult = await generateContextualPortraitAction(
+      campaignId,
+      imageDescription,
+      entityType,
+      { entityTitle: safeTitle }
+    );
+
+    if (!portraitResult.success) {
+      return { success: false, message: portraitResult.message };
+    }
+
+    return { success: true, imageUrl: portraitResult.publicUrl };
+  } catch (err) {
+    console.error("[generateMagicDraftImageAction]", err);
+    return { success: false, message: "Errore imprevisto durante la generazione immagine." };
+  }
+}

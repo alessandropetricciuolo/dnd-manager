@@ -31,7 +31,8 @@ import { CHALLENGE_RATING_OPTIONS } from "@/lib/dnd-constants";
 import { Loader2, Plus, Trash2, Wand2 } from "lucide-react";
 import { type WikiEntityType, WIKI_ENTITY_OPTIONS } from "@/lib/wiki/entity-types";
 import { generateContextualPortraitAction } from "@/lib/actions/ai-generator";
-import { generateWikiMarkdownAction } from "@/lib/ai/wiki-text-generator";
+import { WikiTextGenChat } from "@/components/wiki/wiki-text-gen-chat";
+import type { WikiMarkdownChatDraft } from "@/lib/actions/wiki-text-chat";
 import { WIKI_NPC_LEVEL_OPTIONS } from "@/lib/wiki-npc-ai-options";
 
 type EntityType = WikiEntityType;
@@ -125,14 +126,16 @@ export function EditEntityDialog({
     () => entity.include_in_campaign_ai_memory ?? false
   );
   const [contentValue, setContentValue] = useState(contentBody);
-  const [aiTextLoading, setAiTextLoading] = useState(false);
-  const [aiPrompt, setAiPrompt] = useState("");
+  const [assistChatLoading, setAssistChatLoading] = useState(false);
+  const [assistChatKey, setAssistChatKey] = useState(0);
+  const [assistChatDraft, setAssistChatDraft] = useState<WikiMarkdownChatDraft | null>(null);
   const [npcAiLevel, setNpcAiLevel] = useState("");
 
   useEffect(() => {
     if (open) {
       setContentValue(contentBody);
-      setAiPrompt("");
+      setAssistChatDraft(null);
+      setAssistChatKey((k) => k + 1);
       setNpcAiLevel("");
       setType((entity.type as EntityType) || "npc");
       setAttributes(mergeAttributes((entity.type as EntityType) || "npc", entity.attributes));
@@ -270,73 +273,43 @@ export function EditEntityDialog({
     targetInput.dispatchEvent(new Event("change", { bubbles: true }));
   }
 
-  async function handleAssistGenerateText() {
-    if (aiTextLoading || isLoading) return;
+  function buildEditAssistExtraParams() {
+    if (type === "item") {
+      return { rarity: getAttr("loot").trim() || undefined };
+    }
+    if (type === "npc") {
+      return {
+        npcRace: getAttr("race").trim(),
+        npcClass: getAttr("class").trim(),
+        npcLevel: npcAiLevel.trim(),
+      };
+    }
+    return {};
+  }
+
+  function editAssistChatReady(): boolean {
     const formEl = formRef.current;
     const titleField = formEl?.elements.namedItem("title");
     const safeName =
       titleField instanceof HTMLInputElement ? titleField.value.trim() : entity.name.trim();
-    if (!safeName) {
-      toast.error("Inserisci prima il titolo della voce.");
-      return;
+    if (!safeName) return false;
+    if (type === "npc") {
+      const raceForAi = getAttr("race").trim();
+      const classForAi = getAttr("class").trim();
+      if (!raceForAi || !classForAi || !npcAiLevel.trim()) return false;
     }
-    if (type === "monster") {
-      toast.error(
-        "Per i mostri rigenera il testo dalla creazione voce con il bestiario di campagna."
-      );
-      return;
+    return true;
+  }
+
+  function applyEditAssistChatDraft() {
+    if (!assistChatDraft) return;
+    setContentValue(assistChatDraft.description);
+    if (type === "npc" && assistChatDraft.npcTraits) {
+      if (assistChatDraft.npcTraits.race) setAttr("race", assistChatDraft.npcTraits.race);
+      if (assistChatDraft.npcTraits.class) setAttr("class", assistChatDraft.npcTraits.class);
+      if (assistChatDraft.npcTraits.age) setAttr("age", assistChatDraft.npcTraits.age);
     }
-    const raceForAi = getAttr("race").trim();
-    const classForAi = getAttr("class").trim();
-    if (type === "npc" && (!raceForAi || !classForAi || !npcAiLevel.trim())) {
-      toast.error(
-        "Per gli NPC indica razza, classe e livello nei campi scheda (o nel menu sotto) prima di generare."
-      );
-      return;
-    }
-    setAiTextLoading(true);
-    try {
-      const aiEntityType =
-        type === "item"
-          ? "item"
-          : type === "location"
-            ? "location"
-            : type === "lore"
-              ? "lore"
-              : "npc";
-      const extra =
-        type === "item"
-          ? { rarity: getAttr("loot").trim() || undefined }
-          : type === "npc"
-            ? {
-                npcRace: raceForAi,
-                npcClass: classForAi,
-                npcLevel: npcAiLevel.trim(),
-              }
-            : {};
-      const result = await generateWikiMarkdownAction(
-        campaignId,
-        aiEntityType,
-        safeName,
-        aiPrompt,
-        extra
-      );
-      if (!result.success) {
-        toast.error(result.message);
-        return;
-      }
-      setContentValue(result.description);
-      if (type === "npc" && result.npcTraits) {
-        if (result.npcTraits.race) setAttr("race", result.npcTraits.race);
-        if (result.npcTraits.class) setAttr("class", result.npcTraits.class);
-        if (result.npcTraits.age) setAttr("age", result.npcTraits.age);
-      }
-      toast.success("Contenuto AI generato: controlla il testo e premi Salva.");
-    } catch {
-      toast.error("Errore durante la generazione del testo AI.");
-    } finally {
-      setAiTextLoading(false);
-    }
+    toast.success("Bozza chat applicata. Controlla il testo e premi Salva.");
   }
 
   async function handleAssistGenerateImage() {
@@ -385,6 +358,14 @@ export function EditEntityDialog({
     }
   }
 
+  const editAssistMarkdownEntityType =
+    type === "item"
+      ? "item"
+      : type === "location"
+        ? "location"
+        : type === "lore"
+          ? "lore"
+          : "npc";
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -687,7 +668,7 @@ export function EditEntityDialog({
               value={contentValue}
               onChange={(e) => setContentValue(e.target.value)}
               className="min-h-[120px] resize-y bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
-              disabled={isLoading || aiTextLoading}
+              disabled={isLoading || assistChatLoading}
             />
           </div>
 
@@ -695,12 +676,12 @@ export function EditEntityDialog({
             <details className="rounded-lg border border-barber-gold/30 bg-barber-dark/50 p-3">
               <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-medium text-barber-paper">
                 <Wand2 className="h-4 w-4 text-barber-gold" />
-                Assistente IA — rigenera testo
+                Assistente IA — chat testo
               </summary>
               <div className="mt-3 space-y-3 border-t border-barber-gold/20 pt-3">
                 <p className="text-xs text-barber-paper/65">
-                  Sostituisce il campo sopra con una nuova bozza. Per gli NPC servono razza, classe e
-                  livello.
+                  Chatta con l&apos;IA per rigenerare o affinare il testo. Per gli NPC servono razza,
+                  classe e livello.
                 </p>
                 {type === "npc" ? (
                   <div className="space-y-2">
@@ -709,7 +690,7 @@ export function EditEntityDialog({
                       id="edit-npc-ai-level"
                       value={npcAiLevel}
                       onChange={(e) => setNpcAiLevel(e.target.value)}
-                      disabled={isLoading || aiTextLoading}
+                      disabled={isLoading || assistChatLoading}
                       className="flex h-10 w-full max-w-xs rounded-md border border-barber-gold/30 bg-barber-dark px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
                     >
                       <option value="">Seleziona livello…</option>
@@ -721,33 +702,38 @@ export function EditEntityDialog({
                     </select>
                   </div>
                 ) : null}
-                <div className="space-y-2">
-                  <Label htmlFor="edit-ai-prompt">Prompt opzionale</Label>
-                  <Textarea
-                    id="edit-ai-prompt"
-                    value={aiPrompt}
-                    onChange={(e) => setAiPrompt(e.target.value)}
-                    placeholder="Es: tono più cupo, enfatizza il legame con la fazione locale…"
-                    className="min-h-[72px] resize-y border-barber-gold/30 bg-barber-dark text-barber-paper"
-                    disabled={isLoading || aiTextLoading}
-                  />
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="border-barber-gold/40 text-barber-gold"
-                  disabled={isLoading || aiTextLoading}
-                  onClick={() => void handleAssistGenerateText()}
-                >
-                  {aiTextLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Generazione testo…
-                    </>
-                  ) : (
-                    "Genera testo"
-                  )}
-                </Button>
+
+                {!editAssistChatReady() ? (
+                  <p className="text-xs text-amber-400/90">
+                    Compila titolo{type === "npc" ? ", razza, classe e livello" : ""} prima di usare la chat.
+                  </p>
+                ) : null}
+
+                <WikiTextGenChat
+                  key={`edit-assist-chat-${assistChatKey}-${entity.id}`}
+                  mode="markdown"
+                  campaignId={campaignId}
+                  entityType={editAssistMarkdownEntityType}
+                  entityName={entity.name}
+                  extraParams={buildEditAssistExtraParams()}
+                  disabled={isLoading || !editAssistChatReady()}
+                  onLoadingChange={setAssistChatLoading}
+                  onDraftChange={setAssistChatDraft}
+                  placeholder="Es: rendi il tono più cupo e aggiungi un dettaglio sul mercato nero…"
+                  emptyHint="Primo messaggio = nuova bozza. I successivi affinano il testo come in una chat con ChatGPT."
+                />
+
+                {assistChatDraft ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-barber-gold/40 text-barber-gold"
+                    disabled={isLoading || assistChatLoading}
+                    onClick={applyEditAssistChatDraft}
+                  >
+                    Applica bozza chat al testo
+                  </Button>
+                ) : null}
               </div>
             </details>
           ) : null}

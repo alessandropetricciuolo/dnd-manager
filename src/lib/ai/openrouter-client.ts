@@ -106,6 +106,11 @@ type OpenRouterChatOptions = {
   maxTokens?: number;
 };
 
+export type OpenRouterWikiChatMessage = {
+  role: "system" | "user" | "assistant";
+  content: string;
+};
+
 type OpenRouterEmbeddingOptions = {
   model?: string;
   dimensions?: number;
@@ -121,6 +126,93 @@ function sleep(ms: number): Promise<void> {
 
 function getOpenRouterHeaders(apiKey: string): Record<string, string> {
   return buildOpenRouterHeaders(apiKey);
+}
+
+async function postOpenRouterWikiChat(
+  messages: OpenRouterWikiChatMessage[],
+  options: OpenRouterChatOptions = {}
+): Promise<string> {
+  const apiKey = getOpenRouterApiKey();
+  const normalized = messages
+    .map((m) => ({ role: m.role, content: m.content.trim() }))
+    .filter((m) => m.content.length > 0);
+  if (!normalized.length) {
+    throw new Error("Serve almeno un messaggio per la chat wiki.");
+  }
+
+  const base = getOpenRouterBaseUrl();
+  const url = `${base}${OPENROUTER_CHAT_PATH}`;
+  const model = getSiteWikiTextModel();
+
+  let lastErr: Error | null = null;
+  const maxAttempts = 3;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120_000);
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: getOpenRouterHeaders(apiKey),
+        body: JSON.stringify({
+          model,
+          messages: normalized,
+          max_tokens: options.maxTokens ?? 1500,
+          temperature: options.temperature ?? 0.7,
+        }),
+        signal: controller.signal,
+      });
+
+      const bodyText = await res.text();
+      let data: unknown;
+      try {
+        data = JSON.parse(bodyText) as unknown;
+      } catch {
+        if (isTransientOpenRouterStatus(res.status) && attempt < maxAttempts) {
+          await sleep(500 * attempt);
+          continue;
+        }
+        throw new Error(
+          `OpenRouter wiki text: risposta non JSON (HTTP ${res.status}). ${bodyText.slice(0, 400)}`
+        );
+      }
+
+      if (!res.ok) {
+        const errObj = data && typeof data === "object" ? (data as { error?: { message?: string } }).error : null;
+        const msg = errObj?.message ?? bodyText.slice(0, 500);
+        if (isTransientOpenRouterStatus(res.status) && attempt < maxAttempts) {
+          await sleep(500 * attempt);
+          continue;
+        }
+        throw new Error(`OpenRouter wiki text HTTP ${res.status}: ${msg}`);
+      }
+
+      const out = extractOpenRouterChatContent(data);
+      if (!out) {
+        if (attempt < maxAttempts) {
+          await sleep(350 * attempt);
+          continue;
+        }
+        throw new Error("OpenRouter wiki text ha restituito contenuto vuoto.");
+      }
+      return out;
+    } catch (e) {
+      if (e instanceof Error && e.name === "AbortError") {
+        if (attempt < maxAttempts) {
+          await sleep(600 * attempt);
+          continue;
+        }
+        lastErr = new Error("Timeout della richiesta wiki text a OpenRouter (oltre 120s).");
+      } else {
+        lastErr = e instanceof Error ? e : new Error(String(e));
+      }
+      if (attempt < maxAttempts) continue;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  throw lastErr ?? new Error("OpenRouter wiki text: errore sconosciuto.");
 }
 
 /**
@@ -212,93 +304,23 @@ export async function generateOpenRouterChat(
   throw lastErr ?? new Error("OpenRouter: errore sconosciuto.");
 }
 
-/**
- * Generazione testo wiki: sempre OpenRouter con {@link SITE_WIKI_TEXT_MODEL}.
- */
 export async function generateOpenRouterWikiText(
   userContent: string,
   options: OpenRouterChatOptions = {}
 ): Promise<string> {
-  const apiKey = getOpenRouterApiKey();
-
   const trimmed = userContent.trim();
   if (!trimmed) {
     throw new Error("Il prompt non può essere vuoto.");
   }
+  return postOpenRouterWikiChat([{ role: "user", content: trimmed }], options);
+}
 
-  const base = getOpenRouterBaseUrl();
-  const url = `${base}${OPENROUTER_CHAT_PATH}`;
-  const model = getSiteWikiTextModel();
-
-  let lastErr: Error | null = null;
-  const maxAttempts = 3;
-
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 120_000);
-    try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: getOpenRouterHeaders(apiKey),
-        body: JSON.stringify({
-          model,
-          messages: [{ role: "user", content: trimmed }],
-          max_tokens: options.maxTokens ?? 1500,
-          temperature: options.temperature ?? 0.7,
-        }),
-        signal: controller.signal,
-      });
-
-      const bodyText = await res.text();
-      let data: unknown;
-      try {
-        data = JSON.parse(bodyText) as unknown;
-      } catch {
-        if (isTransientOpenRouterStatus(res.status) && attempt < maxAttempts) {
-          await sleep(500 * attempt);
-          continue;
-        }
-        throw new Error(
-          `OpenRouter wiki text: risposta non JSON (HTTP ${res.status}). ${bodyText.slice(0, 400)}`
-        );
-      }
-
-      if (!res.ok) {
-        const errObj = data && typeof data === "object" ? (data as { error?: { message?: string } }).error : null;
-        const msg = errObj?.message ?? bodyText.slice(0, 500);
-        if (isTransientOpenRouterStatus(res.status) && attempt < maxAttempts) {
-          await sleep(500 * attempt);
-          continue;
-        }
-        throw new Error(`OpenRouter wiki text HTTP ${res.status}: ${msg}`);
-      }
-
-      const out = extractOpenRouterChatContent(data);
-      if (!out) {
-        if (attempt < maxAttempts) {
-          await sleep(350 * attempt);
-          continue;
-        }
-        throw new Error("OpenRouter wiki text ha restituito contenuto vuoto.");
-      }
-      return out;
-    } catch (e) {
-      if (e instanceof Error && e.name === "AbortError") {
-        if (attempt < maxAttempts) {
-          await sleep(600 * attempt);
-          continue;
-        }
-        lastErr = new Error("Timeout della richiesta wiki text a OpenRouter (oltre 120s).");
-      } else {
-        lastErr = e instanceof Error ? e : new Error(String(e));
-      }
-      if (attempt < maxAttempts) continue;
-    } finally {
-      clearTimeout(timeoutId);
-    }
-  }
-
-  throw lastErr ?? new Error("OpenRouter wiki text: errore sconosciuto.");
+/** Chat multi-turno wiki (OpenRouter + modello wiki). */
+export async function generateOpenRouterWikiTextMessages(
+  messages: OpenRouterWikiChatMessage[],
+  options: OpenRouterChatOptions = {}
+): Promise<string> {
+  return postOpenRouterWikiChat(messages, options);
 }
 
 /**

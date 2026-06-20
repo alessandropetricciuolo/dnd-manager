@@ -43,13 +43,14 @@ import { TagsInput } from "@/components/wiki/tags-input";
 import { cn } from "@/lib/utils";
 import {
   createEntity,
-  generateWikiQuickAiAction,
   listCampaignMissionsLiteForGm,
   type WikiGeneratorEntityType,
 } from "@/app/campaigns/wiki-actions";
-import { generateFullAiWikiEntity } from "@/lib/actions/ai-wiki-chain";
+import { generateMagicDraftImageAction } from "@/lib/actions/ai-wiki-chain";
+import { WikiTextGenChat } from "@/components/wiki/wiki-text-gen-chat";
+import type { WikiMarkdownChatDraft } from "@/lib/actions/wiki-text-chat";
+import type { WikiAiTextGeneration } from "@/lib/ai/generator";
 import { generateContextualPortraitAction } from "@/lib/actions/ai-generator";
-import { generateWikiMarkdownAction } from "@/lib/ai/wiki-text-generator";
 import {
   searchBestiaryChunksAction,
   listBestiaryMonstersByCrAction,
@@ -224,14 +225,17 @@ export function CreateEntityDialog({
   const [titleValue, setTitleValue] = useState("");
   const [contentValue, setContentValue] = useState("");
   const [magicOpen, setMagicOpen] = useState(false);
-  const [magicPrompt, setMagicPrompt] = useState("");
   const [magicEntityType, setMagicEntityType] = useState<WikiGeneratorEntityType>("npc");
-  const [magicLoading, setMagicLoading] = useState(false);
-  const [aiTextLoading, setAiTextLoading] = useState(false);
+  const [magicTextChatLoading, setMagicTextChatLoading] = useState(false);
+  const [magicImageLoading, setMagicImageLoading] = useState(false);
+  const [magicChatKey, setMagicChatKey] = useState(0);
+  const [magicImagePromptSeed, setMagicImagePromptSeed] = useState("");
+  const [assistChatLoading, setAssistChatLoading] = useState(false);
   const [aiImageLoading, setAiImageLoading] = useState(false);
   const [aiCr, setAiCr] = useState("");
   const [aiRarity, setAiRarity] = useState("");
-  const [aiPrompt, setAiPrompt] = useState("");
+  const [assistChatKey, setAssistChatKey] = useState(0);
+  const [assistChatDraft, setAssistChatDraft] = useState<WikiMarkdownChatDraft | null>(null);
   const [bestiaryQuery, setBestiaryQuery] = useState("");
   const [bestiaryHits, setBestiaryHits] = useState<BestiarySearchHit[]>([]);
   const [bestiaryGroups, setBestiaryGroups] = useState<BestiaryListGroup[]>([]);
@@ -258,8 +262,6 @@ export function CreateEntityDialog({
     entityType: WikiGeneratorEntityType;
   };
   const [magicDraft, setMagicDraft] = useState<MagicDraft | null>(null);
-  /** Fasi UX durante la catena server (testo → immagine) per NPC/Luogo. */
-  const [magicChainPhase, setMagicChainPhase] = useState<"text" | "image">("text");
   type RelationRow = { targetType: "wiki" | "map"; targetId: string; label: string };
   const [relations, setRelations] = useState<RelationRow[]>([]);
   const [wikiOptions, setWikiOptions] = useState<{ id: string; name: string }[]>([]);
@@ -540,93 +542,57 @@ export function CreateEntityDialog({
     await handleUseBestiaryHit(selectedBestiaryListId);
   }
 
-  async function handleAssistGenerateText() {
-    if (aiTextLoading || isLoading) return;
-    const safeName = titleValue.trim();
-    if (!safeName) {
-      toast.error("Inserisci prima il Titolo dell'elemento.");
-      return;
+  function applyAssistChatDraft() {
+    if (!assistChatDraft) return;
+    const { description, statblock, npcTraits } = assistChatDraft;
+    setContentValue(description);
+    if (type === "npc" || type === "monster") {
+      setAttr("statblock", statblock);
     }
-    if (type === "monster" && !monsterVerbatimStatblock.trim()) {
-      toast.error("Cerca un mostro nel bestiario e premi «Usa questo» per caricare lo statblock dai manuali.");
-      return;
+    if (type === "npc" && npcTraits) {
+      if (npcTraits.race) setAttr("race", npcTraits.race);
+      if (npcTraits.class) setAttr("class", npcTraits.class);
+      if (npcTraits.age) setAttr("age", npcTraits.age);
     }
-    const raceForAi = npcAiRace.trim() || getAttr("race").trim();
-    const classForAi = npcAiClass.trim() || getAttr("class").trim();
-    if (type === "npc" && (!raceForAi || !classForAi || !npcAiLevel.trim())) {
-      toast.error("Per gli NPC indica razza, classe e livello (menu sotto) oppure compila almeno Razza e Classe nei campi scheda.");
-      return;
+    if (type === "monster" && statblock) {
+      const parsedFromGenerated = parseStatsFromLoadedStatblock(statblock);
+      applyMonsterSheetStats({
+        hp: parsedFromGenerated.hp,
+        ac: parsedFromGenerated.ac,
+        cr: parsedFromGenerated.cr || aiCr.trim() || undefined,
+      });
     }
-    setAiTextLoading(true);
-    startAiProgress("Generazione scheda testo IA in corso...");
-    let success = false;
-    try {
-      const aiEntityType =
-        type === "monster"
-          ? "monster"
-          : type === "item"
-            ? "item"
-            : type === "location"
-              ? "location"
-              : type === "lore"
-                ? "lore"
-                : "npc";
-      const extra =
-        type === "monster"
-          ? { cr: aiCr.trim(), verbatimMonsterStatblock: monsterVerbatimStatblock.trim() }
-          : type === "item"
-            ? { rarity: aiRarity.trim() }
-            : type === "npc"
-              ? {
-                  npcRace: raceForAi,
-                  npcClass: classForAi,
-                  npcLevel: npcAiLevel.trim(),
-                }
-              : {};
-      const result = await generateWikiMarkdownAction(
-        campaignId,
-        aiEntityType,
-        safeName,
-        aiPrompt,
-        extra
-      );
-      if (!result.success) {
-        toast.error(result.message);
-        return;
-      }
-      const { description, statblock, stats, npcTraits } = result;
-      setContentValue(description);
-      if (type === "npc" || type === "monster") {
-        setAttr("statblock", statblock);
-      }
-      if (type === "npc" && npcTraits) {
-        if (npcTraits.race) setAttr("race", npcTraits.race);
-        if (npcTraits.class) setAttr("class", npcTraits.class);
-        if (npcTraits.age) setAttr("age", npcTraits.age);
-      }
-      if (type === "monster" && stats) {
-        applyMonsterSheetStats({
-          hp: stats.hp ?? undefined,
-          ac: stats.ac ?? undefined,
-          cr: stats.cr ?? undefined,
-        });
-      }
-      if (type === "monster" && statblock) {
-        const parsedFromGenerated = parseStatsFromLoadedStatblock(statblock);
-        applyMonsterSheetStats({
-          hp: parsedFromGenerated.hp,
-          ac: parsedFromGenerated.ac,
-          cr: parsedFromGenerated.cr || aiCr.trim() || stats?.cr || undefined,
-        });
-      }
-      success = true;
-      toast.success("Contenuto AI generato: narrativa e statblock separati.");
-    } catch {
-      toast.error("Errore durante la generazione del testo AI.");
-    } finally {
-      endAiProgress(success);
-      setAiTextLoading(false);
+    toast.success("Bozza chat applicata al form. Controlla e salva quando pronto.");
+  }
+
+  function buildAssistMarkdownExtraParams() {
+    if (type === "monster") {
+      return { cr: aiCr.trim(), verbatimMonsterStatblock: monsterVerbatimStatblock.trim() };
     }
+    if (type === "item") {
+      return { rarity: aiRarity.trim() };
+    }
+    if (type === "npc") {
+      const raceForAi = npcAiRace.trim() || getAttr("race").trim();
+      const classForAi = npcAiClass.trim() || getAttr("class").trim();
+      return {
+        npcRace: raceForAi,
+        npcClass: classForAi,
+        npcLevel: npcAiLevel.trim(),
+      };
+    }
+    return {};
+  }
+
+  function assistChatReady(): boolean {
+    if (!titleValue.trim()) return false;
+    if (type === "monster" && !monsterVerbatimStatblock.trim()) return false;
+    if (type === "npc") {
+      const raceForAi = npcAiRace.trim() || getAttr("race").trim();
+      const classForAi = npcAiClass.trim() || getAttr("class").trim();
+      if (!raceForAi || !classForAi || !npcAiLevel.trim()) return false;
+    }
+    return aiAvailable;
   }
 
   async function handleAssistGenerateImage() {
@@ -677,14 +643,16 @@ export function CreateEntityDialog({
       setTitleValue("");
       setContentValue("");
       setMagicOpen(false);
-      setMagicPrompt("");
       setMagicEntityType("npc");
+      setMagicDraft(null);
+      setMagicChatKey((k) => k + 1);
+      setAssistChatDraft(null);
+      setAssistChatKey((k) => k + 1);
       setWikiImageUrlPreset(null);
       setMagicPortraitPreview(null);
       setAiImagePreview(null);
       setAiCr("");
       setAiRarity("");
-      setAiPrompt("");
       clearAiProgressTimer();
       setAiProgress(0);
       setAiProgressLabel(null);
@@ -716,24 +684,58 @@ export function CreateEntityDialog({
     void loadBestiaryList();
   }, [open, type, bestiaryGroups.length, loadBestiaryList]);
 
-  useEffect(() => {
-    if (!magicLoading) return;
-    const fullChain = magicEntityType === "npc" || magicEntityType === "location";
-    if (!fullChain) {
-      setMagicChainPhase("text");
-      return;
+  function handleMagicStructuredDraft(draft: WikiAiTextGeneration | null) {
+    if (!draft) return;
+    setMagicDraft({
+      title: draft.title,
+      content: draft.content,
+      hp: draft.hp,
+      ac: draft.ac,
+      imageUrl: magicDraft?.imageUrl ?? null,
+      imageWarning: magicDraft?.imageWarning,
+      entityType: magicEntityType,
+    });
+  }
+
+  async function handleMagicGenerateImage() {
+    if (magicImageLoading || magicTextChatLoading || !magicDraft) return;
+    if (magicEntityType !== "npc" && magicEntityType !== "location") return;
+
+    setMagicImageLoading(true);
+    try {
+      const res = await generateMagicDraftImageAction(
+        campaignId,
+        magicEntityType,
+        magicDraft.title,
+        magicDraft.content,
+        magicImagePromptSeed || magicDraft.title
+      );
+      if (!res.success) {
+        setMagicDraft((prev) =>
+          prev ? { ...prev, imageWarning: res.message } : prev
+        );
+        toast.warning(`Immagine non generata: ${res.message}`);
+        return;
+      }
+      setMagicDraft((prev) =>
+        prev ? { ...prev, imageUrl: res.imageUrl, imageWarning: undefined } : prev
+      );
+      setMagicPortraitPreview(res.imageUrl);
+      toast.success("Immagine generata. Puoi applicare la bozza al form.");
+    } catch {
+      toast.error("Errore durante la generazione immagine.");
+    } finally {
+      setMagicImageLoading(false);
     }
-    setMagicChainPhase("text");
-    const id = window.setTimeout(() => setMagicChainPhase("image"), 4500);
-    return () => window.clearTimeout(id);
-  }, [magicLoading, magicEntityType]);
+  }
 
   function handleMagicDialogOpenChange(next: boolean) {
     setMagicOpen(next);
     if (!next) {
       setMagicPortraitPreview(null);
       setMagicDraft(null);
-      setMagicChainPhase("text");
+      setMagicImagePromptSeed("");
+      setMagicChatKey((k) => k + 1);
     }
   }
 
@@ -760,63 +762,7 @@ export function CreateEntityDialog({
     formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  async function handleMagicGenerate() {
-    if (magicLoading) return;
-    const p = magicPrompt.trim();
-    if (!p) {
-      toast.error("Descrivi cosa vuoi creare.");
-      return;
-    }
-    setMagicLoading(true);
-    setMagicChainPhase("text");
-    setMagicDraft(null);
-    setMagicPortraitPreview(null);
-    try {
-      const fullChain = magicEntityType === "npc" || magicEntityType === "location";
-
-      if (fullChain) {
-        const res = await generateFullAiWikiEntity(campaignId, p, magicEntityType);
-        if (!res.success) {
-          toast.error(res.message);
-          return;
-        }
-        const { title, content, hp, ac, imageUrl, imageWarning } = res.data;
-        setMagicDraft({
-          title,
-          content,
-          hp,
-          ac,
-          imageUrl,
-          imageWarning,
-          entityType: magicEntityType,
-        });
-        setMagicPortraitPreview(imageUrl);
-        toast.success("Bozza pronta. Controlla anteprima testo e immagine, poi applica al form.");
-        return;
-      }
-
-      const res = await generateWikiQuickAiAction(campaignId, p, magicEntityType);
-      if (!res.success) {
-        toast.error(res.message);
-        return;
-      }
-      const { title, content, hp, ac } = res.data;
-      onTypeChange(magicEntityType);
-      const body = appendCombatStatsToMarkdown(content, hp, ac);
-      setTitleValue(title);
-      setContentValue(body);
-      setWikiImageUrlPreset(null);
-      setMagicPortraitPreview(null);
-      toast.success("Bozza testo pronta. Controlla il form sottostante e premi Crea.");
-      setMagicOpen(false);
-      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    } catch {
-      toast.error("Errore durante la generazione.");
-    } finally {
-      setMagicLoading(false);
-      setMagicChainPhase("text");
-    }
-  }
+  const magicBusy = magicTextChatLoading || magicImageLoading;
 
   /* ------------------------------------------------------------------------ */
   /*  RENDER                                                                  */
@@ -825,6 +771,16 @@ export function CreateEntityDialog({
   const typeLabel = WIKI_ENTITY_LABELS_IT[type] ?? type;
   const monsterStatblockLoaded = type === "monster" && monsterVerbatimStatblock.trim().length > 0;
   const aiAvailable = type !== "monster" || monsterStatblockLoaded;
+  const assistMarkdownEntityType =
+    type === "monster"
+      ? "monster"
+      : type === "item"
+        ? "item"
+        : type === "location"
+          ? "location"
+          : type === "lore"
+            ? "lore"
+            : "npc";
 
   return (
     <>
@@ -1277,7 +1233,7 @@ export function CreateEntityDialog({
                         <select
                           value={selectedBestiaryListId}
                           onChange={(e) => setSelectedBestiaryListId(e.target.value)}
-                          disabled={isLoading || aiTextLoading || bestiaryListLoading}
+                          disabled={isLoading || assistChatLoading || bestiaryListLoading}
                           className="flex h-10 min-w-0 flex-1 rounded-md border border-barber-gold/30 bg-barber-dark px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
                         >
                           <option value="">
@@ -1301,7 +1257,7 @@ export function CreateEntityDialog({
                           size="sm"
                           disabled={
                             isLoading ||
-                            aiTextLoading ||
+                            assistChatLoading ||
                             bestiaryListLoading ||
                             !selectedBestiaryListId ||
                             loadingChunkId != null
@@ -1314,7 +1270,7 @@ export function CreateEntityDialog({
                           type="button"
                           variant="ghost"
                           size="sm"
-                          disabled={isLoading || aiTextLoading || bestiaryListLoading}
+                          disabled={isLoading || assistChatLoading || bestiaryListLoading}
                           onClick={() => void loadBestiaryList()}
                           className="text-barber-paper/70 hover:text-barber-gold"
                         >
@@ -1332,14 +1288,14 @@ export function CreateEntityDialog({
                             value={bestiaryQuery}
                             onChange={(e) => setBestiaryQuery(e.target.value)}
                             placeholder="Es. Drago verde, Goblin, Lich…"
-                            disabled={isLoading || aiTextLoading || bestiarySearchLoading}
+                            disabled={isLoading || assistChatLoading || bestiarySearchLoading}
                             className="border-barber-gold/30 bg-barber-dark pl-9 text-barber-paper"
                           />
                         </div>
                         <Button
                           type="button"
                           variant="outline"
-                          disabled={isLoading || aiTextLoading || bestiarySearchLoading}
+                          disabled={isLoading || assistChatLoading || bestiarySearchLoading}
                           onClick={() => void handleBestiarySearch()}
                           className="border-barber-gold/40 text-barber-paper hover:bg-barber-gold/10"
                         >
@@ -1371,7 +1327,7 @@ export function CreateEntityDialog({
                                 type="button"
                                 size="sm"
                                 variant="outline"
-                                disabled={loadingChunkId === h.id || aiTextLoading}
+                                disabled={loadingChunkId === h.id || assistChatLoading}
                                 className="shrink-0 border-barber-gold/40 text-barber-paper hover:bg-barber-gold/10"
                                 onClick={() => void handleUseBestiaryHit(h.id)}
                               >
@@ -1404,7 +1360,7 @@ export function CreateEntityDialog({
                         <select
                           value={npcAiRace}
                           onChange={(e) => setNpcAiRace(e.target.value)}
-                          disabled={isLoading || aiTextLoading}
+                          disabled={isLoading || assistChatLoading}
                           className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-2 text-sm text-barber-paper"
                         >
                           <option value="">— Come campo «Razza» sopra —</option>
@@ -1420,7 +1376,7 @@ export function CreateEntityDialog({
                         <select
                           value={npcAiClass}
                           onChange={(e) => setNpcAiClass(e.target.value)}
-                          disabled={isLoading || aiTextLoading}
+                          disabled={isLoading || assistChatLoading}
                           className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-2 text-sm text-barber-paper"
                         >
                           <option value="">— Come campo «Classe» sopra —</option>
@@ -1436,7 +1392,7 @@ export function CreateEntityDialog({
                         <select
                           value={npcAiLevel}
                           onChange={(e) => setNpcAiLevel(e.target.value)}
-                          disabled={isLoading || aiTextLoading}
+                          disabled={isLoading || assistChatLoading}
                           className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-2 text-sm text-barber-paper"
                         >
                           <option value="">— Livello PG —</option>
@@ -1454,115 +1410,93 @@ export function CreateEntityDialog({
                   </div>
                 )}
 
-                {/* Step 3 — Prompt + parametri tipo + bottone genera testo */}
+                {/* Step 3 — Chat testo + parametri tipo */}
                 <div className="space-y-3 rounded-lg border border-barber-gold/30 bg-barber-dark/65 p-3">
                   <div className="flex items-center gap-2">
                     <Sparkles className="h-4 w-4 shrink-0 text-barber-gold" />
                     <h4 className="font-serif text-sm font-semibold text-barber-paper">
-                      {type === "monster" ? "2 · Genera testo" : "Genera testo"}
+                      {type === "monster" ? "2 · Chat testo IA" : "Chat testo IA"}
                     </h4>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="assist-prompt" className="text-xs text-barber-paper/80">
-                      Istruzioni per l&apos;IA (opzionale)
-                    </Label>
-                    <Textarea
-                      id="assist-prompt"
-                      value={aiPrompt}
-                      onChange={(e) => setAiPrompt(e.target.value)}
-                      placeholder={
-                        type === "monster"
-                          ? "Prima del trattino (-): parole chiave per il contesto. Dopo il -: storia / ruolo nella campagna."
-                          : "Es. Un oste nano burbero legato alla gilda dei ladri..."
-                      }
-                      disabled={isLoading || aiTextLoading}
-                      className="min-h-[72px] resize-y bg-barber-dark border-barber-gold/30 text-barber-paper"
-                    />
-                    <p className="text-[11px] text-barber-paper/55">
-                      Puoi usare il trattino <strong className="font-medium text-barber-paper/85">-</strong>: a sinistra
-                      contesto per i manuali, a destra narrazione e richieste di trama.
+                  {!assistChatReady() ? (
+                    <p className="text-xs text-amber-400/90">
+                      Compila titolo
+                      {type === "monster" ? " e carica lo statblock dal bestiario" : ""}
+                      {type === "npc" ? ", razza, classe e livello" : ""} prima di chattare con l&apos;IA.
                     </p>
-                  </div>
+                  ) : null}
 
-                  <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                  {type === "monster" ? (
                     <div className="space-y-2">
-                      {type === "monster" ? (
-                        <>
-                          <Label htmlFor="assist-cr" className="text-xs text-barber-paper/80">
-                            Grado di Sfida (CR) opzionale
-                          </Label>
-                          <Input
-                            id="assist-cr"
-                            value={aiCr}
-                            onChange={(e) => {
-                              const val = e.target.value.trim();
-                              setAiCr(val);
-                              setAttr("combat_stats.cr", val);
-                              const xp = CHALLENGE_RATING_OPTIONS.find((o) => o.value === val)?.xp;
-                              setMonsterXp(xp ?? 0);
-                            }}
-                            placeholder="Es. 5"
-                            disabled={isLoading || aiTextLoading}
-                            className="bg-barber-dark border-barber-gold/30 text-barber-paper"
-                          />
-                        </>
-                      ) : type === "item" ? (
-                        <>
-                          <Label htmlFor="assist-rarity" className="text-xs text-barber-paper/80">
-                            Rarità oggetto opzionale
-                          </Label>
-                          <select
-                            id="assist-rarity"
-                            value={aiRarity}
-                            onChange={(e) => setAiRarity(e.target.value)}
-                            disabled={isLoading || aiTextLoading}
-                            className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
-                          >
-                            <option value="">— Scegli rarità —</option>
-                            {ITEM_RARITY_OPTIONS.map((rarity) => (
-                              <option key={rarity} value={rarity}>
-                                {rarity}
-                              </option>
-                            ))}
-                          </select>
-                        </>
-                      ) : (
-                        <p className="text-xs text-barber-paper/65">
-                          Template contestuale automatico per{" "}
-                          <span className="font-medium text-barber-paper/90">
-                            {type === "npc" ? "NPC" : type === "location" ? "Luogo" : "Lore"}
-                          </span>
-                          .
-                        </p>
-                      )}
+                      <Label htmlFor="assist-cr" className="text-xs text-barber-paper/80">
+                        Grado di Sfida (CR) opzionale
+                      </Label>
+                      <Input
+                        id="assist-cr"
+                        value={aiCr}
+                        onChange={(e) => {
+                          const val = e.target.value.trim();
+                          setAiCr(val);
+                          setAttr("combat_stats.cr", val);
+                          const xp = CHALLENGE_RATING_OPTIONS.find((o) => o.value === val)?.xp;
+                          setMonsterXp(xp ?? 0);
+                        }}
+                        placeholder="Es. 5"
+                        disabled={isLoading || assistChatLoading}
+                        className="bg-barber-dark border-barber-gold/30 text-barber-paper"
+                      />
                     </div>
+                  ) : type === "item" ? (
+                    <div className="space-y-2">
+                      <Label htmlFor="assist-rarity" className="text-xs text-barber-paper/80">
+                        Rarità oggetto opzionale
+                      </Label>
+                      <select
+                        id="assist-rarity"
+                        value={aiRarity}
+                        onChange={(e) => setAiRarity(e.target.value)}
+                        disabled={isLoading || assistChatLoading}
+                        className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
+                      >
+                        <option value="">— Scegli rarità —</option>
+                        {ITEM_RARITY_OPTIONS.map((rarity) => (
+                          <option key={rarity} value={rarity}>
+                            {rarity}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : null}
+
+                  <WikiTextGenChat
+                    key={`assist-chat-${assistChatKey}-${type}`}
+                    mode="markdown"
+                    campaignId={campaignId}
+                    entityType={assistMarkdownEntityType}
+                    entityName={titleValue.trim() || "Nuova voce"}
+                    extraParams={buildAssistMarkdownExtraParams()}
+                    disabled={isLoading || !assistChatReady()}
+                    onLoadingChange={setAssistChatLoading}
+                    onDraftChange={setAssistChatDraft}
+                    placeholder={
+                      type === "monster"
+                        ? "Descrivi ruolo nella campagna, poi chiedi modifiche…"
+                        : "Descrivi la voce wiki, poi affina con messaggi come in ChatGPT…"
+                    }
+                    emptyHint="Prompt iniziale → generazione → chiedi modifiche finché la bozza ti convince, poi applicala al form."
+                  />
+
+                  {assistChatDraft ? (
                     <Button
                       type="button"
-                      onClick={() => void handleAssistGenerateText()}
-                      disabled={isLoading || aiTextLoading || !aiAvailable}
-                      className="bg-barber-gold text-barber-dark hover:bg-barber-gold/90 disabled:opacity-50"
+                      onClick={applyAssistChatDraft}
+                      disabled={isLoading || assistChatLoading}
+                      className="bg-barber-gold text-barber-dark hover:bg-barber-gold/90"
                     >
-                      {aiTextLoading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Generazione...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="mr-2 h-4 w-4" />
-                          Genera testo
-                        </>
-                      )}
+                      Applica bozza chat al form
                     </Button>
-                  </div>
-
-                  {aiProgressLabel && (
-                    <div className="rounded-md border border-barber-gold/30 bg-barber-dark/60 p-3">
-                      <p className="mb-2 text-xs text-barber-paper/85">{aiProgressLabel}</p>
-                      <Progress value={aiProgress} className="h-2" />
-                    </div>
-                  )}
+                  ) : null}
                 </div>
 
                 {/* Step 4 — Generazione immagine coerente */}
@@ -1889,20 +1823,20 @@ export function CreateEntityDialog({
       {/*  MAGIC DIALOG — Generazione completa "Bacchetta IA"                */}
       {/* ================================================================== */}
       <Dialog open={magicOpen} onOpenChange={handleMagicDialogOpenChange}>
-        <DialogContent className="border-barber-gold/40 bg-barber-dark text-barber-paper sm:max-w-md">
+        <DialogContent className="border-barber-gold/40 bg-barber-dark text-barber-paper sm:max-w-lg">
           <DialogHeader>
             <p className="text-xs font-medium uppercase tracking-[0.25em] text-barber-gold/70">
               Bacchetta IA
             </p>
             <DialogTitle className="flex items-center gap-2 font-serif text-xl text-barber-paper">
               <Sparkles className="h-5 w-5 text-barber-gold" />
-              Generazione completa
+              Chat generazione
             </DialogTitle>
             <DialogDescription className="text-sm text-barber-paper/70">
-              Un solo passaggio: per <strong className="font-medium text-barber-paper">NPC</strong> e{" "}
-              <strong className="font-medium text-barber-paper">Luoghi</strong> generiamo testo dettagliato e
-              immagine coerente. Per <strong className="font-medium text-barber-paper">Oggetti</strong> e{" "}
-              <strong className="font-medium text-barber-paper">Lore</strong>: solo testo.
+              Prompt iniziale → bozza testo → chiedi modifiche in chat. Per{" "}
+              <strong className="font-medium text-barber-paper">NPC</strong> e{" "}
+              <strong className="font-medium text-barber-paper">Luoghi</strong> puoi generare l&apos;immagine
+              quando il testo ti convince.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -1911,8 +1845,13 @@ export function CreateEntityDialog({
               <select
                 id="magic-entity-type"
                 value={magicEntityType}
-                onChange={(e) => setMagicEntityType(e.target.value as WikiGeneratorEntityType)}
-                disabled={magicLoading}
+                onChange={(e) => {
+                  setMagicEntityType(e.target.value as WikiGeneratorEntityType);
+                  setMagicDraft(null);
+                  setMagicPortraitPreview(null);
+                  setMagicChatKey((k) => k + 1);
+                }}
+                disabled={magicBusy}
                 className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
               >
                 {MAGIC_ENTITY_TYPES.map((opt) => (
@@ -1923,75 +1862,55 @@ export function CreateEntityDialog({
               </select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="magic-prompt">Cosa vuoi creare?</Label>
-              <Textarea
-                id="magic-prompt"
-                value={magicPrompt}
-                onChange={(e) => setMagicPrompt(e.target.value)}
-                placeholder="Es: Un oste burbero con il pugnale al fianco e un debito con la mafia locale"
-                className="min-h-[88px] resize-y border-barber-gold/30 bg-barber-dark text-barber-paper"
-                disabled={magicLoading}
-              />
-              <p className="text-xs text-barber-paper/55">
-                Una frase basta. L&apos;IA usa la memoria di campagna per restare coerente.
-              </p>
-            </div>
+            <WikiTextGenChat
+              key={`magic-chat-${magicChatKey}-${magicEntityType}`}
+              mode="structured"
+              campaignId={campaignId}
+              entityType={magicEntityType}
+              disabled={magicBusy}
+              onLoadingChange={setMagicTextChatLoading}
+              onDraftChange={handleMagicStructuredDraft}
+              onFirstUserPrompt={setMagicImagePromptSeed}
+              placeholder="Es: bottega del macellaio di Portico, interno umido e fumoso…"
+              emptyHint="Scrivi cosa vuoi creare. Poi chiedi modifiche («più cupo», «aggiungi un cliente nervoso»…) come in ChatGPT."
+            />
 
-
-            {magicLoading && (
-              <div
-                className="flex items-start gap-3 rounded-lg border border-barber-gold/35 bg-barber-dark/70 p-3 text-sm text-barber-paper"
-                role="status"
-                aria-live="polite"
-              >
-                <Loader2 className="mt-0.5 h-5 w-5 shrink-0 animate-spin text-barber-gold" />
-                <div>
-                  <p className="font-medium">
-                    {magicEntityType === "npc" || magicEntityType === "location"
-                      ? magicChainPhase === "text"
-                        ? "Tessendo la trama (generazione testo)…"
-                        : "Dipingendo il volto (generazione immagine coerente)…"
-                      : "Tessendo la trama (generazione testo)…"}
-                  </p>
-                  <p className="mt-1 text-xs text-barber-paper/65">
-                    Al termine potrai rivedere testo e immagine prima di applicarli al form.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {!magicLoading && magicDraft && (
-              <div className="space-y-3 rounded-lg border border-barber-gold/30 bg-barber-dark/60 p-3">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-barber-gold">Anteprima testo</p>
-                  <p className="font-serif text-base text-barber-paper">{magicDraft.title}</p>
-                  <p className="max-h-40 overflow-auto whitespace-pre-wrap text-xs leading-relaxed text-barber-paper/80">
-                    {magicDraft.content.slice(0, 1200)}
-                    {magicDraft.content.length > 1200 ? "…" : ""}
-                  </p>
-                </div>
+            {magicDraft && (magicEntityType === "npc" || magicEntityType === "location") ? (
+              <div className="space-y-2">
                 {magicPortraitPreview ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm font-medium text-barber-paper">
-                      <ImageIcon className="h-4 w-4 text-barber-gold" />
-                      Anteprima immagine
-                    </div>
-                    <div className="relative aspect-video w-full overflow-hidden rounded-md border border-barber-gold/30 bg-black/40">
-                      <Image
-                        src={magicPortraitPreview}
-                        alt="Anteprima generazione AI"
-                        fill
-                        className="object-contain"
-                        unoptimized
-                      />
-                    </div>
+                  <div className="relative aspect-video w-full overflow-hidden rounded-md border border-barber-gold/30 bg-black/40">
+                    <Image
+                      src={magicPortraitPreview}
+                      alt="Anteprima immagine generata"
+                      fill
+                      className="object-contain"
+                      unoptimized
+                    />
                   </div>
                 ) : magicDraft.imageWarning ? (
-                  <p className="text-xs text-amber-400/90">Immagine non generata: {magicDraft.imageWarning}</p>
+                  <p className="text-xs text-amber-400/90">Immagine: {magicDraft.imageWarning}</p>
                 ) : null}
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full border-barber-gold/40 text-barber-paper hover:bg-barber-gold/10"
+                  disabled={magicBusy}
+                  onClick={() => void handleMagicGenerateImage()}
+                >
+                  {magicImageLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generazione immagine…
+                    </>
+                  ) : (
+                    <>
+                      <ImageIcon className="mr-2 h-4 w-4" />
+                      {magicPortraitPreview ? "Rigenera immagine" : "Genera immagine coerente"}
+                    </>
+                  )}
+                </Button>
               </div>
-            )}
+            ) : null}
           </div>
           <DialogFooter className="gap-2 sm:gap-2">
             <Button
@@ -1999,7 +1918,7 @@ export function CreateEntityDialog({
               variant="outline"
               className="border-barber-gold/40 text-barber-paper hover:bg-barber-gold/10"
               onClick={() => handleMagicDialogOpenChange(false)}
-              disabled={magicLoading}
+              disabled={magicBusy}
             >
               Chiudi
             </Button>
@@ -2008,30 +1927,11 @@ export function CreateEntityDialog({
                 type="button"
                 className="bg-barber-gold text-barber-dark hover:bg-barber-gold/90"
                 onClick={applyMagicDraftToForm}
-                disabled={magicLoading}
+                disabled={magicBusy}
               >
                 Applica al form
               </Button>
-            ) : (
-              <Button
-                type="button"
-                className="bg-barber-red text-barber-paper hover:bg-barber-red/90"
-                onClick={() => void handleMagicGenerate()}
-                disabled={magicLoading}
-              >
-                {magicLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Attendere…
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Genera
-                  </>
-                )}
-              </Button>
-            )}
+            ) : null}
           </DialogFooter>
         </DialogContent>
       </Dialog>
