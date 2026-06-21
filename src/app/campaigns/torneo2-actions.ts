@@ -422,11 +422,20 @@ async function withdrawWinnerFromBracket(
 ): Promise<void> {
   const { data: target } = await supabase
     .from("torneo2_matches")
-    .select("id, kind, status")
+    .select("id, kind, status, feeds_match_id, feeds_slot")
     .eq("id", targetMatchId)
     .eq("campaign_id", campaignId)
     .maybeSingle();
-  if (!target || target.status === "completed") return;
+  if (!target) return;
+
+  if (target.status === "completed" && target.feeds_match_id) {
+    await withdrawWinnerFromBracket(
+      supabase,
+      campaignId,
+      target.feeds_match_id as string,
+      (target.feeds_slot as "a" | "b" | null) ?? "a"
+    );
+  }
 
   const resetCombat = {
     combat_state: null,
@@ -434,14 +443,30 @@ async function withdrawWinnerFromBracket(
     combat_origin: null,
     combat_updated_at: null,
   };
+  const reopenPatch =
+    target.status === "completed"
+      ? {
+          status: "pending" as const,
+          winner_team_id: null,
+          winner_character_id: null,
+          completed_at: null,
+          timer_running: false,
+          timer_started_at: null,
+          timer_paused_elapsed_ms: 0,
+          timer_label: null,
+        }
+      : {};
 
   if (target.kind === "final_ffa") {
     await supabase.from("torneo2_match_participants").delete().eq("match_id", targetMatchId);
-    await supabase.from("torneo2_matches").update(resetCombat).eq("id", targetMatchId);
+    await supabase
+      .from("torneo2_matches")
+      .update({ ...resetCombat, ...reopenPatch })
+      .eq("id", targetMatchId);
   } else {
     await supabase
       .from("torneo2_matches")
-      .update({ [slot === "b" ? "team_b_id" : "team_a_id"]: null, ...resetCombat })
+      .update({ [slot === "b" ? "team_b_id" : "team_a_id"]: null, ...resetCombat, ...reopenPatch })
       .eq("id", targetMatchId);
   }
 }
