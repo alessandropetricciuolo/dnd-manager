@@ -53,3 +53,34 @@ test("deriveCharacterCalendarDate uses character anchor for overrides", () => {
   });
   assert.deepEqual(date, { year: 4, month: 2, day: 7 });
 });
+
+test("deriveCharacterCalendarDate keeps override when campaign base date changes", () => {
+  const config = normalizeFantasyCalendarConfig({
+    months: [
+      { name: "Uno", days: 30 },
+      { name: "Due", days: 30 },
+    ],
+  });
+  const oldBase = normalizeFantasyCalendarDate({ year: 1, month: 1, day: 1 }, config);
+  const newBase = normalizeFantasyCalendarDate({ year: 5, month: 1, day: 1 }, config);
+  const anchored = normalizeFantasyCalendarDate({ year: 4, month: 2, day: 5 }, config);
+  const characterHours = 92;
+
+  const fromOldBase = deriveCharacterCalendarDate({
+    campaignBaseDate: oldBase,
+    characterHours,
+    config,
+    anchorDate: anchored,
+    anchorHours: characterHours,
+  });
+  const fromNewBase = deriveCharacterCalendarDate({
+    campaignBaseDate: newBase,
+    characterHours,
+    config,
+    anchorDate: anchored,
+    anchorHours: characterHours,
+  });
+
+  assert.deepEqual(fromOldBase, anchored);
+  assert.deepEqual(fromNewBase, anchored);
+});
