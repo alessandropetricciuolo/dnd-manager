@@ -13,6 +13,10 @@ import {
   LOCATION_INTERIOR_NEGATIVE_HINT,
 } from "@/lib/ai/image-prompt-location";
 import {
+  buildCreatureFullBodyNegativeHints,
+  buildCreatureTechnicalLine,
+} from "@/lib/ai/image-prompt-character-framing";
+import {
   estimatePromptTokens,
   formatHuggingFaceImageInputs,
   mergeStats,
@@ -98,7 +102,7 @@ function augmentSpeciesAnchorsForCreatureImage(description: string, kind: "npc" 
     anchors.push("GNOLL (D&D): hyena-like humanoid.");
   }
   if (!anchors.length) return d;
-  const framingLabel = kind === "monster" ? "full-body creature" : "character portrait";
+  const framingLabel = kind === "monster" ? "full-body creature" : "full-body character";
   return `${d}\nSpecies anchors (${framingLabel}): ${anchors.join(" | ")}`;
 }
 
@@ -131,12 +135,12 @@ function section(id: string, label: string, text: string): ImagePromptSection {
   return { id, label, text, stats: estimatePromptTokens(text) };
 }
 
-function buildTechnicalStyleLine(entityType: WikiImageEntityKind): string {
+function buildTechnicalStyleLine(entityType: WikiImageEntityKind, haystack = ""): string {
   if (entityType === "location") {
     return "environmental wide shot, high detail, photorealistic, cinematic lighting, fantasy location art";
   }
-  if (entityType === "monster") {
-    return "full-body fantasy creature illustration, entire figure visible, photorealistic, cinematic lighting";
+  if (entityType === "monster" || entityType === "npc") {
+    return buildCreatureTechnicalLine(entityType, haystack);
   }
   return "portrait, close-up, high detail, photorealistic, cinematic lighting, professional fantasy art";
 }
@@ -302,7 +306,7 @@ export async function buildContextualImagePrompts(
   const technicalLine =
     entityType === "location" && locationSceneKind
       ? buildLocationTechnicalLine(locationSceneKind)
-      : buildTechnicalStyleLine(entityType);
+      : buildTechnicalStyleLine(entityType, searchHaystack);
   const styleTail = styleTemplate
     ? `${styleTemplate}. ${technicalLine}. Photorealistic fantasy, non-anime, non-cartoon.`
     : `${technicalLine}. Photorealistic fantasy, non-anime, non-cartoon.`;
@@ -315,7 +319,9 @@ export async function buildContextualImagePrompts(
     styleNegativeTemplate,
     visualNegative,
     STANDARD_VISUAL_NEGATIVES,
-    entityType === "monster" ? MONSTER_FULL_BODY_NEGATIVE_HINT : "",
+    entityType === "npc" || entityType === "monster"
+      ? buildCreatureFullBodyNegativeHints(searchHaystack)
+      : "",
     entityType === "location" &&
       locationSceneKind &&
       locationSceneKind !== "exterior"

@@ -1515,10 +1515,12 @@ export function CreateEntityDialog({
                   <p className="text-xs text-barber-paper/65">
                     Genera un&apos;immagine coerente con la <strong className="font-medium text-barber-paper">descrizione</strong>{" "}
                     già scritta sopra. L&apos;immagine viene caricata automaticamente nel campo «Immagine» qui sotto.
-                    {type === "monster" ? (
+                    {type === "monster" || type === "npc" ? (
                       <span className="mt-1 block text-barber-gold/85">
-                        Per i <strong className="font-medium text-barber-paper">mostri</strong> l&apos;inquadratura è sempre{" "}
-                        <strong className="font-medium text-barber-paper">a figura intera</strong> (creatura completa nel fotogramma).
+                        Per <strong className="font-medium text-barber-paper">NPC e mostri</strong> l&apos;inquadratura
+                        predefinita è{" "}
+                        <strong className="font-medium text-barber-paper">a figura intera in piedi</strong>, salvo
+                        che nel prompt chiedi esplicitamente una posa seduta.
                       </span>
                     ) : null}
                   </p>
