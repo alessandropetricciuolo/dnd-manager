@@ -48,6 +48,7 @@ import {
 } from "@/app/campaigns/wiki-actions";
 import { generateMagicDraftImageAction } from "@/lib/actions/ai-wiki-chain";
 import { WikiTextGenChat } from "@/components/wiki/wiki-text-gen-chat";
+import { WikiImageRefineChat } from "@/components/wiki/wiki-image-refine-chat";
 import type { WikiMarkdownChatDraft } from "@/lib/actions/wiki-text-chat";
 import type { WikiAiTextGeneration } from "@/lib/ai/generator";
 import { generateContextualPortraitAction } from "@/lib/actions/ai-generator";
@@ -593,6 +594,18 @@ export function CreateEntityDialog({
       if (!raceForAi || !classForAi || !npcAiLevel.trim()) return false;
     }
     return aiAvailable;
+  }
+
+  async function handleAssistImageRefined(url: string) {
+    await injectGeneratedImageAsFile(url);
+    setAiImagePreview(url);
+    setWikiImageUrlPreset(null);
+    setMagicPortraitPreview(null);
+  }
+
+  async function handleMagicImageRefined(url: string) {
+    setMagicPortraitPreview(url);
+    setMagicDraft((prev) => (prev ? { ...prev, imageUrl: url, imageWarning: undefined } : prev));
   }
 
   async function handleAssistGenerateImage() {
@@ -1538,10 +1551,24 @@ export function CreateEntityDialog({
                       ) : (
                         <>
                           <Sparkles className="mr-2 h-4 w-4" />
-                          Genera immagine
+                          {aiImagePreview ? "Rigenera da testo wiki" : "Genera immagine"}
                         </>
                       )}
                     </Button>
+                  {aiImagePreview &&
+                  (type === "npc" || type === "monster" || type === "location") ? (
+                    <WikiImageRefineChat
+                      key={`assist-image-refine-${aiImagePreview}`}
+                      campaignId={campaignId}
+                      entityType={
+                        type === "location" ? "location" : type === "monster" ? "monster" : "npc"
+                      }
+                      baseDescription={contentValue.trim()}
+                      imageUrl={aiImagePreview}
+                      onImageChange={handleAssistImageRefined}
+                      disabled={isLoading || aiImageLoading}
+                    />
+                  ) : null}
                 </div>
               </FormSection>
 
@@ -1879,38 +1906,53 @@ export function CreateEntityDialog({
 
             {magicDraft && (magicEntityType === "npc" || magicEntityType === "location") ? (
               <div className="space-y-2">
-                {magicPortraitPreview ? (
-                  <div className="relative aspect-video w-full overflow-hidden rounded-md border border-barber-gold/30 bg-black/40">
-                    <Image
-                      src={magicPortraitPreview}
-                      alt="Anteprima immagine generata"
-                      fill
-                      className="object-contain"
-                      unoptimized
-                    />
-                  </div>
-                ) : magicDraft.imageWarning ? (
+                {!magicPortraitPreview ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full border-barber-gold/40 text-barber-paper hover:bg-barber-gold/10"
+                    disabled={magicBusy}
+                    onClick={() => void handleMagicGenerateImage()}
+                  >
+                    {magicImageLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Generazione immagine…
+                      </>
+                    ) : (
+                      <>
+                        <ImageIcon className="mr-2 h-4 w-4" />
+                        Genera immagine coerente col testo
+                      </>
+                    )}
+                  </Button>
+                ) : null}
+                {magicDraft.imageWarning && !magicPortraitPreview ? (
                   <p className="text-xs text-amber-400/90">Immagine: {magicDraft.imageWarning}</p>
                 ) : null}
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full border-barber-gold/40 text-barber-paper hover:bg-barber-gold/10"
-                  disabled={magicBusy}
-                  onClick={() => void handleMagicGenerateImage()}
-                >
-                  {magicImageLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Generazione immagine…
-                    </>
-                  ) : (
-                    <>
-                      <ImageIcon className="mr-2 h-4 w-4" />
-                      {magicPortraitPreview ? "Rigenera immagine" : "Genera immagine coerente"}
-                    </>
-                  )}
-                </Button>
+                {magicPortraitPreview ? (
+                  <>
+                    <WikiImageRefineChat
+                      key={`magic-image-refine-${magicPortraitPreview}`}
+                      campaignId={campaignId}
+                      entityType={magicEntityType}
+                      baseDescription={magicDraft.content}
+                      imageUrl={magicPortraitPreview}
+                      onImageChange={handleMagicImageRefined}
+                      disabled={magicBusy}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="w-full text-xs text-barber-paper/60 hover:text-barber-paper"
+                      disabled={magicBusy}
+                      onClick={() => void handleMagicGenerateImage()}
+                    >
+                      Rigenera completamente dal testo wiki
+                    </Button>
+                  </>
+                ) : null}
               </div>
             ) : null}
           </div>

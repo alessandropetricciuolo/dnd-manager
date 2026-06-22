@@ -32,6 +32,7 @@ import { Loader2, Plus, Trash2, Wand2 } from "lucide-react";
 import { type WikiEntityType, WIKI_ENTITY_OPTIONS } from "@/lib/wiki/entity-types";
 import { generateContextualPortraitAction } from "@/lib/actions/ai-generator";
 import { WikiTextGenChat } from "@/components/wiki/wiki-text-gen-chat";
+import { WikiImageRefineChat } from "@/components/wiki/wiki-image-refine-chat";
 import type { WikiMarkdownChatDraft } from "@/lib/actions/wiki-text-chat";
 import { WIKI_NPC_LEVEL_OPTIONS } from "@/lib/wiki-npc-ai-options";
 
@@ -96,6 +97,7 @@ export function EditEntityDialog({
   const formRef = useRef<HTMLFormElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [aiImageLoading, setAiImageLoading] = useState(false);
+  const [aiImagePreviewUrl, setAiImagePreviewUrl] = useState<string | null>(null);
   const [type, setType] = useState<EntityType>((entity.type as EntityType) || "npc");
   const [attributes, setAttributes] = useState<Record<string, unknown>>(() =>
     mergeAttributes((entity.type as EntityType) || "npc", entity.attributes)
@@ -136,11 +138,12 @@ export function EditEntityDialog({
       setContentValue(contentBody);
       setAssistChatDraft(null);
       setAssistChatKey((k) => k + 1);
+      setRemoveImage(false);
+      setAiImagePreviewUrl(entity.image_url ?? null);
       setNpcAiLevel("");
       setType((entity.type as EntityType) || "npc");
       setAttributes(mergeAttributes((entity.type as EntityType) || "npc", entity.attributes));
       setSortOrder(entity.sort_order != null ? String(entity.sort_order) : "");
-      setRemoveImage(false);
       setVisibility(initialVisibility);
       setSelectedPlayerIds(initialAllowedUserIds);
       setSelectedPartyIds(initialAllowedPartyIds);
@@ -312,6 +315,12 @@ export function EditEntityDialog({
     toast.success("Bozza chat applicata. Controlla il testo e premi Salva.");
   }
 
+  async function handleEditImageRefined(url: string) {
+    await injectGeneratedImageAsFile(url);
+    setAiImagePreviewUrl(url);
+    setRemoveImage(false);
+  }
+
   async function handleAssistGenerateImage() {
     if (aiImageLoading || isLoading) return;
     if (type !== "npc" && type !== "monster" && type !== "location") {
@@ -349,6 +358,7 @@ export function EditEntityDialog({
         return;
       }
       await injectGeneratedImageAsFile(result.publicUrl);
+      setAiImagePreviewUrl(result.publicUrl);
       setRemoveImage(false);
       toast.success("Immagine AI generata e caricata. Premi Salva per applicarla alla voce.");
     } catch {
@@ -541,7 +551,7 @@ export function EditEntityDialog({
               </div>
             )}
             {(type === "npc" || type === "monster" || type === "location") && (
-              <div className="flex flex-col gap-2 sm:max-w-xs">
+              <div className="flex flex-col gap-3 sm:max-w-md">
                 <Button
                   type="button"
                   variant="outline"
@@ -555,9 +565,22 @@ export function EditEntityDialog({
                       Generazione immagine...
                     </>
                   ) : (
-                    "Genera immagine IA"
+                    aiImagePreviewUrl ? "Rigenera da testo wiki" : "Genera immagine IA"
                   )}
                 </Button>
+                {aiImagePreviewUrl ? (
+                  <WikiImageRefineChat
+                    key={`edit-image-refine-${aiImagePreviewUrl}`}
+                    campaignId={campaignId}
+                    entityType={
+                      type === "location" ? "location" : type === "monster" ? "monster" : "npc"
+                    }
+                    baseDescription={contentValue.trim()}
+                    imageUrl={aiImagePreviewUrl}
+                    onImageChange={handleEditImageRefined}
+                    disabled={isLoading || aiImageLoading}
+                  />
+                ) : null}
               </div>
             )}
           </div>

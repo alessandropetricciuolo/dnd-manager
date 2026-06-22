@@ -37,3 +37,21 @@ export async function generateSiteImageForEntity(
     aspectRatio: getDefaultImageAspectRatioForEntity(entityType),
   });
 }
+
+export async function generateSiteImageRefinement(
+  instructionText: string,
+  referenceImageDataUrl: string,
+  entityType: WikiImageEntityKind,
+  options?: { model?: string }
+): Promise<Buffer> {
+  const result = await generateImageWithOpenRouter({
+    model: options?.model ?? getSiteImageModel(),
+    prompt: instructionText,
+    aspectRatio: getDefaultImageAspectRatioForEntity(entityType),
+    multimodalContent: [
+      { type: "image_url", image_url: { url: referenceImageDataUrl } },
+      { type: "text", text: instructionText },
+    ],
+  });
+  return openRouterImageOutputToBuffer(result);
+}

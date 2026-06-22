@@ -16,7 +16,13 @@ export type ImageGenerationInput = {
   model: string;
   prompt: string;
   aspectRatio: string;
+  /** Se presente, sostituisce `prompt` come content del messaggio utente (multimodale). */
+  multimodalContent?: OpenRouterMultimodalContentPart[];
 };
+
+export type OpenRouterMultimodalContentPart =
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string } };
 
 export type ImageGenerationOutput = {
   success: boolean;

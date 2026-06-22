@@ -172,7 +172,8 @@ async function postOpenRouterImageRequest(
 export async function generateImageWithOpenRouter(input: ImageGenerationInput): Promise<ImageGenerationOutput> {
   const apiKey = getOpenRouterApiKey();
   const prompt = input.prompt.trim();
-  if (!prompt) {
+  const hasMultimodal = Array.isArray(input.multimodalContent) && input.multimodalContent.length > 0;
+  if (!prompt && !hasMultimodal) {
     return {
       success: false,
       rawResponse: null,
@@ -180,6 +181,8 @@ export async function generateImageWithOpenRouter(input: ImageGenerationInput): 
       errorMessage: "Il prompt non può essere vuoto.",
     };
   }
+
+  const messageContent = hasMultimodal ? input.multimodalContent! : prompt;
 
   const modalitiesOptions: Array<Array<"image" | "text">> = [["image"], ["image", "text"]];
   let lastError: Error | null = null;
@@ -189,7 +192,7 @@ export async function generateImageWithOpenRouter(input: ImageGenerationInput): 
       try {
         const { data, durationMs } = await postOpenRouterImageRequest(apiKey, {
           model: input.model,
-          messages: [{ role: "user", content: prompt }],
+          messages: [{ role: "user", content: messageContent }],
           modalities,
           image_config: { aspect_ratio: input.aspectRatio },
           stream: false,
