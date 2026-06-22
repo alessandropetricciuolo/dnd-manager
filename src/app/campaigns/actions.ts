@@ -2146,13 +2146,19 @@ export async function closeSessionAction(
     if (payload.gm_private_notes !== undefined) {
       sessionUpdate.gm_private_notes = payload.gm_private_notes?.trim() || null;
     }
-    const { error: updateSessionErr } = await admin
+    const { data: closedSession, error: updateSessionErr } = await admin
       .from("sessions")
       .update(sessionUpdate as never)
-      .eq("id", sessionId);
+      .eq("id", sessionId)
+      .eq("status", "scheduled")
+      .select("id")
+      .maybeSingle();
     if (updateSessionErr) {
       console.error("[closeSessionAction] session", updateSessionErr);
       return { success: false, message: updateSessionErr.message ?? "Errore durante la chiusura." };
+    }
+    if (!closedSession) {
+      return { success: false, message: "La sessione è già chiusa." };
     }
 
     const { data: signupsData } = await admin
@@ -2374,18 +2380,36 @@ export async function preCloseSessionAction(
     if (session.status !== "scheduled") {
       return { success: false, message: "La sessione è già chiusa." };
     }
+    if ((session as { is_pre_closed?: boolean | null }).is_pre_closed === true) {
+      return {
+        success: true,
+        message: "Sessione già salvata in bozza.",
+        campaignId: session.campaign_id,
+      };
+    }
 
     const admin = createSupabaseAdminClient();
 
-    const { error: updateSessionErr } = await admin
+    const { data: preClosedSession, error: updateSessionErr } = await admin
       .from("sessions")
       .update({ is_pre_closed: true } as never)
-      .eq("id", sessionId);
+      .eq("id", sessionId)
+      .eq("status", "scheduled")
+      .eq("is_pre_closed", false)
+      .select("id")
+      .maybeSingle();
     if (updateSessionErr) {
       console.error("[preCloseSessionAction] session", updateSessionErr);
       return {
         success: false,
         message: updateSessionErr.message ?? "Errore durante il salvataggio in bozza.",
+      };
+    }
+    if (!preClosedSession) {
+      return {
+        success: true,
+        message: "Sessione già salvata in bozza.",
+        campaignId: session.campaign_id,
       };
     }
 
