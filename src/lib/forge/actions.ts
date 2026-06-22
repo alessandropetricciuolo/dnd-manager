@@ -292,15 +292,19 @@ export async function createForgeTransferAction(input: {
   const reasonOut = `Giroconto verso ${toAccount.name}`;
   const reasonIn = `Giroconto da ${fromAccount.name}`;
 
-  const { error: outErr } = await supabase.from("forge_account_movements").insert({
-    account_id: input.from_account_id,
-    type: "uscita",
-    amount: -amount,
-    reason: note ? `${reasonOut} — ${note}` : reasonOut,
-    category: "giroconto",
-    movement_date: movementDate,
-    created_by: user?.id ?? null,
-  });
+  const { data: outMovement, error: outErr } = await supabase
+    .from("forge_account_movements")
+    .insert({
+      account_id: input.from_account_id,
+      type: "uscita",
+      amount: -amount,
+      reason: note ? `${reasonOut} — ${note}` : reasonOut,
+      category: "giroconto",
+      movement_date: movementDate,
+      created_by: user?.id ?? null,
+    })
+    .select("id")
+    .single();
   if (outErr) return { success: false, error: outErr.message };
 
   const { error: inErr } = await supabase.from("forge_account_movements").insert({
@@ -312,7 +316,10 @@ export async function createForgeTransferAction(input: {
     movement_date: movementDate,
     created_by: user?.id ?? null,
   });
-  if (inErr) return { success: false, error: inErr.message };
+  if (inErr) {
+    await supabase.from("forge_account_movements").delete().eq("id", outMovement.id);
+    return { success: false, error: inErr.message };
+  }
 
   revalidateForge();
   return { success: true };
