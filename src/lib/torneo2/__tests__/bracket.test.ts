@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildBracketPlan, isPowerOfTwo, roundLabelForMatchCount } from "@/lib/torneo2/bracket";
+import {
+  assignBracketMatchIds,
+  buildBracketPlan,
+  isPowerOfTwo,
+  roundLabelForMatchCount,
+} from "@/lib/torneo2/bracket";
 
 test("isPowerOfTwo", () => {
   assert.equal(isPowerOfTwo(1), true);
@@ -55,4 +60,25 @@ test("buildBracketPlan with 8 teams: quarti, semifinale, finale", () => {
   assert.equal(plan.filter((m) => m.round === 1).length, 2);
   assert.equal(plan.filter((m) => m.round === 2).length, 1);
   assert.equal(plan.filter((m) => m.round === 2)[0].label, "Finale");
+});
+
+test("assignBracketMatchIds resolves all feed links before insertion", () => {
+  let next = 1;
+  const plan = buildBracketPlan(["t1", "t2", "t3", "t4"]);
+  const withIds = assignBracketMatchIds(plan, () => `match-${next++}`, "triello-1");
+
+  assert.deepEqual(
+    withIds.map((m) => ({
+      id: m.id,
+      round: m.round,
+      position: m.position,
+      feedsMatchId: m.feedsMatchId,
+      feedsSlot: m.feedsSlot,
+    })),
+    [
+      { id: "match-1", round: 0, position: 0, feedsMatchId: "match-3", feedsSlot: "a" },
+      { id: "match-2", round: 0, position: 1, feedsMatchId: "match-3", feedsSlot: "b" },
+      { id: "match-3", round: 1, position: 0, feedsMatchId: "triello-1", feedsSlot: null },
+    ]
+  );
 });
