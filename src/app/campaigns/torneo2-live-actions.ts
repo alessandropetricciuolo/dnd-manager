@@ -17,6 +17,7 @@ import { buildTorneo2CombatSeed } from "@/lib/torneo2/seed";
 import type { Torneo2LiveSession, Torneo2LiveSessionStarted, Torneo2Match } from "@/lib/torneo2/types";
 import type { Torneo2TimerColumns, Torneo2TimerState } from "@/lib/torneo2/timer";
 import { getTorneo2SetupAction } from "@/app/campaigns/torneo2-actions";
+import { torneo2EndMatchPatch } from "@/lib/torneo2/match-lifecycle";
 
 type Result<T = void> = { success: true; data?: T } | { success: false; error: string };
 
@@ -427,12 +428,7 @@ export async function endTorneo2MatchOnStationAction(
 
   const { error } = await supabase
     .from("torneo2_matches")
-    .update({
-      timer_running: false,
-      timer_started_at: null,
-      timer_paused_elapsed_ms: 0,
-      timer_label: null,
-    })
+    .update(torneo2EndMatchPatch())
     .eq("id", matchId)
     .eq("campaign_id", campaignId)
     .eq("status", "active");

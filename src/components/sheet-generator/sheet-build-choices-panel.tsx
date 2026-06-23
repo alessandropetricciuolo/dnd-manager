@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   applySlotChange,
   slotsToOverrides,
@@ -16,6 +16,10 @@ type Props = {
 
 export function SheetBuildChoicesPanel({ preview, level, disabled, onChange }: Props) {
   const [slots, setSlots] = useState<BuildChoiceSlot[]>(preview.slots);
+
+  useEffect(() => {
+    setSlots(preview.slots);
+  }, [preview]);
 
   const groups = useMemo(() => {
     const map = new Map<string, BuildChoiceSlot[]>();
