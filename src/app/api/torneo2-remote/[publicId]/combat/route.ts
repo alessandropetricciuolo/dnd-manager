@@ -4,7 +4,7 @@ import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { gmRemoteRateLimit } from "@/lib/gm-remote/rate-limit";
 import { isRecord } from "@/lib/gm-remote/protocol";
 import { validateGmRemoteSession } from "@/lib/gm-remote/validate-remote-session";
-import { sanitizeTorneo2CombatState } from "@/lib/torneo2/combat-state";
+import { persistTorneo2CombatStateWithNextSeq } from "@/lib/torneo2/combat-persistence";
 
 type RouteContext = { params: Promise<{ publicId: string }> };
 
@@ -39,35 +39,17 @@ export async function POST(request: Request, context: RouteContext) {
   }
 
   const admin = createSupabaseAdminClient() as unknown as SupabaseClient;
-  const { data: current } = await admin
-    .from("torneo2_matches")
-    .select("combat_seq")
-    .eq("id", matchId)
-    .eq("campaign_id", v.session.campaign_id)
-    .maybeSingle();
+  const saved = await persistTorneo2CombatStateWithNextSeq(admin, {
+    campaignId: v.session.campaign_id,
+    matchId,
+    state: rawState,
+    originId: origin,
+  });
 
-  if (!current) {
-    return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
+  if (!saved.ok) {
+    const status = saved.code === "not_found" ? 404 : saved.code === "conflict" ? 409 : 500;
+    return NextResponse.json({ ok: false, error: saved.error }, { status });
   }
 
-  const nextSeq = (Number(current.combat_seq ?? 0) || 0) + 1;
-  const clean = sanitizeTorneo2CombatState(rawState);
-  const updatedAt = new Date().toISOString();
-
-  const { error } = await admin
-    .from("torneo2_matches")
-    .update({
-      combat_state: clean as unknown as Record<string, unknown>,
-      combat_seq: nextSeq,
-      combat_origin: origin,
-      combat_updated_at: updatedAt,
-    })
-    .eq("id", matchId)
-    .eq("campaign_id", v.session.campaign_id);
-
-  if (error) {
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ ok: true, seq: nextSeq });
+  return NextResponse.json({ ok: true, seq: saved.seq });
 }

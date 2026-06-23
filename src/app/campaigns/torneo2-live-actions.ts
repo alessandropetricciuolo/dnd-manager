@@ -13,6 +13,7 @@ import {
   sanitizeTorneo2CombatState,
   type Torneo2CombatState,
 } from "@/lib/torneo2/combat-state";
+import { persistTorneo2CombatStateWithNextSeq } from "@/lib/torneo2/combat-persistence";
 import { buildTorneo2CombatSeed } from "@/lib/torneo2/seed";
 import type { Torneo2LiveSession, Torneo2LiveSessionStarted, Torneo2Match } from "@/lib/torneo2/types";
 import type { Torneo2TimerColumns, Torneo2TimerState } from "@/lib/torneo2/timer";
@@ -259,30 +260,15 @@ export async function updateTorneo2CombatStateAction(
   const check = await ensureTorneo2Gm(campaignId);
   if (!check.ok) return { success: false, error: check.error };
 
-  const { data: current } = await check.supabase
-    .from("torneo2_matches")
-    .select("combat_seq")
-    .eq("id", matchId)
-    .eq("campaign_id", campaignId)
-    .maybeSingle();
+  const saved = await persistTorneo2CombatStateWithNextSeq(check.supabase, {
+    campaignId,
+    matchId,
+    state,
+    originId,
+  });
 
-  const nextSeq = (Number(current?.combat_seq ?? 0) || 0) + 1;
-  const updatedAt = new Date().toISOString();
-  const clean = sanitizeTorneo2CombatState(state);
-
-  const { error } = await check.supabase
-    .from("torneo2_matches")
-    .update({
-      combat_state: clean as unknown as Record<string, unknown>,
-      combat_seq: nextSeq,
-      combat_origin: originId,
-      combat_updated_at: updatedAt,
-    })
-    .eq("id", matchId)
-    .eq("campaign_id", campaignId);
-
-  if (error) return { success: false, error: error.message };
-  return { success: true, data: { seq: nextSeq, updatedAt } };
+  if (!saved.ok) return { success: false, error: saved.error };
+  return { success: true, data: { seq: saved.seq, updatedAt: saved.updatedAt } };
 }
 
 // ============================================================
