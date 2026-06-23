@@ -389,6 +389,13 @@ export function ExplorationMapStage({
   }, [effectsEnabled]);
 
   useEffect(() => {
+    return () => {
+      destroyPixiSmokeRuntime(pixiSmokeRtRef.current);
+      pixiSmokeRtRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!effectsEnabled || !layoutSize || layoutSize.w < 2 || layoutSize.h < 2) return;
     const host = pixiHostRef.current;
     if (!host) return;
