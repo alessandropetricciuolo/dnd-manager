@@ -1,3 +1,5 @@
+import { isSafeTelegramProxyPath } from "@/lib/security/url";
+
 const TELEGRAM_API = "https://api.telegram.org/bot";
 const TELEGRAM_FILE_BASE = "https://api.telegram.org/file/bot";
 
@@ -5,15 +7,6 @@ function extractTelegramFileId(publicUrl: string): string | null {
   const trimmed = publicUrl.trim();
   const match = trimmed.match(/\/api\/tg-image\/([^/?#]+)/);
   return match ? decodeURIComponent(match[1]) : null;
-}
-
-function resolveAbsolutePublicUrl(publicUrl: string): string {
-  const trimmed = publicUrl.trim();
-  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
-  const base =
-    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://127.0.0.1:3000");
-  return `${base.replace(/\/$/, "")}${trimmed.startsWith("/") ? trimmed : `/${trimmed}`}`;
 }
 
 async function fetchTelegramFileAsBuffer(fileId: string): Promise<{ buffer: Buffer; mimeType: string }> {
@@ -45,20 +38,27 @@ async function fetchTelegramFileAsBuffer(fileId: string): Promise<{ buffer: Buff
   return { buffer: Buffer.from(await fileRes.arrayBuffer()), mimeType };
 }
 
-/** Scarica un'immagine pubblicata via `/api/tg-image/…` o URL assoluto e la converte in data URL. */
+/**
+ * Scarica un'immagine pubblicata via `/api/tg-image/…` e la converte in data URL.
+ * Rifiuta URL arbitrari per evitare SSRF server-side.
+ */
 export async function fetchPublicImageAsDataUrl(publicUrl: string): Promise<string> {
-  const fileId = extractTelegramFileId(publicUrl);
-  if (fileId) {
-    const { buffer, mimeType } = await fetchTelegramFileAsBuffer(fileId);
-    return `data:${mimeType};base64,${buffer.toString("base64")}`;
+  const trimmed = publicUrl.trim();
+  if (!trimmed) {
+    throw new Error("URL immagine di riferimento mancante.");
   }
 
-  const absolute = resolveAbsolutePublicUrl(publicUrl);
-  const res = await fetch(absolute);
-  if (!res.ok) {
-    throw new Error(`Download immagine di riferimento fallito (HTTP ${res.status}).`);
+  const fileId = extractTelegramFileId(trimmed);
+  if (!fileId) {
+    throw new Error(
+      "Solo immagini del sito via /api/tg-image/… possono essere usate come riferimento."
+    );
   }
-  const mimeType = res.headers.get("content-type")?.split(";")[0]?.trim() || "image/png";
-  const buffer = Buffer.from(await res.arrayBuffer());
+
+  if (trimmed.startsWith("/") && !isSafeTelegramProxyPath(trimmed)) {
+    throw new Error("Percorso immagine di riferimento non valido.");
+  }
+
+  const { buffer, mimeType } = await fetchTelegramFileAsBuffer(fileId);
   return `data:${mimeType};base64,${buffer.toString("base64")}`;
 }
