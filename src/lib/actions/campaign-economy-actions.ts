@@ -39,6 +39,12 @@ export type EconomyCharacterSnapshot = {
 
 type AdminClient = SupabaseClient<Database>;
 
+type ApplyCampaignEconomyRpcResult = {
+  success: boolean;
+  message?: string | null;
+  balances?: Record<string, { coins_gp: number; coins_sp: number; coins_cp: number }> | null;
+};
+
 function nonNegInt(n: unknown): number {
   if (typeof n === "number" && Number.isFinite(n)) return Math.max(0, Math.trunc(n));
   return 0;
@@ -168,145 +174,68 @@ export async function applyCloseSessionEconomy(
   admin: AdminClient,
   campaignId: string,
   economy: SessionEconomyPayload | undefined
-): Promise<{ success: true } | { success: false; message: string }> {
-  if (!economy) return { success: true };
-  const payout = economy.missionTreasurePayout;
-  const deltas = economy.characterCoinDeltas?.filter(
-    (d) => intDelta(d.coins_gp) !== 0 || intDelta(d.coins_sp) !== 0 || intDelta(d.coins_cp) !== 0
-  );
+): Promise<
+  | { success: true; balances: Record<string, { coins_gp: number; coins_sp: number; coins_cp: number }> }
+  | { success: false; message: string }
+> {
+  if (!economy) return { success: true, balances: {} };
+  const payout =
+    economy.missionTreasurePayout?.missionId && economy.missionTreasurePayout.allocations?.length
+      ? {
+          missionId: economy.missionTreasurePayout.missionId,
+          allocations: economy.missionTreasurePayout.allocations.map((allocation) => ({
+            characterId: allocation.characterId,
+            coins_gp: nonNegInt(allocation.coins_gp),
+            coins_sp: nonNegInt(allocation.coins_sp),
+            coins_cp: nonNegInt(allocation.coins_cp),
+          })),
+        }
+      : null;
+  const deltas =
+    economy.characterCoinDeltas
+      ?.map((delta) => ({
+        characterId: delta.characterId,
+        coins_gp: intDelta(delta.coins_gp),
+        coins_sp: intDelta(delta.coins_sp),
+        coins_cp: intDelta(delta.coins_cp),
+      }))
+      .filter((delta) => delta.coins_gp !== 0 || delta.coins_sp !== 0 || delta.coins_cp !== 0) ?? [];
 
   try {
-    if (payout?.missionId && payout.allocations?.length) {
-      const sum = payout.allocations.reduce(
-        (acc, a) => ({
-          gp: acc.gp + nonNegInt(a.coins_gp),
-          sp: acc.sp + nonNegInt(a.coins_sp),
-          cp: acc.cp + nonNegInt(a.coins_cp),
-        }),
-        { gp: 0, sp: 0, cp: 0 }
-      );
-
-      if (sum.gp > 0 || sum.sp > 0 || sum.cp > 0) {
-        const { data: mission, error: mErr } = await admin
-          .from("campaign_missions")
-          .select("id, campaign_id, status, treasure_gp, treasure_sp, treasure_cp")
-          .eq("id", payout.missionId)
-          .single();
-
-        if (mErr || !mission) {
-          return { success: false, message: mErr?.message ?? "Missione tesoretto non trovata." };
-        }
-        const m = mission as {
-          campaign_id: string;
-          status: string;
-          treasure_gp: number;
-          treasure_sp: number;
-          treasure_cp: number;
-        };
-        if (m.campaign_id !== campaignId) {
-          return { success: false, message: "Missione non appartenente alla campagna." };
-        }
-        if (m.status !== "completed") {
-          return { success: false, message: "La missione non è completata: non puoi prelevare dal tesoretto." };
-        }
-        const tg = nonNegInt(m.treasure_gp);
-        const ts = nonNegInt(m.treasure_sp);
-        const tc = nonNegInt(m.treasure_cp);
-        if (sum.gp > tg || sum.sp > ts || sum.cp > tc) {
-          return {
-            success: false,
-            message: "Tesoretto insufficiente per la distribuzione indicata (oro/argento/rame).",
-          };
-        }
-
-        const { error: updM } = await admin
-          .from("campaign_missions")
-          .update({
-            treasure_gp: tg - sum.gp,
-            treasure_sp: ts - sum.sp,
-            treasure_cp: tc - sum.cp,
-            updated_at: new Date().toISOString(),
-          } as never)
-          .eq("id", payout.missionId)
-          .eq("campaign_id", campaignId);
-
-        if (updM) {
-          console.error("[applyCloseSessionEconomy] mission treasure", updM);
-          return { success: false, message: updM.message ?? "Errore aggiornamento tesoretto." };
-        }
-
-        for (const a of payout.allocations) {
-          const addGp = nonNegInt(a.coins_gp);
-          const addSp = nonNegInt(a.coins_sp);
-          const addCp = nonNegInt(a.coins_cp);
-          if (addGp === 0 && addSp === 0 && addCp === 0) continue;
-
-          const { data: char, error: cErr } = await admin
-            .from("campaign_characters")
-            .select("id, coins_gp, coins_sp, coins_cp")
-            .eq("id", a.characterId)
-            .eq("campaign_id", campaignId)
-            .single();
-
-          if (cErr || !char) {
-            return { success: false, message: cErr?.message ?? "Personaggio non trovato per la distribuzione." };
-          }
-          const ch = char as { coins_gp: number; coins_sp: number; coins_cp: number };
-          const { error: uCh } = await admin
-            .from("campaign_characters")
-            .update({
-              coins_gp: nonNegInt(ch.coins_gp) + addGp,
-              coins_sp: nonNegInt(ch.coins_sp) + addSp,
-              coins_cp: nonNegInt(ch.coins_cp) + addCp,
-            } as never)
-            .eq("id", a.characterId)
-            .eq("campaign_id", campaignId);
-          if (uCh) {
-            console.error("[applyCloseSessionEconomy] character add", uCh);
-            return { success: false, message: uCh.message ?? "Errore aggiornamento monete PG." };
-          }
-        }
-      }
+    if (!payout && deltas.length === 0) {
+      return { success: true, balances: {} };
     }
 
-    if (deltas?.length) {
-      for (const d of deltas) {
-        const { data: char, error: cErr } = await admin
-          .from("campaign_characters")
-          .select("id, coins_gp, coins_sp, coins_cp")
-          .eq("id", d.characterId)
-          .eq("campaign_id", campaignId)
-          .single();
-        if (cErr || !char) {
-          return { success: false, message: cErr?.message ?? "Personaggio non trovato per la variazione monete." };
-        }
-        const ch = char as { coins_gp: number; coins_sp: number; coins_cp: number };
-        const ng = nonNegInt(ch.coins_gp) + intDelta(d.coins_gp);
-        const ns = nonNegInt(ch.coins_sp) + intDelta(d.coins_sp);
-        const nc = nonNegInt(ch.coins_cp) + intDelta(d.coins_cp);
-        if (ng < 0 || ns < 0 || nc < 0) {
-          return {
-            success: false,
-            message: `Le monete del personaggio non possono diventare negative (${d.characterId}).`,
-          };
-        }
-        const { error: uCh } = await admin
-          .from("campaign_characters")
-          .update({
-            coins_gp: ng,
-            coins_sp: ns,
-            coins_cp: nc,
-          } as never)
-          .eq("id", d.characterId)
-          .eq("campaign_id", campaignId);
-        if (uCh) {
-          console.error("[applyCloseSessionEconomy] delta", uCh);
-          return { success: false, message: uCh.message ?? "Errore aggiornamento monete." };
-        }
-      }
+    const { data, error } = (await admin.rpc("apply_campaign_economy_atomic" as never, {
+      p_campaign_id: campaignId,
+      p_mission_id: payout?.missionId ?? null,
+      p_allocations:
+        payout?.allocations.map((allocation) => ({
+          characterId: allocation.characterId,
+          coins_gp: allocation.coins_gp,
+          coins_sp: allocation.coins_sp,
+          coins_cp: allocation.coins_cp,
+        })) ?? [],
+      p_deltas:
+        deltas.map((delta) => ({
+          characterId: delta.characterId,
+          coins_gp: delta.coins_gp,
+          coins_sp: delta.coins_sp,
+          coins_cp: delta.coins_cp,
+        })),
+    } as never)) as { data: ApplyCampaignEconomyRpcResult | null; error: { message?: string } | null };
+
+    if (error) {
+      console.error("[applyCloseSessionEconomy] rpc", error);
+      return { success: false, message: error.message ?? "Errore economia sessione." };
     }
 
-    return { success: true };
+    const result = data as ApplyCampaignEconomyRpcResult | null;
+    if (!result?.success) {
+      return { success: false, message: result?.message ?? "Errore economia sessione." };
+    }
+
+    return { success: true, balances: result.balances ?? {} };
   } catch (e) {
     console.error("[applyCloseSessionEconomy]", e);
     return { success: false, message: e instanceof Error ? e.message : "Errore economia sessione." };
@@ -423,10 +352,24 @@ export async function distributeMissionTreasureAction(
   missionId: string,
   allocations: { characterId: string; coins_gp: number; coins_sp: number; coins_cp: number }[]
 ): Promise<{ success: true } | { success: false; message: string }> {
-  const admin = createSupabaseAdminClient();
-  return applyCloseSessionEconomy(admin, campaignId, {
-    missionTreasurePayout: { missionId, allocations },
-  });
+  try {
+    const supabase = await createSupabaseServerClient();
+    if (!(await isGmOrAdminByRole(supabase))) {
+      return { success: false, message: "Non autorizzato." };
+    }
+
+    const { data: campaign } = await supabase.from("campaigns").select("type").eq("id", campaignId).single();
+    if (campaign?.type !== "long") {
+      return { success: false, message: "Tesoretto disponibile solo per campagne lunghe." };
+    }
+
+    const admin = createSupabaseAdminClient();
+    return applyCloseSessionEconomy(admin, campaignId, {
+      missionTreasurePayout: { missionId, allocations },
+    });
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : "Errore." };
+  }
 }
 
 export async function adjustCharacterCoinsBatchAction(
@@ -471,33 +414,9 @@ export async function adjustCharacterCoinsBatchAction(
       return result;
     }
 
-    const characterIds = normalized.map((delta) => delta.characterId);
-    const { data: rows, error } = await supabase
-      .from("campaign_characters")
-      .select("id, coins_gp, coins_sp, coins_cp")
-      .eq("campaign_id", campaignId)
-      .in("id", characterIds);
-
-    if (error) {
-      return { success: false, message: error.message ?? "Errore nel recupero dei nuovi saldi." };
-    }
-
-    const balances = (rows ?? []).reduce(
-      (acc, row) => {
-        const current = row as { id: string; coins_gp: number | null; coins_sp: number | null; coins_cp: number | null };
-        acc[current.id] = {
-          coins_gp: nonNegInt(current.coins_gp),
-          coins_sp: nonNegInt(current.coins_sp),
-          coins_cp: nonNegInt(current.coins_cp),
-        };
-        return acc;
-      },
-      {} as Record<string, { coins_gp: number; coins_sp: number; coins_cp: number }>
-    );
-
     revalidatePath(`/campaigns/${campaignId}`);
     revalidatePath(`/campaigns/${campaignId}/gm-screen`);
-    return { success: true, balances };
+    return { success: true, balances: result.balances };
   } catch (error) {
     return { success: false, message: error instanceof Error ? error.message : "Errore." };
   }
