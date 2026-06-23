@@ -39,13 +39,13 @@ export async function POST(request: Request, context: RouteContext) {
 
   const { data: live } = await admin
     .from("torneo2_live_sessions")
-    .select("station1_match_id, station2_match_id")
+    .select("remote_session_public_id, station1_match_id, station2_match_id")
     .eq("campaign_id", v.session.campaign_id)
     .eq("status", "live")
     .maybeSingle();
 
-  if (!live) {
-    return NextResponse.json({ ok: true, matches: [] });
+  if (!live || live.remote_session_public_id !== publicId) {
+    return NextResponse.json({ ok: false, error: "remote_not_current" }, { status: 403 });
   }
 
   const stationByMatch = new Map<string, number>();
