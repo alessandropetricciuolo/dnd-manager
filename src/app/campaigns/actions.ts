@@ -1984,27 +1984,37 @@ export async function saveLongCampaignCalendarBaseDate(
 
     const { data: charsRaw, error: charsErr } = await admin
       .from("campaign_characters")
-      .select("id, time_offset_hours")
+      .select("id, time_offset_hours, calendar_anchor_date, calendar_anchor_hours")
       .eq("campaign_id", campaignId);
     if (charsErr) return { success: false, error: charsErr.message ?? "Errore aggiornamento date personaggi." };
 
-    for (const row of (charsRaw ?? []) as Array<{ id: string; time_offset_hours: number | null }>) {
+    for (const row of (charsRaw ?? []) as Array<{
+      id: string;
+      time_offset_hours: number | null;
+      calendar_anchor_date: Json | null;
+      calendar_anchor_hours: number | null;
+    }>) {
       const hours =
         typeof row.time_offset_hours === "number" && Number.isFinite(row.time_offset_hours)
           ? Math.max(0, Math.trunc(row.time_offset_hours))
           : 0;
+      const anchorDate = row.calendar_anchor_date
+        ? normalizeFantasyCalendarDate(row.calendar_anchor_date, normalizedConfig)
+        : null;
+      const anchorHours =
+        typeof row.calendar_anchor_hours === "number" && Number.isFinite(row.calendar_anchor_hours)
+          ? Math.max(0, Math.trunc(row.calendar_anchor_hours))
+          : null;
       const nextDate = deriveCharacterCalendarDate({
         campaignBaseDate: normalizedBaseDate,
         characterHours: hours,
         config: normalizedConfig,
-        anchorDate: null,
-        anchorHours: null,
+        anchorDate,
+        anchorHours,
       });
       const { error: syncErr } = await admin
         .from("campaign_characters")
         .update({
-          calendar_anchor_date: null,
-          calendar_anchor_hours: null,
           calendar_current_date: toCalendarDateJson(nextDate),
         } as never)
         .eq("id", row.id);
@@ -2374,18 +2384,36 @@ export async function preCloseSessionAction(
     if (session.status !== "scheduled") {
       return { success: false, message: "La sessione è già chiusa." };
     }
+    const sessionRow = session as { id: string; campaign_id: string; status: string; is_pre_closed?: boolean | null };
+    if (sessionRow.is_pre_closed === true) {
+      return {
+        success: true,
+        message: "Sessione già salvata in bozza.",
+        campaignId: sessionRow.campaign_id,
+      };
+    }
 
     const admin = createSupabaseAdminClient();
 
-    const { error: updateSessionErr } = await admin
+    const { data: preClosedRow, error: updateSessionErr } = await admin
       .from("sessions")
       .update({ is_pre_closed: true } as never)
-      .eq("id", sessionId);
+      .eq("id", sessionId)
+      .eq("is_pre_closed", false)
+      .select("id")
+      .maybeSingle();
     if (updateSessionErr) {
       console.error("[preCloseSessionAction] session", updateSessionErr);
       return {
         success: false,
         message: updateSessionErr.message ?? "Errore durante il salvataggio in bozza.",
+      };
+    }
+    if (!preClosedRow) {
+      return {
+        success: true,
+        message: "Sessione già salvata in bozza.",
+        campaignId: sessionRow.campaign_id,
       };
     }
 

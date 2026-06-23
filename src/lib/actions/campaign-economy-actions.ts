@@ -219,21 +219,13 @@ export async function applyCloseSessionEconomy(
           };
         }
 
-        const { error: updM } = await admin
-          .from("campaign_missions")
-          .update({
-            treasure_gp: tg - sum.gp,
-            treasure_sp: ts - sum.sp,
-            treasure_cp: tc - sum.cp,
-            updated_at: new Date().toISOString(),
-          } as never)
-          .eq("id", payout.missionId)
-          .eq("campaign_id", campaignId);
-
-        if (updM) {
-          console.error("[applyCloseSessionEconomy] mission treasure", updM);
-          return { success: false, message: updM.message ?? "Errore aggiornamento tesoretto." };
-        }
+        const pendingCredits: Array<{
+          characterId: string;
+          addGp: number;
+          addSp: number;
+          addCp: number;
+          current: { coins_gp: number; coins_sp: number; coins_cp: number };
+        }> = [];
 
         for (const a of payout.allocations) {
           const addGp = nonNegInt(a.coins_gp);
@@ -252,19 +244,45 @@ export async function applyCloseSessionEconomy(
             return { success: false, message: cErr?.message ?? "Personaggio non trovato per la distribuzione." };
           }
           const ch = char as { coins_gp: number; coins_sp: number; coins_cp: number };
+          pendingCredits.push({
+            characterId: a.characterId,
+            addGp,
+            addSp,
+            addCp,
+            current: ch,
+          });
+        }
+
+        for (const credit of pendingCredits) {
           const { error: uCh } = await admin
             .from("campaign_characters")
             .update({
-              coins_gp: nonNegInt(ch.coins_gp) + addGp,
-              coins_sp: nonNegInt(ch.coins_sp) + addSp,
-              coins_cp: nonNegInt(ch.coins_cp) + addCp,
+              coins_gp: nonNegInt(credit.current.coins_gp) + credit.addGp,
+              coins_sp: nonNegInt(credit.current.coins_sp) + credit.addSp,
+              coins_cp: nonNegInt(credit.current.coins_cp) + credit.addCp,
             } as never)
-            .eq("id", a.characterId)
+            .eq("id", credit.characterId)
             .eq("campaign_id", campaignId);
           if (uCh) {
             console.error("[applyCloseSessionEconomy] character add", uCh);
             return { success: false, message: uCh.message ?? "Errore aggiornamento monete PG." };
           }
+        }
+
+        const { error: updM } = await admin
+          .from("campaign_missions")
+          .update({
+            treasure_gp: tg - sum.gp,
+            treasure_sp: ts - sum.sp,
+            treasure_cp: tc - sum.cp,
+            updated_at: new Date().toISOString(),
+          } as never)
+          .eq("id", payout.missionId)
+          .eq("campaign_id", campaignId);
+
+        if (updM) {
+          console.error("[applyCloseSessionEconomy] mission treasure", updM);
+          return { success: false, message: updM.message ?? "Errore aggiornamento tesoretto." };
         }
       }
     }
