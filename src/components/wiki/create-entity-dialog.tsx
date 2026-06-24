@@ -752,15 +752,26 @@ export function CreateEntityDialog({
     }
   }
 
-  function applyMagicDraftToForm() {
+  async function applyMagicDraftToForm() {
     if (!magicDraft) return;
     onTypeChange(magicDraft.entityType);
     const body = appendCombatStatsToMarkdown(magicDraft.content, magicDraft.hp, magicDraft.ac);
     setTitleValue(magicDraft.title);
     setContentValue(body);
     if (magicDraft.imageUrl) {
-      setWikiImageUrlPreset(magicDraft.imageUrl);
-      setAiImagePreview(magicDraft.imageUrl);
+      // AI images are `/api/tg-image/...` paths; ImageSourceField URL mode only accepts http(s).
+      // Mirror the assist flow: inject as file so createEntity receives the image in FormData.
+      try {
+        await injectGeneratedImageAsFile(magicDraft.imageUrl);
+        setAiImagePreview(magicDraft.imageUrl);
+        setWikiImageUrlPreset(null);
+      } catch {
+        toast.warning(
+          "Bozza applicata, ma l'immagine AI non è stata allegata. Rigenerala o caricala manualmente."
+        );
+        setWikiImageUrlPreset(null);
+        setAiImagePreview(null);
+      }
     } else {
       setWikiImageUrlPreset(null);
       setAiImagePreview(null);
@@ -1970,7 +1981,7 @@ export function CreateEntityDialog({
               <Button
                 type="button"
                 className="bg-barber-gold text-barber-dark hover:bg-barber-gold/90"
-                onClick={applyMagicDraftToForm}
+                onClick={() => void applyMagicDraftToForm()}
                 disabled={magicBusy}
               >
                 Applica al form
