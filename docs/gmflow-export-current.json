@@ -1,12 +1,12 @@
 {
-  "updatedAt": "2026-06-25T09:34:30.327Z",
+  "updatedAt": "2026-06-25T09:34:36.850Z",
   "sourceProject": "Barber & Dragons",
   "targetProject": "gmflow.app",
   "sourceRepoPath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App",
   "targetRepoPath": "/Users/alessandropetricciuolo/Desktop/masto-platform",
   "branch": "main",
-  "lastCommit": "82f09ac9711da267c1614feeaa4432e826daafc2",
-  "commitRange": "041d96c..82f09ac",
+  "lastCommit": "365f9c0f76a33c3122d277fb51f7b84351d43bc7",
+  "commitRange": "82f09ac..365f9c0",
   "items": [
     {
       "id": "BD-GMFLOW-041d96c-001",
@@ -473,6 +473,216 @@
       "statusCode": "M",
       "createdAt": "2026-06-25T09:34:30.327Z",
       "updatedAt": "2026-06-25T09:34:30.327Z"
+    },
+    {
+      "id": "BD-GMFLOW-365f9c0-001",
+      "title": "OTHER: export-feature-to-gmflow.md (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `.cursor/commands/export-feature-to-gmflow.md` aggiunto nel commit «chore(gmflow): add export ledger automation and Cursor workflow». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        ".cursor/commands/export-feature-to-gmflow.md"
+      ],
+      "gmflowLikelyFiles": [
+        "src/.cursor/commands/export-feature-to-gmflow.md"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "365f9c0f76a33c3122d277fb51f7b84351d43bc7",
+      "commitShort": "365f9c0",
+      "commitSubject": "chore(gmflow): add export ledger automation and Cursor workflow",
+      "statusCode": "A",
+      "createdAt": "2026-06-25T09:34:36.850Z",
+      "updatedAt": "2026-06-25T09:34:36.850Z"
+    },
+    {
+      "id": "BD-GMFLOW-365f9c0-002",
+      "title": "OTHER: bnd-export-agent.mdc (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `.cursor/rules/bnd-export-agent.mdc` aggiunto nel commit «chore(gmflow): add export ledger automation and Cursor workflow». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        ".cursor/rules/bnd-export-agent.mdc"
+      ],
+      "gmflowLikelyFiles": [
+        "src/.cursor/rules/bnd-export-agent.mdc"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "365f9c0f76a33c3122d277fb51f7b84351d43bc7",
+      "commitShort": "365f9c0",
+      "commitSubject": "chore(gmflow): add export ledger automation and Cursor workflow",
+      "statusCode": "A",
+      "createdAt": "2026-06-25T09:34:36.850Z",
+      "updatedAt": "2026-06-25T09:34:36.850Z"
+    },
+    {
+      "id": "BD-GMFLOW-365f9c0-003",
+      "title": "OTHER: .gitignore (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `.gitignore` modificato nel commit «chore(gmflow): add export ledger automation and Cursor workflow». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        ".gitignore"
+      ],
+      "gmflowLikelyFiles": [
+        "src/.gitignore"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "365f9c0f76a33c3122d277fb51f7b84351d43bc7",
+      "commitShort": "365f9c0",
+      "commitSubject": "chore(gmflow): add export ledger automation and Cursor workflow",
+      "statusCode": "M",
+      "createdAt": "2026-06-25T09:34:36.850Z",
+      "updatedAt": "2026-06-25T09:34:36.850Z"
+    },
+    {
+      "id": "BD-GMFLOW-365f9c0-004",
+      "title": "OTHER: package.json (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `package.json` modificato nel commit «chore(gmflow): add export ledger automation and Cursor workflow». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "package.json"
+      ],
+      "gmflowLikelyFiles": [
+        "src/package.json"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "365f9c0f76a33c3122d277fb51f7b84351d43bc7",
+      "commitShort": "365f9c0",
+      "commitSubject": "chore(gmflow): add export ledger automation and Cursor workflow",
+      "statusCode": "M",
+      "createdAt": "2026-06-25T09:34:36.850Z",
+      "updatedAt": "2026-06-25T09:34:36.850Z"
+    },
+    {
+      "id": "BD-GMFLOW-365f9c0-005",
+      "title": "OTHER: install-post-commit-hook.mjs (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `scripts/gmflow-export/install-post-commit-hook.mjs` aggiunto nel commit «chore(gmflow): add export ledger automation and Cursor workflow». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "scripts/gmflow-export/install-post-commit-hook.mjs"
+      ],
+      "gmflowLikelyFiles": [
+        "src/scripts/gmflow-export/install-post-commit-hook.mjs"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "365f9c0f76a33c3122d277fb51f7b84351d43bc7",
+      "commitShort": "365f9c0",
+      "commitSubject": "chore(gmflow): add export ledger automation and Cursor workflow",
+      "statusCode": "A",
+      "createdAt": "2026-06-25T09:34:36.850Z",
+      "updatedAt": "2026-06-25T09:34:36.850Z"
+    },
+    {
+      "id": "BD-GMFLOW-365f9c0-006",
+      "title": "OTHER: update-gmflow-export-ledger.mjs (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `scripts/gmflow-export/update-gmflow-export-ledger.mjs` aggiunto nel commit «chore(gmflow): add export ledger automation and Cursor workflow». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "scripts/gmflow-export/update-gmflow-export-ledger.mjs"
+      ],
+      "gmflowLikelyFiles": [
+        "src/scripts/gmflow-export/update-gmflow-export-ledger.mjs"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "365f9c0f76a33c3122d277fb51f7b84351d43bc7",
+      "commitShort": "365f9c0",
+      "commitSubject": "chore(gmflow): add export ledger automation and Cursor workflow",
+      "statusCode": "A",
+      "createdAt": "2026-06-25T09:34:36.850Z",
+      "updatedAt": "2026-06-25T09:34:36.850Z"
     }
   ]
 }
