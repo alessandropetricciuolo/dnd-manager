@@ -306,11 +306,15 @@ export function EditEntityDialog({
 
   function applyEditAssistChatDraft() {
     if (!assistChatDraft) return;
-    setContentValue(assistChatDraft.description);
-    if (type === "npc" && assistChatDraft.npcTraits) {
-      if (assistChatDraft.npcTraits.race) setAttr("race", assistChatDraft.npcTraits.race);
-      if (assistChatDraft.npcTraits.class) setAttr("class", assistChatDraft.npcTraits.class);
-      if (assistChatDraft.npcTraits.age) setAttr("age", assistChatDraft.npcTraits.age);
+    const { description, statblock, npcTraits } = assistChatDraft;
+    setContentValue(description);
+    if (type === "npc" || type === "monster") {
+      setAttr("statblock", statblock);
+    }
+    if (type === "npc" && npcTraits) {
+      if (npcTraits.race) setAttr("race", npcTraits.race);
+      if (npcTraits.class) setAttr("class", npcTraits.class);
+      if (npcTraits.age) setAttr("age", npcTraits.age);
     }
     toast.success("Bozza chat applicata. Controlla il testo e premi Salva.");
   }

@@ -514,7 +514,6 @@ export async function updateEntity(
       .single();
     if (campaign?.type === "long" && (type === "npc" || type === "monster")) {
       updatePayload.is_core = isCore;
-      if (!isCore) updatePayload.global_status = "alive";
     }
     if (type === "monster") {
       updatePayload.xp_value = xpValue;
