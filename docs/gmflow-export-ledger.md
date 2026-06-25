@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-* Data aggiornamento: 2026-06-25T09:34:50.795Z
+* Data aggiornamento: 2026-06-25T09:35:38.632Z
 * Branch corrente: main
-* Ultimo commit analizzato: 36d32cb88285899159633da0a2ce630c0ff5376d
-* Range commit analizzato: 365f9c0..36d32cb
-* Stato generale: 18 voci NEEDS_REVIEW
-* Voci totali: 18 (NEEDS_REVIEW: 18, TO_IMPORT: 0, IMPORTED: 0)
+* Ultimo commit analizzato: e4e9d4952eff2fcc668e2ed2e83e974e5094aaef
+* Range commit analizzato: 36d32cb..e4e9d49
+* Stato generale: 19 voci NEEDS_REVIEW
+* Voci totali: 19 (NEEDS_REVIEW: 19, TO_IMPORT: 0, IMPORTED: 0)
 
 ## Delta automatico non revisionato
 
@@ -867,6 +867,51 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
+### [BD-GMFLOW-e4e9d49-001] OTHER: update-gmflow-export-ledger.mjs (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `scripts/gmflow-export/update-gmflow-export-ledger.mjs` modificato nel commit «fix(gmflow): skip ledger rewrite on export-only commits». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* scripts/gmflow-export/update-gmflow-export-ledger.mjs
+
+File gmflow probabili:
+
+* src/scripts/gmflow-export/update-gmflow-export-ledger.mjs
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
 ## Modifiche revisionate manualmente
 
 _Nessuna voce revisionata._
@@ -886,9 +931,9 @@ Questo ledger traccia modifiche Barber & Dragons da valutare per import in gmflo
 
 - Repository sorgente: `/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App`
 - Repository gmflow locale: `/Users/alessandropetricciuolo/Desktop/masto-platform`
-- Ultimo commit: `36d32cb` — chore(gmflow): refresh export ledger after automation commit
-- File analizzati nell'ultimo run: 0
-- Nuove voci aggiunte: 0
+- Ultimo commit: `e4e9d49` — fix(gmflow): skip ledger rewrite on export-only commits
+- File analizzati nell'ultimo run: 1
+- Nuove voci aggiunte: 1
 
 **Azioni consigliate:**
 1. Rivedere voci `NEEDS_REVIEW` nella sezione «Delta automatico».
