@@ -4,8 +4,9 @@ import { revalidatePath } from "next/cache";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { formatSessionInRome, sessionFormLocalToUtcIso } from "@/lib/session-datetime";
-import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { shouldSkipPreCloseRewards } from "@/lib/sessions/pre-close-guard";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
+import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { getPlayerEmails, getNotificationsPaused, hasNotificationsDisabled } from "@/lib/player-emails";
 import { sendEmail, wrapInTemplate, escapeHtml } from "@/lib/email";
 import { sendJoinCampaignEmailIfEnabled } from "@/lib/campaign-long-emails";
@@ -2373,6 +2374,16 @@ export async function preCloseSessionAction(
     }
     if (session.status !== "scheduled") {
       return { success: false, message: "La sessione è già chiusa." };
+    }
+
+    const alreadyPreClosed =
+      (session as { is_pre_closed?: boolean | null }).is_pre_closed === true;
+    if (shouldSkipPreCloseRewards(alreadyPreClosed)) {
+      return {
+        success: true,
+        message: "Sessione già salvata in bozza.",
+        campaignId: session.campaign_id,
+      };
     }
 
     const admin = createSupabaseAdminClient();

@@ -170,6 +170,7 @@ export function EndSessionWizard({
   const [submitting, setSubmitting] = useState(false);
   const [preClosing, setPreClosing] = useState(false);
   const [isPreClosed, setIsPreClosed] = useState(false);
+  const [preCloseMetaResolved, setPreCloseMetaResolved] = useState(false);
 
   const isLongCampaign = campaignType === "long";
   const isOneshot = campaignType === "oneshot";
@@ -238,6 +239,7 @@ export function EndSessionWizard({
     if (!open) return;
     setStep(1);
     setIsPreClosed(false);
+    setPreCloseMetaResolved(false);
     setSummary("");
     setGmPrivateNotes("");
     setSelectedContentKeys(new Set());
@@ -253,35 +255,19 @@ export function EndSessionWizard({
     setEconomyCharacters([]);
     setXpGained(Math.max(0, Math.floor(initialXpGained ?? 0)));
     (async () => {
-      // Metadati sessione: se è in pre-chiusura, salta direttamente allo step 2
-      const meta = await getSessionWizardMeta(sessionId);
-      if (meta.success && meta.data?.is_pre_closed) {
-        setIsPreClosed(true);
-        setStep(2 as StepId);
-      }
+      try {
+        // Metadati sessione: se è in pre-chiusura, salta direttamente allo step 2
+        const meta = await getSessionWizardMeta(sessionId);
+        if (meta.success && meta.data?.is_pre_closed) {
+          setIsPreClosed(true);
+          setStep(2 as StepId);
+        }
 
-      if (initialApprovedSignups?.length) {
-        setSignups(initialApprovedSignups);
-        // Se abbiamo status, usiamolo per precompilare le presenze; altrimenti tutti presenti.
-        setAttendance(
-          initialApprovedSignups.reduce(
-            (acc, s) => {
-              const st = (s.status ?? "").toLowerCase();
-              const value: "attended" | "absent" = st === "absent" ? "absent" : "attended";
-              acc[s.player_id] = initialAttendance?.[s.player_id] ?? value;
-              return acc;
-            },
-            {} as Record<string, "attended" | "absent">
-          )
-        );
-      } else {
-        setLoadingSignups(true);
-        const res = await getApprovedSignupsForSession(sessionId);
-        setLoadingSignups(false);
-        if (res.success && res.data) {
-          setSignups(res.data);
+        if (initialApprovedSignups?.length) {
+          setSignups(initialApprovedSignups);
+          // Se abbiamo status, usiamolo per precompilare le presenze; altrimenti tutti presenti.
           setAttendance(
-            res.data.reduce(
+            initialApprovedSignups.reduce(
               (acc, s) => {
                 const st = (s.status ?? "").toLowerCase();
                 const value: "attended" | "absent" = st === "absent" ? "absent" : "attended";
@@ -292,8 +278,28 @@ export function EndSessionWizard({
             )
           );
         } else {
-          setSignups([]);
+          setLoadingSignups(true);
+          const res = await getApprovedSignupsForSession(sessionId);
+          setLoadingSignups(false);
+          if (res.success && res.data) {
+            setSignups(res.data);
+            setAttendance(
+              res.data.reduce(
+                (acc, s) => {
+                  const st = (s.status ?? "").toLowerCase();
+                  const value: "attended" | "absent" = st === "absent" ? "absent" : "attended";
+                  acc[s.player_id] = initialAttendance?.[s.player_id] ?? value;
+                  return acc;
+                },
+                {} as Record<string, "attended" | "absent">
+              )
+            );
+          } else {
+            setSignups([]);
+          }
         }
+      } finally {
+        setPreCloseMetaResolved(true);
       }
     })();
   }, [open, sessionId, initialApprovedSignups, initialAttendance, initialElapsedHours, initialXpGained]);
@@ -1254,7 +1260,13 @@ export function EndSessionWizard({
                   type="button"
                   variant="outline"
                   onClick={handlePreClose}
-                  disabled={preClosing || !canProceedStep1 || loadingSignups || signups.length === 0}
+                  disabled={
+                    preClosing ||
+                    !preCloseMetaResolved ||
+                    !canProceedStep1 ||
+                    loadingSignups ||
+                    signups.length === 0
+                  }
                   className="border-barber-gold/40 text-barber-gold hover:bg-barber-gold/10"
                 >
                   {preClosing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
