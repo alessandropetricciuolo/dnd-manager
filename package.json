@@ -23,7 +23,9 @@
     "test:r2-env": "tsx scripts/test-r2-env.ts",
     "export:dungeonedraghi": "node scripts/export-dungeonedraghi-compendio.mjs",
     "catalog:import": "tsx scripts/import-character-catalog.ts",
-    "mm:chunks": "tsx scripts/delimit-manuale-mostri.ts"
+    "mm:chunks": "tsx scripts/delimit-manuale-mostri.ts",
+    "gmflow:export": "node scripts/gmflow-export/update-gmflow-export-ledger.mjs",
+    "gmflow:install-hook": "node scripts/gmflow-export/install-post-commit-hook.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1045.0",

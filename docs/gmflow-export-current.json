@@ -1,0 +1,478 @@
+{
+  "updatedAt": "2026-06-25T09:34:30.327Z",
+  "sourceProject": "Barber & Dragons",
+  "targetProject": "gmflow.app",
+  "sourceRepoPath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App",
+  "targetRepoPath": "/Users/alessandropetricciuolo/Desktop/masto-platform",
+  "branch": "main",
+  "lastCommit": "82f09ac9711da267c1614feeaa4432e826daafc2",
+  "commitRange": "041d96c..82f09ac",
+  "items": [
+    {
+      "id": "BD-GMFLOW-041d96c-001",
+      "title": "WIKI: create-entity-dialog.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "WIKI",
+      "priority": "Media",
+      "description": "File `src/components/wiki/create-entity-dialog.tsx` modificato nel commit «feat(wiki): add prompt-based iterative image refinement after first generation.». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.",
+      "bdFiles": [
+        "src/components/wiki/create-entity-dialog.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/wiki/create-entity-dialog.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "041d96c40d43b8286c67316d0dcac419b5f1727a",
+      "commitShort": "041d96c",
+      "commitSubject": "feat(wiki): add prompt-based iterative image refinement after first generation.",
+      "statusCode": "M",
+      "createdAt": "2026-06-24T10:18:04.829Z",
+      "updatedAt": "2026-06-24T10:18:04.829Z"
+    },
+    {
+      "id": "BD-GMFLOW-041d96c-002",
+      "title": "WIKI: edit-entity-dialog.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "WIKI",
+      "priority": "Media",
+      "description": "File `src/components/wiki/edit-entity-dialog.tsx` modificato nel commit «feat(wiki): add prompt-based iterative image refinement after first generation.». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.",
+      "bdFiles": [
+        "src/components/wiki/edit-entity-dialog.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/wiki/edit-entity-dialog.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "041d96c40d43b8286c67316d0dcac419b5f1727a",
+      "commitShort": "041d96c",
+      "commitSubject": "feat(wiki): add prompt-based iterative image refinement after first generation.",
+      "statusCode": "M",
+      "createdAt": "2026-06-24T10:18:04.829Z",
+      "updatedAt": "2026-06-24T10:18:04.829Z"
+    },
+    {
+      "id": "BD-GMFLOW-041d96c-003",
+      "title": "AI: wiki-image-refine-chat.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/components/wiki/wiki-image-refine-chat.tsx` aggiunto nel commit «feat(wiki): add prompt-based iterative image refinement after first generation.». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/components/wiki/wiki-image-refine-chat.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/wiki/wiki-image-refine-chat.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "041d96c40d43b8286c67316d0dcac419b5f1727a",
+      "commitShort": "041d96c",
+      "commitSubject": "feat(wiki): add prompt-based iterative image refinement after first generation.",
+      "statusCode": "A",
+      "createdAt": "2026-06-24T10:18:04.829Z",
+      "updatedAt": "2026-06-24T10:18:04.829Z"
+    },
+    {
+      "id": "BD-GMFLOW-041d96c-004",
+      "title": "WIKI: wiki-image-chat.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "WIKI",
+      "priority": "Media",
+      "description": "File `src/lib/actions/wiki-image-chat.ts` aggiunto nel commit «feat(wiki): add prompt-based iterative image refinement after first generation.». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.",
+      "bdFiles": [
+        "src/lib/actions/wiki-image-chat.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/actions/wiki-image-chat.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "041d96c40d43b8286c67316d0dcac419b5f1727a",
+      "commitShort": "041d96c",
+      "commitSubject": "feat(wiki): add prompt-based iterative image refinement after first generation.",
+      "statusCode": "A",
+      "createdAt": "2026-06-24T10:18:04.829Z",
+      "updatedAt": "2026-06-24T10:18:04.829Z"
+    },
+    {
+      "id": "BD-GMFLOW-041d96c-005",
+      "title": "AI: image-refine-prompt.test.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/lib/ai/__tests__/image-refine-prompt.test.ts` aggiunto nel commit «feat(wiki): add prompt-based iterative image refinement after first generation.». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/lib/ai/__tests__/image-refine-prompt.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/ai/__tests__/image-refine-prompt.test.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "041d96c40d43b8286c67316d0dcac419b5f1727a",
+      "commitShort": "041d96c",
+      "commitSubject": "feat(wiki): add prompt-based iterative image refinement after first generation.",
+      "statusCode": "A",
+      "createdAt": "2026-06-24T10:18:04.829Z",
+      "updatedAt": "2026-06-24T10:18:04.829Z"
+    },
+    {
+      "id": "BD-GMFLOW-041d96c-006",
+      "title": "AI: image-provider.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/lib/ai/image-provider.ts` modificato nel commit «feat(wiki): add prompt-based iterative image refinement after first generation.». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/lib/ai/image-provider.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/ai/image-provider.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "041d96c40d43b8286c67316d0dcac419b5f1727a",
+      "commitShort": "041d96c",
+      "commitSubject": "feat(wiki): add prompt-based iterative image refinement after first generation.",
+      "statusCode": "M",
+      "createdAt": "2026-06-24T10:18:04.829Z",
+      "updatedAt": "2026-06-24T10:18:04.829Z"
+    },
+    {
+      "id": "BD-GMFLOW-041d96c-007",
+      "title": "AI: image-reference-fetch.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/lib/ai/image-reference-fetch.ts` aggiunto nel commit «feat(wiki): add prompt-based iterative image refinement after first generation.». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/lib/ai/image-reference-fetch.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/ai/image-reference-fetch.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "041d96c40d43b8286c67316d0dcac419b5f1727a",
+      "commitShort": "041d96c",
+      "commitSubject": "feat(wiki): add prompt-based iterative image refinement after first generation.",
+      "statusCode": "A",
+      "createdAt": "2026-06-24T10:18:04.829Z",
+      "updatedAt": "2026-06-24T10:18:04.829Z"
+    },
+    {
+      "id": "BD-GMFLOW-041d96c-008",
+      "title": "AI: image-refine-prompt.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/lib/ai/image-refine-prompt.ts` aggiunto nel commit «feat(wiki): add prompt-based iterative image refinement after first generation.». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/lib/ai/image-refine-prompt.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/ai/image-refine-prompt.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "041d96c40d43b8286c67316d0dcac419b5f1727a",
+      "commitShort": "041d96c",
+      "commitSubject": "feat(wiki): add prompt-based iterative image refinement after first generation.",
+      "statusCode": "A",
+      "createdAt": "2026-06-24T10:18:04.829Z",
+      "updatedAt": "2026-06-24T10:18:04.829Z"
+    },
+    {
+      "id": "BD-GMFLOW-041d96c-009",
+      "title": "AI: openrouter-provider.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/lib/image-benchmark/providers/openrouter-provider.ts` modificato nel commit «feat(wiki): add prompt-based iterative image refinement after first generation.». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/lib/image-benchmark/providers/openrouter-provider.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/image-benchmark/providers/openrouter-provider.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "041d96c40d43b8286c67316d0dcac419b5f1727a",
+      "commitShort": "041d96c",
+      "commitSubject": "feat(wiki): add prompt-based iterative image refinement after first generation.",
+      "statusCode": "M",
+      "createdAt": "2026-06-24T10:18:04.829Z",
+      "updatedAt": "2026-06-24T10:18:04.829Z"
+    },
+    {
+      "id": "BD-GMFLOW-041d96c-010",
+      "title": "OTHER: types.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/image-benchmark/types.ts` modificato nel commit «feat(wiki): add prompt-based iterative image refinement after first generation.». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/image-benchmark/types.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/image-benchmark/types.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "041d96c40d43b8286c67316d0dcac419b5f1727a",
+      "commitShort": "041d96c",
+      "commitSubject": "feat(wiki): add prompt-based iterative image refinement after first generation.",
+      "statusCode": "M",
+      "createdAt": "2026-06-24T10:18:04.829Z",
+      "updatedAt": "2026-06-24T10:18:04.829Z"
+    },
+    {
+      "id": "BD-GMFLOW-82f09ac-001",
+      "title": "WIKI: create-entity-dialog.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "WIKI",
+      "priority": "Media",
+      "description": "File `src/components/wiki/create-entity-dialog.tsx` modificato nel commit «fix(wiki): persist AI portrait preset when creating wiki entities». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.",
+      "bdFiles": [
+        "src/components/wiki/create-entity-dialog.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/wiki/create-entity-dialog.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "82f09ac9711da267c1614feeaa4432e826daafc2",
+      "commitShort": "82f09ac",
+      "commitSubject": "fix(wiki): persist AI portrait preset when creating wiki entities",
+      "statusCode": "M",
+      "createdAt": "2026-06-25T09:34:30.327Z",
+      "updatedAt": "2026-06-25T09:34:30.327Z"
+    },
+    {
+      "id": "BD-GMFLOW-82f09ac-002",
+      "title": "OTHER: image-url.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/image-url.ts` modificato nel commit «fix(wiki): persist AI portrait preset when creating wiki entities». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/image-url.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/image-url.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "82f09ac9711da267c1614feeaa4432e826daafc2",
+      "commitShort": "82f09ac",
+      "commitSubject": "fix(wiki): persist AI portrait preset when creating wiki entities",
+      "statusCode": "M",
+      "createdAt": "2026-06-25T09:34:30.327Z",
+      "updatedAt": "2026-06-25T09:34:30.327Z"
+    }
+  ]
+}

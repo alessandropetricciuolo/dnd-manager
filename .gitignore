@@ -39,6 +39,9 @@ yarn-error.log*
 .env*.local
 .env
 
+# gmflow sync locale (path repo gmflow)
+.gmflow-sync.local.json
+
 # Vercel
 .vercel
 
