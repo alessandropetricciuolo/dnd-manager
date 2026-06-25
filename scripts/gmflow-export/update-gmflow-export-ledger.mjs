@@ -479,6 +479,11 @@ function main() {
     changedFiles.push(parsed);
   }
 
+  if (changedFiles.length === 0) {
+    console.log("Nessun file applicativo nel commit — ledger invariato.");
+    return;
+  }
+
   const existingItems = loadExistingItems();
   let newItemsAdded = 0;
   const now = new Date().toISOString();

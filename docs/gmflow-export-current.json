@@ -1,12 +1,12 @@
 {
-  "updatedAt": "2026-06-25T09:34:36.850Z",
+  "updatedAt": "2026-06-25T09:34:50.795Z",
   "sourceProject": "Barber & Dragons",
   "targetProject": "gmflow.app",
   "sourceRepoPath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App",
   "targetRepoPath": "/Users/alessandropetricciuolo/Desktop/masto-platform",
   "branch": "main",
-  "lastCommit": "365f9c0f76a33c3122d277fb51f7b84351d43bc7",
-  "commitRange": "82f09ac..365f9c0",
+  "lastCommit": "36d32cb88285899159633da0a2ce630c0ff5376d",
+  "commitRange": "365f9c0..36d32cb",
   "items": [
     {
       "id": "BD-GMFLOW-041d96c-001",
