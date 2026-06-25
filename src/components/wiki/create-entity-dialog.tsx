@@ -41,6 +41,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { TagsInput } from "@/components/wiki/tags-input";
 import { cn } from "@/lib/utils";
+import { isValidImageUrl, normalizeImageUrl } from "@/lib/image-url";
 import {
   createEntity,
   listCampaignMissionsLiteForGm,
@@ -420,6 +421,13 @@ export function CreateEntityDialog({
     }
     formData.set("relations", JSON.stringify(relations));
 
+    const presetImageUrl = wikiImageUrlPreset?.trim() ?? "";
+    const uploadedImage = formData.get("image");
+    const hasUploadedImage = uploadedImage instanceof File && uploadedImage.size > 0;
+    if (!hasUploadedImage && presetImageUrl && isValidImageUrl(presetImageUrl)) {
+      formData.set("image_url", normalizeImageUrl(presetImageUrl));
+    }
+
     setIsLoading(true);
     try {
       const result = await createEntity(campaignId, formData);
@@ -439,6 +447,9 @@ export function CreateEntityDialog({
         setSelectedPartyIds([]);
         setIncludeInAiMemory(false);
         setLinkedMissionId("");
+        setWikiImageUrlPreset(null);
+        setAiImagePreview(null);
+        setMagicPortraitPreview(null);
         router.refresh();
       } else {
         toast.error(result.message);

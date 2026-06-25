@@ -33,10 +33,17 @@ export function normalizeImageUrl(url: string): string {
   }
 }
 
-/** Verifica che la stringa assomigli a un URL assoluto valido (http/https). */
+/** Proxy interno Telegram (ritratti AI wiki salvati come path relativo). */
+export function isInternalTelegramImagePath(url: string): boolean {
+  const trimmed = url.trim();
+  return trimmed.startsWith("/api/tg-image/") || trimmed.startsWith("/api/tg-file/");
+}
+
+/** URL utilizzabile come sorgente immagine nel form (http/https o proxy Telegram interno). */
 export function isValidImageUrl(url: string): boolean {
   const trimmed = url.trim();
   if (!trimmed) return false;
+  if (isInternalTelegramImagePath(trimmed)) return true;
   try {
     const u = new URL(trimmed);
     return u.protocol === "http:" || u.protocol === "https:";
