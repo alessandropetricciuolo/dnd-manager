@@ -7,10 +7,10 @@ import type { SceneFloorV1 } from "@/lib/map-core/scene-schema";
 import type { EditorDrawOptions } from "@/lib/map-core/scene-editor/draw-floor";
 
 export type SceneEditorTool =
+  | "pan"
   | "select"
   | "room"
   | "corridor"
-  | "wall"
   | "door"
   | "prop"
   | "gmNote"
@@ -41,6 +41,8 @@ export function SceneEditorCanvas({
   onCanvasUp,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const drawingRef = useRef(false);
+  const isPanTool = tool === "pan";
 
   const repaint = useCallback(() => {
     const canvas = canvasRef.current;
@@ -63,42 +65,68 @@ export function SceneEditorCanvas({
   }, [repaint]);
 
   const cursor =
-    tool === "room" || tool === "wall" || tool === "corridor"
-      ? "crosshair"
-      : tool === "erase"
-        ? "not-allowed"
-        : "default";
+    tool === "pan"
+      ? "grab"
+      : tool === "room" || tool === "corridor" || tool === "door"
+        ? "crosshair"
+        : tool === "erase"
+          ? "not-allowed"
+          : "default";
 
   return (
     <div className="h-[min(70vh,720px)] w-full overflow-hidden rounded-lg border border-barber-gold/25 bg-[#0f0d0c]">
-      <TransformWrapper initialScale={0.45} minScale={0.1} maxScale={2.5} centerOnInit>
+      <TransformWrapper
+        initialScale={0.45}
+        minScale={0.1}
+        maxScale={2.5}
+        centerOnInit
+        wheel={{ step: 0.08 }}
+        panning={{
+          allowLeftClickPan: isPanTool,
+          allowMiddleClickPan: true,
+          allowRightClickPan: false,
+          excluded: isPanTool ? [] : ["[data-scene-editor-canvas]"],
+        }}
+        doubleClick={{ disabled: true }}
+      >
         <TransformComponent
           wrapperClass="!h-full !w-full"
           contentClass="!h-full !w-full flex items-center justify-center"
         >
           <canvas
             ref={canvasRef}
+            data-scene-editor-canvas
             className="max-h-none max-w-none shadow-lg"
-            style={{ width: floor.width, height: floor.height, cursor }}
+            style={{ width: floor.width, height: floor.height, cursor, touchAction: "none" }}
             onMouseDown={(e) => {
+              if (isPanTool || e.button !== 0) return;
+              e.stopPropagation();
+              drawingRef.current = true;
               const canvas = canvasRef.current;
               if (!canvas) return;
               const p = pointFromMouse(canvas, e.clientX, e.clientY);
               onCanvasPoint(p.x, p.y, e);
             }}
             onMouseMove={(e) => {
-              if (!onCanvasMove) return;
+              if (!onCanvasMove || isPanTool || !drawingRef.current) return;
+              e.stopPropagation();
               const canvas = canvasRef.current;
               if (!canvas) return;
               const p = pointFromMouse(canvas, e.clientX, e.clientY);
               onCanvasMove(p.x, p.y, e);
             }}
             onMouseUp={(e) => {
+              if (isPanTool) return;
+              e.stopPropagation();
+              drawingRef.current = false;
               if (!onCanvasUp) return;
               const canvas = canvasRef.current;
               if (!canvas) return;
               const p = pointFromMouse(canvas, e.clientX, e.clientY);
               onCanvasUp(p.x, p.y, e);
+            }}
+            onMouseLeave={() => {
+              drawingRef.current = false;
             }}
           />
         </TransformComponent>

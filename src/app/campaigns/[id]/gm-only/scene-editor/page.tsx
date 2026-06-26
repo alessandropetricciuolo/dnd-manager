@@ -74,7 +74,11 @@ export default async function SceneEditorIndexPage({ params }: PageProps) {
                       Aggiornata {new Date(s.updated_at).toLocaleString("it-IT")}
                     </p>
                   </div>
-                  <SceneEditorListActions campaignId={campaignId} sceneId={s.id} />
+                  <SceneEditorListActions
+                    campaignId={campaignId}
+                    sceneId={s.id}
+                    sceneName={s.name || "Senza nome"}
+                  />
                 </li>
               ))}
             </ul>

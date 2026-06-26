@@ -71,7 +71,9 @@ export function GmExplorationFowSheet({ open, onOpenChange, campaignId }: Props)
     [regions, selectedMapId]
   );
   const vm = useMemo(() => rowsToVm(regionsForMap), [regionsForMap]);
-  const imageUrl = selectedMap ? getExplorationMapPublicUrl(selectedMap.image_path) : "";
+  const imageUrl = selectedMap
+    ? getExplorationMapPublicUrl(selectedMap.image_path, selectedMap.updated_at)
+    : "";
 
   useEffect(() => {
     if (!open) return;

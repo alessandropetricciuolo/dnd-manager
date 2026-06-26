@@ -2,7 +2,16 @@
 
 ## Stato
 
-**Accettato** — Fase 0–4 completate (Map Core, Scene Editor, griglia, props, note GM, duplicazione, export gmflow).
+**Accettato** — Fase 0–5 completate (Map Core, Scene Editor, griglia, props, note GM, duplicazione, export gmflow, stile DS).
+
+## Fase 5 — Stile Dungeon Scrawl, layer, muri automatici
+
+- Schema: `layers[]`, `activeLayerId`, preset stile per layer (`classic_hatching`, `old_school`, `rough_cavern`, `clean_stone`)
+- `normalize-floor.ts` — migrazione piani legacy, `prepareSceneDocumentForSave` per FoW denormalizzato
+- `auto-walls.ts` — muri generati dai bordi delle aree; porte preservate per segmento
+- `ds-renderer.ts` — rendering hatch, pavimento chiaro, griglia, props silhouette SVG
+- Editor: pannello layer (preset, opacità, visibilità); rimosso strumento Muro manuale
+- Raster export usa lo stesso renderer DS
 
 ## Fase 4 — Props, note GM, duplicazione, export gmflow
 
@@ -26,7 +35,7 @@
 
 - `/campaigns/[id]/gm-only/scene-editor` — lista + nuova scena
 - `/campaigns/[id]/gm-only/scene-editor/[sceneDocumentId]` — editor completo
-- Strumenti: stanza, corridoio, muro, porta, selezione, elimina
+- Strumenti: stanza, corridoio, porta, selezione, elimina (muri auto-generati)
 - Multi-piano (aggiungi, ordina, elimina, etichetta, dimensioni, griglia)
 - Missione collegata in editor
 - Salvataggio: documento + raster WebP + sync FoW (`saveSceneDocumentWithRastersAction`)

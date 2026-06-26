@@ -1,5 +1,6 @@
 import type { NormPoint } from "../coordinates";
 import type { ScenePropKindV1 } from "./props-catalog";
+import type { SceneLayerPresetId } from "./layer-presets";
 
 export const SCENE_DOCUMENT_VERSION = 1 as const;
 
@@ -52,6 +53,17 @@ export type SceneGmNoteV1 = {
   width?: number;
 };
 
+export type SceneLayerV1 = {
+  id: string;
+  label: string;
+  sortOrder: number;
+  presetId: SceneLayerPresetId;
+  opacity: number;
+  visible: boolean;
+  areas: SceneAreaV1[];
+  walls: SceneWallV1[];
+};
+
 export type SceneFloorV1 = {
   id: string;
   label: string;
@@ -59,8 +71,11 @@ export type SceneFloorV1 = {
   width: number;
   height: number;
   grid: SceneGridV1;
+  /** Denormalizzato per FoW sync (tutti i layer visibili). */
   areas: SceneAreaV1[];
   walls: SceneWallV1[];
+  layers: SceneLayerV1[];
+  activeLayerId: string;
   props: ScenePropV1[];
   gmNotes: SceneGmNoteV1[];
 };
@@ -80,6 +95,17 @@ export function createEmptySceneDocument(name = "Nuova scena"): SceneDocumentV1 
       ? crypto.randomUUID()
       : `floor-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
   const floorId = newId();
+  const layerId = newId();
+  const layer: SceneLayerV1 = {
+    id: layerId,
+    label: "Rough Cavern 1",
+    sortOrder: 0,
+    presetId: "classic_hatching",
+    opacity: 1,
+    visible: true,
+    areas: [],
+    walls: [],
+  };
   return {
     version: SCENE_DOCUMENT_VERSION,
     name,
@@ -94,6 +120,8 @@ export function createEmptySceneDocument(name = "Nuova scena"): SceneDocumentV1 
         grid: { kind: "square", cellPx: 100, offsetX: 0, offsetY: 0 },
         areas: [],
         walls: [],
+        layers: [layer],
+        activeLayerId: layerId,
         props: [],
         gmNotes: [],
       },

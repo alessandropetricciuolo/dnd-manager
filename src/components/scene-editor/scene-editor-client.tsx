@@ -8,6 +8,8 @@ import {
   ChevronLeft,
   ChevronDown,
   ChevronUp,
+  Eye,
+  EyeOff,
   Layers,
   Plus,
   Save,
@@ -30,10 +32,19 @@ import { sceneEditorNewId } from "@/lib/map-core/scene-editor/ids";
 import { distancePointToSegment, snapPoint } from "@/lib/map-core/scene-editor/snap";
 import { pointInPolygon } from "@/lib/map-core/coordinates";
 import {
+  createDefaultLayer,
+  getActiveLayer,
+  normalizeSceneDocument,
+  normalizeSceneFloor,
+  prepareSceneDocumentForSave,
   rectangleAreaPolygon,
+  SCENE_LAYER_PRESETS,
   SCENE_PROP_CATALOG,
+  updateActiveLayer,
   type SceneDocumentV1,
   type SceneFloorV1,
+  type SceneLayerPresetId,
+  type SceneLayerV1,
   type ScenePropKindV1,
 } from "@/lib/map-core/scene-schema";
 import { scenePropCatalogEntry } from "@/lib/map-core/scene-schema/props-catalog";
@@ -52,19 +63,19 @@ type Props = {
 };
 
 const TOOLS: { id: SceneEditorTool; label: string }[] = [
+  { id: "pan", label: "Pan" },
   { id: "select", label: "Seleziona" },
   { id: "room", label: "Stanza" },
   { id: "corridor", label: "Corridoio" },
-  { id: "wall", label: "Muro" },
   { id: "door", label: "Porta" },
   { id: "prop", label: "Prop" },
   { id: "gmNote", label: "Nota GM" },
   { id: "erase", label: "Elimina" },
 ];
 
-function findAreaAt(floor: SceneFloorV1, x: number, y: number) {
-  for (let i = floor.areas.length - 1; i >= 0; i--) {
-    const a = floor.areas[i];
+function findAreaAt(layer: SceneLayerV1, floor: SceneFloorV1, x: number, y: number) {
+  for (let i = layer.areas.length - 1; i >= 0; i--) {
+    const a = layer.areas[i];
     const norm = a.polygon.map((p) => ({
       x: p.x / floor.width,
       y: p.y / floor.height,
@@ -74,9 +85,9 @@ function findAreaAt(floor: SceneFloorV1, x: number, y: number) {
   return null;
 }
 
-function findWallAt(floor: SceneFloorV1, x: number, y: number, threshold = 14) {
+function findWallAt(layer: SceneLayerV1, x: number, y: number, threshold = 14) {
   let best: { id: string; dist: number } | null = null;
-  for (const w of floor.walls) {
+  for (const w of layer.walls) {
     const d = distancePointToSegment(x, y, w.x1, w.y1, w.x2, w.y2);
     if (d <= threshold && (!best || d < best.dist)) best = { id: w.id, dist: d };
   }
@@ -111,9 +122,11 @@ export function SceneEditorClient({
   missionOptions = [],
 }: Props) {
   const router = useRouter();
-  const [document, setDocument] = useState<SceneDocumentV1>(initialDocument);
+  const [document, setDocument] = useState<SceneDocumentV1>(() =>
+    normalizeSceneDocument(initialDocument)
+  );
   const [activeFloorId, setActiveFloorId] = useState(initialDocument.floors[0]?.id ?? "");
-  const [tool, setTool] = useState<SceneEditorTool>("room");
+  const [tool, setTool] = useState<SceneEditorTool>("pan");
   const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
   const [selectedWallId, setSelectedWallId] = useState<string | null>(null);
   const [selectedPropId, setSelectedPropId] = useState<string | null>(null);
@@ -124,15 +137,16 @@ export function SceneEditorClient({
   );
   const [roomDragStart, setRoomDragStart] = useState<{ x: number; y: number } | null>(null);
   const [draftCorridor, setDraftCorridor] = useState<Array<{ x: number; y: number }>>([]);
-  const [wallStart, setWallStart] = useState<{ x: number; y: number } | null>(null);
-  const [draftWall, setDraftWall] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(
-    null
-  );
   const [pending, startTransition] = useTransition();
 
   const activeFloor = useMemo(
     () => document.floors.find((f) => f.id === activeFloorId) ?? document.floors[0],
     [document.floors, activeFloorId]
+  );
+
+  const activeLayer = useMemo(
+    () => (activeFloor ? getActiveLayer(activeFloor) : null),
+    [activeFloor]
   );
 
   const updateFloor = useCallback((floorId: string, updater: (f: SceneFloorV1) => SceneFloorV1) => {
@@ -142,12 +156,31 @@ export function SceneEditorClient({
     }));
   }, []);
 
+  const updateLayerOnFloor = useCallback(
+    (floorId: string, layerId: string, updater: (layer: SceneLayerV1) => SceneLayerV1) => {
+      updateFloor(floorId, (f) => {
+        const normalized = normalizeSceneFloor(f);
+        const layers = normalized.layers.map((layer) =>
+          layer.id === layerId ? updater(layer) : layer
+        );
+        return {
+          ...normalized,
+          layers,
+          areas: layers.filter((l) => l.visible).flatMap((l) => l.areas),
+          walls: layers.filter((l) => l.visible).flatMap((l) => l.walls),
+        };
+      });
+    },
+    [updateFloor]
+  );
+
   const handleSave = useCallback(() => {
     startTransition(async () => {
       try {
+        const prepared = prepareSceneDocumentForSave(document);
         const form = new FormData();
-        form.append("document", JSON.stringify(document));
-        for (const floor of document.floors) {
+        form.append("document", JSON.stringify(prepared));
+        for (const floor of prepared.floors) {
           const blob = await exportFloorRasterBlob(floor);
           form.append(`floor_raster_${floor.id}`, blob, `${floor.label || "piano"}.webp`);
         }
@@ -156,7 +189,9 @@ export function SceneEditorClient({
           toast.error(res.error);
           return;
         }
-        toast.success("Scena salvata: documento, raster e FoW aggiornati.");
+        toast.success(
+          "Scena salvata. Apri Vista dall'alto per vedere mappa e zone FoW aggiornate."
+        );
         router.refresh();
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Salvataggio fallito.");
@@ -168,6 +203,7 @@ export function SceneEditorClient({
     const id = sceneEditorNewId();
     const sortOrder = Math.max(-1, ...document.floors.map((f) => f.sortOrder)) + 1;
     const template = activeFloor ?? document.floors[0];
+    const layer = createDefaultLayer("Layer 1", "rough_cavern");
     setDocument((prev) => ({
       ...prev,
       floors: [
@@ -179,6 +215,8 @@ export function SceneEditorClient({
           width: template?.width ?? 2000,
           height: template?.height ?? 1500,
           grid: { ...(template?.grid ?? { kind: "square", cellPx: 100, offsetX: 0, offsetY: 0 }) },
+          layers: [layer],
+          activeLayerId: layer.id,
           areas: [],
           walls: [],
           props: [],
@@ -187,6 +225,45 @@ export function SceneEditorClient({
       ],
     }));
     setActiveFloorId(id);
+  };
+
+  const addLayer = () => {
+    if (!activeFloor) return;
+    const layer = createDefaultLayer(`Layer ${activeFloor.layers.length + 1}`, "classic_hatching");
+    layer.sortOrder = Math.max(-1, ...activeFloor.layers.map((l) => l.sortOrder)) + 1;
+    updateFloor(activeFloor.id, (f) => {
+      const normalized = normalizeSceneFloor(f);
+      const layers = [...normalized.layers, layer];
+      return {
+        ...normalized,
+        layers,
+        activeLayerId: layer.id,
+        areas: layers.filter((l) => l.visible).flatMap((l) => l.areas),
+        walls: layers.filter((l) => l.visible).flatMap((l) => l.walls),
+      };
+    });
+  };
+
+  const removeActiveLayer = () => {
+    if (!activeFloor || activeFloor.layers.length <= 1) {
+      toast.error("Serve almeno un layer sul piano.");
+      return;
+    }
+    const layerId = activeFloor.activeLayerId;
+    updateFloor(activeFloor.id, (f) => {
+      const normalized = normalizeSceneFloor(f);
+      const layers = normalized.layers.filter((l) => l.id !== layerId);
+      const nextActive = layers[0]?.id ?? "";
+      return {
+        ...normalized,
+        layers,
+        activeLayerId: nextActive,
+        areas: layers.filter((l) => l.visible).flatMap((l) => l.areas),
+        walls: layers.filter((l) => l.visible).flatMap((l) => l.walls),
+      };
+    });
+    setSelectedAreaId(null);
+    setSelectedWallId(null);
   };
 
   const removeActiveFloor = () => {
@@ -214,12 +291,12 @@ export function SceneEditorClient({
   };
 
   const onCanvasPoint = (x: number, y: number) => {
-    if (!activeFloor) return;
+    if (!activeFloor || !activeLayer) return;
     const snapped = snapPoint(x, y, activeFloor);
 
     if (tool === "select") {
-      const areaId = findAreaAt(activeFloor, x, y);
-      const wallId = findWallAt(activeFloor, x, y);
+      const areaId = findAreaAt(activeLayer, activeFloor, x, y);
+      const wallId = findWallAt(activeLayer, x, y);
       const propId = findPropAt(activeFloor, x, y);
       const noteId = findGmNoteAt(activeFloor, x, y);
       setSelectedAreaId(areaId);
@@ -230,21 +307,27 @@ export function SceneEditorClient({
     }
 
     if (tool === "erase") {
-      const areaId = findAreaAt(activeFloor, x, y);
-      const wallId = findWallAt(activeFloor, x, y);
+      const areaId = findAreaAt(activeLayer, activeFloor, x, y);
+      const wallId = findWallAt(activeLayer, x, y);
       const propId = findPropAt(activeFloor, x, y);
       const noteId = findGmNoteAt(activeFloor, x, y);
       if (areaId) {
-        updateFloor(activeFloor.id, (f) => ({
-          ...f,
-          areas: f.areas.filter((a) => a.id !== areaId),
-        }));
+        updateFloor(activeFloor.id, (f) =>
+          updateActiveLayer(f, (layer) => ({
+            ...layer,
+            areas: layer.areas.filter((a) => a.id !== areaId),
+          }))
+        );
         setSelectedAreaId(null);
       } else if (wallId) {
-        updateFloor(activeFloor.id, (f) => ({
-          ...f,
-          walls: f.walls.filter((w) => w.id !== wallId),
-        }));
+        updateFloor(activeFloor.id, (f) =>
+          updateActiveLayer(f, (layer) => ({
+            ...layer,
+            walls: layer.walls.map((w) =>
+              w.id === wallId ? { ...w, door: undefined } : w
+            ),
+          }))
+        );
         setSelectedWallId(null);
       } else if (propId) {
         updateFloor(activeFloor.id, (f) => ({
@@ -296,10 +379,12 @@ export function SceneEditorClient({
         const first = draftCorridor[0];
         if (Math.hypot(snapped.x - first.x, snapped.y - first.y) < activeFloor.grid.cellPx) {
           const id = sceneEditorNewId();
-          updateFloor(activeFloor.id, (f) => ({
-            ...f,
-            areas: [...f.areas, { id, kind: "corridor", polygon: [...draftCorridor] }],
-          }));
+          updateFloor(activeFloor.id, (f) =>
+            updateActiveLayer(f, (layer) => ({
+              ...layer,
+              areas: [...layer.areas, { id, kind: "corridor", polygon: [...draftCorridor] }],
+            }))
+          );
           setDraftCorridor([]);
           return;
         }
@@ -308,51 +393,26 @@ export function SceneEditorClient({
       return;
     }
 
-    if (tool === "wall") {
-      if (!wallStart) {
-        setWallStart(snapped);
-        setDraftWall({ x1: snapped.x, y1: snapped.y, x2: snapped.x, y2: snapped.y });
-        return;
-      }
-      const len = Math.hypot(snapped.x - wallStart.x, snapped.y - wallStart.y);
-      if (len >= activeFloor.grid.cellPx * 0.5) {
-        updateFloor(activeFloor.id, (f) => ({
-          ...f,
-          walls: [
-            ...f.walls,
-            {
-              id: sceneEditorNewId(),
-              x1: wallStart.x,
-              y1: wallStart.y,
-              x2: snapped.x,
-              y2: snapped.y,
-            },
-          ],
-        }));
-      }
-      setWallStart(null);
-      setDraftWall(null);
-      return;
-    }
-
     if (tool === "door") {
-      const wallId = findWallAt(activeFloor, x, y, 18);
+      const wallId = findWallAt(activeLayer, x, y, 22);
       if (!wallId) return;
-      updateFloor(activeFloor.id, (f) => ({
-        ...f,
-        walls: f.walls.map((w) => {
-          if (w.id !== wallId) return w;
-          const len = Math.hypot(w.x2 - w.x1, w.y2 - w.y1);
-          if (len < 1) return w;
-          const t =
-            ((x - w.x1) * (w.x2 - w.x1) + (y - w.y1) * (w.y2 - w.y1)) / (len * len);
-          const doorWidth = Math.min(len * 0.35, f.grid.cellPx * 1.2);
-          return {
-            ...w,
-            door: { width: doorWidth, offset: Math.max(0, Math.min(1, t)) },
-          };
-        }),
-      }));
+      updateFloor(activeFloor.id, (f) =>
+        updateActiveLayer(f, (layer) => ({
+          ...layer,
+          walls: layer.walls.map((w) => {
+            if (w.id !== wallId) return w;
+            const len = Math.hypot(w.x2 - w.x1, w.y2 - w.y1);
+            if (len < 1) return w;
+            const t =
+              ((x - w.x1) * (w.x2 - w.x1) + (y - w.y1) * (w.y2 - w.y1)) / (len * len);
+            const doorWidth = Math.min(len * 0.35, f.grid.cellPx * 1.2);
+            return {
+              ...w,
+              door: { width: doorWidth, offset: Math.max(0, Math.min(1, t)) },
+            };
+          }),
+        }))
+      );
     }
   };
 
@@ -365,9 +425,6 @@ export function SceneEditorClient({
       const w = Math.abs(snapped.x - roomDragStart.x);
       const h = Math.abs(snapped.y - roomDragStart.y);
       setDraftRect({ x: x0, y: y0, w, h });
-    }
-    if (tool === "wall" && wallStart) {
-      setDraftWall({ x1: wallStart.x, y1: wallStart.y, x2: snapped.x, y2: snapped.y });
     }
   };
 
@@ -382,25 +439,35 @@ export function SceneEditorClient({
     setDraftRect(null);
     if (w < activeFloor.grid.cellPx || h < activeFloor.grid.cellPx) return;
     const id = sceneEditorNewId();
-    updateFloor(activeFloor.id, (f) => ({
-      ...f,
-      areas: [
-        ...f.areas,
-        {
-          id,
-          kind: "room",
-          polygon: rectangleAreaPolygon(x0, y0, w, h),
-        },
-      ],
-    }));
+    updateFloor(activeFloor.id, (f) =>
+      updateActiveLayer(f, (layer) => ({
+        ...layer,
+        areas: [
+          ...layer.areas,
+          {
+            id,
+            kind: "room",
+            polygon: rectangleAreaPolygon(x0, y0, w, h),
+          },
+        ],
+      }))
+    );
   };
 
-  if (!activeFloor) {
+  if (!activeFloor || !activeLayer) {
     return <p className="text-sm text-red-400">Nessun piano nella scena.</p>;
   }
 
+  const sortedLayers = [...activeFloor.layers].sort((a, b) => a.sortOrder - b.sortOrder);
+
   return (
     <div className="flex flex-col gap-4">
+      <div className="rounded-md border border-sky-500/30 bg-sky-950/30 px-3 py-2 text-xs text-sky-100/90">
+        Stile <strong>Dungeon Scrawl</strong>: stanze e corridoi generano i muri automaticamente. Usa{" "}
+        <strong>Pan</strong> per spostare la vista (rotella = zoom). La scena compare in Esplorazione
+        e FoW solo dopo <strong>Salva scena</strong>.
+      </div>
+
       <div className="flex flex-wrap items-end gap-3">
         <div className="min-w-[200px] flex-1 space-y-1">
           <Label htmlFor="scene-name">Nome scena</Label>
@@ -492,172 +559,292 @@ export function SceneEditorClient({
         </Button>
       </div>
 
-      {activeFloor ? (
-        <div className="grid gap-3 md:grid-cols-[1fr_220px]">
-          <SceneEditorCanvas
-            floor={activeFloor}
-            tool={tool}
-            drawOptions={{
-              selectedAreaId,
-              selectedWallId,
-              selectedPropId,
-              selectedGmNoteId,
-              draftRect,
-              draftCorridor: draftCorridor.length ? draftCorridor : null,
-              draftWall,
-            }}
-            onCanvasPoint={onCanvasPoint}
-            onCanvasMove={onCanvasMove}
-            onCanvasUp={onCanvasUp}
-          />
-          <aside className="space-y-4 rounded-lg border border-barber-gold/25 bg-barber-dark/60 p-3">
+      <div className="grid gap-3 md:grid-cols-[1fr_240px]">
+        <SceneEditorCanvas
+          floor={activeFloor}
+          tool={tool}
+          drawOptions={{
+            selectedAreaId,
+            selectedWallId,
+            selectedPropId,
+            selectedGmNoteId,
+            draftRect,
+            draftCorridor: draftCorridor.length ? draftCorridor : null,
+            activeLayerId: activeFloor.activeLayerId,
+          }}
+          onCanvasPoint={onCanvasPoint}
+          onCanvasMove={onCanvasMove}
+          onCanvasUp={onCanvasUp}
+        />
+        <aside className="space-y-4 rounded-lg border border-barber-gold/25 bg-barber-dark/60 p-3">
+          <div className="space-y-1">
+            <Label htmlFor="floor-label">Etichetta piano</Label>
+            <Input
+              id="floor-label"
+              value={activeFloor.label}
+              onChange={(e) =>
+                updateFloor(activeFloor.id, (f) => ({ ...f, label: e.target.value }))
+              }
+              className="border-barber-gold/30 bg-barber-dark text-sm"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <Label htmlFor="floor-label">Etichetta piano</Label>
+              <Label className="text-xs">Larghezza px</Label>
               <Input
-                id="floor-label"
-                value={activeFloor.label}
-                onChange={(e) =>
-                  updateFloor(activeFloor.id, (f) => ({ ...f, label: e.target.value }))
-                }
+                type="number"
+                min={256}
+                max={8000}
+                value={activeFloor.width}
+                onChange={(e) => {
+                  const w = Math.max(256, Math.min(8000, Number(e.target.value) || 2000));
+                  updateFloor(activeFloor.id, (f) => ({ ...f, width: w }));
+                }}
                 className="border-barber-gold/30 bg-barber-dark text-sm"
               />
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <Label className="text-xs">Larghezza px</Label>
-                <Input
-                  type="number"
-                  min={256}
-                  max={8000}
-                  value={activeFloor.width}
-                  onChange={(e) => {
-                    const w = Math.max(256, Math.min(8000, Number(e.target.value) || 2000));
-                    updateFloor(activeFloor.id, (f) => ({ ...f, width: w }));
-                  }}
-                  className="border-barber-gold/30 bg-barber-dark text-sm"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Altezza px</Label>
-                <Input
-                  type="number"
-                  min={256}
-                  max={8000}
-                  value={activeFloor.height}
-                  onChange={(e) => {
-                    const h = Math.max(256, Math.min(8000, Number(e.target.value) || 1500));
-                    updateFloor(activeFloor.id, (f) => ({ ...f, height: h }));
-                  }}
-                  className="border-barber-gold/30 bg-barber-dark text-sm"
-                />
-              </div>
-            </div>
             <div className="space-y-1">
-              <Label className="text-xs">Cella griglia (px)</Label>
+              <Label className="text-xs">Altezza px</Label>
               <Input
                 type="number"
-                min={20}
-                max={400}
-                value={activeFloor.grid.cellPx}
+                min={256}
+                max={8000}
+                value={activeFloor.height}
                 onChange={(e) => {
-                  const cellPx = Math.max(20, Math.min(400, Number(e.target.value) || 100));
+                  const h = Math.max(256, Math.min(8000, Number(e.target.value) || 1500));
+                  updateFloor(activeFloor.id, (f) => ({ ...f, height: h }));
+                }}
+                className="border-barber-gold/30 bg-barber-dark text-sm"
+              />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Cella griglia (px)</Label>
+            <Input
+              type="number"
+              min={20}
+              max={400}
+              value={activeFloor.grid.cellPx}
+              onChange={(e) => {
+                const cellPx = Math.max(20, Math.min(400, Number(e.target.value) || 100));
+                updateFloor(activeFloor.id, (f) => ({
+                  ...f,
+                  grid: { ...f.grid, cellPx },
+                }));
+              }}
+              className="border-barber-gold/30 bg-barber-dark text-sm"
+            />
+          </div>
+
+          <div className="space-y-2 border-t border-barber-gold/15 pt-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-barber-gold">Layer</p>
+              <Button type="button" size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={addLayer}>
+                <Plus className="mr-1 h-3 w-3" />
+                Nuovo
+              </Button>
+            </div>
+            <div className="flex flex-col gap-1">
+              {sortedLayers.map((layer) => {
+                const isActive = layer.id === activeFloor.activeLayerId;
+                return (
+                  <div
+                    key={layer.id}
+                    className={`rounded border p-2 ${
+                      isActive ? "border-barber-gold/50 bg-barber-gold/10" : "border-barber-gold/20"
+                    }`}
+                  >
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={isActive ? "default" : "ghost"}
+                        className={
+                          isActive
+                            ? "h-7 flex-1 justify-start bg-barber-gold text-barber-dark text-xs"
+                            : "h-7 flex-1 justify-start text-xs"
+                        }
+                        onClick={() =>
+                          updateFloor(activeFloor.id, (f) => ({
+                            ...normalizeSceneFloor(f),
+                            activeLayerId: layer.id,
+                          }))
+                        }
+                      >
+                        {layer.label || "Layer"}
+                      </Button>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 shrink-0"
+                        aria-label={layer.visible ? "Nascondi layer" : "Mostra layer"}
+                        onClick={() =>
+                          updateLayerOnFloor(activeFloor.id, layer.id, (l) => ({
+                            ...l,
+                            visible: !l.visible,
+                          }))
+                        }
+                      >
+                        {layer.visible ? (
+                          <Eye className="h-3.5 w-3.5" />
+                        ) : (
+                          <EyeOff className="h-3.5 w-3.5 opacity-50" />
+                        )}
+                      </Button>
+                    </div>
+                    {isActive ? (
+                      <div className="mt-2 space-y-2">
+                        <Input
+                          value={layer.label}
+                          onChange={(e) =>
+                            updateLayerOnFloor(activeFloor.id, layer.id, (l) => ({
+                              ...l,
+                              label: e.target.value,
+                            }))
+                          }
+                          className="h-8 border-barber-gold/30 bg-barber-dark text-xs"
+                          placeholder="Nome layer"
+                        />
+                        <Select
+                          value={layer.presetId}
+                          onValueChange={(v) =>
+                            updateLayerOnFloor(activeFloor.id, layer.id, (l) => ({
+                              ...l,
+                              presetId: v as SceneLayerPresetId,
+                            }))
+                          }
+                        >
+                          <SelectTrigger className="h-8 border-barber-gold/30 bg-barber-dark text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.values(SCENE_LAYER_PRESETS).map((preset) => (
+                              <SelectItem key={preset.id} value={preset.id}>
+                                {preset.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <div className="space-y-1">
+                          <Label className="text-[10px]">Opacità {(layer.opacity * 100).toFixed(0)}%</Label>
+                          <input
+                            type="range"
+                            min={0.1}
+                            max={1}
+                            step={0.05}
+                            value={layer.opacity}
+                            onChange={(e) =>
+                              updateLayerOnFloor(activeFloor.id, layer.id, (l) => ({
+                                ...l,
+                                opacity: Number(e.target.value),
+                              }))
+                            }
+                            className="w-full"
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="destructive"
+                          className="h-7 w-full text-xs"
+                          onClick={removeActiveLayer}
+                        >
+                          Elimina layer
+                        </Button>
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="space-y-2 border-t border-barber-gold/15 pt-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-barber-gold">Strumenti</p>
+            <div className="flex flex-col gap-1">
+              {TOOLS.map((t) => (
+                <Button
+                  key={t.id}
+                  type="button"
+                  size="sm"
+                  variant={tool === t.id ? "default" : "outline"}
+                  className={
+                    tool === t.id
+                      ? "justify-start bg-barber-gold text-barber-dark"
+                      : "justify-start border-barber-gold/25"
+                  }
+                  onClick={() => {
+                    setTool(t.id);
+                    setDraftCorridor([]);
+                    setRoomDragStart(null);
+                    setDraftRect(null);
+                  }}
+                >
+                  {t.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+          {tool === "corridor" && draftCorridor.length > 0 ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => setDraftCorridor([])}
+            >
+              Annulla corridoio
+            </Button>
+          ) : null}
+          {tool === "prop" ? (
+            <div className="space-y-1">
+              <Label className="text-xs">Tipo prop</Label>
+              <Select value={propKind} onValueChange={(v) => setPropKind(v as ScenePropKindV1)}>
+                <SelectTrigger className="border-barber-gold/30 bg-barber-dark text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SCENE_PROP_CATALOG.map((p) => (
+                    <SelectItem key={p.kind} value={p.kind}>
+                      {p.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-barber-paper/50">Clicca sul piano per posizionare.</p>
+            </div>
+          ) : null}
+          {tool === "gmNote" ? (
+            <p className="text-[10px] text-barber-paper/50">
+              Clicca per aggiungere una nota GM (visibile solo a te, non in proiezione).
+            </p>
+          ) : null}
+          {selectedGmNoteId ? (
+            <div className="space-y-1">
+              <Label className="text-xs">Testo nota GM</Label>
+              <Textarea
+                rows={4}
+                value={activeFloor.gmNotes.find((n) => n.id === selectedGmNoteId)?.text ?? ""}
+                onChange={(e) => {
+                  const text = e.target.value;
                   updateFloor(activeFloor.id, (f) => ({
                     ...f,
-                    grid: { ...f.grid, cellPx },
+                    gmNotes: f.gmNotes.map((n) =>
+                      n.id === selectedGmNoteId ? { ...n, text } : n
+                    ),
                   }));
                 }}
                 className="border-barber-gold/30 bg-barber-dark text-sm"
               />
             </div>
-            <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-barber-gold">Strumenti</p>
-              <div className="flex flex-col gap-1">
-                {TOOLS.map((t) => (
-                  <Button
-                    key={t.id}
-                    type="button"
-                    size="sm"
-                    variant={tool === t.id ? "default" : "outline"}
-                    className={
-                      tool === t.id
-                        ? "justify-start bg-barber-gold text-barber-dark"
-                        : "justify-start border-barber-gold/25"
-                    }
-                    onClick={() => {
-                      setTool(t.id);
-                      setDraftCorridor([]);
-                      setWallStart(null);
-                      setDraftWall(null);
-                      setRoomDragStart(null);
-                      setDraftRect(null);
-                    }}
-                  >
-                    {t.label}
-                  </Button>
-                ))}
-              </div>
-            </div>
-            {tool === "corridor" && draftCorridor.length > 0 ? (
-              <Button
-                type="button"
-                size="sm"
-                variant="secondary"
-                onClick={() => setDraftCorridor([])}
-              >
-                Annulla corridoio
-              </Button>
-            ) : null}
-            {tool === "prop" ? (
-              <div className="space-y-1">
-                <Label className="text-xs">Tipo prop</Label>
-                <Select value={propKind} onValueChange={(v) => setPropKind(v as ScenePropKindV1)}>
-                  <SelectTrigger className="border-barber-gold/30 bg-barber-dark text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SCENE_PROP_CATALOG.map((p) => (
-                      <SelectItem key={p.kind} value={p.kind}>
-                        {p.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-[10px] text-barber-paper/50">Clicca sul piano per posizionare.</p>
-              </div>
-            ) : null}
-            {tool === "gmNote" ? (
-              <p className="text-[10px] text-barber-paper/50">
-                Clicca per aggiungere una nota GM (visibile solo a te, non in proiezione).
-              </p>
-            ) : null}
-            {selectedGmNoteId ? (
-              <div className="space-y-1">
-                <Label className="text-xs">Testo nota GM</Label>
-                <Textarea
-                  rows={4}
-                  value={
-                    activeFloor.gmNotes.find((n) => n.id === selectedGmNoteId)?.text ?? ""
-                  }
-                  onChange={(e) => {
-                    const text = e.target.value;
-                    updateFloor(activeFloor.id, (f) => ({
-                      ...f,
-                      gmNotes: f.gmNotes.map((n) =>
-                        n.id === selectedGmNoteId ? { ...n, text } : n
-                      ),
-                    }));
-                  }}
-                  className="border-barber-gold/30 bg-barber-dark text-sm"
-                />
-              </div>
-            ) : null}
-            <p className="text-[11px] leading-relaxed text-barber-paper/55">
-              Corridoio: clic per vertici, clic sul primo punto per chiudere. Porta: clic su un muro.
-              Props compaiono nel raster proiezione; le note GM solo in Vista dall&apos;alto.
-            </p>
-          </aside>
-        </div>
-      ) : null}
+          ) : null}
+          <p className="text-[11px] leading-relaxed text-barber-paper/55">
+            Corridoio: clic per vertici, clic sul primo punto per chiudere. Porta: clic su un muro
+            generato. Elimina su muro rimuove la porta. Props nel raster; note GM solo in Vista
+            dall&apos;alto.
+          </p>
+        </aside>
+      </div>
     </div>
   );
 }

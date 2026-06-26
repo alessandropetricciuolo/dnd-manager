@@ -1,3 +1,5 @@
+import { generateWallsFromAreas } from "../scene-editor/auto-walls";
+import { normalizeSceneFloor } from "./normalize-floor";
 import type { SceneDocumentV1 } from "./types";
 
 function newEntityId(): string {
@@ -8,7 +10,7 @@ function newEntityId(): string {
 }
 
 /**
- * Clona un documento scena con nuovi id (piani, aree, muri, props, note).
+ * Clona un documento scena con nuovi id (piani, layer, aree, muri, props, note).
  * Le regioni FoW collegate saranno ricreate con reveal reset.
  */
 export function cloneSceneDocument(
@@ -26,11 +28,36 @@ export function cloneSceneDocument(
       options?.linkedMissionId !== undefined ? options.linkedMissionId : source.linkedMissionId,
     floors: source.floors.map((floor) => {
       const floorId = newEntityId();
+      const base = normalizeSceneFloor({ ...floor, id: floorId });
+      const layers = base.layers.map((layer) => {
+        const layerId = newEntityId();
+        const areas = layer.areas.map((a) => ({ ...a, id: newEntityId() }));
+        const doorHints = layer.walls.map((w) => ({
+          id: w.id,
+          x1: w.x1,
+          y1: w.y1,
+          x2: w.x2,
+          y2: w.y2,
+          door: w.door,
+        }));
+        return {
+          ...layer,
+          id: layerId,
+          areas,
+          walls: generateWallsFromAreas(areas, doorHints, { preserveWallIds: false }),
+        };
+      });
+      const activeIdx = base.layers.findIndex((l) => l.id === base.activeLayerId);
+      const activeLayerId = layers[activeIdx >= 0 ? activeIdx : 0]?.id ?? layers[0]?.id ?? newEntityId();
+      const areas = layers.flatMap((l) => l.areas);
+      const walls = layers.flatMap((l) => l.walls);
       return {
-        ...floor,
+        ...base,
         id: floorId,
-        areas: floor.areas.map((a) => ({ ...a, id: newEntityId() })),
-        walls: floor.walls.map((w) => ({ ...w, id: newEntityId() })),
+        layers,
+        activeLayerId,
+        areas,
+        walls,
         props: (floor.props ?? []).map((p) => ({ ...p, id: newEntityId() })),
         gmNotes: (floor.gmNotes ?? []).map((n) => ({ ...n, id: newEntityId() })),
       };

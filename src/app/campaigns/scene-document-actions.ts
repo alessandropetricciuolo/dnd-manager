@@ -20,6 +20,16 @@ import { uploadImageToTelegram } from "@/lib/telegram-storage";
 
 type Result<T = void> = { success: true; data?: T } | { success: false; error: string };
 
+function revalidateExplorationPaths(campaignId: string, sceneDocumentId?: string) {
+  revalidatePath(`/campaigns/${campaignId}`);
+  revalidatePath(`/campaigns/${campaignId}/gm-only/vista-dall-alto`);
+  revalidatePath(`/campaigns/${campaignId}/gm-screen`);
+  if (sceneDocumentId) {
+    revalidatePath(`/campaigns/${campaignId}/gm-only/scene-editor/${sceneDocumentId}`);
+  }
+  revalidatePath(`/campaigns/${campaignId}/gm-only/scene-editor`);
+}
+
 export type SceneDocumentRow = {
   id: string;
   campaign_id: string;
@@ -256,22 +266,13 @@ export async function createSceneDocumentAction(
 
   if (error || !row) return { success: false, error: error?.message ?? "Errore creazione scena." };
 
-  const maps = await upsertFloorMaps(
-    supabase,
-    campaignId,
-    row.id,
-    doc,
-    doc.linkedMissionId
-  );
-  if (!maps.success) return maps;
-
-  revalidatePath(`/campaigns/${campaignId}`);
+  revalidateExplorationPaths(campaignId);
   return {
     success: true,
     data: {
       sceneDocumentId: row.id,
       document: doc,
-      floorMapIds: maps.data!,
+      floorMapIds: {},
     },
   };
 }
@@ -357,7 +358,7 @@ export async function saveSceneDocumentAction(
   );
   if (!maps.success) return maps;
 
-  revalidatePath(`/campaigns/${campaignId}`);
+  revalidateExplorationPaths(campaignId, sceneDocumentId);
   return { success: true, data: { floorMapIds: maps.data! } };
 }
 
@@ -398,6 +399,17 @@ export async function saveSceneDocumentWithRastersAction(
     }
   }
 
+  if (Object.keys(floorRasters).length === 0) {
+    return { success: false, error: "Raster piano mancanti: impossibile aggiornare Esplorazione e FoW." };
+  }
+
+  if (Object.keys(floorRasters).length !== document.floors.length) {
+    return {
+      success: false,
+      error: "Raster mancante per uno o più piani. Riprova il salvataggio.",
+    };
+  }
+
   const payload = documentToPersistPayload(document);
   const { error: updErr } = await supabase
     .from("campaign_scene_documents")
@@ -412,12 +424,11 @@ export async function saveSceneDocumentWithRastersAction(
     sceneDocumentId,
     document,
     document.linkedMissionId,
-    Object.keys(floorRasters).length > 0 ? floorRasters : undefined
+    floorRasters
   );
   if (!maps.success) return maps;
 
-  revalidatePath(`/campaigns/${campaignId}`);
-  revalidatePath(`/campaigns/${campaignId}/gm-only/scene-editor/${sceneDocumentId}`);
+  revalidateExplorationPaths(campaignId, sceneDocumentId);
   return { success: true, data: { floorMapIds: maps.data! } };
 }
 
@@ -464,12 +475,56 @@ export async function duplicateSceneDocumentAction(
 
   if (error || !row) return { success: false, error: error?.message ?? "Errore duplicazione scena." };
 
-  const maps = await upsertFloorMaps(supabase, campaignId, row.id, cloned, cloned.linkedMissionId);
-  if (!maps.success) return maps;
-
-  revalidatePath(`/campaigns/${campaignId}`);
-  revalidatePath(`/campaigns/${campaignId}/gm-only/scene-editor`);
+  revalidateExplorationPaths(campaignId);
   return { success: true, data: { sceneDocumentId: row.id } };
+}
+
+export async function deleteSceneDocumentAction(
+  campaignId: string,
+  sceneDocumentId: string
+): Promise<Result> {
+  const supabase = await createSupabaseServerClient();
+  const ctx = await requireGm(supabase);
+  if (!ctx.user || !ctx.ok) return { success: false, error: "Non autorizzato." };
+
+  const { data: doc } = await supabase
+    .from("campaign_scene_documents")
+    .select("id")
+    .eq("id", sceneDocumentId)
+    .eq("campaign_id", campaignId)
+    .single();
+  if (!doc) return { success: false, error: "Scena non trovata." };
+
+  const { data: maps } = await supabase
+    .from("campaign_exploration_maps")
+    .select("id")
+    .eq("scene_document_id", sceneDocumentId)
+    .eq("campaign_id", campaignId);
+
+  const mapIds = (maps ?? []).map((m) => m.id);
+  if (mapIds.length > 0) {
+    const { error: fowErr } = await supabase
+      .from("campaign_exploration_fow_regions")
+      .delete()
+      .in("map_id", mapIds);
+    if (fowErr) return { success: false, error: fowErr.message };
+
+    const { error: mapErr } = await supabase
+      .from("campaign_exploration_maps")
+      .delete()
+      .in("id", mapIds);
+    if (mapErr) return { success: false, error: mapErr.message };
+  }
+
+  const { error: delErr } = await supabase
+    .from("campaign_scene_documents")
+    .delete()
+    .eq("id", sceneDocumentId)
+    .eq("campaign_id", campaignId);
+  if (delErr) return { success: false, error: delErr.message };
+
+  revalidateExplorationPaths(campaignId);
+  return { success: true };
 }
 
 export async function getSceneFloorGmNotesAction(

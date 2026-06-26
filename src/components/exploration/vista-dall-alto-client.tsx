@@ -122,7 +122,9 @@ export function VistaDallAltoClient({
     }
   }, [campaignId, selectedMapId]);
 
-  const imageUrl = selectedMap ? getExplorationMapPublicUrl(selectedMap.image_path) : "";
+  const imageUrl = selectedMap
+    ? getExplorationMapPublicUrl(selectedMap.image_path, selectedMap.updated_at)
+    : "";
 
   useEffect(() => {
     setMaps(initialMaps);

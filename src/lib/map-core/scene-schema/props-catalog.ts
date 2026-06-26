@@ -11,6 +11,9 @@ export const SCENE_PROP_KINDS = [
   "boulder",
   "campfire",
   "altar",
+  "star",
+  "stairs",
+  "coffin",
 ] as const;
 
 export type ScenePropKindV1 = (typeof SCENE_PROP_KINDS)[number];
@@ -33,6 +36,9 @@ export const SCENE_PROP_CATALOG: ScenePropCatalogEntry[] = [
   { kind: "boulder", label: "Roccia", baseSize: 64 },
   { kind: "campfire", label: "Fuoco", baseSize: 56 },
   { kind: "altar", label: "Altare", baseSize: 72 },
+  { kind: "star", label: "Marcatura", baseSize: 32 },
+  { kind: "stairs", label: "Scale", baseSize: 64 },
+  { kind: "coffin", label: "Bara", baseSize: 48 },
 ];
 
 export function isScenePropKind(value: string): value is ScenePropKindV1 {

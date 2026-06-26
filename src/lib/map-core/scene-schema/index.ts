@@ -10,6 +10,7 @@ export {
   type SceneFloorV1,
   type SceneGmNoteV1,
   type SceneGridV1,
+  type SceneLayerV1,
   type ScenePropV1,
   type SceneWallDoorV1,
   type SceneWallV1,
@@ -22,6 +23,24 @@ export {
   type ScenePropCatalogEntry,
   type ScenePropKindV1,
 } from "./props-catalog";
+export {
+  SCENE_LAYER_PRESET_IDS,
+  SCENE_LAYER_PRESETS,
+  isSceneLayerPresetId,
+  sceneLayerPreset,
+  type SceneLayerPreset,
+  type SceneLayerPresetId,
+} from "./layer-presets";
+export {
+  normalizeSceneDocument,
+  normalizeSceneFloor,
+  prepareSceneDocumentForSave,
+  prepareFloorForSave,
+  getActiveLayer,
+  updateActiveLayer,
+  flattenAreasFromLayers,
+  createDefaultLayer,
+} from "./normalize-floor";
 export { cloneSceneDocument } from "./clone-document";
 export {
   assertSceneDocumentV1,

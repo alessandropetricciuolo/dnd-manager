@@ -5,10 +5,13 @@ import {
   type SceneFloorV1,
   type SceneGmNoteV1,
   type SceneGridV1,
+  type SceneLayerV1,
   type ScenePropV1,
   type SceneWallV1,
 } from "./types";
 import { isScenePropKind } from "./props-catalog";
+import { isSceneLayerPresetId } from "./layer-presets";
+import { normalizeSceneDocument } from "./normalize-floor";
 
 function isFiniteNumber(n: unknown): n is number {
   return typeof n === "number" && Number.isFinite(n);
@@ -109,6 +112,41 @@ function parseWall(raw: unknown): SceneWallV1 | null {
   return { id: id.trim(), x1, y1, x2, y2, door };
 }
 
+function parseLayer(raw: unknown): SceneLayerV1 | null {
+  if (!raw || typeof raw !== "object") return null;
+  const id = (raw as { id?: unknown }).id;
+  if (typeof id !== "string" || !id.trim()) return null;
+  const labelRaw = (raw as { label?: unknown }).label;
+  const label = typeof labelRaw === "string" ? labelRaw : "Layer";
+  const sortOrder = Number((raw as { sortOrder?: unknown }).sortOrder ?? 0);
+  const presetRaw = (raw as { presetId?: unknown }).presetId;
+  const presetId =
+    typeof presetRaw === "string" && isSceneLayerPresetId(presetRaw)
+      ? presetRaw
+      : "classic_hatching";
+  const opacity = Number((raw as { opacity?: unknown }).opacity ?? 1);
+  const visible = (raw as { visible?: unknown }).visible !== false;
+  const areasRaw = (raw as { areas?: unknown }).areas;
+  const wallsRaw = (raw as { walls?: unknown }).walls;
+  const areas = Array.isArray(areasRaw)
+    ? areasRaw.map(parseArea).filter((a): a is SceneAreaV1 => a !== null)
+    : [];
+  const walls = Array.isArray(wallsRaw)
+    ? wallsRaw.map(parseWall).filter((w): w is SceneWallV1 => w !== null)
+    : [];
+  if (!isFiniteNumber(sortOrder)) return null;
+  return {
+    id: id.trim(),
+    label,
+    sortOrder: Math.floor(sortOrder),
+    presetId,
+    opacity: Math.min(1, Math.max(0.05, opacity)),
+    visible,
+    areas,
+    walls,
+  };
+}
+
 function parseFloor(raw: unknown): SceneFloorV1 | null {
   if (!raw || typeof raw !== "object") return null;
   const id = (raw as { id?: unknown }).id;
@@ -138,6 +176,15 @@ function parseFloor(raw: unknown): SceneFloorV1 | null {
   const gmNotes = Array.isArray(gmNotesRaw)
     ? gmNotesRaw.map(parseGmNote).filter((n): n is SceneGmNoteV1 => n !== null)
     : [];
+  const layersRaw = (raw as { layers?: unknown }).layers;
+  const layersParsed = Array.isArray(layersRaw)
+    ? layersRaw.map(parseLayer).filter((l): l is SceneLayerV1 => l !== null)
+    : [];
+  const activeLayerIdRaw = (raw as { activeLayerId?: unknown }).activeLayerId;
+  const activeLayerId =
+    typeof activeLayerIdRaw === "string" && activeLayerIdRaw.trim()
+      ? activeLayerIdRaw.trim()
+      : layersParsed[0]?.id ?? "";
   return {
     id: id.trim(),
     label: typeof label === "string" ? label : "",
@@ -147,6 +194,8 @@ function parseFloor(raw: unknown): SceneFloorV1 | null {
     grid,
     areas,
     walls,
+    layers: layersParsed,
+    activeLayerId,
     props,
     gmNotes,
   };
@@ -219,5 +268,5 @@ export function parseSceneDocumentV1(raw: unknown): ParseSceneDocumentResult {
 export function assertSceneDocumentV1(raw: unknown): SceneDocumentV1 {
   const parsed = parseSceneDocumentV1(raw);
   if (!parsed.ok) throw new Error(parsed.error);
-  return parsed.document;
+  return normalizeSceneDocument(parsed.document);
 }
