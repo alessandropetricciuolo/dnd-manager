@@ -16,6 +16,9 @@ export type ExplorationMapRow = {
   floor_label: string;
   sort_order: number;
   image_path: string;
+  source_type: "uploaded_image" | "generated_scene";
+  scene_document_id: string | null;
+  scene_floor_id: string | null;
   grid_cell_meters: number | null;
   /** Legacy: px per cell on the image file; used if grid_cells_w/h are not set. */
   grid_source_cell_px: number | null;
@@ -35,6 +38,7 @@ export type FowRegionRow = {
   polygon: Json;
   is_revealed: boolean;
   sort_order: number;
+  source_area_id: string | null;
   created_at: string;
   updated_at: string;
 };

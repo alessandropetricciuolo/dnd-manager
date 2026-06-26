@@ -17,14 +17,18 @@ import {
   type ExplorationMapRow,
   type FowRegionRow,
 } from "@/app/campaigns/exploration-map-actions";
+import { getSceneFloorGmNotesAction } from "@/app/campaigns/scene-document-actions";
 import { getExplorationMapPublicUrl } from "@/lib/exploration/exploration-storage";
 import type { NormPoint } from "@/lib/exploration/fow-geometry";
 import { parsePolygonJson } from "@/lib/exploration/fow-geometry";
+import { sceneGmNotesToOverlay, type GmNoteOverlayVm } from "@/lib/map-core/viewer";
 import {
   ExplorationMapStage,
   hitTestRegion,
   type FowRegionVm,
 } from "@/components/exploration/exploration-map-stage";
+import { useExplorationMapGrid } from "@/components/exploration/use-exploration-map-grid";
+import { mapSourceLabel } from "@/lib/exploration/exploration-map-grid";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,7 +39,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ExternalLink, Trash2, Undo2 } from "lucide-react";
+import { ExternalLink, Map, Pencil, Trash2, Undo2 } from "lucide-react";
+import Link from "next/link";
 
 /**
  * Mappe FoW: sotto 4 MB per la route API.
@@ -83,8 +88,15 @@ export function VistaDallAltoClient({
   const [newMapMissionId, setNewMapMissionId] = useState<string>("none");
   const [selectedMapMissionId, setSelectedMapMissionId] = useState<string>("none");
   const [savingMapMission, setSavingMapMission] = useState(false);
+  const [gridCellsW, setGridCellsW] = useState("");
+  const [gridCellsH, setGridCellsH] = useState("");
+  const [gridOffsetX, setGridOffsetX] = useState("0");
+  const [gridOffsetY, setGridOffsetY] = useState("0");
+  const [savingGrid, setSavingGrid] = useState(false);
+  const [gmNotesOverlay, setGmNotesOverlay] = useState<GmNoteOverlayVm[]>([]);
 
   const selectedMap = maps.find((m) => m.id === selectedMapId) ?? null;
+  const gridOverlay = useExplorationMapGrid(selectedMap);
   const regionsForMap = useMemo(
     () => regions.filter((r) => r.map_id === selectedMapId),
     [regions, selectedMapId]
@@ -123,10 +135,48 @@ export function VistaDallAltoClient({
   useEffect(() => {
     if (!selectedMap) {
       setSelectedMapMissionId("none");
+      setGridCellsW("");
+      setGridCellsH("");
+      setGridOffsetX("0");
+      setGridOffsetY("0");
       return;
     }
     setSelectedMapMissionId(selectedMap.linked_mission_id ?? "none");
+    setGridCellsW(selectedMap.grid_cells_w != null ? String(selectedMap.grid_cells_w) : "");
+    setGridCellsH(selectedMap.grid_cells_h != null ? String(selectedMap.grid_cells_h) : "");
+    setGridOffsetX(String(selectedMap.grid_offset_x_cells ?? 0));
+    setGridOffsetY(String(selectedMap.grid_offset_y_cells ?? 0));
   }, [selectedMap]);
+
+  useEffect(() => {
+    if (
+      !selectedMap ||
+      selectedMap.source_type !== "generated_scene" ||
+      !selectedMap.scene_document_id ||
+      !selectedMap.scene_floor_id
+    ) {
+      setGmNotesOverlay([]);
+      return;
+    }
+    let cancelled = false;
+    void getSceneFloorGmNotesAction(
+      campaignId,
+      selectedMap.scene_document_id,
+      selectedMap.scene_floor_id
+    ).then((res) => {
+      if (cancelled) return;
+      if (!res.success || !res.data) {
+        setGmNotesOverlay([]);
+        return;
+      }
+      setGmNotesOverlay(
+        sceneGmNotesToOverlay(res.data.notes, res.data.floorWidth, res.data.floorHeight)
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [campaignId, selectedMap]);
 
   useEffect(() => {
     if (!selectedMapId) return;
@@ -486,9 +536,68 @@ export function VistaDallAltoClient({
     toast.success("Missione collegata alla mappa.");
   }
 
+  async function handleSaveGridCalibration() {
+    if (!selectedMapId) return;
+    const cw = gridCellsW.trim() ? Number(gridCellsW) : null;
+    const ch = gridCellsH.trim() ? Number(gridCellsH) : null;
+    if ((cw != null && (!Number.isFinite(cw) || cw <= 0)) || (ch != null && (!Number.isFinite(ch) || ch <= 0))) {
+      toast.error("Celle griglia non valide.");
+      return;
+    }
+    setSavingGrid(true);
+    const res = await updateExplorationMapMeta(campaignId, selectedMapId, {
+      grid_cells_w: cw,
+      grid_cells_h: ch,
+      grid_offset_x_cells: Number(gridOffsetX) || 0,
+      grid_offset_y_cells: Number(gridOffsetY) || 0,
+      grid_source_cell_px: null,
+    });
+    setSavingGrid(false);
+    if (!res.success) {
+      toast.error(res.error ?? "Errore salvataggio griglia.");
+      return;
+    }
+    setMaps((prev) =>
+      prev.map((m) =>
+        m.id === selectedMapId
+          ? {
+              ...m,
+              grid_cells_w: cw,
+              grid_cells_h: ch,
+              grid_offset_x_cells: Number(gridOffsetX) || 0,
+              grid_offset_y_cells: Number(gridOffsetY) || 0,
+              grid_source_cell_px: null,
+            }
+          : m
+      )
+    );
+    toast.success("Calibrazione griglia salvata.");
+  }
+
 
   return (
     <div className="flex min-h-[70vh] flex-col gap-6">
+      <section className="rounded-xl border border-barber-gold/25 bg-barber-dark/50 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-semibold text-barber-gold">Scene Editor</h3>
+            <p className="text-xs text-barber-paper/60">
+              Crea mappe con stanze, corridoi, muri e FoW automatica per area.
+            </p>
+          </div>
+          <Button
+            type="button"
+            asChild
+            className="bg-barber-gold text-barber-dark hover:bg-barber-gold/90"
+          >
+            <Link href={`/campaigns/${campaignId}/gm-only/scene-editor`}>
+              <Map className="mr-2 h-4 w-4" />
+              Scene Editor
+            </Link>
+          </Button>
+        </div>
+      </section>
+
       <div className="flex flex-wrap items-end gap-4">
         <div className="space-y-1">
           <Label>Piano / mappa</Label>
@@ -508,6 +617,7 @@ export function VistaDallAltoClient({
               {maps.map((m) => (
                 <SelectItem key={m.id} value={m.id}>
                   {m.floor_label?.trim() || "Senza nome"} (ord. {m.sort_order})
+                  {m.source_type === "generated_scene" ? " · generata" : ""}
                   {m.linked_mission_id ? " · missione" : ""}
                 </SelectItem>
               ))}
@@ -526,6 +636,22 @@ export function VistaDallAltoClient({
             Apri proiezione (2° schermo)
           </Button>
         )}
+        {selectedMap?.source_type === "generated_scene" && selectedMap.scene_document_id ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="border-barber-gold/40"
+            asChild
+          >
+            <Link
+              href={`/campaigns/${campaignId}/gm-only/scene-editor/${selectedMap.scene_document_id}`}
+            >
+              <Pencil className="mr-2 h-4 w-4" />
+              Modifica scena
+            </Link>
+          </Button>
+        ) : null}
       </div>
 
       <section className="rounded-xl border border-barber-gold/25 bg-barber-dark/50 p-4">
@@ -739,12 +865,93 @@ export function VistaDallAltoClient({
 
           <div className="mb-2 flex flex-wrap gap-4 text-sm text-barber-paper/80">
             <span>
+              <span className="rounded bg-barber-gold/15 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-barber-gold">
+                {mapSourceLabel(selectedMap.source_type ?? "uploaded_image")}
+              </span>
+            </span>
+            <span>
               Poligoni: {regionsForMap.length} · Bozza: {draftPoints.length} vertici
             </span>
+            {gridOverlay.showGrid ? (
+              <span className="text-emerald-400/90">Griglia attiva</span>
+            ) : null}
             {selectedMap.grid_cell_meters != null && (
               <span>Scala: 1 quadretto ≈ {String(selectedMap.grid_cell_meters)} m</span>
             )}
           </div>
+
+          {selectedMap.source_type === "generated_scene" ? (
+            <p className="mb-3 text-xs text-barber-paper/55">
+              Griglia da Scene Editor. Per modificarla apri{" "}
+              <Link
+                href={`/campaigns/${campaignId}/gm-only/scene-editor/${selectedMap.scene_document_id}`}
+                className="text-barber-gold underline"
+              >
+                Modifica scena
+              </Link>
+              .
+            </p>
+          ) : (
+            <section className="mb-3 rounded-lg border border-barber-gold/20 bg-barber-dark/40 p-3">
+              <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-barber-gold">
+                Calibrazione griglia (mappe importate)
+              </h4>
+              <p className="mb-2 text-xs text-barber-paper/55">
+                Imposta celle Roll20 (larghezza × altezza in quadretti) come in Dungeon Alchemist / Foundry.
+                L&apos;import JSON scena può precompilare questi valori.
+              </p>
+              <div className="flex flex-wrap items-end gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Celle W</Label>
+                  <Input
+                    value={gridCellsW}
+                    onChange={(e) => setGridCellsW(e.target.value)}
+                    type="number"
+                    min={1}
+                    className="w-24 border-barber-gold/30 bg-barber-dark text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Celle H</Label>
+                  <Input
+                    value={gridCellsH}
+                    onChange={(e) => setGridCellsH(e.target.value)}
+                    type="number"
+                    min={1}
+                    className="w-24 border-barber-gold/30 bg-barber-dark text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Offset X (celle)</Label>
+                  <Input
+                    value={gridOffsetX}
+                    onChange={(e) => setGridOffsetX(e.target.value)}
+                    type="number"
+                    className="w-24 border-barber-gold/30 bg-barber-dark text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Offset Y (celle)</Label>
+                  <Input
+                    value={gridOffsetY}
+                    onChange={(e) => setGridOffsetY(e.target.value)}
+                    type="number"
+                    className="w-24 border-barber-gold/30 bg-barber-dark text-sm"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="border-barber-gold/40"
+                  disabled={savingGrid}
+                  onClick={() => void handleSaveGridCalibration()}
+                >
+                  {savingGrid ? "Salvataggio..." : "Salva griglia"}
+                </Button>
+              </div>
+            </section>
+          )}
 
           {missionOptions.length > 0 ? (
             <section className="mb-3 rounded-lg border border-barber-gold/20 bg-barber-dark/40 p-3">
@@ -847,13 +1054,19 @@ export function VistaDallAltoClient({
             mode={mode}
             draftPoints={draftPoints}
             selectedRegionId={selectedRegionId}
+            onImageSized={gridOverlay.onImageSized}
             onCanvasClick={onCanvasClick}
             onShapeCreate={handleShapeCreate}
             onVertexDragEnd={handleVertexDragEnd}
             onRegionPolygonChange={handleRegionPolygonChange}
             onRegionDelete={handleDeleteRegionById}
             onRevealClick={mode === "explore" ? onRevealClick : undefined}
-            showGrid={false}
+            showGrid={gridOverlay.showGrid}
+            gridCellSourcePxX={gridOverlay.gridCellSourcePxX}
+            gridOffsetXCells={gridOverlay.gridOffsetXCells}
+            gridOffsetYCells={gridOverlay.gridOffsetYCells}
+            showGmNotes={gmNotesOverlay.length > 0}
+            gmNotes={gmNotesOverlay}
           />
 
           <p className="text-xs text-barber-paper/55">

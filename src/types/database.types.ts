@@ -734,24 +734,67 @@ export interface Database {
         Row: {
           id: string;
           campaign_id: string;
+          linked_mission_id: string | null;
           floor_label: string;
           sort_order: number;
           image_path: string;
+          source_type: "uploaded_image" | "generated_scene";
+          scene_document_id: string | null;
+          scene_floor_id: string | null;
           grid_cell_meters: number | null;
+          grid_source_cell_px: number | null;
+          grid_cells_w: number | null;
+          grid_cells_h: number | null;
+          grid_offset_x_cells: number;
+          grid_offset_y_cells: number;
+          grid_kind: "square" | "hex";
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id?: string;
           campaign_id: string;
+          linked_mission_id?: string | null;
           floor_label?: string;
           sort_order?: number;
           image_path: string;
+          source_type?: "uploaded_image" | "generated_scene";
+          scene_document_id?: string | null;
+          scene_floor_id?: string | null;
           grid_cell_meters?: number | null;
+          grid_source_cell_px?: number | null;
+          grid_cells_w?: number | null;
+          grid_cells_h?: number | null;
+          grid_offset_x_cells?: number;
+          grid_offset_y_cells?: number;
+          grid_kind?: "square" | "hex";
           created_at?: string;
           updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["campaign_exploration_maps"]["Insert"]>;
+      };
+      campaign_scene_documents: {
+        Row: {
+          id: string;
+          campaign_id: string;
+          name: string;
+          linked_mission_id: string | null;
+          document: Json;
+          document_version: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          campaign_id: string;
+          name?: string;
+          linked_mission_id?: string | null;
+          document: Json;
+          document_version?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["campaign_scene_documents"]["Insert"]>;
       };
       gm_global_audio_tracks: {
         Row: {
@@ -858,6 +901,7 @@ export interface Database {
           polygon: Json;
           is_revealed: boolean;
           sort_order: number;
+          source_area_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -867,6 +911,7 @@ export interface Database {
           polygon: Json;
           is_revealed?: boolean;
           sort_order?: number;
+          source_area_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };

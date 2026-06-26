@@ -3,13 +3,27 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import { cn } from "@/lib/utils";
-import type { NormPoint } from "@/lib/exploration/fow-geometry";
 import {
+  type NormPoint,
   clampNormPoint,
-  intrinsicNormToElementPx,
-  intrinsicNormToSvgUserUnits,
+  clientPointToNorm,
+  normToCssPercentPosition,
   pointInPolygon,
-} from "@/lib/exploration/fow-geometry";
+} from "@/lib/map-core/coordinates";
+import {
+  drawFogOnCanvas,
+  fogFillForMode,
+  getDevicePixelRatio,
+  sizeCanvasToElement,
+  tracePolygonPathPx,
+} from "@/lib/map-core/fog";
+import {
+  computeSquareGridOverlay,
+  normPointToSvgUserUnits,
+  revealedPolygonsFromRegions,
+  type FowRegionViewModel,
+  type GmNoteOverlayVm,
+} from "@/lib/map-core/viewer";
 import { FowRadialMenu, type FowRadialMenuItem } from "@/components/exploration/fow-radial-menu";
 import {
   generateShapePolygon,
@@ -48,11 +62,7 @@ import {
   type ParticleSystem,
 } from "@/lib/exploration/polygon-particles";
 
-export type FowRegionVm = {
-  id: string;
-  polygon: NormPoint[];
-  is_revealed: boolean;
-};
+export type FowRegionVm = FowRegionViewModel;
 
 type ExplorationMapStageProps = {
   imageUrl: string;
@@ -84,11 +94,10 @@ type ExplorationMapStageProps = {
    * In fullscreen il menu su `document.body` resta fuori dal layer fullscreen; passa il div proiezione che entra in fullscreen.
    */
   effectsRadialPortalTarget?: HTMLElement | null;
+  /** Note GM (solo overlay GM; nascoste in proiezione). */
+  gmNotes?: GmNoteOverlayVm[];
+  showGmNotes?: boolean;
 };
-
-const FOG_RGBA = "rgba(8, 6, 4, 0.82)";
-/** In proiezione la nebbia deve coprire del tutto (niente map visibile sotto). */
-const FOG_RGBA_OPAQUE = "rgba(0, 0, 0, 1)";
 
 const RADIAL_MAIN_ITEMS: FowRadialMenuItem[] = [
   { id: "manual", label: "Vertici manuali" },
@@ -173,41 +182,6 @@ function effectElementDraftStyle(element: ParticleElement): { fill: string; stro
   }
 }
 
-function drawFog(
-  canvas: HTMLCanvasElement,
-  w: number,
-  h: number,
-  revealed: NormPoint[][],
-  fogFill: string,
-  naturalW: number,
-  naturalH: number
-) {
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-  const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
-  canvas.width = Math.max(1, Math.floor(w * dpr));
-  canvas.height = Math.max(1, Math.floor(h * dpr));
-  canvas.style.width = `${w}px`;
-  canvas.style.height = `${h}px`;
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.fillStyle = fogFill;
-  ctx.fillRect(0, 0, w, h);
-  ctx.globalCompositeOperation = "destination-out";
-  for (const poly of revealed) {
-    if (poly.length < 3) continue;
-    ctx.beginPath();
-    const [x0, y0] = intrinsicNormToElementPx(poly[0].x, poly[0].y, w, h, naturalW, naturalH);
-    ctx.moveTo(x0, y0);
-    for (let i = 1; i < poly.length; i++) {
-      const [xi, yi] = intrinsicNormToElementPx(poly[i].x, poly[i].y, w, h, naturalW, naturalH);
-      ctx.lineTo(xi, yi);
-    }
-    ctx.closePath();
-    ctx.fill();
-  }
-  ctx.globalCompositeOperation = "source-over";
-}
-
 export function ExplorationMapStage({
   imageUrl,
   imageAlt,
@@ -232,6 +206,8 @@ export function ExplorationMapStage({
   gridOffsetYCells = 0,
   effectsEnabled = false,
   effectsRadialPortalTarget = null,
+  gmNotes = [],
+  showGmNotes = false,
 }: ExplorationMapStageProps) {
   const imgRef = useRef<HTMLImageElement>(null);
   /** Box della mappa (img + overlay): stesso sistema di coordinate di SVG/canvas. */
@@ -333,10 +309,7 @@ export function ExplorationMapStage({
     effectTransformRef.current = effectTransform;
   }, [effectTransform]);
 
-  const revealedPolys = useMemo(
-    () => regions.filter((r) => r.is_revealed).map((r) => r.polygon),
-    [regions]
-  );
+  const revealedPolys = useMemo(() => revealedPolygonsFromRegions(regions), [regions]);
 
   const effectPolygonsRef = useRef(effectPolygons);
   const effectIsNightRef = useRef(effectIsNight);
@@ -418,25 +391,6 @@ export function ExplorationMapStage({
       cancelled = true;
     };
   }, [effectsEnabled, layoutSize]);
-
-  function tracePolygonPathPx(
-    ctx: CanvasRenderingContext2D,
-    poly: NormPoint[],
-    w: number,
-    h: number,
-    naturalW: number,
-    naturalH: number
-  ) {
-    if (poly.length < 3) return;
-    const [x0, y0] = intrinsicNormToElementPx(poly[0].x, poly[0].y, w, h, naturalW, naturalH);
-    ctx.beginPath();
-    ctx.moveTo(x0, y0);
-    for (let i = 1; i < poly.length; i++) {
-      const [xi, yi] = intrinsicNormToElementPx(poly[i].x, poly[i].y, w, h, naturalW, naturalH);
-      ctx.lineTo(xi, yi);
-    }
-    ctx.closePath();
-  }
 
   useEffect(() => {
     if (!effectsEnabled) return;
@@ -534,7 +488,7 @@ export function ExplorationMapStage({
     return () => cancelAnimationFrame(raf);
   }, [effectsEnabled, natural]);
 
-  const fogFill = readOnly ? FOG_RGBA_OPAQUE : FOG_RGBA;
+  const fogFill = fogFillForMode(readOnly);
 
   const syncFog = useCallback(() => {
     const img = imgRef.current;
@@ -545,33 +499,22 @@ export function ExplorationMapStage({
     setLayoutSize((prev) => (prev?.w === w && prev?.h === h ? prev : { w, h }));
     const cv = fogRef.current;
     if (cv) {
-      drawFog(
-        cv,
-        w,
-        h,
-        mode === "explore" || readOnly ? revealedPolys : [],
+      drawFogOnCanvas(cv, {
+        elementWidth: w,
+        elementHeight: h,
+        revealedPolygons: mode === "explore" || readOnly ? revealedPolys : [],
         fogFill,
-        img.naturalWidth,
-        img.naturalHeight
-      );
+        naturalWidth: img.naturalWidth,
+        naturalHeight: img.naturalHeight,
+      });
     }
     // Effetti: sincronizza dimensioni canvas anche se il canvas nebbia non è ancora montato
     if (effectsEnabled) {
-      const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
+      const dpr = getDevicePixelRatio();
       const fx = effectsCanvasRef.current;
-      if (fx) {
-        fx.width = Math.max(1, Math.floor(w * dpr));
-        fx.height = Math.max(1, Math.floor(h * dpr));
-        fx.style.width = `${w}px`;
-        fx.style.height = `${h}px`;
-      }
+      if (fx) sizeCanvasToElement(fx, w, h, dpr);
       const night = nightOverlayCanvasRef.current;
-      if (night) {
-        night.width = Math.max(1, Math.floor(w * dpr));
-        night.height = Math.max(1, Math.floor(h * dpr));
-        night.style.width = `${w}px`;
-        night.style.height = `${h}px`;
-      }
+      if (night) sizeCanvasToElement(night, w, h, dpr);
     }
   }, [revealedPolys, mode, readOnly, fogFill, effectsEnabled]);
 
@@ -601,27 +544,16 @@ export function ExplorationMapStage({
   const normFromEvent = useCallback((clientX: number, clientY: number): NormPoint | null => {
     const img = imgRef.current;
     if (!img || !img.naturalWidth || !img.naturalHeight) return null;
-    const naturalW = img.naturalWidth;
-    const naturalH = img.naturalHeight;
-    /** Stesso spazio di intrinsicNormToElementPx / canvas: rect schermo (include zoom TransformWrapper) × offset interno. */
     const sr = img.getBoundingClientRect();
-    const elW = img.offsetWidth;
-    const elH = img.offsetHeight;
-    if (elW < 1 || elH < 1 || sr.width <= 0 || sr.height <= 0) return null;
-    const pxRaw = ((clientX - sr.left) / sr.width) * elW;
-    const pyRaw = ((clientY - sr.top) / sr.height) * elH;
-    const slack = 12 * (elW / Math.max(sr.width, 1e-6));
-    if (pxRaw < -slack || pxRaw > elW + slack || pyRaw < -slack || pyRaw > elH + slack) return null;
-    const px = Math.min(elW, Math.max(0, pxRaw));
-    const py = Math.min(elH, Math.max(0, pyRaw));
-    const scaleGeom = Math.min(elW / naturalW, elH / naturalH);
-    const dw = naturalW * scaleGeom;
-    const dh = naturalH * scaleGeom;
-    const ox = (elW - dw) / 2;
-    const oy = (elH - dh) / 2;
-    const x = (px - ox) / dw;
-    const y = (py - oy) / dh;
-    return clampNormPoint({ x, y });
+    return clientPointToNorm({
+      clientX,
+      clientY,
+      boundingRect: sr,
+      offsetWidth: img.offsetWidth,
+      offsetHeight: img.offsetHeight,
+      naturalWidth: img.naturalWidth,
+      naturalHeight: img.naturalHeight,
+    });
   }, []);
 
   useEffect(() => {
@@ -1351,53 +1283,41 @@ export function ExplorationMapStage({
   const hasLayout = elW > 0 && elH > 0;
 
   const normToSvg = (p: NormPoint): [number, number] =>
-    nw > 0 && nh > 0 && elW > 0 && elH > 0
-      ? intrinsicNormToSvgUserUnits(p.x, p.y, elW, elH, nw, nh)
-      : [p.x * 100, p.y * 100];
+    normPointToSvgUserUnits(p, elW, elH, nw, nh);
 
-  const normToCssPercentStyle = (p: NormPoint) => {
-    if (nw > 0 && nh > 0 && elW > 0 && elH > 0) {
-      const [px, py] = intrinsicNormToElementPx(p.x, p.y, elW, elH, nw, nh);
-      return { left: `${(px / elW) * 100}%`, top: `${(py / elH) * 100}%` } as const;
-    }
-    return { left: `${p.x * 100}%`, top: `${p.y * 100}%` } as const;
-  };
+  const normToCssPercentStyle = (p: NormPoint) =>
+    normToCssPercentPosition(p, elW, elH, nw, nh);
+
+  const gmNoteStyles = useMemo(() => {
+    if (!showGmNotes || !hasLayout || gmNotes.length === 0) return [];
+    return gmNotes.map((note) => {
+      const wNorm = note.widthNorm ?? 0.12;
+      const tl = normToCssPercentPosition({ x: note.normX, y: note.normY }, elW, elH, nw, nh);
+      const br = normToCssPercentPosition(
+        { x: Math.min(1, note.normX + wNorm), y: note.normY },
+        elW,
+        elH,
+        nw,
+        nh
+      );
+      const left = parseFloat(tl.left);
+      const width = Math.max(2, parseFloat(br.left) - left);
+      return { id: note.id, text: note.text, left: tl.left, top: tl.top, width: `${width}%` };
+    });
+  }, [showGmNotes, hasLayout, gmNotes, elW, elH, nw, nh]);
 
   const gridData = useMemo(() => {
     if (!showGrid || !hasLayout) return null;
-    const [leftPx, topPx] =
-      nw > 0 && nh > 0 ? intrinsicNormToElementPx(0, 0, elW, elH, nw, nh) : [0, 0];
-    const [rightPx, bottomPx] =
-      nw > 0 && nh > 0 ? intrinsicNormToElementPx(1, 1, elW, elH, nw, nh) : [elW, elH];
-    const wPx = Math.max(0, rightPx - leftPx);
-    const hPx = Math.max(0, bottomPx - topPx);
-    if (wPx < 4 || hPx < 4) return null;
-    const stepFromSource =
-      gridCellSourcePxX && gridCellSourcePxX > 1 && nw > 0 ? (wPx / nw) * gridCellSourcePxX : null;
-    const xStep = stepFromSource ?? gridCellPx ?? 0;
-    const yStep = xStep; // Griglia volutamente quadrata
-    if (!xStep || xStep <= 2 || !yStep || yStep <= 2) return null;
-
-    const mod = (n: number, m: number) => ((n % m) + m) % m;
-    const xStart = leftPx + mod(gridOffsetXCells * xStep, xStep);
-    const yStart = topPx + mod(gridOffsetYCells * yStep, yStep);
-
-    const vertical: number[] = [];
-    for (let x = xStart; x <= leftPx + wPx + 0.5; x += xStep) vertical.push(x);
-    for (let x = xStart - xStep; x >= leftPx - 0.5; x -= xStep) vertical.push(x);
-
-    const horizontal: number[] = [];
-    for (let y = yStart; y <= topPx + hPx + 0.5; y += yStep) horizontal.push(y);
-    for (let y = yStart - yStep; y >= topPx - 0.5; y -= yStep) horizontal.push(y);
-
-    return {
-      leftPct: (leftPx / elW) * 100,
-      topPct: (topPx / elH) * 100,
-      wPct: (wPx / elW) * 100,
-      hPct: (hPx / elH) * 100,
-      vPct: vertical.map((x) => (x / elW) * 100),
-      hLinesPct: horizontal.map((y) => (y / elH) * 100),
-    };
+    return computeSquareGridOverlay({
+      elementWidth: elW,
+      elementHeight: elH,
+      naturalWidth: nw,
+      naturalHeight: nh,
+      gridCellPx,
+      gridCellSourcePxX,
+      gridOffsetXCells,
+      gridOffsetYCells,
+    });
   }, [
     showGrid,
     hasLayout,
@@ -1432,6 +1352,15 @@ export function ExplorationMapStage({
           aria-hidden
         />
       )}
+      {gmNoteStyles.map((note) => (
+        <div
+          key={note.id}
+          className="pointer-events-none absolute z-[12] rounded border border-sky-400/70 bg-sky-950/75 px-1.5 py-1 text-[10px] leading-snug text-sky-100 shadow-md"
+          style={{ left: note.left, top: note.top, width: note.width, maxWidth: "40%" }}
+        >
+          {note.text.trim() || "Nota GM"}
+        </div>
+      ))}
       {effectsEnabled ? (
         <canvas
           ref={nightOverlayCanvasRef}

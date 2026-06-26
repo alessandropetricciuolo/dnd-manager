@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "description": "Preset props Scene Editor (render canvas in map-core). Asset SVG opzionali per skin future.",
+  "props": [
+    { "kind": "barrel", "label": "Barile", "svg": null },
+    { "kind": "crate", "label": "Cassa", "svg": null },
+    { "kind": "table", "label": "Tavolo", "svg": null },
+    { "kind": "chair", "label": "Sedia", "svg": null },
+    { "kind": "torch", "label": "Torcia", "svg": null },
+    { "kind": "pillar", "label": "Colonna", "svg": null },
+    { "kind": "statue", "label": "Statua", "svg": null },
+    { "kind": "boulder", "label": "Roccia", "svg": null },
+    { "kind": "campfire", "label": "Fuoco", "svg": null },
+    { "kind": "altar", "label": "Altare", "svg": null }
+  ]
+}

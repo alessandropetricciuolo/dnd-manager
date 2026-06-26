@@ -28,13 +28,17 @@ import {
   type ExplorationMapRow,
   type FowRegionRow,
 } from "@/app/campaigns/exploration-map-actions";
+import { getSceneFloorGmNotesAction } from "@/app/campaigns/scene-document-actions";
 import { getExplorationMapPublicUrl } from "@/lib/exploration/exploration-storage";
 import { parsePolygonJson } from "@/lib/exploration/fow-geometry";
+import { sceneGmNotesToOverlay, type GmNoteOverlayVm } from "@/lib/map-core/viewer";
 import {
   ExplorationMapStage,
   hitTestRegion,
   type FowRegionVm,
 } from "@/components/exploration/exploration-map-stage";
+import { useExplorationMapGrid } from "@/components/exploration/use-exploration-map-grid";
+import { mapSourceLabel } from "@/lib/exploration/exploration-map-grid";
 import type { NormPoint } from "@/lib/exploration/fow-geometry";
 
 type Props = {
@@ -58,8 +62,10 @@ export function GmExplorationFowSheet({ open, onOpenChange, campaignId }: Props)
   const [loading, setLoading] = useState(false);
   const [undoReveal, setUndoReveal] = useState<{ id: string; was: boolean }[]>([]);
   const [projectionMapId, setProjectionMapId] = useState<string | null>(null);
+  const [gmNotesOverlay, setGmNotesOverlay] = useState<GmNoteOverlayVm[]>([]);
 
   const selectedMap = maps.find((m) => m.id === selectedMapId) ?? null;
+  const gridOverlay = useExplorationMapGrid(selectedMap);
   const regionsForMap = useMemo(
     () => regions.filter((r) => r.map_id === selectedMapId),
     [regions, selectedMapId]
@@ -99,6 +105,37 @@ export function GmExplorationFowSheet({ open, onOpenChange, campaignId }: Props)
       }
     });
   }, [open, selectedMapId]);
+
+  useEffect(() => {
+    if (
+      !open ||
+      !selectedMap ||
+      selectedMap.source_type !== "generated_scene" ||
+      !selectedMap.scene_document_id ||
+      !selectedMap.scene_floor_id
+    ) {
+      setGmNotesOverlay([]);
+      return;
+    }
+    let cancelled = false;
+    void getSceneFloorGmNotesAction(
+      campaignId,
+      selectedMap.scene_document_id,
+      selectedMap.scene_floor_id
+    ).then((res) => {
+      if (cancelled) return;
+      if (!res.success || !res.data) {
+        setGmNotesOverlay([]);
+        return;
+      }
+      setGmNotesOverlay(
+        sceneGmNotesToOverlay(res.data.notes, res.data.floorWidth, res.data.floorHeight)
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, campaignId, selectedMap]);
 
   useEffect(() => {
     if (!open || !selectedMapId) return;
@@ -250,6 +287,8 @@ export function GmExplorationFowSheet({ open, onOpenChange, campaignId }: Props)
                 {maps.map((m) => (
                   <SelectItem key={m.id} value={m.id} className="text-zinc-200 focus:bg-amber-600/20">
                     {m.floor_label?.trim() || "Senza nome"} (ord. {m.sort_order})
+                    {" · "}
+                    {mapSourceLabel(m.source_type ?? "uploaded_image")}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -305,6 +344,9 @@ export function GmExplorationFowSheet({ open, onOpenChange, campaignId }: Props)
                 {projectionMapId === selectedMapId ? (
                   <span className="text-[10px] text-emerald-400/90">Proiezione attiva</span>
                 ) : null}
+                {gridOverlay.showGrid ? (
+                  <span className="text-[10px] text-emerald-400/90">Griglia attiva</span>
+                ) : null}
               </div>
 
               <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-amber-600/25 bg-black">
@@ -316,9 +358,15 @@ export function GmExplorationFowSheet({ open, onOpenChange, campaignId }: Props)
                     mode="explore"
                     draftPoints={[]}
                     selectedRegionId={null}
+                    onImageSized={gridOverlay.onImageSized}
                     onRevealClick={(n) => void onRevealClick(n)}
                     readOnly
-                    showGrid={false}
+                    showGrid={gridOverlay.showGrid}
+                    gridCellSourcePxX={gridOverlay.gridCellSourcePxX}
+                    gridOffsetXCells={gridOverlay.gridOffsetXCells}
+                    gridOffsetYCells={gridOverlay.gridOffsetYCells}
+                    showGmNotes={gmNotesOverlay.length > 0}
+                    gmNotes={gmNotesOverlay}
                   />
                 </div>
               </div>
