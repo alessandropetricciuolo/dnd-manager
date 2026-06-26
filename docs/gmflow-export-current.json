@@ -1,12 +1,12 @@
 {
-  "updatedAt": "2026-06-26T11:12:18.800Z",
+  "updatedAt": "2026-06-26T15:15:32.087Z",
   "sourceProject": "Barber & Dragons",
   "targetProject": "gmflow.app",
   "sourceRepoPath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App",
   "targetRepoPath": "/Users/alessandropetricciuolo/Desktop/masto-platform",
   "branch": "main",
-  "lastCommit": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
-  "commitRange": "64e01ea..94b0f4e",
+  "lastCommit": "be804da3b0b2c0e9f22b38c53028ddc0d4f1a34c",
+  "commitRange": "2c01ec2..be804da",
   "items": [
     {
       "id": "BD-GMFLOW-041d96c-001",
@@ -2893,6 +2893,787 @@
       "statusCode": "A",
       "createdAt": "2026-06-26T11:12:18.800Z",
       "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-be804da-001",
+      "title": "OTHER: adr-map-scene-editor.md (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `docs/adr-map-scene-editor.md` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "docs/adr-map-scene-editor.md"
+      ],
+      "gmflowLikelyFiles": [
+        "docs/imports/adr-map-scene-editor.md"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "be804da3b0b2c0e9f22b38c53028ddc0d4f1a34c",
+      "commitShort": "be804da",
+      "commitSubject": "feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor",
+      "statusCode": "M",
+      "createdAt": "2026-06-26T15:15:32.087Z",
+      "updatedAt": "2026-06-26T15:15:32.087Z"
+    },
+    {
+      "id": "BD-GMFLOW-be804da-002",
+      "title": "CAMPAIGNS: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "CAMPAIGNS",
+      "priority": "Media",
+      "description": "File `src/app/campaigns/[id]/gm-only/scene-editor/page.tsx` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Logica campagne potenzialmente generalizzabile per multi-tenant.",
+      "bdFiles": [
+        "src/app/campaigns/[id]/gm-only/scene-editor/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/campaigns/[id]/gm-only/scene-editor/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "be804da3b0b2c0e9f22b38c53028ddc0d4f1a34c",
+      "commitShort": "be804da",
+      "commitSubject": "feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor",
+      "statusCode": "M",
+      "createdAt": "2026-06-26T15:15:32.087Z",
+      "updatedAt": "2026-06-26T15:15:32.087Z"
+    },
+    {
+      "id": "BD-GMFLOW-be804da-003",
+      "title": "CAMPAIGNS: scene-document-actions.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "CAMPAIGNS",
+      "priority": "Media",
+      "description": "File `src/app/campaigns/scene-document-actions.ts` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Logica campagne potenzialmente generalizzabile per multi-tenant.",
+      "bdFiles": [
+        "src/app/campaigns/scene-document-actions.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/campaigns/scene-document-actions.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "be804da3b0b2c0e9f22b38c53028ddc0d4f1a34c",
+      "commitShort": "be804da",
+      "commitSubject": "feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor",
+      "statusCode": "M",
+      "createdAt": "2026-06-26T15:15:32.087Z",
+      "updatedAt": "2026-06-26T15:15:32.087Z"
+    },
+    {
+      "id": "BD-GMFLOW-be804da-004",
+      "title": "UI_UX: vista-dall-alto-client.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/exploration/vista-dall-alto-client.tsx` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/exploration/vista-dall-alto-client.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/exploration/vista-dall-alto-client.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "be804da3b0b2c0e9f22b38c53028ddc0d4f1a34c",
+      "commitShort": "be804da",
+      "commitSubject": "feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor",
+      "statusCode": "M",
+      "createdAt": "2026-06-26T15:15:32.087Z",
+      "updatedAt": "2026-06-26T15:15:32.087Z"
+    },
+    {
+      "id": "BD-GMFLOW-be804da-005",
+      "title": "GM_SCREEN: gm-exploration-fow-sheet.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/gm-exploration-fow-sheet.tsx` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/gm-exploration-fow-sheet.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/gm-exploration-fow-sheet.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "be804da3b0b2c0e9f22b38c53028ddc0d4f1a34c",
+      "commitShort": "be804da",
+      "commitSubject": "feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor",
+      "statusCode": "M",
+      "createdAt": "2026-06-26T15:15:32.087Z",
+      "updatedAt": "2026-06-26T15:15:32.087Z"
+    },
+    {
+      "id": "BD-GMFLOW-be804da-006",
+      "title": "UI_UX: scene-editor-canvas.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/scene-editor/scene-editor-canvas.tsx` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/scene-editor/scene-editor-canvas.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/scene-editor/scene-editor-canvas.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "be804da3b0b2c0e9f22b38c53028ddc0d4f1a34c",
+      "commitShort": "be804da",
+      "commitSubject": "feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor",
+      "statusCode": "M",
+      "createdAt": "2026-06-26T15:15:32.087Z",
+      "updatedAt": "2026-06-26T15:15:32.087Z"
+    },
+    {
+      "id": "BD-GMFLOW-be804da-007",
+      "title": "UI_UX: scene-editor-client.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/scene-editor/scene-editor-client.tsx` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/scene-editor/scene-editor-client.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/scene-editor/scene-editor-client.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "be804da3b0b2c0e9f22b38c53028ddc0d4f1a34c",
+      "commitShort": "be804da",
+      "commitSubject": "feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor",
+      "statusCode": "M",
+      "createdAt": "2026-06-26T15:15:32.087Z",
+      "updatedAt": "2026-06-26T15:15:32.087Z"
+    },
+    {
+      "id": "BD-GMFLOW-be804da-008",
+      "title": "UI_UX: scene-editor-list-actions.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/scene-editor/scene-editor-list-actions.tsx` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/scene-editor/scene-editor-list-actions.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/scene-editor/scene-editor-list-actions.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "be804da3b0b2c0e9f22b38c53028ddc0d4f1a34c",
+      "commitShort": "be804da",
+      "commitSubject": "feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor",
+      "statusCode": "M",
+      "createdAt": "2026-06-26T15:15:32.087Z",
+      "updatedAt": "2026-06-26T15:15:32.087Z"
+    },
+    {
+      "id": "BD-GMFLOW-be804da-009",
+      "title": "MEDIA_STORAGE: exploration-storage.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "MEDIA_STORAGE",
+      "priority": "Media",
+      "description": "File `src/lib/exploration/exploration-storage.ts` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Upload/storage media — adattare a R2 o storage gmflow.",
+      "bdFiles": [
+        "src/lib/exploration/exploration-storage.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/exploration/exploration-storage.ts"
+      ],
+      "requiredAdaptations": [
+        "Storage R2"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza storage B&D (Telegram) vs gmflow (R2)"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Quale adapter storage usare in gmflow?"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "be804da3b0b2c0e9f22b38c53028ddc0d4f1a34c",
+      "commitShort": "be804da",
+      "commitSubject": "feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor",
+      "statusCode": "M",
+      "createdAt": "2026-06-26T15:15:32.087Z",
+      "updatedAt": "2026-06-26T15:15:32.087Z"
+    },
+    {
+      "id": "BD-GMFLOW-be804da-010",
+      "title": "OTHER: auto-walls.test.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/__tests__/auto-walls.test.ts` aggiunto nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/__tests__/auto-walls.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/__tests__/auto-walls.test.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "be804da3b0b2c0e9f22b38c53028ddc0d4f1a34c",
+      "commitShort": "be804da",
+      "commitSubject": "feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T15:15:32.087Z",
+      "updatedAt": "2026-06-26T15:15:32.087Z"
+    },
+    {
+      "id": "BD-GMFLOW-be804da-011",
+      "title": "OTHER: floor-raster.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/raster-export/floor-raster.ts` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/raster-export/floor-raster.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/raster-export/floor-raster.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "be804da3b0b2c0e9f22b38c53028ddc0d4f1a34c",
+      "commitShort": "be804da",
+      "commitSubject": "feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor",
+      "statusCode": "M",
+      "createdAt": "2026-06-26T15:15:32.087Z",
+      "updatedAt": "2026-06-26T15:15:32.087Z"
+    },
+    {
+      "id": "BD-GMFLOW-be804da-012",
+      "title": "OTHER: auto-walls.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/scene-editor/auto-walls.ts` aggiunto nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/scene-editor/auto-walls.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/scene-editor/auto-walls.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "be804da3b0b2c0e9f22b38c53028ddc0d4f1a34c",
+      "commitShort": "be804da",
+      "commitSubject": "feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T15:15:32.087Z",
+      "updatedAt": "2026-06-26T15:15:32.087Z"
+    },
+    {
+      "id": "BD-GMFLOW-be804da-013",
+      "title": "OTHER: draw-floor.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/scene-editor/draw-floor.ts` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/scene-editor/draw-floor.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/scene-editor/draw-floor.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "be804da3b0b2c0e9f22b38c53028ddc0d4f1a34c",
+      "commitShort": "be804da",
+      "commitSubject": "feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor",
+      "statusCode": "M",
+      "createdAt": "2026-06-26T15:15:32.087Z",
+      "updatedAt": "2026-06-26T15:15:32.087Z"
+    },
+    {
+      "id": "BD-GMFLOW-be804da-014",
+      "title": "OTHER: draw-props-svg.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/scene-editor/draw-props-svg.ts` aggiunto nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/scene-editor/draw-props-svg.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/scene-editor/draw-props-svg.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "be804da3b0b2c0e9f22b38c53028ddc0d4f1a34c",
+      "commitShort": "be804da",
+      "commitSubject": "feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T15:15:32.087Z",
+      "updatedAt": "2026-06-26T15:15:32.087Z"
+    },
+    {
+      "id": "BD-GMFLOW-be804da-015",
+      "title": "OTHER: ds-renderer.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/scene-editor/ds-renderer.ts` aggiunto nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/scene-editor/ds-renderer.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/scene-editor/ds-renderer.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "be804da3b0b2c0e9f22b38c53028ddc0d4f1a34c",
+      "commitShort": "be804da",
+      "commitSubject": "feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T15:15:32.087Z",
+      "updatedAt": "2026-06-26T15:15:32.087Z"
+    },
+    {
+      "id": "BD-GMFLOW-be804da-016",
+      "title": "OTHER: clone-document.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/scene-schema/clone-document.ts` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/scene-schema/clone-document.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/scene-schema/clone-document.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "be804da3b0b2c0e9f22b38c53028ddc0d4f1a34c",
+      "commitShort": "be804da",
+      "commitSubject": "feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor",
+      "statusCode": "M",
+      "createdAt": "2026-06-26T15:15:32.087Z",
+      "updatedAt": "2026-06-26T15:15:32.087Z"
+    },
+    {
+      "id": "BD-GMFLOW-be804da-017",
+      "title": "OTHER: index.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/scene-schema/index.ts` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/scene-schema/index.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/scene-schema/index.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "be804da3b0b2c0e9f22b38c53028ddc0d4f1a34c",
+      "commitShort": "be804da",
+      "commitSubject": "feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor",
+      "statusCode": "M",
+      "createdAt": "2026-06-26T15:15:32.087Z",
+      "updatedAt": "2026-06-26T15:15:32.087Z"
+    },
+    {
+      "id": "BD-GMFLOW-be804da-018",
+      "title": "OTHER: layer-presets.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/scene-schema/layer-presets.ts` aggiunto nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/scene-schema/layer-presets.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/scene-schema/layer-presets.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "be804da3b0b2c0e9f22b38c53028ddc0d4f1a34c",
+      "commitShort": "be804da",
+      "commitSubject": "feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T15:15:32.087Z",
+      "updatedAt": "2026-06-26T15:15:32.087Z"
+    },
+    {
+      "id": "BD-GMFLOW-be804da-019",
+      "title": "OTHER: normalize-floor.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/scene-schema/normalize-floor.ts` aggiunto nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/scene-schema/normalize-floor.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/scene-schema/normalize-floor.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "be804da3b0b2c0e9f22b38c53028ddc0d4f1a34c",
+      "commitShort": "be804da",
+      "commitSubject": "feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T15:15:32.087Z",
+      "updatedAt": "2026-06-26T15:15:32.087Z"
+    },
+    {
+      "id": "BD-GMFLOW-be804da-020",
+      "title": "OTHER: props-catalog.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/scene-schema/props-catalog.ts` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/scene-schema/props-catalog.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/scene-schema/props-catalog.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "be804da3b0b2c0e9f22b38c53028ddc0d4f1a34c",
+      "commitShort": "be804da",
+      "commitSubject": "feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor",
+      "statusCode": "M",
+      "createdAt": "2026-06-26T15:15:32.087Z",
+      "updatedAt": "2026-06-26T15:15:32.087Z"
+    },
+    {
+      "id": "BD-GMFLOW-be804da-021",
+      "title": "OTHER: types.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/scene-schema/types.ts` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/scene-schema/types.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/scene-schema/types.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "be804da3b0b2c0e9f22b38c53028ddc0d4f1a34c",
+      "commitShort": "be804da",
+      "commitSubject": "feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor",
+      "statusCode": "M",
+      "createdAt": "2026-06-26T15:15:32.087Z",
+      "updatedAt": "2026-06-26T15:15:32.087Z"
+    },
+    {
+      "id": "BD-GMFLOW-be804da-022",
+      "title": "OTHER: validate.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/scene-schema/validate.ts` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/scene-schema/validate.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/scene-schema/validate.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "be804da3b0b2c0e9f22b38c53028ddc0d4f1a34c",
+      "commitShort": "be804da",
+      "commitSubject": "feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor",
+      "statusCode": "M",
+      "createdAt": "2026-06-26T15:15:32.087Z",
+      "updatedAt": "2026-06-26T15:15:32.087Z"
     }
   ]
 }

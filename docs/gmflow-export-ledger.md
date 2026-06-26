@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-* Data aggiornamento: 2026-06-26T11:12:18.800Z
+* Data aggiornamento: 2026-06-26T15:15:32.087Z
 * Branch corrente: main
-* Ultimo commit analizzato: 94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186
-* Range commit analizzato: 64e01ea..94b0f4e
-* Stato generale: 79 voci NEEDS_REVIEW
-* Voci totali: 79 (NEEDS_REVIEW: 79, TO_IMPORT: 0, IMPORTED: 0)
+* Ultimo commit analizzato: be804da3b0b2c0e9f22b38c53028ddc0d4f1a34c
+* Range commit analizzato: 2c01ec2..be804da
+* Stato generale: 101 voci NEEDS_REVIEW
+* Voci totali: 101 (NEEDS_REVIEW: 101, TO_IMPORT: 0, IMPORTED: 0)
 
 ## Delta automatico non revisionato
 
@@ -3687,6 +3687,1007 @@ Criterio di import completato:
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 * RLS/policy verificate per multi-tenant
 
+### [BD-GMFLOW-be804da-001] OTHER: adr-map-scene-editor.md (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `docs/adr-map-scene-editor.md` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* docs/adr-map-scene-editor.md
+
+File gmflow probabili:
+
+* docs/imports/adr-map-scene-editor.md
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-be804da-002] CAMPAIGNS: page.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+CAMPAIGNS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/campaigns/[id]/gm-only/scene-editor/page.tsx` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Logica campagne potenzialmente generalizzabile per multi-tenant.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/campaigns/[id]/gm-only/scene-editor/page.tsx
+
+File gmflow probabili:
+
+* src/app/campaigns/[id]/gm-only/scene-editor/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-be804da-003] CAMPAIGNS: scene-document-actions.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+CAMPAIGNS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/campaigns/scene-document-actions.ts` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Logica campagne potenzialmente generalizzabile per multi-tenant.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/campaigns/scene-document-actions.ts
+
+File gmflow probabili:
+
+* src/app/campaigns/scene-document-actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-be804da-004] UI_UX: vista-dall-alto-client.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/exploration/vista-dall-alto-client.tsx` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/exploration/vista-dall-alto-client.tsx
+
+File gmflow probabili:
+
+* src/components/exploration/vista-dall-alto-client.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-be804da-005] GM_SCREEN: gm-exploration-fow-sheet.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/gm-exploration-fow-sheet.tsx` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/gm-exploration-fow-sheet.tsx
+
+File gmflow probabili:
+
+* src/components/gm/gm-exploration-fow-sheet.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-be804da-006] UI_UX: scene-editor-canvas.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/scene-editor/scene-editor-canvas.tsx` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/scene-editor/scene-editor-canvas.tsx
+
+File gmflow probabili:
+
+* src/components/scene-editor/scene-editor-canvas.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-be804da-007] UI_UX: scene-editor-client.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/scene-editor/scene-editor-client.tsx` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/scene-editor/scene-editor-client.tsx
+
+File gmflow probabili:
+
+* src/components/scene-editor/scene-editor-client.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-be804da-008] UI_UX: scene-editor-list-actions.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/scene-editor/scene-editor-list-actions.tsx` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/scene-editor/scene-editor-list-actions.tsx
+
+File gmflow probabili:
+
+* src/components/scene-editor/scene-editor-list-actions.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-be804da-009] MEDIA_STORAGE: exploration-storage.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+MEDIA_STORAGE
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/exploration/exploration-storage.ts` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Upload/storage media — adattare a R2 o storage gmflow.
+
+Adattamenti necessari:
+
+* Storage R2
+
+File B&D coinvolti:
+
+* src/lib/exploration/exploration-storage.ts
+
+File gmflow probabili:
+
+* src/lib/exploration/exploration-storage.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza storage B&D (Telegram) vs gmflow (R2)
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Quale adapter storage usare in gmflow?
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-be804da-010] OTHER: auto-walls.test.ts (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/__tests__/auto-walls.test.ts` aggiunto nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/__tests__/auto-walls.test.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/__tests__/auto-walls.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-be804da-011] OTHER: floor-raster.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/raster-export/floor-raster.ts` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/raster-export/floor-raster.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/raster-export/floor-raster.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-be804da-012] OTHER: auto-walls.ts (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/scene-editor/auto-walls.ts` aggiunto nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/scene-editor/auto-walls.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/scene-editor/auto-walls.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-be804da-013] OTHER: draw-floor.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/scene-editor/draw-floor.ts` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/scene-editor/draw-floor.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/scene-editor/draw-floor.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-be804da-014] OTHER: draw-props-svg.ts (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/scene-editor/draw-props-svg.ts` aggiunto nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/scene-editor/draw-props-svg.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/scene-editor/draw-props-svg.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-be804da-015] OTHER: ds-renderer.ts (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/scene-editor/ds-renderer.ts` aggiunto nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/scene-editor/ds-renderer.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/scene-editor/ds-renderer.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-be804da-016] OTHER: clone-document.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/scene-schema/clone-document.ts` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/scene-schema/clone-document.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/scene-schema/clone-document.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-be804da-017] OTHER: index.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/scene-schema/index.ts` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/scene-schema/index.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/scene-schema/index.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-be804da-018] OTHER: layer-presets.ts (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/scene-schema/layer-presets.ts` aggiunto nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/scene-schema/layer-presets.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/scene-schema/layer-presets.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-be804da-019] OTHER: normalize-floor.ts (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/scene-schema/normalize-floor.ts` aggiunto nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/scene-schema/normalize-floor.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/scene-schema/normalize-floor.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-be804da-020] OTHER: props-catalog.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/scene-schema/props-catalog.ts` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/scene-schema/props-catalog.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/scene-schema/props-catalog.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-be804da-021] OTHER: types.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/scene-schema/types.ts` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/scene-schema/types.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/scene-schema/types.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-be804da-022] OTHER: validate.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/scene-schema/validate.ts` modificato nel commit «feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/scene-schema/validate.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/scene-schema/validate.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
 ## Modifiche revisionate manualmente
 
 _Nessuna voce revisionata._
@@ -3706,9 +4707,9 @@ Questo ledger traccia modifiche Barber & Dragons da valutare per import in gmflo
 
 - Repository sorgente: `/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App`
 - Repository gmflow locale: `/Users/alessandropetricciuolo/Desktop/masto-platform`
-- Ultimo commit: `94b0f4e` — feat(maps): add scene editor with portable map-core and FoW integration
-- File analizzati nell'ultimo run: 49
-- Nuove voci aggiunte: 49
+- Ultimo commit: `be804da` — feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor
+- File analizzati nell'ultimo run: 22
+- Nuove voci aggiunte: 22
 
 **Azioni consigliate:**
 1. Rivedere voci `NEEDS_REVIEW` nella sezione «Delta automatico».
