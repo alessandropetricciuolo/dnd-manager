@@ -1,12 +1,12 @@
 {
-  "updatedAt": "2026-06-26T08:27:28.851Z",
+  "updatedAt": "2026-06-26T11:12:18.800Z",
   "sourceProject": "Barber & Dragons",
   "targetProject": "gmflow.app",
   "sourceRepoPath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App",
   "targetRepoPath": "/Users/alessandropetricciuolo/Desktop/masto-platform",
   "branch": "main",
-  "lastCommit": "fef9b750058815c1444973b531f04d904cc2ab0f",
-  "commitRange": "688720b..fef9b75",
+  "lastCommit": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+  "commitRange": "64e01ea..94b0f4e",
   "items": [
     {
       "id": "BD-GMFLOW-041d96c-001",
@@ -1160,6 +1160,1739 @@
       "statusCode": "A",
       "createdAt": "2026-06-26T08:27:28.851Z",
       "updatedAt": "2026-06-26T08:27:28.851Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-001",
+      "title": "OTHER: adr-map-scene-editor.md (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `docs/adr-map-scene-editor.md` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "docs/adr-map-scene-editor.md"
+      ],
+      "gmflowLikelyFiles": [
+        "docs/imports/adr-map-scene-editor.md"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-002",
+      "title": "OTHER: package.json (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `package.json` modificato nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "package.json"
+      ],
+      "gmflowLikelyFiles": [
+        "src/package.json"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "M",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-003",
+      "title": "OTHER: manifest.json (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `public/scene-assets/manifest.json` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "public/scene-assets/manifest.json"
+      ],
+      "gmflowLikelyFiles": [
+        "src/public/scene-assets/manifest.json"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-004",
+      "title": "CAMPAIGNS: page.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "CAMPAIGNS",
+      "priority": "Media",
+      "description": "File `src/app/campaigns/[id]/gm-only/scene-editor/[sceneDocumentId]/page.tsx` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Logica campagne potenzialmente generalizzabile per multi-tenant.",
+      "bdFiles": [
+        "src/app/campaigns/[id]/gm-only/scene-editor/[sceneDocumentId]/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/campaigns/[id]/gm-only/scene-editor/[sceneDocumentId]/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-005",
+      "title": "CAMPAIGNS: page.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "CAMPAIGNS",
+      "priority": "Media",
+      "description": "File `src/app/campaigns/[id]/gm-only/scene-editor/page.tsx` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Logica campagne potenzialmente generalizzabile per multi-tenant.",
+      "bdFiles": [
+        "src/app/campaigns/[id]/gm-only/scene-editor/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/campaigns/[id]/gm-only/scene-editor/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-006",
+      "title": "CAMPAIGNS: exploration-map-actions.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "CAMPAIGNS",
+      "priority": "Media",
+      "description": "File `src/app/campaigns/exploration-map-actions.ts` modificato nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Logica campagne potenzialmente generalizzabile per multi-tenant.",
+      "bdFiles": [
+        "src/app/campaigns/exploration-map-actions.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/campaigns/exploration-map-actions.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "M",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-007",
+      "title": "CAMPAIGNS: scene-document-actions.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "CAMPAIGNS",
+      "priority": "Media",
+      "description": "File `src/app/campaigns/scene-document-actions.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Logica campagne potenzialmente generalizzabile per multi-tenant.",
+      "bdFiles": [
+        "src/app/campaigns/scene-document-actions.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/campaigns/scene-document-actions.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-008",
+      "title": "UI_UX: exploration-map-stage.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/exploration/exploration-map-stage.tsx` modificato nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/exploration/exploration-map-stage.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/exploration/exploration-map-stage.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "M",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-009",
+      "title": "UI_UX: use-exploration-map-grid.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/exploration/use-exploration-map-grid.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/exploration/use-exploration-map-grid.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/exploration/use-exploration-map-grid.ts"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-010",
+      "title": "UI_UX: vista-dall-alto-client.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/exploration/vista-dall-alto-client.tsx` modificato nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/exploration/vista-dall-alto-client.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/exploration/vista-dall-alto-client.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "M",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-011",
+      "title": "GM_SCREEN: gm-exploration-fow-sheet.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/gm-exploration-fow-sheet.tsx` modificato nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/gm-exploration-fow-sheet.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/gm-exploration-fow-sheet.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "M",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-012",
+      "title": "UI_UX: scene-editor-canvas.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/scene-editor/scene-editor-canvas.tsx` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/scene-editor/scene-editor-canvas.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/scene-editor/scene-editor-canvas.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-013",
+      "title": "UI_UX: scene-editor-client.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/scene-editor/scene-editor-client.tsx` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/scene-editor/scene-editor-client.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/scene-editor/scene-editor-client.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-014",
+      "title": "UI_UX: scene-editor-list-actions.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/scene-editor/scene-editor-list-actions.tsx` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/scene-editor/scene-editor-list-actions.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/scene-editor/scene-editor-list-actions.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-015",
+      "title": "OTHER: exploration-map-grid.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/exploration/exploration-map-grid.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/exploration/exploration-map-grid.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/exploration/exploration-map-grid.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-016",
+      "title": "OTHER: fow-geometry.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/exploration/fow-geometry.ts` modificato nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/exploration/fow-geometry.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/exploration/fow-geometry.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "M",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-017",
+      "title": "OTHER: scene-document.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core-bd/scene-document.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core-bd/scene-document.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core-bd/scene-document.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-018",
+      "title": "OTHER: coordinates.test.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/__tests__/coordinates.test.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/__tests__/coordinates.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/__tests__/coordinates.test.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-019",
+      "title": "OTHER: exploration-map-grid.test.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/__tests__/exploration-map-grid.test.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/__tests__/exploration-map-grid.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/__tests__/exploration-map-grid.test.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-020",
+      "title": "OTHER: scene-document.test.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/__tests__/scene-document.test.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/__tests__/scene-document.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/__tests__/scene-document.test.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-021",
+      "title": "OTHER: train-scene-import.test.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/__tests__/train-scene-import.test.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/__tests__/train-scene-import.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/__tests__/train-scene-import.test.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-022",
+      "title": "OTHER: clamp.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/coordinates/clamp.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/coordinates/clamp.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/coordinates/clamp.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-023",
+      "title": "OTHER: index.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/coordinates/index.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/coordinates/index.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/coordinates/index.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-024",
+      "title": "OTHER: object-contain.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/coordinates/object-contain.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/coordinates/object-contain.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/coordinates/object-contain.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-025",
+      "title": "OTHER: parse-polygon.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/coordinates/parse-polygon.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/coordinates/parse-polygon.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/coordinates/parse-polygon.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-026",
+      "title": "OTHER: point-in-polygon.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/coordinates/point-in-polygon.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/coordinates/point-in-polygon.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/coordinates/point-in-polygon.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-027",
+      "title": "OTHER: types.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/coordinates/types.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/coordinates/types.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/coordinates/types.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-028",
+      "title": "OTHER: constants.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/fog/constants.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/fog/constants.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/fog/constants.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-029",
+      "title": "OTHER: draw-fog.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/fog/draw-fog.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/fog/draw-fog.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/fog/draw-fog.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-030",
+      "title": "OTHER: fow-sync.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/fog/fow-sync.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/fog/fow-sync.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/fog/fow-sync.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-031",
+      "title": "OTHER: index.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/fog/index.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/fog/index.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/fog/index.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-032",
+      "title": "OTHER: fow-sync.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/fow/fow-sync.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/fow/fow-sync.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/fow/fow-sync.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-033",
+      "title": "OTHER: index.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/index.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/index.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/index.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-034",
+      "title": "OTHER: floor-raster.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/raster-export/floor-raster.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/raster-export/floor-raster.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/raster-export/floor-raster.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-035",
+      "title": "OTHER: draw-floor.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/scene-editor/draw-floor.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/scene-editor/draw-floor.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/scene-editor/draw-floor.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-036",
+      "title": "OTHER: draw-props.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/scene-editor/draw-props.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/scene-editor/draw-props.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/scene-editor/draw-props.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-037",
+      "title": "OTHER: ids.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/scene-editor/ids.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/scene-editor/ids.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/scene-editor/ids.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-038",
+      "title": "OTHER: snap.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/scene-editor/snap.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/scene-editor/snap.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/scene-editor/snap.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-039",
+      "title": "OTHER: clone-document.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/scene-schema/clone-document.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/scene-schema/clone-document.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/scene-schema/clone-document.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-040",
+      "title": "OTHER: index.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/scene-schema/index.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/scene-schema/index.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/scene-schema/index.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-041",
+      "title": "OTHER: props-catalog.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/scene-schema/props-catalog.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/scene-schema/props-catalog.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/scene-schema/props-catalog.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-042",
+      "title": "OTHER: types.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/scene-schema/types.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/scene-schema/types.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/scene-schema/types.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-043",
+      "title": "OTHER: validate.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/scene-schema/validate.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/scene-schema/validate.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/scene-schema/validate.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-044",
+      "title": "OTHER: index.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/scene-to-fow/index.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/scene-to-fow/index.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/scene-to-fow/index.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-045",
+      "title": "OTHER: gm-notes.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/viewer/gm-notes.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/viewer/gm-notes.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/viewer/gm-notes.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-046",
+      "title": "OTHER: grid.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/viewer/grid.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/viewer/grid.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/viewer/grid.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-047",
+      "title": "OTHER: index.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/viewer/index.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/viewer/index.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/viewer/index.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-048",
+      "title": "OTHER: database.types.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/types/database.types.ts` modificato nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/types/database.types.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/types/database.types.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "M",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
+    },
+    {
+      "id": "BD-GMFLOW-94b0f4e-049",
+      "title": "DATABASE: 20260628120000_scene_documents_and_map_source.sql (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "DATABASE",
+      "priority": "Alta",
+      "description": "File `supabase/migrations/20260628120000_scene_documents_and_map_source.sql` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schema o migrazione DB — valutare impatto RLS e tenant isolation.",
+      "bdFiles": [
+        "supabase/migrations/20260628120000_scene_documents_and_map_source.sql"
+      ],
+      "gmflowLikelyFiles": [
+        "supabase/migrations/20260628120000_scene_documents_and_map_source.sql"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Impatto RLS / isolamento tenant"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "RLS/policy verificate per multi-tenant"
+      ],
+      "commitHash": "94b0f4ecd3a0f6b99b91ef407c0c33171a9cb186",
+      "commitShort": "94b0f4e",
+      "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
+      "statusCode": "A",
+      "createdAt": "2026-06-26T11:12:18.800Z",
+      "updatedAt": "2026-06-26T11:12:18.800Z"
     }
   ]
 }
