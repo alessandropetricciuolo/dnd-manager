@@ -6,6 +6,13 @@ import type { Json } from "@/types/database.types";
 import { generateRagEmbedding } from "@/lib/ai/huggingface-client";
 import { readExcludedManualBookKeysFromAiContextJson } from "@/lib/campaign-ai-context";
 import { wikiManualBookLabel } from "@/lib/manual-book-catalog";
+import { mmNormalizeHeadingTitle } from "@/lib/manuals/monster-manual-chunks";
+import {
+  bestiaryListItemId,
+  extractStatblockSlice,
+  parseBestiaryListItemId,
+  parseStatblocksFromBestiaryContent,
+} from "@/lib/manuals/bestiary-statblock-parser";
 
 const BESTIARY_ALLOWED_BOOK_KEYS = ["monster_manual", "mordenkainen_multiverse"] as const;
 const BESTIARY_ALLOWED_BOOK_KEY_SET = new Set<string>(BESTIARY_ALLOWED_BOOK_KEYS);
@@ -257,6 +264,46 @@ function extractCrFromText(raw: string): string | null {
   return direct[1].trim();
 }
 
+const EXCLUDED_BESTIARY_SECTION_HEADINGS = new Set(
+  ["manuale dei mostri parte iniziale", "introduzione", "bestiario", "appendice"].map((s) =>
+    mmNormalizeHeadingTitle(s)
+  )
+);
+
+function metaNum(m: Record<string, unknown> | null | undefined, k: string): number {
+  if (!m || typeof m !== "object" || Array.isArray(m) || !(k in m)) return 0;
+  const v = m[k];
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string") {
+    const n = Number.parseInt(v, 10);
+    return Number.isFinite(n) ? n : 0;
+  }
+  return 0;
+}
+
+function isExcludedBestiarySectionHeading(heading: string): boolean {
+  const norm = mmNormalizeHeadingTitle(heading);
+  if (EXCLUDED_BESTIARY_SECTION_HEADINGS.has(norm)) return true;
+  return norm.includes("parte iniziale");
+}
+
+async function fetchAllBestiaryKnowledgeRows(admin: ReturnType<typeof createSupabaseAdminClient>): Promise<Row[]> {
+  const pageSize = 1000;
+  const all: Row[] = [];
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error } = await admin
+      .from("manuals_knowledge")
+      .select("id, content, metadata")
+      .in("metadata->>manual_book_key", [...BESTIARY_ALLOWED_BOOK_KEYS])
+      .range(offset, offset + pageSize - 1);
+    if (error) throw new Error(error.message);
+    if (!data?.length) break;
+    all.push(...(data as Row[]));
+    if (data.length < pageSize) break;
+  }
+  return all;
+}
+
 function crToSort(crValue: string): number {
   const v = crValue.trim();
   if (v in CR_FRACTION_MAP) return CR_FRACTION_MAP[v];
@@ -422,8 +469,9 @@ export async function fetchExpandedBestiaryChunkAction(
   chunkId: string
 ): Promise<{ success: true; text: string } | { success: false; message: string }> {
   const safeCampaignId = String(campaignId ?? "").trim();
-  const id = String(chunkId ?? "").trim();
-  if (!id) return { success: false, message: "Chunk non valido." };
+  const rawId = String(chunkId ?? "").trim();
+  if (!rawId) return { success: false, message: "Chunk non valido." };
+  const { chunkId: id, statblockName } = parseBestiaryListItemId(rawId);
   if (!safeCampaignId) return { success: false, message: "Campagna non valida." };
   try {
     if (!(await assertGmOrAdmin())) {
@@ -506,6 +554,10 @@ export async function fetchExpandedBestiaryChunkAction(
     }
 
     text = sanitizeBestiaryStatblock(text);
+    if (statblockName) {
+      const slice = extractStatblockSlice(text, statblockName);
+      if (slice) text = sanitizeBestiaryStatblock(slice);
+    }
     if (!text) {
       return { success: false, message: "Contenuto chunk vuoto." };
     }
@@ -544,15 +596,16 @@ export async function listBestiaryMonstersByCrAction(
       ((camp as { ai_context?: Json | null } | null)?.ai_context ?? null) as Json | null
     );
 
-    const { data: rows, error } = await admin
-      .from("manuals_knowledge")
-      .select("id, content, metadata")
-      .in("metadata->>manual_book_key", [...BESTIARY_ALLOWED_BOOK_KEYS])
-      .limit(8000);
-    if (error) return { success: false, message: `Errore caricamento lista bestiario: ${error.message}` };
+    let rows: Row[];
+    try {
+      rows = await fetchAllBestiaryKnowledgeRows(admin);
+    } catch (fetchErr) {
+      const message = fetchErr instanceof Error ? fetchErr.message : "Errore caricamento lista bestiario.";
+      return { success: false, message: `Errore caricamento lista bestiario: ${message}` };
+    }
 
-    const filtered = filterExcludedRows((rows ?? []) as Row[], excluded);
-    const dedup = new Map<string, BestiaryListItem>();
+    const filtered = filterExcludedRows(rows, excluded);
+    const sectionGroups = new Map<string, Row[]>();
 
     for (const row of filtered) {
       const meta = row.metadata;
@@ -560,25 +613,62 @@ export async function listBestiaryMonstersByCrAction(
       if (!mbk || !BESTIARY_ALLOWED_BOOK_KEY_SET.has(mbk)) continue;
 
       const sectionHeading = metaStr(meta, "section_heading") ?? metaStr(meta, "section_title");
-      const monsterName = normalizeMonsterName(sectionHeading ?? "");
-      if (!monsterName) continue;
+      if (!sectionHeading || isExcludedBestiarySectionHeading(sectionHeading)) continue;
 
-      const content = typeof row.content === "string" ? row.content : "";
-      const crValue = extractCrFromText(content);
-      if (!crValue) continue;
+      const groupKey = `${mbk}::${mmNormalizeHeadingTitle(sectionHeading)}`;
+      const bucket = sectionGroups.get(groupKey);
+      if (bucket) bucket.push(row);
+      else sectionGroups.set(groupKey, [row]);
+    }
 
-      const key = `${mbk}::${monsterName.toLowerCase()}`;
-      if (dedup.has(key)) continue;
+    const dedup = new Map<string, BestiaryListItem>();
 
-      dedup.set(key, {
-        id: String(row.id),
-        monster_name: monsterName,
-        cr_value: crValue,
-        cr_label: `GS ${crValue}`,
-        cr_sort: crToSort(crValue),
-        manual_book_key: mbk,
-        manual_label: wikiManualBookLabel(mbk),
-      });
+    for (const groupRows of sectionGroups.values()) {
+      const sortedRows = [...groupRows].sort(
+        (a, b) => metaNum(a.metadata, "section_part") - metaNum(b.metadata, "section_part")
+      );
+      const meta = sortedRows[0]?.metadata;
+      const mbk = metaStr(meta, "manual_book_key");
+      if (!mbk) continue;
+
+      const combined = sortedRows
+        .map((row) => (typeof row.content === "string" ? row.content : ""))
+        .filter(Boolean)
+        .join("\n\n");
+      if (!combined.trim()) continue;
+
+      const chunkId = String(sortedRows[0]?.id ?? "");
+      if (!chunkId) continue;
+
+      const statblocks = parseStatblocksFromBestiaryContent(combined);
+      const entries =
+        statblocks.length > 0
+          ? statblocks
+          : (() => {
+              const sectionHeading = metaStr(meta, "section_heading") ?? metaStr(meta, "section_title");
+              const monsterName = normalizeMonsterName(sectionHeading ?? "");
+              const crValue = extractCrFromText(combined);
+              if (!monsterName || !crValue) return [];
+              return [{ name: monsterName, crValue }];
+            })();
+
+      for (const entry of entries) {
+        const monsterName = normalizeMonsterName(entry.name);
+        if (!monsterName) continue;
+
+        const key = `${mbk}::${monsterName.toLowerCase()}`;
+        if (dedup.has(key)) continue;
+
+        dedup.set(key, {
+          id: bestiaryListItemId(chunkId, monsterName),
+          monster_name: monsterName,
+          cr_value: entry.crValue,
+          cr_label: `GS ${entry.crValue}`,
+          cr_sort: crToSort(entry.crValue),
+          manual_book_key: mbk,
+          manual_label: wikiManualBookLabel(mbk),
+        });
+      }
     }
 
     const groupsMap = new Map<string, BestiaryListGroup>();
