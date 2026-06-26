@@ -76,7 +76,7 @@ export type GeneratedCharacterSheet = {
   abilityMods: Record<AbilityKey, number>;
   proficiencyBonus: number;
   savingThrows: Record<AbilityKey, { value: number; proficient: boolean }>;
-  skills: Record<SkillKey, { value: number; proficient: boolean }>;
+  skills: Record<SkillKey, { value: number; proficient: boolean; expertise?: boolean }>;
   passivePerception: number;
 
   speed: string;

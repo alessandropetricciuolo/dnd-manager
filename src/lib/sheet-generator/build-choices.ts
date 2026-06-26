@@ -22,6 +22,13 @@ import {
   pickDefaultClassSkills,
 } from "@/lib/sheet-generator/build-engine";
 import {
+  classSkillPickCount,
+  expertisePickCount,
+  pickBackgroundSkills,
+  pickDefaultExpertise,
+  raceGrantedSkills,
+} from "@/lib/sheet-generator/skill-rules";
+import {
   favoredEnemyCountForLevel,
   favoredTerrainCountForLevel,
   pickRangerFavoredEnemies,
@@ -107,12 +114,13 @@ export async function resolveBuildChoicesPreview(
     core.abilityMods
   );
   const skillPool = getClassSkillPool(input.classLabel);
-  if (skillPool.length >= 2) {
+  const skillPickCount = classSkillPickCount(input.classLabel);
+  if (skillPool.length >= skillPickCount || input.classLabel === "Bardo") {
     const skillOptions = skillPool.map((k) => ({
       value: k,
       label: SKILL_LABELS_IT[k],
     }));
-    for (let i = 0; i < 2; i += 1) {
+    for (let i = 0; i < skillPickCount; i += 1) {
       slots.push(
         slot(
           `skill-${i + 1}`,
@@ -120,6 +128,33 @@ export async function resolveBuildChoicesPreview(
           "Competenze",
           skillOptions,
           defaultSkills[i] ?? skillOptions[0]?.value ?? ""
+        )
+      );
+    }
+  }
+
+  const bgSkills = pickBackgroundSkills(input.backgroundSlug, core.abilityMods);
+  const racialSkills = raceGrantedSkills(input.raceSlug, input.subraceSlug);
+  const proficientPreview = [...new Set([...defaultSkills, ...bgSkills, ...racialSkills])];
+  const expertiseCount = expertisePickCount(input.classLabel, input.level);
+  if (expertiseCount > 0 && proficientPreview.length > 0) {
+    const defaultExpertise = pickDefaultExpertise(
+      input.classLabel,
+      input.level,
+      proficientPreview
+    );
+    const expertiseOptions = [
+      { value: "", label: "— Automatica —" },
+      ...proficientPreview.map((k) => ({ value: k, label: SKILL_LABELS_IT[k] })),
+    ];
+    for (let i = 0; i < expertiseCount; i += 1) {
+      slots.push(
+        slot(
+          `expertise-${i + 1}`,
+          `Maestria ${i + 1} (opzionale)`,
+          "Maestrie",
+          expertiseOptions,
+          defaultExpertise[i] ?? ""
         )
       );
     }
@@ -313,6 +348,9 @@ export function validateBuildOverrides(
     if (s.id.startsWith("skill-")) {
       const idx = Number.parseInt(s.id.replace("skill-", ""), 10) - 1;
       val = overrides.classSkills?.[idx];
+    } else if (s.id.startsWith("expertise-")) {
+      const idx = Number.parseInt(s.id.replace("expertise-", ""), 10) - 1;
+      val = overrides.expertiseSkills?.[idx];
     } else if (s.id.startsWith("cantrip-")) {
       const idx = Number.parseInt(s.id.replace("cantrip-", ""), 10) - 1;
       val = overrides.cantrips?.[idx];
@@ -343,6 +381,12 @@ export function validateBuildOverrides(
   const skillSet = new Set(overrides.classSkills ?? []);
   if ((overrides.classSkills?.length ?? 0) > 1 && skillSet.size !== overrides.classSkills!.length) {
     errors.push("Le competenze di classe devono essere diverse.");
+  }
+
+  const expList = (overrides.expertiseSkills ?? []).filter(Boolean);
+  const expSet = new Set(expList);
+  if (expSet.size !== expList.length) {
+    errors.push("Le maestrie scelte devono essere su abilità diverse.");
   }
 
   const allSpells = [...(overrides.cantrips ?? []), ...(overrides.spells ?? [])];

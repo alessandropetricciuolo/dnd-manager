@@ -1,7 +1,15 @@
 import { backgroundBySlug, backgroundStartingInventoryLines, raceBySlug } from "@/lib/character-build-catalog";
-import { computeRealisticArmorClass } from "@/lib/sheet-generator/armor-class";
+import { computeArmorClass } from "@/lib/sheet-generator/armor-class";
+import type { CharacterBuildOverrides } from "@/lib/sheet-generator/build-choices-types";
 import { armorInventoryLines } from "@/lib/sheet-generator/inventory-armor";
 import { resolveGeneratorRules } from "@/lib/sheet-generator/rules-resolver";
+import {
+  ALL_SKILL_KEYS,
+  classSkillPickCount,
+  pickBackgroundSkills,
+  raceGrantedSkills,
+  resolveExpertiseSkills,
+} from "@/lib/sheet-generator/skill-rules";
 import { detectWildMagicBarbarianPath } from "@/lib/sheet-generator/third-caster-subclass";
 import type {
   AbilityKey,
@@ -46,19 +54,6 @@ type ClassCombatConfig = {
   toolProficiencies: string[];
   genericProficiencies: string[];
   skillPicks: SkillKey[];
-};
-
-const BACKGROUND_SKILLS: Record<string, SkillKey[]> = {
-  accolito: ["insight", "religion"],
-  artigiano_gilda: ["insight", "persuasion"],
-  ciarlatano: ["deception", "sleight_of_hand"],
-  criminale: ["deception", "stealth"],
-  eroe_popolare: ["animal_handling", "survival"],
-  forestiero: ["athletics", "survival"],
-  intrattenitore: ["acrobatics", "performance"],
-  nobile: ["history", "persuasion"],
-  sapiente: ["arcana", "history"],
-  soldato: ["athletics", "intimidation"],
 };
 
 const RACE_EXTRA_LANGUAGES: Record<string, string[]> = {
@@ -387,6 +382,7 @@ function computeHpMax(level: number, hitDie: number, conMod: number): number {
 }
 
 export function getClassSkillPool(classLabel: string): SkillKey[] {
+  if (classLabel === "Bardo") return [...ALL_SKILL_KEYS];
   const cfg = CLASS_CONFIG[classLabel] ?? CLASS_CONFIG.Guerriero;
   return [...cfg.skillPicks];
 }
@@ -396,25 +392,35 @@ export function pickDefaultClassSkills(
   backgroundSlug: string | null | undefined,
   abilityMods: Record<AbilityKey, number>
 ): SkillKey[] {
-  const backgroundSkills = new Set<SkillKey>(BACKGROUND_SKILLS[backgroundSlug?.trim() ?? ""] ?? []);
+  const pickCount = classSkillPickCount(classLabel);
+  const backgroundSkills = new Set<SkillKey>(pickBackgroundSkills(backgroundSlug, abilityMods));
   const selectable = getClassSkillPool(classLabel);
-  selectable.sort((a, b) => {
+  return pickSkillsFromPoolForClass(selectable, pickCount, abilityMods, backgroundSkills);
+}
+
+function pickSkillsFromPoolForClass(
+  pool: SkillKey[],
+  count: number,
+  abilityMods: Record<AbilityKey, number>,
+  exclude: Set<SkillKey>
+): SkillKey[] {
+  const sorted = [...pool].sort((a, b) => {
     const ad = abilityMods[SKILL_ABILITY[a]];
     const bd = abilityMods[SKILL_ABILITY[b]];
     if (bd !== ad) return bd - ad;
     return a.localeCompare(b);
   });
   const classChosen: SkillKey[] = [];
-  for (const s of selectable) {
-    if (classChosen.length >= 2) break;
-    if (backgroundSkills.has(s)) continue;
+  for (const s of sorted) {
+    if (classChosen.length >= count) break;
+    if (exclude.has(s)) continue;
     classChosen.push(s);
   }
-  for (const s of selectable) {
-    if (classChosen.length >= 2) break;
+  for (const s of sorted) {
+    if (classChosen.length >= count) break;
     if (!classChosen.includes(s)) classChosen.push(s);
   }
-  return classChosen;
+  return classChosen.slice(0, count);
 }
 
 function computeCoreFromAbilities(
@@ -422,7 +428,9 @@ function computeCoreFromAbilities(
   level: number,
   abilities: Record<AbilityKey, number>,
   backgroundSlug?: string | null,
-  classSkillOverride?: SkillKey[]
+  buildOverrides?: CharacterBuildOverrides,
+  raceSlug?: string | null,
+  subraceSlug?: string | null
 ): Pick<
   GeneratedCharacterSheet,
   | "abilities"
@@ -459,22 +467,37 @@ function computeCoreFromAbilities(
     return acc;
   }, {} as Record<AbilityKey, { value: number; proficient: boolean }>);
 
-  const backgroundSkills = new Set<SkillKey>(BACKGROUND_SKILLS[backgroundSlug?.trim() ?? ""] ?? []);
+  const pickCount = classSkillPickCount(classLabel);
   const classChosen =
-    classSkillOverride?.length === 2
-      ? classSkillOverride.slice(0, 2)
+    buildOverrides?.classSkills?.length
+      ? buildOverrides.classSkills.slice(0, pickCount)
       : pickDefaultClassSkills(classLabel, backgroundSlug, abilityMods);
-  const skillSet = new Set<SkillKey>([...classChosen, ...backgroundSkills]);
+  const backgroundSkills = pickBackgroundSkills(backgroundSlug, abilityMods);
+  const racialSkills = raceGrantedSkills(raceSlug ?? "", subraceSlug);
+  const proficientList = [...new Set<SkillKey>([...classChosen, ...backgroundSkills, ...racialSkills])];
+  const skillSet = new Set<SkillKey>(proficientList);
+  const expertiseSet = new Set<SkillKey>(
+    resolveExpertiseSkills(classLabel, lvl, proficientList, buildOverrides?.expertiseSkills)
+  );
   const skills = (Object.keys(SKILL_ABILITY) as SkillKey[]).reduce((acc, k) => {
     const proficient = skillSet.has(k);
+    const expertise = proficient && expertiseSet.has(k);
     const ability = SKILL_ABILITY[k];
-    acc[k] = { value: abilityMods[ability] + (proficient ? pb : 0), proficient };
+    const bonus = expertise ? pb * 2 : proficient ? pb : 0;
+    acc[k] = { value: abilityMods[ability] + bonus, proficient, expertise };
     return acc;
-  }, {} as Record<SkillKey, { value: number; proficient: boolean }>);
+  }, {} as Record<SkillKey, { value: number; proficient: boolean; expertise?: boolean }>);
 
   const passivePerception = 10 + skills.perception.value;
   const initiative = abilityMods.dex;
-  const armor = computeRealisticArmorClass(classLabel, abilityMods);
+  const armor = computeArmorClass({
+    classLabel,
+    abilityMods,
+    fightingStyle: buildOverrides?.fightingStyle,
+    spells: buildOverrides?.spells,
+    cantrips: buildOverrides?.cantrips,
+    warlockInvocations: buildOverrides?.warlockInvocations,
+  });
   const armorClass = armor.ac;
   const hpMax = computeHpMax(lvl, cfg.hitDie, abilityMods.con);
   const weaponRows = cfg.weaponSet.map((w) => ({
@@ -519,6 +542,27 @@ function parseAbilityBonusesFromTraits(
   const add = (a: AbilityKey, n: number) => {
     bonuses[a] = (bonuses[a] ?? 0) + n;
   };
+  const itAbilityToKey: Record<string, AbilityKey> = {
+    forza: "str",
+    destrezza: "dex",
+    costituzione: "con",
+    intelligenza: "int",
+    saggezza: "wis",
+    carisma: "cha",
+  };
+
+  if (/ogni punteggio di caratteristica.*aumenta di 1/.test(t)) {
+    for (const a of ABILITIES) add(a, 1);
+  }
+
+  const scoreIncrease =
+    /punteggio di\s+(forza|destrezza|costituzione|intelligenza|saggezza|carisma)[^.\n]{0,80}aumenta di\s*([12])/gi;
+  let scoreMatch: RegExpExecArray | null;
+  while ((scoreMatch = scoreIncrease.exec(t)) !== null) {
+    const key = itAbilityToKey[scoreMatch[1]];
+    if (key) add(key, Number.parseInt(scoreMatch[2], 10));
+  }
+
   const abilityPatterns: Array<{ key: AbilityKey; re: RegExp }> = [
     { key: "str", re: /forza/gi },
     { key: "dex", re: /destrezza/gi },
@@ -528,17 +572,13 @@ function parseAbilityBonusesFromTraits(
     { key: "cha", re: /carisma/gi },
   ];
 
-  if (/ogni punteggio di caratteristica.*aumenta di 1/.test(t)) {
-    for (const a of ABILITIES) add(a, 1);
-  }
-
   for (const { key, re } of abilityPatterns) {
+    if ((bonuses[key] ?? 0) > 0) continue;
     const single = new RegExp(`${re.source}[^.\\n]{0,60}aumenta di\\s*([12])`, "i");
     const m = t.match(single);
     if (m) add(key, Number.parseInt(m[1], 10));
   }
 
-  // Pattern: "forza e costituzione aumentano di 1"
   for (let i = 0; i < abilityPatterns.length; i += 1) {
     for (let j = i + 1; j < abilityPatterns.length; j += 1) {
       const a = abilityPatterns[i];
@@ -553,7 +593,16 @@ function parseAbilityBonusesFromTraits(
     }
   }
 
-  // Fallback per razze "choose +2/+1" (es. MPMM).
+  const flexPlusOne = t.match(/(?:un|altro)\s+punteggio[^.\n]{0,60}aumenta di\s*1/i);
+  if (flexPlusOne) {
+    for (const a of primaryOrder) {
+      if ((bonuses[a] ?? 0) === 0) {
+        add(a, 1);
+        break;
+      }
+    }
+  }
+
   if (Object.keys(bonuses).length === 0) {
     if (/aumenta di 2.*aumenta di 1|due punteggi.*aumentano di 1|un punteggio.*aumenta di 2/.test(t)) {
       add(primaryOrder[0] ?? "str", 2);
@@ -665,7 +714,9 @@ export async function buildGeneratedCharacterSheet(
     input.level,
     boostedAbilities,
     input.backgroundSlug,
-    input.buildOverrides?.classSkills
+    input.buildOverrides,
+    input.raceSlug,
+    input.subraceSlug
   );
   const rules = await resolveGeneratorRules(
     {

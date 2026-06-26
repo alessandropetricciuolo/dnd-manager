@@ -17,6 +17,20 @@ type ArmorLoadout = {
   shieldItem: string | null;
 };
 
+/** Incantesimi/effetti reattivi o a durata breve: non entrano nella CA stampata sulla scheda. */
+const TEMPORARY_AC_SPELL_NAMES = [
+  "scudo",
+  "shield",
+  "scudo della fede",
+  "shield of faith",
+  "barkskin",
+  "scorza",
+  "velocità",
+  "haste",
+  "protezione",
+  "protection from evil",
+];
+
 function loadout(
   ac: number,
   armorItem: string | null,
@@ -26,10 +40,77 @@ function loadout(
   return { ac, armorItem, shieldItem, breakdown };
 }
 
+function normSpellName(name: string): string {
+  return name.trim().toLocaleLowerCase("it");
+}
+
+function isTemporaryAcSpell(name: string): boolean {
+  const n = normSpellName(name);
+  return TEMPORARY_AC_SPELL_NAMES.some((t) => n.includes(t));
+}
+
+function hasPersistentMageArmor(spells: string[], invocations: string[]): boolean {
+  for (const raw of [...spells, ...invocations]) {
+    const n = normSpellName(raw);
+    if (n.includes("armatura magica") || n.includes("mage armor")) return true;
+    if (n.includes("armatura delle ombre")) return true;
+  }
+  return false;
+}
+
+export type ArmorClassContext = {
+  classLabel: string;
+  abilityMods: Record<AbilityKey, number>;
+  fightingStyle?: string | null;
+  spells?: string[];
+  cantrips?: string[];
+  warlockInvocations?: string[];
+};
+
 /**
  * CA da equipaggiamento tipico di 1° livello + difese senza armatura (PHB).
+ * Armatura magica / Armatura delle Ombre sostituiscono la CA senz'armatura (non si sommano).
+ * Stile Difesa +1 solo con armatura fisica. Nessun bonus da Scudo, Barkskin, ecc.
  */
+export function computeArmorClass(ctx: ArmorClassContext): ArmorClassResult {
+  const { classLabel, abilityMods, fightingStyle } = ctx;
+  const spells = [...(ctx.spells ?? []), ...(ctx.cantrips ?? [])].filter((s) => !isTemporaryAcSpell(s));
+  const invocations = (ctx.warlockInvocations ?? []).filter((s) => !isTemporaryAcSpell(s));
+
+  const physical = computePhysicalArmorClass(classLabel, abilityMods);
+  let ac = physical.ac;
+  let breakdown = physical.breakdown;
+  let armorItem = physical.armorItem;
+  let shieldItem = physical.shieldItem;
+
+  const mageArmor = hasPersistentMageArmor(spells, invocations);
+  if (mageArmor) {
+    const mageAc = 13 + abilityMods.dex;
+    if (!armorItem || mageAc > ac) {
+      ac = mageAc;
+      breakdown = "Armatura magica (13 + DES)";
+      armorItem = null;
+      shieldItem = null;
+    }
+  }
+
+  if (fightingStyle?.includes("Difesa") && physical.armorItem) {
+    ac += 1;
+    breakdown = `${breakdown} + Difesa (+1)`;
+  }
+
+  return { ac, breakdown, armorItem, shieldItem };
+}
+
+/** @deprecated Usare computeArmorClass con contesto completo. */
 export function computeRealisticArmorClass(
+  classLabel: string,
+  abilityMods: Record<AbilityKey, number>
+): ArmorClassResult {
+  return computeArmorClass({ classLabel, abilityMods });
+}
+
+function computePhysicalArmorClass(
   classLabel: string,
   abilityMods: Record<AbilityKey, number>
 ): ArmorClassResult {

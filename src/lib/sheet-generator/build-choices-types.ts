@@ -3,6 +3,8 @@ import type { SkillKey } from "@/lib/sheet-generator/types";
 /** Scelte manuali del giocatore durante la generazione scheda. */
 export type CharacterBuildOverrides = {
   classSkills?: SkillKey[];
+  /** Maestria (doppio PB): scelte manuali; se vuote, assegnate automaticamente. */
+  expertiseSkills?: SkillKey[];
   cantrips?: string[];
   spells?: string[];
   fightingStyle?: string;

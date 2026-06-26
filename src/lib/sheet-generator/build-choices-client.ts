@@ -8,6 +8,7 @@ import type { SkillKey } from "@/lib/sheet-generator/types";
 export function overridesFromSlots(slots: BuildChoiceSlot[]): CharacterBuildOverrides {
   const overrides: CharacterBuildOverrides = {};
   const skills: SkillKey[] = [];
+  const expertise: SkillKey[] = [];
   const cantrips: string[] = [];
   const spells: string[] = [];
   const invocations: string[] = [];
@@ -17,6 +18,7 @@ export function overridesFromSlots(slots: BuildChoiceSlot[]): CharacterBuildOver
   for (const s of slots) {
     if (!s.value) continue;
     if (s.id.startsWith("skill-")) skills.push(s.value as SkillKey);
+    else if (s.id.startsWith("expertise-") && s.value) expertise.push(s.value as SkillKey);
     else if (s.id.startsWith("cantrip-")) cantrips.push(s.value);
     else if (s.id.startsWith("spell-")) spells.push(s.value);
     else if (s.id === "fighting-style") overrides.fightingStyle = s.value;
@@ -26,7 +28,8 @@ export function overridesFromSlots(slots: BuildChoiceSlot[]): CharacterBuildOver
     else if (s.id.startsWith("favored-terrain-")) terrains.push(s.value);
   }
 
-  if (skills.length) overrides.classSkills = skills.slice(0, 2);
+  if (skills.length) overrides.classSkills = skills;
+  if (expertise.length) overrides.expertiseSkills = expertise;
   if (cantrips.length) overrides.cantrips = cantrips;
   if (spells.length) overrides.spells = spells;
   if (invocations.length) overrides.warlockInvocations = invocations;
