@@ -951,11 +951,7 @@ export async function forceCharacterTimeSync(
 
   const hours = Number.isFinite(newTime) ? Math.max(0, Math.floor(newTime)) : 0;
 
-  const supabase = ctx.supabase;
   const admin = createSupabaseAdminClient();
-
-  const { data: me } = await supabase.from("profiles").select("role").eq("id", ctx.userId).single();
-  const isAdmin = me?.role === "admin";
 
   const { data: rowRaw, error: fetchErr } = await admin
     .from("campaign_characters")
@@ -971,16 +967,6 @@ export async function forceCharacterTimeSync(
   } | null;
   if (fetchErr || !row) {
     return { success: false, error: fetchErr?.message ?? "Personaggio non trovato." };
-  }
-
-  const { data: camp } = await supabase
-    .from("campaigns")
-    .select("gm_id")
-    .eq("id", row.campaign_id)
-    .single();
-
-  if (!isAdmin && camp?.gm_id !== ctx.userId) {
-    return { success: false, error: "Non sei il Master di questa campagna." };
   }
 
   const { data: calendarRow } = await admin
@@ -1036,9 +1022,6 @@ export async function setCharacterCalendarOverride(
   const supabase = ctx.supabase;
   const admin = createSupabaseAdminClient();
 
-  const { data: me } = await supabase.from("profiles").select("role").eq("id", ctx.userId).single();
-  const isAdmin = me?.role === "admin";
-
   const { data: rowRaw, error: fetchErr } = await admin
     .from("campaign_characters")
     .select("id, campaign_id, time_offset_hours")
@@ -1051,12 +1034,9 @@ export async function setCharacterCalendarOverride(
 
   const { data: camp } = await supabase
     .from("campaigns")
-    .select("gm_id, long_calendar_config")
+    .select("long_calendar_config")
     .eq("id", row.campaign_id)
     .single();
-  if (!isAdmin && camp?.gm_id !== ctx.userId) {
-    return { success: false, error: "Non sei il Master di questa campagna." };
-  }
 
   const config = normalizeFantasyCalendarConfig(
     (camp as { long_calendar_config?: Json | null } | null)?.long_calendar_config ?? DEFAULT_FANTASY_CALENDAR_CONFIG
@@ -1106,11 +1086,7 @@ export async function setCharacterExperience(
   if (!id) return { success: false, error: "Personaggio non valido." };
 
   const nextXp = Number.isFinite(nextXpRaw) ? Math.max(0, Math.floor(nextXpRaw)) : 0;
-  const supabase = ctx.supabase;
   const admin = createSupabaseAdminClient();
-
-  const { data: me } = await supabase.from("profiles").select("role").eq("id", ctx.userId).single();
-  const isAdmin = me?.role === "admin";
 
   const { data: rowRaw, error: fetchErr } = await admin
     .from("campaign_characters")
@@ -1119,11 +1095,6 @@ export async function setCharacterExperience(
     .maybeSingle();
   const row = rowRaw as { id: string; campaign_id: string; assigned_to: string | null } | null;
   if (fetchErr || !row) return { success: false, error: fetchErr?.message ?? "Personaggio non trovato." };
-
-  const { data: camp } = await supabase.from("campaigns").select("gm_id").eq("id", row.campaign_id).single();
-  if (!isAdmin && camp?.gm_id !== ctx.userId) {
-    return { success: false, error: "Non sei il Master di questa campagna." };
-  }
 
   if (!row.assigned_to) {
     return { success: false, error: "Assegna prima il personaggio a un giocatore." };
