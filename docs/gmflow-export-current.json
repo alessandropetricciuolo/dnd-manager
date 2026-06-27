@@ -1,12 +1,12 @@
 {
-  "updatedAt": "2026-06-26T15:15:32.087Z",
+  "updatedAt": "2026-06-27T06:27:19.119Z",
   "sourceProject": "Barber & Dragons",
   "targetProject": "gmflow.app",
   "sourceRepoPath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App",
   "targetRepoPath": "/Users/alessandropetricciuolo/Desktop/masto-platform",
   "branch": "main",
-  "lastCommit": "be804da3b0b2c0e9f22b38c53028ddc0d4f1a34c",
-  "commitRange": "2c01ec2..be804da",
+  "lastCommit": "e9c93e5bd958759b5724435acc8c1cff90667950",
+  "commitRange": "0125d98..e9c93e5",
   "items": [
     {
       "id": "BD-GMFLOW-041d96c-001",
@@ -3674,6 +3674,1425 @@
       "statusCode": "M",
       "createdAt": "2026-06-26T15:15:32.087Z",
       "updatedAt": "2026-06-26T15:15:32.087Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-001",
+      "title": "OTHER: package-lock.json (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `package-lock.json` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "package-lock.json"
+      ],
+      "gmflowLikelyFiles": [
+        "src/package-lock.json"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-002",
+      "title": "OTHER: package.json (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `package.json` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "package.json"
+      ],
+      "gmflowLikelyFiles": [
+        "src/package.json"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-003",
+      "title": "AI: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/app/admin/ai-image-prompt-debug/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/app/admin/ai-image-prompt-debug/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/admin/ai-image-prompt-debug/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-004",
+      "title": "AI: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/app/admin/ai-image-styles/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/app/admin/ai-image-styles/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/admin/ai-image-styles/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-005",
+      "title": "ADMIN: admin-audio-library-client.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "ADMIN",
+      "priority": "Media",
+      "description": "File `src/app/admin/audio-library/admin-audio-library-client.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Tool admin interni — importare solo se gmflow ha pannello equivalente.",
+      "bdFiles": [
+        "src/app/admin/audio-library/admin-audio-library-client.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/admin/audio-library/admin-audio-library-client.tsx"
+      ],
+      "requiredAdaptations": [
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "gmflow ha equivalente admin o è solo tooling B&D?"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-006",
+      "title": "ADMIN: character-catalog-import-client.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "ADMIN",
+      "priority": "Media",
+      "description": "File `src/app/admin/character-catalog-import/character-catalog-import-client.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Tool admin interni — importare solo se gmflow ha pannello equivalente.",
+      "bdFiles": [
+        "src/app/admin/character-catalog-import/character-catalog-import-client.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/admin/character-catalog-import/character-catalog-import-client.tsx"
+      ],
+      "requiredAdaptations": [
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "gmflow ha equivalente admin o è solo tooling B&D?"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-007",
+      "title": "ADMIN: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "ADMIN",
+      "priority": "Media",
+      "description": "File `src/app/admin/communications/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Tool admin interni — importare solo se gmflow ha pannello equivalente.",
+      "bdFiles": [
+        "src/app/admin/communications/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/admin/communications/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "gmflow ha equivalente admin o è solo tooling B&D?"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-008",
+      "title": "ADMIN: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "ADMIN",
+      "priority": "Media",
+      "description": "File `src/app/admin/crm/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Tool admin interni — importare solo se gmflow ha pannello equivalente.",
+      "bdFiles": [
+        "src/app/admin/crm/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/admin/crm/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "gmflow ha equivalente admin o è solo tooling B&D?"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-009",
+      "title": "ADMIN: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "ADMIN",
+      "priority": "Media",
+      "description": "File `src/app/admin/feedback-statistics/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Tool admin interni — importare solo se gmflow ha pannello equivalente.",
+      "bdFiles": [
+        "src/app/admin/feedback-statistics/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/admin/feedback-statistics/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "gmflow ha equivalente admin o è solo tooling B&D?"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-010",
+      "title": "ADMIN: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "ADMIN",
+      "priority": "Media",
+      "description": "File `src/app/admin/gamification/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Tool admin interni — importare solo se gmflow ha pannello equivalente.",
+      "bdFiles": [
+        "src/app/admin/gamification/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/admin/gamification/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "gmflow ha equivalente admin o è solo tooling B&D?"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-011",
+      "title": "ADMIN: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "ADMIN",
+      "priority": "Media",
+      "description": "File `src/app/admin/image-benchmark/[runId]/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Tool admin interni — importare solo se gmflow ha pannello equivalente.",
+      "bdFiles": [
+        "src/app/admin/image-benchmark/[runId]/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/admin/image-benchmark/[runId]/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "gmflow ha equivalente admin o è solo tooling B&D?"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-012",
+      "title": "ADMIN: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "ADMIN",
+      "priority": "Media",
+      "description": "File `src/app/admin/image-benchmark/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Tool admin interni — importare solo se gmflow ha pannello equivalente.",
+      "bdFiles": [
+        "src/app/admin/image-benchmark/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/admin/image-benchmark/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "gmflow ha equivalente admin o è solo tooling B&D?"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-013",
+      "title": "ADMIN: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "ADMIN",
+      "priority": "Media",
+      "description": "File `src/app/admin/import/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Tool admin interni — importare solo se gmflow ha pannello equivalente.",
+      "bdFiles": [
+        "src/app/admin/import/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/admin/import/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "gmflow ha equivalente admin o è solo tooling B&D?"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-014",
+      "title": "ADMIN: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "ADMIN",
+      "priority": "Media",
+      "description": "File `src/app/admin/knowledge/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Tool admin interni — importare solo se gmflow ha pannello equivalente.",
+      "bdFiles": [
+        "src/app/admin/knowledge/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/admin/knowledge/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "gmflow ha equivalente admin o è solo tooling B&D?"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-015",
+      "title": "ADMIN: layout.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "ADMIN",
+      "priority": "Media",
+      "description": "File `src/app/admin/layout.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Tool admin interni — importare solo se gmflow ha pannello equivalente.",
+      "bdFiles": [
+        "src/app/admin/layout.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/admin/layout.tsx"
+      ],
+      "requiredAdaptations": [
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "gmflow ha equivalente admin o è solo tooling B&D?"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-016",
+      "title": "MEDIA_STORAGE: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "MEDIA_STORAGE",
+      "priority": "Media",
+      "description": "File `src/app/admin/media-export/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Upload/storage media — adattare a R2 o storage gmflow.",
+      "bdFiles": [
+        "src/app/admin/media-export/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/admin/media-export/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "Storage R2"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza storage B&D (Telegram) vs gmflow (R2)"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Quale adapter storage usare in gmflow?"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-017",
+      "title": "ADMIN: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "ADMIN",
+      "priority": "Media",
+      "description": "File `src/app/admin/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Tool admin interni — importare solo se gmflow ha pannello equivalente.",
+      "bdFiles": [
+        "src/app/admin/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/admin/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "gmflow ha equivalente admin o è solo tooling B&D?"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-018",
+      "title": "CAMPAIGNS: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "CAMPAIGNS",
+      "priority": "Media",
+      "description": "File `src/app/admin/player-campaigns/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Logica campagne potenzialmente generalizzabile per multi-tenant.",
+      "bdFiles": [
+        "src/app/admin/player-campaigns/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/admin/player-campaigns/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-019",
+      "title": "ADMIN: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "ADMIN",
+      "priority": "Media",
+      "description": "File `src/app/admin/users/[id]/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Tool admin interni — importare solo se gmflow ha pannello equivalente.",
+      "bdFiles": [
+        "src/app/admin/users/[id]/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/admin/users/[id]/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "gmflow ha equivalente admin o è solo tooling B&D?"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-020",
+      "title": "CAMPAIGNS: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "CAMPAIGNS",
+      "priority": "Media",
+      "description": "File `src/app/campaigns/[id]/gm-only/missioni/proiezione/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Logica campagne potenzialmente generalizzabile per multi-tenant.",
+      "bdFiles": [
+        "src/app/campaigns/[id]/gm-only/missioni/proiezione/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/campaigns/[id]/gm-only/missioni/proiezione/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-021",
+      "title": "CAMPAIGNS: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "CAMPAIGNS",
+      "priority": "Media",
+      "description": "File `src/app/campaigns/[id]/gm-only/scene-editor/[sceneDocumentId]/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Logica campagne potenzialmente generalizzabile per multi-tenant.",
+      "bdFiles": [
+        "src/app/campaigns/[id]/gm-only/scene-editor/[sceneDocumentId]/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/campaigns/[id]/gm-only/scene-editor/[sceneDocumentId]/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-022",
+      "title": "CAMPAIGNS: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "CAMPAIGNS",
+      "priority": "Media",
+      "description": "File `src/app/campaigns/[id]/gm-only/scene-editor/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Logica campagne potenzialmente generalizzabile per multi-tenant.",
+      "bdFiles": [
+        "src/app/campaigns/[id]/gm-only/scene-editor/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/campaigns/[id]/gm-only/scene-editor/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-023",
+      "title": "CAMPAIGNS: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "CAMPAIGNS",
+      "priority": "Media",
+      "description": "File `src/app/campaigns/[id]/gm-only/vista-dall-alto/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Logica campagne potenzialmente generalizzabile per multi-tenant.",
+      "bdFiles": [
+        "src/app/campaigns/[id]/gm-only/vista-dall-alto/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/campaigns/[id]/gm-only/vista-dall-alto/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-024",
+      "title": "AI: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/app/campaigns/[id]/settings/ai-style/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/app/campaigns/[id]/settings/ai-style/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/campaigns/[id]/settings/ai-style/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-025",
+      "title": "CAMPAIGNS: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "CAMPAIGNS",
+      "priority": "Media",
+      "description": "File `src/app/campaigns/[id]/wiki/[entityId]/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Logica campagne potenzialmente generalizzabile per multi-tenant.",
+      "bdFiles": [
+        "src/app/campaigns/[id]/wiki/[entityId]/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/campaigns/[id]/wiki/[entityId]/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-026",
+      "title": "CAMPAIGNS: campaign-workspace.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "CAMPAIGNS",
+      "priority": "Media",
+      "description": "File `src/components/campaigns/campaign-workspace.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Logica campagne potenzialmente generalizzabile per multi-tenant.",
+      "bdFiles": [
+        "src/components/campaigns/campaign-workspace.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/campaigns/campaign-workspace.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-027",
+      "title": "UI_UX: layout-conditional-navbar.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/layout-conditional-navbar.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/layout-conditional-navbar.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/layout-conditional-navbar.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-028",
+      "title": "UI_UX: scene-editor-canvas.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/scene-editor/scene-editor-canvas.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/scene-editor/scene-editor-canvas.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/scene-editor/scene-editor-canvas.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-029",
+      "title": "UI_UX: scene-editor-client.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/scene-editor/scene-editor-client.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/scene-editor/scene-editor-client.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/scene-editor/scene-editor-client.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-030",
+      "title": "UI_UX: scene-editor-tool-overlay.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/scene-editor/scene-editor-tool-overlay.tsx` aggiunto nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/scene-editor/scene-editor-tool-overlay.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/scene-editor/scene-editor-tool-overlay.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "A",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-031",
+      "title": "OTHER: shell-classes.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/layout/shell-classes.ts` aggiunto nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/layout/shell-classes.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/layout/shell-classes.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "A",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-032",
+      "title": "OTHER: auto-walls.test.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/__tests__/auto-walls.test.ts` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/__tests__/auto-walls.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/__tests__/auto-walls.test.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-033",
+      "title": "OTHER: corridor-geometry.test.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/__tests__/corridor-geometry.test.ts` aggiunto nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/__tests__/corridor-geometry.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/__tests__/corridor-geometry.test.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "A",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-034",
+      "title": "OTHER: union-boundary-edges.test.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/__tests__/union-boundary-edges.test.ts` aggiunto nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/__tests__/union-boundary-edges.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/__tests__/union-boundary-edges.test.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "A",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-035",
+      "title": "OTHER: auto-walls.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/scene-editor/auto-walls.ts` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/scene-editor/auto-walls.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/scene-editor/auto-walls.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-036",
+      "title": "OTHER: corridor-geometry.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/scene-editor/corridor-geometry.ts` aggiunto nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/scene-editor/corridor-geometry.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/scene-editor/corridor-geometry.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "A",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-037",
+      "title": "OTHER: draw-floor.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/scene-editor/draw-floor.ts` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/scene-editor/draw-floor.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/scene-editor/draw-floor.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-038",
+      "title": "OTHER: ds-renderer.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/scene-editor/ds-renderer.ts` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/scene-editor/ds-renderer.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/scene-editor/ds-renderer.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-e9c93e5-039",
+      "title": "OTHER: union-boundary-edges.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/scene-editor/union-boundary-edges.ts` aggiunto nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/scene-editor/union-boundary-edges.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/scene-editor/union-boundary-edges.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "e9c93e5bd958759b5724435acc8c1cff90667950",
+      "commitShort": "e9c93e5",
+      "commitSubject": "feat(maps): union-based auto-walls and full-width shell layout",
+      "statusCode": "A",
+      "createdAt": "2026-06-27T06:27:19.119Z",
+      "updatedAt": "2026-06-27T06:27:19.119Z"
     }
   ]
 }

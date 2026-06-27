@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-* Data aggiornamento: 2026-06-26T15:15:32.087Z
+* Data aggiornamento: 2026-06-27T06:27:19.119Z
 * Branch corrente: main
-* Ultimo commit analizzato: be804da3b0b2c0e9f22b38c53028ddc0d4f1a34c
-* Range commit analizzato: 2c01ec2..be804da
-* Stato generale: 101 voci NEEDS_REVIEW
-* Voci totali: 101 (NEEDS_REVIEW: 101, TO_IMPORT: 0, IMPORTED: 0)
+* Ultimo commit analizzato: e9c93e5bd958759b5724435acc8c1cff90667950
+* Range commit analizzato: 0125d98..e9c93e5
+* Stato generale: 140 voci NEEDS_REVIEW
+* Voci totali: 140 (NEEDS_REVIEW: 140, TO_IMPORT: 0, IMPORTED: 0)
 
 ## Delta automatico non revisionato
 
@@ -4688,6 +4688,1815 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
+### [BD-GMFLOW-e9c93e5-001] OTHER: package-lock.json (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `package-lock.json` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* package-lock.json
+
+File gmflow probabili:
+
+* src/package-lock.json
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-002] OTHER: package.json (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `package.json` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* package.json
+
+File gmflow probabili:
+
+* src/package.json
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-003] AI: page.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/app/admin/ai-image-prompt-debug/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/app/admin/ai-image-prompt-debug/page.tsx
+
+File gmflow probabili:
+
+* src/app/admin/ai-image-prompt-debug/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-e9c93e5-004] AI: page.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/app/admin/ai-image-styles/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/app/admin/ai-image-styles/page.tsx
+
+File gmflow probabili:
+
+* src/app/admin/ai-image-styles/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-e9c93e5-005] ADMIN: admin-audio-library-client.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+ADMIN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/admin/audio-library/admin-audio-library-client.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Tool admin interni — importare solo se gmflow ha pannello equivalente.
+
+Adattamenti necessari:
+
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/admin/audio-library/admin-audio-library-client.tsx
+
+File gmflow probabili:
+
+* src/app/admin/audio-library/admin-audio-library-client.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* gmflow ha equivalente admin o è solo tooling B&D?
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-006] ADMIN: character-catalog-import-client.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+ADMIN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/admin/character-catalog-import/character-catalog-import-client.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Tool admin interni — importare solo se gmflow ha pannello equivalente.
+
+Adattamenti necessari:
+
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/admin/character-catalog-import/character-catalog-import-client.tsx
+
+File gmflow probabili:
+
+* src/app/admin/character-catalog-import/character-catalog-import-client.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* gmflow ha equivalente admin o è solo tooling B&D?
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-007] ADMIN: page.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+ADMIN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/admin/communications/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Tool admin interni — importare solo se gmflow ha pannello equivalente.
+
+Adattamenti necessari:
+
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/admin/communications/page.tsx
+
+File gmflow probabili:
+
+* src/app/admin/communications/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* gmflow ha equivalente admin o è solo tooling B&D?
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-008] ADMIN: page.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+ADMIN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/admin/crm/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Tool admin interni — importare solo se gmflow ha pannello equivalente.
+
+Adattamenti necessari:
+
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/admin/crm/page.tsx
+
+File gmflow probabili:
+
+* src/app/admin/crm/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* gmflow ha equivalente admin o è solo tooling B&D?
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-009] ADMIN: page.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+ADMIN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/admin/feedback-statistics/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Tool admin interni — importare solo se gmflow ha pannello equivalente.
+
+Adattamenti necessari:
+
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/admin/feedback-statistics/page.tsx
+
+File gmflow probabili:
+
+* src/app/admin/feedback-statistics/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* gmflow ha equivalente admin o è solo tooling B&D?
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-010] ADMIN: page.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+ADMIN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/admin/gamification/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Tool admin interni — importare solo se gmflow ha pannello equivalente.
+
+Adattamenti necessari:
+
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/admin/gamification/page.tsx
+
+File gmflow probabili:
+
+* src/app/admin/gamification/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* gmflow ha equivalente admin o è solo tooling B&D?
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-011] ADMIN: page.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+ADMIN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/admin/image-benchmark/[runId]/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Tool admin interni — importare solo se gmflow ha pannello equivalente.
+
+Adattamenti necessari:
+
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/admin/image-benchmark/[runId]/page.tsx
+
+File gmflow probabili:
+
+* src/app/admin/image-benchmark/[runId]/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* gmflow ha equivalente admin o è solo tooling B&D?
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-012] ADMIN: page.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+ADMIN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/admin/image-benchmark/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Tool admin interni — importare solo se gmflow ha pannello equivalente.
+
+Adattamenti necessari:
+
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/admin/image-benchmark/page.tsx
+
+File gmflow probabili:
+
+* src/app/admin/image-benchmark/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* gmflow ha equivalente admin o è solo tooling B&D?
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-013] ADMIN: page.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+ADMIN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/admin/import/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Tool admin interni — importare solo se gmflow ha pannello equivalente.
+
+Adattamenti necessari:
+
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/admin/import/page.tsx
+
+File gmflow probabili:
+
+* src/app/admin/import/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* gmflow ha equivalente admin o è solo tooling B&D?
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-014] ADMIN: page.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+ADMIN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/admin/knowledge/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Tool admin interni — importare solo se gmflow ha pannello equivalente.
+
+Adattamenti necessari:
+
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/admin/knowledge/page.tsx
+
+File gmflow probabili:
+
+* src/app/admin/knowledge/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* gmflow ha equivalente admin o è solo tooling B&D?
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-015] ADMIN: layout.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+ADMIN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/admin/layout.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Tool admin interni — importare solo se gmflow ha pannello equivalente.
+
+Adattamenti necessari:
+
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/admin/layout.tsx
+
+File gmflow probabili:
+
+* src/app/admin/layout.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* gmflow ha equivalente admin o è solo tooling B&D?
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-016] MEDIA_STORAGE: page.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+MEDIA_STORAGE
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/admin/media-export/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Upload/storage media — adattare a R2 o storage gmflow.
+
+Adattamenti necessari:
+
+* Storage R2
+
+File B&D coinvolti:
+
+* src/app/admin/media-export/page.tsx
+
+File gmflow probabili:
+
+* src/app/admin/media-export/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza storage B&D (Telegram) vs gmflow (R2)
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Quale adapter storage usare in gmflow?
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-017] ADMIN: page.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+ADMIN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/admin/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Tool admin interni — importare solo se gmflow ha pannello equivalente.
+
+Adattamenti necessari:
+
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/admin/page.tsx
+
+File gmflow probabili:
+
+* src/app/admin/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* gmflow ha equivalente admin o è solo tooling B&D?
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-018] CAMPAIGNS: page.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+CAMPAIGNS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/admin/player-campaigns/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Logica campagne potenzialmente generalizzabile per multi-tenant.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/admin/player-campaigns/page.tsx
+
+File gmflow probabili:
+
+* src/app/admin/player-campaigns/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-019] ADMIN: page.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+ADMIN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/admin/users/[id]/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Tool admin interni — importare solo se gmflow ha pannello equivalente.
+
+Adattamenti necessari:
+
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/admin/users/[id]/page.tsx
+
+File gmflow probabili:
+
+* src/app/admin/users/[id]/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* gmflow ha equivalente admin o è solo tooling B&D?
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-020] CAMPAIGNS: page.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+CAMPAIGNS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/campaigns/[id]/gm-only/missioni/proiezione/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Logica campagne potenzialmente generalizzabile per multi-tenant.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/campaigns/[id]/gm-only/missioni/proiezione/page.tsx
+
+File gmflow probabili:
+
+* src/app/campaigns/[id]/gm-only/missioni/proiezione/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-021] CAMPAIGNS: page.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+CAMPAIGNS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/campaigns/[id]/gm-only/scene-editor/[sceneDocumentId]/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Logica campagne potenzialmente generalizzabile per multi-tenant.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/campaigns/[id]/gm-only/scene-editor/[sceneDocumentId]/page.tsx
+
+File gmflow probabili:
+
+* src/app/campaigns/[id]/gm-only/scene-editor/[sceneDocumentId]/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-022] CAMPAIGNS: page.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+CAMPAIGNS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/campaigns/[id]/gm-only/scene-editor/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Logica campagne potenzialmente generalizzabile per multi-tenant.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/campaigns/[id]/gm-only/scene-editor/page.tsx
+
+File gmflow probabili:
+
+* src/app/campaigns/[id]/gm-only/scene-editor/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-023] CAMPAIGNS: page.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+CAMPAIGNS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/campaigns/[id]/gm-only/vista-dall-alto/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Logica campagne potenzialmente generalizzabile per multi-tenant.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/campaigns/[id]/gm-only/vista-dall-alto/page.tsx
+
+File gmflow probabili:
+
+* src/app/campaigns/[id]/gm-only/vista-dall-alto/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-024] AI: page.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/app/campaigns/[id]/settings/ai-style/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/app/campaigns/[id]/settings/ai-style/page.tsx
+
+File gmflow probabili:
+
+* src/app/campaigns/[id]/settings/ai-style/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-e9c93e5-025] CAMPAIGNS: page.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+CAMPAIGNS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/campaigns/[id]/wiki/[entityId]/page.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Logica campagne potenzialmente generalizzabile per multi-tenant.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/campaigns/[id]/wiki/[entityId]/page.tsx
+
+File gmflow probabili:
+
+* src/app/campaigns/[id]/wiki/[entityId]/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-026] CAMPAIGNS: campaign-workspace.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+CAMPAIGNS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/campaigns/campaign-workspace.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Logica campagne potenzialmente generalizzabile per multi-tenant.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/components/campaigns/campaign-workspace.tsx
+
+File gmflow probabili:
+
+* src/components/campaigns/campaign-workspace.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-027] UI_UX: layout-conditional-navbar.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/layout-conditional-navbar.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/layout-conditional-navbar.tsx
+
+File gmflow probabili:
+
+* src/components/layout-conditional-navbar.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-028] UI_UX: scene-editor-canvas.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/scene-editor/scene-editor-canvas.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/scene-editor/scene-editor-canvas.tsx
+
+File gmflow probabili:
+
+* src/components/scene-editor/scene-editor-canvas.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-029] UI_UX: scene-editor-client.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/scene-editor/scene-editor-client.tsx` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/scene-editor/scene-editor-client.tsx
+
+File gmflow probabili:
+
+* src/components/scene-editor/scene-editor-client.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-030] UI_UX: scene-editor-tool-overlay.tsx (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/scene-editor/scene-editor-tool-overlay.tsx` aggiunto nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/scene-editor/scene-editor-tool-overlay.tsx
+
+File gmflow probabili:
+
+* src/components/scene-editor/scene-editor-tool-overlay.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-031] OTHER: shell-classes.ts (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/layout/shell-classes.ts` aggiunto nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/layout/shell-classes.ts
+
+File gmflow probabili:
+
+* src/lib/layout/shell-classes.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-032] OTHER: auto-walls.test.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/__tests__/auto-walls.test.ts` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/__tests__/auto-walls.test.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/__tests__/auto-walls.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-033] OTHER: corridor-geometry.test.ts (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/__tests__/corridor-geometry.test.ts` aggiunto nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/__tests__/corridor-geometry.test.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/__tests__/corridor-geometry.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-034] OTHER: union-boundary-edges.test.ts (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/__tests__/union-boundary-edges.test.ts` aggiunto nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/__tests__/union-boundary-edges.test.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/__tests__/union-boundary-edges.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-035] OTHER: auto-walls.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/scene-editor/auto-walls.ts` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/scene-editor/auto-walls.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/scene-editor/auto-walls.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-036] OTHER: corridor-geometry.ts (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/scene-editor/corridor-geometry.ts` aggiunto nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/scene-editor/corridor-geometry.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/scene-editor/corridor-geometry.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-037] OTHER: draw-floor.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/scene-editor/draw-floor.ts` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/scene-editor/draw-floor.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/scene-editor/draw-floor.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-038] OTHER: ds-renderer.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/scene-editor/ds-renderer.ts` modificato nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/scene-editor/ds-renderer.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/scene-editor/ds-renderer.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e9c93e5-039] OTHER: union-boundary-edges.ts (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/scene-editor/union-boundary-edges.ts` aggiunto nel commit «feat(maps): union-based auto-walls and full-width shell layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/scene-editor/union-boundary-edges.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/scene-editor/union-boundary-edges.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
 ## Modifiche revisionate manualmente
 
 _Nessuna voce revisionata._
@@ -4707,9 +6516,9 @@ Questo ledger traccia modifiche Barber & Dragons da valutare per import in gmflo
 
 - Repository sorgente: `/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App`
 - Repository gmflow locale: `/Users/alessandropetricciuolo/Desktop/masto-platform`
-- Ultimo commit: `be804da` — feat(maps): add DS-style rendering, auto-walls, and layer presets to scene editor
-- File analizzati nell'ultimo run: 22
-- Nuove voci aggiunte: 22
+- Ultimo commit: `e9c93e5` — feat(maps): union-based auto-walls and full-width shell layout
+- File analizzati nell'ultimo run: 39
+- Nuove voci aggiunte: 39
 
 **Azioni consigliate:**
 1. Rivedere voci `NEEDS_REVIEW` nella sezione «Delta automatico».
