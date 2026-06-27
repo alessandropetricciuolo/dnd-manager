@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { it } from "date-fns/locale";
 import { formatSessionInRome } from "@/lib/session-datetime";
-import { Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, ChevronDown, ChevronUp, History } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ type CompletedSessionsListForPlayerProps = {
 export function CompletedSessionsListForPlayer({ campaignId }: CompletedSessionsListForPlayerProps) {
   const [sessions, setSessions] = useState<CompletedSessionForUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -31,34 +32,56 @@ export function CompletedSessionsListForPlayer({ campaignId }: CompletedSessions
     load();
   }, [load]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-6 w-6 animate-spin text-barber-gold" />
-      </div>
-    );
-  }
-
-  if (sessions.length === 0) {
-    return (
-      <p className="rounded-xl border border-barber-gold/20 bg-barber-dark/50 px-4 py-6 text-center text-sm text-barber-paper/60">
-        Nessuna sessione conclusa visibile per il tuo gruppo. Le sessioni del tuo gruppo appariranno qui.
-      </p>
-    );
-  }
-
   return (
-    <div className="mt-8 space-y-4 border-t border-barber-gold/20 pt-8">
-      <h2 className="text-lg font-semibold text-barber-paper">
-        Sessioni concluse (del tuo gruppo)
-      </h2>
-      <ul className="space-y-3">
-        {sessions.map((session) => (
-          <li key={session.id}>
-            <CompletedSessionCardForPlayer session={session} />
-          </li>
-        ))}
-      </ul>
+    <div className="mt-8 border-t border-barber-gold/20 pt-8">
+      <div className="overflow-hidden rounded-xl border border-barber-gold/25 bg-barber-dark/60">
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOpen((value) => !value)}
+          className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-barber-gold/[0.06]"
+        >
+          <span className="flex min-w-0 items-center gap-2 font-semibold text-barber-paper">
+            <History className="h-4 w-4 shrink-0 text-barber-gold" />
+            <span className="truncate">
+              Storico sessioni{loading ? "" : ` (${sessions.length})`}
+            </span>
+          </span>
+          {open ? (
+            <ChevronUp className="h-4 w-4 shrink-0 text-barber-gold/70" aria-hidden />
+          ) : (
+            <ChevronDown className="h-4 w-4 shrink-0 text-barber-gold/70" aria-hidden />
+          )}
+        </button>
+        <div
+          className={cn(
+            "grid transition-[grid-template-rows] duration-200 ease-out",
+            open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+          )}
+        >
+          <div className="overflow-hidden">
+            <div className="border-t border-barber-gold/20 px-4 pb-4 pt-3">
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-barber-gold" />
+                </div>
+              ) : sessions.length === 0 ? (
+                <p className="rounded-xl border border-barber-gold/20 bg-barber-dark/50 px-4 py-6 text-center text-sm text-barber-paper/60">
+                  Nessuna sessione conclusa visibile per il tuo gruppo. Le sessioni del tuo gruppo appariranno qui.
+                </p>
+              ) : (
+                <ul className="space-y-3">
+                  {sessions.map((session) => (
+                    <li key={session.id}>
+                      <CompletedSessionCardForPlayer session={session} />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

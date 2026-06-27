@@ -5,7 +5,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { it } from "date-fns/locale";
 import { formatSessionInRome } from "@/lib/session-datetime";
-import { Pencil, Loader2, Wrench, ChevronDown, ChevronUp } from "lucide-react";
+import { Pencil, Loader2, Wrench, ChevronDown, ChevronUp, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +28,7 @@ type SessionHistoryManagerProps = {
 export function SessionHistoryManager({ campaignId }: SessionHistoryManagerProps) {
   const [sessions, setSessions] = useState<CompletedSessionRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -41,43 +42,61 @@ export function SessionHistoryManager({ campaignId }: SessionHistoryManagerProps
     load();
   }, [load]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-barber-gold" />
-      </div>
-    );
-  }
-
-  if (sessions.length === 0) {
-    return (
-      <p className="rounded-xl border border-barber-gold/20 bg-barber-dark/50 px-4 py-6 text-center text-sm text-barber-paper/70">
-        Nessuna sessione conclusa. Le sessioni chiuse (es. da GM Screen) appariranno qui.
-      </p>
-    );
-  }
-
   return (
-    <div className="space-y-6">
-      <h2 className="text-lg font-semibold text-barber-paper">
-        Storia sessioni
-      </h2>
-      <div className="relative space-y-0">
-        {/* Timeline verticale: linea laterale */}
-        <div className="absolute left-4 top-0 bottom-0 w-px bg-barber-gold/20 md:left-6" />
-        <ul className="space-y-4">
-          {sessions.map((session) => (
-            <li key={session.id} className="relative pl-10 md:pl-12">
-              {/* Pallino timeline */}
-              <div className="absolute left-0 top-6 h-3 w-3 rounded-full border-2 border-barber-gold/50 bg-barber-dark md:left-[18px]" />
-              <SessionHistoryCard
-                session={session}
-                campaignId={campaignId}
-                onSaved={load}
-              />
-            </li>
-          ))}
-        </ul>
+    <div className="overflow-hidden rounded-xl border border-barber-gold/25 bg-barber-dark/60">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-barber-gold/[0.06]"
+      >
+        <span className="flex min-w-0 items-center gap-2 font-semibold text-barber-paper">
+          <History className="h-4 w-4 shrink-0 text-barber-gold" />
+          <span className="truncate">
+            Storico sessioni{loading ? "" : ` (${sessions.length})`}
+          </span>
+        </span>
+        {open ? (
+          <ChevronUp className="h-4 w-4 shrink-0 text-barber-gold/70" aria-hidden />
+        ) : (
+          <ChevronDown className="h-4 w-4 shrink-0 text-barber-gold/70" aria-hidden />
+        )}
+      </button>
+      <div
+        className={cn(
+          "grid transition-[grid-template-rows] duration-200 ease-out",
+          open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+        )}
+      >
+        <div className="overflow-hidden">
+          <div className="border-t border-barber-gold/20 px-4 pb-4 pt-3">
+            {loading ? (
+              <div className="flex items-center justify-center py-10">
+                <Loader2 className="h-7 w-7 animate-spin text-barber-gold" />
+              </div>
+            ) : sessions.length === 0 ? (
+              <p className="rounded-xl border border-barber-gold/20 bg-barber-dark/50 px-4 py-6 text-center text-sm text-barber-paper/70">
+                Nessuna sessione conclusa. Le sessioni chiuse (es. da GM Screen) appariranno qui.
+              </p>
+            ) : (
+              <div className="relative space-y-0">
+                <div className="absolute left-4 top-0 bottom-0 w-px bg-barber-gold/20 md:left-6" />
+                <ul className="space-y-4">
+                  {sessions.map((session) => (
+                    <li key={session.id} className="relative pl-10 md:pl-12">
+                      <div className="absolute left-0 top-6 h-3 w-3 rounded-full border-2 border-barber-gold/50 bg-barber-dark md:left-[18px]" />
+                      <SessionHistoryCard
+                        session={session}
+                        campaignId={campaignId}
+                        onSaved={load}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
