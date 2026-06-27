@@ -1,12 +1,12 @@
 {
-  "updatedAt": "2026-06-27T06:27:19.119Z",
+  "updatedAt": "2026-06-27T06:44:23.017Z",
   "sourceProject": "Barber & Dragons",
   "targetProject": "gmflow.app",
   "sourceRepoPath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App",
   "targetRepoPath": "/Users/alessandropetricciuolo/Desktop/masto-platform",
   "branch": "main",
-  "lastCommit": "e9c93e5bd958759b5724435acc8c1cff90667950",
-  "commitRange": "0125d98..e9c93e5",
+  "lastCommit": "312a24da6d8694a6a5da1b7e210c5d5f87c73eff",
+  "commitRange": "d416b32..312a24d",
   "items": [
     {
       "id": "BD-GMFLOW-041d96c-001",
@@ -5093,6 +5093,186 @@
       "statusCode": "A",
       "createdAt": "2026-06-27T06:27:19.119Z",
       "updatedAt": "2026-06-27T06:27:19.119Z"
+    },
+    {
+      "id": "BD-GMFLOW-312a24d-001",
+      "title": "ADMIN: gm-admin-session-history-panel.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "ADMIN",
+      "priority": "Media",
+      "description": "File `src/components/dashboard/gm-admin-session-history-panel.tsx` aggiunto nel commit «feat(sessions): collapse session history into expandable panels». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Tool admin interni — importare solo se gmflow ha pannello equivalente.",
+      "bdFiles": [
+        "src/components/dashboard/gm-admin-session-history-panel.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/dashboard/gm-admin-session-history-panel.tsx"
+      ],
+      "requiredAdaptations": [
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "gmflow ha equivalente admin o è solo tooling B&D?"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "312a24da6d8694a6a5da1b7e210c5d5f87c73eff",
+      "commitShort": "312a24d",
+      "commitSubject": "feat(sessions): collapse session history into expandable panels",
+      "statusCode": "A",
+      "createdAt": "2026-06-27T06:44:23.017Z",
+      "updatedAt": "2026-06-27T06:44:23.017Z"
+    },
+    {
+      "id": "BD-GMFLOW-312a24d-002",
+      "title": "ADMIN: gm-admin-session-history-section.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "ADMIN",
+      "priority": "Media",
+      "description": "File `src/components/dashboard/gm-admin-session-history-section.tsx` modificato nel commit «feat(sessions): collapse session history into expandable panels». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Tool admin interni — importare solo se gmflow ha pannello equivalente.",
+      "bdFiles": [
+        "src/components/dashboard/gm-admin-session-history-section.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/dashboard/gm-admin-session-history-section.tsx"
+      ],
+      "requiredAdaptations": [
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "gmflow ha equivalente admin o è solo tooling B&D?"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "312a24da6d8694a6a5da1b7e210c5d5f87c73eff",
+      "commitShort": "312a24d",
+      "commitSubject": "feat(sessions): collapse session history into expandable panels",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:44:23.017Z",
+      "updatedAt": "2026-06-27T06:44:23.017Z"
+    },
+    {
+      "id": "BD-GMFLOW-312a24d-003",
+      "title": "SESSIONS: my-sessions-list-client.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "SESSIONS",
+      "priority": "Media",
+      "description": "File `src/components/my-sessions-list-client.tsx` modificato nel commit «feat(sessions): collapse session history into expandable panels». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Gestione sessioni di gioco — valutare parità funzionale gmflow.",
+      "bdFiles": [
+        "src/components/my-sessions-list-client.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/my-sessions-list-client.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "312a24da6d8694a6a5da1b7e210c5d5f87c73eff",
+      "commitShort": "312a24d",
+      "commitSubject": "feat(sessions): collapse session history into expandable panels",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:44:23.017Z",
+      "updatedAt": "2026-06-27T06:44:23.017Z"
+    },
+    {
+      "id": "BD-GMFLOW-312a24d-004",
+      "title": "SESSIONS: completed-sessions-list-for-player.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "SESSIONS",
+      "priority": "Media",
+      "description": "File `src/components/sessions/completed-sessions-list-for-player.tsx` modificato nel commit «feat(sessions): collapse session history into expandable panels». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Gestione sessioni di gioco — valutare parità funzionale gmflow.",
+      "bdFiles": [
+        "src/components/sessions/completed-sessions-list-for-player.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/sessions/completed-sessions-list-for-player.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "312a24da6d8694a6a5da1b7e210c5d5f87c73eff",
+      "commitShort": "312a24d",
+      "commitSubject": "feat(sessions): collapse session history into expandable panels",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:44:23.017Z",
+      "updatedAt": "2026-06-27T06:44:23.017Z"
+    },
+    {
+      "id": "BD-GMFLOW-312a24d-005",
+      "title": "SESSIONS: session-history-manager.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "SESSIONS",
+      "priority": "Media",
+      "description": "File `src/components/sessions/session-history-manager.tsx` modificato nel commit «feat(sessions): collapse session history into expandable panels». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Gestione sessioni di gioco — valutare parità funzionale gmflow.",
+      "bdFiles": [
+        "src/components/sessions/session-history-manager.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/sessions/session-history-manager.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "312a24da6d8694a6a5da1b7e210c5d5f87c73eff",
+      "commitShort": "312a24d",
+      "commitSubject": "feat(sessions): collapse session history into expandable panels",
+      "statusCode": "M",
+      "createdAt": "2026-06-27T06:44:23.017Z",
+      "updatedAt": "2026-06-27T06:44:23.017Z"
     }
   ]
 }

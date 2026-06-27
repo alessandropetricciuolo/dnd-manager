@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-* Data aggiornamento: 2026-06-27T06:27:19.119Z
+* Data aggiornamento: 2026-06-27T06:44:23.017Z
 * Branch corrente: main
-* Ultimo commit analizzato: e9c93e5bd958759b5724435acc8c1cff90667950
-* Range commit analizzato: 0125d98..e9c93e5
-* Stato generale: 140 voci NEEDS_REVIEW
-* Voci totali: 140 (NEEDS_REVIEW: 140, TO_IMPORT: 0, IMPORTED: 0)
+* Ultimo commit analizzato: 312a24da6d8694a6a5da1b7e210c5d5f87c73eff
+* Range commit analizzato: d416b32..312a24d
+* Stato generale: 145 voci NEEDS_REVIEW
+* Voci totali: 145 (NEEDS_REVIEW: 145, TO_IMPORT: 0, IMPORTED: 0)
 
 ## Delta automatico non revisionato
 
@@ -6497,6 +6497,236 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
+### [BD-GMFLOW-312a24d-001] ADMIN: gm-admin-session-history-panel.tsx (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+ADMIN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/dashboard/gm-admin-session-history-panel.tsx` aggiunto nel commit «feat(sessions): collapse session history into expandable panels». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Tool admin interni — importare solo se gmflow ha pannello equivalente.
+
+Adattamenti necessari:
+
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/components/dashboard/gm-admin-session-history-panel.tsx
+
+File gmflow probabili:
+
+* src/components/dashboard/gm-admin-session-history-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* gmflow ha equivalente admin o è solo tooling B&D?
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-312a24d-002] ADMIN: gm-admin-session-history-section.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+ADMIN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/dashboard/gm-admin-session-history-section.tsx` modificato nel commit «feat(sessions): collapse session history into expandable panels». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Tool admin interni — importare solo se gmflow ha pannello equivalente.
+
+Adattamenti necessari:
+
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/components/dashboard/gm-admin-session-history-section.tsx
+
+File gmflow probabili:
+
+* src/components/dashboard/gm-admin-session-history-section.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* gmflow ha equivalente admin o è solo tooling B&D?
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-312a24d-003] SESSIONS: my-sessions-list-client.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+SESSIONS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/my-sessions-list-client.tsx` modificato nel commit «feat(sessions): collapse session history into expandable panels». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Gestione sessioni di gioco — valutare parità funzionale gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/my-sessions-list-client.tsx
+
+File gmflow probabili:
+
+* src/components/my-sessions-list-client.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-312a24d-004] SESSIONS: completed-sessions-list-for-player.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+SESSIONS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/sessions/completed-sessions-list-for-player.tsx` modificato nel commit «feat(sessions): collapse session history into expandable panels». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Gestione sessioni di gioco — valutare parità funzionale gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/sessions/completed-sessions-list-for-player.tsx
+
+File gmflow probabili:
+
+* src/components/sessions/completed-sessions-list-for-player.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-312a24d-005] SESSIONS: session-history-manager.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+SESSIONS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/sessions/session-history-manager.tsx` modificato nel commit «feat(sessions): collapse session history into expandable panels». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Gestione sessioni di gioco — valutare parità funzionale gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/sessions/session-history-manager.tsx
+
+File gmflow probabili:
+
+* src/components/sessions/session-history-manager.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
 ## Modifiche revisionate manualmente
 
 _Nessuna voce revisionata._
@@ -6516,9 +6746,9 @@ Questo ledger traccia modifiche Barber & Dragons da valutare per import in gmflo
 
 - Repository sorgente: `/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App`
 - Repository gmflow locale: `/Users/alessandropetricciuolo/Desktop/masto-platform`
-- Ultimo commit: `e9c93e5` — feat(maps): union-based auto-walls and full-width shell layout
-- File analizzati nell'ultimo run: 39
-- Nuove voci aggiunte: 39
+- Ultimo commit: `312a24d` — feat(sessions): collapse session history into expandable panels
+- File analizzati nell'ultimo run: 5
+- Nuove voci aggiunte: 5
 
 **Azioni consigliate:**
 1. Rivedere voci `NEEDS_REVIEW` nella sezione «Delta automatico».
