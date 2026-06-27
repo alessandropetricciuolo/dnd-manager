@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { DownloadAllImagesButton } from "@/components/media/download-all-images-button";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ImageDown } from "lucide-react";
+import { ADMIN_PAGE_SHELL } from "@/lib/layout/shell-classes";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +21,7 @@ export default async function AdminMediaExportPage() {
   }
 
   return (
-    <div className="min-w-0 p-4 py-10 md:p-8">
+    <div className={ADMIN_PAGE_SHELL}>
       <div className="mx-auto w-full max-w-2xl space-y-6">
         <Button asChild variant="ghost" size="sm" className="text-barber-paper/70">
           <Link href={profile?.role === "admin" ? "/admin" : "/dashboard"}>

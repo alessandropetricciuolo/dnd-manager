@@ -4,6 +4,7 @@ import { GamificationAchievementsTab } from "@/components/admin/gamification-ach
 import { GamificationAvatarsTab } from "@/components/admin/gamification-avatars-tab";
 import { GamificationPlayerTab } from "@/components/admin/gamification-player-tab";
 import type { Database } from "@/types/database.types";
+import { ADMIN_PAGE_SHELL } from "@/lib/layout/shell-classes";
 
 export const dynamic = "force-dynamic";
 
@@ -50,8 +51,8 @@ export default async function GamificationAdminPage() {
   });
 
   return (
-    <div className="min-w-0 p-4 py-10 md:p-8">
-      <div className="mx-auto w-full max-w-4xl space-y-6">
+    <div className={ADMIN_PAGE_SHELL}>
+      <div className="w-full space-y-6">
         <header className="space-y-2">
           <h1 className="text-2xl font-semibold text-barber-paper sm:text-3xl">
             Gamification

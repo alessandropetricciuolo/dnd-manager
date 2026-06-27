@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
+import { ADMIN_NAV_INNER } from "@/lib/layout/shell-classes";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Shield, FileJson, Trophy, BookOpen, BookText, Palette, Swords, BarChart3, Mail, Headphones, Library, ScanSearch, ImageIcon } from "lucide-react";
 
@@ -36,7 +37,7 @@ export default async function AdminLayout({
   return (
     <div className="min-h-screen bg-barber-dark">
       <nav className="sticky top-0 z-10 border-b border-barber-gold/30 bg-barber-dark/95 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-2 px-4 py-3">
+        <div className={ADMIN_NAV_INNER}>
           <Link href="/dashboard">
             <Button
               variant="ghost"

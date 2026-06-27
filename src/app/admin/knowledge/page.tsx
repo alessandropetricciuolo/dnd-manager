@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { ManualSemanticSearch } from "@/components/admin/manual-semantic-search";
 import { ManualV4IngestControls } from "@/components/admin/manual-v4-ingest-controls";
+import { ADMIN_PAGE_SHELL } from "@/lib/layout/shell-classes";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,7 @@ export default async function AdminKnowledgePage({ searchParams }: KnowledgePage
   const message = typeof searchParams?.message === "string" ? searchParams.message : null;
 
   return (
-    <div className="min-w-0 p-4 py-10 md:p-8">
+    <div className={ADMIN_PAGE_SHELL}>
       <div className="mx-auto w-full max-w-3xl space-y-6">
         <header className="space-y-2">
           <h1 className="flex items-center gap-2 text-xl font-semibold text-barber-paper sm:text-2xl">

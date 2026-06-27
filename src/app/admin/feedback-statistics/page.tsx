@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { Star, MessageSquareText, BarChart3 } from "lucide-react";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
+import { ADMIN_PAGE_SHELL } from "@/lib/layout/shell-classes";
 
 export const dynamic = "force-dynamic";
 
@@ -101,8 +102,8 @@ export default async function AdminFeedbackStatisticsPage() {
     .sort((a, b) => b.count - a.count || a.campaignName.localeCompare(b.campaignName));
 
   return (
-    <div className="min-w-0 p-4 py-10 md:p-8">
-      <div className="mx-auto w-full max-w-6xl space-y-6">
+    <div className={ADMIN_PAGE_SHELL}>
+      <div className="w-full space-y-6">
         <header className="space-y-1">
           <h1 className="flex items-center gap-2 text-xl font-semibold text-barber-paper sm:text-2xl">
             <BarChart3 className="h-6 w-6 text-barber-gold" />

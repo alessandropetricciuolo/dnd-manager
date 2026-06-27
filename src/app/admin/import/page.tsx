@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { FileJson } from "lucide-react";
 import { ImportCampaignForm } from "@/components/admin/import-campaign-form";
+import { ADMIN_PAGE_SHELL } from "@/lib/layout/shell-classes";
 
 export const dynamic = "force-dynamic";
 
@@ -29,8 +30,8 @@ export default async function AdminImportPage() {
   }
 
   return (
-    <div className="px-4 py-10">
-      <div className="mx-auto max-w-3xl space-y-6">
+    <div className={ADMIN_PAGE_SHELL}>
+      <div className="mx-auto w-full max-w-3xl space-y-6">
         <header>
           <h1 className="flex items-center gap-2 text-xl font-semibold text-barber-paper sm:text-2xl">
             <FileJson className="h-6 w-6 text-barber-gold" />

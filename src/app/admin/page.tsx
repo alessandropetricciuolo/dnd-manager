@@ -15,6 +15,7 @@ import { NotificationsPausedToggle } from "@/components/admin/notifications-paus
 import { BackupDriveImagesButton } from "@/components/admin/backup-drive-images-button";
 import { Palette, Shield, BarChart3, Mail, BookText, ImageDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ADMIN_PAGE_SHELL } from "@/lib/layout/shell-classes";
 
 export const dynamic = "force-dynamic";
 
@@ -58,8 +59,8 @@ export default async function AdminPage() {
 
   if (error) {
     return (
-      <div className="px-4 py-10">
-        <div className="mx-auto max-w-4xl">
+      <div className={ADMIN_PAGE_SHELL}>
+        <div className="w-full">
           <p className="text-red-400">Errore nel caricamento degli utenti.</p>
         </div>
       </div>
@@ -69,8 +70,8 @@ export default async function AdminPage() {
   const list = profiles;
 
   return (
-    <div className="min-w-0 p-4 py-10 md:p-8">
-      <div className="mx-auto w-full max-w-4xl space-y-6">
+    <div className={ADMIN_PAGE_SHELL}>
+      <div className="w-full space-y-6">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <h1 className="flex min-w-0 items-center gap-2 break-words text-xl font-semibold text-barber-paper sm:text-2xl">
             <Shield className="h-6 w-6 text-barber-gold" />

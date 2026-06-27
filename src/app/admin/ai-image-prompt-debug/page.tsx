@@ -5,6 +5,7 @@ import { ScanSearch } from "lucide-react";
 import { SITE_IMAGE_MODEL } from "@/lib/ai/openrouter-image-preview";
 import { listCampaignsForImagePromptDebugAction } from "./actions";
 import { ImagePromptDebugClient } from "./prompt-debug-client";
+import { ADMIN_PAGE_SHELL } from "@/lib/layout/shell-classes";
 
 export const dynamic = "force-dynamic";
 
@@ -28,8 +29,8 @@ export default async function AdminImagePromptDebugPage() {
   const campaigns = listed.success ? listed.campaigns : [];
 
   return (
-    <div className="p-4 py-8 md:p-8">
-      <div className="mx-auto max-w-5xl space-y-5">
+    <div className={ADMIN_PAGE_SHELL}>
+      <div className="w-full space-y-5">
         <header className="space-y-2">
           <h1 className="flex items-center gap-2 text-2xl font-semibold text-barber-paper">
             <ScanSearch className="h-6 w-6 text-barber-gold" />

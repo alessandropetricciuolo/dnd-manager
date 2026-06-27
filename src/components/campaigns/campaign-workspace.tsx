@@ -23,8 +23,8 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { IMAGE_BLUR_PLACEHOLDER } from "@/lib/utils";
-import { cn } from "@/lib/utils";
+import { IMAGE_BLUR_PLACEHOLDER, cn } from "@/lib/utils";
+import { CAMPAIGN_CONTENT_SHELL } from "@/lib/layout/shell-classes";
 
 const PLACEHOLDER_IMAGE =
   "https://placehold.co/1200x400/1c1917/fbbf24/png?text=Campagna";
@@ -537,7 +537,7 @@ export function CampaignWorkspace({
 
           {/* Main content */}
           <main className="min-h-0 min-w-0 flex-1 overflow-y-auto">
-            <div className="mx-auto w-full max-w-5xl px-3 py-3 sm:px-5 sm:py-5 lg:px-8 lg:py-8">
+            <div className={CAMPAIGN_CONTENT_SHELL}>
               {!hasPlayedCampaign ? (
                 <p className="mb-4 hidden rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs text-amber-100 lg:block">
                   <span className="font-medium">

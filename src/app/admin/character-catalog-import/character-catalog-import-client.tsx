@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { importCharacterCatalogJsonAction } from "./actions";
+import { ADMIN_PAGE_SHELL } from "@/lib/layout/shell-classes";
 
 type Props = {
   exampleJson: string;
@@ -63,7 +64,7 @@ export function CharacterCatalogImportClient({ exampleJson }: Props) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-8 p-4 py-10 md:p-8">
+    <div className={`${ADMIN_PAGE_SHELL} space-y-8`}>
       <header className="space-y-2">
         <h1 className="flex flex-wrap items-center gap-2 text-xl font-semibold text-barber-paper sm:text-2xl">
           <Library className="h-7 w-7 shrink-0 text-barber-gold" />

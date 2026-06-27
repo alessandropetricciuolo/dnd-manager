@@ -26,6 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { EditUserDialog } from "@/components/admin/edit-user-dialog";
 import { DeleteUserButton } from "@/components/admin/delete-user-button";
 import { ArrowLeft, Shield, Gamepad2, Users } from "lucide-react";
+import { ADMIN_PAGE_SHELL } from "@/lib/layout/shell-classes";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -203,8 +204,8 @@ export default async function AdminUserDossierPage({ params }: PageProps) {
   const presentBySession = new Map(presentCounts.map((p) => [p.sessionId, p.presentCount]));
 
   return (
-    <div className="min-h-screen bg-barber-dark px-4 py-10">
-      <div className="mx-auto max-w-5xl space-y-6">
+    <div className={`min-h-screen bg-barber-dark ${ADMIN_PAGE_SHELL}`}>
+      <div className="w-full space-y-6">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-4">
             <Link href="/admin">

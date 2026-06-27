@@ -7,7 +7,6 @@ import type { SceneFloorV1 } from "@/lib/map-core/scene-schema";
 import type { EditorDrawOptions } from "@/lib/map-core/scene-editor/draw-floor";
 
 export type SceneEditorTool =
-  | "pan"
   | "select"
   | "room"
   | "corridor"
@@ -42,7 +41,6 @@ export function SceneEditorCanvas({
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawingRef = useRef(false);
-  const isPanTool = tool === "pan";
 
   const repaint = useCallback(() => {
     const canvas = canvasRef.current;
@@ -65,13 +63,11 @@ export function SceneEditorCanvas({
   }, [repaint]);
 
   const cursor =
-    tool === "pan"
-      ? "grab"
-      : tool === "room" || tool === "corridor" || tool === "door"
-        ? "crosshair"
-        : tool === "erase"
-          ? "not-allowed"
-          : "default";
+    tool === "room" || tool === "corridor" || tool === "door"
+      ? "crosshair"
+      : tool === "erase"
+        ? "not-allowed"
+        : "default";
 
   return (
     <div className="h-[min(70vh,720px)] w-full overflow-hidden rounded-lg border border-barber-gold/25 bg-[#0f0d0c]">
@@ -82,10 +78,9 @@ export function SceneEditorCanvas({
         centerOnInit
         wheel={{ step: 0.08 }}
         panning={{
-          allowLeftClickPan: isPanTool,
+          allowLeftClickPan: false,
           allowMiddleClickPan: true,
           allowRightClickPan: false,
-          excluded: isPanTool ? [] : ["[data-scene-editor-canvas]"],
         }}
         doubleClick={{ disabled: true }}
       >
@@ -99,7 +94,11 @@ export function SceneEditorCanvas({
             className="max-h-none max-w-none shadow-lg"
             style={{ width: floor.width, height: floor.height, cursor, touchAction: "none" }}
             onMouseDown={(e) => {
-              if (isPanTool || e.button !== 0) return;
+              if (e.button === 1) {
+                e.preventDefault();
+                return;
+              }
+              if (e.button !== 0) return;
               e.stopPropagation();
               drawingRef.current = true;
               const canvas = canvasRef.current;
@@ -108,7 +107,9 @@ export function SceneEditorCanvas({
               onCanvasPoint(p.x, p.y, e);
             }}
             onMouseMove={(e) => {
-              if (!onCanvasMove || isPanTool || !drawingRef.current) return;
+              if (!onCanvasMove) return;
+              if (tool === "room" && !drawingRef.current) return;
+              if (tool !== "room" && tool !== "corridor") return;
               e.stopPropagation();
               const canvas = canvasRef.current;
               if (!canvas) return;
@@ -116,7 +117,8 @@ export function SceneEditorCanvas({
               onCanvasMove(p.x, p.y, e);
             }}
             onMouseUp={(e) => {
-              if (isPanTool) return;
+              if (e.button === 1) return;
+              if (e.button !== 0) return;
               e.stopPropagation();
               drawingRef.current = false;
               if (!onCanvasUp) return;
@@ -128,6 +130,7 @@ export function SceneEditorCanvas({
             onMouseLeave={() => {
               drawingRef.current = false;
             }}
+            onContextMenu={(e) => e.preventDefault()}
           />
         </TransformComponent>
       </TransformWrapper>

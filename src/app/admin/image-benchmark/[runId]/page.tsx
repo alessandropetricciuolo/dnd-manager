@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getImageBenchmarkRunAction } from "../actions";
 import { ImageBenchmarkRunClient } from "../image-benchmark-run-client";
+import { ADMIN_PAGE_SHELL } from "@/lib/layout/shell-classes";
 
 export const dynamic = "force-dynamic";
 
@@ -24,8 +25,8 @@ export default async function AdminImageBenchmarkRunPage({ params }: PageProps) 
   const campaign = loaded.campaign;
 
   return (
-    <div className="p-4 py-8 md:p-8">
-      <div className="mx-auto max-w-6xl space-y-4">
+    <div className={ADMIN_PAGE_SHELL}>
+      <div className="w-full space-y-4">
         <Link href="/admin/image-benchmark">
           <Button variant="ghost" size="sm" className="text-barber-paper/80">
             <ArrowLeft className="mr-2 h-4 w-4" />

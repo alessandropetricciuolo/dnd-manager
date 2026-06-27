@@ -9,6 +9,7 @@ import { WikiDetails } from "@/components/wiki/wiki-details";
 import { WikiEntityEditButton } from "@/components/wiki/wiki-entity-edit-button";
 import { WikiEntityDeleteButton } from "@/components/wiki/wiki-entity-delete-button";
 import { getWikiContentBody } from "@/lib/wiki/content";
+import { CAMPAIGN_CONTENT_SHELL } from "@/lib/layout/shell-classes";
 import { ArrowLeft } from "lucide-react";
 
 type PageProps = {
@@ -95,12 +96,9 @@ export default async function WikiEntityPage({ params, searchParams }: PageProps
     sort_order: entity.sort_order ?? null,
   };
 
-  const isLore = entity.type === "lore";
-  const maxWidth = isLore ? "max-w-4xl" : "max-w-5xl";
-
   return (
-    <div className="min-h-screen bg-barber-dark px-4 py-6 md:py-8 min-w-0 overflow-x-hidden">
-      <div className={`mx-auto min-w-0 ${maxWidth}`}>
+    <div className={`min-h-screen bg-barber-dark min-w-0 overflow-x-hidden ${CAMPAIGN_CONTENT_SHELL}`}>
+      <div className="min-w-0 w-full">
         <div className="mb-4 md:mb-6 flex flex-wrap items-center gap-2 min-w-0">
           <Link
             href={`/campaigns/${campaignId}?tab=wiki&wiki_filter=${encodeURIComponent(entity.type)}`}

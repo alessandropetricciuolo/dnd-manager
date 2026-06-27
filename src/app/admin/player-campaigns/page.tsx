@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { Swords } from "lucide-react";
 import { PlayerCampaignsTable } from "./player-campaigns-table";
+import { ADMIN_PAGE_SHELL } from "@/lib/layout/shell-classes";
 
 export const dynamic = "force-dynamic";
 
@@ -63,8 +64,8 @@ export default async function AdminPlayerCampaignsPage() {
   const memberships = (membershipsRaw ?? []) as MembershipRow[];
 
   return (
-    <div className="min-w-0 p-4 py-10 md:p-8">
-      <div className="mx-auto w-full max-w-6xl space-y-6">
+    <div className={ADMIN_PAGE_SHELL}>
+      <div className="w-full space-y-6">
         <header className="space-y-2">
           <h1 className="flex items-center gap-2 text-xl font-semibold text-barber-paper sm:text-2xl">
             <Swords className="h-6 w-6 text-barber-gold" />

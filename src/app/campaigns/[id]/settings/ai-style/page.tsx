@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { Button } from "@/components/ui/button";
 import { AiStyleForm } from "./ai-style-form";
+import { CAMPAIGN_CONTENT_SHELL } from "@/lib/layout/shell-classes";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -74,7 +75,7 @@ export default async function CampaignAiStylePage({ params }: PageProps) {
   }
 
   return (
-    <main className="min-h-[calc(100vh-64px)] bg-barber-dark px-4 py-8 text-barber-paper md:px-8">
+    <main className={`min-h-[calc(100vh-64px)] bg-barber-dark text-barber-paper ${CAMPAIGN_CONTENT_SHELL}`}>
       <div className="mx-auto w-full max-w-3xl space-y-5 rounded-xl border border-barber-gold/25 bg-barber-dark/75 p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-xl font-semibold text-barber-gold">

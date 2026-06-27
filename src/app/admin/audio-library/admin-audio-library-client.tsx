@@ -24,6 +24,7 @@ import { gmGlobalAudioPreviewPath } from "@/lib/gm-global-audio/preview-url";
 import { toAbsoluteMediaUrl } from "@/lib/gm-audio-forge/url-validation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminSpotifyPlaylistsSection } from "@/app/admin/audio-library/admin-spotify-playlists-section";
+import { ADMIN_PAGE_SHELL } from "@/lib/layout/shell-classes";
 
 const TYPE_LABEL: Record<GmGlobalAudioType, string> = {
   music: "Musica",
@@ -171,7 +172,7 @@ export function AdminAudioLibraryClient() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8 px-4 py-8">
+    <div className={`${ADMIN_PAGE_SHELL} space-y-8`}>
       <div>
         <h1 className="font-serif text-2xl text-barber-paper">Libreria audio globale</h1>
         <p className="mt-1 text-sm text-barber-paper/70">

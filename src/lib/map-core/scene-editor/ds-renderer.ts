@@ -3,6 +3,7 @@ import type { SceneAreaV1, SceneFloorV1, SceneLayerV1, SceneWallV1 } from "../sc
 import { sceneLayerPreset, type SceneLayerPreset } from "../scene-schema/layer-presets";
 import { normalizeSceneFloor } from "../scene-schema/normalize-floor";
 import type { EditorDrawOptions } from "./draw-floor";
+import { previewCorridorPolygon } from "./corridor-geometry";
 import { drawSceneGmNote, drawScenePropSvg } from "./draw-props-svg";
 
 export type DsPaintOptions = EditorDrawOptions;
@@ -258,19 +259,40 @@ export function paintSceneFloorDs(
     ctx.fillRect(x, y, rw, rh);
   }
 
-  if (options.draftCorridor && options.draftCorridor.length > 0) {
-    ctx.strokeStyle = "rgba(20,20,20,0.7)";
+  if (options.draftCorridor && options.draftCorridor.centerline.length > 0) {
+    const { centerline, cursor, halfWidth } = options.draftCorridor;
+    const preview = previewCorridorPolygon(centerline, cursor, halfWidth, centerline.length > 1);
+
+    ctx.strokeStyle = "rgba(20,20,20,0.55)";
     ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
     ctx.beginPath();
-    ctx.moveTo(options.draftCorridor[0].x, options.draftCorridor[0].y);
-    for (let i = 1; i < options.draftCorridor.length; i++) {
-      ctx.lineTo(options.draftCorridor[i].x, options.draftCorridor[i].y);
+    ctx.moveTo(centerline[0].x, centerline[0].y);
+    for (let i = 1; i < centerline.length; i++) {
+      ctx.lineTo(centerline[i].x, centerline[i].y);
     }
+    if (cursor) ctx.lineTo(cursor.x, cursor.y);
     ctx.stroke();
-    for (const p of options.draftCorridor) {
+    ctx.setLineDash([]);
+
+    if (preview && preview.length >= 3) {
+      ctx.beginPath();
+      ctx.moveTo(preview[0].x, preview[0].y);
+      for (let i = 1; i < preview.length; i++) {
+        ctx.lineTo(preview[i].x, preview[i].y);
+      }
+      ctx.closePath();
+      ctx.fillStyle = "rgba(248,246,240,0.4)";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(20,20,20,0.75)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    for (const p of centerline) {
       ctx.fillStyle = "#141414";
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
       ctx.fill();
     }
   }

@@ -13,14 +13,27 @@ describe("generateWallsFromAreas", () => {
     assert.equal(walls.length, 4);
   });
 
-  it("dedupes shared edge between two rooms", () => {
+  it("merges adjacent rooms into one outer rectangle", () => {
     const left = rectangleAreaPolygon(0, 0, 100, 100);
     const right = rectangleAreaPolygon(100, 0, 100, 100);
     const walls = generateWallsFromAreas([
       { id: "a1", kind: "room", polygon: left },
       { id: "a2", kind: "room", polygon: right },
     ]);
-    assert.equal(walls.length, 6);
+    assert.equal(walls.length, 4);
+    assert.ok(!walls.some((w) => wallSegmentKey(w.x1, w.y1, w.x2, w.y2) === wallSegmentKey(100, 0, 100, 100)));
+  });
+
+  it("removes internal walls when rooms overlap at a corner", () => {
+    const a = rectangleAreaPolygon(0, 0, 100, 100);
+    const b = rectangleAreaPolygon(50, 50, 100, 100);
+    const walls = generateWallsFromAreas([
+      { id: "a1", kind: "room", polygon: a },
+      { id: "a2", kind: "room", polygon: b },
+    ]);
+    assert.ok(walls.length >= 6);
+    assert.ok(!walls.some((w) => wallSegmentKey(w.x1, w.y1, w.x2, w.y2) === wallSegmentKey(100, 50, 100, 100)));
+    assert.ok(!walls.some((w) => wallSegmentKey(w.x1, w.y1, w.x2, w.y2) === wallSegmentKey(50, 100, 100, 100)));
   });
 
   it("preserves door on matching segment", () => {

@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { ScrollText } from "lucide-react";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { MissionBoardSection } from "@/components/missions/mission-board-section";
+import { CAMPAIGN_CONTENT_SHELL } from "@/lib/layout/shell-classes";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -21,8 +22,8 @@ export default async function MissionProjectionPage({ params }: PageProps) {
   if (!isGmOrAdmin) notFound();
 
   return (
-    <div className="min-h-screen bg-zinc-950 p-4 md:p-6">
-      <div className="mx-auto w-full max-w-7xl space-y-4">
+    <div className={`min-h-screen bg-zinc-950 ${CAMPAIGN_CONTENT_SHELL}`}>
+      <div className="w-full space-y-4">
         <header className="rounded-xl border border-amber-600/25 bg-zinc-900/60 p-4">
           <h1 className="flex items-center gap-2 text-lg font-semibold text-amber-200 md:text-xl">
             <ScrollText className="h-5 w-5" />

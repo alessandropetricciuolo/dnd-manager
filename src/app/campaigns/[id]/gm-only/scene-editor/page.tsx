@@ -8,6 +8,7 @@ import {
   listSceneDocumentsAction,
 } from "@/app/campaigns/scene-document-actions";
 import { SceneEditorListActions } from "@/components/scene-editor/scene-editor-list-actions";
+import { CAMPAIGN_CONTENT_SHELL } from "@/lib/layout/shell-classes";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -54,7 +55,7 @@ export default async function SceneEditorIndexPage({ params }: PageProps) {
         <h1 className="text-lg font-semibold text-barber-gold">Scene Editor</h1>
         <span className="text-sm text-barber-paper/60">{campaign.name}</span>
       </header>
-      <div className="mx-auto w-full max-w-3xl flex-1 space-y-6 px-4 py-8">
+      <div className={`${CAMPAIGN_CONTENT_SHELL} flex min-h-0 flex-1 flex-col space-y-6`}>
         <form action={createNewScene}>
           <Button type="submit" className="bg-barber-gold text-barber-dark hover:bg-barber-gold/90">
             <Map className="mr-2 h-4 w-4" />

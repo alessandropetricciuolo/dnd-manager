@@ -1,4 +1,5 @@
 import type { SceneAreaV1, SceneWallDoorV1, SceneWallV1 } from "../scene-schema";
+import { segmentKey as unionSegmentKey, unionBoundarySegments } from "./union-boundary-edges";
 
 function roundCoord(n: number): number {
   return Math.round(n * 100) / 100;
@@ -6,32 +7,11 @@ function roundCoord(n: number): number {
 
 /** Chiave canonica per segmento (indipendente da direzione). */
 export function wallSegmentKey(x1: number, y1: number, x2: number, y2: number): string {
-  const a = `${roundCoord(x1)},${roundCoord(y1)}`;
-  const b = `${roundCoord(x2)},${roundCoord(y2)}`;
-  return a < b ? `${a}|${b}` : `${b}|${a}`;
-}
-
-function edgesFromPolygon(polygon: Array<{ x: number; y: number }>): Array<{
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-}> {
-  const edges: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
-  for (let i = 0; i < polygon.length; i++) {
-    const j = (i + 1) % polygon.length;
-    edges.push({
-      x1: polygon[i].x,
-      y1: polygon[i].y,
-      x2: polygon[j].x,
-      y2: polygon[j].y,
-    });
-  }
-  return edges;
+  return unionSegmentKey(x1, y1, x2, y2);
 }
 
 /**
- * Genera muri dai bordi delle aree; preserva porte su segmenti coincidenti.
+ * Genera muri dal perimetro esterno dell'unione delle aree; preserva porte su segmenti coincidenti.
  */
 export function generateWallsFromAreas(
   areas: SceneAreaV1[],
@@ -48,30 +28,18 @@ export function generateWallsFromAreas(
     if (w.door) doorsByKey.set(key, w.door);
   }
 
-  const edgeKeys = new Map<
-    string,
-    { x1: number; y1: number; x2: number; y2: number }
-  >();
-  const edgeUseCount = new Map<string, number>();
-
-  for (const area of areas) {
-    if (area.polygon.length < 3) continue;
-    for (const e of edgesFromPolygon(area.polygon)) {
-      const key = wallSegmentKey(e.x1, e.y1, e.x2, e.y2);
-      edgeUseCount.set(key, (edgeUseCount.get(key) ?? 0) + 1);
-      if (!edgeKeys.has(key)) edgeKeys.set(key, e);
-    }
-  }
+  const polygons = areas.filter((a) => a.polygon.length >= 3).map((a) => a.polygon);
+  const boundary = unionBoundarySegments(polygons);
 
   const walls: SceneWallV1[] = [];
-  for (const [key, e] of edgeKeys) {
-    if ((edgeUseCount.get(key) ?? 0) > 1) continue;
+  for (const e of boundary) {
+    const key = wallSegmentKey(e.x1, e.y1, e.x2, e.y2);
     walls.push({
       id: idsByKey.get(key) ?? `wall-${key.replace(/[^a-z0-9]/gi, "").slice(0, 24)}`,
-      x1: e.x1,
-      y1: e.y1,
-      x2: e.x2,
-      y2: e.y2,
+      x1: roundCoord(e.x1),
+      y1: roundCoord(e.y1),
+      x2: roundCoord(e.x2),
+      y2: roundCoord(e.y2),
       door: doorsByKey.get(key),
     });
   }

@@ -7,7 +7,11 @@ export type EditorDrawOptions = {
   selectedPropId?: string | null;
   selectedGmNoteId?: string | null;
   draftRect?: { x: number; y: number; w: number; h: number } | null;
-  draftCorridor?: Array<{ x: number; y: number }> | null;
+  draftCorridor?: {
+    centerline: Array<{ x: number; y: number }>;
+    cursor: { x: number; y: number } | null;
+    halfWidth: number;
+  } | null;
   activeLayerId?: string | null;
 };
 

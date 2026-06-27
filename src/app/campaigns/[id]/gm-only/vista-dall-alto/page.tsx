@@ -4,6 +4,7 @@ import { ChevronLeft, Layers } from "lucide-react";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { Button } from "@/components/ui/button";
 import { VistaDallAltoClient } from "@/components/exploration/vista-dall-alto-client";
+import { CAMPAIGN_CONTENT_SHELL } from "@/lib/layout/shell-classes";
 import type { ExplorationMapRow, FowRegionRow } from "@/app/campaigns/exploration-map-actions";
 
 type PageProps = {
@@ -74,7 +75,7 @@ export default async function VistaDallAltoPage({ params }: PageProps) {
         <h1 className="text-lg font-semibold text-barber-gold">Esplorazione e FOW</h1>
         <span className="text-sm text-barber-paper/60">{campaign.name}</span>
       </header>
-      <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
+      <div className={`${CAMPAIGN_CONTENT_SHELL} flex min-h-0 flex-1 flex-col`}>
         <VistaDallAltoClient
           campaignId={campaignId}
           initialMaps={mapList}
