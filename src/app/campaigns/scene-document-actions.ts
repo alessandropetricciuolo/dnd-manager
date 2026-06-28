@@ -57,21 +57,53 @@ async function requireGm(supabase: Awaited<ReturnType<typeof createSupabaseServe
   return { user, ok, supabase };
 }
 
-async function uploadPlaceholderImage(floorLabel: string): Promise<string> {
+const EXPLORATION_MAPS_BUCKET = "exploration_maps";
+
+async function uploadExplorationMapImage(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  campaignId: string,
+  file: File | Blob,
+  label: string
+): Promise<string> {
+  try {
+    const fileId = await uploadImageToTelegram(file, label || "scene");
+    return `/api/tg-image/${fileId}`;
+  } catch {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const type = file.type || "image/png";
+    const ext = type.includes("png") ? "png" : type.includes("webp") ? "webp" : "png";
+    const path = `${campaignId}/scene-${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from(EXPLORATION_MAPS_BUCKET).upload(path, bytes, {
+      contentType: type,
+      upsert: false,
+    });
+    if (error) throw new Error(error.message);
+    return path;
+  }
+}
+
+async function uploadPlaceholderImage(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  campaignId: string,
+  floorLabel: string
+): Promise<string> {
   const buf = getSceneMapPlaceholderPngBuffer();
   const bytes = new Uint8Array(buf);
   const file = new File([bytes], "scene-placeholder.png", { type: "image/png" });
-  const fileId = await uploadImageToTelegram(file, floorLabel || "scene");
-  return `/api/tg-image/${fileId}`;
+  return uploadExplorationMapImage(supabase, campaignId, file, floorLabel || "scene");
 }
 
-async function uploadFloorRasterBlob(floorLabel: string, blob: Blob): Promise<string> {
+async function uploadFloorRasterBlob(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  campaignId: string,
+  floorLabel: string,
+  blob: Blob
+): Promise<string> {
   const bytes = new Uint8Array(await blob.arrayBuffer());
   const type = blob.type || "image/webp";
   const ext = type.includes("png") ? "png" : "webp";
   const file = new File([bytes], `${floorLabel}.${ext}`, { type });
-  const fileId = await uploadImageToTelegram(file, floorLabel || "scene");
-  return `/api/tg-image/${fileId}`;
+  return uploadExplorationMapImage(supabase, campaignId, file, floorLabel || "scene");
 }
 
 async function applyFowSyncForMap(
@@ -155,7 +187,12 @@ async function upsertFloorMaps(
       const raster = floorRasters?.[floor.id];
       if (raster && raster.size > 0) {
         try {
-          imagePathUpdate.image_path = await uploadFloorRasterBlob(floor.label, raster);
+          imagePathUpdate.image_path = await uploadFloorRasterBlob(
+            supabase,
+            campaignId,
+            floor.label,
+            raster
+          );
         } catch (e) {
           return {
             success: false,
@@ -187,7 +224,7 @@ async function upsertFloorMaps(
     const raster = floorRasters?.[floor.id];
     if (raster && raster.size > 0) {
       try {
-        imagePath = await uploadFloorRasterBlob(floor.label, raster);
+        imagePath = await uploadFloorRasterBlob(supabase, campaignId, floor.label, raster);
       } catch (e) {
         return {
           success: false,
@@ -196,7 +233,7 @@ async function upsertFloorMaps(
       }
     } else {
       try {
-        imagePath = await uploadPlaceholderImage(floor.label);
+        imagePath = await uploadPlaceholderImage(supabase, campaignId, floor.label);
       } catch (e) {
         return {
           success: false,
@@ -241,6 +278,58 @@ async function upsertFloorMaps(
   return { success: true, data: floorMapIds };
 }
 
+/** Ripara scene senza mappe collegate in Esplorazione e FoW (es. create pre-fix). */
+export async function healCampaignSceneExplorationMapsAction(
+  campaignId: string
+): Promise<Result<{ healed: number }>> {
+  const supabase = await createSupabaseServerClient();
+  const ctx = await requireGm(supabase);
+  if (!ctx.user || !ctx.ok) return { success: false, error: "Non autorizzato." };
+
+  const { data: scenes, error } = await supabase
+    .from("campaign_scene_documents")
+    .select("id, document, linked_mission_id")
+    .eq("campaign_id", campaignId);
+  if (error) return { success: false, error: error.message };
+
+  let healed = 0;
+  for (const scene of scenes ?? []) {
+    let document: SceneDocumentV1;
+    try {
+      document = assertSceneDocumentV1(scene.document);
+    } catch {
+      continue;
+    }
+
+    const { data: existingMaps } = await supabase
+      .from("campaign_exploration_maps")
+      .select("scene_floor_id")
+      .eq("scene_document_id", scene.id);
+
+    const mappedFloors = new Set(
+      (existingMaps ?? [])
+        .map((m) => m.scene_floor_id)
+        .filter((id): id is string => Boolean(id))
+    );
+    const needsSync = document.floors.some((f) => !mappedFloors.has(f.id));
+    if (!needsSync) continue;
+
+    const synced = await upsertFloorMaps(
+      supabase,
+      campaignId,
+      scene.id,
+      document,
+      scene.linked_mission_id
+    );
+    if (synced.success) healed += 1;
+  }
+
+  if (healed > 0) {
+    revalidateExplorationPaths(campaignId);
+  }
+  return { success: true, data: { healed } };
+}
+
 export async function createSceneDocumentAction(
   campaignId: string,
   options?: { name?: string; linkedMissionId?: string | null }
@@ -266,13 +355,25 @@ export async function createSceneDocumentAction(
 
   if (error || !row) return { success: false, error: error?.message ?? "Errore creazione scena." };
 
-  revalidateExplorationPaths(campaignId);
+  const maps = await upsertFloorMaps(
+    supabase,
+    campaignId,
+    row.id,
+    doc,
+    doc.linkedMissionId ?? null
+  );
+  if (!maps.success) {
+    await supabase.from("campaign_scene_documents").delete().eq("id", row.id);
+    return { success: false, error: maps.error };
+  }
+
+  revalidateExplorationPaths(campaignId, row.id);
   return {
     success: true,
     data: {
       sceneDocumentId: row.id,
       document: doc,
-      floorMapIds: {},
+      floorMapIds: maps.data!,
     },
   };
 }
@@ -309,6 +410,20 @@ export async function getSceneDocumentAction(
   const floorMapIds: Record<string, string> = {};
   for (const m of maps ?? []) {
     if (m.scene_floor_id) floorMapIds[m.scene_floor_id] = m.id;
+  }
+
+  const needsSync = document.floors.some((f) => !floorMapIds[f.id]);
+  if (needsSync) {
+    const synced = await upsertFloorMaps(
+      supabase,
+      campaignId,
+      sceneDocumentId,
+      document,
+      document.linkedMissionId ?? null
+    );
+    if (synced.success && synced.data) {
+      Object.assign(floorMapIds, synced.data);
+    }
   }
 
   return {
@@ -400,14 +515,7 @@ export async function saveSceneDocumentWithRastersAction(
   }
 
   if (Object.keys(floorRasters).length === 0) {
-    return { success: false, error: "Raster piano mancanti: impossibile aggiornare Esplorazione e FoW." };
-  }
-
-  if (Object.keys(floorRasters).length !== document.floors.length) {
-    return {
-      success: false,
-      error: "Raster mancante per uno o più piani. Riprova il salvataggio.",
-    };
+    return saveSceneDocumentAction(campaignId, sceneDocumentId, document);
   }
 
   const payload = documentToPersistPayload(document);
@@ -475,7 +583,19 @@ export async function duplicateSceneDocumentAction(
 
   if (error || !row) return { success: false, error: error?.message ?? "Errore duplicazione scena." };
 
-  revalidateExplorationPaths(campaignId);
+  const maps = await upsertFloorMaps(
+    supabase,
+    campaignId,
+    row.id,
+    cloned,
+    cloned.linkedMissionId ?? null
+  );
+  if (!maps.success) {
+    await supabase.from("campaign_scene_documents").delete().eq("id", row.id);
+    return { success: false, error: maps.error };
+  }
+
+  revalidateExplorationPaths(campaignId, row.id);
   return { success: true, data: { sceneDocumentId: row.id } };
 }
 

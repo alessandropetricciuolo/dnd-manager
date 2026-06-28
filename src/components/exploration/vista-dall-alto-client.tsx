@@ -1043,7 +1043,9 @@ export function VistaDallAltoClient({
               ))}
               {regionsForMap.length === 0 ? (
                 <p className="text-xs italic text-barber-paper/60">
-                  Nessuna zona FoW: crea poligoni manuali o importa un JSON scena.
+                  {selectedMap?.source_type === "generated_scene"
+                    ? "Nessuna zona FoW: disegna stanze/corridoi nello Scene Editor e salva, oppure crea poligoni manuali in «Prepara poligoni»."
+                    : "Nessuna zona FoW: crea poligoni manuali o importa un JSON scena."}
                 </p>
               ) : null}
             </div>
@@ -1080,7 +1082,13 @@ export function VistaDallAltoClient({
       )}
 
       {maps.length === 0 && (
-        <p className="text-sm text-barber-paper/70">Carica almeno un&apos;immagine per iniziare.</p>
+        <p className="text-sm text-barber-paper/70">
+          Nessuna mappa disponibile. Crea una scena con lo{" "}
+          <Link href={`/campaigns/${campaignId}/gm-only/scene-editor`} className="text-barber-gold underline">
+            Scene Editor
+          </Link>{" "}
+          (salva la scena per aggiornare l&apos;immagine) oppure carica un&apos;immagine qui sotto.
+        </p>
       )}
     </div>
   );

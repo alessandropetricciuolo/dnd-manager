@@ -13,13 +13,21 @@ export function renderFloorToCanvas(floor: SceneFloorV1): HTMLCanvasElement {
   return canvas;
 }
 
+function canvasToBlob(
+  canvas: HTMLCanvasElement,
+  type: string,
+  quality?: number
+): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob), type, quality);
+  });
+}
+
 export async function exportFloorRasterBlob(floor: SceneFloorV1): Promise<Blob> {
   const canvas = renderFloorToCanvas(floor);
-  return new Promise((resolve, reject) => {
-    canvas.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error("Export raster fallito."))),
-      "image/webp",
-      0.9
-    );
-  });
+  const webp = await canvasToBlob(canvas, "image/webp", 0.9);
+  if (webp) return webp;
+  const png = await canvasToBlob(canvas, "image/png");
+  if (png) return png;
+  throw new Error("Export raster fallito.");
 }

@@ -28,7 +28,7 @@ export function SceneEditorListActions({ campaignId, sceneId, sceneName }: Props
         toast.error(res.error ?? "Duplicazione fallita.");
         return;
       }
-      toast.success("Scena duplicata. Salva dall'editor per pubblicarla in Esplorazione e FoW.");
+      toast.success("Scena duplicata e collegata a Esplorazione e FoW.");
       router.push(`/campaigns/${campaignId}/gm-only/scene-editor/${res.data!.sceneDocumentId}`);
     });
   }

@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { Button } from "@/components/ui/button";
 import { VistaDallAltoClient } from "@/components/exploration/vista-dall-alto-client";
 import { CAMPAIGN_CONTENT_SHELL } from "@/lib/layout/shell-classes";
+import { healCampaignSceneExplorationMapsAction } from "@/app/campaigns/scene-document-actions";
 import type { ExplorationMapRow, FowRegionRow } from "@/app/campaigns/exploration-map-actions";
 
 type PageProps = {
@@ -43,6 +44,8 @@ export default async function VistaDallAltoPage({ params }: PageProps) {
       title: m.title?.trim() ? m.title : "Senza titolo",
     }));
   }
+
+  await healCampaignSceneExplorationMapsAction(campaignId);
 
   const { data: maps } = await supabase
     .from("campaign_exploration_maps")
