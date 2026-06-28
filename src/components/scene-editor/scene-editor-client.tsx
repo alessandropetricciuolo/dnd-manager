@@ -217,7 +217,11 @@ export function SceneEditorClient({
         form.append("document", JSON.stringify(prepared));
         for (const floor of prepared.floors) {
           const blob = await exportFloorRasterBlob(floor);
-          form.append(`floor_raster_${floor.id}`, blob, `${floor.label || "piano"}.webp`);
+          if (blob.size < 512) {
+            toast.error("Export mappa fallito: immagine vuota. Riprova.");
+            return;
+          }
+          form.append(`floor_raster_${floor.id}`, blob, `${floor.label || "piano"}.png`);
         }
         const res = await saveSceneDocumentWithRastersAction(campaignId, sceneDocumentId, form);
         if (!res.success) {

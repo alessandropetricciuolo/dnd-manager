@@ -25,9 +25,9 @@ function canvasToBlob(
 
 export async function exportFloorRasterBlob(floor: SceneFloorV1): Promise<Blob> {
   const canvas = renderFloorToCanvas(floor);
-  const webp = await canvasToBlob(canvas, "image/webp", 0.9);
-  if (webp) return webp;
   const png = await canvasToBlob(canvas, "image/png");
   if (png) return png;
+  const webp = await canvasToBlob(canvas, "image/webp", 0.9);
+  if (webp) return webp;
   throw new Error("Export raster fallito.");
 }

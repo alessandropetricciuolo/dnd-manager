@@ -17,6 +17,7 @@ import {
 } from "@/lib/map-core-bd/scene-document";
 import { cloneSceneDocument } from "@/lib/map-core/scene-schema";
 import { uploadImageToTelegram } from "@/lib/telegram-storage";
+import { readBlobFromFormDataValue } from "@/lib/exploration/exploration-map-upload-core";
 
 type Result<T = void> = { success: true; data?: T } | { success: false; error: string };
 
@@ -508,14 +509,24 @@ export async function saveSceneDocumentWithRastersAction(
 
   const floorRasters: Record<string, Blob> = {};
   for (const floor of document.floors) {
-    const entry = formData.get(`floor_raster_${floor.id}`);
-    if (entry instanceof Blob && entry.size > 0) {
-      floorRasters[floor.id] = entry;
+    const blob = readBlobFromFormDataValue(formData.get(`floor_raster_${floor.id}`));
+    if (blob && blob.size >= 512) {
+      floorRasters[floor.id] = blob;
     }
   }
 
   if (Object.keys(floorRasters).length === 0) {
-    return saveSceneDocumentAction(campaignId, sceneDocumentId, document);
+    return {
+      success: false,
+      error: "Raster piano mancanti o corrotti: impossibile aggiornare l'immagine mappa.",
+    };
+  }
+
+  if (Object.keys(floorRasters).length !== document.floors.length) {
+    return {
+      success: false,
+      error: "Raster mancante per uno o più piani. Riprova il salvataggio.",
+    };
   }
 
   const payload = documentToPersistPayload(document);

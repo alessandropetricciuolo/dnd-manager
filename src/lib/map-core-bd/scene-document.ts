@@ -11,9 +11,9 @@ import {
 export { createEmptySceneDocument, assertSceneDocumentV1 };
 export type { SceneDocumentV1 };
 
-/** PNG 1×1 grigio — placeholder raster fino all'export Scene Editor (Fase 2). */
+/** PNG 1×1 grigio chiaro — segnaposto finché non arriva l'export dal Scene Editor. */
 const PLACEHOLDER_PNG_BASE64 =
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGN4/eIBAAV1ArRqj4a2AAAAAElFTkSuQmCC";
 
 export function getSceneMapPlaceholderPngBuffer(): Buffer {
   return Buffer.from(PLACEHOLDER_PNG_BASE64, "base64");

@@ -9,6 +9,16 @@ export type MapUploadResult =
   | { success: false; error: string };
 
 /** FormData file entries are not always `instanceof File` in the Node server-actions runtime. */
+export function readBlobFromFormDataValue(raw: FormDataEntryValue | null): Blob | null {
+  if (raw == null || typeof raw === "string") return null;
+  if (typeof raw !== "object") return null;
+  const blob = raw as Blob;
+  if (typeof blob.size !== "number" || blob.size === 0) return null;
+  if (typeof blob.arrayBuffer !== "function") return null;
+  return blob;
+}
+
+/** FormData file entries are not always `instanceof File` in the Node server-actions runtime. */
 function readImageBlobFromFormData(formData: FormData):
   | { ok: true; blob: Blob; contentType: string }
   | { ok: false; error: string } {
@@ -16,14 +26,8 @@ function readImageBlobFromFormData(formData: FormData):
   if (raw == null || typeof raw === "string") {
     return { ok: false, error: "Seleziona un'immagine." };
   }
-  if (typeof raw !== "object" || raw === null) {
-    return { ok: false, error: "Seleziona un'immagine." };
-  }
-  const blob = raw as Blob;
-  if (typeof blob.size !== "number" || blob.size === 0) {
-    return { ok: false, error: "Seleziona un'immagine." };
-  }
-  if (typeof blob.arrayBuffer !== "function") {
+  const blob = readBlobFromFormDataValue(raw);
+  if (!blob) {
     return { ok: false, error: "Seleziona un'immagine." };
   }
   let contentType = blob.type;
