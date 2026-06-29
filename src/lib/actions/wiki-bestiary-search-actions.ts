@@ -10,8 +10,10 @@ import { mmNormalizeHeadingTitle } from "@/lib/manuals/monster-manual-chunks";
 import {
   bestiaryListItemId,
   extractStatblockSlice,
+  findBestChunkIdForStatblock,
   parseBestiaryListItemId,
   parseStatblocksFromBestiaryContent,
+  resolveStatblockFromRowContents,
 } from "@/lib/manuals/bestiary-statblock-parser";
 
 const BESTIARY_ALLOWED_BOOK_KEYS = ["monster_manual", "mordenkainen_multiverse"] as const;
@@ -287,6 +289,34 @@ function isExcludedBestiarySectionHeading(heading: string): boolean {
   return norm.includes("parte iniziale");
 }
 
+async function fetchBestiarySectionRows(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  meta: Record<string, unknown>
+): Promise<Row[]> {
+  const fileName = metaStr(meta, "file_name");
+  const sectionHeading = metaStr(meta, "section_heading") ?? metaStr(meta, "section_title");
+  const mbk = metaStr(meta, "manual_book_key");
+  if (!fileName || !sectionHeading) return [];
+
+  let query = admin
+    .from("manuals_knowledge")
+    .select("id, content, metadata")
+    .eq("metadata->>file_name", fileName)
+    .eq("metadata->>section_heading", sectionHeading);
+  if (mbk) {
+    query = query.eq("metadata->>manual_book_key", mbk);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    console.error("[fetchBestiarySectionRows]", error);
+    return [];
+  }
+  return [...((data ?? []) as Row[])].sort(
+    (a, b) => metaNum(a.metadata, "section_part") - metaNum(b.metadata, "section_part")
+  );
+}
+
 async function fetchAllBestiaryKnowledgeRows(admin: ReturnType<typeof createSupabaseAdminClient>): Promise<Row[]> {
   const pageSize = 1000;
   const all: Row[] = [];
@@ -553,11 +583,29 @@ export async function fetchExpandedBestiaryChunkAction(
       }
     }
 
-    text = sanitizeBestiaryStatblock(text);
     if (statblockName) {
-      const slice = extractStatblockSlice(text, statblockName);
-      if (slice) text = sanitizeBestiaryStatblock(slice);
+      let slice =
+        extractStatblockSlice(text, statblockName) ??
+        resolveStatblockFromRowContents([{ content: text }], statblockName);
+
+      if (!slice) {
+        const sectionRows = await fetchBestiarySectionRows(admin, meta);
+        if (sectionRows.length > 0) {
+          slice = resolveStatblockFromRowContents(sectionRows, statblockName);
+        }
+      }
+
+      if (!slice) {
+        return {
+          success: false,
+          message: `Statblock «${statblockName}» non trovato nel manuale indicizzato.`,
+        };
+      }
+      text = sanitizeBestiaryStatblock(slice);
+    } else {
+      text = sanitizeBestiaryStatblock(text);
     }
+
     if (!text) {
       return { success: false, message: "Contenuto chunk vuoto." };
     }
@@ -637,9 +685,6 @@ export async function listBestiaryMonstersByCrAction(
         .join("\n\n");
       if (!combined.trim()) continue;
 
-      const chunkId = String(sortedRows[0]?.id ?? "");
-      if (!chunkId) continue;
-
       const statblocks = parseStatblocksFromBestiaryContent(combined);
       const entries =
         statblocks.length > 0
@@ -658,6 +703,10 @@ export async function listBestiaryMonstersByCrAction(
 
         const key = `${mbk}::${monsterName.toLowerCase()}`;
         if (dedup.has(key)) continue;
+
+        const chunkId =
+          findBestChunkIdForStatblock(sortedRows, monsterName) ?? String(sortedRows[0]?.id ?? "");
+        if (!chunkId) continue;
 
         dedup.set(key, {
           id: bestiaryListItemId(chunkId, monsterName),

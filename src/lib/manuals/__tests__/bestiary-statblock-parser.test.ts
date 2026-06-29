@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "fs";
 import {
   extractStatblockSlice,
+  findBestChunkIdForStatblock,
   parseStatblocksFromBestiaryContent,
+  resolveStatblockFromRowContents,
 } from "@/lib/manuals/bestiary-statblock-parser";
 import {
   chunkMonsterManualByCreatureIndex,
@@ -48,6 +50,32 @@ test("ritaglia un singolo statblock dal blocco combinato", () => {
   assert.ok(slice);
   assert.match(slice!, /\*\*Sfida\*\*/i);
   assert.doesNotMatch(slice!, /# PLANETAR/i);
+});
+
+test("Appendice A: Sciame di topi non usa il chunk di Albero risvegliato", () => {
+  const mm = readFileSync("public/manuals/manuale mostri.md", "utf8");
+  const appendixChunks = chunkMonsterManualByCreatureIndex(mm).filter((c) =>
+    c.sectionHeading.toLowerCase().includes("appendice a")
+  );
+  assert.ok(appendixChunks.length >= 2, "appendice A è divisa in più chunk");
+
+  const combined = appendixChunks.map((c) => c.content).join("\n\n");
+  const parsed = parseStatblocksFromBestiaryContent(combined);
+  assert.ok(parsed.some((p) => p.name.toLowerCase().includes("sciame di topi")));
+
+  const firstChunkId = "mock-first";
+  const rows = appendixChunks.map((c, i) => ({
+    id: i === 0 ? firstChunkId : `part-${i}`,
+    content: c.content,
+  }));
+
+  const ownerId = findBestChunkIdForStatblock(rows, "Sciame di topi");
+  assert.notEqual(ownerId, firstChunkId, "Sciame di topi non deve puntare al primo chunk");
+
+  const slice = resolveStatblockFromRowContents(rows, "Sciame di topi");
+  assert.ok(slice);
+  assert.match(slice!, /sciame di topi/i);
+  assert.doesNotMatch(slice!, /albero risvegliato/i);
 });
 
 test("copre la maggior parte degli statblock del Manuale dei Mostri", () => {

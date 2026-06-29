@@ -114,6 +114,19 @@ export function parseBestiaryListItemId(
   }
 }
 
+/** True se il chunk contiene un heading `#`/`##`/`###` con il nome creatura. */
+export function contentHasStatblockHeading(content: string, statblockName: string): boolean {
+  const target = normalizeLoose(statblockName);
+  if (!target) return false;
+  const lines = content.replace(/\r\n/g, "\n").split("\n");
+  for (const line of lines) {
+    const hm = line.match(/^(#{1,3})\s+(.+)$/);
+    if (!hm) continue;
+    if (normalizeLoose(hm[2].trim()) === target) return true;
+  }
+  return false;
+}
+
 /**
  * Ritaglia un singolo statblock dal testo espanso (match sul titolo heading, case/accenti insensitive).
  */
@@ -128,4 +141,43 @@ export function extractStatblockSlice(content: string, statblockName: string): s
     if (slice) return slice;
   }
   return null;
+}
+
+/** Trova il chunk che contiene l'inizio dello statblock (es. Appendice A con molte creature). */
+export function findBestChunkIdForStatblock(
+  rows: Array<{ id: string | number; content: string | null }>,
+  statblockName: string
+): string | null {
+  for (const row of rows) {
+    const content = typeof row.content === "string" ? row.content : "";
+    if (!content) continue;
+    if (extractStatblockSlice(content, statblockName)) {
+      const id = String(row.id ?? "").trim();
+      if (id) return id;
+    }
+  }
+  for (const row of rows) {
+    const content = typeof row.content === "string" ? row.content : "";
+    if (!content || !contentHasStatblockHeading(content, statblockName)) continue;
+    const id = String(row.id ?? "").trim();
+    if (id) return id;
+  }
+  return null;
+}
+
+/** Cerca lo statblock in uno o più chunk della stessa sezione (parti divise per embedding). */
+export function resolveStatblockFromRowContents(
+  rows: Array<{ content: string | null }>,
+  statblockName: string
+): string | null {
+  for (const row of rows) {
+    const content = typeof row.content === "string" ? row.content : "";
+    const slice = extractStatblockSlice(content, statblockName);
+    if (slice) return slice;
+  }
+  const combined = rows
+    .map((r) => (typeof r.content === "string" ? r.content : ""))
+    .filter(Boolean)
+    .join("\n\n");
+  return extractStatblockSlice(combined, statblockName);
 }
