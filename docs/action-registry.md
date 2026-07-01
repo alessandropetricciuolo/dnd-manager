@@ -75,10 +75,20 @@ npm run test:command-center
 
 - `previewAction()` usato dal Proposal Builder per anteprime in `ai_action_requests`
 - Action proponibili AI: subset di workspace + `wiki.entity.create` + `gm.note.create`
-- Nessuna esecuzione automatica — vedi `docs/ai-control-plane.md`
 
-## TODO Fase 4+
+## Fase 4 (Confirmed actions)
 
-- [ ] `ai.proposal.approve` / `ai.proposal.execute`
+| Nome | Descrizione |
+|------|-------------|
+| `ai.proposal.execute` | GM applica bozza → esegue action sottostante + audit |
+| `ai.proposal.reject` | Scarta bozza in attesa |
+
+## Fase 5 (Voice input)
+
+- `command.note.create` accetta `source: voice` + `transcript`
+- Web Speech API in UI Command Center
+
+## TODO Fase 6+
+
 - [ ] `memory.reindex` wrapper
 - [ ] `wiki.entity.update`, `session.update`

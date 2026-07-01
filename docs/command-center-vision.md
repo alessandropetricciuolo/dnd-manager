@@ -45,7 +45,7 @@ Bridge previsto in Fase 2 (`gm.note.*` wrapper + eventuale conversione).
 |---------|-------|
 | 0 Read-only | Fase 3 |
 | 1 Draft | Fase 3 |
-| 2 Confirmed actions | Fase 4 |
+| 2 Confirmed actions | **Fase 4** |
 | 3 Trusted automations | Futuro |
 | 4 Autonomous agents | Non pianificato |
 
@@ -63,9 +63,19 @@ Bridge previsto in Fase 2 (`gm.note.*` wrapper + eventuale conversione).
 - Cronologia azioni in UI
 - Test `npm run test:command-center`
 
+### Fase 3
+- AI Draft Mode (Livello 1): interpreter, context resolver, bozze in `ai_action_requests`
+- UI Assistente + pannello bozze
+
+### Fase 4
+- Livello 2: pulsante **Applica** con conferma GM
+- `ai.proposal.execute` / `ai.proposal.reject` nel registry
+- Esecuzione tramite `executeAction` + audit
+
+### Fase 5
+- Input vocale (Web Speech API) → `command_inputs` con `source: voice`
+- Microfono su cattura rapida e assistente GM
+
 ## TODO
 
-- [ ] Fase 3: AI Draft Mode
-- [ ] Fase 4: Confirmed actions
-- [ ] Fase 5: Voice input nello stesso flusso `command_inputs`
 - [ ] Fase 6: Porting gmflow (`gmflow.adapter.ts`)

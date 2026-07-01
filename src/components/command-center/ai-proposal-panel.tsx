@@ -1,13 +1,16 @@
 "use client";
 
 import { useTransition } from "react";
-import { Bot, Loader2, XCircle } from "lucide-react";
+import { Bot, CheckCircle, Loader2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { AiActionRequestRow } from "@/modules/command-center/types";
-import { rejectAiProposalAction } from "@/modules/command-center/server/actions";
+import {
+  executeAiProposalAction,
+  rejectAiProposalAction,
+} from "@/modules/command-center/server/actions";
 
 const ACTION_LABELS: Record<string, string> = {
   "workspace.task.create": "Nuovo task",
@@ -19,6 +22,7 @@ const ACTION_LABELS: Record<string, string> = {
 type AiProposalPanelProps = {
   proposals: AiActionRequestRow[];
   onProposalRejected?: (id: string) => void;
+  onProposalExecuted?: (id: string, actionName: string) => void;
 };
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -26,7 +30,6 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return value as Record<string, unknown>;
 }
 
-/** Unwrap registry fallback `{ action, input }` and merge with input_payload. */
 function resolvePreviewData(
   preview: Record<string, unknown>,
   input: Record<string, unknown>
@@ -55,6 +58,10 @@ function summarizeInput(actionName: string, input: Record<string, unknown>): str
     return `Wiki ${input.type}`;
   }
   return "Dettagli in anteprima";
+}
+
+function hasPreviewError(preview: Record<string, unknown>): boolean {
+  return typeof preview.error === "string" && preview.error.trim().length > 0;
 }
 
 function PreviewBlock({
@@ -116,7 +123,11 @@ function PreviewBlock({
   );
 }
 
-export function AiProposalPanel({ proposals, onProposalRejected }: AiProposalPanelProps) {
+export function AiProposalPanel({
+  proposals,
+  onProposalRejected,
+  onProposalExecuted,
+}: AiProposalPanelProps) {
   const [isPending, startTransition] = useTransition();
   const open = proposals.filter((p) => p.status === "proposed");
 
@@ -132,6 +143,25 @@ export function AiProposalPanel({ proposals, onProposalRejected }: AiProposalPan
     });
   }
 
+  function handleExecute(proposal: AiActionRequestRow) {
+    const label = ACTION_LABELS[proposal.action_name] ?? proposal.action_name;
+    const title = summarizeInput(proposal.action_name, proposal.input_payload);
+    const ok = window.confirm(
+      `Applicare questa bozza AI?\n\n${label}: ${title}\n\nL'azione verrà eseguita nel database.`
+    );
+    if (!ok) return;
+
+    startTransition(async () => {
+      const res = await executeAiProposalAction(proposal.id);
+      if (!res.success) {
+        toast.error(res.error);
+        return;
+      }
+      toast.success("Bozza applicata");
+      onProposalExecuted?.(proposal.id, proposal.action_name);
+    });
+  }
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2 text-sm font-medium text-barber-paper">
@@ -144,7 +174,7 @@ export function AiProposalPanel({ proposals, onProposalRejected }: AiProposalPan
         ) : null}
       </div>
       <p className="text-[10px] text-barber-paper/40">
-        Livello 1 — approvazione ed esecuzione in Fase 4
+        Livello 2 — conferma GM richiesta per applicare
       </p>
 
       <ScrollArea className="max-h-64 pr-1">
@@ -152,60 +182,80 @@ export function AiProposalPanel({ proposals, onProposalRejected }: AiProposalPan
           <p className="text-xs text-barber-paper/50">Nessuna bozza in attesa.</p>
         ) : (
           <ul className="space-y-2">
-            {open.map((proposal) => (
-              <li
-                key={proposal.id}
-                className="rounded-md border border-barber-gold/20 bg-barber-dark/60 p-2 text-xs"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="font-medium text-barber-paper">
-                      {ACTION_LABELS[proposal.action_name] ?? proposal.action_name}
-                    </p>
-                    <p className="text-barber-paper/50">
-                      {summarizeInput(proposal.action_name, proposal.input_payload)}
-                    </p>
-                  </div>
-                  <span className="shrink-0 text-[10px] text-barber-paper/30">
-                    {new Date(proposal.created_at).toLocaleTimeString("it-IT", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                </div>
-
-                {proposal.rationale ? (
-                  <p className="mt-1 text-[10px] italic text-barber-gold/70">{proposal.rationale}</p>
-                ) : null}
-
-                <div className="mt-2 rounded border border-barber-gold/10 bg-barber-dark/40 p-1.5">
-                  <p className="mb-1 text-[9px] uppercase tracking-wide text-barber-paper/40">
-                    Anteprima
-                  </p>
-                  <PreviewBlock
-                    actionName={proposal.action_name}
-                    preview={proposal.preview_payload}
-                    input={proposal.input_payload}
-                  />
-                </div>
-
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="mt-2 h-7 w-full text-[10px] text-barber-paper/60 hover:text-red-400"
-                  disabled={isPending}
-                  onClick={() => handleReject(proposal.id)}
+            {open.map((proposal) => {
+              const previewInvalid = hasPreviewError(proposal.preview_payload);
+              return (
+                <li
+                  key={proposal.id}
+                  className="rounded-md border border-barber-gold/20 bg-barber-dark/60 p-2 text-xs"
                 >
-                  {isPending ? (
-                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                  ) : (
-                    <XCircle className="mr-1 h-3 w-3" />
-                  )}
-                  Scarta bozza
-                </Button>
-              </li>
-            ))}
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-medium text-barber-paper">
+                        {ACTION_LABELS[proposal.action_name] ?? proposal.action_name}
+                      </p>
+                      <p className="text-barber-paper/50">
+                        {summarizeInput(proposal.action_name, proposal.input_payload)}
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-[10px] text-barber-paper/30">
+                      {new Date(proposal.created_at).toLocaleTimeString("it-IT", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
+
+                  {proposal.rationale ? (
+                    <p className="mt-1 text-[10px] italic text-barber-gold/70">{proposal.rationale}</p>
+                  ) : null}
+
+                  <div className="mt-2 rounded border border-barber-gold/10 bg-barber-dark/40 p-1.5">
+                    <p className="mb-1 text-[9px] uppercase tracking-wide text-barber-paper/40">
+                      Anteprima
+                    </p>
+                    <PreviewBlock
+                      actionName={proposal.action_name}
+                      preview={proposal.preview_payload}
+                      input={proposal.input_payload}
+                    />
+                  </div>
+
+                  <div className="mt-2 flex gap-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="h-7 flex-1 text-[10px]"
+                      disabled={isPending || previewInvalid}
+                      onClick={() => handleExecute(proposal)}
+                    >
+                      {isPending ? (
+                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                      ) : (
+                        <CheckCircle className="mr-1 h-3 w-3" />
+                      )}
+                      Applica
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 flex-1 text-[10px] text-barber-paper/60 hover:text-red-400"
+                      disabled={isPending}
+                      onClick={() => handleReject(proposal.id)}
+                    >
+                      <XCircle className="mr-1 h-3 w-3" />
+                      Scarta
+                    </Button>
+                  </div>
+                  {previewInvalid ? (
+                    <p className="mt-1 text-[10px] text-red-400/80">
+                      Anteprima non valida: correggi o scarta la bozza.
+                    </p>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
         )}
       </ScrollArea>

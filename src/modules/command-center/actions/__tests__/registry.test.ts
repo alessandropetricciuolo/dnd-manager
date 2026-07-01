@@ -13,6 +13,7 @@ test("registry registers core workspace and wrapper actions", () => {
   assert.ok(names.includes("gm.note.create"));
   assert.ok(names.includes("session.create"));
   assert.ok(names.includes("wiki.entity.create"));
+  assert.ok(names.includes("ai.proposal.execute"));
 });
 
 test("executeAction rejects unknown action name", async () => {

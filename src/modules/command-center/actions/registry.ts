@@ -113,7 +113,7 @@ export async function executeAction<T = unknown>(
       entityId: entity?.entityId ?? null,
       beforeSnapshot,
       afterSnapshot: snapshotValue(result),
-      metadata: { input: validated.data },
+      metadata: { input: validated.data, ...(options?.auditMetadata ?? {}) },
     });
   }
 

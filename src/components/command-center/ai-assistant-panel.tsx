@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useRef, useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Send, Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -11,11 +11,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import type { AiActionRequestRow } from "@/modules/command-center/types";
 import { runAiDraftAssistantAction } from "@/modules/command-center/server/actions";
+import { buildCommandInputFromVoice } from "@/modules/command-center/voice/command-input-voice";
+import { useVoiceDictation } from "@/modules/command-center/voice/use-voice-dictation";
+import {
+  VoiceInterimHint,
+  VoiceMicButton,
+} from "@/components/command-center/voice-capture-button";
 
 type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
+  fromVoice?: boolean;
   intentSummary?: string;
   proposalIds?: string[];
 };
@@ -39,28 +46,48 @@ export function AiAssistantPanel({
       id: "welcome",
       role: "assistant",
       content:
-        "Sono in modalità bozza (Livello 1). Descrivi cosa vuoi preparare: task, pagine workspace, note GM o entità wiki. Propongo azioni senza eseguirle.",
+        "Descrivi o detta cosa vuoi preparare: task, pagine workspace, note GM o entità wiki. Propongo bozze; tu confermi con Applica.",
     },
   ]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  function handleSend() {
-    const text = input.trim();
-    if (!text || isPending) return;
+  const voice = useVoiceDictation({
+    language: "it-IT",
+    onFinalTranscript: (transcript, durationMs) => {
+      if (!transcript.trim() || isPending) return;
+      submitMessage(transcript, buildCommandInputFromVoice(transcript, { durationMs }));
+    },
+  });
+
+  useEffect(() => {
+    if (voice.error) toast.error(voice.error);
+  }, [voice.error]);
+
+  function submitMessage(
+    text: string,
+    voicePayload?: ReturnType<typeof buildCommandInputFromVoice>
+  ) {
+    const trimmed = text.trim();
+    if (!trimmed || isPending) return;
 
     const userMsg: ChatMessage = {
       id: `u-${Date.now()}`,
       role: "user",
-      content: text,
+      content: trimmed,
+      fromVoice: Boolean(voicePayload),
     };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
 
     startTransition(async () => {
       const res = await runAiDraftAssistantAction({
-        message: text,
+        message: trimmed,
         campaignId,
         noteId: noteId ?? null,
+        source: voicePayload?.source ?? "text",
+        transcript: voicePayload?.transcript ?? null,
+        language: voicePayload?.language ?? "it",
+        voiceMetadata: voicePayload?.metadata,
       });
 
       if (!res.success) {
@@ -102,6 +129,10 @@ export function AiAssistantPanel({
     });
   }
 
+  function handleSend() {
+    submitMessage(input);
+  }
+
   return (
     <div className="mx-auto flex h-full max-w-2xl flex-col">
       <div className="mb-3 flex items-center gap-2">
@@ -109,7 +140,7 @@ export function AiAssistantPanel({
         <div>
           <h2 className="font-serif text-lg font-semibold text-barber-paper">Assistente GM</h2>
           <p className="text-xs text-barber-paper/50">
-            Solo bozze · nessuna scrittura automatica
+            Testo o voce · bozze con conferma
             {campaignId ? " · campagna selezionata" : ""}
           </p>
         </div>
@@ -128,6 +159,9 @@ export function AiAssistantPanel({
               )}
             >
               <p className="whitespace-pre-wrap">{msg.content}</p>
+              {msg.fromVoice ? (
+                <p className="mt-1 text-[10px] text-barber-paper/40">Input vocale</p>
+              ) : null}
               {msg.intentSummary ? (
                 <p className="mt-1 text-[10px] text-barber-paper/40">Intento: {msg.intentSummary}</p>
               ) : null}
@@ -142,13 +176,19 @@ export function AiAssistantPanel({
         <div ref={scrollRef} />
       </ScrollArea>
 
-      <div className="mt-3 flex gap-2">
+      <VoiceInterimHint
+        listening={voice.isListening}
+        interim={voice.interimTranscript}
+        finalPreview={voice.finalTranscript}
+      />
+
+      <div className="mt-2 flex gap-2">
         <Textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Es. Prepara un NPC mercante per la prossima sessione…"
+          placeholder="Scrivi o usa il microfono…"
           rows={3}
-          disabled={isPending}
+          disabled={isPending || voice.isListening}
           className="min-h-0 flex-1 resize-none border-barber-gold/30 bg-barber-dark/80"
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
@@ -157,18 +197,16 @@ export function AiAssistantPanel({
             }
           }}
         />
-        <Button
-          type="button"
-          onClick={handleSend}
-          disabled={isPending || !input.trim()}
-          className="shrink-0 self-end"
-        >
-          {isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Send className="h-4 w-4" />
-          )}
-        </Button>
+        <div className="flex shrink-0 flex-col gap-1 self-end">
+          <VoiceMicButton voice={voice} disabled={isPending} />
+          <Button type="button" onClick={handleSend} disabled={isPending || !input.trim() || voice.isListening}>
+            {isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   );

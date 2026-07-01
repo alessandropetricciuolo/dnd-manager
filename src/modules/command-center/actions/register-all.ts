@@ -2,6 +2,7 @@ import { registerWorkspaceActions } from "./definitions/workspace.actions";
 import { registerGmNoteWrapperActions } from "./definitions/wrappers/gm-note.actions";
 import { registerSessionWrapperActions } from "./definitions/wrappers/session.actions";
 import { registerWikiWrapperActions } from "./definitions/wrappers/wiki.actions";
+import { registerAiProposalActions } from "./definitions/ai-proposal.actions";
 
 let registered = false;
 
@@ -12,6 +13,7 @@ export function registerAllActions(): void {
   registerGmNoteWrapperActions();
   registerSessionWrapperActions();
   registerWikiWrapperActions();
+  registerAiProposalActions();
   registered = true;
 }
 

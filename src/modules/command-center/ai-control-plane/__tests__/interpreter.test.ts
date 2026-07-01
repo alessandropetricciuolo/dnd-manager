@@ -6,7 +6,7 @@ import {
 } from "@/modules/command-center/ai-control-plane/interpreter";
 import {
   CURRENT_MAX_AUTONOMY,
-  assertDraftOnlyMode,
+  assertCanProposeDrafts,
   canExecuteWithoutApproval,
   canProposeDrafts,
 } from "@/modules/command-center/ai-control-plane/autonomy";
@@ -31,9 +31,9 @@ test("parseInterpreterJson filters unknown actions", () => {
   assert.equal(result.proposals[0]?.action_name, "workspace.task.create");
 });
 
-test("autonomy level 1 allows drafts only", () => {
-  assert.equal(CURRENT_MAX_AUTONOMY, 1);
+test("autonomy level 2 allows drafts and confirmed execution", () => {
+  assert.equal(CURRENT_MAX_AUTONOMY, 2);
   assert.equal(canProposeDrafts(), true);
   assert.equal(canExecuteWithoutApproval(), false);
-  assert.doesNotThrow(() => assertDraftOnlyMode());
+  assert.doesNotThrow(() => assertCanProposeDrafts());
 });

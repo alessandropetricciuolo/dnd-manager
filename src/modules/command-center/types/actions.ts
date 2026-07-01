@@ -25,7 +25,7 @@ export type AuditEntityRef = {
 export type RegisteredAction<TInput = unknown, TResult = unknown> = {
   name: string;
   description: string;
-  category: "workspace" | "command" | "campaign" | "wiki" | "session" | "gm";
+  category: "workspace" | "command" | "campaign" | "wiki" | "session" | "gm" | "ai";
   validate: (input: unknown) => ValidationResult<TInput>;
   authorize?: (ctx: ActionContext, input: TInput) => Promise<{ ok: true } | { ok: false; error: string }>;
   preview?: (ctx: ActionContext, input: TInput) => Promise<Record<string, unknown>>;
@@ -39,4 +39,5 @@ export type ExecuteActionOptions = {
   actorType?: ActionActorType;
   skipAudit?: boolean;
   previewOnly?: boolean;
+  auditMetadata?: Record<string, unknown>;
 };

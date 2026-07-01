@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { getTenantAdapter } from "@/modules/command-center/adapters";
 import { executeAction } from "@/modules/command-center/actions";
 import { runAiDraftAssistant } from "@/modules/command-center/ai-control-plane/draft-assistant";
+import type { RunAiDraftAssistantParams } from "@/modules/command-center/ai-control-plane/draft-assistant.types";
 import type {
   CommandLinkRow,
   CommandNoteRow,
@@ -84,6 +85,10 @@ export async function createCommandNoteAction(input: {
   content: string;
   campaignId?: string | null;
   status?: CommandNoteStatus;
+  source?: "manual" | "voice" | "text";
+  transcript?: string | null;
+  language?: string;
+  inputMetadata?: Record<string, unknown>;
 }): Promise<ActionResult<CommandNoteRow>> {
   return mapRegistryError(
     await executeAction<CommandNoteRow>("command.note.create", {
@@ -91,6 +96,10 @@ export async function createCommandNoteAction(input: {
       content: input.content,
       campaignId: input.campaignId ?? null,
       status: input.status ?? "inbox",
+      source: input.source ?? "manual",
+      transcript: input.transcript ?? null,
+      language: input.language ?? "it",
+      inputMetadata: input.inputMetadata ?? {},
     })
   );
 }
@@ -356,11 +365,9 @@ export async function resolveCommandLinkLabelsAction(
 
 // ---------- AI Draft (Fase 3) ----------
 
-export async function runAiDraftAssistantAction(input: {
-  message: string;
-  campaignId?: string | null;
-  noteId?: string | null;
-}): Promise<ActionResult<AiDraftAssistantResult>> {
+export async function runAiDraftAssistantAction(
+  input: RunAiDraftAssistantParams
+): Promise<ActionResult<AiDraftAssistantResult>> {
   const result = await runAiDraftAssistant(input);
   if (!result.success) return { success: false, error: result.error };
   return { success: true, data: result.data };
@@ -392,19 +399,18 @@ export async function listAiProposalsAction(
 }
 
 export async function rejectAiProposalAction(proposalId: string): Promise<ActionResult> {
-  const auth = await getAuthSupabase();
-  if (!auth.ok) return { success: false, error: auth.error };
-
-  const { error } = await auth.supabase
-    .from("ai_action_requests")
-    .update({ status: "rejected" })
-    .eq("id", proposalId)
-    .eq("requested_by", auth.ctx.userId)
-    .eq("status", "proposed");
-
-  if (error) {
-    console.error("[rejectAiProposalAction]", error);
-    return { success: false, error: error.message };
-  }
+  const result = await executeAction("ai.proposal.reject", { proposalId });
+  if (!result.success) return { success: false, error: result.error };
   return { success: true };
+}
+
+export async function executeAiProposalAction(proposalId: string): Promise<
+  ActionResult<{ proposalId: string; actionName: string; result: unknown }>
+> {
+  const result = await executeAction<{ proposalId: string; actionName: string; result: unknown }>(
+    "ai.proposal.execute",
+    { proposalId }
+  );
+  if (!result.success) return { success: false, error: result.error };
+  return { success: true, data: result.data };
 }

@@ -53,6 +53,12 @@ import { COMMAND_LINK_ENTITY_LABELS_IT } from "@/modules/command-center/types/en
 import { AuditTimeline } from "@/components/command-center/audit-timeline";
 import { AiAssistantPanel } from "@/components/command-center/ai-assistant-panel";
 import { AiProposalPanel } from "@/components/command-center/ai-proposal-panel";
+import {
+  VoiceInterimHint,
+  VoiceMicButton,
+} from "@/components/command-center/voice-capture-button";
+import { buildCommandInputFromVoice } from "@/modules/command-center/voice/command-input-voice";
+import { useVoiceDictation } from "@/modules/command-center/voice/use-voice-dictation";
 
 type CenterView = "workspace" | "assistant";
 
@@ -112,6 +118,14 @@ export function CommandCenterClient({
     initialPages[0]?.id ?? null
   );
   const [captureText, setCaptureText] = useState("");
+  const captureVoice = useVoiceDictation({
+    language: "it-IT",
+    onFinalTranscript: (transcript, durationMs) => {
+      const payload = buildCommandInputFromVoice(transcript, { durationMs });
+      setCaptureText(transcript);
+      handleCapture(transcript, payload);
+    },
+  });
   const [links, setLinks] = useState<CommandLinkRow[]>([]);
   const [linkLabels, setLinkLabels] = useState<Record<string, string>>({});
   const [sessions, setSessions] = useState<{ id: string; title: string | null; scheduled_at: string }[]>([]);
@@ -168,19 +182,30 @@ export function CommandCenterClient({
     });
   }, [campaignFilter]);
 
-  function handleCapture() {
-    const text = captureText.trim();
+  useEffect(() => {
+    if (captureVoice.error) toast.error(captureVoice.error);
+  }, [captureVoice.error]);
+
+  function handleCapture(
+    textOverride?: string,
+    voicePayload?: ReturnType<typeof buildCommandInputFromVoice>
+  ) {
+    const text = (textOverride ?? captureText).trim();
     if (!text) return;
     startTransition(async () => {
       const res = await createCommandNoteAction({
         content: text,
         campaignId: campaignFilter === "all" ? null : campaignFilter,
+        source: voicePayload?.source ?? "manual",
+        transcript: voicePayload?.transcript ?? null,
+        language: voicePayload?.language ?? "it",
+        inputMetadata: voicePayload?.metadata ? { voice: voicePayload.metadata } : {},
       });
       if (!res.success) {
         toast.error(res.error);
         return;
       }
-      toast.success("Idea catturata in inbox");
+      toast.success(voicePayload ? "Idea vocale catturata in inbox" : "Idea catturata in inbox");
       setCaptureText("");
       if (res.data) {
         setNotes((prev) => [res.data!, ...prev]);
@@ -373,12 +398,19 @@ export function CommandCenterClient({
           </div>
         </div>
 
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 flex flex-col gap-1">
+          <VoiceInterimHint
+            listening={captureVoice.isListening}
+            interim={captureVoice.interimTranscript}
+            finalPreview={captureVoice.finalTranscript}
+          />
+          <div className="flex gap-2">
           <Textarea
             value={captureText}
             onChange={(e) => setCaptureText(e.target.value)}
             placeholder="Cattura un'idea in pochi secondi…"
             rows={2}
+            disabled={captureVoice.isListening}
             className="min-h-0 flex-1 resize-none border-barber-gold/30 bg-barber-dark/80"
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
@@ -387,15 +419,17 @@ export function CommandCenterClient({
               }
             }}
           />
+          <VoiceMicButton voice={captureVoice} disabled={isPending} className="self-end" />
           <Button
             type="button"
-            onClick={handleCapture}
-            disabled={isPending || !captureText.trim()}
+            onClick={() => handleCapture()}
+            disabled={isPending || !captureText.trim() || captureVoice.isListening}
             className="shrink-0 self-end"
           >
             {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
             <span className="ml-1 hidden sm:inline">Cattura</span>
           </Button>
+          </div>
         </div>
       </header>
 
@@ -707,6 +741,12 @@ export function CommandCenterClient({
                   prev.map((p) => (p.id === id ? { ...p, status: "rejected" as const } : p))
                 )
               }
+              onProposalExecuted={(id) => {
+                setProposals((prev) =>
+                  prev.map((p) => (p.id === id ? { ...p, status: "executed" as const } : p))
+                );
+                router.refresh();
+              }}
             />
           </div>
 

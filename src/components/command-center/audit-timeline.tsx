@@ -17,6 +17,8 @@ const ACTION_LABELS: Record<string, string> = {
   "gm.note.delete": "Nota GM eliminata",
   "session.create": "Sessione creata",
   "wiki.entity.create": "Entità wiki creata",
+  "ai.proposal.execute": "Bozza AI applicata",
+  "ai.proposal.reject": "Bozza AI scartata",
 };
 
 type AuditTimelineProps = {

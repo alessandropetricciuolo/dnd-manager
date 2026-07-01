@@ -1,6 +1,7 @@
 import {
   COMMAND_LINK_ENTITY_TYPES,
   COMMAND_NOTE_STATUSES,
+  COMMAND_INPUT_SOURCES,
   WORKSPACE_PAGE_TYPES,
   WORKSPACE_TASK_PRIORITIES,
   WORKSPACE_TASK_STATUSES,
@@ -10,6 +11,7 @@ import type {
   CommandLinkRow,
   CommandNoteRow,
   CommandNoteStatus,
+  CommandInputSource,
   WorkspacePageRow,
   WorkspaceTaskPriority,
   WorkspaceTaskRow,
@@ -39,6 +41,10 @@ export function registerWorkspaceActions(): void {
       const o = input as Record<string, unknown>;
       const content = requireString(o.content, "Contenuto");
       if (!content.ok) return content;
+      const sourceRaw = optionalString(o.source) ?? "manual";
+      const source = (COMMAND_INPUT_SOURCES as readonly string[]).includes(sourceRaw)
+        ? (sourceRaw as CommandInputSource)
+        : "manual";
       return {
         ok: true,
         data: {
@@ -46,6 +52,13 @@ export function registerWorkspaceActions(): void {
           title: optionalString(o.title) ?? undefined,
           campaignId: optionalString(o.campaignId),
           status: (optionalString(o.status) as CommandNoteStatus | null) ?? "inbox",
+          source,
+          transcript: optionalString(o.transcript),
+          language: optionalString(o.language) ?? "it",
+          inputMetadata:
+            o.inputMetadata && typeof o.inputMetadata === "object" && !Array.isArray(o.inputMetadata)
+              ? (o.inputMetadata as Record<string, unknown>)
+              : {},
         },
       };
     },
@@ -66,8 +79,11 @@ export function registerWorkspaceActions(): void {
         .insert({
           workspace_id: ctx.adapter.resolveWorkspaceId(),
           campaign_id: input.campaignId,
-          source: "manual",
+          source: input.source,
           raw_content: input.content,
+          transcript: input.source === "voice" ? input.transcript ?? input.content : input.transcript,
+          language: input.language,
+          metadata: input.inputMetadata,
           created_by: ctx.userId,
         })
         .select("id")
