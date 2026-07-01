@@ -12,6 +12,7 @@ import {
   Loader2,
   Plus,
   Sparkles,
+  Trash2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,8 @@ import {
   createWorkspacePageAction,
   createWorkspaceTaskAction,
   deleteCommandLinkAction,
+  deleteWorkspacePageAction,
+  deleteWorkspaceTaskAction,
   listCommandLinksForNoteAction,
   resolveCommandLinkLabelsAction,
   updateCommandNoteAction,
@@ -353,6 +356,40 @@ export function CommandCenterClient({
     });
   }
 
+  function handleDeleteTask(taskId: string, title: string) {
+    if (!window.confirm(`Eliminare il task «${title}»?`)) return;
+    startTransition(async () => {
+      const res = await deleteWorkspaceTaskAction(taskId);
+      if (!res.success) {
+        toast.error(res.error);
+        return;
+      }
+      toast.success("Task eliminato");
+      setTasks((prev) => prev.filter((t) => t.id !== taskId));
+      router.refresh();
+    });
+  }
+
+  function handleDeletePage(pageId: string, title: string) {
+    if (!window.confirm(`Eliminare la pagina «${title}»?`)) return;
+    startTransition(async () => {
+      const res = await deleteWorkspacePageAction(pageId);
+      if (!res.success) {
+        toast.error(res.error);
+        return;
+      }
+      toast.success("Pagina eliminata");
+      setPages((prev) => {
+        const next = prev.filter((p) => p.id !== pageId);
+        if (selectedPageId === pageId) {
+          setSelectedPageId(next[0]?.id ?? null);
+        }
+        return next;
+      });
+      router.refresh();
+    });
+  }
+
   return (
     <div className="flex min-h-[calc(100vh-4rem)] flex-col">
       <header className="border-b border-barber-gold/20 bg-barber-dark/90 px-4 py-3 md:px-6">
@@ -527,7 +564,18 @@ export function CommandCenterClient({
                               key={task.id}
                               className="rounded-md border border-barber-gold/20 bg-barber-dark/60 px-2 py-1.5 text-sm"
                             >
-                              <p className="font-medium text-barber-paper">{task.title}</p>
+                              <div className="flex items-start justify-between gap-1">
+                                <p className="min-w-0 flex-1 font-medium text-barber-paper">{task.title}</p>
+                                <button
+                                  type="button"
+                                  title="Elimina task"
+                                  className="shrink-0 text-barber-paper/40 hover:text-red-400"
+                                  onClick={() => handleDeleteTask(task.id, task.title)}
+                                  disabled={isPending}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
                               <div className="mt-1 flex flex-wrap gap-1">
                                 {TASK_STATUS_COLUMNS.filter((c) => c.id !== task.status).map((c) => (
                                   <button
@@ -558,16 +606,29 @@ export function CommandCenterClient({
                 <ul className="divide-y divide-barber-gold/10">
                   {pages.map((page) => (
                     <li key={page.id}>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedPageId(page.id)}
+                      <div
                         className={cn(
-                          "w-full px-2 py-2 text-left text-sm hover:bg-barber-gold/5",
+                          "flex items-center gap-1 hover:bg-barber-gold/5",
                           selectedPageId === page.id && "bg-barber-gold/10"
                         )}
                       >
-                        {page.title}
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedPageId(page.id)}
+                          className="min-w-0 flex-1 truncate px-2 py-2 text-left text-sm"
+                        >
+                          {page.title}
+                        </button>
+                        <button
+                          type="button"
+                          title="Elimina pagina"
+                          className="shrink-0 px-2 py-2 text-barber-paper/40 hover:text-red-400"
+                          onClick={() => handleDeletePage(page.id, page.title)}
+                          disabled={isPending}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -646,11 +707,24 @@ export function CommandCenterClient({
             </div>
           ) : sidebarTab === "pages" && selectedPage ? (
             <div className="mx-auto max-w-2xl space-y-4">
-              <Input
-                value={selectedPage.title}
-                onChange={(e) => handlePageSave("title", e.target.value)}
-                className="border-barber-gold/30 bg-barber-dark/80 font-serif text-lg"
-              />
+              <div className="flex items-center justify-between gap-2">
+                <Input
+                  value={selectedPage.title}
+                  onChange={(e) => handlePageSave("title", e.target.value)}
+                  className="border-barber-gold/30 bg-barber-dark/80 font-serif text-lg"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0 text-barber-paper/60 hover:text-red-400"
+                  onClick={() => handleDeletePage(selectedPage.id, selectedPage.title)}
+                  disabled={isPending}
+                >
+                  <Trash2 className="mr-1 h-4 w-4" />
+                  Elimina
+                </Button>
+              </div>
               <Textarea
                 value={selectedPage.content_markdown}
                 onChange={(e) => handlePageSave("contentMarkdown", e.target.value)}

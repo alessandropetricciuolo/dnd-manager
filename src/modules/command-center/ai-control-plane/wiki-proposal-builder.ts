@@ -3,7 +3,8 @@ import {
   type WikiMarkdownChatDraft,
   type WikiTextChatTurn,
 } from "@/lib/actions/wiki-text-chat";
-import type { WikiMarkdownEntityType } from "@/lib/ai/wiki-text-generator";
+import type { WikiMarkdownEntityType, WikiMarkdownExtraParams } from "@/lib/ai/wiki-text-generator";
+import { extractNpcBuildParams, mergeWikiExtraParams } from "@/lib/ai/wiki-npc-params";
 import { previewAction } from "../actions";
 import type { PreviewedProposal } from "./preview-proposals";
 import type { ChatWikiMeta } from "./draft-assistant.types";
@@ -85,6 +86,7 @@ export async function enrichWikiEntityProposal(
   options?: {
     refine?: boolean;
     wikiMeta?: ChatWikiMeta | null;
+    extraParams?: WikiMarkdownExtraParams;
   }
 ): Promise<
   | {
@@ -108,12 +110,19 @@ export async function enrichWikiEntityProposal(
     ? [...priorMessages, { role: "user", content: userMessage.trim() }]
     : [{ role: "user", content: userMessage.trim() }];
 
+  const extraParams = mergeWikiExtraParams(
+    options?.extraParams,
+    options?.wikiMeta ? extractNpcBuildParams(options.wikiMeta.userPrompt) : null,
+    extractNpcBuildParams(userMessage)
+  );
+
   const result = await chatWikiMarkdownTextAction(
     campaignId,
     entityType,
     safeTitle,
     chatMessages,
-    options?.refine ? currentDraft : null
+    options?.refine ? currentDraft : null,
+    extraParams
   );
 
   if (!result.success) {

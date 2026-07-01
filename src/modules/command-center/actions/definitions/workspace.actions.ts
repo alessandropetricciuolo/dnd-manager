@@ -401,6 +401,39 @@ export function registerWorkspaceActions(): void {
   });
 
   registerAction({
+    name: "workspace.task.delete",
+    description: "Elimina un task workspace",
+    category: "workspace",
+    validate: (input) => {
+      const taskId = requireString((input as Record<string, unknown>).taskId, "ID task");
+      return taskId;
+    },
+    loadBefore: async (ctx, input) => {
+      const { data } = await ctx.supabase
+        .from("workspace_tasks")
+        .select("*")
+        .eq("id", input)
+        .eq("created_by", ctx.userId)
+        .maybeSingle();
+      return (data as Record<string, unknown> | null) ?? null;
+    },
+    execute: async (ctx, taskId) => {
+      const { error } = await ctx.supabase
+        .from("workspace_tasks")
+        .delete()
+        .eq("id", taskId)
+        .eq("created_by", ctx.userId);
+      if (error) throw new Error(error.message);
+      return { taskId };
+    },
+    auditEntity: (_input, result) => ({
+      entityType: "workspace_task",
+      entityId: result.taskId,
+    }),
+    revalidatePaths: () => ["/command-center"],
+  });
+
+  registerAction({
     name: "workspace.page.create",
     description: "Crea una pagina workspace",
     category: "workspace",
@@ -508,6 +541,39 @@ export function registerWorkspaceActions(): void {
     auditEntity: (input) => ({
       entityType: "workspace_page",
       entityId: input.pageId,
+    }),
+    revalidatePaths: () => ["/command-center"],
+  });
+
+  registerAction({
+    name: "workspace.page.delete",
+    description: "Elimina una pagina workspace",
+    category: "workspace",
+    validate: (input) => {
+      const pageId = requireString((input as Record<string, unknown>).pageId, "ID pagina");
+      return pageId;
+    },
+    loadBefore: async (ctx, input) => {
+      const { data } = await ctx.supabase
+        .from("workspace_pages")
+        .select("*")
+        .eq("id", input)
+        .eq("created_by", ctx.userId)
+        .maybeSingle();
+      return (data as Record<string, unknown> | null) ?? null;
+    },
+    execute: async (ctx, pageId) => {
+      const { error } = await ctx.supabase
+        .from("workspace_pages")
+        .delete()
+        .eq("id", pageId)
+        .eq("created_by", ctx.userId);
+      if (error) throw new Error(error.message);
+      return { pageId };
+    },
+    auditEntity: (_input, result) => ({
+      entityType: "workspace_page",
+      entityId: result.pageId,
     }),
     revalidatePaths: () => ["/command-center"],
   });

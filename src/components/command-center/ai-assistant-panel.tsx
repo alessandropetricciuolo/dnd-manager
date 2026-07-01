@@ -115,6 +115,10 @@ export function AiAssistantPanel({
         campaignId,
         noteId: noteId ?? null,
         pendingProposal: currentPending,
+        recentUserMessages: messages
+          .filter((m) => m.role === "user" && m.id !== userMsg.id)
+          .slice(-4)
+          .map((m) => m.content),
         source: voicePayload?.source ?? "text",
         transcript: voicePayload?.transcript ?? null,
         language: voicePayload?.language ?? "it",

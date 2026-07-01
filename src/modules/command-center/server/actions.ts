@@ -177,6 +177,12 @@ export async function updateWorkspaceTaskAction(
   );
 }
 
+export async function deleteWorkspaceTaskAction(taskId: string): Promise<ActionResult> {
+  const result = await executeAction("workspace.task.delete", { taskId });
+  if (!result.success) return { success: false, error: result.error };
+  return { success: true };
+}
+
 // ---------- Pages ----------
 
 export async function listWorkspacePagesAction(
@@ -224,6 +230,12 @@ export async function updateWorkspacePageAction(
   return mapRegistryError(
     await executeAction<WorkspacePageRow>("workspace.page.update", { pageId, patch })
   );
+}
+
+export async function deleteWorkspacePageAction(pageId: string): Promise<ActionResult> {
+  const result = await executeAction("workspace.page.delete", { pageId });
+  if (!result.success) return { success: false, error: result.error };
+  return { success: true };
 }
 
 // ---------- Links ----------

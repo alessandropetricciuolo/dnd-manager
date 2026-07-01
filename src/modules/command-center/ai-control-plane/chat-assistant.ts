@@ -15,6 +15,11 @@ import {
   isWikiMarkdownEntityType,
   supportsWikiContextualImage,
 } from "./wiki-proposal-builder";
+import {
+  detectWikiCreateRequest,
+  hasNpcMechanicsParams,
+} from "./wiki-request-detector";
+import type { AiInterpreterResult } from "../types/ai-proposal";
 
 export type ChatPendingProposal = ChatPendingProposalPayload;
 
@@ -104,7 +109,11 @@ async function tryEnrichWikiProposal(
   campaignId: string,
   userMessage: string,
   proposal: PreviewedProposal,
-  options?: { refine?: boolean; pending?: ChatPendingProposal | null }
+  options?: {
+    refine?: boolean;
+    pending?: ChatPendingProposal | null;
+    extraParams?: import("@/lib/ai/wiki-text-generator").WikiMarkdownExtraParams;
+  }
 ): Promise<{
   proposal: PreviewedProposal;
   wikiMeta?: ChatPendingProposal["wikiMeta"];
@@ -121,6 +130,7 @@ async function tryEnrichWikiProposal(
   const enriched = await enrichWikiEntityProposal(campaignId, userMessage, entityType, title, {
     refine: options?.refine,
     wikiMeta: options?.pending?.wikiMeta ?? null,
+    extraParams: options?.extraParams,
   });
 
   if (!enriched.ok) {
@@ -134,6 +144,50 @@ async function tryEnrichWikiProposal(
     },
     wikiMeta: enriched.wikiMeta,
     assistantMessage: enriched.assistantMessage,
+  };
+}
+
+function applyWikiFallbackInterpreter(
+  message: string,
+  campaignId: string,
+  recentUserMessages: string[] | undefined,
+  interpreted: AiInterpreterResult
+): {
+  interpreted: AiInterpreterResult;
+  detectedExtraParams?: import("@/lib/ai/wiki-text-generator").WikiMarkdownExtraParams;
+} {
+  if (interpreted.proposals.length > 0 && interpreted.intent_summary !== "Parse fallito") {
+    return { interpreted };
+  }
+
+  const combinedContext = [...(recentUserMessages ?? []), message].filter(Boolean).join("\n");
+  const detected = detectWikiCreateRequest(combinedContext);
+  if (!detected) return { interpreted };
+
+  const narrativeOnly =
+    detected.entityType === "npc" && !hasNpcMechanicsParams(detected.extraParams);
+
+  return {
+    detectedExtraParams: detected.extraParams,
+    interpreted: {
+      reply: narrativeOnly
+        ? `Preparo il profilo narrativo di **${detected.title}**. Senza livello non genero lo statblock: puoi aggiungerlo in chat (es. «livello 5») e chiedere modifiche.`
+        : `Preparo una voce wiki per **${detected.title}**.`,
+      intent_summary: `Creare ${detected.entityType}: ${detected.title}`,
+      proposals: [
+        {
+          action_name: "wiki.entity.create",
+          input: {
+            campaignId,
+            title: detected.title,
+            type: detected.entityType,
+            content: "",
+            visibility: "public",
+          },
+          rationale: "Richiesta wiki rilevata dal messaggio",
+        },
+      ],
+    },
   };
 }
 
@@ -409,6 +463,19 @@ export async function runAiChatAssistant(
     };
   }
 
+  let detectedExtraParams: import("@/lib/ai/wiki-text-generator").WikiMarkdownExtraParams | undefined;
+
+  if (campaignId) {
+    const fallback = applyWikiFallbackInterpreter(
+      message,
+      campaignId,
+      input.recentUserMessages,
+      interpreted
+    );
+    interpreted = fallback.interpreted;
+    detectedExtraParams = fallback.detectedExtraParams;
+  }
+
   let previews = await previewInterpreterProposals(interpreted.proposals, campaignId);
   let nextPending: ChatPendingProposal | null = previews[0]
     ? { ...previews[0], phase: "text" as const }
@@ -422,6 +489,7 @@ export async function runAiChatAssistant(
     const enriched = await tryEnrichWikiProposal(campaignId, message, nextPending, {
       refine: intent === "refine",
       pending,
+      extraParams: detectedExtraParams,
     });
 
     if (enriched.error) {

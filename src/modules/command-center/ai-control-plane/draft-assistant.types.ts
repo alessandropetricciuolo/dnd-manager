@@ -38,4 +38,5 @@ export type ChatPendingProposalPayload = {
 
 export type RunAiChatAssistantParams = RunAiDraftAssistantParams & {
   pendingProposal?: ChatPendingProposalPayload | null;
+  recentUserMessages?: string[];
 };

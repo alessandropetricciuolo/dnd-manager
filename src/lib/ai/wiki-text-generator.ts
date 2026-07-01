@@ -10,6 +10,11 @@ import {
   readExcludedManualBookKeysFromAiContextJson,
 } from "@/lib/campaign-ai-context";
 import { fetchLongCampaignWikiMemoryPromptBlock } from "@/lib/campaign-wiki-ai-memory";
+import {
+  extractNpcBuildParams,
+  hasNpcMechanicsParams,
+  mergeWikiExtraParams,
+} from "@/lib/ai/wiki-npc-params";
 
 export type WikiMarkdownEntityType = "npc" | "location" | "item" | "lore" | "monster" | "magic_item";
 
@@ -426,6 +431,8 @@ export async function generateWikiMarkdownAction(
 
     let prompt = "";
     let prebuiltMarkdown: string | null = null;
+    let npcNarrativeOnly = false;
+    const mergedNpcParams = mergeWikiExtraParams(extraParams, extractNpcBuildParams(safeUserPrompt));
 
     if (normalizedType === "monster" && extraParams.verbatimMonsterStatblock?.trim()) {
       const verbatim = extraParams.verbatimMonsterStatblock.trim();
@@ -544,17 +551,31 @@ export async function generateWikiMarkdownAction(
         .filter((s) => typeof s === "string" && s.trim().length > 0)
         .join("\n\n");
     } else if (normalizedType === "npc") {
-      const npcRace = cleanSingleLine(extraParams.npcRace ?? "");
-      const npcClass = cleanSingleLine(extraParams.npcClass ?? "");
-      const npcLevel = cleanSingleLine(extraParams.npcLevel ?? "");
-      if (!npcRace || !npcClass || !npcLevel) {
-        return {
-          success: false,
-          message:
-            "Per gli NPC con AI devi indicare razza, classe e livello (menu sotto l'assistente) così il sistema usa solo i manuali ammessi.",
-        };
-      }
-      const searchQuery = `D&D 5e razza ${npcRace}: tratti, taglia, velocità. Classe ${npcClass} livello ${npcLevel}: privilegi di classe, tabella progressione, sottoclasse se presente. ${safeRetrievalPrompt || ""}`;
+      const resolvedRace = cleanSingleLine(mergedNpcParams.npcRace ?? "");
+      const resolvedClass = cleanSingleLine(mergedNpcParams.npcClass ?? "");
+      const resolvedLevel = cleanSingleLine(mergedNpcParams.npcLevel ?? "");
+      const hasMechanicsParams = hasNpcMechanicsParams(mergedNpcParams);
+
+      if (!hasMechanicsParams) {
+        npcNarrativeOnly = true;
+        prompt = [
+          "Sei un Senior D&D 5e Content Designer.",
+          campaignMemoryPriorityBlock(wikiMemory),
+          `Tono campagna: ${loreTone}`,
+          `Livello magia: ${magicLevel}`,
+          `RICHIESTA: Il nome dell'NPC è "${safeName}". Dettagli: "${safeNarrativePrompt || safeUserPrompt}".`,
+          resolvedRace ? `Razza indicata: ${resolvedRace}.` : "Razza non specificata: deducila dalla richiesta se possibile, altrimenti lascia generico.",
+          resolvedClass ? `Classe indicata: ${resolvedClass}.` : "Classe non specificata: non inventare privilegi di classe.",
+          templateInstructionMap.npc,
+          "Genera SOLO profilo narrativo (aspetto, carattere, ruolo, segreti).",
+          "NON includere statblock, CA, PF, tiri salvezza, attacchi o meccanica di combattimento.",
+          "Apri con il tag [NARRATIVA] sulla prima riga. NON aggiungere [MECCANICA].",
+          "Rispondi SOLO in Markdown valido.",
+        ]
+          .filter((s) => typeof s === "string" && s.trim().length > 0)
+          .join("\n\n");
+      } else {
+      const searchQuery = `D&D 5e razza ${resolvedRace}: tratti, taglia, velocità. Classe ${resolvedClass} livello ${resolvedLevel}: privilegi di classe, tabella progressione, sottoclasse se presente. ${safeRetrievalPrompt || ""}`;
       let technicalContext = "";
       try {
         const embedding = await generateRagEmbedding(searchQuery);
@@ -583,7 +604,7 @@ export async function generateWikiMarkdownAction(
           .join("\n\n");
       } catch (ragError) {
         console.error("[generateWikiMarkdownAction] NPC RAG failed, fallback", ragError);
-        const keywords = buildKeywordCandidates(`${npcRace} ${npcClass} ${npcLevel}`, safeUserPrompt);
+        const keywords = buildKeywordCandidates(`${resolvedRace} ${resolvedClass} ${resolvedLevel}`, safeUserPrompt);
         try {
           const orExpr = keywords.map((kw) => `content.ilike.%${kw}%`).join(",");
           const { data: rows, error: textErr } = await admin
@@ -618,9 +639,9 @@ export async function generateWikiMarkdownAction(
         campaignMemoryPriorityBlock(wikiMemory),
         `[CONTESTO TECNICO — solo dai manuali importati]:\n${technicalContext}`,
         `Nome PNG: ${safeName}`,
-        `Razza (vincolata): ${npcRace}`,
-        `Classe (vincolata): ${npcClass}`,
-        `Livello (vincolato): ${npcLevel}`,
+        `Razza (vincolata): ${resolvedRace}`,
+        `Classe (vincolata): ${resolvedClass}`,
+        `Livello (vincolato): ${resolvedLevel}`,
         `Richiesta narrativa/aggiuntiva: ${safeNarrativePrompt || "Nessuna."}`,
         "Per la parte [MECCANICA] usa ESCLUSIVAMENTE privilegi e numeri supportati dal CONTESTO TECNICO (tiri salvezza, CD, attacchi, PF se deducibili). Non inventare privilegi non presenti.",
         "La [NARRATIVA] (personalità, aspetto, storia nel mondo) deve rispettare la memoria di campagna quando presente.",
@@ -631,6 +652,7 @@ export async function generateWikiMarkdownAction(
       ]
         .filter((s) => typeof s === "string" && s.trim().length > 0)
         .join("\n\n");
+      }
     } else {
       prompt = [
         "Sei un Senior D&D 5e Content Designer.",
@@ -656,7 +678,12 @@ export async function generateWikiMarkdownAction(
         markdown = prebuiltMarkdown;
       } else {
         const first = sanitizeMarkdownResponse((await generateAiTextWithRepair(prompt, 2)).trim());
-        const firstBad = looksLikePromptLeakage(first) || !hasStrictNarrativeMechanicsSections(first);
+        const narrativeOnlyOk =
+          npcNarrativeOnly &&
+          (/^\[NARRATIVA\]/i.test(first) || hasLikelyNarrativeContent(first));
+        const firstBad =
+          looksLikePromptLeakage(first) ||
+          (npcNarrativeOnly ? !narrativeOnlyOk : !hasStrictNarrativeMechanicsSections(first));
         if (!firstBad || first === "NO_TECHNICAL_DATA") {
           markdown = first;
         } else {
@@ -701,7 +728,10 @@ export async function generateWikiMarkdownAction(
     }
 
     let { description, statblock } = splitNarrativeAndMechanics(normalized);
-    if ((normalizedType === "monster" || normalizedType === "npc") && !hasLikelyMechanicalContent(statblock)) {
+    if (
+      (normalizedType === "monster" || (normalizedType === "npc" && !npcNarrativeOnly)) &&
+      !hasLikelyMechanicalContent(statblock)
+    ) {
       const mechanicsRecoveryPrompt = [
         "Ricostruisci SOLO la sezione [MECCANICA] in Markdown valido.",
         "Requisiti: niente narrativa, niente meta-commenti, niente JSON.",
@@ -767,8 +797,8 @@ export async function generateWikiMarkdownAction(
             if (fromStatblock.race || fromStatblock.class || fromStatblock.age) return fromStatblock;
             return extractNpcTraitsFromMarkdown(normalized);
           })();
-          const raceFallback = cleanSingleLine(extraParams.npcRace ?? "");
-          const classFallback = cleanSingleLine(extraParams.npcClass ?? "");
+          const raceFallback = cleanSingleLine(mergedNpcParams.npcRace ?? "");
+          const classFallback = cleanSingleLine(mergedNpcParams.npcClass ?? "");
           return {
             race: (fromMd.race?.trim() || raceFallback) || null,
             class: (fromMd.class?.trim() || classFallback) || null,
