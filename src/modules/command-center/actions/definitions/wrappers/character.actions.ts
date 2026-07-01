@@ -6,7 +6,23 @@ function optionalString(value: unknown): string | null {
   return typeof value === "string" ? value.trim() || null : null;
 }
 
-function parseCharacterBase(o: Record<string, unknown>, requireId = false) {
+type CharacterActionInput = {
+  campaignId: string;
+  characterId: string;
+  name: string;
+  characterClass: string | null;
+  classSubclass: string | null;
+  level: number;
+  background: string | null;
+  raceSlug: string | null;
+  armorClass: number | null;
+  hitPoints: number | null;
+};
+
+function parseCharacterBase(
+  o: Record<string, unknown>,
+  requireId = false
+): { ok: true; data: CharacterActionInput } | { ok: false; error: string } {
   const campaignId = typeof o.campaignId === "string" ? o.campaignId.trim() : "";
   const characterId = typeof o.characterId === "string" ? o.characterId.trim() : "";
   const name = typeof o.name === "string" ? o.name.trim() : "";
@@ -49,9 +65,7 @@ function parseCharacterBase(o: Record<string, unknown>, requireId = false) {
   };
 }
 
-function toCharacterFormData(
-  data: ReturnType<typeof parseCharacterBase> extends { ok: true; data: infer D } ? D : never
-): FormData {
+function toCharacterFormData(data: CharacterActionInput): FormData {
   const fd = new FormData();
   fd.set("name", data.name);
   if (data.characterClass) fd.set("character_class", data.characterClass);
