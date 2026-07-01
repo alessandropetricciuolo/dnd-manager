@@ -1,8 +1,10 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
+import { Button } from "@/components/ui/button";
 import { CampaignList } from "@/components/campaign-list";
 import { MySessionsList } from "@/components/my-sessions-list";
 import { CalendarSessionsLoader } from "@/components/dashboard/calendar-sessions-loader";
@@ -98,6 +100,9 @@ export default async function DashboardPage() {
             {isGmOrAdmin ? (
               <div className="flex flex-wrap items-center justify-end gap-2">
                 <CreateOpenCalendarEventDialog gmAdminUsers={gmAdminUsers} defaultDmId={user.id} />
+                <Button asChild variant="outline" size="sm" className="border-barber-gold/40">
+                  <Link href="/command-center">Command Center</Link>
+                </Button>
               </div>
             ) : null}
             <Suspense

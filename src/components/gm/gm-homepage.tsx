@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { BookOpen, Layers, Mail, Map, Palette, Sparkles, Swords } from "lucide-react";
+import { BookOpen, Layers, Mail, Map, Palette, Sparkles, Swords, Terminal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -67,6 +67,17 @@ export function GmHomepage({
     <div className="rounded-xl border-2 border-violet-800/60 bg-slate-950/80 p-6 shadow-inner">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="border-amber-500/50 text-amber-200 hover:bg-amber-500/20"
+          >
+            <Link href={`/command-center?campaignId=${campaignId}`}>
+              <Terminal className="mr-2 h-4 w-4" />
+              Command Center
+            </Link>
+          </Button>
           <GmScreenLauncher
             campaignId={campaignId}
             className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"

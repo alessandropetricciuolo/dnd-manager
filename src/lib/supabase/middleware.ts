@@ -11,7 +11,7 @@ import { NextResponse, type NextRequest } from "next/server";
 const AUTH_ROUTES = ["/login", "/signup", "/forgot-password"];
 
 /** Prefissi delle rotte protette: se l'utente non è loggato, va reindirizzato a /login */
-const PROTECTED_PREFIXES = ["/dashboard", "/campaigns", "/profile", "/admin"];
+const PROTECTED_PREFIXES = ["/dashboard", "/campaigns", "/profile", "/admin", "/command-center"];
 
 /** Percorsi sempre accessibili (tutti) */
 const PUBLIC_PATHS = ["/", "/privacy"];

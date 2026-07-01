@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, User, UserCog, Shield, LogOut, ArrowLeft, ImageDown, Hammer, Landmark } from "lucide-react";
+import { LayoutDashboard, User, UserCog, Shield, LogOut, ArrowLeft, ImageDown, Hammer, Landmark, Terminal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MobileNavMenu } from "@/components/dashboard/mobile-nav-menu";
 import { CreateCampaignDialog } from "@/components/create-campaign-dialog";
@@ -77,6 +77,17 @@ function NavLinks({
         <LayoutDashboard className="h-5 w-5 shrink-0" />
         <span className={SIDEBAR_LABEL}>Dashboard</span>
       </Link>
+      {isGmOrAdmin && (
+        <Link
+          href="/command-center"
+          onClick={onNavigate}
+          className={linkClass("/command-center")}
+          title="Command Center"
+        >
+          <Terminal className="h-5 w-5 shrink-0" />
+          <span className={SIDEBAR_LABEL}>Command Center</span>
+        </Link>
+      )}
       <Link href="/profile" onClick={onNavigate} className={linkClass("/profile")} title="Profilo">
         <User className="h-5 w-5 shrink-0" />
         <span className={SIDEBAR_LABEL}>Profilo</span>

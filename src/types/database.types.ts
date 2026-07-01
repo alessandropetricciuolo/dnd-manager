@@ -1165,6 +1165,154 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["vault_account_movements"]["Insert"]>;
         Relationships: [];
       };
+      command_inputs: {
+        Row: {
+          id: string;
+          workspace_id: string | null;
+          campaign_id: string | null;
+          source: string;
+          raw_content: string;
+          transcript: string | null;
+          language: string;
+          metadata: Json;
+          created_by: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id?: string | null;
+          campaign_id?: string | null;
+          source?: string;
+          raw_content?: string;
+          transcript?: string | null;
+          language?: string;
+          metadata?: Json;
+          created_by: string;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["command_inputs"]["Insert"]>;
+        Relationships: [];
+      };
+      command_notes: {
+        Row: {
+          id: string;
+          workspace_id: string | null;
+          campaign_id: string | null;
+          title: string;
+          content: string;
+          status: string;
+          source_input_id: string | null;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id?: string | null;
+          campaign_id?: string | null;
+          title?: string;
+          content?: string;
+          status?: string;
+          source_input_id?: string | null;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["command_notes"]["Insert"]>;
+        Relationships: [];
+      };
+      command_links: {
+        Row: {
+          id: string;
+          workspace_id: string | null;
+          note_id: string | null;
+          input_id: string | null;
+          entity_type: string;
+          entity_id: string;
+          confidence: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id?: string | null;
+          note_id?: string | null;
+          input_id?: string | null;
+          entity_type: string;
+          entity_id: string;
+          confidence?: number | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["command_links"]["Insert"]>;
+        Relationships: [];
+      };
+      workspace_pages: {
+        Row: {
+          id: string;
+          workspace_id: string | null;
+          campaign_id: string | null;
+          parent_page_id: string | null;
+          title: string;
+          icon: string | null;
+          page_type: string;
+          content_markdown: string;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id?: string | null;
+          campaign_id?: string | null;
+          parent_page_id?: string | null;
+          title?: string;
+          icon?: string | null;
+          page_type?: string;
+          content_markdown?: string;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["workspace_pages"]["Insert"]>;
+        Relationships: [];
+      };
+      workspace_tasks: {
+        Row: {
+          id: string;
+          workspace_id: string | null;
+          campaign_id: string | null;
+          session_id: string | null;
+          title: string;
+          description: string;
+          status: string;
+          priority: string;
+          due_date: string | null;
+          assigned_to: string | null;
+          source_note_id: string | null;
+          source_action_id: string | null;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id?: string | null;
+          campaign_id?: string | null;
+          session_id?: string | null;
+          title?: string;
+          description?: string;
+          status?: string;
+          priority?: string;
+          due_date?: string | null;
+          assigned_to?: string | null;
+          source_note_id?: string | null;
+          source_action_id?: string | null;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["workspace_tasks"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: {
       forge_product_stock: {
