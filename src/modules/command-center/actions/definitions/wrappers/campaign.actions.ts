@@ -30,6 +30,7 @@ export function registerCampaignWrapperActions(): void {
           description: optionalString(o.description) ?? "",
           type,
           isPublic: o.isPublic === true || o.isPublic === "true",
+          playerPrimer: optionalString(o.playerPrimer ?? o.player_primer),
         },
       };
     },
@@ -37,6 +38,7 @@ export function registerCampaignWrapperActions(): void {
       title: input.title,
       type: input.type,
       description: input.description.slice(0, 200),
+      playerPrimer: input.playerPrimer?.slice(0, 200) ?? null,
       isPublic: input.isPublic,
     }),
     execute: async (ctx, input) => {
@@ -46,6 +48,7 @@ export function registerCampaignWrapperActions(): void {
       fd.set("type", input.type);
       if (input.isPublic) fd.set("is_public", "true");
       if (input.type === "long") fd.set("is_long_campaign", "true");
+      if (input.playerPrimer) fd.set("player_primer", input.playerPrimer);
 
       const result = await createCampaign(fd);
       if (!result.success) throw new Error(result.message);

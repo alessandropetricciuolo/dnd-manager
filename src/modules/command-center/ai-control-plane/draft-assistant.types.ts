@@ -1,3 +1,5 @@
+import type { CampaignAiDraft } from "@/lib/ai/campaign-text-generator";
+import type { MissionAiDraft } from "@/lib/ai/mission-text-generator";
 import type { CommandInputSource } from "../types/workspace";
 import type { CommandInputVoicePayload } from "../voice/command-input-voice";
 
@@ -13,7 +15,7 @@ export type RunAiDraftAssistantParams = {
   voiceMetadata?: CommandInputVoicePayload["metadata"];
 };
 
-export type ChatPendingPhase = "text" | "awaiting_image";
+export type ChatPendingPhase = "text" | "awaiting_image" | "awaiting_architect";
 
 export type ChatWikiMeta = {
   entityType: string;
@@ -27,6 +29,18 @@ export type ChatWikiMeta = {
   chatMessages: { role: "user" | "assistant"; content: string }[];
 };
 
+export type ChatCampaignMeta = {
+  userPrompt: string;
+  draft: CampaignAiDraft;
+  chatMessages: { role: "user" | "assistant"; content: string }[];
+};
+
+export type ChatMissionMeta = {
+  userPrompt: string;
+  draft: MissionAiDraft;
+  chatMessages: { role: "user" | "assistant"; content: string }[];
+};
+
 export type ChatPendingProposalPayload = {
   action_name: string;
   input: Record<string, unknown>;
@@ -34,6 +48,8 @@ export type ChatPendingProposalPayload = {
   preview_payload: Record<string, unknown>;
   phase?: ChatPendingPhase;
   wikiMeta?: ChatWikiMeta;
+  campaignMeta?: ChatCampaignMeta;
+  missionMeta?: ChatMissionMeta;
 };
 
 export type RunAiChatAssistantParams = RunAiDraftAssistantParams & {

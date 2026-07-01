@@ -73,12 +73,29 @@ export function AiAssistantCanvas({
   const wikiDraft = pendingProposal.wikiMeta?.markdownDraft;
 
   const title =
-    pickText(preview.title, preview.name, input.title, pendingProposal.wikiMeta?.entityTitle) ||
-    "Senza titolo";
-  const type = pickText(preview.type, input.type, pendingProposal.wikiMeta?.entityType);
+    pickText(
+      preview.title,
+      preview.name,
+      input.title,
+      pendingProposal.campaignMeta?.draft.title,
+      pendingProposal.missionMeta?.draft.title,
+      pendingProposal.wikiMeta?.entityTitle
+    ) || "Senza titolo";
+  const type = pickText(
+    preview.type,
+    input.type,
+    pendingProposal.wikiMeta?.entityType,
+    pendingProposal.campaignMeta?.draft.type,
+    pendingProposal.missionMeta?.draft.grade ? `Grado ${pendingProposal.missionMeta.draft.grade}` : ""
+  );
   const content =
+    pendingProposal.campaignMeta?.draft.description ||
+    pendingProposal.missionMeta?.draft.description ||
     wikiDraft?.description ||
     pickText(preview.assistantPreview, preview.content, preview.contentMarkdown, preview.description, input.content, input.description);
+  const playerPrimer =
+    pendingProposal.campaignMeta?.draft.playerPrimer ||
+    pickText(preview.playerPrimer, input.playerPrimer);
   const statblock = wikiDraft?.statblock?.trim() || "";
   const imageUrl = pickText(preview.imageUrl, input.imageUrl) || null;
   const actionLabel = ACTION_LABELS[pendingProposal.action_name] ?? pendingProposal.action_name;
@@ -102,6 +119,10 @@ export function AiAssistantCanvas({
             {pendingProposal.phase === "awaiting_image" ? (
               <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-0.5 text-[10px] text-amber-300">
                 Decisione immagine
+              </span>
+            ) : pendingProposal.phase === "awaiting_architect" ? (
+              <span className="rounded-full border border-violet-500/40 bg-violet-500/10 px-2.5 py-0.5 text-[10px] text-violet-200">
+                Decisione Architect
               </span>
             ) : (
               <span className="rounded-full border border-barber-paper/20 bg-barber-paper/5 px-2.5 py-0.5 text-[10px] text-barber-paper/60">
@@ -136,10 +157,36 @@ export function AiAssistantCanvas({
           <section className="space-y-2">
             <h4 className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-barber-gold/80">
               <BookOpen className="h-3.5 w-3.5" />
-              Contenuto
+              {playerPrimer ? "Descrizione (GM)" : "Contenuto"}
             </h4>
             <div className="rounded-lg border border-barber-gold/15 bg-barber-dark/50 p-4">
               <p className="whitespace-pre-wrap text-sm leading-relaxed text-barber-paper/90">{content}</p>
+            </div>
+          </section>
+        ) : null}
+
+        {pendingProposal.missionMeta ? (
+          <section className="mt-4 space-y-2">
+            <h4 className="text-xs font-medium uppercase tracking-wide text-barber-gold/80">Scheda missione</h4>
+            <div className="rounded-lg border border-barber-gold/15 bg-barber-dark/50 p-4 text-sm text-barber-paper/85">
+              <p>Committente: {pendingProposal.missionMeta.draft.committente}</p>
+              <p>Ubicazione: {pendingProposal.missionMeta.draft.ubicazione}</p>
+              <p>
+                Paga: {pendingProposal.missionMeta.draft.paga} · Urgenza:{" "}
+                {pendingProposal.missionMeta.draft.urgenza} · Punti:{" "}
+                {pendingProposal.missionMeta.draft.pointsReward}
+              </p>
+            </div>
+          </section>
+        ) : null}
+
+        {playerPrimer ? (
+          <section className="mt-4 space-y-2">
+            <h4 className="text-xs font-medium uppercase tracking-wide text-barber-gold/80">
+              Guida del giocatore
+            </h4>
+            <div className="rounded-lg border border-barber-gold/15 bg-barber-dark/50 p-4">
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-barber-paper/90">{playerPrimer}</p>
             </div>
           </section>
         ) : null}

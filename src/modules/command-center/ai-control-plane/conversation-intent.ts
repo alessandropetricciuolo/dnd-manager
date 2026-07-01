@@ -6,7 +6,9 @@ export type ConversationIntent =
   | "reject"
   | "refine"
   | "image_yes"
-  | "image_no";
+  | "image_no"
+  | "architect_yes"
+  | "architect_no";
 
 const CONFIRM_RE =
   /^(sì|si|ok|okay|va bene|perfetto|conferma|applica|vai|procedi|fallo|esegui|approvo|dai|certo)\b/i;
@@ -31,6 +33,13 @@ export function detectConversationIntent(
   if (phase === "awaiting_image") {
     if (IMAGE_YES_RE.test(trimmed)) return "image_yes";
     if (IMAGE_NO_RE.test(trimmed)) return "image_no";
+    if (REJECT_RE.test(trimmed)) return "reject";
+    return "refine";
+  }
+
+  if (phase === "awaiting_architect") {
+    if (IMAGE_YES_RE.test(trimmed)) return "architect_yes";
+    if (IMAGE_NO_RE.test(trimmed)) return "architect_no";
     if (REJECT_RE.test(trimmed)) return "reject";
     return "refine";
   }

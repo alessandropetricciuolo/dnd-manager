@@ -33,3 +33,9 @@ test("detectConversationIntent image decision phase", () => {
   assert.equal(detectConversationIntent("senza immagine", true, "awaiting_image"), "image_no");
   assert.equal(detectConversationIntent("annulla", true, "awaiting_image"), "reject");
 });
+
+test("detectConversationIntent architect decision phase", () => {
+  assert.equal(detectConversationIntent("sì", true, "awaiting_architect"), "architect_yes");
+  assert.equal(detectConversationIntent("no", true, "awaiting_architect"), "architect_no");
+  assert.equal(detectConversationIntent("annulla", true, "awaiting_architect"), "reject");
+});

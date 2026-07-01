@@ -10,6 +10,7 @@ import {
   type CampaignMemoryExportChunk,
   type CampaignMemoryExportMode,
 } from "@/lib/campaign-memory-markdown-export";
+import { formatCampaignMemoryActionError } from "@/lib/campaign-memory-errors";
 
 type CampaignMemoryExportResult =
   | {
@@ -27,10 +28,6 @@ type CampaignMemoryExportResult =
       needsIndex?: boolean;
       chunkCount?: number;
     };
-
-function memorySchemaMissingMessage(): string {
-  return "Lo schema della memoria interrogabile non è ancora disponibile su Supabase. Applica la migration della tabella `campaign_memory_chunks` e dell'RPC `match_campaign_memory`, poi riprova.";
-}
 
 async function ensureGmOrAdminForCampaign(campaignId: string): Promise<
   | {
@@ -150,12 +147,10 @@ export async function exportCampaignMemoryMarkdownAction(
     console.error("[exportCampaignMemoryMarkdownAction]", error);
     return {
       success: false,
-      message:
-        error instanceof Error && /campaign_memory_chunks|match_campaign_memory/i.test(error.message)
-          ? memorySchemaMissingMessage()
-          : error instanceof Error
-            ? error.message
-            : "Errore durante l'export della memoria campagna.",
+      message: formatCampaignMemoryActionError(
+        error,
+        "Errore durante l'export della memoria campagna."
+      ),
     };
   }
 }

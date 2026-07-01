@@ -9,6 +9,7 @@ import {
   reindexCampaignMemory,
   type CampaignMemorySourceType,
 } from "@/lib/campaign-memory-indexer";
+import { formatCampaignMemoryActionError, memorySchemaMissingMessage } from "@/lib/campaign-memory-errors";
 
 type CampaignMemoryChunkRow = {
   id: string;
@@ -52,10 +53,6 @@ export type CampaignMemoryQueryResult =
 export type CampaignMemoryReindexResult =
   | { success: true; chunkCount: number; message: string }
   | { success: false; message: string };
-
-function memorySchemaMissingMessage(): string {
-  return "Lo schema della memoria interrogabile non è ancora disponibile su Supabase. Applica la migration della tabella `campaign_memory_chunks` e dell'RPC `match_campaign_memory`, poi riprova.";
-}
 
 function metaString(meta: Record<string, unknown> | null | undefined, key: string): string | null {
   if (!meta || !(key in meta)) return null;
@@ -458,12 +455,7 @@ export async function reindexCampaignMemoryAction(
     console.error("[reindexCampaignMemoryAction]", error);
     return {
       success: false,
-      message:
-        error instanceof Error && /campaign_memory_chunks|match_campaign_memory/i.test(error.message)
-          ? memorySchemaMissingMessage()
-          : error instanceof Error
-            ? error.message
-            : "Errore durante la reindicizzazione.",
+      message: formatCampaignMemoryActionError(error, "Errore durante la reindicizzazione."),
     };
   }
 }

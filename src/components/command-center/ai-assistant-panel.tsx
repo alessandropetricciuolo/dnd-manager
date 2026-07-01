@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import type { ChatPendingProposalPayload } from "@/modules/command-center/ai-control-plane/draft-assistant.types";
+import type { ChatPendingPhase, ChatPendingProposalPayload } from "@/modules/command-center/ai-control-plane/draft-assistant.types";
 import { runAiChatAssistantAction } from "@/modules/command-center/server/actions";
 import { buildCommandInputFromVoice } from "@/modules/command-center/voice/command-input-voice";
 import { useVoiceDictation } from "@/modules/command-center/voice/use-voice-dictation";
@@ -33,7 +33,7 @@ type ChatMessage = {
   fromVoice?: boolean;
   intentSummary?: string;
   hasPendingProposal?: boolean;
-  pendingPhase?: "text" | "awaiting_image";
+  pendingPhase?: ChatPendingPhase;
 };
 
 type AiAssistantPanelProps = {
@@ -195,6 +195,8 @@ export function AiAssistantPanel({
               Chat a sinistra · anteprima a destra
               {pendingProposal?.phase === "awaiting_image"
                 ? " · decisione immagine"
+                : pendingProposal?.phase === "awaiting_architect"
+                  ? " · decisione Architect"
                 : pendingProposal
                   ? " · proposta attiva"
                   : ""}
@@ -247,6 +249,8 @@ export function AiAssistantPanel({
                     <p className="mt-2 text-[10px] text-barber-gold/80">
                       {msg.pendingPhase === "awaiting_image"
                         ? "→ Rispondi sì/no per l'immagine"
+                        : msg.pendingPhase === "awaiting_architect"
+                          ? "→ Rispondi sì/no per i paletti IA"
                         : "→ Vedi anteprima a destra"}
                     </p>
                   ) : null}
@@ -280,6 +284,8 @@ export function AiAssistantPanel({
                 placeholder={
                   pendingProposal?.phase === "awaiting_image"
                     ? "sì / no / annulla…"
+                    : pendingProposal?.phase === "awaiting_architect"
+                      ? "sì / no / annulla…"
                     : pendingProposal
                       ? "conferma, annulla o modifiche…"
                       : "Scrivi o usa il microfono…"
