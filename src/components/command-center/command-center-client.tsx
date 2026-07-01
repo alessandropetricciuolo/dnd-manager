@@ -33,7 +33,6 @@ import type {
   WorkspacePageRow,
   WorkspaceTaskRow,
   AppAuditEventRow,
-  AiActionRequestRow,
 } from "@/modules/command-center/types";
 import {
   createCommandLinkAction,
@@ -52,7 +51,6 @@ import {
 import { COMMAND_LINK_ENTITY_LABELS_IT } from "@/modules/command-center/types/entities";
 import { AuditTimeline } from "@/components/command-center/audit-timeline";
 import { AiAssistantPanel } from "@/components/command-center/ai-assistant-panel";
-import { AiProposalPanel } from "@/components/command-center/ai-proposal-panel";
 import {
   VoiceInterimHint,
   VoiceMicButton,
@@ -69,7 +67,6 @@ type CommandCenterClientProps = {
   initialTasks: WorkspaceTaskRow[];
   initialPages: WorkspacePageRow[];
   initialAuditEvents: AppAuditEventRow[];
-  initialProposals: AiActionRequestRow[];
   campaigns: { id: string; name: string }[];
   initialCampaignId: string | null;
 };
@@ -93,7 +90,6 @@ export function CommandCenterClient({
   initialTasks,
   initialPages,
   initialAuditEvents,
-  initialProposals,
   campaigns,
   initialCampaignId,
 }: CommandCenterClientProps) {
@@ -106,7 +102,6 @@ export function CommandCenterClient({
   const [tasks, setTasks] = useState(initialTasks);
   const [pages, setPages] = useState(initialPages);
   const [auditEvents, setAuditEvents] = useState(initialAuditEvents);
-  const [proposals, setProposals] = useState(initialProposals);
   const [centerView, setCenterView] = useState<CenterView>("workspace");
   const [campaignFilter, setCampaignFilter] = useState<string | "all">(
     initialCampaignId ?? "all"
@@ -149,8 +144,7 @@ export function CommandCenterClient({
     setTasks(initialTasks);
     setPages(initialPages);
     setAuditEvents(initialAuditEvents);
-    setProposals(initialProposals);
-  }, [initialNotes, initialTasks, initialPages, initialAuditEvents, initialProposals]);
+  }, [initialNotes, initialTasks, initialPages, initialAuditEvents]);
 
   useEffect(() => {
     if (!selectedNoteId) {
@@ -564,9 +558,6 @@ export function CommandCenterClient({
             <AiAssistantPanel
               campaignId={campaignFilter === "all" ? null : campaignFilter}
               noteId={selectedNote?.id ?? null}
-              onProposalsCreated={(created) =>
-                setProposals((prev) => [...created, ...prev])
-              }
             />
           ) : sidebarTab === "inbox" && selectedNote ? (
             <div className="mx-auto max-w-2xl space-y-4">
@@ -734,23 +725,6 @@ export function CommandCenterClient({
           )}
 
           <div className="mt-6 rounded-lg border border-dashed border-barber-gold/20 p-3">
-            <AiProposalPanel
-              proposals={proposals}
-              onProposalRejected={(id) =>
-                setProposals((prev) =>
-                  prev.map((p) => (p.id === id ? { ...p, status: "rejected" as const } : p))
-                )
-              }
-              onProposalExecuted={(id) => {
-                setProposals((prev) =>
-                  prev.map((p) => (p.id === id ? { ...p, status: "executed" as const } : p))
-                );
-                router.refresh();
-              }}
-            />
-          </div>
-
-          <div className="mt-4 rounded-lg border border-dashed border-barber-gold/20 p-3">
             <AuditTimeline events={auditEvents} />
           </div>
         </aside>

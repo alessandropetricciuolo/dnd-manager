@@ -2,6 +2,7 @@ import { previewAction } from "../actions";
 import { getRegisteredAction } from "../actions/registry";
 import type { ActionContext } from "../types/actions";
 import type { AiActionRequestRow, AiInterpreterProposal } from "../types/ai-proposal";
+import { normalizeProposalInput } from "./proposal-input";
 
 export async function buildProposalsFromInterpreter(
   ctx: ActionContext,
@@ -49,21 +50,4 @@ export async function buildProposalsFromInterpreter(
   }
 
   return created;
-}
-
-function normalizeProposalInput(
-  actionName: string,
-  input: Record<string, unknown>,
-  campaignId: string | null
-): Record<string, unknown> {
-  const out = { ...input };
-  if (campaignId) {
-    if (actionName === "wiki.entity.create" || actionName === "gm.note.create") {
-      out.campaignId = campaignId;
-    }
-    if (actionName === "workspace.task.create" || actionName === "workspace.page.create") {
-      if (out.campaignId === undefined) out.campaignId = campaignId;
-    }
-  }
-  return out;
 }

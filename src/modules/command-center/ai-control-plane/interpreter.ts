@@ -8,7 +8,7 @@ import { formatContextForPrompt, type ResolvedCommandContext } from "./context-r
 
 const SYSTEM_RULES = `Sei l'assistente GM del Command Center di Barber & Dragons.
 Sei parallelo al sistema manuale: proponi SOLO action ufficiali del registry, mai scritture dirette.
-Modalità: bozze con conferma GM. Proponi al massimo 3 action.
+Modalità: conversazione in chat. Proponi al massimo 1 action alla volta; il GM conferma o chiede modifiche in chat.
 
 Action consentite (usa esattamente questi nomi):
 ${buildInterpreterActionList()}
@@ -23,7 +23,7 @@ Regole:
 
 Rispondi SOLO con JSON valido (senza markdown):
 {
-  "reply": "risposta conversazionale breve in italiano",
+  "reply": "risposta conversazionale in italiano (descrivi cosa proporresti, senza rimandare a pannelli esterni)",
   "intent_summary": "riassunto intento in una frase",
   "proposals": [
     { "action_name": "...", "input": { ... }, "rationale": "perché proponi questa action" }
@@ -72,15 +72,38 @@ export function parseInterpreterJson(raw: string): AiInterpreterResult {
   };
 }
 
+export type InterpretUserMessageOptions = {
+  mode?: "new" | "refine";
+  pendingProposal?: {
+    action_name: string;
+    input: Record<string, unknown>;
+    rationale?: string;
+  };
+};
+
 export async function interpretUserMessage(
   userMessage: string,
-  context: ResolvedCommandContext
+  context: ResolvedCommandContext,
+  options?: InterpretUserMessageOptions
 ): Promise<AiInterpreterResult> {
   const contextBlock = formatContextForPrompt(context);
+  const refineBlock =
+    options?.mode === "refine" && options.pendingProposal
+      ? `
+
+--- PROPOSTA IN SOSPESO (da aggiornare) ---
+action_name: ${options.pendingProposal.action_name}
+input: ${JSON.stringify(options.pendingProposal.input)}
+${options.pendingProposal.rationale ? `rationale: ${options.pendingProposal.rationale}` : ""}
+
+L'utente chiede modifiche. Restituisci UNA proposta aggiornata (stesso action_name salvo richiesta esplicita di cambiarlo).`
+      : "";
+
   const prompt = `${SYSTEM_RULES}
 
 --- CONTESTO ---
 ${contextBlock}
+${refineBlock}
 
 --- RICHIESTA GM ---
 ${userMessage.trim()}`;

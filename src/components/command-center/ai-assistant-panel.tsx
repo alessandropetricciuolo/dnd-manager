@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import type { AiActionRequestRow } from "@/modules/command-center/types";
-import { runAiDraftAssistantAction } from "@/modules/command-center/server/actions";
+import type { ChatPendingProposalPayload } from "@/modules/command-center/ai-control-plane/draft-assistant.types";
+import { runAiChatAssistantAction } from "@/modules/command-center/server/actions";
 import { buildCommandInputFromVoice } from "@/modules/command-center/voice/command-input-voice";
 import { useVoiceDictation } from "@/modules/command-center/voice/use-voice-dictation";
 import {
@@ -24,29 +24,25 @@ type ChatMessage = {
   content: string;
   fromVoice?: boolean;
   intentSummary?: string;
-  proposalIds?: string[];
+  hasPendingProposal?: boolean;
 };
 
 type AiAssistantPanelProps = {
   campaignId: string | null;
   noteId?: string | null;
-  onProposalsCreated?: (proposals: AiActionRequestRow[]) => void;
 };
 
-export function AiAssistantPanel({
-  campaignId,
-  noteId,
-  onProposalsCreated,
-}: AiAssistantPanelProps) {
+export function AiAssistantPanel({ campaignId, noteId }: AiAssistantPanelProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [input, setInput] = useState("");
+  const [pendingProposal, setPendingProposal] = useState<ChatPendingProposalPayload | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "welcome",
       role: "assistant",
       content:
-        "Sei l'assistente GM del Command Center. Posso proporre campagne, oneshot, wiki, missioni, sessioni, note GM, PG e task — sempre in bozza finché non clicchi Applica.",
+        "Sono l'assistente GM del Command Center. Descrivi cosa vuoi creare o modificare — ti rispondo in chat con la proposta completa. Conferma con «conferma» o «applica», annulla con «annulla», oppure chiedi modifiche.",
     },
   ]);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -79,11 +75,14 @@ export function AiAssistantPanel({
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
 
+    const currentPending = pendingProposal;
+
     startTransition(async () => {
-      const res = await runAiDraftAssistantAction({
+      const res = await runAiChatAssistantAction({
         message: trimmed,
         campaignId,
         noteId: noteId ?? null,
+        pendingProposal: currentPending,
         source: voicePayload?.source ?? "text",
         transcript: voicePayload?.transcript ?? null,
         language: voicePayload?.language ?? "it",
@@ -103,7 +102,15 @@ export function AiAssistantPanel({
         return;
       }
 
-      const { reply, intentSummary, proposals } = res.data!;
+      const { reply, intentSummary, pendingProposal: nextPending, executed, clearedPending } =
+        res.data!;
+
+      if (clearedPending) {
+        setPendingProposal(null);
+      } else if (nextPending) {
+        setPendingProposal(nextPending);
+      }
+
       setMessages((prev) => [
         ...prev,
         {
@@ -111,17 +118,12 @@ export function AiAssistantPanel({
           role: "assistant",
           content: reply,
           intentSummary,
-          proposalIds: proposals.map((p) => p.id),
+          hasPendingProposal: Boolean(nextPending) && !clearedPending,
         },
       ]);
 
-      if (proposals.length > 0) {
-        toast.success(
-          proposals.length === 1
-            ? "1 proposta in bozza"
-            : `${proposals.length} proposte in bozza`
-        );
-        onProposalsCreated?.(proposals);
+      if (executed) {
+        toast.success("Proposta applicata");
       }
 
       router.refresh();
@@ -134,25 +136,26 @@ export function AiAssistantPanel({
   }
 
   return (
-    <div className="mx-auto flex h-full max-w-2xl flex-col">
+    <div className="mx-auto flex h-full max-w-3xl flex-col">
       <div className="mb-3 flex items-center gap-2">
         <Sparkles className="h-5 w-5 text-barber-gold" />
         <div>
           <h2 className="font-serif text-lg font-semibold text-barber-paper">Assistente GM</h2>
           <p className="text-xs text-barber-paper/50">
-            Testo o voce · bozze con conferma
+            Testo o voce · conferma in chat
             {campaignId ? " · campagna selezionata" : ""}
+            {pendingProposal ? " · proposta in attesa" : ""}
           </p>
         </div>
       </div>
 
-      <ScrollArea className="min-h-[240px] flex-1 rounded-lg border border-barber-gold/20 bg-barber-dark/40 p-3">
+      <ScrollArea className="min-h-[280px] flex-1 rounded-lg border border-barber-gold/20 bg-barber-dark/40 p-3">
         <ul className="space-y-3">
           {messages.map((msg) => (
             <li
               key={msg.id}
               className={cn(
-                "max-w-[90%] rounded-lg px-3 py-2 text-sm",
+                "max-w-[95%] rounded-lg px-3 py-2 text-sm",
                 msg.role === "user"
                   ? "ml-auto bg-barber-gold/20 text-barber-paper"
                   : "bg-barber-dark/80 text-barber-paper/90"
@@ -165,9 +168,9 @@ export function AiAssistantPanel({
               {msg.intentSummary ? (
                 <p className="mt-1 text-[10px] text-barber-paper/40">Intento: {msg.intentSummary}</p>
               ) : null}
-              {msg.proposalIds?.length ? (
-                <p className="mt-1 text-[10px] text-barber-gold/80">
-                  {msg.proposalIds.length} proposta/e nel pannello a destra
+              {msg.hasPendingProposal ? (
+                <p className="mt-2 text-[10px] text-barber-gold/80">
+                  In attesa: scrivi conferma, annulla o descrivi modifiche.
                 </p>
               ) : null}
             </li>
@@ -186,7 +189,11 @@ export function AiAssistantPanel({
         <Textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Scrivi o usa il microfono…"
+          placeholder={
+            pendingProposal
+              ? "conferma, annulla o descrivi modifiche…"
+              : "Scrivi o usa il microfono…"
+          }
           rows={3}
           disabled={isPending || voice.isListening}
           className="min-h-0 flex-1 resize-none border-barber-gold/30 bg-barber-dark/80"

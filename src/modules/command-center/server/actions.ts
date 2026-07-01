@@ -4,7 +4,11 @@ import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { getTenantAdapter } from "@/modules/command-center/adapters";
 import { executeAction } from "@/modules/command-center/actions";
 import { runAiDraftAssistant } from "@/modules/command-center/ai-control-plane/draft-assistant";
-import type { RunAiDraftAssistantParams } from "@/modules/command-center/ai-control-plane/draft-assistant.types";
+import { runAiChatAssistant, type AiChatAssistantResult } from "@/modules/command-center/ai-control-plane/chat-assistant";
+import type {
+  RunAiDraftAssistantParams,
+  RunAiChatAssistantParams,
+} from "@/modules/command-center/ai-control-plane/draft-assistant.types";
 import type {
   CommandLinkRow,
   CommandNoteRow,
@@ -369,6 +373,14 @@ export async function runAiDraftAssistantAction(
   input: RunAiDraftAssistantParams
 ): Promise<ActionResult<AiDraftAssistantResult>> {
   const result = await runAiDraftAssistant(input);
+  if (!result.success) return { success: false, error: result.error };
+  return { success: true, data: result.data };
+}
+
+export async function runAiChatAssistantAction(
+  input: RunAiChatAssistantParams
+): Promise<ActionResult<AiChatAssistantResult>> {
+  const result = await runAiChatAssistant(input);
   if (!result.success) return { success: false, error: result.error };
   return { success: true, data: result.data };
 }

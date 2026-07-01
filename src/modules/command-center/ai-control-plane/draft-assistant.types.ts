@@ -12,3 +12,14 @@ export type RunAiDraftAssistantParams = {
   language?: string;
   voiceMetadata?: CommandInputVoicePayload["metadata"];
 };
+
+export type ChatPendingProposalPayload = {
+  action_name: string;
+  input: Record<string, unknown>;
+  rationale: string | null;
+  preview_payload: Record<string, unknown>;
+};
+
+export type RunAiChatAssistantParams = RunAiDraftAssistantParams & {
+  pendingProposal?: ChatPendingProposalPayload | null;
+};
