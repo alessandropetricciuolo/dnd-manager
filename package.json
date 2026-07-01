@@ -12,7 +12,7 @@
     "test:security": "tsx --test --test-concurrency=1 src/lib/security/__tests__/*.test.ts",
     "test:torneo2": "tsx --test src/lib/torneo2/__tests__/*.test.ts",
     "test:map-core": "tsx --test src/lib/map-core/__tests__/*.test.ts",
-    "test:command-center": "tsx --test src/modules/command-center/actions/__tests__/*.test.ts src/modules/command-center/ai-control-plane/__tests__/*.test.ts",
+    "test:command-center": "tsx --test src/modules/command-center/actions/__tests__/*.test.ts src/modules/command-center/ai-control-plane/__tests__/*.test.ts src/modules/command-center/utils/__tests__/*.test.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:report": "playwright show-report",
