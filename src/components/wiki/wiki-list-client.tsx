@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ComponentType } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useRouter } from "nextjs-toploader/app";
@@ -9,7 +9,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lock, BookOpen, ChevronDown, Eye, Pencil, Search } from "lucide-react";
+import {
+  BookOpen,
+  ChevronDown,
+  Eye,
+  Lock,
+  MapPin,
+  Package,
+  Pencil,
+  ScrollText,
+  Search,
+  Skull,
+  Users,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WikiEntityDeleteButton } from "./wiki-entity-delete-button";
 import { WIKI_ENTITY_TYPES, WIKI_FILTER_LABELS_IT } from "@/lib/wiki/entity-types";
@@ -19,13 +31,10 @@ export type WikiEntityListItem = {
   name: string;
   type: string;
   isSecret: boolean;
-  /** public | secret | selective - per mostrare il lucchetto (solo GM/Admin) */
   visibility?: string;
-  /** Etichetta target visibilità selettiva (solo GM/Admin). */
   selectiveAudienceLabel?: string | null;
   sortOrder: number | null;
   tags?: string[];
-  /** Breve testo per ricerca (body della voce) */
   description?: string;
   linkedMissionId?: string | null;
   missionTitle?: string | null;
@@ -38,7 +47,6 @@ type WikiListClientProps = {
   entities: WikiEntityListItem[];
   isGmOrAdmin: boolean;
   typeLabels: Record<string, string>;
-  /** Messaggio quando non ci sono entità (es. player senza contenuti sbloccati). */
   emptyMessage?: string;
 };
 
@@ -48,6 +56,53 @@ type WikiFilterValue = (typeof WIKI_FILTER_VALUES)[number];
 
 const MISSION_FILTER_ALL = "all";
 const MISSION_FILTER_NONE = "none";
+
+const TYPE_META: Record<
+  string,
+  {
+    icon: ComponentType<{ className?: string }>;
+    header: string;
+    border: string;
+    bg: string;
+    text: string;
+  }
+> = {
+  npc: {
+    icon: Users,
+    header: "border-amber-500/35 bg-amber-500/10",
+    border: "border-amber-500/30",
+    bg: "bg-amber-500/[0.04]",
+    text: "text-amber-200",
+  },
+  location: {
+    icon: MapPin,
+    header: "border-emerald-500/35 bg-emerald-500/10",
+    border: "border-emerald-500/30",
+    bg: "bg-emerald-500/[0.04]",
+    text: "text-emerald-200",
+  },
+  monster: {
+    icon: Skull,
+    header: "border-red-500/35 bg-red-500/10",
+    border: "border-red-500/30",
+    bg: "bg-red-500/[0.04]",
+    text: "text-red-200",
+  },
+  item: {
+    icon: Package,
+    header: "border-blue-500/35 bg-blue-500/10",
+    border: "border-blue-500/30",
+    bg: "bg-blue-500/[0.04]",
+    text: "text-blue-200",
+  },
+  lore: {
+    icon: ScrollText,
+    header: "border-violet-500/35 bg-violet-500/10",
+    border: "border-violet-500/30",
+    bg: "bg-violet-500/[0.04]",
+    text: "text-violet-200",
+  },
+};
 
 function isWikiFilterValue(value: string): value is WikiFilterValue {
   return WIKI_FILTER_VALUES.includes(value as WikiFilterValue);
@@ -61,7 +116,7 @@ function sortEntitiesForDisplay(
   items: WikiEntityListItem[],
   typeFilter: WikiFilterValue
 ): WikiEntityListItem[] {
-  if (typeFilter === "lore") {
+  if (typeFilter === "lore" || items.every((e) => e.type === "lore")) {
     return [...items].sort((a, b) => {
       const na = a.sortOrder ?? 9999;
       const nb = b.sortOrder ?? 9999;
@@ -70,6 +125,26 @@ function sortEntitiesForDisplay(
     });
   }
   return [...items].sort((a, b) => a.name.localeCompare(b.name, "it"));
+}
+
+function groupEntitiesByType(items: WikiEntityListItem[]) {
+  const buckets = new Map<string, WikiEntityListItem[]>();
+  for (const entity of items) {
+    const list = buckets.get(entity.type) ?? [];
+    list.push(entity);
+    buckets.set(entity.type, list);
+  }
+  return WIKI_ENTITY_TYPES.filter((type) => buckets.has(type)).map((type) => ({
+    type,
+    items: sortEntitiesForDisplay(buckets.get(type)!, type as WikiFilterValue),
+  }));
+}
+
+function entityDisplayName(entity: WikiEntityListItem) {
+  if (entity.type === "lore" && entity.sortOrder != null && entity.sortOrder > 0) {
+    return `Cap. ${entity.sortOrder}: ${entity.name}`;
+  }
+  return entity.name;
 }
 
 export function WikiListClient({
@@ -106,7 +181,7 @@ export function WikiListClient({
 
   const missionFilterLabel = useMemo(() => {
     if (campaignType !== "long") return "";
-    if (missionFilter === MISSION_FILTER_ALL) return "Tutte le missioni";
+    if (missionFilter === MISSION_FILTER_ALL) return "Tutte (raggruppate)";
     if (missionFilter === MISSION_FILTER_NONE) return "Senza missione";
     return missions.find((m) => m.id === missionFilter)?.title ?? "Missione";
   }, [campaignType, missionFilter, missions]);
@@ -127,7 +202,9 @@ export function WikiListClient({
   }
 
   const byType =
-    typeFilter === ALL_TYPES ? entities : entities.filter((e) => e.type === typeFilter);
+    !isGmOrAdmin && typeFilter !== ALL_TYPES
+      ? entities.filter((e) => e.type === typeFilter)
+      : entities;
 
   const byMission = useMemo(() => {
     if (campaignType !== "long") return byType;
@@ -148,7 +225,10 @@ export function WikiListClient({
     });
   }, [byMission, searchQuery]);
 
-  const sorted = sortEntitiesForDisplay(filtered, typeFilter);
+  const sorted = sortEntitiesForDisplay(
+    filtered,
+    isGmOrAdmin ? ALL_TYPES : typeFilter
+  );
 
   const groupedSections = useMemo(() => {
     if (campaignType !== "long" || missionFilter !== MISSION_FILTER_ALL || sorted.length === 0) {
@@ -192,6 +272,14 @@ export function WikiListClient({
     return sections.length > 0 ? sections : null;
   }, [campaignType, missionFilter, sorted, missions]);
 
+  const typeSummary = useMemo(() => {
+    if (!isGmOrAdmin) return [];
+    return WIKI_ENTITY_TYPES.map((type) => ({
+      type,
+      count: filtered.filter((e) => e.type === type).length,
+    })).filter((row) => row.count > 0);
+  }, [isGmOrAdmin, filtered]);
+
   const badgeVariant = (
     type: string
   ): "npc" | "location" | "monster" | "item" | "lore" | "secondary" =>
@@ -200,11 +288,130 @@ export function WikiListClient({
   const showLock = (entity: WikiEntityListItem) =>
     isGmOrAdmin && (entity.visibility === "secret" || entity.visibility === "selective");
 
+  function renderGmColumnEntity(entity: WikiEntityListItem) {
+    const entityUrl = `/campaigns/${campaignId}/wiki/${entity.id}`;
+    const editUrl = `${entityUrl}?edit=1`;
+    const tagList = (entity.tags ?? []).map((t) => t.trim()).filter(Boolean);
+
+    return (
+      <li
+        key={entity.id}
+        className="group rounded-md border border-transparent px-1.5 py-1 transition-colors hover:border-barber-gold/20 hover:bg-barber-gold/[0.06]"
+      >
+        <div className="flex items-start gap-1">
+          <div className="min-w-0 flex-1">
+            <Link
+              href={entityUrl}
+              className="block truncate text-sm font-medium leading-snug text-barber-paper hover:text-barber-gold hover:underline"
+              title={entityDisplayName(entity)}
+            >
+              {entityDisplayName(entity)}
+            </Link>
+            {tagList.length > 0 ? (
+              <div className="mt-0.5 flex flex-wrap gap-0.5">
+                {tagList.slice(0, 3).map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded border border-barber-gold/20 px-1 py-px text-[9px] leading-none text-barber-paper/55"
+                  >
+                    {tag}
+                  </span>
+                ))}
+                {tagList.length > 3 ? (
+                  <span className="text-[9px] text-barber-paper/40">+{tagList.length - 3}</span>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+          {showLock(entity) ? (
+            <Lock className="mt-0.5 h-3 w-3 shrink-0 text-barber-gold/80" aria-label="Visibilità limitata" />
+          ) : null}
+        </div>
+        <div className="mt-1 flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+          <Button variant="ghost" size="icon" className="h-6 w-6 text-barber-paper/70 hover:text-barber-gold" asChild>
+            <Link href={entityUrl} title="Apri">
+              <Eye className="h-3.5 w-3.5" />
+            </Link>
+          </Button>
+          <Button variant="ghost" size="icon" className="h-6 w-6 text-barber-paper/70 hover:text-barber-gold" asChild>
+            <Link href={editUrl} title="Modifica">
+              <Pencil className="h-3.5 w-3.5" />
+            </Link>
+          </Button>
+          <WikiEntityDeleteButton compact campaignId={campaignId} entityId={entity.id} entityName={entity.name} />
+        </div>
+      </li>
+    );
+  }
+
+  function renderGmTypeColumn(type: string, items: WikiEntityListItem[]) {
+    const meta = TYPE_META[type] ?? {
+      icon: BookOpen,
+      header: "border-barber-gold/35 bg-barber-gold/10",
+      border: "border-barber-gold/30",
+      bg: "bg-barber-dark/40",
+      text: "text-barber-gold",
+    };
+    const Icon = meta.icon;
+    const label = typeLabels[type] ?? type;
+
+    return (
+      <article
+        key={type}
+        className={cn(
+          "flex min-h-[8rem] min-w-0 flex-col overflow-hidden rounded-lg border",
+          meta.border,
+          meta.bg
+        )}
+      >
+        <header
+          className={cn(
+            "flex items-center justify-between gap-2 border-b px-2.5 py-2",
+            meta.header
+          )}
+        >
+          <div className="flex min-w-0 items-center gap-1.5">
+            <Icon className={cn("h-3.5 w-3.5 shrink-0", meta.text)} />
+            <h4 className={cn("truncate text-xs font-semibold uppercase tracking-wide", meta.text)}>
+              {label}
+            </h4>
+          </div>
+          <span className="shrink-0 text-[10px] font-medium text-barber-paper/50">{items.length}</span>
+        </header>
+        <ul className="scrollbar-barber-y min-h-0 flex-1 space-y-0.5 overflow-y-auto p-1.5 max-h-[min(22rem,42vh)]">
+          {items.map((entity) => renderGmColumnEntity(entity))}
+        </ul>
+      </article>
+    );
+  }
+
+  function renderGmMissionBoard(
+    sectionKey: string,
+    label: string,
+    count: number,
+    items: WikiEntityListItem[]
+  ) {
+    const typeGroups = groupEntitiesByType(items);
+    if (typeGroups.length === 0) return null;
+
+    return (
+      <section
+        key={sectionKey}
+        className="overflow-hidden rounded-xl border border-barber-gold/30 bg-barber-dark/80 shadow-[inset_0_1px_0_0_rgba(212,175,55,0.06)]"
+      >
+        <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-barber-gold/20 bg-barber-dark/90 px-3 py-2.5 sm:px-4">
+          <h3 className="font-serif text-sm font-semibold text-barber-gold sm:text-base">{label}</h3>
+          <span className="text-[11px] text-barber-paper/50">{count} voci</span>
+        </div>
+        <div className="grid gap-2 p-2 sm:grid-cols-2 sm:gap-3 sm:p-3 lg:grid-cols-3 xl:grid-cols-5">
+          {typeGroups.map(({ type, items: typeItems }) => renderGmTypeColumn(type, typeItems))}
+        </div>
+      </section>
+    );
+  }
+
   function renderEntityRow(entity: WikiEntityListItem) {
-    const displayName =
-      typeFilter === "lore" && entity.sortOrder != null && entity.sortOrder > 0
-        ? `Capitolo ${entity.sortOrder}: ${entity.name}`
-        : entity.name;
+    const displayName = entityDisplayName(entity);
     const entityUrl = `/campaigns/${campaignId}/wiki/${entity.id}`;
     const editUrl = `${entityUrl}?edit=1`;
     const showMissionBadge =
@@ -351,10 +558,18 @@ export function WikiListClient({
   ];
 
   const showMissionUi = campaignType === "long";
+  const useGmColumnBoard = isGmOrAdmin;
+
+  const gmSingleSectionLabel =
+    missionFilter === MISSION_FILTER_NONE
+      ? "Senza missione"
+      : missionFilter === MISSION_FILTER_ALL
+        ? "Tutte le voci"
+        : (missions.find((m) => m.id === missionFilter)?.title ?? "Missione");
 
   return (
     <div className="min-w-0 max-w-full space-y-4">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:gap-4">
         <div className="relative min-w-0 flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-barber-paper/50" />
           <Input
@@ -388,20 +603,135 @@ export function WikiListClient({
         )}
       </div>
 
-      <Tabs value={typeFilter} onValueChange={setWikiFilter}>
-        <div className="md:hidden w-full min-w-0">
+      {useGmColumnBoard && typeSummary.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-barber-gold/20 bg-barber-dark/50 px-3 py-2">
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-barber-paper/45">
+            Panoramica
+          </span>
+          {typeSummary.map(({ type, count }) => {
+            const meta = TYPE_META[type];
+            const Icon = meta?.icon ?? BookOpen;
+            return (
+              <span
+                key={type}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium",
+                  meta?.header ?? "border-barber-gold/25 bg-barber-gold/10",
+                  meta?.text ?? "text-barber-gold"
+                )}
+              >
+                <Icon className="h-3 w-3" />
+                {typeLabels[type] ?? type}
+                <span className="text-barber-paper/50">·</span>
+                {count}
+              </span>
+            );
+          })}
+        </div>
+      ) : null}
+
+      {!useGmColumnBoard ? (
+        <Tabs value={typeFilter} onValueChange={setWikiFilter}>
+          <div className="md:hidden w-full min-w-0">
+            <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
+              <SheetTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-between rounded-xl border-barber-gold/40 bg-barber-dark/90 py-3 text-left text-barber-paper hover:bg-barber-gold/10 hover:text-barber-gold"
+                >
+                  <span className="font-medium">
+                    Filtro tipo: {currentFilterLabel}
+                    {showMissionUi && missionFilter !== MISSION_FILTER_ALL ? (
+                      <span className="mt-1 block text-xs font-normal text-barber-paper/60">{missionFilterLabel}</span>
+                    ) : null}
+                  </span>
+                  <ChevronDown className="h-5 w-5 shrink-0 opacity-70" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent
+                side="bottom"
+                className="rounded-t-2xl border-t border-barber-gold/20 bg-barber-dark pb-8 pt-4 max-h-[min(70vh,480px)] overflow-y-auto"
+              >
+                <p className="mb-4 px-1 text-sm font-medium text-barber-paper/70">Tipologia voce wiki</p>
+                <nav className="flex flex-col gap-1">
+                  {filterOptions.map(({ value, label }) => {
+                    const isActive = typeFilter === value;
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => {
+                          setWikiFilter(value);
+                          setFilterSheetOpen(false);
+                        }}
+                        className={cn(
+                          "flex items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-medium transition-colors text-barber-paper hover:bg-barber-gold/10 hover:text-barber-gold",
+                          isActive && "bg-barber-gold/20 text-barber-gold"
+                        )}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </nav>
+                {showMissionUi && missions.length > 0 && (
+                  <>
+                    <p className="mb-2 mt-6 px-1 text-sm font-medium text-barber-paper/70">Missione</p>
+                    <div className="flex flex-col gap-1">
+                      {[
+                        { id: MISSION_FILTER_ALL, title: "Tutte (raggruppate)" },
+                        { id: MISSION_FILTER_NONE, title: "Senza missione" },
+                        ...missions,
+                      ].map((m) => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => {
+                            setWikiMissionFilter(m.id);
+                            setFilterSheetOpen(false);
+                          }}
+                          className={cn(
+                            "rounded-xl px-4 py-3 text-left text-sm font-medium transition-colors text-barber-paper hover:bg-barber-gold/10 hover:text-barber-gold",
+                            missionFilter === m.id && "bg-barber-gold/20 text-barber-gold"
+                          )}
+                        >
+                          {m.title}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </SheetContent>
+            </Sheet>
+          </div>
+
+          <TabsList className="hidden md:flex w-full min-w-0 max-w-full flex-wrap justify-start gap-1 rounded-xl border border-barber-gold/40 bg-barber-dark/90 p-1">
+            <TabsTrigger
+              value={ALL_TYPES}
+              className="data-[state=active]:bg-barber-gold/20 data-[state=active]:text-barber-gold"
+            >
+              Tutti
+            </TabsTrigger>
+            {Object.entries(typeLabels).map(([value, label]) => (
+              <TabsTrigger
+                key={value}
+                value={value}
+                className="data-[state=active]:bg-barber-gold/20 data-[state=active]:text-barber-gold"
+              >
+                {label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+      ) : showMissionUi ? (
+        <div className="md:hidden">
           <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
             <SheetTrigger asChild>
               <Button
                 variant="outline"
                 className="w-full justify-between rounded-xl border-barber-gold/40 bg-barber-dark/90 py-3 text-left text-barber-paper hover:bg-barber-gold/10 hover:text-barber-gold"
               >
-                <span className="font-medium">
-                  Filtro tipo: {currentFilterLabel}
-                  {showMissionUi && missionFilter !== MISSION_FILTER_ALL ? (
-                    <span className="mt-1 block text-xs font-normal text-barber-paper/60">{missionFilterLabel}</span>
-                  ) : null}
-                </span>
+                <span className="font-medium">Missione: {missionFilterLabel}</span>
                 <ChevronDown className="h-5 w-5 shrink-0 opacity-70" />
               </Button>
             </SheetTrigger>
@@ -409,106 +739,56 @@ export function WikiListClient({
               side="bottom"
               className="rounded-t-2xl border-t border-barber-gold/20 bg-barber-dark pb-8 pt-4 max-h-[min(70vh,480px)] overflow-y-auto"
             >
-              <p className="mb-4 px-1 text-sm font-medium text-barber-paper/70">Tipologia voce wiki</p>
-              <nav className="flex flex-col gap-1">
-                {filterOptions.map(({ value, label }) => {
-                  const isActive = typeFilter === value;
-                  return (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => {
-                        setWikiFilter(value);
-                        setFilterSheetOpen(false);
-                      }}
-                      className={cn(
-                        "flex items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-medium transition-colors text-barber-paper hover:bg-barber-gold/10 hover:text-barber-gold",
-                        isActive && "bg-barber-gold/20 text-barber-gold"
-                      )}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </nav>
-              {showMissionUi && missions.length > 0 && (
-                <>
-                  <p className="mb-2 mt-6 px-1 text-sm font-medium text-barber-paper/70">Missione</p>
-                  <div className="flex flex-col gap-1">
-                    {[
-                      { id: MISSION_FILTER_ALL, title: "Tutte (raggruppate)" },
-                      { id: MISSION_FILTER_NONE, title: "Senza missione" },
-                      ...missions,
-                    ].map((m) => (
-                      <button
-                        key={m.id}
-                        type="button"
-                        onClick={() => {
-                          setWikiMissionFilter(m.id);
-                          setFilterSheetOpen(false);
-                        }}
-                        className={cn(
-                          "rounded-xl px-4 py-3 text-left text-sm font-medium transition-colors text-barber-paper hover:bg-barber-gold/10 hover:text-barber-gold",
-                          missionFilter === m.id && "bg-barber-gold/20 text-barber-gold"
-                        )}
-                      >
-                        {m.title}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
+              <p className="mb-4 px-1 text-sm font-medium text-barber-paper/70">Filtra per missione</p>
+              <div className="flex flex-col gap-1">
+                {[
+                  { id: MISSION_FILTER_ALL, title: "Tutte (raggruppate)" },
+                  { id: MISSION_FILTER_NONE, title: "Senza missione" },
+                  ...missions,
+                ].map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => {
+                      setWikiMissionFilter(m.id);
+                      setFilterSheetOpen(false);
+                    }}
+                    className={cn(
+                      "rounded-xl px-4 py-3 text-left text-sm font-medium transition-colors text-barber-paper hover:bg-barber-gold/10 hover:text-barber-gold",
+                      missionFilter === m.id && "bg-barber-gold/20 text-barber-gold"
+                    )}
+                  >
+                    {m.title}
+                  </button>
+                ))}
+              </div>
             </SheetContent>
           </Sheet>
         </div>
-
-        <TabsList className="hidden md:flex w-full min-w-0 max-w-full flex-wrap justify-start gap-1 rounded-xl border border-barber-gold/40 bg-barber-dark/90 p-1">
-          <TabsTrigger
-            value={ALL_TYPES}
-            className="data-[state=active]:bg-barber-gold/20 data-[state=active]:text-barber-gold"
-          >
-            Tutti
-          </TabsTrigger>
-          {Object.entries(typeLabels).map(([value, label]) => (
-            <TabsTrigger
-              key={value}
-              value={value}
-              className="data-[state=active]:bg-barber-gold/20 data-[state=active]:text-barber-gold"
-            >
-              {label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+      ) : null}
 
       {sorted.length === 0 ? (
         <div className="rounded-xl border border-dashed border-barber-gold/35 bg-barber-dark/50 px-6 py-10 text-center text-sm text-barber-paper/65">
-          Nessuna voce con questi filtri. Prova a cambiare missione o tipo.
+          Nessuna voce con questi filtri. Prova a cambiare missione{!useGmColumnBoard ? " o tipo" : ""}.
         </div>
+      ) : useGmColumnBoard && groupedSections ? (
+        <div className="space-y-5">
+          {groupedSections.map((section) =>
+            renderGmMissionBoard(section.key, section.label, section.count, section.items)
+          )}
+        </div>
+      ) : useGmColumnBoard ? (
+        renderGmMissionBoard("__single", gmSingleSectionLabel, sorted.length, sorted)
       ) : groupedSections ? (
-        <div className={cn("space-y-6", isGmOrAdmin && "space-y-4")}>
+        <div className="space-y-6">
           {groupedSections.map((section) => (
             <section
               key={section.key}
               className="overflow-hidden rounded-xl border border-barber-gold/35 bg-barber-dark/85 shadow-[inset_0_1px_0_0_rgba(212,175,55,0.08)]"
             >
-              <div
-                className={cn(
-                  "sticky top-0 z-[1] flex flex-wrap items-baseline justify-between gap-2 border-b border-barber-gold/25 bg-barber-dark/95 px-4 py-3 backdrop-blur-sm",
-                  isGmOrAdmin && "py-2 px-3"
-                )}
-              >
-                <h3
-                  className={cn(
-                    "font-semibold uppercase tracking-wide text-barber-gold",
-                    isGmOrAdmin ? "text-xs" : "text-sm"
-                  )}
-                >
-                  {section.label}
-                </h3>
-                <span className={cn("text-barber-paper/50", isGmOrAdmin ? "text-[10px]" : "text-xs")}>
-                  {section.count} voci
-                </span>
+              <div className="sticky top-0 z-[1] flex flex-wrap items-baseline justify-between gap-2 border-b border-barber-gold/25 bg-barber-dark/95 px-4 py-3 backdrop-blur-sm">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-barber-gold">{section.label}</h3>
+                <span className="text-xs text-barber-paper/50">{section.count} voci</span>
               </div>
               <ul className="divide-y divide-barber-gold/10">{section.items.map((e) => renderEntityRow(e))}</ul>
             </section>

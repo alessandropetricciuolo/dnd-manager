@@ -2,106 +2,14 @@
 
 ## Snapshot
 
-* Data aggiornamento: 2026-06-27T06:44:23.017Z
+* Data aggiornamento: 2026-07-01T06:12:23.305Z
 * Branch corrente: main
-* Ultimo commit analizzato: 312a24da6d8694a6a5da1b7e210c5d5f87c73eff
-* Range commit analizzato: d416b32..312a24d
-* Stato generale: 145 voci NEEDS_REVIEW
-* Voci totali: 145 (NEEDS_REVIEW: 145, TO_IMPORT: 0, IMPORTED: 0)
+* Ultimo commit analizzato: 2a187dffa72accb8950d83f5be0b318eac0858de
+* Range commit analizzato: 874262e..2a187df
+* Stato generale: 62 voci NEEDS_REVIEW
+* Voci totali: 162 (NEEDS_REVIEW: 62, TO_IMPORT: 24, IMPORTED: 0)
 
 ## Delta automatico non revisionato
-
-### [BD-GMFLOW-041d96c-001] WIKI: create-entity-dialog.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-WIKI
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/wiki/create-entity-dialog.tsx` modificato nel commit «feat(wiki): add prompt-based iterative image refinement after first generation.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/wiki/create-entity-dialog.tsx
-
-File gmflow probabili:
-
-* src/components/wiki/create-entity-dialog.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-041d96c-002] WIKI: edit-entity-dialog.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-WIKI
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/wiki/edit-entity-dialog.tsx` modificato nel commit «feat(wiki): add prompt-based iterative image refinement after first generation.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/wiki/edit-entity-dialog.tsx
-
-File gmflow probabili:
-
-* src/components/wiki/edit-entity-dialog.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
 ### [BD-GMFLOW-041d96c-003] AI: wiki-image-refine-chat.tsx (aggiunto)
 
@@ -136,1127 +44,6 @@ File B&D coinvolti:
 File gmflow probabili:
 
 * src/components/wiki/wiki-image-refine-chat.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-041d96c-004] WIKI: wiki-image-chat.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-WIKI
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/lib/actions/wiki-image-chat.ts` aggiunto nel commit «feat(wiki): add prompt-based iterative image refinement after first generation.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/lib/actions/wiki-image-chat.ts
-
-File gmflow probabili:
-
-* src/lib/actions/wiki-image-chat.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-041d96c-005] AI: image-refine-prompt.test.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/lib/ai/__tests__/image-refine-prompt.test.ts` aggiunto nel commit «feat(wiki): add prompt-based iterative image refinement after first generation.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/lib/ai/__tests__/image-refine-prompt.test.ts
-
-File gmflow probabili:
-
-* src/lib/ai/__tests__/image-refine-prompt.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-041d96c-006] AI: image-provider.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/lib/ai/image-provider.ts` modificato nel commit «feat(wiki): add prompt-based iterative image refinement after first generation.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/lib/ai/image-provider.ts
-
-File gmflow probabili:
-
-* src/lib/ai/image-provider.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-041d96c-007] AI: image-reference-fetch.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/lib/ai/image-reference-fetch.ts` aggiunto nel commit «feat(wiki): add prompt-based iterative image refinement after first generation.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/lib/ai/image-reference-fetch.ts
-
-File gmflow probabili:
-
-* src/lib/ai/image-reference-fetch.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-041d96c-008] AI: image-refine-prompt.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/lib/ai/image-refine-prompt.ts` aggiunto nel commit «feat(wiki): add prompt-based iterative image refinement after first generation.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/lib/ai/image-refine-prompt.ts
-
-File gmflow probabili:
-
-* src/lib/ai/image-refine-prompt.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-041d96c-009] AI: openrouter-provider.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/lib/image-benchmark/providers/openrouter-provider.ts` modificato nel commit «feat(wiki): add prompt-based iterative image refinement after first generation.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/lib/image-benchmark/providers/openrouter-provider.ts
-
-File gmflow probabili:
-
-* src/lib/image-benchmark/providers/openrouter-provider.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-041d96c-010] OTHER: types.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/lib/image-benchmark/types.ts` modificato nel commit «feat(wiki): add prompt-based iterative image refinement after first generation.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/lib/image-benchmark/types.ts
-
-File gmflow probabili:
-
-* src/lib/image-benchmark/types.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-82f09ac-001] WIKI: create-entity-dialog.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-WIKI
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/wiki/create-entity-dialog.tsx` modificato nel commit «fix(wiki): persist AI portrait preset when creating wiki entities». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/wiki/create-entity-dialog.tsx
-
-File gmflow probabili:
-
-* src/components/wiki/create-entity-dialog.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-82f09ac-002] OTHER: image-url.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/lib/image-url.ts` modificato nel commit «fix(wiki): persist AI portrait preset when creating wiki entities». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/lib/image-url.ts
-
-File gmflow probabili:
-
-* src/lib/image-url.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-365f9c0-001] OTHER: export-feature-to-gmflow.md (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `.cursor/commands/export-feature-to-gmflow.md` aggiunto nel commit «chore(gmflow): add export ledger automation and Cursor workflow». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* .cursor/commands/export-feature-to-gmflow.md
-
-File gmflow probabili:
-
-* src/.cursor/commands/export-feature-to-gmflow.md
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-365f9c0-002] OTHER: bnd-export-agent.mdc (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `.cursor/rules/bnd-export-agent.mdc` aggiunto nel commit «chore(gmflow): add export ledger automation and Cursor workflow». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* .cursor/rules/bnd-export-agent.mdc
-
-File gmflow probabili:
-
-* src/.cursor/rules/bnd-export-agent.mdc
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-365f9c0-003] OTHER: .gitignore (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `.gitignore` modificato nel commit «chore(gmflow): add export ledger automation and Cursor workflow». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* .gitignore
-
-File gmflow probabili:
-
-* src/.gitignore
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-365f9c0-004] OTHER: package.json (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `package.json` modificato nel commit «chore(gmflow): add export ledger automation and Cursor workflow». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* package.json
-
-File gmflow probabili:
-
-* src/package.json
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-365f9c0-005] OTHER: install-post-commit-hook.mjs (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `scripts/gmflow-export/install-post-commit-hook.mjs` aggiunto nel commit «chore(gmflow): add export ledger automation and Cursor workflow». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* scripts/gmflow-export/install-post-commit-hook.mjs
-
-File gmflow probabili:
-
-* src/scripts/gmflow-export/install-post-commit-hook.mjs
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-365f9c0-006] OTHER: update-gmflow-export-ledger.mjs (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `scripts/gmflow-export/update-gmflow-export-ledger.mjs` aggiunto nel commit «chore(gmflow): add export ledger automation and Cursor workflow». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* scripts/gmflow-export/update-gmflow-export-ledger.mjs
-
-File gmflow probabili:
-
-* src/scripts/gmflow-export/update-gmflow-export-ledger.mjs
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-e4e9d49-001] OTHER: update-gmflow-export-ledger.mjs (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `scripts/gmflow-export/update-gmflow-export-ledger.mjs` modificato nel commit «fix(gmflow): skip ledger rewrite on export-only commits». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* scripts/gmflow-export/update-gmflow-export-ledger.mjs
-
-File gmflow probabili:
-
-* src/scripts/gmflow-export/update-gmflow-export-ledger.mjs
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-688720b-001] AI: skill-expertise-ac.test.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/lib/sheet-generator/__tests__/skill-expertise-ac.test.ts` aggiunto nel commit «feat(sheet-generator): add expertise, bard skills, and realistic AC rules». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/lib/sheet-generator/__tests__/skill-expertise-ac.test.ts
-
-File gmflow probabili:
-
-* src/lib/sheet-generator/__tests__/skill-expertise-ac.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-688720b-002] AI: armor-class.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/lib/sheet-generator/armor-class.ts` modificato nel commit «feat(sheet-generator): add expertise, bard skills, and realistic AC rules». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/lib/sheet-generator/armor-class.ts
-
-File gmflow probabili:
-
-* src/lib/sheet-generator/armor-class.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-688720b-003] AI: build-choices-client.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/lib/sheet-generator/build-choices-client.ts` modificato nel commit «feat(sheet-generator): add expertise, bard skills, and realistic AC rules». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/lib/sheet-generator/build-choices-client.ts
-
-File gmflow probabili:
-
-* src/lib/sheet-generator/build-choices-client.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-688720b-004] AI: build-choices-types.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/lib/sheet-generator/build-choices-types.ts` modificato nel commit «feat(sheet-generator): add expertise, bard skills, and realistic AC rules». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/lib/sheet-generator/build-choices-types.ts
-
-File gmflow probabili:
-
-* src/lib/sheet-generator/build-choices-types.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-688720b-005] AI: build-choices.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/lib/sheet-generator/build-choices.ts` modificato nel commit «feat(sheet-generator): add expertise, bard skills, and realistic AC rules». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/lib/sheet-generator/build-choices.ts
-
-File gmflow probabili:
-
-* src/lib/sheet-generator/build-choices.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-688720b-006] AI: build-engine.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/lib/sheet-generator/build-engine.ts` modificato nel commit «feat(sheet-generator): add expertise, bard skills, and realistic AC rules». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/lib/sheet-generator/build-engine.ts
-
-File gmflow probabili:
-
-* src/lib/sheet-generator/build-engine.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-688720b-007] AI: skill-rules.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/lib/sheet-generator/skill-rules.ts` aggiunto nel commit «feat(sheet-generator): add expertise, bard skills, and realistic AC rules». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/lib/sheet-generator/skill-rules.ts
-
-File gmflow probabili:
-
-* src/lib/sheet-generator/skill-rules.ts
 
 Rischi:
 
@@ -1327,142 +114,6 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 * OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-fef9b75-001] WIKI: wiki-bestiary-search-actions.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-WIKI
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/lib/actions/wiki-bestiary-search-actions.ts` modificato nel commit «feat(wiki): list individual statblocks from multi-creature bestiary chunks». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/lib/actions/wiki-bestiary-search-actions.ts
-
-File gmflow probabili:
-
-* src/lib/actions/wiki-bestiary-search-actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-fef9b75-002] OTHER: bestiary-statblock-parser.test.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/lib/manuals/__tests__/bestiary-statblock-parser.test.ts` aggiunto nel commit «feat(wiki): list individual statblocks from multi-creature bestiary chunks». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/lib/manuals/__tests__/bestiary-statblock-parser.test.ts
-
-File gmflow probabili:
-
-* src/lib/manuals/__tests__/bestiary-statblock-parser.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-fef9b75-003] OTHER: bestiary-statblock-parser.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/lib/manuals/bestiary-statblock-parser.ts` aggiunto nel commit «feat(wiki): list individual statblocks from multi-creature bestiary chunks». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/lib/manuals/bestiary-statblock-parser.ts
-
-File gmflow probabili:
-
-* src/lib/manuals/bestiary-statblock-parser.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
 ### [BD-GMFLOW-94b0f4e-001] OTHER: adr-map-scene-editor.md (aggiunto)
 
@@ -1960,98 +611,6 @@ File gmflow probabili:
 Rischi:
 
 * Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-94b0f4e-012] UI_UX: scene-editor-canvas.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-UI_UX
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/scene-editor/scene-editor-canvas.tsx` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Miglioramento interfaccia — valutare design system gmflow.
-
-Adattamenti necessari:
-
-* i18n
-
-File B&D coinvolti:
-
-* src/components/scene-editor/scene-editor-canvas.tsx
-
-File gmflow probabili:
-
-* src/components/scene-editor/scene-editor-canvas.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Divergenza design system / CSS tema
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-94b0f4e-013] UI_UX: scene-editor-client.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-UI_UX
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/scene-editor/scene-editor-client.tsx` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Miglioramento interfaccia — valutare design system gmflow.
-
-Adattamenti necessari:
-
-* i18n
-
-File B&D coinvolti:
-
-* src/components/scene-editor/scene-editor-client.tsx
-
-File gmflow probabili:
-
-* src/components/scene-editor/scene-editor-client.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Divergenza design system / CSS tema
 
 Decisioni richieste:
 
@@ -3639,10 +2198,1738 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
-### [BD-GMFLOW-94b0f4e-049] DATABASE: 20260628120000_scene_documents_and_map_source.sql (aggiunto)
+### [BD-GMFLOW-3cf1907-001] CAMPAIGNS: page.tsx (modificato)
 
 Stato:
 NEEDS_REVIEW
+
+Categoria:
+CAMPAIGNS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/campaigns/[id]/gm-only/vista-dall-alto/page.tsx` modificato nel commit «fix(maps): sync Scene Editor scenes to Esplorazione e FoW on create.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Logica campagne potenzialmente generalizzabile per multi-tenant.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/campaigns/[id]/gm-only/vista-dall-alto/page.tsx
+
+File gmflow probabili:
+
+* src/app/campaigns/[id]/gm-only/vista-dall-alto/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-3cf1907-002] CAMPAIGNS: scene-document-actions.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+CAMPAIGNS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/campaigns/scene-document-actions.ts` modificato nel commit «fix(maps): sync Scene Editor scenes to Esplorazione e FoW on create.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Logica campagne potenzialmente generalizzabile per multi-tenant.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/campaigns/scene-document-actions.ts
+
+File gmflow probabili:
+
+* src/app/campaigns/scene-document-actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-3cf1907-003] UI_UX: vista-dall-alto-client.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/exploration/vista-dall-alto-client.tsx` modificato nel commit «fix(maps): sync Scene Editor scenes to Esplorazione e FoW on create.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/exploration/vista-dall-alto-client.tsx
+
+File gmflow probabili:
+
+* src/components/exploration/vista-dall-alto-client.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-3cf1907-004] UI_UX: scene-editor-list-actions.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/scene-editor/scene-editor-list-actions.tsx` modificato nel commit «fix(maps): sync Scene Editor scenes to Esplorazione e FoW on create.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/scene-editor/scene-editor-list-actions.tsx
+
+File gmflow probabili:
+
+* src/components/scene-editor/scene-editor-list-actions.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-3cf1907-005] OTHER: floor-raster.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/raster-export/floor-raster.ts` modificato nel commit «fix(maps): sync Scene Editor scenes to Esplorazione e FoW on create.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/raster-export/floor-raster.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/raster-export/floor-raster.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-f9bcd77-001] CAMPAIGNS: scene-document-actions.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+CAMPAIGNS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/campaigns/scene-document-actions.ts` modificato nel commit «fix(maps): upload full Scene Editor rasters from FormData on save.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Logica campagne potenzialmente generalizzabile per multi-tenant.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/campaigns/scene-document-actions.ts
+
+File gmflow probabili:
+
+* src/app/campaigns/scene-document-actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-f9bcd77-002] UI_UX: scene-editor-client.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/scene-editor/scene-editor-client.tsx` modificato nel commit «fix(maps): upload full Scene Editor rasters from FormData on save.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/scene-editor/scene-editor-client.tsx
+
+File gmflow probabili:
+
+* src/components/scene-editor/scene-editor-client.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-f9bcd77-003] MEDIA_STORAGE: exploration-map-upload-core.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+MEDIA_STORAGE
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/exploration/exploration-map-upload-core.ts` modificato nel commit «fix(maps): upload full Scene Editor rasters from FormData on save.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Upload/storage media — adattare a R2 o storage gmflow.
+
+Adattamenti necessari:
+
+* Storage R2
+
+File B&D coinvolti:
+
+* src/lib/exploration/exploration-map-upload-core.ts
+
+File gmflow probabili:
+
+* src/lib/exploration/exploration-map-upload-core.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza storage B&D (Telegram) vs gmflow (R2)
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Quale adapter storage usare in gmflow?
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-f9bcd77-004] OTHER: scene-document.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core-bd/scene-document.ts` modificato nel commit «fix(maps): upload full Scene Editor rasters from FormData on save.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core-bd/scene-document.ts
+
+File gmflow probabili:
+
+* src/lib/map-core-bd/scene-document.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-f9bcd77-005] OTHER: floor-raster.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/raster-export/floor-raster.ts` modificato nel commit «fix(maps): upload full Scene Editor rasters from FormData on save.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/raster-export/floor-raster.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/raster-export/floor-raster.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-874262e-001] WIKI: wiki-bestiary-search-actions.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+WIKI
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/actions/wiki-bestiary-search-actions.ts` modificato nel commit «fix(bestiary): map each monster to the chunk that owns its statblock.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/lib/actions/wiki-bestiary-search-actions.ts
+
+File gmflow probabili:
+
+* src/lib/actions/wiki-bestiary-search-actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-874262e-002] OTHER: bestiary-statblock-parser.test.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/manuals/__tests__/bestiary-statblock-parser.test.ts` modificato nel commit «fix(bestiary): map each monster to the chunk that owns its statblock.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/manuals/__tests__/bestiary-statblock-parser.test.ts
+
+File gmflow probabili:
+
+* src/lib/manuals/__tests__/bestiary-statblock-parser.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-874262e-003] OTHER: bestiary-statblock-parser.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/manuals/bestiary-statblock-parser.ts` modificato nel commit «fix(bestiary): map each monster to the chunk that owns its statblock.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/manuals/bestiary-statblock-parser.ts
+
+File gmflow probabili:
+
+* src/lib/manuals/bestiary-statblock-parser.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-2a187df-001] WIKI: wiki-list-client.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+WIKI
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/wiki/wiki-list-client.tsx` modificato nel commit «feat(wiki): GM column board grouped by entity type per mission». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/wiki/wiki-list-client.tsx
+
+File gmflow probabili:
+
+* src/components/wiki/wiki-list-client.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+## Modifiche revisionate manualmente
+
+### [BD-GMFLOW-PKG-2026-06-28-001] Package: Nuove funzioni e bugfix (no RLS, no grafica)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* Export consolidato: AI refinement, full-body framing, sheet generator, bestiary parser, union auto-walls, auth app-layer. Esclusi RLS e modifiche grafiche.
+
+Perché potrebbe servire a gmflow:
+
+* Porta miglioramenti funzionali post-giugno 2026 senza policy RLS B&D né restyling.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* RLS gmflow-native
+
+File B&D coinvolti:
+
+* docs/gmflow-export-packages/2026-06-28-features-bugfixes-export.md
+
+File gmflow probabili:
+
+* docs/imports/bd-gmflow-export-packages/2026-06-28-features-bugfixes-export.md
+
+Rischi:
+
+* Non importare RLS B&D
+* Auth guild potrebbe divergere da modello gmflow
+
+Decisioni richieste:
+
+* GM cross-campaign: globale o per-org in gmflow?
+
+Criterio di import completato:
+
+* Package importato e voci figlie a IMPORTED/PARTIALLY_IMPORTED
+* Zero CREATE POLICY da B&D
+* Test checklist superata
+
+### [BD-GMFLOW-041d96c-001] WIKI: create-entity-dialog.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+WIKI
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/wiki/create-entity-dialog.tsx` modificato nel commit «feat(wiki): add prompt-based iterative image refinement after first generation.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/wiki/create-entity-dialog.tsx
+
+File gmflow probabili:
+
+* src/components/wiki/create-entity-dialog.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-041d96c-002] WIKI: edit-entity-dialog.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+WIKI
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/wiki/edit-entity-dialog.tsx` modificato nel commit «feat(wiki): add prompt-based iterative image refinement after first generation.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/wiki/edit-entity-dialog.tsx
+
+File gmflow probabili:
+
+* src/components/wiki/edit-entity-dialog.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-041d96c-004] WIKI: wiki-image-chat.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+WIKI
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/actions/wiki-image-chat.ts` aggiunto nel commit «feat(wiki): add prompt-based iterative image refinement after first generation.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/lib/actions/wiki-image-chat.ts
+
+File gmflow probabili:
+
+* src/lib/actions/wiki-image-chat.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-041d96c-005] AI: image-refine-prompt.test.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/ai/__tests__/image-refine-prompt.test.ts` aggiunto nel commit «feat(wiki): add prompt-based iterative image refinement after first generation.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/ai/__tests__/image-refine-prompt.test.ts
+
+File gmflow probabili:
+
+* src/lib/ai/__tests__/image-refine-prompt.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-041d96c-006] AI: image-provider.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/ai/image-provider.ts` modificato nel commit «feat(wiki): add prompt-based iterative image refinement after first generation.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/ai/image-provider.ts
+
+File gmflow probabili:
+
+* src/lib/ai/image-provider.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-041d96c-007] AI: image-reference-fetch.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/ai/image-reference-fetch.ts` aggiunto nel commit «feat(wiki): add prompt-based iterative image refinement after first generation.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/ai/image-reference-fetch.ts
+
+File gmflow probabili:
+
+* src/lib/ai/image-reference-fetch.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-041d96c-008] AI: image-refine-prompt.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/ai/image-refine-prompt.ts` aggiunto nel commit «feat(wiki): add prompt-based iterative image refinement after first generation.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/ai/image-refine-prompt.ts
+
+File gmflow probabili:
+
+* src/lib/ai/image-refine-prompt.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-041d96c-009] AI: openrouter-provider.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/image-benchmark/providers/openrouter-provider.ts` modificato nel commit «feat(wiki): add prompt-based iterative image refinement after first generation.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/image-benchmark/providers/openrouter-provider.ts
+
+File gmflow probabili:
+
+* src/lib/image-benchmark/providers/openrouter-provider.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-041d96c-010] OTHER: types.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/image-benchmark/types.ts` modificato nel commit «feat(wiki): add prompt-based iterative image refinement after first generation.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/image-benchmark/types.ts
+
+File gmflow probabili:
+
+* src/lib/image-benchmark/types.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-82f09ac-001] WIKI: create-entity-dialog.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+WIKI
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/wiki/create-entity-dialog.tsx` modificato nel commit «fix(wiki): persist AI portrait preset when creating wiki entities». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/wiki/create-entity-dialog.tsx
+
+File gmflow probabili:
+
+* src/components/wiki/create-entity-dialog.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-82f09ac-002] OTHER: image-url.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/image-url.ts` modificato nel commit «fix(wiki): persist AI portrait preset when creating wiki entities». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/image-url.ts
+
+File gmflow probabili:
+
+* src/lib/image-url.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-688720b-001] AI: skill-expertise-ac.test.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/sheet-generator/__tests__/skill-expertise-ac.test.ts` aggiunto nel commit «feat(sheet-generator): add expertise, bard skills, and realistic AC rules». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/sheet-generator/__tests__/skill-expertise-ac.test.ts
+
+File gmflow probabili:
+
+* src/lib/sheet-generator/__tests__/skill-expertise-ac.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-688720b-002] AI: armor-class.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/sheet-generator/armor-class.ts` modificato nel commit «feat(sheet-generator): add expertise, bard skills, and realistic AC rules». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/sheet-generator/armor-class.ts
+
+File gmflow probabili:
+
+* src/lib/sheet-generator/armor-class.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-688720b-003] AI: build-choices-client.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/sheet-generator/build-choices-client.ts` modificato nel commit «feat(sheet-generator): add expertise, bard skills, and realistic AC rules». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/sheet-generator/build-choices-client.ts
+
+File gmflow probabili:
+
+* src/lib/sheet-generator/build-choices-client.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-688720b-004] AI: build-choices-types.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/sheet-generator/build-choices-types.ts` modificato nel commit «feat(sheet-generator): add expertise, bard skills, and realistic AC rules». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/sheet-generator/build-choices-types.ts
+
+File gmflow probabili:
+
+* src/lib/sheet-generator/build-choices-types.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-688720b-005] AI: build-choices.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/sheet-generator/build-choices.ts` modificato nel commit «feat(sheet-generator): add expertise, bard skills, and realistic AC rules». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/sheet-generator/build-choices.ts
+
+File gmflow probabili:
+
+* src/lib/sheet-generator/build-choices.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-688720b-006] AI: build-engine.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/sheet-generator/build-engine.ts` modificato nel commit «feat(sheet-generator): add expertise, bard skills, and realistic AC rules». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/sheet-generator/build-engine.ts
+
+File gmflow probabili:
+
+* src/lib/sheet-generator/build-engine.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-688720b-007] AI: skill-rules.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/sheet-generator/skill-rules.ts` aggiunto nel commit «feat(sheet-generator): add expertise, bard skills, and realistic AC rules». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/sheet-generator/skill-rules.ts
+
+File gmflow probabili:
+
+* src/lib/sheet-generator/skill-rules.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-fef9b75-001] WIKI: wiki-bestiary-search-actions.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+WIKI
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/actions/wiki-bestiary-search-actions.ts` modificato nel commit «feat(wiki): list individual statblocks from multi-creature bestiary chunks». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/lib/actions/wiki-bestiary-search-actions.ts
+
+File gmflow probabili:
+
+* src/lib/actions/wiki-bestiary-search-actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-fef9b75-002] OTHER: bestiary-statblock-parser.test.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/manuals/__tests__/bestiary-statblock-parser.test.ts` aggiunto nel commit «feat(wiki): list individual statblocks from multi-creature bestiary chunks». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/manuals/__tests__/bestiary-statblock-parser.test.ts
+
+File gmflow probabili:
+
+* src/lib/manuals/__tests__/bestiary-statblock-parser.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-fef9b75-003] OTHER: bestiary-statblock-parser.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/manuals/bestiary-statblock-parser.ts` aggiunto nel commit «feat(wiki): list individual statblocks from multi-creature bestiary chunks». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/manuals/bestiary-statblock-parser.ts
+
+File gmflow probabili:
+
+* src/lib/manuals/bestiary-statblock-parser.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-94b0f4e-049] DATABASE: 20260628120000_scene_documents_and_map_source.sql (aggiunto)
+
+Stato:
+TO_IMPORT
 
 Categoria:
 DATABASE
@@ -3687,10 +3974,466 @@ Criterio di import completato:
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 * RLS/policy verificate per multi-tenant
 
+### [BD-GMFLOW-c75aa38-001] CAMPAIGNS: character-actions.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+CAMPAIGNS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/campaigns/character-actions.ts` modificato nel commit «fix(authz): restore guild-wide GM access to all campaigns.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Logica campagne potenzialmente generalizzabile per multi-tenant.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/campaigns/character-actions.ts
+
+File gmflow probabili:
+
+* src/app/campaigns/character-actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+## Modifiche da NON importare
+
+### [BD-GMFLOW-365f9c0-001] OTHER: export-feature-to-gmflow.md (aggiunto)
+
+Stato:
+BD_ONLY
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `.cursor/commands/export-feature-to-gmflow.md` aggiunto nel commit «chore(gmflow): add export ledger automation and Cursor workflow». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* .cursor/commands/export-feature-to-gmflow.md
+
+File gmflow probabili:
+
+* src/.cursor/commands/export-feature-to-gmflow.md
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-365f9c0-002] OTHER: bnd-export-agent.mdc (aggiunto)
+
+Stato:
+BD_ONLY
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `.cursor/rules/bnd-export-agent.mdc` aggiunto nel commit «chore(gmflow): add export ledger automation and Cursor workflow». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* .cursor/rules/bnd-export-agent.mdc
+
+File gmflow probabili:
+
+* src/.cursor/rules/bnd-export-agent.mdc
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-365f9c0-003] OTHER: .gitignore (modificato)
+
+Stato:
+BD_ONLY
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `.gitignore` modificato nel commit «chore(gmflow): add export ledger automation and Cursor workflow». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* .gitignore
+
+File gmflow probabili:
+
+* src/.gitignore
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-365f9c0-004] OTHER: package.json (modificato)
+
+Stato:
+BD_ONLY
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `package.json` modificato nel commit «chore(gmflow): add export ledger automation and Cursor workflow». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* package.json
+
+File gmflow probabili:
+
+* src/package.json
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-365f9c0-005] OTHER: install-post-commit-hook.mjs (aggiunto)
+
+Stato:
+BD_ONLY
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `scripts/gmflow-export/install-post-commit-hook.mjs` aggiunto nel commit «chore(gmflow): add export ledger automation and Cursor workflow». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* scripts/gmflow-export/install-post-commit-hook.mjs
+
+File gmflow probabili:
+
+* src/scripts/gmflow-export/install-post-commit-hook.mjs
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-365f9c0-006] OTHER: update-gmflow-export-ledger.mjs (aggiunto)
+
+Stato:
+BD_ONLY
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `scripts/gmflow-export/update-gmflow-export-ledger.mjs` aggiunto nel commit «chore(gmflow): add export ledger automation and Cursor workflow». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* scripts/gmflow-export/update-gmflow-export-ledger.mjs
+
+File gmflow probabili:
+
+* src/scripts/gmflow-export/update-gmflow-export-ledger.mjs
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-e4e9d49-001] OTHER: update-gmflow-export-ledger.mjs (modificato)
+
+Stato:
+DISCARDED
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `scripts/gmflow-export/update-gmflow-export-ledger.mjs` modificato nel commit «fix(gmflow): skip ledger rewrite on export-only commits». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* scripts/gmflow-export/update-gmflow-export-ledger.mjs
+
+File gmflow probabili:
+
+* src/scripts/gmflow-export/update-gmflow-export-ledger.mjs
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-94b0f4e-012] UI_UX: scene-editor-canvas.tsx (aggiunto)
+
+Stato:
+DISCARDED
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/scene-editor/scene-editor-canvas.tsx` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/scene-editor/scene-editor-canvas.tsx
+
+File gmflow probabili:
+
+* src/components/scene-editor/scene-editor-canvas.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-94b0f4e-013] UI_UX: scene-editor-client.tsx (aggiunto)
+
+Stato:
+DISCARDED
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/scene-editor/scene-editor-client.tsx` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/scene-editor/scene-editor-client.tsx
+
+File gmflow probabili:
+
+* src/components/scene-editor/scene-editor-client.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
 ### [BD-GMFLOW-be804da-001] OTHER: adr-map-scene-editor.md (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 OTHER
@@ -3735,7 +4478,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-be804da-002] CAMPAIGNS: page.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 CAMPAIGNS
@@ -3782,7 +4525,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-be804da-003] CAMPAIGNS: scene-document-actions.ts (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 CAMPAIGNS
@@ -3829,7 +4572,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-be804da-004] UI_UX: vista-dall-alto-client.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 UI_UX
@@ -3875,7 +4618,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-be804da-005] GM_SCREEN: gm-exploration-fow-sheet.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 GM_SCREEN
@@ -3921,7 +4664,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-be804da-006] UI_UX: scene-editor-canvas.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 UI_UX
@@ -3967,7 +4710,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-be804da-007] UI_UX: scene-editor-client.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 UI_UX
@@ -4013,7 +4756,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-be804da-008] UI_UX: scene-editor-list-actions.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 UI_UX
@@ -4059,7 +4802,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-be804da-009] MEDIA_STORAGE: exploration-storage.ts (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 MEDIA_STORAGE
@@ -4106,7 +4849,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-be804da-010] OTHER: auto-walls.test.ts (aggiunto)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 OTHER
@@ -4151,7 +4894,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-be804da-011] OTHER: floor-raster.ts (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 OTHER
@@ -4196,7 +4939,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-be804da-012] OTHER: auto-walls.ts (aggiunto)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 OTHER
@@ -4241,7 +4984,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-be804da-013] OTHER: draw-floor.ts (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 OTHER
@@ -4286,7 +5029,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-be804da-014] OTHER: draw-props-svg.ts (aggiunto)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 OTHER
@@ -4331,7 +5074,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-be804da-015] OTHER: ds-renderer.ts (aggiunto)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 OTHER
@@ -4376,7 +5119,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-be804da-016] OTHER: clone-document.ts (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 OTHER
@@ -4421,7 +5164,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-be804da-017] OTHER: index.ts (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 OTHER
@@ -4466,7 +5209,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-be804da-018] OTHER: layer-presets.ts (aggiunto)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 OTHER
@@ -4511,7 +5254,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-be804da-019] OTHER: normalize-floor.ts (aggiunto)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 OTHER
@@ -4556,7 +5299,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-be804da-020] OTHER: props-catalog.ts (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 OTHER
@@ -4601,7 +5344,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-be804da-021] OTHER: types.ts (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 OTHER
@@ -4646,7 +5389,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-be804da-022] OTHER: validate.ts (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 OTHER
@@ -4691,7 +5434,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-001] OTHER: package-lock.json (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 OTHER
@@ -4736,7 +5479,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-002] OTHER: package.json (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 OTHER
@@ -4781,7 +5524,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-003] AI: page.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 AI
@@ -4833,7 +5576,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-004] AI: page.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 AI
@@ -4885,7 +5628,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-005] ADMIN: admin-audio-library-client.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 ADMIN
@@ -4931,7 +5674,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-006] ADMIN: character-catalog-import-client.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 ADMIN
@@ -4977,7 +5720,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-007] ADMIN: page.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 ADMIN
@@ -5023,7 +5766,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-008] ADMIN: page.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 ADMIN
@@ -5069,7 +5812,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-009] ADMIN: page.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 ADMIN
@@ -5115,7 +5858,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-010] ADMIN: page.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 ADMIN
@@ -5161,7 +5904,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-011] ADMIN: page.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 ADMIN
@@ -5207,7 +5950,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-012] ADMIN: page.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 ADMIN
@@ -5253,7 +5996,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-013] ADMIN: page.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 ADMIN
@@ -5299,7 +6042,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-014] ADMIN: page.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 ADMIN
@@ -5345,7 +6088,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-015] ADMIN: layout.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 ADMIN
@@ -5391,7 +6134,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-016] MEDIA_STORAGE: page.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 MEDIA_STORAGE
@@ -5438,7 +6181,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-017] ADMIN: page.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 ADMIN
@@ -5484,7 +6227,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-018] CAMPAIGNS: page.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 CAMPAIGNS
@@ -5531,7 +6274,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-019] ADMIN: page.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 ADMIN
@@ -5577,7 +6320,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-020] CAMPAIGNS: page.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 CAMPAIGNS
@@ -5624,7 +6367,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-021] CAMPAIGNS: page.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 CAMPAIGNS
@@ -5671,7 +6414,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-022] CAMPAIGNS: page.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 CAMPAIGNS
@@ -5718,7 +6461,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-023] CAMPAIGNS: page.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 CAMPAIGNS
@@ -5765,7 +6508,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-024] AI: page.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 AI
@@ -5817,7 +6560,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-025] CAMPAIGNS: page.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 CAMPAIGNS
@@ -5864,7 +6607,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-026] CAMPAIGNS: campaign-workspace.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 CAMPAIGNS
@@ -5911,7 +6654,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-027] UI_UX: layout-conditional-navbar.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 UI_UX
@@ -5957,7 +6700,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-028] UI_UX: scene-editor-canvas.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 UI_UX
@@ -6003,7 +6746,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-029] UI_UX: scene-editor-client.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 UI_UX
@@ -6049,7 +6792,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-030] UI_UX: scene-editor-tool-overlay.tsx (aggiunto)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 UI_UX
@@ -6095,7 +6838,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-031] OTHER: shell-classes.ts (aggiunto)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 OTHER
@@ -6140,7 +6883,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-032] OTHER: auto-walls.test.ts (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 OTHER
@@ -6185,7 +6928,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-033] OTHER: corridor-geometry.test.ts (aggiunto)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 OTHER
@@ -6230,7 +6973,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-034] OTHER: union-boundary-edges.test.ts (aggiunto)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 OTHER
@@ -6275,7 +7018,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-035] OTHER: auto-walls.ts (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 OTHER
@@ -6320,7 +7063,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-036] OTHER: corridor-geometry.ts (aggiunto)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 OTHER
@@ -6365,7 +7108,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-037] OTHER: draw-floor.ts (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 OTHER
@@ -6410,7 +7153,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-038] OTHER: ds-renderer.ts (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 OTHER
@@ -6455,7 +7198,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-e9c93e5-039] OTHER: union-boundary-edges.ts (aggiunto)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 OTHER
@@ -6500,7 +7243,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-312a24d-001] ADMIN: gm-admin-session-history-panel.tsx (aggiunto)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 ADMIN
@@ -6546,7 +7289,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-312a24d-002] ADMIN: gm-admin-session-history-section.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 ADMIN
@@ -6592,7 +7335,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-312a24d-003] SESSIONS: my-sessions-list-client.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 SESSIONS
@@ -6638,7 +7381,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-312a24d-004] SESSIONS: completed-sessions-list-for-player.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 SESSIONS
@@ -6684,7 +7427,7 @@ Criterio di import completato:
 ### [BD-GMFLOW-312a24d-005] SESSIONS: session-history-manager.tsx (modificato)
 
 Stato:
-NEEDS_REVIEW
+DISCARDED
 
 Categoria:
 SESSIONS
@@ -6727,17 +7470,80 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
-## Modifiche revisionate manualmente
+### [BD-GMFLOW-c75aa38-002] DATABASE: 20260626140000_guild_gm_full_campaign_access.sql (aggiunto)
 
-_Nessuna voce revisionata._
+Stato:
+DISCARDED
 
-## Modifiche da NON importare
+Categoria:
+DATABASE
 
-_Nessuna voce esclusa o in decisione._
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `supabase/migrations/20260626140000_guild_gm_full_campaign_access.sql` aggiunto nel commit «fix(authz): restore guild-wide GM access to all campaigns.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schema o migrazione DB — valutare impatto RLS e tenant isolation.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* sicurezza
+
+File B&D coinvolti:
+
+* supabase/migrations/20260626140000_guild_gm_full_campaign_access.sql
+
+File gmflow probabili:
+
+* supabase/migrations/20260626140000_guild_gm_full_campaign_access.sql
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Impatto RLS / isolamento tenant
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* RLS/policy verificate per multi-tenant
 
 ## Coda import consigliata
 
-_Coda vuota — promuovere voci da NEEDS_REVIEW a TO_IMPORT dopo revisione._
+- **[BD-GMFLOW-PKG-2026-06-28-001]** Package: Nuove funzioni e bugfix (no RLS, no grafica) — priorità Alta (OTHER)
+- **[BD-GMFLOW-041d96c-005]** AI: image-refine-prompt.test.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-041d96c-006]** AI: image-provider.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-041d96c-007]** AI: image-reference-fetch.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-041d96c-008]** AI: image-refine-prompt.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-041d96c-009]** AI: openrouter-provider.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-688720b-001]** AI: skill-expertise-ac.test.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-688720b-002]** AI: armor-class.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-688720b-003]** AI: build-choices-client.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-688720b-004]** AI: build-choices-types.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-688720b-005]** AI: build-choices.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-688720b-006]** AI: build-engine.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-688720b-007]** AI: skill-rules.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-94b0f4e-049]** DATABASE: 20260628120000_scene_documents_and_map_source.sql (aggiunto) — priorità Alta (DATABASE)
+- **[BD-GMFLOW-041d96c-001]** WIKI: create-entity-dialog.tsx (modificato) — priorità Media (WIKI)
+- **[BD-GMFLOW-041d96c-002]** WIKI: edit-entity-dialog.tsx (modificato) — priorità Media (WIKI)
+- **[BD-GMFLOW-041d96c-004]** WIKI: wiki-image-chat.ts (aggiunto) — priorità Media (WIKI)
+- **[BD-GMFLOW-041d96c-010]** OTHER: types.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-82f09ac-001]** WIKI: create-entity-dialog.tsx (modificato) — priorità Media (WIKI)
+- **[BD-GMFLOW-82f09ac-002]** OTHER: image-url.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-fef9b75-001]** WIKI: wiki-bestiary-search-actions.ts (modificato) — priorità Media (WIKI)
+- **[BD-GMFLOW-fef9b75-002]** OTHER: bestiary-statblock-parser.test.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-fef9b75-003]** OTHER: bestiary-statblock-parser.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-c75aa38-001]** CAMPAIGNS: character-actions.ts (modificato) — priorità Media (CAMPAIGNS)
 
 ## Sintesi per ChatGPT
 
@@ -6746,9 +7552,9 @@ Questo ledger traccia modifiche Barber & Dragons da valutare per import in gmflo
 
 - Repository sorgente: `/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App`
 - Repository gmflow locale: `/Users/alessandropetricciuolo/Desktop/masto-platform`
-- Ultimo commit: `312a24d` — feat(sessions): collapse session history into expandable panels
-- File analizzati nell'ultimo run: 5
-- Nuove voci aggiunte: 5
+- Ultimo commit: `2a187df` — feat(wiki): GM column board grouped by entity type per mission
+- File analizzati nell'ultimo run: 1
+- Nuove voci aggiunte: 1
 
 **Azioni consigliate:**
 1. Rivedere voci `NEEDS_REVIEW` nella sezione «Delta automatico».
