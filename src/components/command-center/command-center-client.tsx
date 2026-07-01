@@ -69,6 +69,7 @@ type CommandCenterClientProps = {
   initialAuditEvents: AppAuditEventRow[];
   campaigns: { id: string; name: string }[];
   initialCampaignId: string | null;
+  initialCenterView?: CenterView;
 };
 
 const NOTE_STATUS_LABELS: Record<CommandNoteStatus, string> = {
@@ -92,6 +93,7 @@ export function CommandCenterClient({
   initialAuditEvents,
   campaigns,
   initialCampaignId,
+  initialCenterView = "workspace",
 }: CommandCenterClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -102,7 +104,7 @@ export function CommandCenterClient({
   const [tasks, setTasks] = useState(initialTasks);
   const [pages, setPages] = useState(initialPages);
   const [auditEvents, setAuditEvents] = useState(initialAuditEvents);
-  const [centerView, setCenterView] = useState<CenterView>("workspace");
+  const [centerView, setCenterView] = useState<CenterView>(initialCenterView);
   const [campaignFilter, setCampaignFilter] = useState<string | "all">(
     initialCampaignId ?? "all"
   );
@@ -138,6 +140,27 @@ export function CommandCenterClient({
     },
     [router, searchParams]
   );
+
+  const setCenterViewInUrl = useCallback(
+    (view: CenterView) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (view === "assistant") params.set("view", "assistant");
+      else params.delete("view");
+      router.push(`/command-center?${params.toString()}`, { scroll: false });
+    },
+    [router, searchParams]
+  );
+
+  function handleCenterViewChange(view: CenterView) {
+    setCenterView(view);
+    setCenterViewInUrl(view);
+  }
+
+  function handleAssistantCampaignChange(campaignId: string | null) {
+    const next = campaignId ?? "all";
+    setCampaignFilter(next);
+    setCampaignInUrl(next);
+  }
 
   useEffect(() => {
     setNotes(initialNotes);
@@ -346,7 +369,7 @@ export function CommandCenterClient({
             <div className="flex rounded-md border border-barber-gold/30 p-0.5">
               <button
                 type="button"
-                onClick={() => setCenterView("workspace")}
+                onClick={() => handleCenterViewChange("workspace")}
                 className={cn(
                   "rounded px-2.5 py-1 text-xs font-medium transition-colors",
                   centerView === "workspace"
@@ -358,7 +381,7 @@ export function CommandCenterClient({
               </button>
               <button
                 type="button"
-                onClick={() => setCenterView("assistant")}
+                onClick={() => handleCenterViewChange("assistant")}
                 className={cn(
                   "flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium transition-colors",
                   centerView === "assistant"
@@ -392,7 +415,7 @@ export function CommandCenterClient({
           </div>
         </div>
 
-        <div className="mt-3 flex flex-col gap-1">
+        <div className={cn("mt-3 flex flex-col gap-1", centerView === "assistant" && "hidden")}>
           <VoiceInterimHint
             listening={captureVoice.isListening}
             interim={captureVoice.interimTranscript}
@@ -428,7 +451,8 @@ export function CommandCenterClient({
       </header>
 
       <div className="flex flex-1 flex-col lg:flex-row lg:overflow-hidden">
-        {/* Sidebar sinistra */}
+        {/* Sidebar sinistra — nascosta in vista assistente */}
+        {centerView !== "assistant" ? (
         <aside className="flex w-full flex-col border-b border-barber-gold/20 lg:w-72 lg:border-b-0 lg:border-r">
           <div className="flex border-b border-barber-gold/20">
             {(
@@ -551,13 +575,22 @@ export function CommandCenterClient({
             )}
           </ScrollArea>
         </aside>
+        ) : null}
 
         {/* Centro */}
-        <main className="min-h-[280px] flex-1 p-4 md:p-6">
+        <main
+          className={cn(
+            "min-h-[280px] flex-1",
+            centerView === "assistant" ? "p-3 md:p-4" : "p-4 md:p-6"
+          )}
+        >
           {centerView === "assistant" ? (
             <AiAssistantPanel
               campaignId={campaignFilter === "all" ? null : campaignFilter}
+              campaigns={campaigns}
               noteId={selectedNote?.id ?? null}
+              onCampaignChange={handleAssistantCampaignChange}
+              fullBleed
             />
           ) : sidebarTab === "inbox" && selectedNote ? (
             <div className="mx-auto max-w-2xl space-y-4">
@@ -636,6 +669,7 @@ export function CommandCenterClient({
         </main>
 
         {/* Destra — collegamenti */}
+        {centerView !== "assistant" ? (
         <aside className="w-full border-t border-barber-gold/20 p-4 lg:w-72 lg:border-l lg:border-t-0">
           <div className="mb-3 flex items-center gap-2 text-sm font-medium text-barber-paper">
             <Link2 className="h-4 w-4 text-barber-gold" />
@@ -728,6 +762,7 @@ export function CommandCenterClient({
             <AuditTimeline events={auditEvents} />
           </div>
         </aside>
+        ) : null}
       </div>
     </div>
   );

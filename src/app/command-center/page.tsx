@@ -27,6 +27,8 @@ export default async function CommandCenterPage({ searchParams }: PageProps) {
   const sp = (await searchParams) ?? {};
   const campaignIdRaw = typeof sp.campaignId === "string" ? sp.campaignId : null;
   const campaignId = campaignIdRaw?.trim() || null;
+  const initialCenterView: "workspace" | "assistant" =
+    sp.view === "assistant" ? "assistant" : "workspace";
 
   const [notesRes, tasksRes, pagesRes, campaignsRes, auditRes] = await Promise.all([
     listCommandNotesAction(campaignId),
@@ -44,6 +46,7 @@ export default async function CommandCenterPage({ searchParams }: PageProps) {
       initialAuditEvents={auditRes.success ? auditRes.data ?? [] : []}
       campaigns={campaignsRes.success ? campaignsRes.data ?? [] : []}
       initialCampaignId={campaignId}
+      initialCenterView={initialCenterView}
     />
   );
 }

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, LayoutDashboard, User, UserCog, Shield, LogOut, ImageDown, Hammer, Landmark, Terminal } from "lucide-react";
+import { Menu, LayoutDashboard, User, UserCog, Shield, LogOut, ImageDown, Hammer, Landmark, Terminal, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { CreateCampaignDialog } from "@/components/create-campaign-dialog";
@@ -48,6 +48,12 @@ function NavLinks({
         <LayoutDashboard className="h-5 w-5 shrink-0" />
         Dashboard
       </Link>
+      {isGmOrAdmin && (
+        <Link href="/command-center?view=assistant" onClick={onNavigate} className={linkClass("/command-center")}>
+          <Sparkles className="h-5 w-5 shrink-0" />
+          Assistente GM
+        </Link>
+      )}
       {isGmOrAdmin && (
         <Link href="/command-center" onClick={onNavigate} className={linkClass("/command-center")}>
           <Terminal className="h-5 w-5 shrink-0" />

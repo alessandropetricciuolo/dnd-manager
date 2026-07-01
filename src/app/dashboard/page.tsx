@@ -1,10 +1,10 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { Sparkles, Terminal } from "lucide-react";
 
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
-import { Button } from "@/components/ui/button";
 import { CampaignList } from "@/components/campaign-list";
 import { MySessionsList } from "@/components/my-sessions-list";
 import { CalendarSessionsLoader } from "@/components/dashboard/calendar-sessions-loader";
@@ -95,14 +95,52 @@ export default async function DashboardPage() {
           </h1>
         </header>
 
+        {isGmOrAdmin ? (
+          <section className="grid gap-4 sm:grid-cols-2">
+            <Link
+              href="/command-center?view=assistant"
+              className="group relative overflow-hidden rounded-xl border border-barber-gold/35 bg-gradient-to-br from-barber-gold/15 via-barber-dark/90 to-barber-dark/95 p-5 transition-colors hover:border-barber-gold/55"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-barber-gold/80">
+                    AI · Command Center
+                  </p>
+                  <h2 className="mt-1 font-serif text-xl font-semibold text-barber-paper">
+                    Assistente GM
+                  </h2>
+                  <p className="mt-2 text-sm text-barber-paper/65">
+                    Crea NPC, luoghi e missioni in chat. Anteprima live a destra, conferma in conversazione.
+                  </p>
+                </div>
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-barber-gold/40 bg-barber-gold/15 text-barber-gold transition-transform group-hover:scale-105">
+                  <Sparkles className="h-5 w-5" />
+                </div>
+              </div>
+            </Link>
+            <Link
+              href="/command-center"
+              className="flex flex-col justify-between rounded-xl border border-barber-gold/25 bg-barber-dark/80 p-5 transition-colors hover:border-barber-gold/40 hover:bg-barber-dark/90"
+            >
+              <div className="flex items-center gap-2 text-barber-gold/80">
+                <Terminal className="h-4 w-4" />
+                <span className="text-xs font-medium uppercase tracking-wide">Workspace</span>
+              </div>
+              <div className="mt-3">
+                <h2 className="font-serif text-lg font-semibold text-barber-paper">Command Center</h2>
+                <p className="mt-1 text-sm text-barber-paper/55">
+                  Inbox, task, pagine e cronologia azioni.
+                </p>
+              </div>
+            </Link>
+          </section>
+        ) : null}
+
         <div className="space-y-6">
           <section className="w-full min-w-0 overflow-hidden space-y-3">
             {isGmOrAdmin ? (
               <div className="flex flex-wrap items-center justify-end gap-2">
                 <CreateOpenCalendarEventDialog gmAdminUsers={gmAdminUsers} defaultDmId={user.id} />
-                <Button asChild variant="outline" size="sm" className="border-barber-gold/40">
-                  <Link href="/command-center">Command Center</Link>
-                </Button>
               </div>
             ) : null}
             <Suspense

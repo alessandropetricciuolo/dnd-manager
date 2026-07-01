@@ -15,7 +15,8 @@ ${buildInterpreterActionList()}
 
 Regole:
 - Per oneshot/campagne nuove usa campaign.create con type oneshot
-- Per NPC/luoghi/lore usa wiki.entity.create
+- Per NPC/luoghi/lore usa wiki.entity.create con type corretto (npc, location, lore, monster, item)
+- Per wiki: proponi sempre title e type; il contenuto narrativo verrà generato dal motore wiki contestuale
 - Per note nella tab GM campagna usa gm.note.create
 - Per missioni gilda usa mission.create
 - Non inventare campaignId: usa quello del contesto se presente

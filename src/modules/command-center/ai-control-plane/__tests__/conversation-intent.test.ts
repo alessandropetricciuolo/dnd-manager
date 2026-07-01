@@ -25,3 +25,11 @@ test("detectConversationIntent refine for other messages with pending", () => {
     "refine"
   );
 });
+
+test("detectConversationIntent image decision phase", () => {
+  assert.equal(detectConversationIntent("sì", true, "awaiting_image"), "image_yes");
+  assert.equal(detectConversationIntent("genera immagine", true, "awaiting_image"), "image_yes");
+  assert.equal(detectConversationIntent("no", true, "awaiting_image"), "image_no");
+  assert.equal(detectConversationIntent("senza immagine", true, "awaiting_image"), "image_no");
+  assert.equal(detectConversationIntent("annulla", true, "awaiting_image"), "reject");
+});

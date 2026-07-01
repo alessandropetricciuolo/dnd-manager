@@ -1,4 +1,5 @@
 import type { PreviewedProposal } from "./preview-proposals";
+import type { ChatPendingPhase } from "./draft-assistant.types";
 
 const ACTION_LABELS: Record<string, string> = {
   "workspace.task.create": "Nuovo task",
@@ -50,7 +51,7 @@ function formatPreviewBody(
     input.contentMarkdown,
     input.description
   );
-  if (body) lines.push(`Contenuto:\n${body.slice(0, 600)}${body.length > 600 ? "…" : ""}`);
+  if (body) lines.push(`Contenuto:\n${body}`);
 
   if (actionName === "campaign.create" || actionName === "campaign.update") {
     const ctype = pickText(preview.type, input.type);
@@ -64,7 +65,17 @@ function formatPreviewBody(
   return lines;
 }
 
-export function formatProposalForChat(proposal: PreviewedProposal): string {
+function footerForPhase(phase?: ChatPendingPhase): string {
+  if (phase === "awaiting_image") {
+    return "Scrivi sì per generare l'immagine contestuale, no per creare solo la voce wiki, oppure annulla.";
+  }
+  return "Scrivi conferma per approvare il testo, annulla per scartare, oppure descrivi le modifiche.";
+}
+
+export function formatProposalForChat(
+  proposal: PreviewedProposal,
+  options?: { phase?: ChatPendingPhase }
+): string {
   const label = ACTION_LABELS[proposal.action_name] ?? proposal.action_name;
   const lines = [
     `📋 Proposta: ${label}`,
@@ -72,6 +83,6 @@ export function formatProposalForChat(proposal: PreviewedProposal): string {
   ];
   if (proposal.rationale) lines.push(`Perché: ${proposal.rationale}`);
   lines.push("");
-  lines.push("Scrivi conferma per applicare, annulla per scartare, oppure descrivi le modifiche.");
+  lines.push(footerForPhase(options?.phase));
   return lines.join("\n");
 }

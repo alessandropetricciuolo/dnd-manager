@@ -18,6 +18,12 @@ export function registerWikiWrapperActions(): void {
       if (typeof o.type !== "string" || !(WIKI_ENTITY_TYPES as readonly string[]).includes(o.type)) {
         return { ok: false, error: "Tipo entità wiki non valido." };
       }
+      const attributes =
+        o.attributes && typeof o.attributes === "object" && !Array.isArray(o.attributes)
+          ? (o.attributes as Record<string, unknown>)
+          : undefined;
+      const imageUrl =
+        typeof o.imageUrl === "string" && o.imageUrl.trim() ? o.imageUrl.trim() : undefined;
       return {
         ok: true,
         data: {
@@ -26,6 +32,8 @@ export function registerWikiWrapperActions(): void {
           type: o.type.trim(),
           content: typeof o.content === "string" ? o.content : "",
           visibility: typeof o.visibility === "string" ? o.visibility : "public",
+          attributes,
+          imageUrl,
         },
       };
     },
@@ -33,8 +41,10 @@ export function registerWikiWrapperActions(): void {
       campaignId: input.campaignId,
       name: input.title,
       type: input.type,
-      contentPreview: input.content.slice(0, 200),
+      content: input.content,
+      contentMarkdown: input.content,
       visibility: input.visibility,
+      imageUrl: input.imageUrl ?? null,
     }),
     execute: async (_ctx, input) => {
       const fd = new FormData();
@@ -42,6 +52,12 @@ export function registerWikiWrapperActions(): void {
       fd.set("type", input.type);
       fd.set("content", input.content);
       fd.set("visibility", input.visibility);
+      if (input.attributes) {
+        fd.set("attributes", JSON.stringify(input.attributes));
+      }
+      if (input.imageUrl) {
+        fd.set("image_url", input.imageUrl);
+      }
 
       const result = await createEntity(input.campaignId, fd);
       if (!result.success) throw new Error(result.message);

@@ -13,11 +13,27 @@ export type RunAiDraftAssistantParams = {
   voiceMetadata?: CommandInputVoicePayload["metadata"];
 };
 
+export type ChatPendingPhase = "text" | "awaiting_image";
+
+export type ChatWikiMeta = {
+  entityType: string;
+  entityTitle: string;
+  userPrompt: string;
+  markdownDraft: {
+    description: string;
+    statblock: string;
+    npcTraits?: { race: string | null; class: string | null; age: string | null };
+  };
+  chatMessages: { role: "user" | "assistant"; content: string }[];
+};
+
 export type ChatPendingProposalPayload = {
   action_name: string;
   input: Record<string, unknown>;
   rationale: string | null;
   preview_payload: Record<string, unknown>;
+  phase?: ChatPendingPhase;
+  wikiMeta?: ChatWikiMeta;
 };
 
 export type RunAiChatAssistantParams = RunAiDraftAssistantParams & {
