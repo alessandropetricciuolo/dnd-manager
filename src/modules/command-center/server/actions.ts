@@ -3,6 +3,7 @@
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { getTenantAdapter } from "@/modules/command-center/adapters";
 import { executeAction } from "@/modules/command-center/actions";
+import { runAiDraftAssistant } from "@/modules/command-center/ai-control-plane/draft-assistant";
 import type {
   CommandLinkRow,
   CommandNoteRow,
@@ -13,6 +14,8 @@ import type {
   WorkspaceTaskStatus,
   WorkspacePageType,
   AppAuditEventRow,
+  AiActionRequestRow,
+  AiDraftAssistantResult,
 } from "@/modules/command-center/types";
 
 type ActionResult<T = void> =
@@ -349,4 +352,59 @@ export async function resolveCommandLinkLabelsAction(
   }
 
   return { success: true, data: labels };
+}
+
+// ---------- AI Draft (Fase 3) ----------
+
+export async function runAiDraftAssistantAction(input: {
+  message: string;
+  campaignId?: string | null;
+  noteId?: string | null;
+}): Promise<ActionResult<AiDraftAssistantResult>> {
+  const result = await runAiDraftAssistant(input);
+  if (!result.success) return { success: false, error: result.error };
+  return { success: true, data: result.data };
+}
+
+export async function listAiProposalsAction(
+  campaignId?: string | null,
+  status: "proposed" | "all" = "proposed"
+): Promise<ActionResult<AiActionRequestRow[]>> {
+  const auth = await getAuthSupabase();
+  if (!auth.ok) return { success: false, error: auth.error };
+
+  let query = auth.supabase
+    .from("ai_action_requests")
+    .select("*")
+    .eq("requested_by", auth.ctx.userId)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  if (campaignId) query = query.eq("campaign_id", campaignId);
+  if (status === "proposed") query = query.eq("status", "proposed");
+
+  const { data, error } = await query;
+  if (error) {
+    console.error("[listAiProposalsAction]", error);
+    return { success: false, error: error.message };
+  }
+  return { success: true, data: (data ?? []) as AiActionRequestRow[] };
+}
+
+export async function rejectAiProposalAction(proposalId: string): Promise<ActionResult> {
+  const auth = await getAuthSupabase();
+  if (!auth.ok) return { success: false, error: auth.error };
+
+  const { error } = await auth.supabase
+    .from("ai_action_requests")
+    .update({ status: "rejected" })
+    .eq("id", proposalId)
+    .eq("requested_by", auth.ctx.userId)
+    .eq("status", "proposed");
+
+  if (error) {
+    console.error("[rejectAiProposalAction]", error);
+    return { success: false, error: error.message };
+  }
+  return { success: true };
 }

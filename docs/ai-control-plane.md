@@ -1,70 +1,91 @@
 # AI Control Plane
 
-## Stato: non implementato (Fase 3+)
+## Stato: Fase 3 implementata (Livello 1 — solo bozze)
 
-Questo documento descrive il motore logico previsto. In Fase 1 **non c'è AI invasiva** nel Command Center.
+L'AI **non scrive mai** direttamente su dati ufficiali. Propone action tramite `ai_action_requests`; esecuzione dopo approvazione GM in Fase 4.
 
-## Responsabilità future
+## Livelli autonomia
 
-1. Ricevere input (testo, voce, file…)
-2. Normalizzare in `command_inputs`
-3. Creare `command_notes` collegate
-4. Interpretare intento
-5. Risolvere contesto autorizzato (campagna, memoria)
-6. Proporre action via Action Registry
-7. Generare anteprime
-8. Attendere conferma utente (Livello 2)
-9. Eseguire solo tramite registry
-10. Scrivere audit log
+| Livello | Comportamento | Stato B&D |
+|---------|---------------|-----------|
+| 0 | Solo lettura | — |
+| **1** | **Bozze / proposte** | **Attivo (`CURRENT_MAX_AUTONOMY = 1`)** |
+| 2 | Esecuzione con conferma | Fase 4 |
+| 3+ | Maggiore autonomia | Non pianificato |
 
-## Flusso target
+## Flusso Fase 3
 
 ```
-User input
-  → command_inputs
-  → command_notes
-  → AI Interpreter
-  → Context Resolver
-  → Action Proposal (ai_action_requests)
-  → User Approval
-  → Action Registry
-  → App Modules
-  → Audit Log
+Messaggio GM (UI Assistente)
+  → command_inputs (audit input grezzo)
+  → Context Resolver (campagna, memoria RAG, note recenti)
+  → AI Interpreter (JSON strutturato)
+  → Proposal Builder (preview Action Registry)
+  → ai_action_requests (status: proposed)
+  → Pannello Bozze AI (scarta / in attesa approvazione)
 ```
 
-## Context Resolver — scope memoria
+## Action proponibili dall'AI (Fase 3)
 
-| Livello | Fonte B&D attuale |
-|---------|-------------------|
-| GM globale | `profiles`, futuro `gm_workspace_memory` |
-| Campagna | `campaigns.ai_context`, `campaign_memory_chunks` |
-| Sessione | `sessions.session_summary`, `gm_private_notes` |
+- `workspace.task.create`
+- `workspace.page.create`
+- `wiki.entity.create`
+- `gm.note.create`
 
-Regola: non mescolare scope senza `campaign_id` esplicito.
+Definite in `types/ai-proposal.ts` → `AI_DRAFT_ALLOWED_ACTIONS`.
 
-## Integrazione AI esistente (B&D)
-
-Da riusare in Fase 3, **senza scrittura diretta**:
-
-| Modulo | File | Uso Control Plane |
-|--------|------|-------------------|
-| Memoria RAG | `campaign-memory-query-actions.ts` | Read-only contesto |
-| Architetto | `ai-architect.ts` | Separare generate vs apply |
-| Wiki chat | `wiki-text-chat.ts` | Bozze testo |
-| Generator | `ai/generator.ts` | Bozze strutturate |
-
-## File previsti (Fase 3)
+## Moduli
 
 ```
 src/modules/command-center/ai-control-plane/
-├── interpreter.ts
-├── context-resolver.ts
-├── proposal-builder.ts
-└── autonomy.ts
+├── autonomy.ts          # Livello massimo consentito
+├── context-resolver.ts  # Campagna + memoria + note inbox
+├── interpreter.ts       # LLM → intent + proposals JSON
+├── proposal-builder.ts  # previewAction + insert ai_action_requests
+├── draft-assistant.ts   # Orchestrazione server-side
+└── __tests__/interpreter.test.ts
 ```
 
-## Rischi
+## UI
 
-- AI che scrive direttamente (pattern legacy da eliminare gradualmente)
-- Context leak tra campagne → mitigare con resolver + test permessi
-- Costi API → billing/limiti in gmflow
+- Toggle **Workspace / Assistente** nell'header Command Center
+- `ai-assistant-panel.tsx` — chat conversazionale
+- `ai-proposal-panel.tsx` — bozze con anteprima e scarto
+
+## Context Resolver — scope memoria
+
+| Livello | Fonte B&D |
+|---------|-----------|
+| GM globale | Note recenti `command_notes` |
+| Campagna | `campaigns.ai_context`, `campaign_memory_chunks` (solo `type = long`) |
+| Sessione | Da estendere in fasi successive |
+
+Regola: non mescolare scope senza `campaign_id` esplicito nel filtro UI.
+
+## Integrazione AI esistente
+
+| Modulo | Uso Control Plane |
+|--------|-------------------|
+| `generateAiText` | Interpreter |
+| `generateOpenRouterEmbedding` + `match_campaign_memory` | Context (read-only) |
+| Action Registry `previewAction` | Anteprima proposte |
+
+## Tabella `ai_action_requests`
+
+Migration: `supabase/migrations/20260701160000_ai_action_requests.sql`
+
+Stati: `proposed` | `approved` | `executed` | `rejected` | `failed`
+
+RLS: GM/Admin, `requested_by = auth.uid()`.
+
+## Fase 4 (prossima)
+
+- Approvazione ed esecuzione via `executeAction`
+- Audit su esecuzione proposta
+- Eventuali `ai.proposal.approve` / `ai.proposal.execute` nel registry
+
+## Rischi mitigati
+
+- Scrittura diretta AI → bloccata da Livello 1 + nessun `executeAction` in Fase 3
+- Context leak → filtro campagna obbligatorio per memoria RAG
+- Costi API → da limitare in gmflow (billing)

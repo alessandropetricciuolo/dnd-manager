@@ -33,6 +33,7 @@ import type {
   WorkspacePageRow,
   WorkspaceTaskRow,
   AppAuditEventRow,
+  AiActionRequestRow,
 } from "@/modules/command-center/types";
 import {
   createCommandLinkAction,
@@ -50,6 +51,10 @@ import {
 } from "@/modules/command-center/server/actions";
 import { COMMAND_LINK_ENTITY_LABELS_IT } from "@/modules/command-center/types/entities";
 import { AuditTimeline } from "@/components/command-center/audit-timeline";
+import { AiAssistantPanel } from "@/components/command-center/ai-assistant-panel";
+import { AiProposalPanel } from "@/components/command-center/ai-proposal-panel";
+
+type CenterView = "workspace" | "assistant";
 
 type SidebarTab = "inbox" | "tasks" | "pages";
 
@@ -58,6 +63,7 @@ type CommandCenterClientProps = {
   initialTasks: WorkspaceTaskRow[];
   initialPages: WorkspacePageRow[];
   initialAuditEvents: AppAuditEventRow[];
+  initialProposals: AiActionRequestRow[];
   campaigns: { id: string; name: string }[];
   initialCampaignId: string | null;
 };
@@ -81,6 +87,7 @@ export function CommandCenterClient({
   initialTasks,
   initialPages,
   initialAuditEvents,
+  initialProposals,
   campaigns,
   initialCampaignId,
 }: CommandCenterClientProps) {
@@ -93,6 +100,8 @@ export function CommandCenterClient({
   const [tasks, setTasks] = useState(initialTasks);
   const [pages, setPages] = useState(initialPages);
   const [auditEvents, setAuditEvents] = useState(initialAuditEvents);
+  const [proposals, setProposals] = useState(initialProposals);
+  const [centerView, setCenterView] = useState<CenterView>("workspace");
   const [campaignFilter, setCampaignFilter] = useState<string | "all">(
     initialCampaignId ?? "all"
   );
@@ -126,7 +135,8 @@ export function CommandCenterClient({
     setTasks(initialTasks);
     setPages(initialPages);
     setAuditEvents(initialAuditEvents);
-  }, [initialNotes, initialTasks, initialPages, initialAuditEvents]);
+    setProposals(initialProposals);
+  }, [initialNotes, initialTasks, initialPages, initialAuditEvents, initialProposals]);
 
   useEffect(() => {
     if (!selectedNoteId) {
@@ -314,6 +324,33 @@ export function CommandCenterClient({
             </h1>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <div className="flex rounded-md border border-barber-gold/30 p-0.5">
+              <button
+                type="button"
+                onClick={() => setCenterView("workspace")}
+                className={cn(
+                  "rounded px-2.5 py-1 text-xs font-medium transition-colors",
+                  centerView === "workspace"
+                    ? "bg-barber-gold/20 text-barber-gold"
+                    : "text-barber-paper/60 hover:text-barber-paper"
+                )}
+              >
+                Workspace
+              </button>
+              <button
+                type="button"
+                onClick={() => setCenterView("assistant")}
+                className={cn(
+                  "flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium transition-colors",
+                  centerView === "assistant"
+                    ? "bg-barber-gold/20 text-barber-gold"
+                    : "text-barber-paper/60 hover:text-barber-paper"
+                )}
+              >
+                <Sparkles className="h-3 w-3" />
+                Assistente
+              </button>
+            </div>
             <Select
               value={campaignFilter}
               onValueChange={(v) => {
@@ -489,7 +526,15 @@ export function CommandCenterClient({
 
         {/* Centro */}
         <main className="min-h-[280px] flex-1 p-4 md:p-6">
-          {sidebarTab === "inbox" && selectedNote ? (
+          {centerView === "assistant" ? (
+            <AiAssistantPanel
+              campaignId={campaignFilter === "all" ? null : campaignFilter}
+              noteId={selectedNote?.id ?? null}
+              onProposalsCreated={(created) =>
+                setProposals((prev) => [...created, ...prev])
+              }
+            />
+          ) : sidebarTab === "inbox" && selectedNote ? (
             <div className="mx-auto max-w-2xl space-y-4">
               <Input
                 value={selectedNote.title}
@@ -520,6 +565,15 @@ export function CommandCenterClient({
               <div className="flex gap-2">
                 <Button type="button" variant="outline" size="sm" onClick={handleNewTask}>
                   Crea task da nota
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCenterView("assistant")}
+                >
+                  <Sparkles className="mr-1 h-3.5 w-3.5" />
+                  Chiedi all&apos;AI
                 </Button>
                 <Button
                   type="button"
@@ -646,12 +700,18 @@ export function CommandCenterClient({
           )}
 
           <div className="mt-6 rounded-lg border border-dashed border-barber-gold/20 p-3">
-            <AuditTimeline events={auditEvents} />
+            <AiProposalPanel
+              proposals={proposals}
+              onProposalRejected={(id) =>
+                setProposals((prev) =>
+                  prev.map((p) => (p.id === id ? { ...p, status: "rejected" as const } : p))
+                )
+              }
+            />
           </div>
 
-          <div className="mt-4 rounded-lg border border-dashed border-barber-gold/20 p-3 text-xs text-barber-paper/40">
-            <p className="font-medium text-barber-paper/60">AI Control Plane</p>
-            <p className="mt-1">Fase 3 — bozze e proposte assistite.</p>
+          <div className="mt-4 rounded-lg border border-dashed border-barber-gold/20 p-3">
+            <AuditTimeline events={auditEvents} />
           </div>
         </aside>
       </div>

@@ -1313,6 +1313,46 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["workspace_tasks"]["Insert"]>;
         Relationships: [];
       };
+      ai_action_requests: {
+        Row: {
+          id: string;
+          workspace_id: string | null;
+          campaign_id: string | null;
+          requested_by: string;
+          user_input_id: string | null;
+          note_id: string | null;
+          action_name: string;
+          status: string;
+          input_payload: Json;
+          preview_payload: Json;
+          result_payload: Json | null;
+          rationale: string | null;
+          error: string | null;
+          created_at: string;
+          approved_at: string | null;
+          executed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          workspace_id?: string | null;
+          campaign_id?: string | null;
+          requested_by: string;
+          user_input_id?: string | null;
+          note_id?: string | null;
+          action_name: string;
+          status?: string;
+          input_payload?: Json;
+          preview_payload?: Json;
+          result_payload?: Json | null;
+          rationale?: string | null;
+          error?: string | null;
+          created_at?: string;
+          approved_at?: string | null;
+          executed_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["ai_action_requests"]["Insert"]>;
+        Relationships: [];
+      };
       app_audit_events: {
         Row: {
           id: string;

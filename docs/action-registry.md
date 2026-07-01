@@ -71,9 +71,14 @@ UI: pannello **Cronologia azioni** nel Command Center (colonna destra).
 npm run test:command-center
 ```
 
-## TODO Fase 3+
+## Fase 3 (AI Draft)
 
-- [ ] `ai.proposal.create` / `approve` / `reject`
+- `previewAction()` usato dal Proposal Builder per anteprime in `ai_action_requests`
+- Action proponibili AI: subset di workspace + `wiki.entity.create` + `gm.note.create`
+- Nessuna esecuzione automatica — vedi `docs/ai-control-plane.md`
+
+## TODO Fase 4+
+
+- [ ] `ai.proposal.approve` / `ai.proposal.execute`
 - [ ] `memory.reindex` wrapper
 - [ ] `wiki.entity.update`, `session.update`
-- [ ] Preview UI per proposte AI
