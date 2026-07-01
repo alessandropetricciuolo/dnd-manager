@@ -21,11 +21,35 @@ type AiProposalPanelProps = {
   onProposalRejected?: (id: string) => void;
 };
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
+}
+
+/** Unwrap registry fallback `{ action, input }` and merge with input_payload. */
+function resolvePreviewData(
+  preview: Record<string, unknown>,
+  input: Record<string, unknown>
+): { fields: Record<string, unknown>; error: string | null } {
+  const nestedInput = asRecord(preview.input);
+  if (typeof preview.error === "string" && preview.error) {
+    return { fields: { ...input, ...nestedInput }, error: preview.error };
+  }
+  if (nestedInput) {
+    return { fields: { ...nestedInput, ...preview }, error: null };
+  }
+  return { fields: { ...input, ...preview }, error: null };
+}
+
+function pickText(...values: unknown[]): string | null {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return null;
+}
+
 function summarizeInput(actionName: string, input: Record<string, unknown>): string {
-  const title =
-    (typeof input.title === "string" && input.title) ||
-    (typeof input.name === "string" && input.name) ||
-    null;
+  const title = pickText(input.title, input.name);
   if (title) return title;
   if (actionName === "wiki.entity.create" && typeof input.type === "string") {
     return `Wiki ${input.type}`;
@@ -33,24 +57,61 @@ function summarizeInput(actionName: string, input: Record<string, unknown>): str
   return "Dettagli in anteprima";
 }
 
-function PreviewBlock({ preview }: { preview: Record<string, unknown> }) {
-  if (preview.error) {
-    return <p className="text-[10px] text-red-400/90">{String(preview.error)}</p>;
+function PreviewBlock({
+  actionName,
+  preview,
+  input,
+}: {
+  actionName: string;
+  preview: Record<string, unknown>;
+  input: Record<string, unknown>;
+}) {
+  const { fields, error } = resolvePreviewData(preview, input);
+
+  if (error) {
+    return <p className="text-[10px] text-red-400/90">{error}</p>;
   }
-  const title =
-    (typeof preview.title === "string" && preview.title) ||
-    (typeof preview.name === "string" && preview.name) ||
-    null;
-  const content =
-    (typeof preview.content === "string" && preview.content.slice(0, 120)) ||
-    (typeof preview.contentMarkdown === "string" && preview.contentMarkdown.slice(0, 120)) ||
-    (typeof preview.description === "string" && preview.description.slice(0, 120)) ||
-    null;
+
+  const title = pickText(fields.title, fields.name);
+  const body = pickText(
+    fields.content,
+    fields.contentMarkdown,
+    fields.contentPreview,
+    fields.description
+  );
+
+  const meta: string[] = [];
+  if (typeof fields.pageType === "string" && fields.pageType) meta.push(`Tipo: ${fields.pageType}`);
+  if (typeof fields.type === "string" && fields.type) meta.push(`Tipo: ${fields.type}`);
+  if (typeof fields.priority === "string" && fields.priority) meta.push(`Priorità: ${fields.priority}`);
+  if (typeof fields.target === "string" && fields.target) meta.push(`Destinazione: ${fields.target}`);
+  if (typeof fields.visibility === "string" && fields.visibility) {
+    meta.push(`Visibilità: ${fields.visibility}`);
+  }
+
+  if (!title && !body && meta.length === 0) {
+    const summary = Object.entries(input)
+      .filter(([, v]) => v !== null && v !== undefined && v !== "")
+      .slice(0, 4)
+      .map(([k, v]) => `${k}: ${typeof v === "string" ? v.slice(0, 80) : JSON.stringify(v)}`)
+      .join(" · ");
+    return (
+      <p className="text-[10px] text-barber-paper/50">
+        {summary || "Anteprima non disponibile per questa action."}
+      </p>
+    );
+  }
 
   return (
     <div className="text-[10px] text-barber-paper/60">
       {title ? <p className="font-medium text-barber-paper/80">{title}</p> : null}
-      {content ? <p className="mt-0.5 line-clamp-3">{content}</p> : null}
+      {body ? <p className="mt-0.5 line-clamp-4 whitespace-pre-wrap">{body}</p> : null}
+      {meta.length > 0 ? (
+        <p className="mt-1 text-barber-paper/40">{meta.join(" · ")}</p>
+      ) : null}
+      {actionName === "workspace.page.create" && !body ? (
+        <p className="mt-1 italic text-barber-paper/40">Pagina senza contenuto markdown ancora.</p>
+      ) : null}
     </div>
   );
 }
@@ -121,7 +182,11 @@ export function AiProposalPanel({ proposals, onProposalRejected }: AiProposalPan
                   <p className="mb-1 text-[9px] uppercase tracking-wide text-barber-paper/40">
                     Anteprima
                   </p>
-                  <PreviewBlock preview={proposal.preview_payload} />
+                  <PreviewBlock
+                    actionName={proposal.action_name}
+                    preview={proposal.preview_payload}
+                    input={proposal.input_payload}
+                  />
                 </div>
 
                 <Button

@@ -406,6 +406,12 @@ export function registerWorkspaceActions(): void {
         },
       };
     },
+    preview: async (_ctx, input) => ({
+      title: input.title,
+      contentMarkdown: input.contentMarkdown,
+      campaignId: input.campaignId,
+      pageType: input.pageType,
+    }),
     execute: async (ctx, input) => {
       const { data, error } = await ctx.supabase
         .from("workspace_pages")
