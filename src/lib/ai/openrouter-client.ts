@@ -305,7 +305,7 @@ async function postOpenRouterWikiChat(
 
   if (lastErr && isRateLimitStatus(429, lastErr.message)) {
     throw new Error(
-      "Il servizio AI wiki è temporaneamente sovraccarico (rate limit). Riprova tra qualche minuto oppure imposta WIKI_TEXT_MODEL su un modello a pagamento in Vercel."
+      "OpenRouter ha rifiutato la richiesta per rate limit sul modello wiki (spesso i modelli :free sono saturi). Riprova tra qualche minuto, oppure imposta WIKI_TEXT_MODEL (es. openai/gpt-4o-mini) nelle variabili d'ambiente del deploy."
     );
   }
 
