@@ -40,6 +40,8 @@ declare namespace NodeJS {
     AI_IMAGE_MODEL?: string;
     /** Modello OpenRouter per testo wiki (default `google/gemma-4-31b-it:free`). */
     WIKI_TEXT_MODEL?: string;
+    /** Fallback wiki se il modello primario è in rate limit (default `OPENROUTER_MODEL` o `openai/gpt-4o-mini`). */
+    WIKI_TEXT_FALLBACK_MODEL?: string;
     /**
      * Chiave API SiliconFlow. SiliconFlow ha due piattaforme separate con chiavi NON
      * intercambiabili: internazionale (`cloud.siliconflow.com`) e cinese

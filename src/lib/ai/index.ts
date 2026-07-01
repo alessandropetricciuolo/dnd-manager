@@ -13,6 +13,7 @@ export { shouldUseOllamaForAiText, getOllamaModelForAiText } from "./ollama-clie
 export {
   SITE_WIKI_TEXT_MODEL,
   getSiteWikiTextModel,
+  getSiteWikiTextFallbackModel,
   shouldUseOpenRouterForAiText,
   getOpenRouterModelForAiText,
   generateOpenRouterWikiText,

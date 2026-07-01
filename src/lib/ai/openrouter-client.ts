@@ -66,6 +66,13 @@ export function getSiteWikiTextModel(): string {
   return env || SITE_WIKI_TEXT_MODEL;
 }
 
+/** Fallback wiki quando il modello primario è in rate limit (es. `:free`). */
+export function getSiteWikiTextFallbackModel(): string {
+  const env = process.env.WIKI_TEXT_FALLBACK_MODEL?.trim();
+  if (env) return env;
+  return getOpenRouterModelForAiText();
+}
+
 export function getOpenRouterModelForEmbeddings(): string {
   const m = process.env.OPENROUTER_EMBEDDING_MODEL?.trim();
   return m && m.length > 0 ? m : "openai/text-embedding-3-small";
@@ -120,12 +127,137 @@ function isTransientOpenRouterStatus(status: number): boolean {
   return status === 408 || status === 409 || status === 425 || status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
 }
 
+function isRateLimitStatus(status: number, message: string): boolean {
+  if (status === 429) return true;
+  const lower = message.toLowerCase();
+  return (
+    lower.includes("rate limit") ||
+    lower.includes("rate_limit") ||
+    lower.includes("too many requests") ||
+    lower.includes("provider returned error")
+  );
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function getRetryDelayMs(attempt: number, status: number, res?: Response): number {
+  const retryAfter = res?.headers.get("retry-after")?.trim();
+  if (retryAfter) {
+    const seconds = Number(retryAfter);
+    if (Number.isFinite(seconds) && seconds > 0) {
+      return Math.min(seconds * 1000, 60_000);
+    }
+  }
+  if (status === 429) {
+    return Math.min(2000 * 2 ** (attempt - 1), 15_000);
+  }
+  return 500 * attempt;
+}
+
 function getOpenRouterHeaders(apiKey: string): Record<string, string> {
   return buildOpenRouterHeaders(apiKey);
+}
+
+type OpenRouterWikiChatAttemptResult =
+  | { ok: true; content: string }
+  | { ok: false; rateLimited: boolean; error: Error };
+
+async function requestOpenRouterWikiChatWithModel(
+  apiKey: string,
+  url: string,
+  model: string,
+  messages: OpenRouterWikiChatMessage[],
+  options: OpenRouterChatOptions
+): Promise<OpenRouterWikiChatAttemptResult> {
+  const maxAttempts = 3;
+  let lastErr: Error | null = null;
+  let lastRateLimited = false;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120_000);
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: getOpenRouterHeaders(apiKey),
+        body: JSON.stringify({
+          model,
+          messages,
+          max_tokens: options.maxTokens ?? 1500,
+          temperature: options.temperature ?? 0.7,
+        }),
+        signal: controller.signal,
+      });
+
+      const bodyText = await res.text();
+      let data: unknown;
+      try {
+        data = JSON.parse(bodyText) as unknown;
+      } catch {
+        if (isTransientOpenRouterStatus(res.status) && attempt < maxAttempts) {
+          await sleep(getRetryDelayMs(attempt, res.status, res));
+          continue;
+        }
+        return {
+          ok: false,
+          rateLimited: isRateLimitStatus(res.status, bodyText),
+          error: new Error(
+            `OpenRouter wiki text: risposta non JSON (HTTP ${res.status}). ${bodyText.slice(0, 400)}`
+          ),
+        };
+      }
+
+      if (!res.ok) {
+        const errObj = data && typeof data === "object" ? (data as { error?: { message?: string } }).error : null;
+        const msg = errObj?.message ?? bodyText.slice(0, 500);
+        const rateLimited = isRateLimitStatus(res.status, msg);
+        lastRateLimited = rateLimited;
+        if (isTransientOpenRouterStatus(res.status) && attempt < maxAttempts) {
+          await sleep(getRetryDelayMs(attempt, res.status, res));
+          continue;
+        }
+        return {
+          ok: false,
+          rateLimited,
+          error: new Error(`OpenRouter wiki text HTTP ${res.status}: ${msg}`),
+        };
+      }
+
+      const out = extractOpenRouterChatContent(data);
+      if (!out) {
+        if (attempt < maxAttempts) {
+          await sleep(getRetryDelayMs(attempt, 0));
+          continue;
+        }
+        return {
+          ok: false,
+          rateLimited: false,
+          error: new Error("OpenRouter wiki text ha restituito contenuto vuoto."),
+        };
+      }
+      return { ok: true, content: out };
+    } catch (e) {
+      if (e instanceof Error && e.name === "AbortError") {
+        lastErr = new Error("Timeout della richiesta wiki text a OpenRouter (oltre 120s).");
+      } else {
+        lastErr = e instanceof Error ? e : new Error(String(e));
+      }
+      if (attempt < maxAttempts) {
+        await sleep(getRetryDelayMs(attempt, 0));
+        continue;
+      }
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  return {
+    ok: false,
+    rateLimited: lastRateLimited,
+    error: lastErr ?? new Error("OpenRouter wiki text: errore sconosciuto."),
+  };
 }
 
 async function postOpenRouterWikiChat(
@@ -142,74 +274,39 @@ async function postOpenRouterWikiChat(
 
   const base = getOpenRouterBaseUrl();
   const url = `${base}${OPENROUTER_CHAT_PATH}`;
-  const model = getSiteWikiTextModel();
+  const primaryModel = getSiteWikiTextModel();
+  const fallbackModel = getSiteWikiTextFallbackModel();
+  const models = primaryModel === fallbackModel ? [primaryModel] : [primaryModel, fallbackModel];
 
   let lastErr: Error | null = null;
-  const maxAttempts = 3;
 
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 120_000);
-    try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: getOpenRouterHeaders(apiKey),
-        body: JSON.stringify({
-          model,
-          messages: normalized,
-          max_tokens: options.maxTokens ?? 1500,
-          temperature: options.temperature ?? 0.7,
-        }),
-        signal: controller.signal,
-      });
-
-      const bodyText = await res.text();
-      let data: unknown;
-      try {
-        data = JSON.parse(bodyText) as unknown;
-      } catch {
-        if (isTransientOpenRouterStatus(res.status) && attempt < maxAttempts) {
-          await sleep(500 * attempt);
-          continue;
-        }
-        throw new Error(
-          `OpenRouter wiki text: risposta non JSON (HTTP ${res.status}). ${bodyText.slice(0, 400)}`
+  for (let modelIndex = 0; modelIndex < models.length; modelIndex++) {
+    const model = models[modelIndex]!;
+    const result = await requestOpenRouterWikiChatWithModel(apiKey, url, model, normalized, options);
+    if (result.ok) {
+      if (modelIndex > 0) {
+        console.warn(
+          `[openrouter] Wiki text fallback: ${primaryModel} → ${model} (rate limit sul modello primario).`
         );
       }
-
-      if (!res.ok) {
-        const errObj = data && typeof data === "object" ? (data as { error?: { message?: string } }).error : null;
-        const msg = errObj?.message ?? bodyText.slice(0, 500);
-        if (isTransientOpenRouterStatus(res.status) && attempt < maxAttempts) {
-          await sleep(500 * attempt);
-          continue;
-        }
-        throw new Error(`OpenRouter wiki text HTTP ${res.status}: ${msg}`);
-      }
-
-      const out = extractOpenRouterChatContent(data);
-      if (!out) {
-        if (attempt < maxAttempts) {
-          await sleep(350 * attempt);
-          continue;
-        }
-        throw new Error("OpenRouter wiki text ha restituito contenuto vuoto.");
-      }
-      return out;
-    } catch (e) {
-      if (e instanceof Error && e.name === "AbortError") {
-        if (attempt < maxAttempts) {
-          await sleep(600 * attempt);
-          continue;
-        }
-        lastErr = new Error("Timeout della richiesta wiki text a OpenRouter (oltre 120s).");
-      } else {
-        lastErr = e instanceof Error ? e : new Error(String(e));
-      }
-      if (attempt < maxAttempts) continue;
-    } finally {
-      clearTimeout(timeoutId);
+      return result.content;
     }
+
+    lastErr = result.error;
+    const hasFallback = modelIndex < models.length - 1;
+    if (result.rateLimited && hasFallback) {
+      console.warn(
+        `[openrouter] Wiki text rate limit su ${model}, provo fallback ${models[modelIndex + 1]}.`
+      );
+      continue;
+    }
+    if (!hasFallback) break;
+  }
+
+  if (lastErr && isRateLimitStatus(429, lastErr.message)) {
+    throw new Error(
+      "Il servizio AI wiki è temporaneamente sovraccarico (rate limit). Riprova tra qualche minuto oppure imposta WIKI_TEXT_MODEL su un modello a pagamento in Vercel."
+    );
   }
 
   throw lastErr ?? new Error("OpenRouter wiki text: errore sconosciuto.");
