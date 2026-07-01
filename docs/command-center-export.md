@@ -6,9 +6,9 @@
 |------|-----------|------|
 | `src/modules/command-center/types/` | ✅ | Tipi puri |
 | `src/modules/command-center/adapters/types.ts` | ✅ | Interfaccia `TenantAdapter` |
-| `src/modules/command-center/server/actions.ts` | ⚠️ | Core logica; dipende da Supabase schema |
+| `src/modules/command-center/server/actions.ts` | ⚠️ | Usa registry per mutazioni |
 | `src/modules/command-center/ai-control-plane/` | ✅ (futuro) | Non ancora creato |
-| `src/modules/command-center/actions/` | ✅ (futuro) | Fase 2 |
+| `src/modules/command-center/actions/` | ✅ | Core esportabile |
 | `src/components/command-center/` | ⚠️ | UI riusabile con theming gmflow |
 
 ## Specifico B&D (non portare verbatim)
@@ -37,18 +37,13 @@ Creare `gmflow.adapter.ts` che implementa `TenantAdapter`:
 | `campaign_id` | opzionale | opzionale, sempre nel workspace |
 | RLS | GM/Admin globali | per workspace_id |
 
-## File creati Fase 1
+## File creati Fase 1–2
 
 ```
 supabase/migrations/20260701120000_command_center_workspace.sql
-src/modules/command-center/
-src/app/command-center/
-src/components/command-center/command-center-client.tsx
-src/types/database.types.ts (tabelle command_*, workspace_*)
-docs/command-center-vision.md
-docs/ai-control-plane.md
-docs/action-registry.md
-docs/command-center-export.md
+supabase/migrations/20260701140000_app_audit_events.sql
+src/modules/command-center/actions/
+src/components/command-center/audit-timeline.tsx
 ```
 
 ## Modificati Fase 1

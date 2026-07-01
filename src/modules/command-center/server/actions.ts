@@ -1,8 +1,8 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { getTenantAdapter } from "@/modules/command-center/adapters";
+import { executeAction } from "@/modules/command-center/actions";
 import type {
   CommandLinkRow,
   CommandNoteRow,
@@ -12,16 +12,8 @@ import type {
   WorkspaceTaskRow,
   WorkspaceTaskStatus,
   WorkspacePageType,
+  AppAuditEventRow,
 } from "@/modules/command-center/types";
-import {
-  COMMAND_LINK_ENTITY_TYPES,
-  COMMAND_NOTE_STATUSES,
-  WORKSPACE_TASK_PRIORITIES,
-  WORKSPACE_TASK_STATUSES,
-  WORKSPACE_PAGE_TYPES,
-} from "@/modules/command-center/types/workspace";
-
-const REVALIDATE_PATH = "/command-center";
 
 type ActionResult<T = void> =
   | { success: true; data?: T }
@@ -35,20 +27,9 @@ async function getAuthSupabase() {
   return { ok: true as const, supabase, ctx: access.ctx, adapter };
 }
 
-function isCommandNoteStatus(v: string): v is CommandNoteStatus {
-  return (COMMAND_NOTE_STATUSES as readonly string[]).includes(v);
-}
-
-function isTaskStatus(v: string): v is WorkspaceTaskStatus {
-  return (WORKSPACE_TASK_STATUSES as readonly string[]).includes(v);
-}
-
-function isTaskPriority(v: string): v is WorkspaceTaskPriority {
-  return (WORKSPACE_TASK_PRIORITIES as readonly string[]).includes(v);
-}
-
-function isPageType(v: string): v is WorkspacePageType {
-  return (WORKSPACE_PAGE_TYPES as readonly string[]).includes(v);
+function mapRegistryError<T>(result: { success: true; data: T } | { success: false; error: string }): ActionResult<T> {
+  if (!result.success) return { success: false, error: result.error };
+  return { success: true, data: result.data };
 }
 
 // ---------- Notes ----------
@@ -101,55 +82,14 @@ export async function createCommandNoteAction(input: {
   campaignId?: string | null;
   status?: CommandNoteStatus;
 }): Promise<ActionResult<CommandNoteRow>> {
-  const auth = await getAuthSupabase();
-  if (!auth.ok) return { success: false, error: auth.error };
-
-  const content = input.content.trim();
-  if (!content) return { success: false, error: "Il contenuto è obbligatorio." };
-
-  const title =
-    input.title?.trim() ||
-    content.split("\n")[0]?.slice(0, 120) ||
-    "Nota senza titolo";
-
-  const { data: inputRow, error: inputErr } = await auth.supabase
-    .from("command_inputs")
-    .insert({
-      workspace_id: auth.adapter.resolveWorkspaceId(),
-      campaign_id: input.campaignId ?? null,
-      source: "manual",
-      raw_content: content,
-      created_by: auth.ctx.userId,
-    })
-    .select("id")
-    .single();
-
-  if (inputErr) {
-    console.error("[createCommandNoteAction] input", inputErr);
-    return { success: false, error: inputErr.message };
-  }
-
-  const { data, error } = await auth.supabase
-    .from("command_notes")
-    .insert({
-      workspace_id: auth.adapter.resolveWorkspaceId(),
-      campaign_id: input.campaignId ?? null,
-      title,
-      content,
+  return mapRegistryError(
+    await executeAction<CommandNoteRow>("command.note.create", {
+      title: input.title,
+      content: input.content,
+      campaignId: input.campaignId ?? null,
       status: input.status ?? "inbox",
-      source_input_id: inputRow.id,
-      created_by: auth.ctx.userId,
     })
-    .select("*")
-    .single();
-
-  if (error) {
-    console.error("[createCommandNoteAction]", error);
-    return { success: false, error: error.message };
-  }
-
-  revalidatePath(REVALIDATE_PATH);
-  return { success: true, data: data as CommandNoteRow };
+  );
 }
 
 export async function updateCommandNoteAction(
@@ -161,35 +101,9 @@ export async function updateCommandNoteAction(
     campaignId?: string | null;
   }
 ): Promise<ActionResult<CommandNoteRow>> {
-  const auth = await getAuthSupabase();
-  if (!auth.ok) return { success: false, error: auth.error };
-
-  const update: Record<string, unknown> = {};
-  if (patch.title !== undefined) update.title = patch.title.trim();
-  if (patch.content !== undefined) update.content = patch.content;
-  if (patch.status !== undefined) {
-    if (!isCommandNoteStatus(patch.status)) {
-      return { success: false, error: "Stato nota non valido." };
-    }
-    update.status = patch.status;
-  }
-  if (patch.campaignId !== undefined) update.campaign_id = patch.campaignId;
-
-  const { data, error } = await auth.supabase
-    .from("command_notes")
-    .update(update)
-    .eq("id", noteId)
-    .eq("created_by", auth.ctx.userId)
-    .select("*")
-    .single();
-
-  if (error) {
-    console.error("[updateCommandNoteAction]", error);
-    return { success: false, error: error.message };
-  }
-
-  revalidatePath(REVALIDATE_PATH);
-  return { success: true, data: data as CommandNoteRow };
+  return mapRegistryError(
+    await executeAction<CommandNoteRow>("command.note.update", { noteId, patch })
+  );
 }
 
 // ---------- Tasks ----------
@@ -226,35 +140,9 @@ export async function createWorkspaceTaskAction(input: {
   dueDate?: string | null;
   sourceNoteId?: string | null;
 }): Promise<ActionResult<WorkspaceTaskRow>> {
-  const auth = await getAuthSupabase();
-  if (!auth.ok) return { success: false, error: auth.error };
-
-  const title = input.title.trim();
-  if (!title) return { success: false, error: "Il titolo è obbligatorio." };
-
-  const { data, error } = await auth.supabase
-    .from("workspace_tasks")
-    .insert({
-      workspace_id: auth.adapter.resolveWorkspaceId(),
-      campaign_id: input.campaignId ?? null,
-      session_id: input.sessionId ?? null,
-      title,
-      description: input.description?.trim() ?? "",
-      priority: input.priority ?? "medium",
-      due_date: input.dueDate ?? null,
-      source_note_id: input.sourceNoteId ?? null,
-      created_by: auth.ctx.userId,
-    })
-    .select("*")
-    .single();
-
-  if (error) {
-    console.error("[createWorkspaceTaskAction]", error);
-    return { success: false, error: error.message };
-  }
-
-  revalidatePath(REVALIDATE_PATH);
-  return { success: true, data: data as WorkspaceTaskRow };
+  return mapRegistryError(
+    await executeAction<WorkspaceTaskRow>("workspace.task.create", input)
+  );
 }
 
 export async function updateWorkspaceTaskAction(
@@ -268,38 +156,9 @@ export async function updateWorkspaceTaskAction(
     campaignId?: string | null;
   }
 ): Promise<ActionResult<WorkspaceTaskRow>> {
-  const auth = await getAuthSupabase();
-  if (!auth.ok) return { success: false, error: auth.error };
-
-  const update: Record<string, unknown> = {};
-  if (patch.title !== undefined) update.title = patch.title.trim();
-  if (patch.description !== undefined) update.description = patch.description;
-  if (patch.status !== undefined) {
-    if (!isTaskStatus(patch.status)) return { success: false, error: "Stato task non valido." };
-    update.status = patch.status;
-  }
-  if (patch.priority !== undefined) {
-    if (!isTaskPriority(patch.priority)) return { success: false, error: "Priorità non valida." };
-    update.priority = patch.priority;
-  }
-  if (patch.dueDate !== undefined) update.due_date = patch.dueDate;
-  if (patch.campaignId !== undefined) update.campaign_id = patch.campaignId;
-
-  const { data, error } = await auth.supabase
-    .from("workspace_tasks")
-    .update(update)
-    .eq("id", taskId)
-    .eq("created_by", auth.ctx.userId)
-    .select("*")
-    .single();
-
-  if (error) {
-    console.error("[updateWorkspaceTaskAction]", error);
-    return { success: false, error: error.message };
-  }
-
-  revalidatePath(REVALIDATE_PATH);
-  return { success: true, data: data as WorkspaceTaskRow };
+  return mapRegistryError(
+    await executeAction<WorkspaceTaskRow>("workspace.task.update", { taskId, patch })
+  );
 }
 
 // ---------- Pages ----------
@@ -332,34 +191,9 @@ export async function createWorkspacePageAction(input: {
   campaignId?: string | null;
   pageType?: WorkspacePageType;
 }): Promise<ActionResult<WorkspacePageRow>> {
-  const auth = await getAuthSupabase();
-  if (!auth.ok) return { success: false, error: auth.error };
-
-  const title = input.title.trim();
-  if (!title) return { success: false, error: "Il titolo è obbligatorio." };
-  const pageType = input.pageType ?? "note";
-  if (!isPageType(pageType)) return { success: false, error: "Tipo pagina non valido." };
-
-  const { data, error } = await auth.supabase
-    .from("workspace_pages")
-    .insert({
-      workspace_id: auth.adapter.resolveWorkspaceId(),
-      campaign_id: input.campaignId ?? null,
-      title,
-      content_markdown: input.contentMarkdown ?? "",
-      page_type: pageType,
-      created_by: auth.ctx.userId,
-    })
-    .select("*")
-    .single();
-
-  if (error) {
-    console.error("[createWorkspacePageAction]", error);
-    return { success: false, error: error.message };
-  }
-
-  revalidatePath(REVALIDATE_PATH);
-  return { success: true, data: data as WorkspacePageRow };
+  return mapRegistryError(
+    await executeAction<WorkspacePageRow>("workspace.page.create", input)
+  );
 }
 
 export async function updateWorkspacePageAction(
@@ -371,33 +205,9 @@ export async function updateWorkspacePageAction(
     campaignId?: string | null;
   }
 ): Promise<ActionResult<WorkspacePageRow>> {
-  const auth = await getAuthSupabase();
-  if (!auth.ok) return { success: false, error: auth.error };
-
-  const update: Record<string, unknown> = {};
-  if (patch.title !== undefined) update.title = patch.title.trim();
-  if (patch.contentMarkdown !== undefined) update.content_markdown = patch.contentMarkdown;
-  if (patch.pageType !== undefined) {
-    if (!isPageType(patch.pageType)) return { success: false, error: "Tipo pagina non valido." };
-    update.page_type = patch.pageType;
-  }
-  if (patch.campaignId !== undefined) update.campaign_id = patch.campaignId;
-
-  const { data, error } = await auth.supabase
-    .from("workspace_pages")
-    .update(update)
-    .eq("id", pageId)
-    .eq("created_by", auth.ctx.userId)
-    .select("*")
-    .single();
-
-  if (error) {
-    console.error("[updateWorkspacePageAction]", error);
-    return { success: false, error: error.message };
-  }
-
-  revalidatePath(REVALIDATE_PATH);
-  return { success: true, data: data as WorkspacePageRow };
+  return mapRegistryError(
+    await executeAction<WorkspacePageRow>("workspace.page.update", { pageId, patch })
+  );
 }
 
 // ---------- Links ----------
@@ -427,67 +237,36 @@ export async function createCommandLinkAction(input: {
   entityId: string;
   campaignId?: string | null;
 }): Promise<ActionResult<CommandLinkRow>> {
-  const auth = await getAuthSupabase();
-  if (!auth.ok) return { success: false, error: auth.error };
-
-  if (!(COMMAND_LINK_ENTITY_TYPES as readonly string[]).includes(input.entityType)) {
-    return { success: false, error: "Tipo entità non valido." };
-  }
-
-  const linkCheck = await auth.adapter.assertCanLinkEntity(
-    auth.supabase,
-    input.entityType,
-    input.entityId,
-    input.campaignId
+  return mapRegistryError(
+    await executeAction<CommandLinkRow>("command.link.create", input)
   );
-  if (!linkCheck.ok) return { success: false, error: linkCheck.error };
-
-  const { data: note } = await auth.supabase
-    .from("command_notes")
-    .select("id")
-    .eq("id", input.noteId)
-    .eq("created_by", auth.ctx.userId)
-    .maybeSingle();
-  if (!note) return { success: false, error: "Nota non trovata." };
-
-  const { data, error } = await auth.supabase
-    .from("command_links")
-    .insert({
-      workspace_id: auth.adapter.resolveWorkspaceId(),
-      note_id: input.noteId,
-      entity_type: input.entityType,
-      entity_id: input.entityId,
-    })
-    .select("*")
-    .single();
-
-  if (error) {
-    console.error("[createCommandLinkAction]", error);
-    return { success: false, error: error.message };
-  }
-
-  await auth.supabase
-    .from("command_notes")
-    .update({ status: "linked" })
-    .eq("id", input.noteId)
-    .eq("created_by", auth.ctx.userId);
-
-  revalidatePath(REVALIDATE_PATH);
-  return { success: true, data: data as CommandLinkRow };
 }
 
 export async function deleteCommandLinkAction(linkId: string): Promise<ActionResult> {
+  const result = await executeAction("command.link.delete", { linkId });
+  if (!result.success) return { success: false, error: result.error };
+  return { success: true };
+}
+
+// ---------- Audit ----------
+
+export async function listAuditEventsAction(
+  limit = 30
+): Promise<ActionResult<AppAuditEventRow[]>> {
   const auth = await getAuthSupabase();
   if (!auth.ok) return { success: false, error: auth.error };
 
-  const { error } = await auth.supabase.from("command_links").delete().eq("id", linkId);
+  const { data, error } = await auth.supabase
+    .from("app_audit_events")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(Math.min(100, Math.max(1, limit)));
+
   if (error) {
-    console.error("[deleteCommandLinkAction]", error);
+    console.error("[listAuditEventsAction]", error);
     return { success: false, error: error.message };
   }
-
-  revalidatePath(REVALIDATE_PATH);
-  return { success: true };
+  return { success: true, data: (data ?? []) as AppAuditEventRow[] };
 }
 
 // ---------- Pickers ----------
@@ -554,16 +333,18 @@ export async function resolveCommandLinkLabelsAction(
     const key = `${link.entity_type}:${link.entity_id}`;
     if (link.entity_type === "campaign") {
       const { data } = await auth.supabase.from("campaigns").select("name").eq("id", link.entity_id).maybeSingle();
-      labels[key] = data?.name ?? link.entity_id.slice(0, 8);
+      labels[key] = (data as { name?: string } | null)?.name ?? link.entity_id.slice(0, 8);
     } else if (link.entity_type === "session") {
       const { data } = await auth.supabase.from("sessions").select("title, scheduled_at").eq("id", link.entity_id).maybeSingle();
-      labels[key] = data?.title ?? new Date(data?.scheduled_at ?? "").toLocaleDateString("it-IT");
+      const row = data as { title?: string | null; scheduled_at?: string } | null;
+      labels[key] = row?.title ?? new Date(row?.scheduled_at ?? "").toLocaleDateString("it-IT");
     } else if (link.entity_type === "mission" || link.entity_type === "quest") {
       const { data } = await auth.supabase.from("campaign_missions").select("title").eq("id", link.entity_id).maybeSingle();
-      labels[key] = data?.title ?? "Missione";
+      labels[key] = (data as { title?: string } | null)?.title ?? "Missione";
     } else {
       const { data } = await auth.supabase.from("wiki_entities").select("name, type").eq("id", link.entity_id).maybeSingle();
-      labels[key] = data ? `${data.name} (${data.type})` : "Wiki";
+      const row = data as { name?: string; type?: string } | null;
+      labels[key] = row ? `${row.name} (${row.type})` : "Wiki";
     }
   }
 

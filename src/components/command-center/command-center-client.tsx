@@ -32,6 +32,7 @@ import type {
   CommandNoteStatus,
   WorkspacePageRow,
   WorkspaceTaskRow,
+  AppAuditEventRow,
 } from "@/modules/command-center/types";
 import {
   createCommandLinkAction,
@@ -48,6 +49,7 @@ import {
   listWikiEntitiesForCommandCenterAction,
 } from "@/modules/command-center/server/actions";
 import { COMMAND_LINK_ENTITY_LABELS_IT } from "@/modules/command-center/types/entities";
+import { AuditTimeline } from "@/components/command-center/audit-timeline";
 
 type SidebarTab = "inbox" | "tasks" | "pages";
 
@@ -55,6 +57,7 @@ type CommandCenterClientProps = {
   initialNotes: CommandNoteRow[];
   initialTasks: WorkspaceTaskRow[];
   initialPages: WorkspacePageRow[];
+  initialAuditEvents: AppAuditEventRow[];
   campaigns: { id: string; name: string }[];
   initialCampaignId: string | null;
 };
@@ -77,6 +80,7 @@ export function CommandCenterClient({
   initialNotes,
   initialTasks,
   initialPages,
+  initialAuditEvents,
   campaigns,
   initialCampaignId,
 }: CommandCenterClientProps) {
@@ -88,6 +92,7 @@ export function CommandCenterClient({
   const [notes, setNotes] = useState(initialNotes);
   const [tasks, setTasks] = useState(initialTasks);
   const [pages, setPages] = useState(initialPages);
+  const [auditEvents, setAuditEvents] = useState(initialAuditEvents);
   const [campaignFilter, setCampaignFilter] = useState<string | "all">(
     initialCampaignId ?? "all"
   );
@@ -120,7 +125,8 @@ export function CommandCenterClient({
     setNotes(initialNotes);
     setTasks(initialTasks);
     setPages(initialPages);
-  }, [initialNotes, initialTasks, initialPages]);
+    setAuditEvents(initialAuditEvents);
+  }, [initialNotes, initialTasks, initialPages, initialAuditEvents]);
 
   useEffect(() => {
     if (!selectedNoteId) {
@@ -639,7 +645,11 @@ export function CommandCenterClient({
             </p>
           )}
 
-          <div className="mt-6 rounded-lg border border-dashed border-barber-gold/20 p-3 text-xs text-barber-paper/40">
+          <div className="mt-6 rounded-lg border border-dashed border-barber-gold/20 p-3">
+            <AuditTimeline events={auditEvents} />
+          </div>
+
+          <div className="mt-4 rounded-lg border border-dashed border-barber-gold/20 p-3 text-xs text-barber-paper/40">
             <p className="font-medium text-barber-paper/60">AI Control Plane</p>
             <p className="mt-1">Fase 3 — bozze e proposte assistite.</p>
           </div>

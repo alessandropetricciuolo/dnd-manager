@@ -1,67 +1,79 @@
 # Action Registry
 
-## Stato: pianificato (Fase 2)
+## Stato: implementato (Fase 2)
 
-In Fase 1 le operazioni Command Center usano server actions dedicate in `src/modules/command-center/server/actions.ts`. Non esiste ancora un registry centralizzato.
+Le mutazioni Command Center passano da `executeAction()` nel registry centralizzato. Ogni esecuzione registra un evento in `app_audit_events`.
 
-## Regola architetturale
-
-Tutto ciò che UI manuale e AI possono fare deve passare da action ufficiali:
+## Flusso
 
 ```
-UI / AI → ActionRegistry.execute(name, payload, ctx)
-              ├── validate
-              ├── authorize (TenantAdapter)
-              ├── preview (opzionale)
-              ├── execute
-              └── audit
+UI / Server Action → executeAction(name, input)
+                         ├── validate
+                         ├── authorize (adapter + action)
+                         ├── preview (opzionale)
+                         ├── loadBefore (snapshot)
+                         ├── execute
+                         ├── writeAuditEvent
+                         └── revalidatePath
 ```
 
-## Action Fase 1 (implementate come server actions dirette)
+## Action registrate
 
-| Nome concettuale | Funzione attuale |
-|------------------|------------------|
-| `command.note.create` | `createCommandNoteAction` |
-| `command.note.update` | `updateCommandNoteAction` |
-| `command.link.create` | `createCommandLinkAction` |
-| `workspace.task.create` | `createWorkspaceTaskAction` |
-| `workspace.task.update` | `updateWorkspaceTaskAction` |
-| `workspace.page.create` | `createWorkspacePageAction` |
-| `workspace.page.update` | `updateWorkspacePageAction` |
+### Workspace / Command (core)
 
-## Action Fase 2 (wrap esistenti)
+| Nome | Descrizione |
+|------|-------------|
+| `command.note.create` | Crea nota inbox + command_input |
+| `command.note.update` | Aggiorna nota |
+| `command.link.create` | Collega nota a entità |
+| `command.link.delete` | Rimuove collegamento |
+| `workspace.task.create` | Crea task |
+| `workspace.task.update` | Aggiorna task |
+| `workspace.page.create` | Crea pagina |
+| `workspace.page.update` | Aggiorna pagina |
 
-| Nome registry | Handler B&D |
-|---------------|-------------|
+### Wrapper legacy (Fase 2)
+
+| Nome | Handler sottostante |
+|------|---------------------|
 | `gm.note.create` | `createGmNote` |
+| `gm.note.update` | `updateGmNote` |
+| `gm.note.delete` | `deleteGmNote` |
 | `session.create` | `createSession` |
 | `wiki.entity.create` | `createEntity` |
-| `mission.create` | `createMissionAction` |
-| `memory.reindex` | `reindexCampaignMemoryAction` |
 
-## Struttura prevista
+## File
 
 ```
 src/modules/command-center/actions/
 ├── registry.ts
 ├── audit.ts
-└── definitions/
-    ├── command-note.actions.ts
-    └── wrappers/
-        ├── session.actions.ts
-        └── wiki.actions.ts
+├── register-all.ts
+├── definitions/
+│   ├── workspace.actions.ts
+│   └── wrappers/
+│       ├── gm-note.actions.ts
+│       ├── session.actions.ts
+│       └── wiki.actions.ts
+└── __tests__/registry.test.ts
 ```
 
-## Tabella audit (Fase 2)
+## Audit
 
-`app_audit_events` — migration dedicata in Fase 2.
+Tabella: `app_audit_events`  
+Migration: `20260701140000_app_audit_events.sql`
 
-Campi: `actor_type`, `action_name`, `entity_type`, `entity_id`, `before_snapshot`, `after_snapshot`, `metadata`.
+UI: pannello **Cronologia azioni** nel Command Center (colonna destra).
 
-## TODO Fase 2
+## Test
 
-- [ ] Creare `registry.ts` con `registerAction` / `executeAction`
-- [ ] Migrare actions Fase 1 al registry
-- [ ] Migration `app_audit_events`
-- [ ] Wrapper per `gm.note.*`, `session.create`, `wiki.entity.create`
-- [ ] Test permessi negati + audit write
+```bash
+npm run test:command-center
+```
+
+## TODO Fase 3+
+
+- [ ] `ai.proposal.create` / `approve` / `reject`
+- [ ] `memory.reindex` wrapper
+- [ ] `wiki.entity.update`, `session.update`
+- [ ] Preview UI per proposte AI

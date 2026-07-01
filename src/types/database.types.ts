@@ -1313,6 +1313,36 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["workspace_tasks"]["Insert"]>;
         Relationships: [];
       };
+      app_audit_events: {
+        Row: {
+          id: string;
+          workspace_id: string | null;
+          user_id: string | null;
+          actor_type: string;
+          action_name: string;
+          entity_type: string | null;
+          entity_id: string | null;
+          before_snapshot: Json | null;
+          after_snapshot: Json | null;
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id?: string | null;
+          user_id?: string | null;
+          actor_type?: string;
+          action_name: string;
+          entity_type?: string | null;
+          entity_id?: string | null;
+          before_snapshot?: Json | null;
+          after_snapshot?: Json | null;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["app_audit_events"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: {
       forge_product_stock: {

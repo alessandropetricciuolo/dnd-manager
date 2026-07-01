@@ -6,6 +6,7 @@ import {
   listCommandNotesAction,
   listWorkspacePagesAction,
   listWorkspaceTasksAction,
+  listAuditEventsAction,
 } from "@/modules/command-center/server/actions";
 import { CommandCenterClient } from "@/components/command-center/command-center-client";
 
@@ -27,11 +28,12 @@ export default async function CommandCenterPage({ searchParams }: PageProps) {
   const campaignIdRaw = typeof sp.campaignId === "string" ? sp.campaignId : null;
   const campaignId = campaignIdRaw?.trim() || null;
 
-  const [notesRes, tasksRes, pagesRes, campaignsRes] = await Promise.all([
+  const [notesRes, tasksRes, pagesRes, campaignsRes, auditRes] = await Promise.all([
     listCommandNotesAction(campaignId),
     listWorkspaceTasksAction(campaignId),
     listWorkspacePagesAction(campaignId),
     listCampaignsForCommandCenterAction(),
+    listAuditEventsAction(30),
   ]);
 
   return (
@@ -39,6 +41,7 @@ export default async function CommandCenterPage({ searchParams }: PageProps) {
       initialNotes={notesRes.success ? notesRes.data ?? [] : []}
       initialTasks={tasksRes.success ? tasksRes.data ?? [] : []}
       initialPages={pagesRes.success ? pagesRes.data ?? [] : []}
+      initialAuditEvents={auditRes.success ? auditRes.data ?? [] : []}
       campaigns={campaignsRes.success ? campaignsRes.data ?? [] : []}
       initialCampaignId={campaignId}
     />

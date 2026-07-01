@@ -49,17 +49,22 @@ Bridge previsto in Fase 2 (`gm.note.*` wrapper + eventuale conversione).
 | 3 Trusted automations | Futuro |
 | 4 Autonomous agents | Non pianificato |
 
-## Implementato (Fase 1)
+## Implementato
 
+### Fase 1
 - Migration `20260701120000_command_center_workspace.sql`
 - Modulo `src/modules/command-center/`
-- UI `src/components/command-center/command-center-client.tsx`
-- Route `src/app/command-center/`
-- Server actions in `src/modules/command-center/server/actions.ts`
+- UI `/command-center` (inbox, task, pagine, collegamenti)
+
+### Fase 2
+- Action Registry (`src/modules/command-center/actions/`)
+- Audit log `app_audit_events`
+- Wrapper: `gm.note.*`, `session.create`, `wiki.entity.create`
+- Cronologia azioni in UI
+- Test `npm run test:command-center`
 
 ## TODO
 
-- [ ] Fase 2: Action Registry + `app_audit_events`
 - [ ] Fase 3: AI Draft Mode
 - [ ] Fase 4: Confirmed actions
 - [ ] Fase 5: Voice input nello stesso flusso `command_inputs`
