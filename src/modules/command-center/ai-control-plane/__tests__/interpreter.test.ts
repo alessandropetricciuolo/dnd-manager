@@ -23,7 +23,7 @@ test("parseInterpreterJson filters unknown actions", () => {
       intent_summary: "Task",
       proposals: [
         { action_name: "workspace.task.create", input: { title: "Prep sessione" }, rationale: "Utile" },
-        { action_name: "session.create", input: {}, rationale: "Non consentita" },
+        { action_name: "not.a.real.action", input: {}, rationale: "Non consentita" },
       ],
     })
   );

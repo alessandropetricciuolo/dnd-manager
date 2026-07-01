@@ -1,94 +1,65 @@
 # Action Registry
 
-## Stato: implementato (Fase 2)
+## Stato: esteso (Tier A–C campagna + workspace)
 
-Le mutazioni Command Center passano da `executeAction()` nel registry centralizzato. Ogni esecuzione registra un evento in `app_audit_events`.
+Tutte le mutazioni Command Center e le operazioni campagna dell'assistente passano da `executeAction()`.
 
-## Flusso
+## Catalogo
 
-```
-UI / Server Action → executeAction(name, input)
-                         ├── validate
-                         ├── authorize (adapter + action)
-                         ├── preview (opzionale)
-                         ├── loadBefore (snapshot)
-                         ├── execute
-                         ├── writeAuditEvent
-                         └── revalidatePath
-```
+File sorgente: `src/modules/command-center/actions/action-catalog.ts`
 
-## Action registrate
+### Tier A — Workspace
 
-### Workspace / Command (core)
+| Action | Stato |
+|--------|-------|
+| `command.note.create/update` | ✓ |
+| `command.link.create/delete` | ✓ |
+| `workspace.task.create/update` | ✓ |
+| `workspace.page.create/update` | ✓ |
+| `command.input.capture` | ✓ |
+| `memory.reindex` | ✓ |
 
-| Nome | Descrizione |
-|------|-------------|
-| `command.note.create` | Crea nota inbox + command_input |
-| `command.note.update` | Aggiorna nota |
-| `command.link.create` | Collega nota a entità |
-| `command.link.delete` | Rimuove collegamento |
-| `workspace.task.create` | Crea task |
-| `workspace.task.update` | Aggiorna task |
-| `workspace.page.create` | Crea pagina |
-| `workspace.page.update` | Aggiorna pagina |
+### Tier B — Operazioni mature (wrapper)
 
-### Wrapper legacy (Fase 2)
-
-| Nome | Handler sottostante |
-|------|---------------------|
-| `gm.note.create` | `createGmNote` |
-| `gm.note.update` | `updateGmNote` |
-| `gm.note.delete` | `deleteGmNote` |
+| Action | Legacy |
+|--------|--------|
+| `gm.note.create/update/delete` | `gm-actions` |
 | `session.create` | `createSession` |
-| `wiki.entity.create` | `createEntity` |
+| `session.update` | `updateSession` |
+| `wiki.entity.create/update` | `wiki-actions` |
+| `mission.create/update` | `mission-actions` |
 
-## File
+### Tier C — Alto impatto
+
+| Action | Note |
+|--------|------|
+| `session.close` | Chiusura semplificata (presenze auto) |
+| `campaign.create/update` | Oneshot, quest, long, torneo |
+| `wiki.entity.delete` | Conferma GM obbligatoria |
+| `character.create/update` | Solo campi testuali (no upload) |
+| `campaign.aiContext.generate` | Architetto AI → `ai_context` |
+| `ai.proposal.execute/reject` | Meta-action bozze |
+
+### Deferred
+
+| Action | Motivo |
+|--------|--------|
+| `map.create/update` | Upload file / scene editor |
+| `memory.promoteToCanon` | Da definire |
+| `command.note.archive` | Usa `command.note.update` status `archived` |
+
+## Assistente AI
+
+17 action proponibili (`AI_DRAFT_ALLOWED_ACTIONS`). Flusso invariato:
 
 ```
-src/modules/command-center/actions/
-├── registry.ts
-├── audit.ts
-├── register-all.ts
-├── definitions/
-│   ├── workspace.actions.ts
-│   └── wrappers/
-│       ├── gm-note.actions.ts
-│       ├── session.actions.ts
-│       └── wiki.actions.ts
-└── __tests__/registry.test.ts
+Input → interpreter → bozza → GM Applica → executeAction → audit
 ```
 
-## Audit
-
-Tabella: `app_audit_events`  
-Migration: `20260701140000_app_audit_events.sql`
-
-UI: pannello **Cronologia azioni** nel Command Center (colonna destra).
+L'assistente resta **parallelo** alle UI esistenti (wiki, missioni, GM tab, dashboard).
 
 ## Test
 
 ```bash
 npm run test:command-center
 ```
-
-## Fase 3 (AI Draft)
-
-- `previewAction()` usato dal Proposal Builder per anteprime in `ai_action_requests`
-- Action proponibili AI: subset di workspace + `wiki.entity.create` + `gm.note.create`
-
-## Fase 4 (Confirmed actions)
-
-| Nome | Descrizione |
-|------|-------------|
-| `ai.proposal.execute` | GM applica bozza → esegue action sottostante + audit |
-| `ai.proposal.reject` | Scarta bozza in attesa |
-
-## Fase 5 (Voice input)
-
-- `command.note.create` accetta `source: voice` + `transcript`
-- Web Speech API in UI Command Center
-
-## TODO Fase 6+
-
-- [ ] `memory.reindex` wrapper
-- [ ] `wiki.entity.update`, `session.update`

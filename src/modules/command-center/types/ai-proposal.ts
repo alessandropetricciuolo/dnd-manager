@@ -1,3 +1,9 @@
+export {
+  AI_DRAFT_ALLOWED_ACTIONS,
+  AI_HIGH_IMPACT_ACTIONS,
+  type AiDraftAllowedAction,
+} from "../actions/action-catalog";
+
 export const AI_PROPOSAL_STATUSES = [
   "proposed",
   "approved",
@@ -45,13 +51,3 @@ export type AiDraftAssistantResult = {
   inputId: string | null;
   proposals: AiActionRequestRow[];
 };
-
-/** Action che l'AI può proporre in Fase 3 (solo bozze, nessuna esecuzione). */
-export const AI_DRAFT_ALLOWED_ACTIONS = [
-  "workspace.task.create",
-  "workspace.page.create",
-  "wiki.entity.create",
-  "gm.note.create",
-] as const;
-
-export type AiDraftAllowedAction = (typeof AI_DRAFT_ALLOWED_ACTIONS)[number];

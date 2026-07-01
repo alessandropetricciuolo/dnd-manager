@@ -46,7 +46,7 @@ export function AiAssistantPanel({
       id: "welcome",
       role: "assistant",
       content:
-        "Descrivi o detta cosa vuoi preparare: task, pagine workspace, note GM o entità wiki. Propongo bozze; tu confermi con Applica.",
+        "Sei l'assistente GM del Command Center. Posso proporre campagne, oneshot, wiki, missioni, sessioni, note GM, PG e task — sempre in bozza finché non clicchi Applica.",
     },
   ]);
   const scrollRef = useRef<HTMLDivElement>(null);

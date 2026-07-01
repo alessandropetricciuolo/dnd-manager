@@ -3,9 +3,9 @@ import { executeAction } from "../actions/registry";
 import { snapshotValue } from "../actions/audit";
 import type { ActionContext } from "../types/actions";
 import {
-  AI_DRAFT_ALLOWED_ACTIONS,
-  type AiActionRequestRow,
-} from "../types/ai-proposal";
+  isAiDraftAllowedAction,
+} from "../actions/action-catalog";
+import type { AiActionRequestRow } from "../types/ai-proposal";
 import { assertCanExecuteWithApproval } from "./autonomy";
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -19,7 +19,7 @@ export function getProposalExecutionBlockReason(
   if (row.status !== "proposed") {
     return "La proposta non è più in attesa.";
   }
-  if (!(AI_DRAFT_ALLOWED_ACTIONS as readonly string[]).includes(row.action_name)) {
+  if (!isAiDraftAllowedAction(row.action_name)) {
     return `Action non consentita: ${row.action_name}`;
   }
   const previewError = asRecord(row.preview_payload)?.error;

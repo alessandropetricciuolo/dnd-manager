@@ -29,17 +29,17 @@ test("getProposalExecutionBlockReason blocks invalid preview", () => {
 test("getProposalExecutionBlockReason blocks unknown actions", () => {
   const reason = getProposalExecutionBlockReason({
     status: "proposed",
-    action_name: "session.create",
+    action_name: "not.a.real.action",
     preview_payload: {},
   });
   assert.match(reason ?? "", /non consentita/);
 });
 
-test("getProposalExecutionBlockReason allows valid proposal", () => {
+test("getProposalExecutionBlockReason allows campaign.create", () => {
   const reason = getProposalExecutionBlockReason({
     status: "proposed",
-    action_name: "workspace.page.create",
-    preview_payload: { title: "Test" },
+    action_name: "campaign.create",
+    preview_payload: { title: "Cioccolandia al mare", type: "oneshot" },
   });
   assert.equal(reason, null);
 });

@@ -15,8 +15,23 @@ import {
 const ACTION_LABELS: Record<string, string> = {
   "workspace.task.create": "Nuovo task",
   "workspace.page.create": "Nuova pagina",
-  "wiki.entity.create": "Entità wiki",
+  "command.input.capture": "Input grezzo",
+  "campaign.create": "Nuova campagna",
+  "campaign.update": "Aggiorna campagna",
   "gm.note.create": "Nota GM",
+  "gm.note.update": "Aggiorna nota GM",
+  "session.create": "Nuova sessione",
+  "session.update": "Aggiorna sessione",
+  "session.close": "Chiudi sessione",
+  "wiki.entity.create": "Entità wiki",
+  "wiki.entity.update": "Aggiorna wiki",
+  "wiki.entity.delete": "Elimina wiki",
+  "mission.create": "Nuova missione",
+  "mission.update": "Aggiorna missione",
+  "character.create": "Nuovo PG",
+  "character.update": "Aggiorna PG",
+  "campaign.aiContext.generate": "Contesto AI campagna",
+  "memory.reindex": "Reindicizza memoria",
 };
 
 type AiProposalPanelProps = {

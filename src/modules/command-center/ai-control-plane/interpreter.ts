@@ -1,18 +1,25 @@
 import { generateAiText } from "@/lib/ai/huggingface-client";
-import { AI_DRAFT_ALLOWED_ACTIONS, type AiInterpreterResult } from "../types/ai-proposal";
+import {
+  buildInterpreterActionList,
+  isAiDraftAllowedAction,
+} from "../actions/action-catalog";
+import type { AiInterpreterResult } from "../types/ai-proposal";
 import { formatContextForPrompt, type ResolvedCommandContext } from "./context-resolver";
 
 const SYSTEM_RULES = `Sei l'assistente GM del Command Center di Barber & Dragons.
-Modalità: SOLO BOZZE (Livello 1). Non eseguire nulla. Proponi al massimo 3 action ufficiali.
+Sei parallelo al sistema manuale: proponi SOLO action ufficiali del registry, mai scritture dirette.
+Modalità: bozze con conferma GM. Proponi al massimo 3 action.
 
 Action consentite (usa esattamente questi nomi):
-${AI_DRAFT_ALLOWED_ACTIONS.map((a) => `- ${a}`).join("\n")}
+${buildInterpreterActionList()}
 
-Schema input per action:
-- workspace.task.create: { title, description?, campaignId? }
-- workspace.page.create: { title, contentMarkdown?, campaignId?, pageType? }
-- wiki.entity.create: { campaignId, title, type: npc|location|lore|item|monster, content, visibility? }
-- gm.note.create: { campaignId, title, content, sessionId? }
+Regole:
+- Per oneshot/campagne nuove usa campaign.create con type oneshot
+- Per NPC/luoghi/lore usa wiki.entity.create
+- Per note nella tab GM campagna usa gm.note.create
+- Per missioni gilda usa mission.create
+- Non inventare campaignId: usa quello del contesto se presente
+- Per modifiche servono gli ID esistenti (entityId, missionId, sessionId, …)
 
 Rispondi SOLO con JSON valido (senza markdown):
 {
@@ -23,8 +30,7 @@ Rispondi SOLO con JSON valido (senza markdown):
   ]
 }
 
-Se non serve proporre action, usa "proposals": [].
-Non inventare campaignId: usa quello del contesto se presente.`;
+Se non serve proporre action, usa "proposals": [].`;
 
 export function extractJsonObject(raw: string): string {
   const trimmed = raw.trim();
@@ -48,7 +54,7 @@ export function parseInterpreterJson(raw: string): AiInterpreterResult {
       if (!p || typeof p !== "object") return null;
       const o = p as Record<string, unknown>;
       const action_name = typeof o.action_name === "string" ? o.action_name.trim() : "";
-      if (!(AI_DRAFT_ALLOWED_ACTIONS as readonly string[]).includes(action_name)) return null;
+      if (!isAiDraftAllowedAction(action_name)) return null;
       const input =
         o.input && typeof o.input === "object" && !Array.isArray(o.input)
           ? (o.input as Record<string, unknown>)

@@ -1,5 +1,39 @@
-import { createSession } from "@/app/campaigns/actions";
+import { createSession, updateSession, closeSessionAction } from "@/app/campaigns/actions";
+import type { ActionContext } from "../../../types/actions";
 import { registerAction } from "../../registry";
+
+async function buildMinimalClosePayload(
+  ctx: ActionContext,
+  sessionId: string,
+  input: {
+    summary: string;
+    gmPrivateNotes?: string | null;
+    xpGained?: number;
+    elapsedHours?: number;
+  }
+) {
+  const { data: signups } = await ctx.supabase
+    .from("session_signups")
+    .select("player_id")
+    .eq("session_id", sessionId);
+
+  const attendance: Record<string, "attended" | "absent"> = {};
+  for (const row of signups ?? []) {
+    const pid = (row as { player_id: string }).player_id;
+    if (pid) attendance[pid] = "attended";
+  }
+
+  return {
+    attendance,
+    xpGained: input.xpGained ?? 0,
+    unlockContent: false,
+    unlockContentIds: [] as { id: string; type: "wiki" | "map" }[],
+    summary: input.summary,
+    gm_private_notes: input.gmPrivateNotes ?? null,
+    entityStatusUpdates: {} as Record<string, "alive" | "dead" | "missing">,
+    elapsedHours: input.elapsedHours ?? 0,
+  };
+}
 
 export function registerSessionWrapperActions(): void {
   registerAction({
@@ -60,5 +94,106 @@ export function registerSessionWrapperActions(): void {
       entityId: input.campaignId,
     }),
     revalidatePaths: (input) => [`/campaigns/${input.campaignId}`, "/command-center"],
+  });
+
+  registerAction({
+    name: "session.update",
+    description: "Aggiorna titolo, riassunto o note GM private di una sessione",
+    category: "session",
+    validate: (input) => {
+      const o = input as Record<string, unknown>;
+      const sessionId = typeof o.sessionId === "string" ? o.sessionId.trim() : "";
+      if (!sessionId) return { ok: false, error: "ID sessione obbligatorio." };
+      return {
+        ok: true,
+        data: {
+          sessionId,
+          title: typeof o.title === "string" ? o.title.trim() || null : undefined,
+          sessionSummary:
+            typeof o.sessionSummary === "string"
+              ? o.sessionSummary
+              : typeof o.session_summary === "string"
+                ? o.session_summary
+                : undefined,
+          gmPrivateNotes:
+            typeof o.gmPrivateNotes === "string"
+              ? o.gmPrivateNotes
+              : typeof o.gm_private_notes === "string"
+                ? o.gm_private_notes
+                : undefined,
+        },
+      };
+    },
+    preview: async (_ctx, input) => ({
+      sessionId: input.sessionId,
+      title: input.title,
+      sessionSummary: input.sessionSummary?.slice(0, 200),
+      gmPrivateNotes: input.gmPrivateNotes?.slice(0, 120),
+    }),
+    execute: async (_ctx, input) => {
+      const result = await updateSession(input.sessionId, {
+        title: input.title,
+        session_summary: input.sessionSummary,
+        gm_private_notes: input.gmPrivateNotes,
+      });
+      if (!result.success) throw new Error(result.message);
+      return { sessionId: input.sessionId, campaignId: result.campaignId };
+    },
+    auditEntity: (input) => ({
+      entityType: "session",
+      entityId: input.sessionId,
+    }),
+    revalidatePaths: (_input, result) =>
+      result.campaignId
+        ? [`/campaigns/${result.campaignId}`, "/command-center"]
+        : ["/command-center"],
+  });
+
+  registerAction({
+    name: "session.close",
+    description: "Chiude una sessione programmata (modalità semplificata)",
+    category: "session",
+    validate: (input) => {
+      const o = input as Record<string, unknown>;
+      const sessionId = typeof o.sessionId === "string" ? o.sessionId.trim() : "";
+      const summary = typeof o.summary === "string" ? o.summary.trim() : "";
+      if (!sessionId) return { ok: false, error: "ID sessione obbligatorio." };
+      if (!summary) return { ok: false, error: "Riassunto sessione obbligatorio." };
+      return {
+        ok: true,
+        data: {
+          sessionId,
+          summary,
+          gmPrivateNotes:
+            typeof o.gmPrivateNotes === "string"
+              ? o.gmPrivateNotes
+              : typeof o.gm_private_notes === "string"
+                ? o.gm_private_notes
+                : null,
+          xpGained: typeof o.xpGained === "number" ? o.xpGained : 0,
+          elapsedHours: typeof o.elapsedHours === "number" ? o.elapsedHours : 0,
+        },
+      };
+    },
+    preview: async (_ctx, input) => ({
+      sessionId: input.sessionId,
+      summary: input.summary.slice(0, 240),
+      xpGained: input.xpGained,
+      mode: "minimal_close",
+    }),
+    execute: async (ctx, input) => {
+      const payload = await buildMinimalClosePayload(ctx, input.sessionId, input);
+      const result = await closeSessionAction(input.sessionId, payload);
+      if (!result.success) throw new Error(result.message);
+      return { sessionId: input.sessionId, campaignId: result.campaignId };
+    },
+    auditEntity: (input) => ({
+      entityType: "session",
+      entityId: input.sessionId,
+    }),
+    revalidatePaths: (_input, result) =>
+      result.campaignId
+        ? [`/campaigns/${result.campaignId}`, "/command-center"]
+        : ["/command-center"],
   });
 }
