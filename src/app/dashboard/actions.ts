@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { createSupabaseAdminClient } from "@/utils/supabase/admin";
+import { syncCampaignMetaToCampaignMemory } from "@/lib/campaign-memory-indexer";
 import { uploadToTelegram } from "@/lib/telegram-storage";
 import { parseSafeExternalUrl } from "@/lib/security/url";
 import { CAMPAIGN_TYPE_VALUES, type CampaignType } from "@/lib/campaign-type";
@@ -108,6 +110,15 @@ export async function createCampaign(
           success: false,
           message: uploadErr instanceof Error ? uploadErr.message : "Errore durante il caricamento dell'immagine.",
         };
+      }
+    }
+
+    if (newCampaign?.id && (isLongCampaign || type === "long")) {
+      try {
+        const admin = createSupabaseAdminClient();
+        await syncCampaignMetaToCampaignMemory(admin, newCampaign.id);
+      } catch (syncErr) {
+        console.error("[createCampaign] memory sync", syncErr);
       }
     }
 

@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { createSupabaseAdminClient } from "@/utils/supabase/admin";
+import { syncCampaignMetaToCampaignMemory } from "@/lib/campaign-memory-indexer";
 import type { Json } from "@/types/database.types";
 import { ARCHITECT_SYSTEM_PROMPT } from "@/lib/ai/prompts";
 import { generateAiText, HuggingFaceInferenceError } from "@/lib/ai/huggingface-client";
@@ -154,6 +156,13 @@ export async function generateCampaignContextAction(
     if (updateError) {
       console.error("[generateCampaignContextAction]", updateError);
       return { success: false, message: updateError.message ?? "Errore nel salvataggio." };
+    }
+
+    try {
+      const admin = createSupabaseAdminClient();
+      await syncCampaignMetaToCampaignMemory(admin, campaignId);
+    } catch (syncErr) {
+      console.error("[generateCampaignContextAction] memory sync", syncErr);
     }
 
     revalidatePath(`/campaigns/${campaignId}`);

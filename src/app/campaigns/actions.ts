@@ -18,6 +18,7 @@ import {
 } from "@/lib/actions/campaign-economy-actions";
 import {
   deleteCampaignMemorySource,
+  syncCampaignMetaToCampaignMemory,
   syncWikiEntityToCampaignMemory,
   syncSessionToCampaignMemory,
 } from "@/lib/campaign-memory-indexer";
@@ -3075,6 +3076,13 @@ export async function updateCampaign(formData: FormData): Promise<UpdateCampaign
       return { success: false, message: error.message ?? "Errore durante l'aggiornamento." };
     }
 
+    try {
+      const admin = createSupabaseAdminClient();
+      await syncCampaignMetaToCampaignMemory(admin, campaignId);
+    } catch (syncErr) {
+      console.error("[updateCampaign] memory sync", syncErr);
+    }
+
     revalidatePath(`/campaigns/${campaignId}`);
     revalidatePath("/dashboard");
     return { success: true, message: "Campagna aggiornata!" };
@@ -3138,6 +3146,13 @@ export async function updateCampaignPrimer(
     if (error) {
       console.error("[updateCampaignPrimer]", error);
       return { success: false, message: error.message ?? "Errore durante il salvataggio." };
+    }
+
+    try {
+      const admin = createSupabaseAdminClient();
+      await syncCampaignMetaToCampaignMemory(admin, campaignId);
+    } catch (syncErr) {
+      console.error("[updateCampaignPrimer] memory sync", syncErr);
     }
 
     revalidatePath(`/campaigns/${campaignId}`);

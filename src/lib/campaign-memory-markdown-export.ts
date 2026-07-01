@@ -33,8 +33,11 @@ type BuildMarkdownOptions = {
 };
 
 const SOURCE_TYPE_ORDER: CampaignMemorySourceType[] = [
+  "campaign_description",
+  "campaign_ai_context",
   "wiki",
   "map_description",
+  "mission",
   "character_background",
   "session_summary",
   "session_note",
@@ -50,6 +53,9 @@ const SOURCE_TYPE_LABEL: Record<CampaignMemorySourceType, string> = {
   session_note: "Note private sessione",
   gm_note: "Note GM",
   secret_whisper: "Secret whispers",
+  campaign_description: "Descrizione campagna",
+  campaign_ai_context: "Paletti IA campagna",
+  mission: "Missioni gilda",
 };
 
 const DEFAULT_COMPACT_MAX_CHARS = 24_000;
@@ -244,6 +250,9 @@ function buildSourceCounts(sources: CampaignMemoryExportSource[]): Record<Campai
     session_note: sources.filter((source) => source.sourceType === "session_note").length,
     gm_note: sources.filter((source) => source.sourceType === "gm_note").length,
     secret_whisper: sources.filter((source) => source.sourceType === "secret_whisper").length,
+    campaign_description: sources.filter((source) => source.sourceType === "campaign_description").length,
+    campaign_ai_context: sources.filter((source) => source.sourceType === "campaign_ai_context").length,
+    mission: sources.filter((source) => source.sourceType === "mission").length,
   };
 }
 

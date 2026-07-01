@@ -15,10 +15,8 @@ import {
   isWikiMarkdownEntityType,
   supportsWikiContextualImage,
 } from "./wiki-proposal-builder";
-import {
-  detectWikiCreateRequest,
-  hasNpcMechanicsParams,
-} from "./wiki-request-detector";
+import { applyDomainFallbackInterpreter } from "./domain-fallback-interpreter";
+import { enrichDomainProposal } from "./proposal-enricher";
 import type { AiInterpreterResult } from "../types/ai-proposal";
 
 export type ChatPendingProposal = ChatPendingProposalPayload;
@@ -146,51 +144,6 @@ async function tryEnrichWikiProposal(
     assistantMessage: enriched.assistantMessage,
   };
 }
-
-function applyWikiFallbackInterpreter(
-  message: string,
-  campaignId: string,
-  recentUserMessages: string[] | undefined,
-  interpreted: AiInterpreterResult
-): {
-  interpreted: AiInterpreterResult;
-  detectedExtraParams?: import("@/lib/ai/wiki-text-generator").WikiMarkdownExtraParams;
-} {
-  if (interpreted.proposals.length > 0 && interpreted.intent_summary !== "Parse fallito") {
-    return { interpreted };
-  }
-
-  const combinedContext = [...(recentUserMessages ?? []), message].filter(Boolean).join("\n");
-  const detected = detectWikiCreateRequest(combinedContext);
-  if (!detected) return { interpreted };
-
-  const narrativeOnly =
-    detected.entityType === "npc" && !hasNpcMechanicsParams(detected.extraParams);
-
-  return {
-    detectedExtraParams: detected.extraParams,
-    interpreted: {
-      reply: narrativeOnly
-        ? `Preparo il profilo narrativo di **${detected.title}**. Senza livello non genero lo statblock: puoi aggiungerlo in chat (es. «livello 5») e chiedere modifiche.`
-        : `Preparo una voce wiki per **${detected.title}**.`,
-      intent_summary: `Creare ${detected.entityType}: ${detected.title}`,
-      proposals: [
-        {
-          action_name: "wiki.entity.create",
-          input: {
-            campaignId,
-            title: detected.title,
-            type: detected.entityType,
-            content: "",
-            visibility: "public",
-          },
-          rationale: "Richiesta wiki rilevata dal messaggio",
-        },
-      ],
-    },
-  };
-}
-
 export async function runAiChatAssistant(
   input: RunAiChatAssistantParams
 ): Promise<{ success: true; data: AiChatAssistantResult } | { success: false; error: string }> {
@@ -465,47 +418,74 @@ export async function runAiChatAssistant(
 
   let detectedExtraParams: import("@/lib/ai/wiki-text-generator").WikiMarkdownExtraParams | undefined;
 
-  if (campaignId) {
-    const fallback = applyWikiFallbackInterpreter(
-      message,
-      campaignId,
-      input.recentUserMessages,
-      interpreted
-    );
-    interpreted = fallback.interpreted;
-    detectedExtraParams = fallback.detectedExtraParams;
-  }
+  const fallback = applyDomainFallbackInterpreter(
+    message,
+    campaignId,
+    input.recentUserMessages,
+    interpreted
+  );
+  interpreted = fallback.interpreted;
+  detectedExtraParams = fallback.detectedExtraParams;
 
   let previews = await previewInterpreterProposals(interpreted.proposals, campaignId);
   let nextPending: ChatPendingProposal | null = previews[0]
     ? { ...previews[0], phase: "text" as const }
     : null;
 
-  if (
-    nextPending?.action_name === "wiki.entity.create" &&
-    campaignId &&
-    isWikiMarkdownEntityType(pickWikiType(nextPending.input))
-  ) {
-    const enriched = await tryEnrichWikiProposal(campaignId, message, nextPending, {
-      refine: intent === "refine",
-      pending,
-      extraParams: detectedExtraParams,
-    });
+  if (nextPending) {
+    const enrichableActions = new Set([
+      "wiki.entity.create",
+      "mission.create",
+      "character.create",
+      "campaign.create",
+    ]);
 
-    if (enriched.error) {
-      return { success: false, error: enriched.error };
+    if (
+      nextPending.action_name === "wiki.entity.create" &&
+      campaignId &&
+      isWikiMarkdownEntityType(pickWikiType(nextPending.input))
+    ) {
+      const enriched = await tryEnrichWikiProposal(campaignId, message, nextPending, {
+        refine: intent === "refine",
+        pending,
+        extraParams: detectedExtraParams,
+      });
+
+      if (enriched.error) {
+        return { success: false, error: enriched.error };
+      }
+
+      nextPending = {
+        ...enriched.proposal,
+        phase: "text",
+        wikiMeta: enriched.wikiMeta,
+      };
+    } else if (nextPending.action_name === "wiki.entity.create" && !campaignId) {
+      return {
+        success: false,
+        error: "Seleziona una campagna nel filtro per creare voci wiki con l'AI contestuale.",
+      };
+    } else if (enrichableActions.has(nextPending.action_name)) {
+      const enriched = await enrichDomainProposal(
+        nextPending.action_name,
+        campaignId,
+        message,
+        nextPending
+      );
+
+      if (!enriched.ok) {
+        return { success: false, error: enriched.error };
+      }
+
+      nextPending = {
+        ...enriched.proposal,
+        phase: "text",
+        preview_payload: {
+          ...enriched.proposal.preview_payload,
+          ...(enriched.assistantMessage ? { assistantPreview: enriched.assistantMessage } : {}),
+        },
+      };
     }
-
-    nextPending = {
-      ...enriched.proposal,
-      phase: "text",
-      wikiMeta: enriched.wikiMeta,
-    };
-  } else if (nextPending?.action_name === "wiki.entity.create" && !campaignId) {
-    return {
-      success: false,
-      error: "Seleziona una campagna nel filtro per creare voci wiki con l'AI contestuale.",
-    };
   }
 
   let reply = interpreted.reply;

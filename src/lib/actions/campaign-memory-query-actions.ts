@@ -81,6 +81,12 @@ function sourceLabel(sourceType: CampaignMemorySourceType): string {
       return "Nota GM";
     case "secret_whisper":
       return "Whisper";
+    case "campaign_description":
+      return "Campagna";
+    case "campaign_ai_context":
+      return "Paletti IA";
+    case "mission":
+      return "Missione";
   }
 }
 
@@ -98,6 +104,11 @@ function sourceHref(campaignId: string, row: CampaignMemoryChunkRow): string {
     case "gm_note":
     case "secret_whisper":
       return `/campaigns/${campaignId}?tab=gm`;
+    case "campaign_description":
+    case "campaign_ai_context":
+      return `/campaigns/${campaignId}`;
+    case "mission":
+      return `/campaigns/${campaignId}?tab=missioni`;
   }
 }
 
@@ -186,6 +197,12 @@ function rerankMatches(question: string, rows: CampaignMemoryChunkRow[]): Campai
       if (row.source_type === "gm_note" && !wantsSecrets && !wantsRecent) score += 0.04;
       if (/\b(mappa|mappe|continente|citta|città|regione|dungeon|luogo|dove)\b/i.test(question) && row.source_type === "map_description") {
         score += 0.12;
+      }
+      if (/\b(missione|missioni|gilda|incarico|quest)\b/i.test(question) && row.source_type === "mission") {
+        score += 0.18;
+      }
+      if (/\b(campagna|ambientazione|tono|magia|paletti)\b/i.test(question) && (row.source_type === "campaign_description" || row.source_type === "campaign_ai_context")) {
+        score += 0.14;
       }
       return { row, score };
     })

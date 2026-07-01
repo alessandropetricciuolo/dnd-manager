@@ -531,7 +531,10 @@ export interface Database {
             | "session_note"
             | "gm_note"
             | "secret_whisper"
-            | "map_description";
+            | "map_description"
+            | "campaign_description"
+            | "campaign_ai_context"
+            | "mission";
           source_id: string;
           chunk_index: number;
           title: string;

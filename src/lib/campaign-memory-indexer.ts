@@ -1,4 +1,5 @@
 import { generateOpenRouterEmbedding } from "@/lib/ai/openrouter-client";
+import { parseCampaignAiContextFromDb } from "@/lib/campaign-ai-context";
 import { extractWikiContentBody, extractWikiEntityMemoryText, extractWikiGmNotes } from "@/lib/campaign-wiki-ai-memory";
 import type { Json } from "@/types/database.types";
 
@@ -12,6 +13,9 @@ export const CAMPAIGN_MEMORY_SOURCE_TYPES = [
   "gm_note",
   "secret_whisper",
   "map_description",
+  "campaign_description",
+  "campaign_ai_context",
+  "mission",
 ] as const;
 
 export type CampaignMemorySourceType = (typeof CAMPAIGN_MEMORY_SOURCE_TYPES)[number];
@@ -95,6 +99,30 @@ type MapMemoryRow = {
   map_type: string;
   visibility: string;
   parent_map_id: string | null;
+  updated_at: string;
+};
+
+type CampaignMetaMemoryRow = {
+  id: string;
+  name: string;
+  description: string | null;
+  player_primer: string | null;
+  ai_context: Json | null;
+  updated_at: string;
+};
+
+type MissionMemoryRow = {
+  id: string;
+  campaign_id: string;
+  grade: string;
+  title: string;
+  committente: string;
+  ubicazione: string;
+  paga: string;
+  urgenza: string;
+  description: string;
+  points_reward: number | null;
+  status: string | null;
   updated_at: string;
 };
 
@@ -495,6 +523,110 @@ function buildMapChunks(row: MapMemoryRow): CampaignMemoryChunkInsert[] {
   }));
 }
 
+function buildCampaignDescriptionChunks(row: CampaignMetaMemoryRow): CampaignMemoryChunkInsert[] {
+  const description = normalizeWhitespace(row.description ?? "");
+  const primer = normalizeWhitespace(row.player_primer ?? "");
+  if (!description && !primer) return [];
+
+  const body = [description, primer ? `Guida del giocatore:\n${primer}` : null]
+    .filter(Boolean)
+    .join("\n\n");
+
+  return chunkText(
+    withHeader(
+      `Campagna: ${row.name}`,
+      [`Ultimo aggiornamento: ${row.updated_at}`, "Fonte: descrizione e guida del giocatore."],
+      body
+    )
+  ).map((content, index) => ({
+    campaign_id: row.id,
+    source_type: "campaign_description",
+    source_id: row.id,
+    chunk_index: index,
+    title: row.name,
+    content,
+    summary: excerpt(body),
+    metadata: {
+      campaign_name: row.name,
+      has_player_primer: Boolean(primer),
+      updated_at: row.updated_at,
+      is_private: false,
+    },
+  }));
+}
+
+function buildCampaignAiContextChunks(row: CampaignMetaMemoryRow): CampaignMemoryChunkInsert[] {
+  const ctx = parseCampaignAiContextFromDb(row.ai_context);
+  if (!ctx) return [];
+
+  const body = [
+    `Tono narrativo: ${ctx.narrative_tone}`,
+    `Livello di magia: ${ctx.magic_level}`,
+    `Focus meccaniche: ${ctx.mechanics_focus}`,
+    `Stile visivo (positivo): ${ctx.visual_positive}`,
+    `Vietato in immagine: ${ctx.visual_negative}`,
+  ].join("\n");
+
+  return chunkText(
+    withHeader(
+      `Paletti IA: ${row.name}`,
+      [`Ultimo aggiornamento: ${row.updated_at}`, "Fonte: contesto AI Architect della campagna."],
+      body
+    )
+  ).map((content, index) => ({
+    campaign_id: row.id,
+    source_type: "campaign_ai_context",
+    source_id: row.id,
+    chunk_index: index,
+    title: row.name,
+    content,
+    summary: excerpt(body),
+    metadata: {
+      campaign_name: row.name,
+      updated_at: row.updated_at,
+      is_private: false,
+    },
+  }));
+}
+
+function buildMissionChunks(row: MissionMemoryRow): CampaignMemoryChunkInsert[] {
+  const description = normalizeWhitespace(row.description ?? "");
+  if (!description) return [];
+
+  const text = withHeader(
+    `Missione: ${row.title} (grado ${row.grade})`,
+    [
+      `Committente: ${row.committente}`,
+      `Ubicazione: ${row.ubicazione}`,
+      `Paga: ${row.paga}`,
+      `Urgenza: ${row.urgenza}`,
+      row.points_reward != null ? `Punti gilda: ${row.points_reward}` : null,
+      row.status ? `Stato: ${row.status}` : null,
+      `Ultimo aggiornamento: ${row.updated_at}`,
+      "Fonte: bacheca missioni della campagna.",
+    ],
+    description
+  );
+
+  return chunkText(text).map((content, index) => ({
+    campaign_id: row.campaign_id,
+    source_type: "mission",
+    source_id: row.id,
+    chunk_index: index,
+    title: row.title,
+    content,
+    summary: excerpt(description),
+    metadata: {
+      grade: row.grade,
+      committente: row.committente,
+      ubicazione: row.ubicazione,
+      status: row.status,
+      updated_at: row.updated_at,
+      is_private: false,
+    },
+  }));
+}
+
 export async function syncWikiEntityToCampaignMemory(
   admin: AdminClient,
   entityId: string,
@@ -699,6 +831,84 @@ export async function syncMapDescriptionToCampaignMemory(
   await upsertCampaignMemoryChunks(admin, row.campaign_id, "map_description", row.id, buildMapChunks(row));
 }
 
+export async function syncCampaignMetaToCampaignMemory(
+  admin: AdminClient,
+  campaignId: string
+): Promise<void> {
+  const { data } = await admin
+    .from("campaigns")
+    .select("id, name, description, player_primer, ai_context, updated_at")
+    .eq("id", campaignId)
+    .maybeSingle();
+
+  if (!data) {
+    await Promise.all([
+      deleteCampaignMemorySource(admin, campaignId, "campaign_description", campaignId),
+      deleteCampaignMemorySource(admin, campaignId, "campaign_ai_context", campaignId),
+    ]);
+    return;
+  }
+
+  const row = data as CampaignMetaMemoryRow;
+  if (!(await isLongCampaign(admin, row.id))) {
+    await Promise.all([
+      deleteCampaignMemorySource(admin, row.id, "campaign_description", row.id),
+      deleteCampaignMemorySource(admin, row.id, "campaign_ai_context", row.id),
+    ]);
+    return;
+  }
+
+  await upsertCampaignMemoryChunks(
+    admin,
+    row.id,
+    "campaign_description",
+    row.id,
+    buildCampaignDescriptionChunks(row)
+  );
+  await upsertCampaignMemoryChunks(
+    admin,
+    row.id,
+    "campaign_ai_context",
+    row.id,
+    buildCampaignAiContextChunks(row)
+  );
+}
+
+export async function syncMissionToCampaignMemory(
+  admin: AdminClient,
+  missionId: string,
+  options?: { campaignId?: string }
+): Promise<void> {
+  const { data } = await admin
+    .from("campaign_missions")
+    .select(
+      "id, campaign_id, grade, title, committente, ubicazione, paga, urgenza, description, points_reward, status, updated_at"
+    )
+    .eq("id", missionId)
+    .maybeSingle();
+
+  if (!data) {
+    if (options?.campaignId) {
+      await deleteCampaignMemorySource(admin, options.campaignId, "mission", missionId);
+    }
+    return;
+  }
+
+  const row = data as MissionMemoryRow;
+  if (!(await isLongCampaign(admin, row.campaign_id))) {
+    await deleteCampaignMemorySource(admin, row.campaign_id, "mission", row.id);
+    return;
+  }
+
+  await upsertCampaignMemoryChunks(
+    admin,
+    row.campaign_id,
+    "mission",
+    row.id,
+    buildMissionChunks(row)
+  );
+}
+
 export async function countCampaignMemoryChunks(admin: AdminClient, campaignId: string): Promise<number> {
   const { count, error } = await admin
     .from("campaign_memory_chunks")
@@ -729,6 +939,8 @@ export async function reindexCampaignMemory(admin: AdminClient, campaignId: stri
     noteRes,
     whisperRes,
     mapRes,
+    campaignRes,
+    missionRes,
   ] = await Promise.all([
     admin
       .from("wiki_entities")
@@ -760,6 +972,18 @@ export async function reindexCampaignMemory(admin: AdminClient, campaignId: stri
       .select("id, campaign_id, name, description, map_type, visibility, parent_map_id, updated_at")
       .eq("campaign_id", campaignId)
       .order("updated_at", { ascending: false }),
+    admin
+      .from("campaigns")
+      .select("id, name, description, player_primer, ai_context, updated_at")
+      .eq("id", campaignId)
+      .maybeSingle(),
+    admin
+      .from("campaign_missions")
+      .select(
+        "id, campaign_id, grade, title, committente, ubicazione, paga, urgenza, description, points_reward, status, updated_at"
+      )
+      .eq("campaign_id", campaignId)
+      .order("updated_at", { ascending: false }),
   ]);
 
   if (wikiRes.error) throw new Error(wikiRes.error.message);
@@ -768,6 +992,8 @@ export async function reindexCampaignMemory(admin: AdminClient, campaignId: stri
   if (noteRes.error) throw new Error(noteRes.error.message);
   if (whisperRes.error) throw new Error(whisperRes.error.message);
   if (mapRes.error) throw new Error(mapRes.error.message);
+  if (campaignRes.error) throw new Error(campaignRes.error.message);
+  if (missionRes.error) throw new Error(missionRes.error.message);
 
   for (const row of (wikiRes.data ?? []) as WikiMemoryRow[]) {
     await upsertCampaignMemoryChunks(admin, campaignId, "wiki", row.id, buildWikiChunks(row));
@@ -806,5 +1032,25 @@ export async function reindexCampaignMemory(admin: AdminClient, campaignId: stri
   }
   for (const row of (mapRes.data ?? []) as MapMemoryRow[]) {
     await upsertCampaignMemoryChunks(admin, campaignId, "map_description", row.id, buildMapChunks(row));
+  }
+  if (campaignRes.data) {
+    const campaignRow = campaignRes.data as CampaignMetaMemoryRow;
+    await upsertCampaignMemoryChunks(
+      admin,
+      campaignId,
+      "campaign_description",
+      campaignRow.id,
+      buildCampaignDescriptionChunks(campaignRow)
+    );
+    await upsertCampaignMemoryChunks(
+      admin,
+      campaignId,
+      "campaign_ai_context",
+      campaignRow.id,
+      buildCampaignAiContextChunks(campaignRow)
+    );
+  }
+  for (const row of (missionRes.data ?? []) as MissionMemoryRow[]) {
+    await upsertCampaignMemoryChunks(admin, campaignId, "mission", row.id, buildMissionChunks(row));
   }
 }

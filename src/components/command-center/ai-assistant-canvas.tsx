@@ -14,6 +14,7 @@ const ACTION_LABELS: Record<string, string> = {
   "workspace.task.create": "Task",
   "workspace.page.create": "Pagina",
   "campaign.create": "Campagna",
+  "character.create": "Personaggio",
 };
 
 type AiAssistantCanvasProps = {
@@ -77,7 +78,7 @@ export function AiAssistantCanvas({
   const type = pickText(preview.type, input.type, pendingProposal.wikiMeta?.entityType);
   const content =
     wikiDraft?.description ||
-    pickText(preview.content, preview.contentMarkdown, input.content);
+    pickText(preview.assistantPreview, preview.content, preview.contentMarkdown, preview.description, input.content, input.description);
   const statblock = wikiDraft?.statblock?.trim() || "";
   const imageUrl = pickText(preview.imageUrl, input.imageUrl) || null;
   const actionLabel = ACTION_LABELS[pendingProposal.action_name] ?? pendingProposal.action_name;

@@ -1,4 +1,4 @@
-import { generateAiText } from "@/lib/ai/huggingface-client";
+import { generateOpenRouterChat } from "@/lib/ai/openrouter-client";
 import {
   buildInterpreterActionList,
   isAiDraftAllowedAction,
@@ -109,7 +109,7 @@ ${refineBlock}
 --- RICHIESTA GM ---
 ${userMessage.trim()}`;
 
-  const raw = await generateAiText(prompt);
+  const raw = await generateOpenRouterChat(prompt, { temperature: 0.2, maxTokens: 2000 });
   try {
     return parseInterpreterJson(raw);
   } catch (err) {

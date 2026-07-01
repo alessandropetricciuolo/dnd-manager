@@ -34,6 +34,13 @@ function sourceBadgeClass(sourceType: CampaignMemoryQuerySource["sourceType"]): 
       return "border-fuchsia-600/40 bg-fuchsia-950/40 text-fuchsia-100";
     case "secret_whisper":
       return "border-rose-600/40 bg-rose-950/40 text-rose-100";
+    case "campaign_description":
+    case "campaign_ai_context":
+      return "border-violet-600/40 bg-violet-950/40 text-violet-100";
+    case "mission":
+      return "border-orange-600/40 bg-orange-950/40 text-orange-100";
+    default:
+      return "border-barber-gold/30 bg-barber-dark/50 text-barber-paper/80";
   }
 }
 

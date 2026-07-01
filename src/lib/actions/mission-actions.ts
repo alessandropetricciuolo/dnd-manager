@@ -2,6 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { createSupabaseAdminClient } from "@/utils/supabase/admin";
+import {
+  deleteCampaignMemorySource,
+  syncMissionToCampaignMemory,
+} from "@/lib/campaign-memory-indexer";
 import { parseGuildRank, rankFromPoints } from "@/lib/missions/guild-ranks";
 import type { BulkMissionImportItem } from "@/lib/missions/mission-bulk-import";
 import type { Json } from "@/types/database.types";
@@ -255,16 +260,34 @@ export async function createMissionAction(
       updated_at: new Date().toISOString(),
     };
 
-    let { error } = await supabase.from("campaign_missions").insert(insertRow);
+    let { data: inserted, error } = await supabase
+      .from("campaign_missions")
+      .insert(insertRow)
+      .select("id")
+      .maybeSingle();
 
     if (error && isMissingMissionProgressColumns(error)) {
       const { points_reward, status, ...legacy } = insertRow;
       void points_reward;
       void status;
-      ({ error } = await supabase.from("campaign_missions").insert(legacy));
+      ({ data: inserted, error } = await supabase
+        .from("campaign_missions")
+        .insert(legacy)
+        .select("id")
+        .maybeSingle());
     }
 
     if (error) return { success: false, message: error.message };
+
+    const missionId = (inserted as { id?: string } | null)?.id;
+    if (missionId) {
+      try {
+        const admin = createSupabaseAdminClient();
+        await syncMissionToCampaignMemory(admin, missionId, { campaignId });
+      } catch (syncErr) {
+        console.error("[createMissionAction] memory sync", syncErr);
+      }
+    }
 
     revalidatePath(`/campaigns/${campaignId}`);
     return { success: true };
@@ -411,6 +434,13 @@ export async function updateMissionAction(
     }
 
     if (error) return { success: false, message: error.message };
+
+    try {
+      const admin = createSupabaseAdminClient();
+      await syncMissionToCampaignMemory(admin, missionId, { campaignId });
+    } catch (syncErr) {
+      console.error("[updateMissionAction] memory sync", syncErr);
+    }
 
     revalidatePath(`/campaigns/${campaignId}`);
     return { success: true };
@@ -845,6 +875,13 @@ export async function deleteMissionAction(
       .eq("campaign_id", campaignId);
 
     if (error) return { success: false, message: error.message };
+
+    try {
+      const admin = createSupabaseAdminClient();
+      await deleteCampaignMemorySource(admin, campaignId, "mission", missionId);
+    } catch (syncErr) {
+      console.error("[deleteMissionAction] memory delete", syncErr);
+    }
 
     // Ripristina punti se era completata (coerenza con reopen)
     if (m?.status === "completed" && m.completed_by_guild_id) {
