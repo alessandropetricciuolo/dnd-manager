@@ -364,6 +364,9 @@ export async function createCharacter(
     imageUrlFromFormRaw && imageUrlFromFormRaw.startsWith("http")
       ? parseSafeExternalUrl(imageUrlFromFormRaw)
       : imageUrlFromFormRaw;
+  const avatarImageBase64 = (formData.get("avatar_image_base64") as string | null)?.trim() || "";
+  const avatarImageMimeType =
+    (formData.get("avatar_image_mime_type") as string | null)?.trim() || "image/png";
   const sheetFile = formData.get("sheet") as File | null;
   const sheetUrlFromFormRaw = (formData.get("sheet_url") as string | null)?.trim() || null;
   const sheetUrlFromForm = sheetUrlFromFormRaw ? parseSafeExternalUrl(sheetUrlFromFormRaw) : null;
@@ -397,6 +400,26 @@ export async function createCharacter(
     } catch (uploadErr) {
       console.error("[createCharacter] Telegram upload", uploadErr);
       return { success: false, error: uploadErr instanceof Error ? uploadErr.message : "Errore caricamento immagine." };
+    }
+  } else if (avatarImageBase64) {
+    try {
+      const bytes = Buffer.from(avatarImageBase64, "base64");
+      if (!bytes.length) {
+        return { success: false, error: "Immagine caricata non valida." };
+      }
+      const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+      const mime = allowed.includes(avatarImageMimeType) ? avatarImageMimeType : "image/png";
+      const ext = mime === "image/jpeg" ? "jpg" : mime.split("/")[1] ?? "png";
+      const blob = new Blob([bytes], { type: mime });
+      const file = new File([blob], `avatar.${ext}`, { type: mime });
+      const fileId = await uploadToTelegram(file);
+      image_url = `/api/tg-image/${encodeURIComponent(fileId)}`;
+    } catch (uploadErr) {
+      console.error("[createCharacter] avatar base64 upload", uploadErr);
+      return {
+        success: false,
+        error: uploadErr instanceof Error ? uploadErr.message : "Errore caricamento ritratto.",
+      };
     }
   } else if (imageUrlFromForm) {
     image_url = imageUrlFromForm;

@@ -1,3 +1,4 @@
+import type { CharacterAiStoryDraft } from "@/lib/ai/character-text-generator";
 import type { CampaignAiDraft } from "@/lib/ai/campaign-text-generator";
 import type { MissionAiDraft } from "@/lib/ai/mission-text-generator";
 import type { CommandInputSource } from "../types/workspace";
@@ -15,7 +16,38 @@ export type RunAiDraftAssistantParams = {
   voiceMetadata?: CommandInputVoicePayload["metadata"];
 };
 
-export type ChatPendingPhase = "text" | "awaiting_image" | "awaiting_architect";
+export type ChatPendingPhase =
+  | "text"
+  | "awaiting_sheet"
+  | "awaiting_image"
+  | "awaiting_avatar"
+  | "awaiting_architect";
+
+export type CharacterGeneratedSheetPayload = {
+  pdfBase64: string;
+  fileName: string;
+  armorClass: number;
+  hitPoints: number;
+  sheetData?: Record<string, unknown>;
+  quickManualSections?: import("@/lib/sheet-generator/quick-manual-builder").QuickManualSection[];
+  backgroundPdfSections?: import("@/lib/sheet-generator/quick-manual-builder").QuickManualSection[];
+  includeBackgroundStoryInPdf?: boolean;
+  characterStory?: string | null;
+  spellcasting?: {
+    spellSlots: Array<{ level: number; count: number }>;
+    cantripsKnown: number;
+    spellcastingAbility: string | null;
+  } | null;
+  build: {
+    race_slug: string;
+    subclass_slug: string;
+    character_class: string;
+    class_subclass: string;
+    background_slug: string;
+    level: string;
+  };
+  characterName: string;
+};
 
 export type ChatWikiMeta = {
   entityType: string;
@@ -41,6 +73,14 @@ export type ChatMissionMeta = {
   chatMessages: { role: "user" | "assistant"; content: string }[];
 };
 
+export type ChatCharacterMeta = {
+  userPrompt: string;
+  characterName: string;
+  storyDraft: CharacterAiStoryDraft;
+  generatedSheet?: CharacterGeneratedSheetPayload | null;
+  chatMessages: { role: "user" | "assistant"; content: string }[];
+};
+
 export type ChatPendingProposalPayload = {
   action_name: string;
   input: Record<string, unknown>;
@@ -50,6 +90,7 @@ export type ChatPendingProposalPayload = {
   wikiMeta?: ChatWikiMeta;
   campaignMeta?: ChatCampaignMeta;
   missionMeta?: ChatMissionMeta;
+  characterMeta?: ChatCharacterMeta;
 };
 
 export type RunAiChatAssistantParams = RunAiDraftAssistantParams & {

@@ -151,7 +151,9 @@ export function AiAssistantPanel({
         const title =
           typeof currentPending?.input?.title === "string"
             ? currentPending.input.title
-            : null;
+            : typeof currentPending?.input?.name === "string"
+              ? currentPending.input.name
+              : null;
         setExecutedSummary(
           title ? `«${title}» applicato con successo.` : "Proposta applicata con successo."
         );
@@ -193,13 +195,17 @@ export function AiAssistantPanel({
             <h2 className="font-serif text-lg font-semibold text-barber-paper">Assistente GM</h2>
             <p className="text-xs text-barber-paper/50">
               Chat a sinistra · anteprima a destra
-              {pendingProposal?.phase === "awaiting_image"
-                ? " · decisione immagine"
-                : pendingProposal?.phase === "awaiting_architect"
-                  ? " · decisione Architect"
-                : pendingProposal
-                  ? " · proposta attiva"
-                  : ""}
+              {pendingProposal?.phase === "awaiting_sheet"
+                ? " · completa la scheda PDF"
+                : pendingProposal?.phase === "awaiting_avatar"
+                  ? " · ritratto opzionale"
+                  : pendingProposal?.phase === "awaiting_image"
+                    ? " · decisione immagine"
+                    : pendingProposal?.phase === "awaiting_architect"
+                      ? " · decisione Architect"
+                      : pendingProposal
+                        ? " · proposta attiva"
+                        : ""}
             </p>
           </div>
         </div>
@@ -282,10 +288,13 @@ export function AiAssistantPanel({
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={
-                  pendingProposal?.phase === "awaiting_image"
+                  pendingProposal?.phase === "awaiting_image" ||
+                  pendingProposal?.phase === "awaiting_avatar"
                     ? "sì / no / annulla…"
                     : pendingProposal?.phase === "awaiting_architect"
                       ? "sì / no / annulla…"
+                      : pendingProposal?.phase === "awaiting_sheet"
+                        ? "completa la scheda a destra, poi conferma…"
                     : pendingProposal
                       ? "conferma, annulla o modifiche…"
                       : "Scrivi o usa il microfono…"
@@ -324,6 +333,8 @@ export function AiAssistantPanel({
           executedSummary={executedSummary}
           isThinking={isPending}
           campaignName={campaignName}
+          campaignId={campaignId}
+          onPendingProposalChange={setPendingProposal}
         />
       </div>
     </div>

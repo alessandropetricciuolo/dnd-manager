@@ -30,7 +30,7 @@ export function detectConversationIntent(
   const trimmed = message.trim();
   if (!hasPending) return "new";
 
-  if (phase === "awaiting_image") {
+  if (phase === "awaiting_image" || phase === "awaiting_avatar") {
     if (IMAGE_YES_RE.test(trimmed)) return "image_yes";
     if (IMAGE_NO_RE.test(trimmed)) return "image_no";
     if (REJECT_RE.test(trimmed)) return "reject";

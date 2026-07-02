@@ -19,10 +19,12 @@ import {
   enrichCampaignProposal,
 } from "./campaign-proposal-builder";
 import { enrichMissionProposal } from "./mission-proposal-builder";
+import {
+  enrichCharacterProposal,
+} from "./character-proposal-builder";
 import { isLongCampaignType, type CampaignType } from "@/lib/campaign-type";
 import { buildArchitectDescriptionFromDraft } from "@/lib/ai/campaign-text-generator";
 import { applyDomainFallbackInterpreter } from "./domain-fallback-interpreter";
-import { enrichDomainProposal } from "./proposal-enricher";
 import type { AiInterpreterResult } from "../types/ai-proposal";
 
 export type ChatPendingProposal = ChatPendingProposalPayload;
@@ -39,10 +41,27 @@ function chatHintForProposal(phase?: ChatPendingProposal["phase"]): string {
   if (phase === "awaiting_image") {
     return "Scrivi **sì** per l'immagine contestuale o **no** per creare solo il testo.";
   }
+  if (phase === "awaiting_avatar") {
+    return "Scrivi **sì** per generare un ritratto, **no** per creare il PG senza avatar, oppure carica un'immagine nel pannello a destra.";
+  }
   if (phase === "awaiting_architect") {
     return "Scrivi **sì** per generare i paletti IA (Architect) o **no** per creare solo la campagna.";
   }
+  if (phase === "awaiting_sheet") {
+    return "Compila il generatore scheda nel pannello a destra e premi **Usa questa scheda**, poi scrivi **conferma**.";
+  }
   return "L'anteprima completa è nel pannello a destra. Scrivi **conferma**, **annulla** o descrivi modifiche.";
+}
+
+function pickCharacterName(input: Record<string, unknown>): string {
+  return typeof input.name === "string" ? input.name.trim() : "";
+}
+
+function hasCharacterGeneratedSheet(pending: ChatPendingProposal): boolean {
+  return Boolean(
+    pending.characterMeta?.generatedSheet?.pdfBase64 ||
+      pending.input.generatedSheetPdfBase64
+  );
 }
 
 function pickCampaignTitle(input: Record<string, unknown>): string {
@@ -151,6 +170,25 @@ async function generateWikiContextualImage(
   }
 
   return { error: "Tipo entità non supportato per immagine contestuale." };
+}
+
+async function generateCharacterPortrait(
+  campaignId: string,
+  pending: ChatPendingProposal
+): Promise<{ imageUrl: string } | { error: string }> {
+  const name = pickCharacterName(pending.input);
+  const story =
+    pending.characterMeta?.storyDraft.characterStory ||
+    (typeof pending.input.background === "string" ? pending.input.background : "");
+  if (!story.trim()) {
+    return { error: "Serve una descrizione narrativa per generare il ritratto." };
+  }
+
+  const res = await generateContextualPortraitAction(campaignId, story, "npc", {
+    entityTitle: name || "Personaggio",
+  });
+  if (!res.success) return { error: res.message };
+  return { imageUrl: res.publicUrl };
 }
 
 function pickWikiTitle(input: Record<string, unknown>): string {
@@ -262,6 +300,97 @@ export async function runAiChatAssistant(
         pendingProposal: pending,
         executed: false,
         clearedPending: false,
+      },
+    };
+  }
+
+  if (pending?.phase === "awaiting_avatar" && intent === "refine") {
+    return {
+      success: true,
+      data: {
+        reply:
+          "Per procedere scrivi **sì** per il ritratto AI, **no** per creare il PG senza avatar, carica un'immagine nel pannello, oppure **annulla**.",
+        intentSummary: "In attesa decisione ritratto",
+        pendingProposal: pending,
+        executed: false,
+        clearedPending: false,
+      },
+    };
+  }
+
+  if (intent === "image_no" && pending?.phase === "awaiting_avatar" && pending.action_name === "character.create") {
+    const exec = await executePendingProposal(pending, campaignId);
+    if (!exec.success) {
+      return {
+        success: true,
+        data: {
+          reply: `Non sono riuscito a creare il personaggio: ${exec.error}`,
+          intentSummary: "Esecuzione fallita",
+          pendingProposal: pending,
+          executed: false,
+          clearedPending: false,
+        },
+      };
+    }
+    return {
+      success: true,
+      data: {
+        reply: `Personaggio **${pickCharacterName(pending.input)}** creato (senza avatar). Puoi aggiungere l'immagine dalla scheda campagna.`,
+        intentSummary: "PG creato senza avatar",
+        pendingProposal: null,
+        executed: true,
+        clearedPending: true,
+      },
+    };
+  }
+
+  if (intent === "image_yes" && pending?.phase === "awaiting_avatar" && pending.action_name === "character.create") {
+    if (!campaignId) {
+      return { success: false, error: "Seleziona una campagna per generare il ritratto." };
+    }
+
+    const imageResult = await generateCharacterPortrait(campaignId, pending);
+    if ("error" in imageResult) {
+      return {
+        success: true,
+        data: {
+          reply: `Non sono riuscito a generare il ritratto: ${imageResult.error}\n\nScrivi **no** per creare senza avatar, carica un file nel pannello, oppure **annulla**.`,
+          intentSummary: "Ritratto fallito",
+          pendingProposal: pending,
+          executed: false,
+          clearedPending: false,
+        },
+      };
+    }
+
+    const withImage: ChatPendingProposal = {
+      ...pending,
+      input: { ...pending.input, imageUrl: imageResult.imageUrl },
+      preview_payload: { ...pending.preview_payload, imageUrl: imageResult.imageUrl },
+    };
+
+    const exec = await executePendingProposal(withImage, campaignId);
+    if (!exec.success) {
+      return {
+        success: true,
+        data: {
+          reply: `Ritratto generato ma creazione fallita: ${exec.error}`,
+          intentSummary: "Esecuzione fallita",
+          pendingProposal: withImage,
+          executed: false,
+          clearedPending: false,
+        },
+      };
+    }
+
+    return {
+      success: true,
+      data: {
+        reply: `Personaggio **${pickCharacterName(withImage.input)}** creato con ritratto e scheda PDF.`,
+        intentSummary: "PG creato con ritratto",
+        pendingProposal: null,
+        executed: true,
+        clearedPending: true,
       },
     };
   }
@@ -455,6 +584,78 @@ export async function runAiChatAssistant(
       };
     }
 
+    if (pending.action_name === "character.create") {
+      if (!hasCharacterGeneratedSheet(pending)) {
+        return {
+          success: true,
+          data: {
+            reply:
+              "Prima di confermare devi completare il **generatore scheda** nel pannello a destra e premere **Usa questa scheda**.",
+            intentSummary: "Scheda PDF mancante",
+            pendingProposal: { ...pending, phase: "awaiting_sheet" },
+            executed: false,
+            clearedPending: false,
+          },
+        };
+      }
+
+      const hasManualAvatar =
+        (typeof pending.input.avatarImageBase64 === "string" &&
+          pending.input.avatarImageBase64.trim().length > 0) ||
+        (typeof pending.input.imageUrl === "string" && pending.input.imageUrl.trim().length > 0);
+
+      if (pending.phase !== "awaiting_avatar") {
+        return {
+          success: true,
+          data: {
+            reply: `Scheda approvata per **${pickCharacterName(pending.input)}**.\n\nVuoi un **ritratto** (AI o upload nel pannello)? Scrivi **sì**, **no** per creare senza avatar, oppure carica l'immagine e scrivi di nuovo **conferma**.`,
+            intentSummary: "Scheda approvata — decisione ritratto",
+            pendingProposal: { ...pending, phase: "awaiting_avatar" },
+            executed: false,
+            clearedPending: false,
+          },
+        };
+      }
+
+      if (!hasManualAvatar) {
+        return {
+          success: true,
+          data: {
+            reply: chatHintForProposal("awaiting_avatar"),
+            intentSummary: "In attesa ritratto o conferma senza avatar",
+            pendingProposal: pending,
+            executed: false,
+            clearedPending: false,
+          },
+        };
+      }
+
+      const exec = await executePendingProposal(pending, campaignId);
+      if (!exec.success) {
+        return {
+          success: true,
+          data: {
+            reply: `Non sono riuscito a creare il personaggio: ${exec.error}`,
+            intentSummary: "Esecuzione fallita",
+            pendingProposal: pending,
+            executed: false,
+            clearedPending: false,
+          },
+        };
+      }
+
+      return {
+        success: true,
+        data: {
+          reply: `Personaggio **${pickCharacterName(pending.input)}** creato con scheda PDF e ritratto.`,
+          intentSummary: "PG creato",
+          pendingProposal: null,
+          executed: true,
+          clearedPending: true,
+        },
+      };
+    }
+
     const exec = await executePendingProposal(pending, campaignId);
     if (!exec.success) {
       return {
@@ -481,7 +682,7 @@ export async function runAiChatAssistant(
     };
   }
 
-  if (intent === "refine" && pending?.campaignMeta && pending.phase !== "awaiting_architect" && pending.phase !== "awaiting_image") {
+  if (intent === "refine" && pending?.campaignMeta && pending.phase !== "awaiting_architect" && pending.phase !== "awaiting_image" && pending.phase !== "awaiting_avatar" && pending.phase !== "awaiting_sheet") {
     const enriched = await enrichCampaignProposal(message, pending, {
       refine: true,
       campaignMeta: pending.campaignMeta,
@@ -510,7 +711,7 @@ export async function runAiChatAssistant(
     };
   }
 
-  if (intent === "refine" && pending?.wikiMeta && pending.phase !== "awaiting_image" && pending.phase !== "awaiting_architect") {
+  if (intent === "refine" && pending?.wikiMeta && pending.phase !== "awaiting_image" && pending.phase !== "awaiting_architect" && pending.phase !== "awaiting_avatar" && pending.phase !== "awaiting_sheet") {
     if (!campaignId) {
       return {
         success: false,
@@ -558,7 +759,9 @@ export async function runAiChatAssistant(
     pending?.missionMeta &&
     pending.action_name === "mission.create" &&
     pending.phase !== "awaiting_image" &&
-    pending.phase !== "awaiting_architect"
+    pending.phase !== "awaiting_architect" &&
+    pending.phase !== "awaiting_avatar" &&
+    pending.phase !== "awaiting_sheet"
   ) {
     if (!campaignId) {
       return {
@@ -590,6 +793,57 @@ export async function runAiChatAssistant(
           "\n\n"
         ),
         intentSummary: "Bozza missione aggiornata",
+        pendingProposal: nextPending,
+        executed: false,
+        clearedPending: false,
+      },
+    };
+  }
+
+  if (
+    intent === "refine" &&
+    pending?.characterMeta &&
+    pending.action_name === "character.create" &&
+    pending.phase !== "awaiting_image" &&
+    pending.phase !== "awaiting_architect" &&
+    pending.phase !== "awaiting_avatar"
+  ) {
+    if (!campaignId) {
+      return {
+        success: false,
+        error: "Seleziona una campagna nel filtro per affinare personaggi con l'AI contestuale.",
+      };
+    }
+
+    const enriched = await enrichCharacterProposal(campaignId, message, pending, {
+      refine: true,
+      characterMeta: pending.characterMeta,
+    });
+
+    if (!enriched.ok) {
+      return { success: false, error: enriched.error };
+    }
+
+    const nextPending: ChatPendingProposal = {
+      ...enriched.proposal,
+      rationale: pending.rationale,
+      phase: hasCharacterGeneratedSheet({
+        ...enriched.proposal,
+        characterMeta: enriched.characterMeta,
+      })
+        ? "text"
+        : "awaiting_sheet",
+      characterMeta: enriched.characterMeta,
+    };
+
+    return {
+      success: true,
+      data: {
+        reply: [
+          "Ho aggiornato la storia del personaggio.",
+          chatHintForProposal(nextPending.phase),
+        ].join("\n\n"),
+        intentSummary: "Storia PG aggiornata",
         pendingProposal: nextPending,
         executed: false,
         clearedPending: false,
@@ -644,8 +898,6 @@ export async function runAiChatAssistant(
     : null;
 
   if (nextPending) {
-    const enrichableActions = new Set(["character.create"]);
-
     if (
       nextPending.action_name === "wiki.entity.create" &&
       campaignId &&
@@ -708,13 +960,18 @@ export async function runAiChatAssistant(
         phase: "text",
         missionMeta: enriched.missionMeta,
       };
-    } else if (enrichableActions.has(nextPending.action_name)) {
-      const enriched = await enrichDomainProposal(
-        nextPending.action_name,
-        campaignId,
-        message,
-        nextPending
-      );
+    } else if (nextPending.action_name === "character.create") {
+      if (!campaignId) {
+        return {
+          success: false,
+          error: "Seleziona una campagna nel filtro per creare personaggi con l'AI contestuale.",
+        };
+      }
+
+      const enriched = await enrichCharacterProposal(campaignId, message, nextPending, {
+        refine: intent === "refine",
+        characterMeta: pending?.characterMeta ?? null,
+      });
 
       if (!enriched.ok) {
         return { success: false, error: enriched.error };
@@ -722,11 +979,8 @@ export async function runAiChatAssistant(
 
       nextPending = {
         ...enriched.proposal,
-        phase: "text",
-        preview_payload: {
-          ...enriched.proposal.preview_payload,
-          ...(enriched.assistantMessage ? { assistantPreview: enriched.assistantMessage } : {}),
-        },
+        phase: "awaiting_sheet",
+        characterMeta: enriched.characterMeta,
       };
     }
   }

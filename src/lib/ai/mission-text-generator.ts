@@ -1,5 +1,5 @@
 import { generateOpenRouterChat } from "@/lib/ai/openrouter-client";
-import { buildCampaignContextBlock } from "@/lib/ai/generator";
+import { buildCampaignContextBlock } from "@/lib/campaign-context-prompt";
 import { parseCampaignAiContextFromDb } from "@/lib/campaign-ai-context";
 import { fetchLongCampaignWikiMemoryPromptBlock } from "@/lib/campaign-wiki-ai-memory";
 import { GUILD_RANK_LETTERS, parseGuildRank, type GuildRankLetter } from "@/lib/missions/guild-ranks";
