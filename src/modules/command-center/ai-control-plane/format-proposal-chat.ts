@@ -19,6 +19,7 @@ const ACTION_LABELS: Record<string, string> = {
   "mission.update": "Aggiorna missione",
   "character.create": "Nuovo personaggio",
   "character.update": "Aggiorna personaggio",
+  "wiki.relationship.create": "Relazione wiki",
   "campaign.aiContext.generate": "Contesto AI campagna",
   "memory.reindex": "Reindicizza memoria",
 };

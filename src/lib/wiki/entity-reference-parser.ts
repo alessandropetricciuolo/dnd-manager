@@ -55,6 +55,30 @@ function resolveCatalogName(
   return null;
 }
 
+/** Risolve un nome entità/mappa nel catalogo (match esatto, poi parziale unico). */
+export function findCatalogEntryByName(
+  rawName: string,
+  catalog: WikiCatalogEntry[],
+  excludeId?: string
+): WikiCatalogEntry | null {
+  const key = normalizeEntityNameKey(rawName);
+  if (!key) return null;
+
+  const exact = catalog.filter(
+    (e) => e.id !== excludeId && normalizeEntityNameKey(e.name) === key
+  );
+  if (exact.length === 1) return exact[0]!;
+
+  const partial = catalog.filter((e) => {
+    if (e.id === excludeId) return false;
+    const nameKey = normalizeEntityNameKey(e.name);
+    return nameKey.includes(key) || key.includes(nameKey);
+  });
+  if (partial.length === 1) return partial[0]!;
+
+  return null;
+}
+
 /**
  * Estrae riferimenti a voci wiki o mappe dal testo narrativo.
  * Sintassi supportata:

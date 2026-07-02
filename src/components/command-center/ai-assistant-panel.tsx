@@ -153,7 +153,12 @@ export function AiAssistantPanel({
             ? currentPending.input.title
             : typeof currentPending?.input?.name === "string"
               ? currentPending.input.name
-              : null;
+              : typeof currentPending?.input?.sourceName === "string" &&
+                  typeof currentPending?.input?.targetName === "string"
+                ? `${currentPending.input.sourceName} → ${currentPending.input.targetName}`
+                : typeof currentPending?.preview_payload?.scheduledAt === "string"
+                  ? String(currentPending.preview_payload.scheduledAt)
+                  : null;
         setExecutedSummary(
           title ? `«${title}» applicato con successo.` : "Proposta applicata con successo."
         );

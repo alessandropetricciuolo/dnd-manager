@@ -44,3 +44,9 @@ test("detectConversationIntent architect decision phase", () => {
   assert.equal(detectConversationIntent("no", true, "awaiting_architect"), "architect_no");
   assert.equal(detectConversationIntent("annulla", true, "awaiting_architect"), "reject");
 });
+
+test("detectConversationIntent close info phase", () => {
+  assert.equal(detectConversationIntent("conferma", true, "awaiting_close_info"), "confirm");
+  assert.equal(detectConversationIntent("Marco assente", true, "awaiting_close_info"), "refine");
+  assert.equal(detectConversationIntent("annulla", true, "awaiting_close_info"), "reject");
+});

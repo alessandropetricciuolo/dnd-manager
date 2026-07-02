@@ -21,6 +21,7 @@ export const ACTION_TIERS = {
     "session.update",
     "wiki.entity.create",
     "wiki.entity.update",
+    "wiki.relationship.create",
     "mission.create",
     "mission.update",
   ],
@@ -53,6 +54,7 @@ export const AI_DRAFT_ALLOWED_ACTIONS = [
   "session.close",
   "wiki.entity.create",
   "wiki.entity.update",
+  "wiki.relationship.create",
   "wiki.entity.delete",
   "mission.create",
   "mission.update",
@@ -91,11 +93,14 @@ export const ACTION_INPUT_SCHEMAS: Record<string, string> = {
   "session.create":
     "{ campaignId, date, time?, location?, maxPlayers?, chapterTitle? }",
   "session.update": "{ sessionId, title?, sessionSummary?, gmPrivateNotes? }",
-  "session.close": "{ sessionId, summary, gmPrivateNotes?, xpGained?, elapsedHours? }",
+  "session.close":
+    "{ sessionId, summary, attendance, xpGained?, perPlayerXpAwards?, elapsedHours?, unlockContent?, unlockContentIds?, entityStatusUpdates?, gmPrivateNotes?, economy? }",
   "wiki.entity.create":
     "{ campaignId, title, type: npc|location|lore|item|monster, content, visibility? }",
   "wiki.entity.update":
     "{ entityId, campaignId, title, type, content, visibility? }",
+  "wiki.relationship.create":
+    "{ campaignId, sourceId, targetId?, targetMapId?, label, sourceName?, targetName?, targetKind? }",
   "wiki.entity.delete": "{ entityId, campaignId }",
   "mission.create":
     "{ campaignId, grade, title, committente, ubicazione, paga, urgenza, description, pointsReward? }",

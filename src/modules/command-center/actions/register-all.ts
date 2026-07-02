@@ -7,6 +7,7 @@ import { registerWikiWrapperActions } from "./definitions/wrappers/wiki.actions"
 import { registerMissionWrapperActions } from "./definitions/wrappers/mission.actions";
 import { registerCampaignWrapperActions } from "./definitions/wrappers/campaign.actions";
 import { registerCharacterWrapperActions } from "./definitions/wrappers/character.actions";
+import { registerWikiRelationshipWrapperActions } from "./definitions/wrappers/wiki-relationship.actions";
 import { registerAiProposalActions } from "./definitions/ai-proposal.actions";
 
 let registered = false;
@@ -23,6 +24,7 @@ export function registerAllActions(): void {
   registerMissionWrapperActions();
   registerCampaignWrapperActions();
   registerCharacterWrapperActions();
+  registerWikiRelationshipWrapperActions();
   registerAiProposalActions();
   registered = true;
 }

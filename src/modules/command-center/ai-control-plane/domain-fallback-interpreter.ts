@@ -2,6 +2,9 @@ import type { AiInterpreterResult } from "../types/ai-proposal";
 import { detectCampaignCreateRequest } from "./campaign-request-detector";
 import { detectCharacterCreateRequest } from "./character-request-detector";
 import { detectMissionCreateRequest } from "./mission-request-detector";
+import { detectRelationshipCreateRequest } from "./relationship-request-detector";
+import { detectSessionCreateRequest } from "./session-request-detector";
+import { detectSessionCloseRequest } from "./session-close-request-detector";
 import {
   detectWikiCreateRequest,
   hasNpcMechanicsParams,
@@ -78,6 +81,74 @@ export function applyDomainFallbackInterpreter(
               pointsReward: missionDetected.pointsReward,
             },
             rationale: "Richiesta missione rilevata dal messaggio",
+          },
+        ],
+      },
+    };
+  }
+
+  const sessionCloseDetected = campaignId ? detectSessionCloseRequest(combinedContext) : null;
+  if (sessionCloseDetected) {
+    return {
+      interpreted: {
+        reply: "Preparo la chiusura sessione con debrief (presenze, XP, riassunto).",
+        intent_summary: "Chiudere sessione",
+        proposals: [
+          {
+            action_name: "session.close",
+            input: {
+              campaignId,
+              summary: "",
+            },
+            rationale: "Richiesta chiusura sessione rilevata dal messaggio",
+          },
+        ],
+      },
+    };
+  }
+
+  const sessionDetected = campaignId ? detectSessionCreateRequest(combinedContext) : null;
+  if (sessionDetected) {
+    const when = [sessionDetected.date, sessionDetected.time].filter(Boolean).join(" ore ");
+    return {
+      interpreted: {
+        reply: `Preparo una sessione${when ? ` per **${when}**` : ""}${sessionDetected.chapterTitle ? ` — capitolo «${sessionDetected.chapterTitle}»` : ""}.`,
+        intent_summary: `Creare sessione${when ? `: ${when}` : ""}`,
+        proposals: [
+          {
+            action_name: "session.create",
+            input: {
+              campaignId,
+              date: sessionDetected.date,
+              time: sessionDetected.time,
+              chapterTitle: sessionDetected.chapterTitle,
+              location: sessionDetected.location,
+              partyName: sessionDetected.partyName,
+              maxPlayers: sessionDetected.maxPlayers,
+            },
+            rationale: "Richiesta programmazione sessione rilevata dal messaggio",
+          },
+        ],
+      },
+    };
+  }
+
+  const relationshipDetected = campaignId ? detectRelationshipCreateRequest(combinedContext) : null;
+  if (relationshipDetected) {
+    return {
+      interpreted: {
+        reply: `Preparo il collegamento **${relationshipDetected.sourceName}** → **${relationshipDetected.targetName}** (${relationshipDetected.label}).`,
+        intent_summary: `Relazione: ${relationshipDetected.sourceName} → ${relationshipDetected.targetName}`,
+        proposals: [
+          {
+            action_name: "wiki.relationship.create",
+            input: {
+              campaignId,
+              sourceName: relationshipDetected.sourceName,
+              targetName: relationshipDetected.targetName,
+              label: relationshipDetected.label,
+            },
+            rationale: "Richiesta relazione mappa concettuale rilevata dal messaggio",
           },
         ],
       },

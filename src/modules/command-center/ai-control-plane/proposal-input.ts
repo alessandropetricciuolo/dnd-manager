@@ -5,7 +5,7 @@ export function normalizeProposalInput(
 ): Record<string, unknown> {
   const out = { ...input };
   if (campaignId) {
-    if (actionName === "wiki.entity.create" || actionName === "gm.note.create") {
+    if (actionName === "wiki.entity.create" || actionName === "gm.note.create" || actionName === "session.create") {
       out.campaignId = campaignId;
     }
     if (
@@ -15,6 +15,7 @@ export function normalizeProposalInput(
       actionName === "mission.update" ||
       actionName === "wiki.entity.update" ||
       actionName === "wiki.entity.delete" ||
+      actionName === "wiki.relationship.create" ||
       actionName === "character.create" ||
       actionName === "character.update" ||
       actionName === "campaign.aiContext.generate" ||

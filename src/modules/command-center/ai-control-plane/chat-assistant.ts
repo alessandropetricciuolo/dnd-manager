@@ -19,9 +19,15 @@ import {
   enrichCampaignProposal,
 } from "./campaign-proposal-builder";
 import { enrichMissionProposal } from "./mission-proposal-builder";
-import {
-  enrichCharacterProposal,
+import { enrichCharacterProposal,
 } from "./character-proposal-builder";
+import { enrichRelationshipProposal } from "./relationship-proposal-builder";
+import { enrichSessionProposal } from "./session-proposal-builder";
+import {
+  enrichSessionCloseProposal,
+  formatCloseMissingFieldsReply,
+  hasBlockingCloseMissingFields,
+} from "./session-close-proposal-builder";
 import { isLongCampaignType, type CampaignType } from "@/lib/campaign-type";
 import { buildArchitectDescriptionFromDraft } from "@/lib/ai/campaign-text-generator";
 import { applyDomainFallbackInterpreter } from "./domain-fallback-interpreter";
@@ -49,6 +55,9 @@ function chatHintForProposal(phase?: ChatPendingProposal["phase"]): string {
   }
   if (phase === "awaiting_sheet") {
     return "Compila il generatore scheda nel pannello a destra e premi **Usa questa scheda**, poi scrivi **conferma**.";
+  }
+  if (phase === "awaiting_close_info") {
+    return "Rispondi alle domande mancanti in chat, poi scrivi **conferma** per chiudere la sessione o **annulla**.";
   }
   return "L'anteprima completa è nel pannello a destra. Scrivi **conferma**, **annulla** o descrivi modifiche.";
 }
@@ -656,6 +665,58 @@ export async function runAiChatAssistant(
       };
     }
 
+    if (pending.action_name === "session.close") {
+      if (
+        pending.sessionCloseMeta &&
+        hasBlockingCloseMissingFields(pending.sessionCloseMeta.missingFields)
+      ) {
+        return {
+          success: true,
+          data: {
+            reply: [
+              formatCloseMissingFieldsReply(pending.sessionCloseMeta.missingFields),
+              chatHintForProposal("awaiting_close_info"),
+            ].join("\n\n"),
+            intentSummary: "Dati mancanti per chiusura",
+            pendingProposal: { ...pending, phase: "awaiting_close_info" },
+            executed: false,
+            clearedPending: false,
+          },
+        };
+      }
+
+      const closeExec = await executePendingProposal(pending, campaignId);
+      if (!closeExec.success) {
+        return {
+          success: true,
+          data: {
+            reply: `Non sono riuscito a chiudere la sessione: ${closeExec.error}`,
+            intentSummary: "Esecuzione fallita",
+            pendingProposal: pending,
+            executed: false,
+            clearedPending: false,
+          },
+        };
+      }
+
+      const label = pending.sessionCloseMeta?.sessionLabel ?? "Sessione";
+      const economyHint = pending.sessionCloseMeta?.missingFields.some(
+        (f: { id: string }) => f.id === "economy_wizard"
+      )
+        ? `\n\nPer economia avanzata e trofei: ${pending.sessionCloseMeta?.wizardEconomyUrl}`
+        : "";
+      return {
+        success: true,
+        data: {
+          reply: `**${label}** chiusa. Riassunto e premi salvati.${economyHint}`,
+          intentSummary: "Sessione chiusa",
+          pendingProposal: null,
+          executed: true,
+          clearedPending: true,
+        },
+      };
+    }
+
     const exec = await executePendingProposal(pending, campaignId);
     if (!exec.success) {
       return {
@@ -666,6 +727,43 @@ export async function runAiChatAssistant(
           pendingProposal: pending,
           executed: false,
           clearedPending: false,
+        },
+      };
+    }
+
+    if (pending.action_name === "session.create") {
+      const scheduled =
+        typeof pending.preview_payload.scheduledAt === "string"
+          ? pending.preview_payload.scheduledAt
+          : `${pending.input.date ?? ""} ${pending.input.time ?? ""}`.trim();
+      const chapter =
+        typeof pending.input.chapterTitle === "string" ? pending.input.chapterTitle : null;
+      return {
+        success: true,
+        data: {
+          reply: `Sessione programmata per **${scheduled}**${chapter ? ` — ${chapter}` : ""}. I giocatori la vedranno in calendario campagna.`,
+          intentSummary: "Sessione creata",
+          pendingProposal: null,
+          executed: true,
+          clearedPending: true,
+        },
+      };
+    }
+
+    if (pending.action_name === "wiki.relationship.create") {
+      const sourceName =
+        typeof pending.input.sourceName === "string" ? pending.input.sourceName : "Sorgente";
+      const targetName =
+        typeof pending.input.targetName === "string" ? pending.input.targetName : "Bersaglio";
+      const label = typeof pending.input.label === "string" ? pending.input.label : "relazione";
+      return {
+        success: true,
+        data: {
+          reply: `Collegamento creato: **${sourceName}** —[${label}]→ **${targetName}**. Visibile nella mappa concettuale.`,
+          intentSummary: "Relazione creata",
+          pendingProposal: null,
+          executed: true,
+          clearedPending: true,
         },
       };
     }
@@ -793,6 +891,145 @@ export async function runAiChatAssistant(
           "\n\n"
         ),
         intentSummary: "Bozza missione aggiornata",
+        pendingProposal: nextPending,
+        executed: false,
+        clearedPending: false,
+      },
+    };
+  }
+
+  if (
+    (intent === "refine" || pending?.phase === "awaiting_close_info") &&
+    pending?.sessionCloseMeta &&
+    pending.action_name === "session.close" &&
+    pending.phase !== "awaiting_image" &&
+    pending.phase !== "awaiting_architect" &&
+    pending.phase !== "awaiting_avatar" &&
+    pending.phase !== "awaiting_sheet"
+  ) {
+    if (!campaignId) {
+      return {
+        success: false,
+        error: "Seleziona una campagna nel filtro per chiudere sessioni.",
+      };
+    }
+
+    const enriched = await enrichSessionCloseProposal(campaignId, message, pending, {
+      refine: true,
+      sessionCloseMeta: pending.sessionCloseMeta,
+    });
+
+    if (!enriched.ok) {
+      return { success: false, error: enriched.error };
+    }
+
+    const nextPending: ChatPendingProposal = {
+      ...enriched.proposal,
+      rationale: pending.rationale,
+      phase: enriched.phase,
+      sessionCloseMeta: enriched.sessionCloseMeta,
+    };
+
+    const missingReply = hasBlockingCloseMissingFields(enriched.sessionCloseMeta.missingFields)
+      ? formatCloseMissingFieldsReply(enriched.sessionCloseMeta.missingFields)
+      : null;
+
+    return {
+      success: true,
+      data: {
+        reply: [
+          missingReply ?? "Ho aggiornato il debrief di chiusura sessione.",
+          chatHintForProposal(enriched.phase),
+        ].join("\n\n"),
+        intentSummary: enriched.phase === "awaiting_close_info" ? "Dati mancanti" : "Bozza chiusura aggiornata",
+        pendingProposal: nextPending,
+        executed: false,
+        clearedPending: false,
+      },
+    };
+  }
+
+  if (
+    intent === "refine" &&
+    pending?.sessionMeta &&
+    pending.action_name === "session.create" &&
+    pending.phase !== "awaiting_image" &&
+    pending.phase !== "awaiting_architect" &&
+    pending.phase !== "awaiting_avatar" &&
+    pending.phase !== "awaiting_sheet"
+  ) {
+    if (!campaignId) {
+      return {
+        success: false,
+        error: "Seleziona una campagna nel filtro per affinare sessioni.",
+      };
+    }
+
+    const enriched = await enrichSessionProposal(campaignId, message, pending, {
+      refine: true,
+      sessionMeta: pending.sessionMeta,
+    });
+
+    if (!enriched.ok) {
+      return { success: false, error: enriched.error };
+    }
+
+    const nextPending: ChatPendingProposal = {
+      ...enriched.proposal,
+      rationale: pending.rationale,
+      phase: "text",
+      sessionMeta: enriched.sessionMeta,
+    };
+
+    return {
+      success: true,
+      data: {
+        reply: ["Ho aggiornato la sessione.", chatHintForProposal("text")].join("\n\n"),
+        intentSummary: "Bozza sessione aggiornata",
+        pendingProposal: nextPending,
+        executed: false,
+        clearedPending: false,
+      },
+    };
+  }
+
+  if (
+    intent === "refine" &&
+    pending?.relationshipMeta &&
+    pending.action_name === "wiki.relationship.create" &&
+    pending.phase !== "awaiting_image" &&
+    pending.phase !== "awaiting_architect" &&
+    pending.phase !== "awaiting_avatar" &&
+    pending.phase !== "awaiting_sheet"
+  ) {
+    if (!campaignId) {
+      return {
+        success: false,
+        error: "Seleziona una campagna nel filtro per affinare relazioni wiki.",
+      };
+    }
+
+    const enriched = await enrichRelationshipProposal(campaignId, message, pending, {
+      refine: true,
+      relationshipMeta: pending.relationshipMeta,
+    });
+
+    if (!enriched.ok) {
+      return { success: false, error: enriched.error };
+    }
+
+    const nextPending: ChatPendingProposal = {
+      ...enriched.proposal,
+      rationale: pending.rationale,
+      phase: "text",
+      relationshipMeta: enriched.relationshipMeta,
+    };
+
+    return {
+      success: true,
+      data: {
+        reply: ["Ho aggiornato la relazione.", chatHintForProposal("text")].join("\n\n"),
+        intentSummary: "Bozza relazione aggiornata",
         pendingProposal: nextPending,
         executed: false,
         clearedPending: false,
@@ -960,6 +1197,50 @@ export async function runAiChatAssistant(
         phase: "text",
         missionMeta: enriched.missionMeta,
       };
+    } else if (nextPending.action_name === "session.create") {
+      if (!campaignId) {
+        return {
+          success: false,
+          error: "Seleziona una campagna nel filtro per programmare sessioni.",
+        };
+      }
+
+      const enriched = await enrichSessionProposal(campaignId, message, nextPending, {
+        refine: intent === "refine",
+        sessionMeta: pending?.sessionMeta ?? null,
+      });
+
+      if (!enriched.ok) {
+        return { success: false, error: enriched.error };
+      }
+
+      nextPending = {
+        ...enriched.proposal,
+        phase: "text",
+        sessionMeta: enriched.sessionMeta,
+      };
+    } else if (nextPending.action_name === "session.close") {
+      if (!campaignId) {
+        return {
+          success: false,
+          error: "Seleziona una campagna nel filtro per chiudere sessioni.",
+        };
+      }
+
+      const enriched = await enrichSessionCloseProposal(campaignId, message, nextPending, {
+        refine: intent === "refine",
+        sessionCloseMeta: pending?.sessionCloseMeta ?? null,
+      });
+
+      if (!enriched.ok) {
+        return { success: false, error: enriched.error };
+      }
+
+      nextPending = {
+        ...enriched.proposal,
+        phase: enriched.phase,
+        sessionCloseMeta: enriched.sessionCloseMeta,
+      };
     } else if (nextPending.action_name === "character.create") {
       if (!campaignId) {
         return {
@@ -982,12 +1263,43 @@ export async function runAiChatAssistant(
         phase: "awaiting_sheet",
         characterMeta: enriched.characterMeta,
       };
+    } else if (nextPending.action_name === "wiki.relationship.create") {
+      if (!campaignId) {
+        return {
+          success: false,
+          error: "Seleziona una campagna nel filtro per creare relazioni nella mappa concettuale.",
+        };
+      }
+
+      const enriched = await enrichRelationshipProposal(campaignId, message, nextPending, {
+        refine: intent === "refine",
+        relationshipMeta: pending?.relationshipMeta ?? null,
+      });
+
+      if (!enriched.ok) {
+        return { success: false, error: enriched.error };
+      }
+
+      nextPending = {
+        ...enriched.proposal,
+        phase: "text",
+        relationshipMeta: enriched.relationshipMeta,
+      };
     }
   }
 
   let reply = interpreted.reply;
   if (nextPending) {
-    reply = `${reply}\n\n${chatHintForProposal("text")}`;
+    if (nextPending.sessionCloseMeta) {
+      const missingReply = hasBlockingCloseMissingFields(
+        nextPending.sessionCloseMeta.missingFields
+      )
+        ? formatCloseMissingFieldsReply(nextPending.sessionCloseMeta.missingFields)
+        : null;
+      const preview = nextPending.sessionCloseMeta.chatMessages.at(-1)?.content;
+      reply = [reply, preview, missingReply].filter(Boolean).join("\n\n");
+    }
+    reply = `${reply}\n\n${chatHintForProposal(nextPending.phase ?? "text")}`;
   } else if (intent === "refine") {
     reply =
       `${reply}\n\nNon ho capito la modifica. Ripeti cosa vuoi cambiare, oppure scrivi annulla.`;

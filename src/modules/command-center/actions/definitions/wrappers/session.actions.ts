@@ -1,37 +1,137 @@
 import { createSession, updateSession, closeSessionAction } from "@/app/campaigns/actions";
-import type { ActionContext } from "../../../types/actions";
+import type { SessionEconomyPayload } from "@/lib/actions/campaign-economy-actions";
 import { registerAction } from "../../registry";
 
-async function buildMinimalClosePayload(
-  ctx: ActionContext,
-  sessionId: string,
-  input: {
-    summary: string;
-    gmPrivateNotes?: string | null;
-    xpGained?: number;
-    elapsedHours?: number;
+function parseAttendance(
+  raw: unknown
+): Record<string, "attended" | "absent"> | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const out: Record<string, "attended" | "absent"> = {};
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof key !== "string" || !key.trim()) continue;
+    if (value === "attended" || value === "absent") {
+      out[key.trim()] = value;
+    }
   }
-) {
-  const { data: signups } = await ctx.supabase
-    .from("session_signups")
-    .select("player_id")
-    .eq("session_id", sessionId);
+  return Object.keys(out).length ? out : null;
+}
 
-  const attendance: Record<string, "attended" | "absent"> = {};
-  for (const row of signups ?? []) {
-    const pid = (row as { player_id: string }).player_id;
-    if (pid) attendance[pid] = "attended";
+function parseEntityStatusUpdates(
+  raw: unknown
+): Record<string, "alive" | "dead" | "missing"> {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+  const out: Record<string, "alive" | "dead" | "missing"> = {};
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof key !== "string" || !key.trim()) continue;
+    if (value === "alive" || value === "dead" || value === "missing") {
+      out[key.trim()] = value;
+    }
+  }
+  return out;
+}
+
+function parseUnlockContentIds(
+  raw: unknown
+): { id: string; type: "wiki" | "map" }[] {
+  if (!Array.isArray(raw)) return [];
+  const out: { id: string; type: "wiki" | "map" }[] = [];
+  for (const row of raw) {
+    if (!row || typeof row !== "object") continue;
+    const o = row as Record<string, unknown>;
+    const id = typeof o.id === "string" ? o.id.trim() : "";
+    const type = o.type === "map" ? "map" : o.type === "wiki" ? "wiki" : null;
+    if (id && type) out.push({ id, type });
+  }
+  return out;
+}
+
+function parsePerPlayerXpAwards(
+  raw: unknown
+): { playerId: string; xp: number }[] {
+  if (!Array.isArray(raw)) return [];
+  const out: { playerId: string; xp: number }[] = [];
+  for (const row of raw) {
+    if (!row || typeof row !== "object") continue;
+    const o = row as Record<string, unknown>;
+    const playerId =
+      typeof o.playerId === "string"
+        ? o.playerId.trim()
+        : typeof o.player_id === "string"
+          ? o.player_id.trim()
+          : "";
+    const xp =
+      typeof o.xp === "number" && Number.isFinite(o.xp)
+        ? Math.max(0, Math.trunc(o.xp))
+        : 0;
+    if (playerId && xp > 0) out.push({ playerId, xp });
+  }
+  return out;
+}
+
+function parseEconomy(raw: unknown): SessionEconomyPayload | undefined {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+  return raw as SessionEconomyPayload;
+}
+
+type SessionCloseValidated = {
+  sessionId: string;
+  summary: string;
+  gmPrivateNotes: string | null;
+  xpGained: number;
+  perPlayerXpAwards: { playerId: string; xp: number }[];
+  elapsedHours: number;
+  attendance: Record<string, "attended" | "absent">;
+  unlockContent: boolean;
+  unlockContentIds: { id: string; type: "wiki" | "map" }[];
+  entityStatusUpdates: Record<string, "alive" | "dead" | "missing">;
+  economy?: SessionEconomyPayload;
+};
+
+function validateSessionCloseInput(
+  input: Record<string, unknown>
+): { ok: true; data: SessionCloseValidated } | { ok: false; error: string } {
+  const sessionId = typeof input.sessionId === "string" ? input.sessionId.trim() : "";
+  const summary = typeof input.summary === "string" ? input.summary.trim() : "";
+  if (!sessionId) return { ok: false, error: "ID sessione obbligatorio." };
+  if (!summary) return { ok: false, error: "Riassunto sessione obbligatorio." };
+
+  const attendance = parseAttendance(input.attendance);
+  if (!attendance) {
+    return { ok: false, error: "Presenze obbligatorie (attendance)." };
   }
 
   return {
-    attendance,
-    xpGained: input.xpGained ?? 0,
-    unlockContent: false,
-    unlockContentIds: [] as { id: string; type: "wiki" | "map" }[],
-    summary: input.summary,
-    gm_private_notes: input.gmPrivateNotes ?? null,
-    entityStatusUpdates: {} as Record<string, "alive" | "dead" | "missing">,
-    elapsedHours: input.elapsedHours ?? 0,
+    ok: true,
+    data: {
+      sessionId,
+      summary,
+      gmPrivateNotes:
+        typeof input.gmPrivateNotes === "string"
+          ? input.gmPrivateNotes
+          : typeof input.gm_private_notes === "string"
+            ? input.gm_private_notes
+            : null,
+      xpGained:
+        typeof input.xpGained === "number" && Number.isFinite(input.xpGained)
+          ? Math.max(0, Math.trunc(input.xpGained))
+          : 0,
+      perPlayerXpAwards: parsePerPlayerXpAwards(
+        input.perPlayerXpAwards ?? input.per_player_xp_awards
+      ),
+      elapsedHours:
+        typeof input.elapsedHours === "number" && Number.isFinite(input.elapsedHours)
+          ? Math.max(0, Math.trunc(input.elapsedHours))
+          : 0,
+      attendance,
+      unlockContent: input.unlockContent === true || input.unlock_content === true,
+      unlockContentIds: parseUnlockContentIds(
+        input.unlockContentIds ?? input.unlock_content_ids
+      ),
+      entityStatusUpdates: parseEntityStatusUpdates(
+        input.entityStatusUpdates ?? input.entity_status_updates
+      ),
+      economy: parseEconomy(input.economy),
+    },
   };
 }
 
@@ -151,38 +251,40 @@ export function registerSessionWrapperActions(): void {
 
   registerAction({
     name: "session.close",
-    description: "Chiude una sessione programmata (modalità semplificata)",
+    description: "Chiude una sessione programmata con debrief completo (presenze, XP, mondo, sblocchi)",
     category: "session",
     validate: (input) => {
-      const o = input as Record<string, unknown>;
-      const sessionId = typeof o.sessionId === "string" ? o.sessionId.trim() : "";
-      const summary = typeof o.summary === "string" ? o.summary.trim() : "";
-      if (!sessionId) return { ok: false, error: "ID sessione obbligatorio." };
-      if (!summary) return { ok: false, error: "Riassunto sessione obbligatorio." };
-      return {
-        ok: true,
-        data: {
-          sessionId,
-          summary,
-          gmPrivateNotes:
-            typeof o.gmPrivateNotes === "string"
-              ? o.gmPrivateNotes
-              : typeof o.gm_private_notes === "string"
-                ? o.gm_private_notes
-                : null,
-          xpGained: typeof o.xpGained === "number" ? o.xpGained : 0,
-          elapsedHours: typeof o.elapsedHours === "number" ? o.elapsedHours : 0,
-        },
-      };
+      const parsed = validateSessionCloseInput(input as Record<string, unknown>);
+      if (!parsed.ok) return parsed;
+      return { ok: true, data: parsed.data };
     },
     preview: async (_ctx, input) => ({
       sessionId: input.sessionId,
-      summary: input.summary.slice(0, 240),
+      summary: input.summary.slice(0, 320),
       xpGained: input.xpGained,
-      mode: "minimal_close",
+      elapsedHours: input.elapsedHours,
+      attendanceCount: Object.keys(input.attendance).length,
+      presentCount: Object.values(input.attendance).filter((s) => s === "attended").length,
+      unlockCount: input.unlockContentIds.length,
+      entityUpdateCount: Object.keys(input.entityStatusUpdates).length,
+      hasEconomy: Boolean(input.economy),
+      mode: "full_close",
     }),
-    execute: async (ctx, input) => {
-      const payload = await buildMinimalClosePayload(ctx, input.sessionId, input);
+    execute: async (_ctx, input) => {
+      const payload = {
+        attendance: input.attendance,
+        xpGained: input.xpGained,
+        perPlayerXpAwards: input.perPlayerXpAwards.length
+          ? input.perPlayerXpAwards
+          : undefined,
+        unlockContent: input.unlockContent && input.unlockContentIds.length > 0,
+        unlockContentIds: input.unlockContentIds,
+        summary: input.summary,
+        gm_private_notes: input.gmPrivateNotes,
+        entityStatusUpdates: input.entityStatusUpdates,
+        elapsedHours: input.elapsedHours,
+        economy: input.economy,
+      };
       const result = await closeSessionAction(input.sessionId, payload);
       if (!result.success) throw new Error(result.message);
       return { sessionId: input.sessionId, campaignId: result.campaignId };

@@ -1,3 +1,4 @@
+import type { SessionAiDraft } from "@/lib/ai/session-text-generator";
 import type { CharacterAiStoryDraft } from "@/lib/ai/character-text-generator";
 import type { CampaignAiDraft } from "@/lib/ai/campaign-text-generator";
 import type { MissionAiDraft } from "@/lib/ai/mission-text-generator";
@@ -21,7 +22,8 @@ export type ChatPendingPhase =
   | "awaiting_sheet"
   | "awaiting_image"
   | "awaiting_avatar"
-  | "awaiting_architect";
+  | "awaiting_architect"
+  | "awaiting_close_info";
 
 export type CharacterGeneratedSheetPayload = {
   pdfBase64: string;
@@ -81,6 +83,41 @@ export type ChatCharacterMeta = {
   chatMessages: { role: "user" | "assistant"; content: string }[];
 };
 
+export type ChatRelationshipResolved = {
+  sourceId: string;
+  sourceName: string;
+  targetId: string | null;
+  targetMapId: string | null;
+  targetName: string;
+  targetKind: "wiki" | "map";
+  label: string;
+};
+
+export type ChatRelationshipMeta = {
+  userPrompt: string;
+  request: {
+    sourceName: string;
+    targetName: string;
+    label: string;
+    userPrompt: string;
+  };
+  resolved: ChatRelationshipResolved;
+  chatMessages: { role: "user" | "assistant"; content: string }[];
+};
+
+export type ChatSessionMeta = {
+  userPrompt: string;
+  draft: SessionAiDraft;
+  partyId: string | null;
+  partyLabel: string | null;
+  isLongCampaign: boolean;
+  chatMessages: { role: "user" | "assistant"; content: string }[];
+};
+
+import type { ChatSessionCloseMeta } from "./session-close.types";
+
+export type { ChatSessionCloseMeta };
+
 export type ChatPendingProposalPayload = {
   action_name: string;
   input: Record<string, unknown>;
@@ -91,6 +128,9 @@ export type ChatPendingProposalPayload = {
   campaignMeta?: ChatCampaignMeta;
   missionMeta?: ChatMissionMeta;
   characterMeta?: ChatCharacterMeta;
+  relationshipMeta?: ChatRelationshipMeta;
+  sessionMeta?: ChatSessionMeta;
+  sessionCloseMeta?: ChatSessionCloseMeta;
 };
 
 export type RunAiChatAssistantParams = RunAiDraftAssistantParams & {

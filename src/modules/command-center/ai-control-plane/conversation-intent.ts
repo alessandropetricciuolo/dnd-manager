@@ -44,6 +44,12 @@ export function detectConversationIntent(
     return "refine";
   }
 
+  if (phase === "awaiting_close_info") {
+    if (REJECT_RE.test(trimmed)) return "reject";
+    if (CONFIRM_RE.test(trimmed)) return "confirm";
+    return "refine";
+  }
+
   if (CONFIRM_RE.test(trimmed)) return "confirm";
   if (REJECT_RE.test(trimmed)) return "reject";
   return "refine";
