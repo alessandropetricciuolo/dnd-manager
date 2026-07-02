@@ -11,7 +11,7 @@ type Props = {
   characters: CampaignCharacterRow[];
 };
 
-export function DownloadTorneoSheetsButton({ campaignId, characters }: Props) {
+export function DownloadCampaignSheetsButton({ campaignId, characters }: Props) {
   const [loading, setLoading] = useState(false);
   const withSheetCount = characters.filter((c) => c.sheet_url?.trim()).length;
 
@@ -29,14 +29,16 @@ export function DownloadTorneoSheetsButton({ campaignId, characters }: Props) {
       const blob = await res.blob();
       const cd = res.headers.get("Content-Disposition");
       const match = cd?.match(/filename="([^"]+)"/);
-      const filename = match?.[1] ?? "schede-torneo.zip";
+      const filename = match?.[1] ?? "schede-campagna.zip";
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success(`Scaricato pacchetto con ${withSheetCount} sched${withSheetCount === 1 ? "a" : "e"} PDF.`);
+      toast.success(
+        `Scaricato pacchetto ZIP con ${withSheetCount} sched${withSheetCount === 1 ? "a" : "e"} PDF.`
+      );
     } catch {
       toast.error("Errore di rete durante il download.");
     } finally {
@@ -52,10 +54,13 @@ export function DownloadTorneoSheetsButton({ campaignId, characters }: Props) {
       className="border-barber-gold/40 text-barber-gold hover:bg-barber-gold/10"
       disabled={loading}
       onClick={() => void onDownload()}
-      title="Scarica tutte le schede PDF in un file ZIP"
+      title="Scarica tutte le schede PDF in un unico file ZIP"
     >
       <Download className="mr-2 h-4 w-4" />
       {loading ? "Preparazione ZIP…" : `Scarica tutte le schede (${withSheetCount})`}
     </Button>
   );
 }
+
+/** @deprecated Usa DownloadCampaignSheetsButton */
+export const DownloadTorneoSheetsButton = DownloadCampaignSheetsButton;

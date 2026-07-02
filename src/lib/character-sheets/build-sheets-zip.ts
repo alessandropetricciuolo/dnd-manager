@@ -59,7 +59,7 @@ export async function buildCampaignCharacterSheetsZip(
   );
 
   const stamp = new Date().toISOString().slice(0, 10);
-  const label = options?.zipLabel?.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 40) || "torneo";
+  const label = options?.zipLabel?.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 40) || "campagna";
   const filename = `barber-and-dragons-schede_${label}_${stamp}.zip`;
 
   const passThrough = new PassThrough();

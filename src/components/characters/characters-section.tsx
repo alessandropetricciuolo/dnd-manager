@@ -3,7 +3,7 @@
 import { CreateCharacterDialog } from "./create-character-dialog";
 import { ImportCharactersFromCatalogDialog } from "./import-characters-from-catalog-dialog";
 import { CharacterCardGm } from "./character-card-gm";
-import { DownloadTorneoSheetsButton } from "./download-torneo-sheets-button";
+import { DownloadCampaignSheetsButton } from "./download-campaign-sheets-button";
 import { CharacterCardPlayer } from "./character-card-player";
 import { PlayerSecretChat } from "@/components/player/player-secret-chat";
 import type { CampaignCharacterRow, EligiblePlayer } from "@/app/campaigns/character-actions";
@@ -85,9 +85,7 @@ export function CharactersSection({
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h2 className="text-lg font-semibold text-barber-paper">Personaggi</h2>
           <div className="flex flex-wrap items-center gap-2">
-            {isTorneoCampaign ? (
-              <DownloadTorneoSheetsButton campaignId={campaignId} characters={characters} />
-            ) : null}
+            <DownloadCampaignSheetsButton campaignId={campaignId} characters={characters} />
             <ImportCharactersFromCatalogDialog campaignId={campaignId} />
             <CreateCharacterDialog campaignId={campaignId} initialOpen={openCreateDialogOnLoad} />
           </div>
