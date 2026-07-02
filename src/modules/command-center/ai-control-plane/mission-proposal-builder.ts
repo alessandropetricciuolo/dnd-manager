@@ -8,6 +8,7 @@ import {
 import { previewAction } from "../actions";
 import type { ChatMissionMeta } from "./draft-assistant.types";
 import type { PreviewedProposal } from "./preview-proposals";
+import { resolveRefineUserMessage, type PreviewTextSelection } from "./preview-text-selection";
 
 export function buildMissionCreateInput(
   campaignId: string,
@@ -48,6 +49,7 @@ export async function enrichMissionProposal(
   options?: {
     refine?: boolean;
     missionMeta?: ChatMissionMeta | null;
+    previewTextSelection?: PreviewTextSelection | null;
   }
 ): Promise<
   | {
@@ -64,13 +66,17 @@ export async function enrichMissionProposal(
     return { ok: false, error: "Descrivi la missione che vuoi creare." };
   }
 
+  const refineMessage = options?.refine
+    ? resolveRefineUserMessage(userMessage, options.previewTextSelection)
+    : userMessage.trim();
+
   const chatMessages = options?.refine
-    ? [...(options.missionMeta?.chatMessages ?? []), { role: "user" as const, content: userMessage.trim() }]
+    ? [...(options.missionMeta?.chatMessages ?? []), { role: "user" as const, content: refineMessage }]
     : [{ role: "user" as const, content: userMessage.trim() }];
 
   const generated =
     options?.refine && options.missionMeta?.draft
-      ? await refineMissionDraftFromPrompt(campaignId, userMessage.trim(), options.missionMeta.draft)
+      ? await refineMissionDraftFromPrompt(campaignId, refineMessage, options.missionMeta.draft)
       : await generateMissionDraftFromPrompt(campaignId, userPrompt, hints);
 
   if (!generated.ok) {

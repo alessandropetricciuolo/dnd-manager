@@ -5,9 +5,19 @@ import {
 } from "@/lib/actions/wiki-text-chat";
 import type { WikiMarkdownEntityType, WikiMarkdownExtraParams } from "@/lib/ai/wiki-text-generator";
 import { extractNpcBuildParams, mergeWikiExtraParams } from "@/lib/ai/wiki-npc-params";
+import {
+  resolveWikiVisibilityForAssistant,
+  type WikiVisibility,
+} from "./wiki-request-detector";
 import { previewAction } from "../actions";
 import type { PreviewedProposal } from "./preview-proposals";
 import type { ChatWikiMeta } from "./draft-assistant.types";
+import {
+  resolveRefineUserMessage,
+  selectionTargetsWikiDescription,
+  selectionTargetsWikiStatblock,
+  type PreviewTextSelection,
+} from "./preview-text-selection";
 
 const WIKI_MARKDOWN_TYPES = new Set<string>([
   "npc",
@@ -31,14 +41,14 @@ export function buildWikiEntityInput(
   entityType: WikiMarkdownEntityType,
   title: string,
   draft: WikiMarkdownChatDraft,
-  imageUrl?: string | null
+  options?: { visibility?: WikiVisibility; imageUrl?: string | null }
 ): Record<string, unknown> {
   const input: Record<string, unknown> = {
     campaignId,
     title,
     type: entityType,
     content: draft.description.trim(),
-    visibility: "public",
+    visibility: options?.visibility ?? "secret",
   };
 
   const attributes: Record<string, unknown> = {};
@@ -53,8 +63,8 @@ export function buildWikiEntityInput(
   if (Object.keys(attributes).length > 0) {
     input.attributes = attributes;
   }
-  if (imageUrl) {
-    input.imageUrl = imageUrl;
+  if (options?.imageUrl) {
+    input.imageUrl = options.imageUrl;
   }
 
   return input;
@@ -63,8 +73,15 @@ export function buildWikiEntityInput(
 function formatWikiDraftForPreview(
   title: string,
   entityType: string,
-  draft: WikiMarkdownChatDraft
+  draft: WikiMarkdownChatDraft,
+  visibility: WikiVisibility
 ): Record<string, unknown> {
+  const visibilityLabel =
+    visibility === "public"
+      ? "Pubblico"
+      : visibility === "selective"
+        ? "Selettivo"
+        : "Segreto (solo GM)";
   const parts = [draft.description.trim()];
   if (draft.statblock.trim()) {
     parts.push(`---\n\n**Meccanica**\n\n${draft.statblock.trim()}`);
@@ -75,6 +92,8 @@ function formatWikiDraftForPreview(
     title,
     content: parts.join("\n\n"),
     contentMarkdown: parts.join("\n\n"),
+    visibility,
+    visibilityLabel,
   };
 }
 
@@ -87,6 +106,8 @@ export async function enrichWikiEntityProposal(
     refine?: boolean;
     wikiMeta?: ChatWikiMeta | null;
     extraParams?: WikiMarkdownExtraParams;
+    previousVisibility?: string | null;
+    previewTextSelection?: PreviewTextSelection | null;
   }
 ): Promise<
   | {
@@ -106,8 +127,12 @@ export async function enrichWikiEntityProposal(
   const currentDraft = options?.wikiMeta?.markdownDraft ?? null;
   const userPrompt = options?.wikiMeta?.userPrompt?.trim() || userMessage.trim();
 
+  const refineMessage = options?.refine
+    ? resolveRefineUserMessage(userMessage, options.previewTextSelection)
+    : userMessage.trim();
+
   const chatMessages: WikiTextChatTurn[] = options?.refine
-    ? [...priorMessages, { role: "user", content: userMessage.trim() }]
+    ? [...priorMessages, { role: "user", content: refineMessage }]
     : [{ role: "user", content: userMessage.trim() }];
 
   const extraParams = mergeWikiExtraParams(
@@ -116,24 +141,42 @@ export async function enrichWikiEntityProposal(
     extractNpcBuildParams(userMessage)
   );
 
+  const refineFocus = options?.previewTextSelection
+    ? selectionTargetsWikiStatblock(options.previewTextSelection)
+      ? ("meccanica" as const)
+      : selectionTargetsWikiDescription(options.previewTextSelection)
+        ? ("narrativa" as const)
+        : undefined
+    : undefined;
+
   const result = await chatWikiMarkdownTextAction(
     campaignId,
     entityType,
     safeTitle,
     chatMessages,
     options?.refine ? currentDraft : null,
-    extraParams
+    extraParams,
+    refineFocus ? { focus: refineFocus } : undefined
   );
 
   if (!result.success) {
     return { ok: false, error: result.message };
   }
 
-  const input = buildWikiEntityInput(campaignId, entityType, safeTitle, result.draft);
+  const visibility = resolveWikiVisibilityForAssistant(
+    userMessage,
+    userPrompt,
+    options?.previousVisibility,
+    { preservePrevious: options?.refine }
+  );
+
+  const input = buildWikiEntityInput(campaignId, entityType, safeTitle, result.draft, {
+    visibility,
+  });
   const previewResult = await previewAction("wiki.entity.create", input, { actorType: "ai" });
   const preview_payload = previewResult.success
     ? {
-        ...formatWikiDraftForPreview(safeTitle, entityType, result.draft),
+        ...formatWikiDraftForPreview(safeTitle, entityType, result.draft, visibility),
         ...(previewResult.data as Record<string, unknown>),
       }
     : { error: previewResult.error };

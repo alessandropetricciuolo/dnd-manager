@@ -9,6 +9,7 @@ import { isLongCampaignType } from "@/lib/campaign-type";
 import { previewAction } from "../actions";
 import type { PreviewedProposal } from "./preview-proposals";
 import type { ChatCampaignMeta } from "./draft-assistant.types";
+import { resolveRefineUserMessage, type PreviewTextSelection } from "./preview-text-selection";
 
 export function supportsCampaignArchitect(draft: Pick<CampaignAiDraft, "type">): boolean {
   return isLongCampaignType(draft.type);
@@ -44,6 +45,7 @@ export async function enrichCampaignProposal(
   options?: {
     refine?: boolean;
     campaignMeta?: ChatCampaignMeta | null;
+    previewTextSelection?: PreviewTextSelection | null;
   }
 ): Promise<
   | {
@@ -59,12 +61,16 @@ export async function enrichCampaignProposal(
     return { ok: false, error: "Descrivi la campagna che vuoi creare." };
   }
 
+  const refineMessage = options?.refine
+    ? resolveRefineUserMessage(userMessage, options.previewTextSelection)
+    : userMessage.trim();
+
   const chatMessages = options?.refine
-    ? [...(options.campaignMeta?.chatMessages ?? []), { role: "user" as const, content: userMessage.trim() }]
+    ? [...(options.campaignMeta?.chatMessages ?? []), { role: "user" as const, content: refineMessage }]
     : [{ role: "user" as const, content: userMessage.trim() }];
 
   const generated = options?.refine && options.campaignMeta?.draft
-    ? await refineCampaignDraftFromPrompt(userMessage.trim(), options.campaignMeta.draft)
+    ? await refineCampaignDraftFromPrompt(refineMessage, options.campaignMeta.draft)
     : await generateCampaignDraftFromPrompt(userPrompt);
 
   if (!generated.ok) {

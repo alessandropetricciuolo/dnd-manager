@@ -31,7 +31,7 @@ export function registerWikiWrapperActions(): void {
           title: o.title.trim(),
           type: o.type.trim(),
           content: typeof o.content === "string" ? o.content : "",
-          visibility: typeof o.visibility === "string" ? o.visibility : "public",
+          visibility: typeof o.visibility === "string" ? o.visibility : "secret",
           attributes,
           imageUrl,
         },
@@ -99,7 +99,7 @@ export function registerWikiWrapperActions(): void {
           title: o.title.trim(),
           type: o.type.trim(),
           content: typeof o.content === "string" ? o.content : "",
-          visibility: typeof o.visibility === "string" ? o.visibility : "public",
+          visibility: typeof o.visibility === "string" ? o.visibility : "secret",
         },
       };
     },

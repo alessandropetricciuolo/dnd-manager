@@ -21,6 +21,7 @@ import {
 } from "./session-close-request-detector";
 import type { SessionCloseMissingField } from "./session-close.types";
 import type { ChatSessionCloseMeta } from "./session-close.types";
+import { resolveRefineUserMessage, type PreviewTextSelection } from "./preview-text-selection";
 import type { SessionCloseResolvedDraft } from "./session-close.types";
 import type { PreviewedProposal } from "./preview-proposals";
 
@@ -396,6 +397,7 @@ export async function enrichSessionCloseProposal(
   options?: {
     refine?: boolean;
     sessionCloseMeta?: ChatSessionCloseMeta | null;
+    previewTextSelection?: PreviewTextSelection | null;
   }
 ): Promise<
   | {
@@ -466,11 +468,15 @@ export async function enrichSessionCloseProposal(
     campaignContext,
   };
 
+  const refineMessage = options?.refine
+    ? resolveRefineUserMessage(userMessage, options.previewTextSelection)
+    : userMessage.trim();
+
   const chatMessages =
     options?.refine && options.sessionCloseMeta
       ? [
           ...options.sessionCloseMeta.chatMessages,
-          { role: "user" as const, content: userMessage.trim() },
+          { role: "user" as const, content: refineMessage },
         ]
       : options?.sessionCloseMeta?.chatMessages ?? [];
 
@@ -480,7 +486,7 @@ export async function enrichSessionCloseProposal(
     options?.refine && options.sessionCloseMeta?.aiDraft
       ? await refineSessionCloseDraftFromPrompt(
           campaignId,
-          userMessage.trim(),
+          refineMessage,
           options.sessionCloseMeta.aiDraft,
           genCtx,
           chatMessages

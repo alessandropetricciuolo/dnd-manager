@@ -30,6 +30,11 @@ import {
 } from "./session-close-proposal-builder";
 import { isLongCampaignType, type CampaignType } from "@/lib/campaign-type";
 import { buildArchitectDescriptionFromDraft } from "@/lib/ai/campaign-text-generator";
+import {
+  isValidPreviewTextSelection,
+  shouldTreatAsSelectionRefine,
+  type PreviewTextSelection,
+} from "./preview-text-selection";
 import { applyDomainFallbackInterpreter } from "./domain-fallback-interpreter";
 import type { AiInterpreterResult } from "../types/ai-proposal";
 
@@ -45,7 +50,7 @@ export type AiChatAssistantResult = {
 
 function chatHintForProposal(phase?: ChatPendingProposal["phase"]): string {
   if (phase === "awaiting_image") {
-    return "Scrivi **sì** per l'immagine contestuale o **no** per creare solo il testo.";
+    return "Scrivi **sì** per generare l'immagine nell'anteprima, **no** per continuare senza, poi **conferma** per salvare.";
   }
   if (phase === "awaiting_avatar") {
     return "Scrivi **sì** per generare un ritratto, **no** per creare il PG senza avatar, oppure carica un'immagine nel pannello a destra.";
@@ -209,6 +214,50 @@ function pickWikiType(input: Record<string, unknown>): string {
   return typeof input.type === "string" ? input.type.trim() : "npc";
 }
 
+function hasWikiContextualImage(pending: ChatPendingProposal): boolean {
+  const url = pending.input.imageUrl ?? pending.preview_payload.imageUrl;
+  return typeof url === "string" && url.trim().length > 0;
+}
+
+function shouldOfferWikiContextualImage(pending: ChatPendingProposal): boolean {
+  if (pending.action_name !== "wiki.entity.create") return false;
+  return supportsWikiContextualImage(pickWikiType(pending.input));
+}
+
+function applyWikiImageOfferPhase(pending: ChatPendingProposal): ChatPendingProposal {
+  if (!shouldOfferWikiContextualImage(pending)) return { ...pending, phase: pending.phase ?? "text" };
+  if (hasWikiContextualImage(pending)) return { ...pending, phase: "text" };
+  return { ...pending, phase: "awaiting_image" };
+}
+
+function wikiImageOfferReply(title: string): string {
+  return `Testo pronto per **${title || "la voce wiki"}**.\n\nVuoi che generi anche un'immagine contestuale? Comparirà sotto il testo nell'anteprima a destra prima del salvataggio.\n\nScrivi **sì** o **no**.`;
+}
+
+function finalizeWikiProposalAfterText(
+  pending: ChatPendingProposal,
+  enriched: PreviewedProposal,
+  wikiMeta: ChatPendingProposal["wikiMeta"]
+): { nextPending: ChatPendingProposal; replyExtra: string | null } {
+  const base: ChatPendingProposal = {
+    ...enriched,
+    rationale: pending.rationale,
+    wikiMeta,
+    input: { ...enriched.input },
+    preview_payload: { ...enriched.preview_payload },
+  };
+  delete base.input.imageUrl;
+  delete base.preview_payload.imageUrl;
+
+  const nextPending = applyWikiImageOfferPhase(base);
+  const replyExtra =
+    nextPending.phase === "awaiting_image"
+      ? wikiImageOfferReply(pickWikiTitle(nextPending.input))
+      : null;
+
+  return { nextPending, replyExtra };
+}
+
 async function tryEnrichWikiProposal(
   campaignId: string,
   userMessage: string,
@@ -217,6 +266,7 @@ async function tryEnrichWikiProposal(
     refine?: boolean;
     pending?: ChatPendingProposal | null;
     extraParams?: import("@/lib/ai/wiki-text-generator").WikiMarkdownExtraParams;
+    previewTextSelection?: PreviewTextSelection | null;
   }
 ): Promise<{
   proposal: PreviewedProposal;
@@ -235,6 +285,9 @@ async function tryEnrichWikiProposal(
     refine: options?.refine,
     wikiMeta: options?.pending?.wikiMeta ?? null,
     extraParams: options?.extraParams,
+    previousVisibility:
+      typeof proposal.input.visibility === "string" ? proposal.input.visibility : null,
+    previewTextSelection: options?.previewTextSelection,
   });
 
   if (!enriched.ok) {
@@ -264,7 +317,14 @@ export async function runAiChatAssistant(
 
   const campaignId = input.campaignId?.trim() || null;
   const pending = input.pendingProposal ?? null;
-  const intent = detectConversationIntent(message, Boolean(pending), pending?.phase);
+  const previewTextSelection = isValidPreviewTextSelection(input.previewTextSelection)
+    ? input.previewTextSelection
+    : null;
+  const baseIntent = detectConversationIntent(message, Boolean(pending), pending?.phase);
+  const intent = shouldTreatAsSelectionRefine(baseIntent, previewTextSelection, pending?.phase)
+    ? "refine"
+    : baseIntent;
+  const selectionRefine = Boolean(previewTextSelection) && intent === "refine";
 
   const source = input.source ?? "text";
   const transcript =
@@ -282,6 +342,12 @@ export async function runAiChatAssistant(
       chatIntent: intent,
       hasPending: Boolean(pending),
       pendingPhase: pending?.phase ?? null,
+      previewTextSelection: previewTextSelection
+        ? {
+            field: previewTextSelection.field,
+            excerptLength: previewTextSelection.selectedText.length,
+          }
+        : null,
     },
     created_by: ctx.userId,
   });
@@ -304,7 +370,7 @@ export async function runAiChatAssistant(
       success: true,
       data: {
         reply:
-          "Per procedere scrivi **sì** per generare l'immagine contestuale, **no** per creare solo la voce wiki, oppure **annulla**.",
+          "Per procedere scrivi **sì** per generare l'immagine nell'anteprima, **no** per continuare senza immagine, oppure **annulla**.",
         intentSummary: "In attesa decisione immagine",
         pendingProposal: pending,
         executed: false,
@@ -404,33 +470,20 @@ export async function runAiChatAssistant(
     };
   }
 
-  if (intent === "image_no" && pending?.phase === "awaiting_image") {
-    const exec = await executePendingProposal(pending, campaignId);
-    if (!exec.success) {
-      return {
-        success: true,
-        data: {
-          reply: `Non sono riuscito a creare la voce wiki: ${exec.error}`,
-          intentSummary: "Esecuzione fallita",
-          pendingProposal: pending,
-          executed: false,
-          clearedPending: false,
-        },
-      };
-    }
+  if (intent === "image_no" && pending?.phase === "awaiting_image" && pending.action_name === "wiki.entity.create") {
     return {
       success: true,
       data: {
-        reply: `Voce wiki **${pickWikiTitle(pending.input)}** creata senza immagine. Vuoi preparare altro?`,
-        intentSummary: "Wiki creata (solo testo)",
-        pendingProposal: null,
-        executed: true,
-        clearedPending: true,
+        reply: `Ok, **${pickWikiTitle(pending.input)}** verrà salvata senza immagine. Scrivi **conferma** quando sei pronto, oppure descrivi modifiche al testo.`,
+        intentSummary: "Wiki senza immagine",
+        pendingProposal: { ...pending, phase: "text" },
+        executed: false,
+        clearedPending: false,
       },
     };
   }
 
-  if (intent === "image_yes" && pending?.phase === "awaiting_image") {
+  if (intent === "image_yes" && pending?.phase === "awaiting_image" && pending.action_name === "wiki.entity.create") {
     if (!campaignId) {
       return { success: false, error: "Seleziona una campagna per generare l'immagine." };
     }
@@ -440,7 +493,7 @@ export async function runAiChatAssistant(
       return {
         success: true,
         data: {
-          reply: `Non sono riuscito a generare l'immagine: ${imageResult.error}\n\nScrivi **no** per creare la voce senza immagine, oppure **annulla**.`,
+          reply: `Non sono riuscito a generare l'immagine: ${imageResult.error}\n\nScrivi **no** per continuare senza immagine, oppure **annulla**.`,
           intentSummary: "Generazione immagine fallita",
           pendingProposal: pending,
           executed: false,
@@ -456,30 +509,17 @@ export async function runAiChatAssistant(
         ...pending.preview_payload,
         imageUrl: imageResult.imageUrl,
       },
+      phase: "text",
     };
-
-    const exec = await executePendingProposal(withImage, campaignId);
-    if (!exec.success) {
-      return {
-        success: true,
-        data: {
-          reply: `Immagine generata ma creazione fallita: ${exec.error}`,
-          intentSummary: "Esecuzione fallita",
-          pendingProposal: withImage,
-          executed: false,
-          clearedPending: false,
-        },
-      };
-    }
 
     return {
       success: true,
       data: {
-        reply: `Voce wiki **${pickWikiTitle(withImage.input)}** creata con immagine contestuale.\n\nAnteprima: ${imageResult.imageUrl}\n\nVuoi preparare altro?`,
-        intentSummary: "Wiki creata con immagine",
-        pendingProposal: null,
-        executed: true,
-        clearedPending: true,
+        reply: `Immagine generata per **${pickWikiTitle(withImage.input)}**. Vedi testo e immagine nell'anteprima a destra, poi scrivi **conferma** per salvare la voce wiki.`,
+        intentSummary: "Immagine wiki in anteprima",
+        pendingProposal: withImage,
+        executed: false,
+        clearedPending: false,
       },
     };
   }
@@ -561,19 +601,13 @@ export async function runAiChatAssistant(
       };
     }
 
-    const wikiType = pickWikiType(pending.input);
-    const awaitingImage =
-      pending.action_name === "wiki.entity.create" &&
-      pending.phase !== "awaiting_image" &&
-      supportsWikiContextualImage(wikiType);
-
-    if (awaitingImage) {
+    if (pending.action_name === "wiki.entity.create" && pending.phase === "awaiting_image") {
       return {
         success: true,
         data: {
-          reply: `Testo approvato per **${pickWikiTitle(pending.input)}**.\n\nVuoi che generi anche un'immagine contestuale (come nel form wiki)? Scrivi **sì** o **no**.`,
-          intentSummary: "Testo approvato — decisione immagine",
-          pendingProposal: { ...pending, phase: "awaiting_image" },
+          reply: wikiImageOfferReply(pickWikiTitle(pending.input)),
+          intentSummary: "In attesa decisione immagine",
+          pendingProposal: pending,
           executed: false,
           clearedPending: false,
         },
@@ -768,6 +802,21 @@ export async function runAiChatAssistant(
       };
     }
 
+    if (pending.action_name === "wiki.entity.create") {
+      const title = pickWikiTitle(pending.input);
+      const withImage = hasWikiContextualImage(pending);
+      return {
+        success: true,
+        data: {
+          reply: `Voce wiki **${title}** creata${withImage ? " con immagine contestuale" : ""}. Vuoi preparare altro?`,
+          intentSummary: withImage ? "Wiki creata con immagine" : "Wiki creata",
+          pendingProposal: null,
+          executed: true,
+          clearedPending: true,
+        },
+      };
+    }
+
     return {
       success: true,
       data: {
@@ -784,6 +833,7 @@ export async function runAiChatAssistant(
     const enriched = await enrichCampaignProposal(message, pending, {
       refine: true,
       campaignMeta: pending.campaignMeta,
+      previewTextSelection,
     });
 
     if (!enriched.ok) {
@@ -801,7 +851,7 @@ export async function runAiChatAssistant(
       success: true,
       data: {
         reply: ["Ho aggiornato la proposta campagna.", chatHintForProposal("text")].join("\n\n"),
-        intentSummary: "Bozza campagna aggiornata",
+        intentSummary: selectionRefine ? "Modifica mirata (campagna)" : "Bozza campagna aggiornata",
         pendingProposal: nextPending,
         executed: false,
         clearedPending: false,
@@ -820,23 +870,26 @@ export async function runAiChatAssistant(
     const enriched = await tryEnrichWikiProposal(campaignId, message, pending, {
       refine: true,
       pending,
+      previewTextSelection,
     });
 
     if (enriched.error) {
       return { success: false, error: enriched.error };
     }
 
-    const nextPending: ChatPendingProposal = {
-      ...enriched.proposal,
-      rationale: pending.rationale,
-      phase: "text",
-      wikiMeta: enriched.wikiMeta,
-    };
+    const { nextPending, replyExtra } = finalizeWikiProposalAfterText(
+      pending,
+      enriched.proposal,
+      enriched.wikiMeta
+    );
 
     const reply = [
       "Ho aggiornato la proposta in base alle tue indicazioni.",
-      chatHintForProposal("text"),
-    ].join("\n\n");
+      replyExtra,
+      chatHintForProposal(nextPending.phase ?? "text"),
+    ]
+      .filter(Boolean)
+      .join("\n\n");
 
     revalidatePath("/command-center");
 
@@ -844,7 +897,11 @@ export async function runAiChatAssistant(
       success: true,
       data: {
         reply,
-        intentSummary: "Bozza wiki aggiornata",
+        intentSummary: replyExtra
+          ? "Testo wiki — decisione immagine"
+          : selectionRefine
+            ? "Modifica mirata (wiki)"
+            : "Bozza wiki aggiornata",
         pendingProposal: nextPending,
         executed: false,
         clearedPending: false,
@@ -871,6 +928,7 @@ export async function runAiChatAssistant(
     const enriched = await enrichMissionProposal(campaignId, message, pending, {
       refine: true,
       missionMeta: pending.missionMeta,
+      previewTextSelection,
     });
 
     if (!enriched.ok) {
@@ -890,7 +948,7 @@ export async function runAiChatAssistant(
         reply: ["Ho aggiornato la missione in base alle tue indicazioni.", chatHintForProposal("text")].join(
           "\n\n"
         ),
-        intentSummary: "Bozza missione aggiornata",
+        intentSummary: selectionRefine ? "Modifica mirata (missione)" : "Bozza missione aggiornata",
         pendingProposal: nextPending,
         executed: false,
         clearedPending: false,
@@ -917,6 +975,7 @@ export async function runAiChatAssistant(
     const enriched = await enrichSessionCloseProposal(campaignId, message, pending, {
       refine: true,
       sessionCloseMeta: pending.sessionCloseMeta,
+      previewTextSelection,
     });
 
     if (!enriched.ok) {
@@ -941,7 +1000,12 @@ export async function runAiChatAssistant(
           missingReply ?? "Ho aggiornato il debrief di chiusura sessione.",
           chatHintForProposal(enriched.phase),
         ].join("\n\n"),
-        intentSummary: enriched.phase === "awaiting_close_info" ? "Dati mancanti" : "Bozza chiusura aggiornata",
+        intentSummary:
+          enriched.phase === "awaiting_close_info"
+            ? "Dati mancanti"
+            : selectionRefine
+              ? "Modifica mirata (chiusura)"
+              : "Bozza chiusura aggiornata",
         pendingProposal: nextPending,
         executed: false,
         clearedPending: false,
@@ -1055,6 +1119,7 @@ export async function runAiChatAssistant(
     const enriched = await enrichCharacterProposal(campaignId, message, pending, {
       refine: true,
       characterMeta: pending.characterMeta,
+      previewTextSelection,
     });
 
     if (!enriched.ok) {
@@ -1080,7 +1145,7 @@ export async function runAiChatAssistant(
           "Ho aggiornato la storia del personaggio.",
           chatHintForProposal(nextPending.phase),
         ].join("\n\n"),
-        intentSummary: "Storia PG aggiornata",
+        intentSummary: selectionRefine ? "Modifica mirata (storia PG)" : "Storia PG aggiornata",
         pendingProposal: nextPending,
         executed: false,
         clearedPending: false,
@@ -1150,11 +1215,20 @@ export async function runAiChatAssistant(
         return { success: false, error: enriched.error };
       }
 
-      nextPending = {
-        ...enriched.proposal,
-        phase: "text",
-        wikiMeta: enriched.wikiMeta,
-      };
+      const finalized = finalizeWikiProposalAfterText(
+        { ...nextPending, rationale: nextPending.rationale ?? previews[0]?.rationale ?? null },
+        enriched.proposal,
+        enriched.wikiMeta
+      );
+
+      nextPending = finalized.nextPending;
+
+      if (finalized.replyExtra) {
+        interpreted = {
+          ...interpreted,
+          reply: [interpreted.reply, finalized.replyExtra].filter(Boolean).join("\n\n"),
+        };
+      }
     } else if (nextPending.action_name === "wiki.entity.create" && !campaignId) {
       return {
         success: false,

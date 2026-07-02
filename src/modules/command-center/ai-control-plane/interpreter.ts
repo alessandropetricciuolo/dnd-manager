@@ -18,6 +18,7 @@ Regole:
 - Per campagne long: il motore AI genererà descrizione e guida giocatore; non serve compilare tutto nel JSON
 - Per NPC/luoghi/lore usa wiki.entity.create con type corretto (npc, location, lore, monster, item)
 - Per wiki: proponi sempre title e type; il contenuto narrativo verrà generato dal motore wiki contestuale
+- Per wiki.entity.create: visibility default "secret" (solo GM); "public" o "selective" solo se richiesto esplicitamente
 - Per note nella tab GM campagna usa gm.note.create
 - Per missioni gilda usa mission.create
 - Non inventare campaignId: usa quello del contesto se presente

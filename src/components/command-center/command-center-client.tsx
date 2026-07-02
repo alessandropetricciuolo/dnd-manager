@@ -391,7 +391,7 @@ export function CommandCenterClient({
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] flex-col">
+    <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden">
       <header className="border-b border-barber-gold/20 bg-barber-dark/90 px-4 py-3 md:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -641,8 +641,10 @@ export function CommandCenterClient({
         {/* Centro */}
         <main
           className={cn(
-            "min-h-[280px] flex-1",
-            centerView === "assistant" ? "p-3 md:p-4" : "p-4 md:p-6"
+            "flex min-h-0 flex-1 flex-col",
+            centerView === "assistant"
+              ? "overflow-hidden p-3 md:p-4"
+              : "min-h-[280px] overflow-auto p-4 md:p-6"
           )}
         >
           {centerView === "assistant" ? (

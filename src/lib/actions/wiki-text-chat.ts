@@ -68,14 +68,23 @@ function formatMarkdownDraftForChat(description: string, statblock: string): str
 function buildMarkdownRefineSystemPrompt(
   entityName: string,
   entityType: WikiMarkdownEntityType,
-  draft: WikiMarkdownChatDraft
+  draft: WikiMarkdownChatDraft,
+  focus?: "narrativa" | "meccanica"
 ): string {
+  const focusLine =
+    focus === "meccanica"
+      ? "Il Master ha selezionato un frammento nella sezione MECCANICA: modifica solo quella parte in [MECCANICA]; lascia [NARRATIVA] invariata salvo minimi aggiustamenti."
+      : focus === "narrativa"
+        ? "Il Master ha selezionato un frammento nella sezione NARRATIVA: modifica solo quella parte in [NARRATIVA]; lascia [MECCANICA] invariata salvo minimi aggiustamenti."
+        : null;
+
   return [
     "Sei un editor wiki per D&D 5e. Il Master ti chiede di modificare una voce già generata.",
     `Entità: ${entityName} (${entityType})`,
     "Mantieni coerenza con le richieste precedenti nella conversazione.",
     "Rispondi SOLO in Markdown con due sezioni delimitate da [NARRATIVA] e [MECCANICA].",
     "Non aggiungere commenti meta, JSON o testo fuori dalle sezioni.",
+    ...(focusLine ? ["", focusLine] : []),
     "",
     "TESTO ATTUALE [NARRATIVA]:",
     draft.description.trim() || "(vuoto)",
@@ -159,7 +168,8 @@ export async function chatWikiMarkdownTextAction(
   entityName: string,
   messages: WikiTextChatTurn[],
   currentDraft?: WikiMarkdownChatDraft | null,
-  extraParams: WikiMarkdownExtraParams = {}
+  extraParams: WikiMarkdownExtraParams = {},
+  refineOptions?: { focus?: "narrativa" | "meccanica" }
 ): Promise<WikiMarkdownChatResult> {
   if (!campaignId) {
     return { success: false, message: "Campagna non valida." };
@@ -208,7 +218,12 @@ export async function chatWikiMarkdownTextAction(
       return { success: false, message: "Manca la bozza corrente per continuare la conversazione." };
     }
 
-    const systemPrompt = buildMarkdownRefineSystemPrompt(entityName, entityType, currentDraft);
+    const systemPrompt = buildMarkdownRefineSystemPrompt(
+      entityName,
+      entityType,
+      currentDraft,
+      refineOptions?.focus
+    );
     const apiMessages = [
       { role: "system" as const, content: systemPrompt },
       ...messages.map((m) => ({ role: m.role, content: m.content.trim() })),

@@ -2,6 +2,8 @@ import type { WikiMarkdownEntityType } from "@/lib/ai/wiki-text-generator";
 import type { WikiMarkdownExtraParams } from "@/lib/ai/wiki-text-generator";
 import { extractNpcBuildParams, mergeWikiExtraParams } from "@/lib/ai/wiki-npc-params";
 
+export type WikiVisibility = "public" | "secret" | "selective";
+
 export type DetectedWikiRequest = {
   entityType: WikiMarkdownEntityType;
   title: string;
@@ -79,6 +81,52 @@ function looksLikeWikiCreate(message: string): boolean {
   if (/\bcrea(?:mi)?\s+(?:un[a']?\s+)?(?:npc|png|luogo|voce\s+wiki)/i.test(t)) return true;
   if (NPC_ROLES.test(t) && t.length > 40) return true;
   return false;
+}
+
+/** Visibilità esplicita nel prompt; null = usa default assistente (secret / solo GM). */
+export function detectWikiVisibilityFromPrompt(message: string): WikiVisibility | null {
+  const t = message.trim();
+  if (!t) return null;
+
+  if (
+    /\b(selettiv[oa]|visibile\s+solo\s+a|solo\s+per\s+(?:il\s+)?(?:giocatore|party|gruppo))\b/i.test(t)
+  ) {
+    return "selective";
+  }
+  if (
+    /\b(pubblic[oa]|visibile\s+(?:a\s+)?tutti|per\s+i\s+pg\b|per\s+i\s+giocator|visibilit[aà]\s+pubblica|visible\s+to\s+players)\b/i.test(
+      t
+    )
+  ) {
+    return "public";
+  }
+  if (/\b(segreto|solo\s+gm|nascost[oa]|gm\s+only|hidden\s+from\s+players)\b/i.test(t)) {
+    return "secret";
+  }
+  return null;
+}
+
+function isWikiVisibility(value: string): value is WikiVisibility {
+  return value === "public" || value === "secret" || value === "selective";
+}
+
+export function resolveWikiVisibilityForAssistant(
+  userMessage: string,
+  userPrompt: string,
+  previousVisibility?: string | null,
+  options?: { preservePrevious?: boolean }
+): WikiVisibility {
+  const fromMessage = detectWikiVisibilityFromPrompt(userMessage);
+  if (fromMessage) return fromMessage;
+
+  if (options?.preservePrevious && previousVisibility && isWikiVisibility(previousVisibility)) {
+    return previousVisibility;
+  }
+
+  const fromPrompt = detectWikiVisibilityFromPrompt(userPrompt);
+  if (fromPrompt) return fromPrompt;
+
+  return "secret";
 }
 
 export function detectWikiCreateRequest(message: string): DetectedWikiRequest | null {

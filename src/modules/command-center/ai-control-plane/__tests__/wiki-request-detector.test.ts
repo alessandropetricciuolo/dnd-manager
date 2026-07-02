@@ -3,8 +3,10 @@ import assert from "node:assert/strict";
 
 import {
   detectWikiCreateRequest,
+  detectWikiVisibilityFromPrompt,
   extractNpcBuildParams,
   hasNpcMechanicsParams,
+  resolveWikiVisibilityForAssistant,
 } from "../wiki-request-detector";
 
 test("detectWikiCreateRequest from generami gambly prompt", () => {
@@ -27,4 +29,14 @@ test("extractNpcBuildParams from trait-only message", () => {
 
 test("detectWikiCreateRequest returns null for short unrelated text", () => {
   assert.equal(detectWikiCreateRequest("ciao"), null);
+});
+
+test("resolveWikiVisibilityForAssistant defaults to secret", () => {
+  assert.equal(resolveWikiVisibilityForAssistant("generami gambly halfling", "generami gambly"), "secret");
+});
+
+test("detectWikiVisibilityFromPrompt recognizes public and secret hints", () => {
+  assert.equal(detectWikiVisibilityFromPrompt("rendilo pubblico per i giocatori"), "public");
+  assert.equal(detectWikiVisibilityFromPrompt("visibilità segreta solo gm"), "secret");
+  assert.equal(detectWikiVisibilityFromPrompt("generami un npc"), null);
 });

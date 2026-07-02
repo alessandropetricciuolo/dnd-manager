@@ -13,6 +13,8 @@ import type {
   ChatPendingProposalPayload,
 } from "@/modules/command-center/ai-control-plane/draft-assistant.types";
 import type { SessionCloseMissingField } from "@/modules/command-center/ai-control-plane/session-close.types";
+import type { PreviewTextSelection } from "@/modules/command-center/ai-control-plane/preview-text-selection";
+import { PreviewSelectableText } from "@/components/command-center/preview-selectable-text";
 
 const ACTION_LABELS: Record<string, string> = {
   "wiki.entity.create": "Entità wiki",
@@ -33,6 +35,8 @@ type AiAssistantCanvasProps = {
   isThinking: boolean;
   campaignName?: string | null;
   campaignId?: string | null;
+  previewTextSelection?: PreviewTextSelection | null;
+  onPreviewTextSelect?: (selection: PreviewTextSelection) => void;
   onPendingProposalChange?: (next: ChatPendingProposalPayload) => void;
 };
 
@@ -57,13 +61,15 @@ export function AiAssistantCanvas({
   isThinking,
   campaignName,
   campaignId,
+  previewTextSelection,
+  onPreviewTextSelect,
   onPendingProposalChange,
 }: AiAssistantCanvasProps) {
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
   if (executedSummary) {
     return (
-      <div className="flex h-full min-h-[320px] flex-col items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-8 text-center">
+      <div className="flex h-full min-h-0 flex-col items-center justify-center overflow-y-auto rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-8 text-center">
         <CheckCircle2 className="mb-3 h-10 w-10 text-emerald-400" />
         <p className="font-serif text-lg text-barber-paper">{executedSummary}</p>
         <p className="mt-2 text-sm text-barber-paper/60">Puoi continuare a chattare per preparare altro.</p>
@@ -73,7 +79,7 @@ export function AiAssistantCanvas({
 
   if (!pendingProposal) {
     return (
-      <div className="flex h-full min-h-[320px] flex-col items-center justify-center rounded-xl border border-dashed border-barber-gold/25 bg-barber-dark/30 p-8 text-center">
+      <div className="flex h-full min-h-0 flex-col items-center justify-center overflow-y-auto rounded-xl border border-dashed border-barber-gold/25 bg-barber-dark/30 p-8 text-center">
         <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-barber-gold/30 bg-barber-gold/10">
           <Sparkles className="h-7 w-7 text-barber-gold" />
         </div>
@@ -96,6 +102,7 @@ export function AiAssistantCanvas({
   const input = pendingProposal.input;
   const wikiDraft = pendingProposal.wikiMeta?.markdownDraft;
   const isCharacter = pendingProposal.action_name === "character.create";
+  const isWiki = pendingProposal.action_name === "wiki.entity.create";
   const isRelationship = pendingProposal.action_name === "wiki.relationship.create";
   const attendanceResolved = Array.isArray(preview.attendanceResolved)
     ? (preview.attendanceResolved as { playerName: string; status: string }[])
@@ -151,7 +158,23 @@ export function AiAssistantCanvas({
   const statblock = wikiDraft?.statblock?.trim() || "";
   const imageUrl = pickText(preview.imageUrl, input.imageUrl) || null;
   const actionLabel = ACTION_LABELS[pendingProposal.action_name] ?? pendingProposal.action_name;
+  const visibilityLabel = pickText(preview.visibilityLabel, preview.visibility, input.visibility);
   const sheetReady = Boolean(pendingProposal.characterMeta?.generatedSheet?.pdfBase64);
+  const sessionSummary =
+    pendingProposal.sessionCloseMeta?.aiDraft.summary?.trim() ||
+    pickText(preview.summary, input.summary);
+
+  const selectionDisabled =
+    isThinking ||
+    !onPreviewTextSelect ||
+    pendingProposal.phase === "awaiting_image" ||
+    pendingProposal.phase === "awaiting_avatar" ||
+    pendingProposal.phase === "awaiting_sheet" ||
+    pendingProposal.phase === "awaiting_architect";
+
+  function isFieldActive(field: PreviewTextSelection["field"]): boolean {
+    return previewTextSelection?.field === field;
+  }
 
   function handleSheetReady(sheet: CharacterGeneratedSheetPayload) {
     if (!onPendingProposalChange || !campaignId || !pendingProposal) return;
@@ -188,8 +211,8 @@ export function AiAssistantCanvas({
   }
 
   return (
-    <div className="flex h-full min-h-[320px] flex-col overflow-hidden rounded-xl border border-barber-gold/25 bg-gradient-to-b from-barber-dark/60 to-barber-dark/90">
-      <div className="border-b border-barber-gold/15 px-4 py-3">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-barber-gold/25 bg-gradient-to-b from-barber-dark/60 to-barber-dark/90">
+      <div className="shrink-0 border-b border-barber-gold/15 px-4 py-3">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-barber-gold/70">
@@ -201,6 +224,17 @@ export function AiAssistantCanvas({
             {type ? (
               <span className="rounded-full border border-barber-gold/30 bg-barber-gold/10 px-2.5 py-0.5 text-[10px] uppercase tracking-wide text-barber-gold">
                 {type}
+              </span>
+            ) : null}
+            {pendingProposal.action_name === "wiki.entity.create" && visibilityLabel ? (
+              <span className="rounded-full border border-violet-500/30 bg-violet-500/10 px-2.5 py-0.5 text-[10px] text-violet-200">
+                {visibilityLabel === "secret"
+                  ? "Solo GM"
+                  : visibilityLabel === "public"
+                    ? "Pubblico"
+                    : visibilityLabel === "selective"
+                      ? "Selettivo"
+                      : visibilityLabel}
               </span>
             ) : null}
             {pendingProposal.phase === "awaiting_sheet" ? (
@@ -236,20 +270,7 @@ export function AiAssistantCanvas({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4">
-        {imageUrl ? (
-          <div className="mb-4 overflow-hidden rounded-lg border border-barber-gold/20">
-            <div className="relative aspect-[4/3] w-full max-h-56 bg-barber-dark">
-              <Image src={imageUrl} alt={title} fill className="object-cover" unoptimized />
-            </div>
-          </div>
-        ) : pendingProposal.phase === "awaiting_image" ? (
-          <div className="mb-4 flex items-center gap-2 rounded-lg border border-dashed border-barber-gold/25 bg-barber-dark/50 px-3 py-2 text-xs text-barber-paper/50">
-            <ImageIcon className="h-4 w-4 shrink-0" />
-            Immagine non ancora generata — rispondi in chat.
-          </div>
-        ) : null}
-
+      <div className="min-h-0 flex-1 overflow-y-auto p-4">
         {isCharacter && content ? (
           <section className="mb-4 space-y-2">
             <h4 className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-barber-gold/80">
@@ -257,7 +278,14 @@ export function AiAssistantCanvas({
               Storia (AI)
             </h4>
             <div className="rounded-lg border border-barber-gold/15 bg-barber-dark/50 p-3">
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-barber-paper/90">{content}</p>
+              <PreviewSelectableText
+                text={content}
+                field="character_story"
+                sectionLabel="Storia PG"
+                onSelectExcerpt={onPreviewTextSelect ?? (() => {})}
+                disabled={selectionDisabled}
+                active={isFieldActive("character_story")}
+              />
             </div>
           </section>
         ) : null}
@@ -309,10 +337,25 @@ export function AiAssistantCanvas({
           <section className="space-y-2">
             <h4 className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-barber-gold/80">
               <BookOpen className="h-3.5 w-3.5" />
-              {playerPrimer ? "Descrizione (GM)" : "Contenuto"}
+              {playerPrimer ? "Descrizione (GM)" : isWiki && wikiDraft ? "Descrizione" : "Contenuto"}
             </h4>
             <div className="rounded-lg border border-barber-gold/15 bg-barber-dark/50 p-4">
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-barber-paper/90">{content}</p>
+              <PreviewSelectableText
+                text={content}
+                field={isWiki && wikiDraft ? "wiki_description" : "content"}
+                sectionLabel={
+                  isWiki && wikiDraft
+                    ? "Descrizione wiki"
+                    : pendingProposal.campaignMeta
+                      ? "Descrizione campagna"
+                      : pendingProposal.missionMeta
+                        ? "Descrizione missione"
+                        : "Contenuto"
+                }
+                onSelectExcerpt={onPreviewTextSelect ?? (() => {})}
+                disabled={selectionDisabled}
+                active={isFieldActive(isWiki && wikiDraft ? "wiki_description" : "content")}
+              />
             </div>
           </section>
         ) : null}
@@ -458,7 +501,32 @@ export function AiAssistantCanvas({
               Guida del giocatore
             </h4>
             <div className="rounded-lg border border-barber-gold/15 bg-barber-dark/50 p-4">
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-barber-paper/90">{playerPrimer}</p>
+              <PreviewSelectableText
+                text={playerPrimer}
+                field="player_primer"
+                sectionLabel="Guida del giocatore"
+                onSelectExcerpt={onPreviewTextSelect ?? (() => {})}
+                disabled={selectionDisabled}
+                active={isFieldActive("player_primer")}
+              />
+            </div>
+          </section>
+        ) : null}
+
+        {sessionSummary && pendingProposal.sessionCloseMeta ? (
+          <section className="mt-4 space-y-2">
+            <h4 className="text-xs font-medium uppercase tracking-wide text-barber-gold/80">
+              Riepilogo sessione
+            </h4>
+            <div className="rounded-lg border border-barber-gold/15 bg-barber-dark/50 p-4">
+              <PreviewSelectableText
+                text={sessionSummary}
+                field="session_summary"
+                sectionLabel="Riepilogo chiusura"
+                onSelectExcerpt={onPreviewTextSelect ?? (() => {})}
+                disabled={selectionDisabled}
+                active={isFieldActive("session_summary")}
+              />
             </div>
           </section>
         ) : null}
@@ -467,10 +535,42 @@ export function AiAssistantCanvas({
           <section className="mt-4 space-y-2">
             <h4 className="text-xs font-medium uppercase tracking-wide text-barber-gold/80">Meccanica</h4>
             <div className="rounded-lg border border-barber-gold/15 bg-barber-dark/50 p-4">
-              <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-barber-paper/80">
-                {statblock}
-              </pre>
+              <PreviewSelectableText
+                text={statblock}
+                field="wiki_statblock"
+                sectionLabel="Meccanica"
+                onSelectExcerpt={onPreviewTextSelect ?? (() => {})}
+                disabled={selectionDisabled}
+                active={isFieldActive("wiki_statblock")}
+                className="font-sans text-barber-paper/80"
+              />
             </div>
+          </section>
+        ) : null}
+
+        {isWiki ? (
+          <section className="mt-4 space-y-2">
+            <h4 className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-barber-gold/80">
+              <ImageIcon className="h-3.5 w-3.5" />
+              Immagine contestuale
+            </h4>
+            {imageUrl ? (
+              <div className="overflow-hidden rounded-lg border border-barber-gold/20">
+                <div className="relative aspect-[4/3] w-full max-h-72 bg-barber-dark">
+                  <Image src={imageUrl} alt={title} fill className="object-cover" unoptimized />
+                </div>
+              </div>
+            ) : isThinking && pendingProposal.phase === "awaiting_image" ? (
+              <div className="flex items-center gap-2 rounded-lg border border-dashed border-barber-gold/25 bg-barber-dark/50 px-3 py-3 text-xs text-barber-paper/60">
+                <ImageIcon className="h-4 w-4 shrink-0 animate-pulse text-barber-gold/70" />
+                Generazione immagine in corso…
+              </div>
+            ) : pendingProposal.phase === "awaiting_image" ? (
+              <div className="flex items-center gap-2 rounded-lg border border-dashed border-barber-gold/25 bg-barber-dark/50 px-3 py-3 text-xs text-barber-paper/50">
+                <ImageIcon className="h-4 w-4 shrink-0" />
+                Rispondi in chat (**sì** / **no**) per generare o saltare l&apos;immagine.
+              </div>
+            ) : null}
           </section>
         ) : null}
 

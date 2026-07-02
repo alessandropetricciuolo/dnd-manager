@@ -96,7 +96,7 @@ export const ACTION_INPUT_SCHEMAS: Record<string, string> = {
   "session.close":
     "{ sessionId, summary, attendance, xpGained?, perPlayerXpAwards?, elapsedHours?, unlockContent?, unlockContentIds?, entityStatusUpdates?, gmPrivateNotes?, economy? }",
   "wiki.entity.create":
-    "{ campaignId, title, type: npc|location|lore|item|monster, content, visibility? }",
+    "{ campaignId, title, type: npc|location|lore|item|monster, content, visibility?: secret|public|selective (default secret) }",
   "wiki.entity.update":
     "{ entityId, campaignId, title, type, content, visibility? }",
   "wiki.relationship.create":

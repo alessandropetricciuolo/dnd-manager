@@ -2,11 +2,10 @@
 
 import { useRef, useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Send, Sparkles } from "lucide-react";
+import { Loader2, Pencil, Send, Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -17,6 +16,10 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type { ChatPendingPhase, ChatPendingProposalPayload } from "@/modules/command-center/ai-control-plane/draft-assistant.types";
+import {
+  truncateSelectionPreview,
+  type PreviewTextSelection,
+} from "@/modules/command-center/ai-control-plane/preview-text-selection";
 import { runAiChatAssistantAction } from "@/modules/command-center/server/actions";
 import { buildCommandInputFromVoice } from "@/modules/command-center/voice/command-input-voice";
 import { useVoiceDictation } from "@/modules/command-center/voice/use-voice-dictation";
@@ -55,6 +58,9 @@ export function AiAssistantPanel({
   const [isPending, startTransition] = useTransition();
   const [input, setInput] = useState("");
   const [pendingProposal, setPendingProposal] = useState<ChatPendingProposalPayload | null>(null);
+  const [previewTextSelection, setPreviewTextSelection] = useState<PreviewTextSelection | null>(
+    null
+  );
   const [executedSummary, setExecutedSummary] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -65,6 +71,7 @@ export function AiAssistantPanel({
     },
   ]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const campaignName =
     campaignId && campaigns.length
@@ -82,6 +89,17 @@ export function AiAssistantPanel({
   useEffect(() => {
     if (voice.error) toast.error(voice.error);
   }, [voice.error]);
+
+  useEffect(() => {
+    if (!pendingProposal) {
+      setPreviewTextSelection(null);
+    }
+  }, [pendingProposal]);
+
+  function handlePreviewTextSelect(selection: PreviewTextSelection) {
+    setPreviewTextSelection(selection);
+    requestAnimationFrame(() => inputRef.current?.focus());
+  }
 
   useEffect(() => {
     if (isPending) {
@@ -109,12 +127,15 @@ export function AiAssistantPanel({
 
     const currentPending = pendingProposal;
 
+    const currentSelection = previewTextSelection;
+
     startTransition(async () => {
       const res = await runAiChatAssistantAction({
         message: trimmed,
         campaignId,
         noteId: noteId ?? null,
         pendingProposal: currentPending,
+        previewTextSelection: currentSelection,
         recentUserMessages: messages
           .filter((m) => m.role === "user" && m.id !== userMsg.id)
           .slice(-4)
@@ -143,8 +164,12 @@ export function AiAssistantPanel({
 
       if (clearedPending) {
         setPendingProposal(null);
+        setPreviewTextSelection(null);
       } else if (nextPending) {
         setPendingProposal(nextPending);
+        if (currentSelection && intentSummary?.includes("Modifica mirata")) {
+          setPreviewTextSelection(null);
+        }
       }
 
       if (executed) {
@@ -189,11 +214,11 @@ export function AiAssistantPanel({
   return (
     <div
       className={cn(
-        "flex h-full min-h-[calc(100vh-12rem)] flex-col",
+        "flex h-full min-h-0 flex-col",
         fullBleed ? "w-full" : "mx-auto w-full max-w-6xl"
       )}
     >
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-barber-gold" />
           <div>
@@ -234,10 +259,10 @@ export function AiAssistantPanel({
         ) : null}
       </div>
 
-      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(280px,380px)_1fr]">
+      <div className="grid h-full min-h-0 flex-1 grid-rows-2 gap-4 lg:grid-cols-[minmax(280px,380px)_1fr] lg:grid-rows-none">
         {/* Chat */}
-        <div className="relative flex min-h-[360px] flex-col rounded-xl border border-barber-gold/20 bg-barber-dark/40">
-          <ScrollArea className="min-h-0 flex-1 p-3">
+        <div className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-barber-gold/20 bg-barber-dark/40">
+          <div className="min-h-0 flex-1 overflow-y-auto p-3">
             <ul className="space-y-3 pb-2">
               {messages.map((msg) => (
                 <li
@@ -269,7 +294,7 @@ export function AiAssistantPanel({
               ))}
             </ul>
             <div ref={scrollRef} />
-          </ScrollArea>
+          </div>
 
           {isPending ? (
             <div
@@ -282,7 +307,31 @@ export function AiAssistantPanel({
             </div>
           ) : null}
 
-          <div className="border-t border-barber-gold/15 p-3">
+          <div className="shrink-0 border-t border-barber-gold/15 p-3">
+            {previewTextSelection ? (
+              <div className="mb-2 flex items-start gap-2 rounded-lg border border-barber-gold/30 bg-barber-gold/10 px-3 py-2 text-xs text-barber-paper/90">
+                <Pencil className="mt-0.5 h-3.5 w-3.5 shrink-0 text-barber-gold" />
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-barber-gold">
+                    Modifica selezione
+                    {previewTextSelection.sectionLabel
+                      ? ` · ${previewTextSelection.sectionLabel}`
+                      : ""}
+                  </p>
+                  <p className="mt-0.5 line-clamp-2 text-barber-paper/70">
+                    «{truncateSelectionPreview(previewTextSelection.selectedText)}»
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="shrink-0 rounded p-0.5 text-barber-paper/50 hover:text-barber-paper"
+                  onClick={() => setPreviewTextSelection(null)}
+                  aria-label="Annulla selezione"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : null}
             <VoiceInterimHint
               listening={voice.isListening}
               interim={voice.interimTranscript}
@@ -290,10 +339,13 @@ export function AiAssistantPanel({
             />
             <div className="flex gap-2">
               <Textarea
+                ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={
-                  pendingProposal?.phase === "awaiting_image" ||
+                  previewTextSelection
+                    ? "Descrivi come modificare il testo selezionato…"
+                    : pendingProposal?.phase === "awaiting_image" ||
                   pendingProposal?.phase === "awaiting_avatar"
                     ? "sì / no / annulla…"
                     : pendingProposal?.phase === "awaiting_architect"
@@ -333,14 +385,18 @@ export function AiAssistantPanel({
         </div>
 
         {/* Canvas */}
-        <AiAssistantCanvas
+        <div className="flex h-full min-h-0 flex-col overflow-hidden">
+          <AiAssistantCanvas
           pendingProposal={pendingProposal}
           executedSummary={executedSummary}
           isThinking={isPending}
           campaignName={campaignName}
           campaignId={campaignId}
+          previewTextSelection={previewTextSelection}
+          onPreviewTextSelect={handlePreviewTextSelect}
           onPendingProposalChange={setPendingProposal}
         />
+        </div>
       </div>
     </div>
   );

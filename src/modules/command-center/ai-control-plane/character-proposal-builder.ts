@@ -9,6 +9,7 @@ import {
   mergeCharacterInputFromSheet,
 } from "./character-proposal-shared";
 import type { PreviewedProposal } from "./preview-proposals";
+import { resolveRefineUserMessage, type PreviewTextSelection } from "./preview-text-selection";
 
 function ensureString(value: unknown, fallback: string): string {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
@@ -27,6 +28,7 @@ export async function enrichCharacterProposal(
   options?: {
     refine?: boolean;
     characterMeta?: ChatCharacterMeta | null;
+    previewTextSelection?: PreviewTextSelection | null;
   }
 ): Promise<
   | {
@@ -46,15 +48,19 @@ export async function enrichCharacterProposal(
     return { ok: false, error: "Descrivi il personaggio che vuoi creare." };
   }
 
+  const refineMessage = options?.refine
+    ? resolveRefineUserMessage(userMessage, options.previewTextSelection)
+    : userMessage.trim();
+
   const chatMessages = options?.refine
-    ? [...(options.characterMeta?.chatMessages ?? []), { role: "user" as const, content: userMessage.trim() }]
+    ? [...(options.characterMeta?.chatMessages ?? []), { role: "user" as const, content: refineMessage }]
     : [{ role: "user" as const, content: userMessage.trim() }];
 
   const generated =
     options?.refine && options.characterMeta?.storyDraft
       ? await refineCharacterStoryFromPrompt(
           campaignId,
-          userMessage.trim(),
+          refineMessage,
           options.characterMeta.storyDraft.characterStory,
           characterName
         )

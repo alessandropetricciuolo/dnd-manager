@@ -4,6 +4,7 @@ import type { CampaignAiDraft } from "@/lib/ai/campaign-text-generator";
 import type { MissionAiDraft } from "@/lib/ai/mission-text-generator";
 import type { CommandInputSource } from "../types/workspace";
 import type { CommandInputVoicePayload } from "../voice/command-input-voice";
+import type { PreviewTextSelection } from "./preview-text-selection";
 
 export type DraftAssistantInputSource = Extract<CommandInputSource, "text" | "voice">;
 
@@ -136,4 +137,5 @@ export type ChatPendingProposalPayload = {
 export type RunAiChatAssistantParams = RunAiDraftAssistantParams & {
   pendingProposal?: ChatPendingProposalPayload | null;
   recentUserMessages?: string[];
+  previewTextSelection?: PreviewTextSelection | null;
 };

@@ -5,10 +5,7 @@ import { detectMissionCreateRequest } from "./mission-request-detector";
 import { detectRelationshipCreateRequest } from "./relationship-request-detector";
 import { detectSessionCreateRequest } from "./session-request-detector";
 import { detectSessionCloseRequest } from "./session-close-request-detector";
-import {
-  detectWikiCreateRequest,
-  hasNpcMechanicsParams,
-} from "./wiki-request-detector";
+import { detectWikiCreateRequest, hasNpcMechanicsParams, resolveWikiVisibilityForAssistant } from "./wiki-request-detector";
 import type { WikiMarkdownExtraParams } from "@/lib/ai/wiki-text-generator";
 
 export type DomainFallbackResult = {
@@ -36,12 +33,13 @@ export function applyDomainFallbackInterpreter(
   if (wikiDetected && campaignId) {
     const narrativeOnly =
       wikiDetected.entityType === "npc" && !hasNpcMechanicsParams(wikiDetected.extraParams);
+    const visibility = resolveWikiVisibilityForAssistant(combinedContext, wikiDetected.userPrompt);
     return {
       detectedExtraParams: wikiDetected.extraParams,
       interpreted: {
         reply: narrativeOnly
-          ? `Preparo il profilo narrativo di **${wikiDetected.title}**. Senza livello non genero lo statblock: puoi aggiungerlo in chat (es. «livello 5») e chiedere modifiche.`
-          : `Preparo una voce wiki per **${wikiDetected.title}**.`,
+          ? `Preparo il profilo narrativo di **${wikiDetected.title}** (visibilità: ${visibility === "public" ? "pubblica" : visibility === "selective" ? "selettiva" : "solo GM"}). Senza livello non genero lo statblock: puoi aggiungerlo in chat (es. «livello 5») e chiedere modifiche.`
+          : `Preparo una voce wiki per **${wikiDetected.title}** (visibilità: ${visibility === "public" ? "pubblica" : visibility === "selective" ? "selettiva" : "solo GM"}).`,
         intent_summary: `Creare ${wikiDetected.entityType}: ${wikiDetected.title}`,
         proposals: [
           {
@@ -51,7 +49,7 @@ export function applyDomainFallbackInterpreter(
               title: wikiDetected.title,
               type: wikiDetected.entityType,
               content: "",
-              visibility: "public",
+              visibility,
             },
             rationale: "Richiesta wiki rilevata dal messaggio",
           },
