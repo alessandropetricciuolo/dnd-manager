@@ -18,6 +18,14 @@ test("parseCampaignDraftJson accepts valid campaign JSON", () => {
   assert.match(parsed.data.playerPrimer ?? "", /maledetto/i);
 });
 
+test("parseCampaignDraftJson accepts JSON with braces inside description", () => {
+  const raw =
+    '{"title":"La Cripta","description":"I PG esplorano {rovine} sommerse.","type":"oneshot","player_primer":"","is_public":false}';
+  const parsed = parseCampaignDraftJson(raw);
+  assert.ok(parsed.ok);
+  assert.match(parsed.data.description, /rovine/);
+});
+
 test("parseCampaignDraftJson rejects missing title", () => {
   const parsed = parseCampaignDraftJson('{"description":"x","type":"oneshot"}');
   assert.equal(parsed.ok, false);

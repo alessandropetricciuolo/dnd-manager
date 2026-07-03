@@ -111,6 +111,8 @@ function extractOpenRouterChatContent(data: unknown): string {
 type OpenRouterChatOptions = {
   temperature?: number;
   maxTokens?: number;
+  /** Richiede output JSON object (modelli compatibili OpenAI su OpenRouter). */
+  jsonMode?: boolean;
 };
 
 export type OpenRouterWikiChatMessage = {
@@ -345,6 +347,7 @@ export async function generateOpenRouterChat(
           messages: [{ role: "user", content: trimmed }],
           max_tokens: options.maxTokens ?? 1500,
           temperature: options.temperature ?? 0.7,
+          ...(options.jsonMode ? { response_format: { type: "json_object" } } : {}),
         }),
         signal: controller.signal,
       });

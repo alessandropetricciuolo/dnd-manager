@@ -1,6 +1,6 @@
 import { generateOpenRouterChat } from "@/lib/ai/openrouter-client";
-import { CAMPAIGN_TYPE_VALUES, type CampaignType } from "@/lib/campaign-type";
-import { extractJsonObject } from "@/modules/command-center/ai-control-plane/interpreter";
+import { parseJsonObjectFromLlm } from "@/lib/ai/json-extract";
+import { CAMPAIGN_TYPE_LABELS, CAMPAIGN_TYPE_VALUES, type CampaignType } from "@/lib/campaign-type";
 import {
   AUTO_NAME_CAMPAIGN_HINT,
   isPlaceholderCampaignTitle,
@@ -20,16 +20,19 @@ const CREATE_SYSTEM_PROMPT = `Sei un Game Designer esperto per D&D 5e. Il Master
 
 Il tuo compito principale è aiutarlo a scrivere una **descrizione per il GM** chiara e ricca: ambientazione, hook narrativo, tono, conflitti, atmosfera. Questo testo diventerà la **memoria di base della campagna** e guiderà la generazione delle voci wiki.
 
-Rispondi SOLO con JSON valido (senza markdown):
+Rispondi SOLO con JSON valido (senza markdown, senza testo fuori dal JSON):
 {
   "title": "titolo evocativo della campagna",
   "description": "descrizione per il GM: ambientazione, hook, tono, 2-4 paragrafi in italiano",
   "type": "oneshot | quest | long | torneo",
-  "player_primer": "guida del giocatore in Markdown (cosa sanno i PG, regole di tavolo, tono) — obbligatoria e ricca se type=long, altrimenti stringa vuota",
+  "player_primer": "guida del giocatore in Markdown se type=long, altrimenti stringa vuota",
   "is_public": false
 }
 
-Regole:
+Regole JSON:
+- Usa solo virgolette dritte "
+- Nei valori stringa usa \\n per andare a capo (non newline letterali nel JSON)
+- Se type non è "long", player_primer deve essere ""
 - Se il tipo è già indicato nel prompt, NON cambiarlo
 - Campagna lunga / saga → type "long" e player_primer completa
 - One shot → type "oneshot", player_primer vuoto
@@ -42,7 +45,49 @@ Regole:
 const REFINE_SYSTEM_PROMPT = `Sei un editor di proposte campagna D&D 5e. Aggiorna la bozza in base alle richieste del Master.
 
 Rispondi SOLO con JSON valido (stesse chiavi di creazione):
-title, description, type, player_primer, is_public`;
+title, description, type, player_primer, is_public
+Nei valori stringa usa \\n per andare a capo. Nessun markdown fuori dal JSON.`;
+
+function buildCampaignGenerationPrompt(
+  userPrompt: string,
+  options?: { titleIsPlaceholder?: boolean; forcedType?: CampaignType }
+): string {
+  const typeHint = options?.forcedType
+    ? `\nTIPO GIÀ DECISO DAL MASTER: "${options.forcedType}" (${CAMPAIGN_TYPE_LABELS[options.forcedType]}) — non cambiarlo nel JSON.\n`
+    : "";
+
+  const brief = [
+    userPrompt.trim(),
+    options?.forcedType ? `Formato: ${CAMPAIGN_TYPE_LABELS[options.forcedType]}.` : null,
+    "Genera titolo evocativo e descrizione GM ricca (memoria di campagna per wiki future).",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return `${CREATE_SYSTEM_PROMPT}
+${typeHint}
+${options?.titleIsPlaceholder ? `${AUTO_NAME_CAMPAIGN_HINT}\n` : ""}--- RICHIESTA MASTER ---
+${brief}`;
+}
+
+async function requestCampaignDraftRaw(prompt: string, strictRetry = false): Promise<string> {
+  const suffix = strictRetry
+    ? "\n\nRIPROVA: rispondi SOLO con un oggetto JSON valido. Escapa correttamente le stringhe. player_primer vuoto se non è campagna long."
+    : "";
+
+  const fullPrompt = `${prompt}${suffix}`;
+  const options = {
+    temperature: strictRetry ? 0.45 : 0.65,
+    maxTokens: 2200,
+    jsonMode: true as const,
+  };
+
+  try {
+    return await generateOpenRouterChat(fullPrompt, options);
+  } catch {
+    return generateOpenRouterChat(fullPrompt, { ...options, jsonMode: false });
+  }
+}
 
 function normalizeCampaignType(raw: unknown): CampaignType {
   const value = typeof raw === "string" ? raw.trim().toLowerCase() : "";
@@ -51,18 +96,12 @@ function normalizeCampaignType(raw: unknown): CampaignType {
 }
 
 export function parseCampaignDraftJson(raw: string): { ok: true; data: CampaignAiDraft } | { ok: false; error: string } {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(extractJsonObject(raw));
-  } catch {
+  const parsedResult = parseJsonObjectFromLlm(raw);
+  if (!parsedResult.ok) {
     return { ok: false, error: "Il modello non ha restituito JSON valido per la campagna." };
   }
 
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-    return { ok: false, error: "Risposta campagna non è un oggetto JSON." };
-  }
-
-  const o = parsed as Record<string, unknown>;
+  const o = parsedResult.value;
   const title = typeof o.title === "string" ? o.title.trim() : "";
   const description = typeof o.description === "string" ? o.description.trim() : "";
   const type = normalizeCampaignType(o.type);
@@ -109,18 +148,15 @@ export async function generateCampaignDraftFromPrompt(
 ): Promise<
   { ok: true; draft: CampaignAiDraft; assistantMessage: string } | { ok: false; error: string }
 > {
-  const typeHint = options?.forcedType
-    ? `\nTIPO GIÀ DECISO DAL MASTER: "${options.forcedType}" — non cambiarlo nel JSON.\n`
-    : "";
-
-  const prompt = `${CREATE_SYSTEM_PROMPT}
-${typeHint}
-${options?.titleIsPlaceholder ? `${AUTO_NAME_CAMPAIGN_HINT}\n` : ""}--- RICHIESTA MASTER ---
-${userPrompt.trim()}`;
+  const prompt = buildCampaignGenerationPrompt(userPrompt, options);
 
   try {
-    const raw = await generateOpenRouterChat(prompt, { temperature: 0.65, maxTokens: 2200 });
-    const parsed = parseCampaignDraftJson(raw);
+    let raw = await requestCampaignDraftRaw(prompt);
+    let parsed = parseCampaignDraftJson(raw);
+    if (!parsed.ok) {
+      raw = await requestCampaignDraftRaw(prompt, true);
+      parsed = parseCampaignDraftJson(raw);
+    }
     if (!parsed.ok) return { ok: false, error: parsed.error };
 
     const draft = options?.forcedType
@@ -161,8 +197,12 @@ ${JSON.stringify(
 ${userPrompt.trim()}`;
 
   try {
-    const raw = await generateOpenRouterChat(prompt, { temperature: 0.55, maxTokens: 2200 });
-    const parsed = parseCampaignDraftJson(raw);
+    let raw = await requestCampaignDraftRaw(prompt);
+    let parsed = parseCampaignDraftJson(raw);
+    if (!parsed.ok) {
+      raw = await requestCampaignDraftRaw(prompt, true);
+      parsed = parseCampaignDraftJson(raw);
+    }
     if (!parsed.ok) return { ok: false, error: parsed.error };
     return {
       ok: true,

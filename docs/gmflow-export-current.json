@@ -1,12 +1,12 @@
 {
-  "updatedAt": "2026-07-03T14:25:22.880Z",
+  "updatedAt": "2026-07-03T14:45:19.617Z",
   "sourceProject": "Barber & Dragons",
   "targetProject": "gmflow.app",
   "sourceRepoPath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App",
   "targetRepoPath": "/Users/alessandropetricciuolo/Desktop/masto-platform",
   "branch": "main",
-  "lastCommit": "508bd4471ec9ba6a6c6cc7c02bffe48cb7b871c1",
-  "commitRange": "eb80561..508bd44",
+  "lastCommit": "a4a054564a5f4c082bbe1d1e89ba99a37c7879c7",
+  "commitRange": "508bd44..a4a0545",
   "items": [
     {
       "id": "BD-GMFLOW-PKG-2026-06-28-001",
@@ -18578,6 +18578,587 @@
       "statusCode": "M",
       "createdAt": "2026-07-03T14:25:22.880Z",
       "updatedAt": "2026-07-03T14:25:22.880Z"
+    },
+    {
+      "id": "BD-GMFLOW-a4a0545-001",
+      "title": "AI: ai-assistant-canvas.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/components/command-center/ai-assistant-canvas.tsx` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/components/command-center/ai-assistant-canvas.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/command-center/ai-assistant-canvas.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "a4a054564a5f4c082bbe1d1e89ba99a37c7879c7",
+      "commitShort": "a4a0545",
+      "commitSubject": "feat(command-center): guided AI campaign create with type, description, and cover",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T14:45:19.617Z",
+      "updatedAt": "2026-07-03T14:45:19.617Z"
+    },
+    {
+      "id": "BD-GMFLOW-a4a0545-002",
+      "title": "AI: ai-assistant-panel.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/components/command-center/ai-assistant-panel.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/command-center/ai-assistant-panel.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "a4a054564a5f4c082bbe1d1e89ba99a37c7879c7",
+      "commitShort": "a4a0545",
+      "commitSubject": "feat(command-center): guided AI campaign create with type, description, and cover",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T14:45:19.617Z",
+      "updatedAt": "2026-07-03T14:45:19.617Z"
+    },
+    {
+      "id": "BD-GMFLOW-a4a0545-003",
+      "title": "AI: ai-generator.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/lib/actions/ai-generator.ts` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/lib/actions/ai-generator.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/actions/ai-generator.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "a4a054564a5f4c082bbe1d1e89ba99a37c7879c7",
+      "commitShort": "a4a0545",
+      "commitSubject": "feat(command-center): guided AI campaign create with type, description, and cover",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T14:45:19.617Z",
+      "updatedAt": "2026-07-03T14:45:19.617Z"
+    },
+    {
+      "id": "BD-GMFLOW-a4a0545-004",
+      "title": "AI: campaign-text-generator.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/lib/ai/campaign-text-generator.ts` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/lib/ai/campaign-text-generator.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/ai/campaign-text-generator.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "a4a054564a5f4c082bbe1d1e89ba99a37c7879c7",
+      "commitShort": "a4a0545",
+      "commitSubject": "feat(command-center): guided AI campaign create with type, description, and cover",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T14:45:19.617Z",
+      "updatedAt": "2026-07-03T14:45:19.617Z"
+    },
+    {
+      "id": "BD-GMFLOW-a4a0545-005",
+      "title": "OTHER: campaign.actions.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/modules/command-center/actions/definitions/wrappers/campaign.actions.ts` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/actions/definitions/wrappers/campaign.actions.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/actions/definitions/wrappers/campaign.actions.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "a4a054564a5f4c082bbe1d1e89ba99a37c7879c7",
+      "commitShort": "a4a0545",
+      "commitSubject": "feat(command-center): guided AI campaign create with type, description, and cover",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T14:45:19.617Z",
+      "updatedAt": "2026-07-03T14:45:19.617Z"
+    },
+    {
+      "id": "BD-GMFLOW-a4a0545-006",
+      "title": "AI: campaign-type-selection.test.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/__tests__/campaign-type-selection.test.ts` aggiunto nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/campaign-type-selection.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/campaign-type-selection.test.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "a4a054564a5f4c082bbe1d1e89ba99a37c7879c7",
+      "commitShort": "a4a0545",
+      "commitSubject": "feat(command-center): guided AI campaign create with type, description, and cover",
+      "statusCode": "A",
+      "createdAt": "2026-07-03T14:45:19.617Z",
+      "updatedAt": "2026-07-03T14:45:19.617Z"
+    },
+    {
+      "id": "BD-GMFLOW-a4a0545-007",
+      "title": "AI: conversation-intent.test.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "a4a054564a5f4c082bbe1d1e89ba99a37c7879c7",
+      "commitShort": "a4a0545",
+      "commitSubject": "feat(command-center): guided AI campaign create with type, description, and cover",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T14:45:19.617Z",
+      "updatedAt": "2026-07-03T14:45:19.617Z"
+    },
+    {
+      "id": "BD-GMFLOW-a4a0545-008",
+      "title": "AI: campaign-proposal-builder.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "a4a054564a5f4c082bbe1d1e89ba99a37c7879c7",
+      "commitShort": "a4a0545",
+      "commitSubject": "feat(command-center): guided AI campaign create with type, description, and cover",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T14:45:19.617Z",
+      "updatedAt": "2026-07-03T14:45:19.617Z"
+    },
+    {
+      "id": "BD-GMFLOW-a4a0545-009",
+      "title": "AI: campaign-request-detector.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/campaign-request-detector.ts` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/campaign-request-detector.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/campaign-request-detector.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "a4a054564a5f4c082bbe1d1e89ba99a37c7879c7",
+      "commitShort": "a4a0545",
+      "commitSubject": "feat(command-center): guided AI campaign create with type, description, and cover",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T14:45:19.617Z",
+      "updatedAt": "2026-07-03T14:45:19.617Z"
+    },
+    {
+      "id": "BD-GMFLOW-a4a0545-010",
+      "title": "AI: campaign-type-selection.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/campaign-type-selection.ts` aggiunto nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/campaign-type-selection.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/campaign-type-selection.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "a4a054564a5f4c082bbe1d1e89ba99a37c7879c7",
+      "commitShort": "a4a0545",
+      "commitSubject": "feat(command-center): guided AI campaign create with type, description, and cover",
+      "statusCode": "A",
+      "createdAt": "2026-07-03T14:45:19.617Z",
+      "updatedAt": "2026-07-03T14:45:19.617Z"
+    },
+    {
+      "id": "BD-GMFLOW-a4a0545-011",
+      "title": "AI: chat-assistant.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/chat-assistant.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/chat-assistant.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "a4a054564a5f4c082bbe1d1e89ba99a37c7879c7",
+      "commitShort": "a4a0545",
+      "commitSubject": "feat(command-center): guided AI campaign create with type, description, and cover",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T14:45:19.617Z",
+      "updatedAt": "2026-07-03T14:45:19.617Z"
+    },
+    {
+      "id": "BD-GMFLOW-a4a0545-012",
+      "title": "AI: domain-fallback-interpreter.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "a4a054564a5f4c082bbe1d1e89ba99a37c7879c7",
+      "commitShort": "a4a0545",
+      "commitSubject": "feat(command-center): guided AI campaign create with type, description, and cover",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T14:45:19.617Z",
+      "updatedAt": "2026-07-03T14:45:19.617Z"
+    },
+    {
+      "id": "BD-GMFLOW-a4a0545-013",
+      "title": "AI: draft-assistant.types.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/draft-assistant.types.ts` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/draft-assistant.types.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/draft-assistant.types.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "a4a054564a5f4c082bbe1d1e89ba99a37c7879c7",
+      "commitShort": "a4a0545",
+      "commitSubject": "feat(command-center): guided AI campaign create with type, description, and cover",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T14:45:19.617Z",
+      "updatedAt": "2026-07-03T14:45:19.617Z"
+    },
+    {
+      "id": "BD-GMFLOW-a4a0545-014",
+      "title": "AI: preview-text-selection.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/preview-text-selection.ts` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/preview-text-selection.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/preview-text-selection.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "a4a054564a5f4c082bbe1d1e89ba99a37c7879c7",
+      "commitShort": "a4a0545",
+      "commitSubject": "feat(command-center): guided AI campaign create with type, description, and cover",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T14:45:19.617Z",
+      "updatedAt": "2026-07-03T14:45:19.617Z"
     }
   ]
 }
