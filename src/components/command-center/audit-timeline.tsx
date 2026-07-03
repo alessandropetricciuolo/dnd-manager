@@ -1,6 +1,5 @@
 "use client";
 
-import { ScrollArea } from "@/components/ui/scroll-area";
 import type { AppAuditEventRow } from "@/modules/command-center/types";
 
 const ACTION_LABELS: Record<string, string> = {
@@ -43,18 +42,16 @@ type AuditTimelineProps = {
 export function AuditTimeline({ events }: AuditTimelineProps) {
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-xs font-medium uppercase tracking-wide text-barber-gold/70">
-        Cronologia azioni
-      </p>
-      <ScrollArea className="h-48 pr-2">
+      <p className="text-[11px] font-medium text-barber-gold/75">Cronologia azioni</p>
+      <div className="scrollbar-barber-y max-h-48 overflow-y-auto pr-1">
         {events.length === 0 ? (
           <p className="text-xs text-barber-paper/50">Nessuna azione registrata.</p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-1.5">
             {events.map((event) => (
               <li
                 key={event.id}
-                className="rounded-md border border-barber-gold/15 bg-barber-dark/50 px-2 py-1.5 text-xs"
+                className="rounded-lg bg-white/[0.03] px-2.5 py-1.5 text-xs ring-1 ring-inset ring-white/[0.06]"
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-medium text-barber-paper">
@@ -77,7 +74,7 @@ export function AuditTimeline({ events }: AuditTimelineProps) {
             ))}
           </ul>
         )}
-      </ScrollArea>
+      </div>
     </div>
   );
 }

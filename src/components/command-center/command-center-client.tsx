@@ -25,7 +25,6 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type {
   CommandLinkRow,
@@ -391,50 +390,26 @@ export function CommandCenterClient({
   }
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden">
-      <header
-        className={cn(
-          "shrink-0 px-4 py-3 md:px-6",
-          centerView === "assistant"
-            ? "border-b border-white/[0.06] bg-barber-dark/50 backdrop-blur-sm"
-            : "border-b border-barber-gold/20 bg-barber-dark/90"
-        )}
-      >
+    <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden bg-[#0b0a10]">
+      <header className="shrink-0 border-b border-white/[0.06] bg-barber-dark/50 px-4 py-3 backdrop-blur-sm md:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            {centerView !== "assistant" ? (
-              <p className="text-xs font-medium uppercase tracking-[0.2em] text-barber-gold/70">
-                GM Workspace
-              </p>
-            ) : null}
-            <h1
-              className={cn(
-                "font-serif font-bold text-barber-paper",
-                centerView === "assistant" ? "text-lg md:text-xl" : "text-xl md:text-2xl"
-              )}
-            >
-              {centerView === "assistant" ? "Assistente GM" : "Command Center"}
+            <h1 className="font-serif text-lg font-bold text-barber-paper md:text-xl">
+              {centerView === "assistant" ? "Assistente GM" : "Workspace"}
             </h1>
-            {centerView === "assistant" ? (
-              <p className="mt-0.5 text-xs text-barber-paper/50">
-                Chat e anteprima live per wiki, missioni e schede
-              </p>
-            ) : null}
+            <p className="mt-0.5 text-xs text-barber-paper/50">
+              {centerView === "assistant"
+                ? "Chat e anteprima live per wiki, missioni e schede"
+                : "Inbox, task, pagine e collegamenti alla campagna"}
+            </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <div
-              className={cn(
-                "flex rounded-xl p-0.5",
-                centerView === "assistant"
-                  ? "bg-white/[0.04] ring-1 ring-white/[0.06]"
-                  : "rounded-md border border-barber-gold/30"
-              )}
-            >
+            <div className="flex rounded-xl bg-white/[0.04] p-0.5 ring-1 ring-white/[0.06]">
               <button
                 type="button"
                 onClick={() => handleCenterViewChange("workspace")}
                 className={cn(
-                  "rounded px-2.5 py-1 text-xs font-medium transition-colors",
+                  "rounded-lg px-2.5 py-1 text-xs font-medium transition-colors",
                   centerView === "workspace"
                     ? "bg-barber-gold/20 text-barber-gold"
                     : "text-barber-paper/60 hover:text-barber-paper"
@@ -446,7 +421,7 @@ export function CommandCenterClient({
                 type="button"
                 onClick={() => handleCenterViewChange("assistant")}
                 className={cn(
-                  "flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium transition-colors",
+                  "flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors",
                   centerView === "assistant"
                     ? "bg-barber-gold/20 text-barber-gold"
                     : "text-barber-paper/60 hover:text-barber-paper"
@@ -463,14 +438,7 @@ export function CommandCenterClient({
                 setCampaignInUrl(v as string | "all");
               }}
             >
-              <SelectTrigger
-                className={cn(
-                  "w-[200px] bg-barber-dark",
-                  centerView === "assistant"
-                    ? "border-white/10 ring-1 ring-white/5"
-                    : "border-barber-gold/30"
-                )}
-              >
+              <SelectTrigger className="w-[200px] border-white/10 bg-barber-dark ring-1 ring-white/5">
                 <SelectValue placeholder="Tutte le campagne" />
               </SelectTrigger>
               <SelectContent>
@@ -485,75 +453,89 @@ export function CommandCenterClient({
           </div>
         </div>
 
-        <div className={cn("mt-3 flex flex-col gap-1", centerView === "assistant" && "hidden")}>
+        <div
+          className={cn(
+            "mt-3 rounded-2xl bg-white/[0.03] p-3 ring-1 ring-inset ring-white/[0.06]",
+            centerView === "assistant" && "hidden"
+          )}
+        >
           <VoiceInterimHint
             listening={captureVoice.isListening}
             interim={captureVoice.interimTranscript}
             finalPreview={captureVoice.finalTranscript}
           />
           <div className="flex gap-2">
-          <Textarea
-            value={captureText}
-            onChange={(e) => setCaptureText(e.target.value)}
-            placeholder="Cattura un'idea in pochi secondi…"
-            rows={2}
-            disabled={captureVoice.isListening}
-            className="min-h-0 flex-1 resize-none border-barber-gold/30 bg-barber-dark/80"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                e.preventDefault();
-                handleCapture();
-              }
-            }}
-          />
-          <VoiceMicButton voice={captureVoice} disabled={isPending} className="self-end" />
-          <Button
-            type="button"
-            onClick={() => handleCapture()}
-            disabled={isPending || !captureText.trim() || captureVoice.isListening}
-            className="shrink-0 self-end"
-          >
-            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-            <span className="ml-1 hidden sm:inline">Cattura</span>
-          </Button>
+            <Textarea
+              value={captureText}
+              onChange={(e) => setCaptureText(e.target.value)}
+              placeholder="Cattura un'idea in pochi secondi…"
+              rows={2}
+              disabled={captureVoice.isListening}
+              className="min-h-0 flex-1 resize-none border-white/10 bg-barber-dark/50 ring-1 ring-white/5"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                  e.preventDefault();
+                  handleCapture();
+                }
+              }}
+            />
+            <VoiceMicButton voice={captureVoice} disabled={isPending} className="self-end" />
+            <Button
+              type="button"
+              onClick={() => handleCapture()}
+              disabled={isPending || !captureText.trim() || captureVoice.isListening}
+              className="shrink-0 self-end"
+            >
+              {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              <span className="ml-1 hidden sm:inline">Cattura</span>
+            </Button>
           </div>
         </div>
       </header>
 
-      <div className="flex flex-1 flex-col lg:flex-row lg:overflow-hidden">
-        {/* Sidebar sinistra — nascosta in vista assistente */}
+      <div
+        className={cn(
+          "flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-2 md:p-3",
+          centerView === "assistant" ? "" : "lg:flex-row"
+        )}
+      >
         {centerView !== "assistant" ? (
-        <aside className="flex w-full flex-col border-b border-barber-gold/20 lg:w-72 lg:border-b-0 lg:border-r">
-          <div className="flex border-b border-barber-gold/20">
-            {(
-              [
-                { id: "inbox" as const, label: "Inbox", icon: Inbox },
-                { id: "tasks" as const, label: "Task", icon: CheckSquare },
-                { id: "pages" as const, label: "Pagine", icon: FileText },
-              ] as const
-            ).map(({ id, label, icon: Icon }) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setSidebarTab(id)}
-                className={cn(
-                  "flex flex-1 items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors",
-                  sidebarTab === id
-                    ? "border-b-2 border-barber-gold text-barber-gold"
-                    : "text-barber-paper/60 hover:text-barber-paper"
-                )}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                {label}
-              </button>
-            ))}
-          </div>
+          <aside className="flex w-full min-h-0 flex-col lg:w-72 lg:shrink-0">
+            <div className="flex max-h-[38vh] min-h-[220px] flex-col overflow-hidden rounded-2xl bg-barber-dark/35 ring-1 ring-inset ring-white/[0.06] lg:max-h-none lg:min-h-0 lg:h-full">
+              <div className="shrink-0 p-2">
+                <div className="flex gap-1 rounded-xl bg-white/[0.03] p-1 ring-1 ring-inset ring-white/[0.06]">
+                  {(
+                    [
+                      { id: "inbox" as const, label: "Inbox", icon: Inbox },
+                      { id: "tasks" as const, label: "Task", icon: CheckSquare },
+                      { id: "pages" as const, label: "Pagine", icon: FileText },
+                    ] as const
+                  ).map(({ id, label, icon: Icon }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setSidebarTab(id)}
+                      className={cn(
+                        "flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-medium transition-colors",
+                        sidebarTab === id
+                          ? "bg-barber-gold/15 text-barber-gold"
+                          : "text-barber-paper/55 hover:bg-white/[0.04] hover:text-barber-paper"
+                      )}
+                    >
+                      <Icon className="h-3.5 w-3.5" />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-          <ScrollArea className="h-48 lg:h-auto lg:flex-1">
+              <div className="scrollbar-barber-y min-h-0 flex-1 overflow-y-auto px-2 pb-2 lg:max-h-none">
             {sidebarTab === "inbox" && (
-              <ul className="divide-y divide-barber-gold/10">
+              <ul className="space-y-1">
                 {notes.length === 0 ? (
-                  <li className="p-4 text-center text-sm text-barber-paper/50">Inbox vuota</li>
+                  <li className="rounded-xl bg-white/[0.02] p-4 text-center text-sm text-barber-paper/50">
+                    Inbox vuota
+                  </li>
                 ) : (
                   notes.map((note) => (
                     <li key={note.id}>
@@ -561,8 +543,8 @@ export function CommandCenterClient({
                         type="button"
                         onClick={() => setSelectedNoteId(note.id)}
                         className={cn(
-                          "w-full px-3 py-2.5 text-left transition-colors hover:bg-barber-gold/5",
-                          selectedNoteId === note.id && "bg-barber-gold/10"
+                          "w-full rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-white/[0.04]",
+                          selectedNoteId === note.id && "bg-barber-gold/10 ring-1 ring-barber-gold/20"
                         )}
                       >
                         <p className="truncate text-sm font-medium text-barber-paper">{note.title}</p>
@@ -578,25 +560,28 @@ export function CommandCenterClient({
             )}
 
             {sidebarTab === "tasks" && (
-              <div className="p-2">
-                <Button type="button" variant="outline" size="sm" className="mb-2 w-full" onClick={handleNewTask}>
+              <div className="space-y-3 pb-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full border-white/10 bg-barber-dark/40 ring-1 ring-white/5"
+                  onClick={handleNewTask}
+                >
                   <Plus className="mr-1 h-3.5 w-3.5" />
                   Nuovo task
                 </Button>
-                <div className="space-y-3">
-                  {TASK_STATUS_COLUMNS.map((col) => (
-                    <div key={col.id}>
-                      <p className="mb-1 text-xs font-medium uppercase tracking-wide text-barber-gold/70">
-                        {col.label}
-                      </p>
-                      <ul className="space-y-1">
-                        {tasks
-                          .filter((t) => t.status === col.id)
-                          .map((task) => (
-                            <li
-                              key={task.id}
-                              className="rounded-md border border-barber-gold/20 bg-barber-dark/60 px-2 py-1.5 text-sm"
-                            >
+                {TASK_STATUS_COLUMNS.map((col) => (
+                  <div key={col.id}>
+                    <p className="mb-1.5 px-1 text-[11px] font-medium text-barber-gold/75">{col.label}</p>
+                    <ul className="space-y-1.5">
+                      {tasks
+                        .filter((t) => t.status === col.id)
+                        .map((task) => (
+                          <li
+                            key={task.id}
+                            className="rounded-xl bg-white/[0.03] px-2.5 py-2 text-sm ring-1 ring-inset ring-white/[0.06]"
+                          >
                               <div className="flex items-start justify-between gap-1">
                                 <p className="min-w-0 flex-1 font-medium text-barber-paper">{task.title}</p>
                                 <button
@@ -623,26 +608,31 @@ export function CommandCenterClient({
                               </div>
                             </li>
                           ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
+                    </ul>
+                  </div>
+                ))}
               </div>
             )}
 
             {sidebarTab === "pages" && (
-              <div className="p-2">
-                <Button type="button" variant="outline" size="sm" className="mb-2 w-full" onClick={handleNewPage}>
+              <div className="space-y-2 pb-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full border-white/10 bg-barber-dark/40 ring-1 ring-white/5"
+                  onClick={handleNewPage}
+                >
                   <Plus className="mr-1 h-3.5 w-3.5" />
                   Nuova pagina
                 </Button>
-                <ul className="divide-y divide-barber-gold/10">
+                <ul className="space-y-1">
                   {pages.map((page) => (
                     <li key={page.id}>
                       <div
                         className={cn(
-                          "flex items-center gap-1 hover:bg-barber-gold/5",
-                          selectedPageId === page.id && "bg-barber-gold/10"
+                          "flex items-center gap-1 rounded-xl transition-colors hover:bg-white/[0.04]",
+                          selectedPageId === page.id && "bg-barber-gold/10 ring-1 ring-barber-gold/20"
                         )}
                       >
                         <button
@@ -667,19 +657,12 @@ export function CommandCenterClient({
                 </ul>
               </div>
             )}
-          </ScrollArea>
-        </aside>
+              </div>
+            </div>
+          </aside>
         ) : null}
 
-        {/* Centro */}
-        <main
-          className={cn(
-            "flex min-h-0 flex-1 flex-col",
-            centerView === "assistant"
-              ? "overflow-hidden p-2 md:p-3"
-              : "min-h-[280px] overflow-auto p-4 md:p-6"
-          )}
-        >
+        <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {centerView === "assistant" ? (
             <AiAssistantPanel
               campaignId={campaignFilter === "all" ? null : campaignFilter}
@@ -689,102 +672,118 @@ export function CommandCenterClient({
               fullBleed
               hideCampaignSelector
             />
-          ) : sidebarTab === "inbox" && selectedNote ? (
-            <div className="mx-auto max-w-2xl space-y-4">
-              <Input
-                value={selectedNote.title}
-                onChange={(e) => handleNoteFieldChange("title", e.target.value)}
-                className="border-barber-gold/30 bg-barber-dark/80 font-serif text-lg"
-              />
-              <Select
-                value={selectedNote.status}
-                onValueChange={(v) => handleNoteFieldChange("status", v)}
-              >
-                <SelectTrigger className="w-[180px] border-barber-gold/30">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(NOTE_STATUS_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Textarea
-                value={selectedNote.content}
-                onChange={(e) => handleNoteFieldChange("content", e.target.value)}
-                rows={12}
-                className="border-barber-gold/30 bg-barber-dark/80 font-mono text-sm"
-              />
-              <div className="flex gap-2">
-                <Button type="button" variant="outline" size="sm" onClick={handleNewTask}>
-                  Crea task da nota
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCenterView("assistant")}
-                >
-                  <Sparkles className="mr-1 h-3.5 w-3.5" />
-                  Chiedi all&apos;AI
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleNoteFieldChange("status", "archived")}
-                >
-                  <Archive className="mr-1 h-3.5 w-3.5" />
-                  Archivia
-                </Button>
-              </div>
-            </div>
-          ) : sidebarTab === "pages" && selectedPage ? (
-            <div className="mx-auto max-w-2xl space-y-4">
-              <div className="flex items-center justify-between gap-2">
-                <Input
-                  value={selectedPage.title}
-                  onChange={(e) => handlePageSave("title", e.target.value)}
-                  className="border-barber-gold/30 bg-barber-dark/80 font-serif text-lg"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="shrink-0 text-barber-paper/60 hover:text-red-400"
-                  onClick={() => handleDeletePage(selectedPage.id, selectedPage.title)}
-                  disabled={isPending}
-                >
-                  <Trash2 className="mr-1 h-4 w-4" />
-                  Elimina
-                </Button>
-              </div>
-              <Textarea
-                value={selectedPage.content_markdown}
-                onChange={(e) => handlePageSave("contentMarkdown", e.target.value)}
-                rows={16}
-                placeholder="Markdown…"
-                className="border-barber-gold/30 bg-barber-dark/80 font-mono text-sm"
-              />
-            </div>
           ) : (
-            <div className="flex h-full flex-col items-center justify-center text-center text-barber-paper/50">
-              <Sparkles className="mb-3 h-8 w-8 text-barber-gold/40" />
-              <p className="text-sm">Seleziona una nota o una pagina dalla barra laterale.</p>
-              <p className="mt-1 text-xs">Usa la cattura rapida in alto per nuove idee.</p>
+            <div className="scrollbar-barber-y flex h-full min-h-0 flex-col overflow-y-auto rounded-2xl bg-gradient-to-br from-barber-dark/45 via-barber-dark/60 to-barber-dark/80 p-4 ring-1 ring-barber-gold/10 sm:p-5">
+              {sidebarTab === "inbox" && selectedNote ? (
+                <div className="mx-auto w-full max-w-2xl space-y-4">
+                  <Input
+                    value={selectedNote.title}
+                    onChange={(e) => handleNoteFieldChange("title", e.target.value)}
+                    className="border-white/10 bg-barber-dark/50 font-serif text-lg ring-1 ring-white/5"
+                  />
+                  <Select
+                    value={selectedNote.status}
+                    onValueChange={(v) => handleNoteFieldChange("status", v)}
+                  >
+                    <SelectTrigger className="w-[180px] border-white/10 ring-1 ring-white/5">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(NOTE_STATUS_LABELS).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Textarea
+                    value={selectedNote.content}
+                    onChange={(e) => handleNoteFieldChange("content", e.target.value)}
+                    rows={12}
+                    className="border-white/10 bg-barber-dark/50 font-mono text-sm ring-1 ring-white/5"
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="border-white/10 ring-1 ring-white/5"
+                      onClick={handleNewTask}
+                    >
+                      Crea task da nota
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="border-barber-gold/30 text-barber-gold ring-1 ring-barber-gold/15"
+                      onClick={() => handleCenterViewChange("assistant")}
+                    >
+                      <Sparkles className="mr-1 h-3.5 w-3.5" />
+                      Chiedi all&apos;AI
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleNoteFieldChange("status", "archived")}
+                    >
+                      <Archive className="mr-1 h-3.5 w-3.5" />
+                      Archivia
+                    </Button>
+                  </div>
+                </div>
+              ) : sidebarTab === "pages" && selectedPage ? (
+                <div className="mx-auto w-full max-w-2xl space-y-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <Input
+                      value={selectedPage.title}
+                      onChange={(e) => handlePageSave("title", e.target.value)}
+                      className="border-white/10 bg-barber-dark/50 font-serif text-lg ring-1 ring-white/5"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="shrink-0 text-barber-paper/60 hover:text-red-400"
+                      onClick={() => handleDeletePage(selectedPage.id, selectedPage.title)}
+                      disabled={isPending}
+                    >
+                      <Trash2 className="mr-1 h-4 w-4" />
+                      Elimina
+                    </Button>
+                  </div>
+                  <Textarea
+                    value={selectedPage.content_markdown}
+                    onChange={(e) => handlePageSave("contentMarkdown", e.target.value)}
+                    rows={16}
+                    placeholder="Markdown…"
+                    className="border-white/10 bg-barber-dark/50 font-mono text-sm ring-1 ring-white/5"
+                  />
+                </div>
+              ) : (
+                <div className="flex h-full min-h-[200px] flex-col items-center justify-center rounded-2xl bg-white/[0.02] p-8 text-center ring-1 ring-dashed ring-barber-gold/15">
+                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-barber-gold/10 ring-1 ring-barber-gold/20">
+                    <Inbox className="h-7 w-7 text-barber-gold" />
+                  </div>
+                  <p className="font-serif text-base text-barber-paper">Seleziona un elemento</p>
+                  <p className="mt-2 max-w-sm text-sm leading-relaxed text-barber-paper/55">
+                    Scegli una nota, un task o una pagina dalla colonna a sinistra. Usa la cattura rapida in alto per
+                    nuove idee.
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </main>
 
-        {/* Destra — collegamenti */}
         {centerView !== "assistant" ? (
-        <aside className="w-full border-t border-barber-gold/20 p-4 lg:w-72 lg:border-l lg:border-t-0">
-          <div className="mb-3 flex items-center gap-2 text-sm font-medium text-barber-paper">
-            <Link2 className="h-4 w-4 text-barber-gold" />
-            Collegamenti
-          </div>
+          <aside className="flex w-full min-h-0 flex-col lg:w-72 lg:shrink-0">
+            <div className="scrollbar-barber-y flex h-full min-h-0 flex-col overflow-y-auto rounded-2xl bg-barber-dark/35 p-4 ring-1 ring-inset ring-white/[0.06] lg:max-h-none">
+              <div className="mb-3 flex items-center gap-2 text-sm font-medium text-barber-paper">
+                <Link2 className="h-4 w-4 text-barber-gold" />
+                Collegamenti
+              </div>
 
           {selectedNote && sidebarTab === "inbox" ? (
             <div className="space-y-3">
@@ -797,7 +796,7 @@ export function CommandCenterClient({
                     return (
                       <li
                         key={link.id}
-                        className="flex items-start justify-between gap-2 rounded-md border border-barber-gold/20 px-2 py-1.5 text-xs"
+                        className="flex items-start justify-between gap-2 rounded-xl bg-white/[0.03] px-2.5 py-2 text-xs ring-1 ring-inset ring-white/[0.06]"
                       >
                         <div>
                           <span className="text-barber-gold/80">
@@ -819,13 +818,13 @@ export function CommandCenterClient({
               </ul>
 
               {campaignFilter !== "all" || selectedNote.campaign_id ? (
-                <div className="space-y-2 border-t border-barber-gold/10 pt-3">
-                  <p className="text-xs text-barber-paper/60">Aggiungi collegamento</p>
+                <div className="space-y-2 border-t border-white/[0.06] pt-3">
+                  <p className="text-[11px] font-medium text-barber-gold/75">Aggiungi collegamento</p>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="w-full justify-start text-xs"
+                    className="w-full justify-start border-white/10 text-xs ring-1 ring-white/5"
                     onClick={() => handleAddLink("campaign", campaignFilter === "all" ? selectedNote.campaign_id! : campaignFilter)}
                     disabled={campaignFilter === "all" && !selectedNote.campaign_id}
                   >
@@ -868,10 +867,11 @@ export function CommandCenterClient({
             </p>
           )}
 
-          <div className="mt-6 rounded-lg border border-dashed border-barber-gold/20 p-3">
-            <AuditTimeline events={auditEvents} />
-          </div>
-        </aside>
+              <div className="mt-6 rounded-xl bg-white/[0.02] p-3 ring-1 ring-inset ring-white/[0.06]">
+                <AuditTimeline events={auditEvents} />
+              </div>
+            </div>
+          </aside>
         ) : null}
       </div>
     </div>
