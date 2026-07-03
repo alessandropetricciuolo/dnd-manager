@@ -1,9 +1,10 @@
 import { CAMPAIGN_TYPE_VALUES, type CampaignType } from "@/lib/campaign-type";
+import { hasExplicitCampaignType } from "./campaign-type-selection";
 
 export type DetectedCampaignRequest = {
   title: string;
   description: string;
-  type: CampaignType;
+  type: CampaignType | null;
   isLongCampaign: boolean;
   userPrompt: string;
 };
@@ -52,13 +53,13 @@ export function detectCampaignCreateRequest(message: string): DetectedCampaignRe
   const userPrompt = message.trim();
   if (!looksLikeCampaignCreate(userPrompt)) return null;
 
-  const type = inferCampaignType(userPrompt);
+  const type = hasExplicitCampaignType(userPrompt) ? inferCampaignType(userPrompt) : null;
   const isLongCampaign = type === "long" || /\b(long|lunga)\b/i.test(userPrompt);
 
   return {
     title: extractCampaignTitle(userPrompt) ?? "Nuova campagna",
     description: userPrompt,
-    type: CAMPAIGN_TYPE_VALUES.includes(type) ? type : "oneshot",
+    type: type && CAMPAIGN_TYPE_VALUES.includes(type) ? type : null,
     isLongCampaign,
     userPrompt,
   };

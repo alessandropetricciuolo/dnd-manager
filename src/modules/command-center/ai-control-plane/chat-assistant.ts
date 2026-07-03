@@ -1,6 +1,9 @@
 import { revalidatePath } from "next/cache";
 import { generateMagicDraftImageAction } from "@/lib/actions/ai-wiki-chain";
-import { generateContextualPortraitAction } from "@/lib/actions/ai-generator";
+import {
+  generateCampaignCoverDraftImageAction,
+  generateContextualPortraitAction,
+} from "@/lib/actions/ai-generator";
 import { isAiDraftAllowedAction } from "../actions/action-catalog";
 import { executeAction, resolveActionContext } from "../actions/registry";
 import { assertCanProposeDrafts } from "./autonomy";
@@ -38,6 +41,13 @@ import {
 import { applyDomainFallbackInterpreter } from "./domain-fallback-interpreter";
 import { preparePendingInputForExecute } from "./proposal-input";
 import { mergeCharacterInputFromSheet } from "./character-proposal-shared";
+import {
+  formatCampaignTypeAck,
+  formatCampaignTypeQuestion,
+  hasExplicitCampaignType,
+  parseCampaignTypeFromUserMessage,
+} from "./campaign-type-selection";
+import { isCampaignType } from "@/lib/campaign-type";
 import type { AiInterpreterResult } from "../types/ai-proposal";
 
 export type ChatPendingProposal = ChatPendingProposalPayload;
@@ -51,6 +61,9 @@ export type AiChatAssistantResult = {
 };
 
 function chatHintForProposal(phase?: ChatPendingProposal["phase"]): string {
+  if (phase === "awaiting_campaign_type") {
+    return "Scegli il **tipo di evento** (oneshot, quest, campagna lunga, torneo) prima di scrivere la descrizione.";
+  }
   if (phase === "awaiting_image") {
     return "Scrivi **sì** per generare l'immagine nell'anteprima, **no** per continuare senza, poi **conferma** per salvare.";
   }
@@ -88,10 +101,35 @@ function shouldAskCampaignArchitect(pending: ChatPendingProposal): boolean {
   if (pending.action_name !== "campaign.create" || pending.phase === "awaiting_architect") {
     return false;
   }
+  if (!pending.campaignMeta?.coverDecided) return false;
   const draftType = pending.campaignMeta?.draft.type;
   const inputType = pending.input.type;
   const type = (typeof draftType === "string" ? draftType : typeof inputType === "string" ? inputType : "oneshot") as CampaignType;
   return isLongCampaignType(type);
+}
+
+function hasCampaignCoverImage(pending: ChatPendingProposal): boolean {
+  return Boolean(
+    (typeof pending.input.imageUrl === "string" && pending.input.imageUrl.trim()) ||
+      (typeof pending.preview_payload.imageUrl === "string" && pending.preview_payload.imageUrl.trim())
+  );
+}
+
+function campaignCoverOfferReply(title: string): string {
+  return `Descrizione approvata per **${title || "la campagna"}**.\n\nQuesto testo diventerà la **memoria di base** della campagna e guiderà le future voci wiki.\n\nVuoi generare anche una **copertina**? Comparirà nell'anteprima a destra prima del salvataggio.\n\nScrivi **sì** o **no**.`;
+}
+
+async function generateCampaignCoverImage(
+  pending: ChatPendingProposal
+): Promise<{ imageUrl: string } | { error: string }> {
+  const title = pickCampaignTitle(pending.input) || pending.campaignMeta?.draft.title || "";
+  const description =
+    pending.campaignMeta?.draft.description ||
+    (typeof pending.input.description === "string" ? pending.input.description : "");
+
+  const res = await generateCampaignCoverDraftImageAction(title, description);
+  if (!res.success) return { error: res.message };
+  return { imageUrl: res.publicUrl };
 }
 
 async function executePendingProposal(
@@ -407,12 +445,14 @@ export async function runAiChatAssistant(
   }
 
   if (pending?.phase === "awaiting_image" && intent === "refine") {
+    const isCampaign = pending.action_name === "campaign.create";
     return {
       success: true,
       data: {
-        reply:
-          "Per procedere scrivi **sì** per generare l'immagine nell'anteprima, **no** per continuare senza immagine, oppure **annulla**.",
-        intentSummary: "In attesa decisione immagine",
+        reply: isCampaign
+          ? "Per procedere scrivi **sì** per generare la copertina nell'anteprima, **no** per continuare senza, oppure **annulla**."
+          : "Per procedere scrivi **sì** per generare l'immagine nell'anteprima, **no** per continuare senza immagine, oppure **annulla**.",
+        intentSummary: isCampaign ? "In attesa decisione copertina" : "In attesa decisione immagine",
         pendingProposal: pending,
         executed: false,
         clearedPending: false,
@@ -565,6 +605,66 @@ export async function runAiChatAssistant(
     };
   }
 
+  if (intent === "image_no" && pending?.phase === "awaiting_image" && pending.action_name === "campaign.create") {
+    const title = pickCampaignTitle(pending.input);
+    return {
+      success: true,
+      data: {
+        reply: `Ok, **${title}** verrà creata senza copertina. Scrivi **conferma** per salvare, oppure descrivi modifiche alla descrizione.`,
+        intentSummary: "Campagna senza copertina",
+        pendingProposal: {
+          ...pending,
+          phase: "text",
+          campaignMeta: pending.campaignMeta
+            ? { ...pending.campaignMeta, coverDecided: true }
+            : pending.campaignMeta,
+        },
+        executed: false,
+        clearedPending: false,
+      },
+    };
+  }
+
+  if (intent === "image_yes" && pending?.phase === "awaiting_image" && pending.action_name === "campaign.create") {
+    const imageResult = await generateCampaignCoverImage(pending);
+    if ("error" in imageResult) {
+      return {
+        success: true,
+        data: {
+          reply: `Non sono riuscito a generare la copertina: ${imageResult.error}\n\nScrivi **no** per continuare senza immagine, oppure **annulla**.`,
+          intentSummary: "Copertina fallita",
+          pendingProposal: pending,
+          executed: false,
+          clearedPending: false,
+        },
+      };
+    }
+
+    const withImage: ChatPendingProposal = {
+      ...pending,
+      input: { ...pending.input, imageUrl: imageResult.imageUrl },
+      preview_payload: {
+        ...pending.preview_payload,
+        imageUrl: imageResult.imageUrl,
+      },
+      phase: "text",
+      campaignMeta: pending.campaignMeta
+        ? { ...pending.campaignMeta, coverDecided: true }
+        : pending.campaignMeta,
+    };
+
+    return {
+      success: true,
+      data: {
+        reply: `Copertina generata per **${pickCampaignTitle(withImage.input)}**. Vedi anteprima a destra, poi scrivi **conferma** per creare la campagna.`,
+        intentSummary: "Copertina in anteprima",
+        pendingProposal: withImage,
+        executed: false,
+        clearedPending: false,
+      },
+    };
+  }
+
   if (pending?.phase === "awaiting_architect" && intent === "refine") {
     return {
       success: true,
@@ -651,6 +751,86 @@ export async function runAiChatAssistant(
           pendingProposal: pending,
           executed: false,
           clearedPending: false,
+        },
+      };
+    }
+
+    if (pending.action_name === "campaign.create") {
+      if (pending.phase === "awaiting_campaign_type") {
+        return {
+          success: true,
+          data: {
+            reply: formatCampaignTypeQuestion(),
+            intentSummary: "Tipo campagna richiesto",
+            pendingProposal: pending,
+            executed: false,
+            clearedPending: false,
+          },
+        };
+      }
+
+      if (pending.phase === "awaiting_image") {
+        return {
+          success: true,
+          data: {
+            reply: campaignCoverOfferReply(pickCampaignTitle(pending.input)),
+            intentSummary: "In attesa decisione copertina",
+            pendingProposal: pending,
+            executed: false,
+            clearedPending: false,
+          },
+        };
+      }
+
+      if (!pending.campaignMeta?.coverDecided) {
+        return {
+          success: true,
+          data: {
+            reply: campaignCoverOfferReply(pickCampaignTitle(pending.input)),
+            intentSummary: "Descrizione approvata — copertina",
+            pendingProposal: { ...pending, phase: "awaiting_image" },
+            executed: false,
+            clearedPending: false,
+          },
+        };
+      }
+
+      if (shouldAskCampaignArchitect(pending)) {
+        return {
+          success: true,
+          data: {
+            reply: `Bozza approvata per **${pickCampaignTitle(pending.input)}**.\n\nVuoi che generi anche i **paletti IA** (tono, magia, stile visivo) con l'Architect? Scrivi **sì** o **no**.`,
+            intentSummary: "Bozza approvata — decisione Architect",
+            pendingProposal: { ...pending, phase: "awaiting_architect" },
+            executed: false,
+            clearedPending: false,
+          },
+        };
+      }
+
+      const campaignResult = await finalizeCampaignCreation(pending, { withArchitect: false });
+      if (!campaignResult.success) {
+        return {
+          success: true,
+          data: {
+            reply: `Non sono riuscito a creare la campagna: ${campaignResult.error}`,
+            intentSummary: "Esecuzione fallita",
+            pendingProposal: pending,
+            executed: false,
+            clearedPending: false,
+          },
+        };
+      }
+
+      const withCover = hasCampaignCoverImage(pending);
+      return {
+        success: true,
+        data: {
+          reply: `Campagna **${campaignResult.title}** creata${withCover ? " con copertina" : ""}. La descrizione è ora la base della memoria campagna. Vuoi preparare altro?`,
+          intentSummary: withCover ? "Campagna creata con copertina" : "Campagna creata",
+          pendingProposal: null,
+          executed: true,
+          clearedPending: true,
         },
       };
     }
@@ -859,7 +1039,62 @@ export async function runAiChatAssistant(
     };
   }
 
-  if (intent === "refine" && pending?.campaignMeta && pending.phase !== "awaiting_architect" && pending.phase !== "awaiting_image" && pending.phase !== "awaiting_avatar" && pending.phase !== "awaiting_sheet") {
+  if (intent === "refine" && pending?.phase === "awaiting_campaign_type" && pending.action_name === "campaign.create") {
+    const selectedType = parseCampaignTypeFromUserMessage(message);
+    if (!selectedType) {
+      return {
+        success: true,
+        data: {
+          reply: `Non ho riconosciuto il tipo. ${formatCampaignTypeQuestion()}`,
+          intentSummary: "Tipo campagna non riconosciuto",
+          pendingProposal: pending,
+          executed: false,
+          clearedPending: false,
+        },
+      };
+    }
+
+    const enriched = await enrichCampaignProposal(
+      pending.campaignMeta?.userPrompt ?? message,
+      pending,
+      {
+        forcedType: selectedType,
+        campaignMeta: pending.campaignMeta ?? null,
+      }
+    );
+
+    if (!enriched.ok) {
+      return { success: false, error: enriched.error };
+    }
+
+    const nextPending: ChatPendingProposal = {
+      ...enriched.proposal,
+      rationale: pending.rationale,
+      phase: "text",
+      campaignMeta: {
+        ...enriched.campaignMeta,
+        typeConfirmed: true,
+        coverDecided: false,
+      },
+    };
+
+    return {
+      success: true,
+      data: {
+        reply: [
+          formatCampaignTypeAck(selectedType),
+          enriched.assistantMessage,
+          chatHintForProposal("text"),
+        ].join("\n\n"),
+        intentSummary: "Bozza descrizione campagna",
+        pendingProposal: nextPending,
+        executed: false,
+        clearedPending: false,
+      },
+    };
+  }
+
+  if (intent === "refine" && pending?.campaignMeta && pending.phase !== "awaiting_architect" && pending.phase !== "awaiting_image" && pending.phase !== "awaiting_avatar" && pending.phase !== "awaiting_sheet" && pending.phase !== "awaiting_campaign_type") {
     const enriched = await enrichCampaignProposal(message, pending, {
       refine: true,
       campaignMeta: pending.campaignMeta,
@@ -874,13 +1109,20 @@ export async function runAiChatAssistant(
       ...enriched.proposal,
       rationale: pending.rationale,
       phase: "text",
-      campaignMeta: enriched.campaignMeta,
+      campaignMeta: {
+        ...enriched.campaignMeta,
+        coverDecided: false,
+      },
     };
 
     return {
       success: true,
       data: {
-        reply: ["Ho aggiornato la proposta campagna.", chatHintForProposal("text")].join("\n\n"),
+        reply: [
+          "Ho aggiornato la descrizione della campagna.",
+          "Quando il testo ti convince, **conferma**: diventerà la memoria di base per wiki e lore.",
+          chatHintForProposal("text"),
+        ].join("\n\n"),
         intentSummary: selectionRefine ? "Modifica mirata (campagna)" : "Bozza campagna aggiornata",
         pendingProposal: nextPending,
         executed: false,
@@ -1265,20 +1507,78 @@ export async function runAiChatAssistant(
         error: "Seleziona una campagna nel filtro per creare voci wiki con l'AI contestuale.",
       };
     } else if (nextPending.action_name === "campaign.create") {
-      const enriched = await enrichCampaignProposal(message, nextPending, {
-        refine: intent === "refine",
-        campaignMeta: pending?.campaignMeta ?? null,
-      });
+      const inputType =
+        typeof nextPending.input.type === "string" && isCampaignType(nextPending.input.type)
+          ? nextPending.input.type
+          : null;
+      const messageType = parseCampaignTypeFromUserMessage(message);
+      const knownType =
+        pending?.campaignMeta?.typeConfirmed && pending.campaignMeta.draft?.type
+          ? pending.campaignMeta.draft.type
+          : messageType || inputType || (hasExplicitCampaignType(message) ? messageType : null);
 
-      if (!enriched.ok) {
-        return { success: false, error: enriched.error };
+      if (!knownType && !pending?.campaignMeta?.typeConfirmed) {
+        const userPrompt = pending?.campaignMeta?.userPrompt ?? message.trim();
+        const title =
+          typeof nextPending.input.title === "string" ? nextPending.input.title : "Nuova campagna";
+        nextPending = {
+          action_name: "campaign.create",
+          input: { title },
+          rationale: nextPending.rationale ?? previews[0]?.rationale ?? null,
+          preview_payload: {},
+          phase: "awaiting_campaign_type",
+          campaignMeta: {
+            userPrompt,
+            draft: {
+              title,
+              description: "",
+              type: "oneshot",
+              playerPrimer: null,
+              isPublic: false,
+            },
+            chatMessages: [],
+            typeConfirmed: false,
+            coverDecided: false,
+          },
+        };
+        interpreted = {
+          ...interpreted,
+          reply: [interpreted.reply, formatCampaignTypeQuestion()].filter(Boolean).join("\n\n"),
+        };
+      } else {
+        const enriched = await enrichCampaignProposal(message, nextPending, {
+          refine: intent === "refine",
+          campaignMeta: pending?.campaignMeta ?? null,
+          forcedType: knownType ?? undefined,
+        });
+
+        if (!enriched.ok) {
+          return { success: false, error: enriched.error };
+        }
+
+        nextPending = {
+          ...enriched.proposal,
+          phase: "text",
+          campaignMeta: {
+            ...enriched.campaignMeta,
+            typeConfirmed: true,
+            coverDecided: false,
+          },
+        };
+
+        if (!pending?.campaignMeta?.draft?.description) {
+          interpreted = {
+            ...interpreted,
+            reply: [
+              interpreted.reply,
+              knownType ? formatCampaignTypeAck(knownType) : null,
+              "Ho preparato una bozza di **descrizione** nell'anteprima. Modificala in chat finché non ti convince, poi **conferma**.",
+            ]
+              .filter(Boolean)
+              .join("\n\n"),
+          };
+        }
       }
-
-      nextPending = {
-        ...enriched.proposal,
-        phase: "text",
-        campaignMeta: enriched.campaignMeta,
-      };
     } else if (nextPending.action_name === "mission.create") {
       if (!campaignId) {
         return {

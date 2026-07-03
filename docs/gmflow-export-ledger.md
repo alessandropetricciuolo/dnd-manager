@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-* Data aggiornamento: 2026-07-03T13:32:01.359Z
+* Data aggiornamento: 2026-07-03T14:25:22.880Z
 * Branch corrente: main
-* Ultimo commit analizzato: 240d27cc77c69fe295ccc218790d47a176c8b9ca
-* Range commit analizzato: 3932db3..240d27c
-* Stato generale: 383 voci NEEDS_REVIEW
-* Voci totali: 483 (NEEDS_REVIEW: 383, TO_IMPORT: 24, IMPORTED: 0)
+* Ultimo commit analizzato: 508bd4471ec9ba6a6c6cc7c02bffe48cb7b871c1
+* Range commit analizzato: eb80561..508bd44
+* Stato generale: 385 voci NEEDS_REVIEW
+* Voci totali: 485 (NEEDS_REVIEW: 385, TO_IMPORT: 24, IMPORTED: 0)
 
 ## Delta automatico non revisionato
 
@@ -18575,6 +18575,98 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
+### [BD-GMFLOW-508bd44-001] UI_UX: audit-timeline.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/command-center/audit-timeline.tsx` modificato nel commit «feat(command-center): align workspace UI with assistant fluid shell». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/command-center/audit-timeline.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/audit-timeline.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-508bd44-002] UI_UX: command-center-client.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/command-center/command-center-client.tsx` modificato nel commit «feat(command-center): align workspace UI with assistant fluid shell». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/command-center/command-center-client.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/command-center-client.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
 ## Modifiche revisionate manualmente
 
 ### [BD-GMFLOW-PKG-2026-06-28-001] Package: Nuove funzioni e bugfix (no RLS, no grafica)
@@ -23286,9 +23378,9 @@ Questo ledger traccia modifiche Barber & Dragons da valutare per import in gmflo
 
 - Repository sorgente: `/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App`
 - Repository gmflow locale: `/Users/alessandropetricciuolo/Desktop/masto-platform`
-- Ultimo commit: `240d27c` — feat(home): refresh live-play copy and logged-in carousel links
-- File analizzati nell'ultimo run: 4
-- Nuove voci aggiunte: 4
+- Ultimo commit: `508bd44` — feat(command-center): align workspace UI with assistant fluid shell
+- File analizzati nell'ultimo run: 2
+- Nuove voci aggiunte: 2
 
 **Azioni consigliate:**
 1. Rivedere voci `NEEDS_REVIEW` nella sezione «Delta automatico».

@@ -201,14 +201,17 @@ export function applyDomainFallbackInterpreter(
 
   const campaignDetected = detectCampaignCreateRequest(combinedContext);
   if (campaignDetected) {
+    const typeLabel = campaignDetected.type ?? "da definire";
     const campaignLabel = isPlaceholderCampaignTitle(campaignDetected.title)
-      ? `una campagna (${campaignDetected.type})`
-      : `la campagna **${campaignDetected.title}** (${campaignDetected.type})`;
+      ? `una campagna (${typeLabel})`
+      : `la campagna **${campaignDetected.title}** (${typeLabel})`;
     return {
       interpreted: {
-        reply: `Preparo ${campaignLabel}.`,
+        reply: campaignDetected.type
+          ? `Preparo ${campaignLabel}.`
+          : `Preparo ${campaignLabel}. Prima ti chiederò il tipo di evento.`,
         intent_summary: isPlaceholderCampaignTitle(campaignDetected.title)
-          ? `Creare campagna ${campaignDetected.type}`
+          ? `Creare campagna${campaignDetected.type ? ` ${campaignDetected.type}` : ""}`
           : `Creare campagna: ${campaignDetected.title}`,
         proposals: [
           {
@@ -216,7 +219,7 @@ export function applyDomainFallbackInterpreter(
             input: {
               title: campaignDetected.title,
               description: campaignDetected.description,
-              type: campaignDetected.type,
+              ...(campaignDetected.type ? { type: campaignDetected.type } : {}),
               isPublic: false,
             },
             rationale: "Richiesta nuova campagna rilevata dal messaggio",

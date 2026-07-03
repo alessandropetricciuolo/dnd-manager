@@ -18,6 +18,8 @@ const CAMPAIGN_TYPE_SET = new Set<string>(CAMPAIGN_TYPE_VALUES);
 
 const CREATE_SYSTEM_PROMPT = `Sei un Game Designer esperto per D&D 5e. Il Master vuole creare una nuova campagna.
 
+Il tuo compito principale è aiutarlo a scrivere una **descrizione per il GM** chiara e ricca: ambientazione, hook narrativo, tono, conflitti, atmosfera. Questo testo diventerà la **memoria di base della campagna** e guiderà la generazione delle voci wiki.
+
 Rispondi SOLO con JSON valido (senza markdown):
 {
   "title": "titolo evocativo della campagna",
@@ -28,11 +30,13 @@ Rispondi SOLO con JSON valido (senza markdown):
 }
 
 Regole:
-- Se il Master chiede campagna lunga / long / saga → type "long" e player_primer completa
+- Se il tipo è già indicato nel prompt, NON cambiarlo
+- Campagna lunga / saga → type "long" e player_primer completa
 - One shot → type "oneshot", player_primer vuoto
 - Quest breve → type "quest"
 - Torneo → type "torneo"
 - is_public resta false salvo richiesta esplicita di visibilità pubblica
+- La description deve essere autosufficiente per orientare futuri NPC, luoghi e lore wiki
 - Scrivi in italiano`;
 
 const REFINE_SYSTEM_PROMPT = `Sei un editor di proposte campagna D&D 5e. Aggiorna la bozza in base alle richieste del Master.
@@ -101,12 +105,16 @@ export function formatCampaignDraftForChat(draft: CampaignAiDraft): string {
 
 export async function generateCampaignDraftFromPrompt(
   userPrompt: string,
-  options?: { titleIsPlaceholder?: boolean }
+  options?: { titleIsPlaceholder?: boolean; forcedType?: CampaignType }
 ): Promise<
   { ok: true; draft: CampaignAiDraft; assistantMessage: string } | { ok: false; error: string }
 > {
-  const prompt = `${CREATE_SYSTEM_PROMPT}
+  const typeHint = options?.forcedType
+    ? `\nTIPO GIÀ DECISO DAL MASTER: "${options.forcedType}" — non cambiarlo nel JSON.\n`
+    : "";
 
+  const prompt = `${CREATE_SYSTEM_PROMPT}
+${typeHint}
 ${options?.titleIsPlaceholder ? `${AUTO_NAME_CAMPAIGN_HINT}\n` : ""}--- RICHIESTA MASTER ---
 ${userPrompt.trim()}`;
 
@@ -114,10 +122,15 @@ ${userPrompt.trim()}`;
     const raw = await generateOpenRouterChat(prompt, { temperature: 0.65, maxTokens: 2200 });
     const parsed = parseCampaignDraftJson(raw);
     if (!parsed.ok) return { ok: false, error: parsed.error };
+
+    const draft = options?.forcedType
+      ? { ...parsed.data, type: options.forcedType }
+      : parsed.data;
+
     return {
       ok: true,
-      draft: parsed.data,
-      assistantMessage: formatCampaignDraftForChat(parsed.data),
+      draft,
+      assistantMessage: formatCampaignDraftForChat(draft),
     };
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Errore generazione campagna.";

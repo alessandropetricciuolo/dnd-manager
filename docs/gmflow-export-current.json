@@ -1,12 +1,12 @@
 {
-  "updatedAt": "2026-07-03T13:32:01.359Z",
+  "updatedAt": "2026-07-03T14:25:22.880Z",
   "sourceProject": "Barber & Dragons",
   "targetProject": "gmflow.app",
   "sourceRepoPath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App",
   "targetRepoPath": "/Users/alessandropetricciuolo/Desktop/masto-platform",
   "branch": "main",
-  "lastCommit": "240d27cc77c69fe295ccc218790d47a176c8b9ca",
-  "commitRange": "3932db3..240d27c",
+  "lastCommit": "508bd4471ec9ba6a6c6cc7c02bffe48cb7b871c1",
+  "commitRange": "eb80561..508bd44",
   "items": [
     {
       "id": "BD-GMFLOW-PKG-2026-06-28-001",
@@ -18506,6 +18506,78 @@
       "statusCode": "M",
       "createdAt": "2026-07-03T13:32:01.359Z",
       "updatedAt": "2026-07-03T13:32:01.359Z"
+    },
+    {
+      "id": "BD-GMFLOW-508bd44-001",
+      "title": "UI_UX: audit-timeline.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/command-center/audit-timeline.tsx` modificato nel commit «feat(command-center): align workspace UI with assistant fluid shell». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/command-center/audit-timeline.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/command-center/audit-timeline.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "508bd4471ec9ba6a6c6cc7c02bffe48cb7b871c1",
+      "commitShort": "508bd44",
+      "commitSubject": "feat(command-center): align workspace UI with assistant fluid shell",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T14:25:22.880Z",
+      "updatedAt": "2026-07-03T14:25:22.880Z"
+    },
+    {
+      "id": "BD-GMFLOW-508bd44-002",
+      "title": "UI_UX: command-center-client.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/command-center/command-center-client.tsx` modificato nel commit «feat(command-center): align workspace UI with assistant fluid shell». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/command-center/command-center-client.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/command-center/command-center-client.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "508bd4471ec9ba6a6c6cc7c02bffe48cb7b871c1",
+      "commitShort": "508bd44",
+      "commitSubject": "feat(command-center): align workspace UI with assistant fluid shell",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T14:25:22.880Z",
+      "updatedAt": "2026-07-03T14:25:22.880Z"
     }
   ]
 }

@@ -125,6 +125,7 @@ export function AiAssistantCanvas({
   const input = pendingProposal.input;
   const wikiDraft = pendingProposal.wikiMeta?.markdownDraft;
   const isCharacter = pendingProposal.action_name === "character.create";
+  const isCampaign = pendingProposal.action_name === "campaign.create";
   const isWiki = pendingProposal.action_name === "wiki.entity.create";
   const isRelationship = pendingProposal.action_name === "wiki.relationship.create";
   const attendanceResolved = Array.isArray(preview.attendanceResolved)
@@ -190,6 +191,7 @@ export function AiAssistantCanvas({
   const selectionDisabled =
     isThinking ||
     !onPreviewTextSelect ||
+    pendingProposal.phase === "awaiting_campaign_type" ||
     pendingProposal.phase === "awaiting_image" ||
     pendingProposal.phase === "awaiting_avatar" ||
     pendingProposal.phase === "awaiting_sheet" ||
@@ -262,7 +264,11 @@ export function AiAssistantCanvas({
                       : visibilityLabel}
               </span>
             ) : null}
-            {pendingProposal.phase === "awaiting_sheet" ? (
+            {pendingProposal.phase === "awaiting_campaign_type" ? (
+              <span className="rounded-full border border-sky-500/40 bg-sky-500/10 px-2.5 py-0.5 text-[10px] text-sky-200">
+                Tipo evento
+              </span>
+            ) : pendingProposal.phase === "awaiting_sheet" ? (
               <span className="rounded-full border border-sky-500/40 bg-sky-500/10 px-2.5 py-0.5 text-[10px] text-sky-200">
                 Scheda richiesta
               </span>
@@ -296,6 +302,15 @@ export function AiAssistantCanvas({
       </div>
 
       <div className="scrollbar-barber-y min-h-0 flex-1 space-y-4 overflow-y-auto px-4 pb-5 pt-1 sm:space-y-5 sm:px-5 sm:pb-6">
+        {isCampaign && pendingProposal.phase === "awaiting_campaign_type" ? (
+          <PreviewSection title="Tipo di evento" icon={BookOpen}>
+            <p className="text-sm leading-relaxed text-barber-paper/75">
+              Scegli il formato in chat: oneshot, quest, campagna lunga o torneo. Poi l&apos;assistente
+              ti aiuterà a scrivere la descrizione che diventerà la memoria della campagna.
+            </p>
+          </PreviewSection>
+        ) : null}
+
         {isCharacter && content ? (
           <PreviewSection title="Storia (AI)" icon={BookOpen}>
             <PreviewSelectableText
@@ -534,26 +549,34 @@ export function AiAssistantCanvas({
           </PreviewSection>
         ) : null}
 
-        {isWiki ? (
-          <PreviewSection title="Immagine contestuale" icon={ImageIcon}>
+        {isWiki || isCampaign ? (
+          <PreviewSection
+            title={isCampaign ? "Copertina" : "Immagine contestuale"}
+            icon={ImageIcon}
+          >
             {imageUrl ? (
               <div className="flex justify-center overflow-hidden rounded-lg bg-barber-dark/50 p-1">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={imageUrl}
                   alt={title}
-                  className="max-h-[min(65vh,40rem)] w-full object-contain"
+                  className={cn(
+                    "w-full object-contain",
+                    isCampaign ? "max-h-[min(50vh,28rem)] object-cover" : "max-h-[min(65vh,40rem)]"
+                  )}
                 />
               </div>
             ) : isThinking && pendingProposal.phase === "awaiting_image" ? (
               <div className="flex items-center gap-2 text-xs text-barber-paper/60">
                 <ImageIcon className="h-4 w-4 shrink-0 animate-pulse text-barber-gold/70" />
-                Generazione immagine in corso…
+                {isCampaign ? "Generazione copertina in corso…" : "Generazione immagine in corso…"}
               </div>
             ) : pendingProposal.phase === "awaiting_image" ? (
               <div className="flex items-center gap-2 text-xs text-barber-paper/50">
                 <ImageIcon className="h-4 w-4 shrink-0" />
-                Rispondi in chat (**sì** / **no**) per generare o saltare l&apos;immagine.
+                {isCampaign
+                  ? "Rispondi in chat (**sì** / **no**) per generare o saltare la copertina."
+                  : "Rispondi in chat (**sì** / **no**) per generare o saltare l'immagine."}
               </div>
             ) : null}
           </PreviewSection>

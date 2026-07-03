@@ -51,3 +51,9 @@ test("detectConversationIntent close info phase", () => {
   assert.equal(detectConversationIntent("Marco assente", true, "awaiting_close_info"), "refine");
   assert.equal(detectConversationIntent("annulla", true, "awaiting_close_info"), "reject");
 });
+
+test("detectConversationIntent campaign type phase treats messages as refine", () => {
+  assert.equal(detectConversationIntent("oneshot", true, "awaiting_campaign_type"), "refine");
+  assert.equal(detectConversationIntent("2", true, "awaiting_campaign_type"), "refine");
+  assert.equal(detectConversationIntent("annulla", true, "awaiting_campaign_type"), "reject");
+});

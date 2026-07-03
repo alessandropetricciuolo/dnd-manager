@@ -232,7 +232,9 @@ export function AiAssistantPanel({
               </h2>
               <p className="text-[11px] text-barber-paper/50">
                 Chat · anteprima live
-                {pendingProposal?.phase === "awaiting_sheet"
+                {pendingProposal?.phase === "awaiting_campaign_type"
+                  ? " · tipo evento"
+                  : pendingProposal?.phase === "awaiting_sheet"
                   ? " · scheda PDF"
                   : pendingProposal?.phase === "awaiting_avatar"
                     ? " · ritratto"
@@ -306,11 +308,15 @@ export function AiAssistantPanel({
                   ) : null}
                   {msg.hasPendingProposal ? (
                     <p className="mt-1.5 px-1 text-[10px] text-barber-gold/75">
-                      {msg.pendingPhase === "awaiting_image"
-                        ? "→ Rispondi sì/no per l'immagine"
-                        : msg.pendingPhase === "awaiting_architect"
-                          ? "→ Rispondi sì/no per i paletti IA"
-                          : "→ Vedi anteprima a destra"}
+                      {msg.pendingPhase === "awaiting_campaign_type"
+                        ? "→ Scegli il tipo di evento in chat"
+                        : msg.pendingPhase === "awaiting_image"
+                          ? pendingProposal?.action_name === "campaign.create"
+                            ? "→ Rispondi sì/no per la copertina"
+                            : "→ Rispondi sì/no per l'immagine"
+                          : msg.pendingPhase === "awaiting_architect"
+                            ? "→ Rispondi sì/no per i paletti IA"
+                            : "→ Vedi anteprima a destra"}
                     </p>
                   ) : null}
                 </li>

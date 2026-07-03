@@ -58,6 +58,7 @@ export function selectionTargetsWikiDescription(selection: PreviewTextSelection)
 const SELECTION_BLOCKED_INTENTS = new Set(["confirm", "reject", "image_yes", "image_no"]);
 
 const SELECTION_BLOCKED_PHASES = new Set([
+  "awaiting_campaign_type",
   "awaiting_image",
   "awaiting_avatar",
   "awaiting_sheet",

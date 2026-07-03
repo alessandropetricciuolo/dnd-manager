@@ -20,6 +20,7 @@ export type RunAiDraftAssistantParams = {
 
 export type ChatPendingPhase =
   | "text"
+  | "awaiting_campaign_type"
   | "awaiting_sheet"
   | "awaiting_image"
   | "awaiting_avatar"
@@ -68,6 +69,10 @@ export type ChatCampaignMeta = {
   userPrompt: string;
   draft: CampaignAiDraft;
   chatMessages: { role: "user" | "assistant"; content: string }[];
+  /** Tipo scelto esplicitamente dal GM (fase iniziale). */
+  typeConfirmed?: boolean;
+  /** Descrizione approvata e fase copertina completata. */
+  coverDecided?: boolean;
 };
 
 export type ChatMissionMeta = {

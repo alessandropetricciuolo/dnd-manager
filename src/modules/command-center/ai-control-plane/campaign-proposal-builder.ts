@@ -6,6 +6,7 @@ import {
   type CampaignAiDraft,
 } from "@/lib/ai/campaign-text-generator";
 import { isLongCampaignType } from "@/lib/campaign-type";
+import type { CampaignType } from "@/lib/campaign-type";
 import { previewAction } from "../actions";
 import type { PreviewedProposal } from "./preview-proposals";
 import type { ChatCampaignMeta } from "./draft-assistant.types";
@@ -47,6 +48,7 @@ export async function enrichCampaignProposal(
     refine?: boolean;
     campaignMeta?: ChatCampaignMeta | null;
     previewTextSelection?: PreviewTextSelection | null;
+    forcedType?: CampaignType | null;
   }
 ): Promise<
   | {
@@ -77,6 +79,7 @@ export async function enrichCampaignProposal(
     ? await refineCampaignDraftFromPrompt(refineMessage, options.campaignMeta.draft)
     : await generateCampaignDraftFromPrompt(userPrompt, {
         titleIsPlaceholder: isPlaceholderCampaignTitle(proposedTitle),
+        forcedType: options?.forcedType ?? undefined,
       });
 
   if (!generated.ok) {
@@ -100,6 +103,8 @@ export async function enrichCampaignProposal(
       ...chatMessages,
       { role: "assistant", content: generated.assistantMessage },
     ],
+    typeConfirmed: options?.forcedType ? true : options?.campaignMeta?.typeConfirmed,
+    coverDecided: options?.campaignMeta?.coverDecided,
   };
 
   return {
