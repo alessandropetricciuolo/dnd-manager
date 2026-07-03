@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-* Data aggiornamento: 2026-07-03T05:41:44.792Z
+* Data aggiornamento: 2026-07-03T13:32:01.359Z
 * Branch corrente: main
-* Ultimo commit analizzato: 1a4d59a9ff6f320135ef473026f213af2728d621
-* Range commit analizzato: c983095..1a4d59a
-* Stato generale: 379 voci NEEDS_REVIEW
-* Voci totali: 479 (NEEDS_REVIEW: 379, TO_IMPORT: 24, IMPORTED: 0)
+* Ultimo commit analizzato: 240d27cc77c69fe295ccc218790d47a176c8b9ca
+* Range commit analizzato: 3932db3..240d27c
+* Stato generale: 383 voci NEEDS_REVIEW
+* Voci totali: 483 (NEEDS_REVIEW: 383, TO_IMPORT: 24, IMPORTED: 0)
 
 ## Delta automatico non revisionato
 
@@ -18392,6 +18392,189 @@ Criterio di import completato:
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 * OPENROUTER_API_KEY configurata in gmflow
 
+### [BD-GMFLOW-240d27c-001] OTHER: page.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/page.tsx` modificato nel commit «feat(home): refresh live-play copy and logged-in carousel links». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/app/page.tsx
+
+File gmflow probabili:
+
+* src/app/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-240d27c-002] UI_UX: campaign-mini-carousel-client.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/home/campaign-mini-carousel-client.tsx` modificato nel commit «feat(home): refresh live-play copy and logged-in carousel links». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/home/campaign-mini-carousel-client.tsx
+
+File gmflow probabili:
+
+* src/components/home/campaign-mini-carousel-client.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-240d27c-003] UI_UX: campaign-mini-carousel.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/home/campaign-mini-carousel.tsx` modificato nel commit «feat(home): refresh live-play copy and logged-in carousel links». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/home/campaign-mini-carousel.tsx
+
+File gmflow probabili:
+
+* src/components/home/campaign-mini-carousel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-240d27c-004] UI_UX: navbar-nav-links.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/navbar-nav-links.tsx` modificato nel commit «feat(home): refresh live-play copy and logged-in carousel links». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/navbar-nav-links.tsx
+
+File gmflow probabili:
+
+* src/components/navbar-nav-links.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
 ## Modifiche revisionate manualmente
 
 ### [BD-GMFLOW-PKG-2026-06-28-001] Package: Nuove funzioni e bugfix (no RLS, no grafica)
@@ -23103,9 +23286,9 @@ Questo ledger traccia modifiche Barber & Dragons da valutare per import in gmflo
 
 - Repository sorgente: `/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App`
 - Repository gmflow locale: `/Users/alessandropetricciuolo/Desktop/masto-platform`
-- Ultimo commit: `1a4d59a` — feat(ai): add contextual name generator across create dialogs and command center
-- File analizzati nell'ultimo run: 30
-- Nuove voci aggiunte: 30
+- Ultimo commit: `240d27c` — feat(home): refresh live-play copy and logged-in carousel links
+- File analizzati nell'ultimo run: 4
+- Nuove voci aggiunte: 4
 
 **Azioni consigliate:**
 1. Rivedere voci `NEEDS_REVIEW` nella sezione «Delta automatico».

@@ -1,12 +1,12 @@
 {
-  "updatedAt": "2026-07-03T05:41:44.792Z",
+  "updatedAt": "2026-07-03T13:32:01.359Z",
   "sourceProject": "Barber & Dragons",
   "targetProject": "gmflow.app",
   "sourceRepoPath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App",
   "targetRepoPath": "/Users/alessandropetricciuolo/Desktop/masto-platform",
   "branch": "main",
-  "lastCommit": "1a4d59a9ff6f320135ef473026f213af2728d621",
-  "commitRange": "c983095..1a4d59a",
+  "lastCommit": "240d27cc77c69fe295ccc218790d47a176c8b9ca",
+  "commitRange": "3932db3..240d27c",
   "items": [
     {
       "id": "BD-GMFLOW-PKG-2026-06-28-001",
@@ -18363,6 +18363,149 @@
       "statusCode": "M",
       "createdAt": "2026-07-03T05:41:44.792Z",
       "updatedAt": "2026-07-03T05:41:44.792Z"
+    },
+    {
+      "id": "BD-GMFLOW-240d27c-001",
+      "title": "OTHER: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/app/page.tsx` modificato nel commit «feat(home): refresh live-play copy and logged-in carousel links». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/app/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "240d27cc77c69fe295ccc218790d47a176c8b9ca",
+      "commitShort": "240d27c",
+      "commitSubject": "feat(home): refresh live-play copy and logged-in carousel links",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T13:32:01.359Z",
+      "updatedAt": "2026-07-03T13:32:01.359Z"
+    },
+    {
+      "id": "BD-GMFLOW-240d27c-002",
+      "title": "UI_UX: campaign-mini-carousel-client.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/home/campaign-mini-carousel-client.tsx` modificato nel commit «feat(home): refresh live-play copy and logged-in carousel links». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/home/campaign-mini-carousel-client.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/home/campaign-mini-carousel-client.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "240d27cc77c69fe295ccc218790d47a176c8b9ca",
+      "commitShort": "240d27c",
+      "commitSubject": "feat(home): refresh live-play copy and logged-in carousel links",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T13:32:01.359Z",
+      "updatedAt": "2026-07-03T13:32:01.359Z"
+    },
+    {
+      "id": "BD-GMFLOW-240d27c-003",
+      "title": "UI_UX: campaign-mini-carousel.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/home/campaign-mini-carousel.tsx` modificato nel commit «feat(home): refresh live-play copy and logged-in carousel links». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/home/campaign-mini-carousel.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/home/campaign-mini-carousel.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "240d27cc77c69fe295ccc218790d47a176c8b9ca",
+      "commitShort": "240d27c",
+      "commitSubject": "feat(home): refresh live-play copy and logged-in carousel links",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T13:32:01.359Z",
+      "updatedAt": "2026-07-03T13:32:01.359Z"
+    },
+    {
+      "id": "BD-GMFLOW-240d27c-004",
+      "title": "UI_UX: navbar-nav-links.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/navbar-nav-links.tsx` modificato nel commit «feat(home): refresh live-play copy and logged-in carousel links». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/navbar-nav-links.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/navbar-nav-links.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "240d27cc77c69fe295ccc218790d47a176c8b9ca",
+      "commitShort": "240d27c",
+      "commitSubject": "feat(home): refresh live-play copy and logged-in carousel links",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T13:32:01.359Z",
+      "updatedAt": "2026-07-03T13:32:01.359Z"
     }
   ]
 }
