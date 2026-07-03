@@ -24,10 +24,12 @@ export type CampaignMiniItem = {
 
 type CampaignMiniCarouselClientProps = {
   campaigns: CampaignMiniItem[];
+  isLoggedIn?: boolean;
 };
 
 export function CampaignMiniCarouselClient({
   campaigns,
+  isLoggedIn = false,
 }: CampaignMiniCarouselClientProps) {
   const [api, setApi] = useState<CarouselApi | null>(null);
 
@@ -54,7 +56,10 @@ export function CampaignMiniCarouselClient({
                   "basis-[78%] sm:basis-[52%] md:basis-[40%] lg:basis-[30%]"
                 )}
               >
-                <Link href="/login" className="block h-full">
+                <Link
+                  href={isLoggedIn ? `/campaigns/${campaign.id}` : "/login"}
+                  className="block h-full"
+                >
                   <Card className="h-full overflow-hidden border-barber-gold/25 bg-[#140f1f]/90 transition-colors hover:border-barber-gold/50">
                     <div className="relative aspect-[16/9] w-full overflow-hidden">
                       <Image
@@ -73,7 +78,10 @@ export function CampaignMiniCarouselClient({
                         {campaign.name}
                       </h3>
                       <p className="mt-1 line-clamp-2 text-xs text-barber-paper/75">
-                        {campaign.description || "Scopri la sinossi e le prossime sessioni disponibili."}
+                        {campaign.description ||
+                          (isLoggedIn
+                            ? "Apri la campagna e iscriviti alle prossime date dal vivo."
+                            : "Scopri la sinossi e le prossime serate disponibili.")}
                       </p>
                     </CardContent>
                   </Card>
@@ -85,7 +93,9 @@ export function CampaignMiniCarouselClient({
       </Carousel>
 
       <p className="text-xs text-barber-paper/70">
-        Visualizzi le campagne in anteprima. Accedi per entrare nelle pagine campagna e iscriverti alle sessioni.
+        {isLoggedIn
+          ? "Le avventure in corso della Gilda. Scegli una campagna e iscriviti alla prossima serata al tavolo."
+          : "Anteprima delle campagne dal vivo. Accedi per iscriverti alle sessioni e unirti alla community."}
       </p>
     </div>
   );

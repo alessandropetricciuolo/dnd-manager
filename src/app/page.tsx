@@ -19,7 +19,7 @@ export default async function HomePage() {
   const displayName = user ? getUserDisplayName(user) : null;
   const joinHref = "/login";
   const primaryHref = isLoggedIn ? "/dashboard" : joinHref;
-  const primaryLabel = isLoggedIn ? "Vai alla Dashboard" : "Unisciti alla Gilda";
+  const primaryLabel = isLoggedIn ? "Le mie avventure" : "Unisciti alla Gilda";
 
   return (
     <main className="min-h-screen bg-[#0b0a10] text-barber-paper">
@@ -28,7 +28,7 @@ export default async function HomePage() {
           <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <p className="text-sm text-barber-paper/90 sm:text-base">
               <span className="font-medium text-barber-gold">Bentornato, {displayName}.</span>{" "}
-              Le tue campagne e le prossime sessioni ti aspettano.
+              Le prossime serate al tavolo e le tue iscrizioni ti aspettano.
             </p>
             <Button
               asChild
@@ -37,7 +37,7 @@ export default async function HomePage() {
             >
               <Link href="/dashboard" className="inline-flex items-center gap-2">
                 <LayoutDashboard className="h-4 w-4" />
-                Dashboard
+                Area personale
               </Link>
             </Button>
           </div>
@@ -57,11 +57,11 @@ export default async function HomePage() {
           <h1 className="max-w-4xl font-serif text-4xl font-bold leading-tight text-barber-gold sm:text-5xl md:text-6xl">
             {isLoggedIn
               ? "Il tavolo ti aspetta. Riprendi da dove avevi lasciato."
-              : "Il meglio del digitale. La magia del tavolo reale."}
+              : "D&D dal vivo, come si deve."}
           </h1>
           <p className="max-w-2xl text-base text-barber-paper/85 sm:text-lg">
             {isLoggedIn
-              ? "Dalla dashboard gestisci campagne, sessioni e personaggi. Quando sei pronto, torna al tavolo dal vivo."
+              ? "Barber & Dragons è la nostra community di gioco dal vivo: qui trovi avventure, date e iscrizioni. Il resto succede al tavolo — mappe, miniature e dadi veri."
               : "Un'esperienza D&D dal vivo dove mappe 3D interattive, miniature fisiche e dadi veri si fondono in un'unica avventura. Tu vieni e giochi."}
           </p>
           <div className="flex flex-wrap gap-3">
@@ -84,7 +84,7 @@ export default async function HomePage() {
             </Button>
           </div>
           <div className="pt-1">
-            <CampaignMiniCarousel />
+            <CampaignMiniCarousel isLoggedIn={isLoggedIn} />
           </div>
         </div>
       </section>
@@ -95,7 +95,7 @@ export default async function HomePage() {
             Scegli il tuo tipo di avventura
           </h2>
           <p className="mx-auto mt-3 max-w-3xl text-center text-sm text-barber-paper/75 sm:text-base">
-            Offriamo tre modalita di gioco, dalla prima esperienza fino al percorso completo in un mondo condiviso.
+            Tre modi per sederti al nostro tavolo: dalla serata singola al percorso lungo in un mondo condiviso.
           </p>
           <div className="mt-8 grid gap-5 md:grid-cols-3">
             <article className="rounded-xl border border-barber-gold/25 bg-[#12101a] p-5">
@@ -125,7 +125,9 @@ export default async function HomePage() {
 
       <section className="border-b border-barber-gold/20 py-14 sm:py-16">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <h2 className="text-center font-serif text-2xl font-semibold text-barber-gold sm:text-3xl">Perche l&apos;esperienza e diversa</h2>
+          <h2 className="text-center font-serif text-2xl font-semibold text-barber-gold sm:text-3xl">
+            Perche giocare dal vivo con noi
+          </h2>
           <div className="mt-8 grid gap-5 md:grid-cols-3">
             <article className="rounded-xl border border-barber-gold/25 bg-[#12101a] p-5">
               <MapPinned className="h-7 w-7 text-barber-gold" />
@@ -189,12 +191,12 @@ export default async function HomePage() {
         <div className="mx-auto max-w-6xl px-4 text-center sm:px-6">
           <h2 className="font-serif text-2xl font-semibold text-barber-gold sm:text-3xl">
             {isLoggedIn
-              ? "Pronto per la prossima sessione?"
+              ? "Pronto per la prossima serata al tavolo?"
               : "Pronto a vivere D&D come non l'hai mai giocato?"}
           </h2>
           <p className="mx-auto mt-3 max-w-2xl text-sm text-barber-paper/75 sm:text-base">
             {isLoggedIn
-              ? "Apri la dashboard per vedere campagne, iscrizioni e calendario sessioni."
+              ? "Controlla date e iscrizioni, prepara il personaggio e vieni a giocare dal vivo con la Gilda."
               : "Entra nella community Barber & Dragons e trova il tuo prossimo tavolo dal vivo."}
           </p>
           <div className="mt-6">

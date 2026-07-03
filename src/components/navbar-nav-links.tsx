@@ -23,7 +23,7 @@ const PUBLIC_NAV_LINKS = [
   { href: "/contatti", label: "Contatti" },
 ] as const;
 
-const LOGGED_IN_NAV_LINK = { href: "/dashboard", label: "Dashboard" } as const;
+const LOGGED_IN_NAV_LINK = { href: "/dashboard", label: "Area personale" } as const;
 
 function isCampaignDetailPath(pathname: string | null): boolean {
   return Boolean(pathname?.match(/^\/campaigns\/[^/]+$/));
@@ -116,7 +116,7 @@ export function NavbarNavLinks() {
                     className="w-full bg-barber-gold text-barber-dark hover:bg-barber-gold/90"
                   >
                     <Link href="/dashboard" onClick={closeMenu}>
-                      Dashboard
+                      Area personale
                     </Link>
                   </Button>
                 ) : (

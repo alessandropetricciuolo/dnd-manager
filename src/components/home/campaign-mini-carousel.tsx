@@ -8,7 +8,7 @@ type PublicCampaignPreview = {
   image_url: string | null;
 };
 
-export async function CampaignMiniCarousel() {
+export async function CampaignMiniCarousel({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
   const supabase = createSupabaseAdminClient();
 
   const { data: campaigns, error } = await supabase
@@ -32,5 +32,5 @@ export async function CampaignMiniCarousel() {
 
   if (!list.length) return null;
 
-  return <CampaignMiniCarouselClient campaigns={list} />;
+  return <CampaignMiniCarouselClient campaigns={list} isLoggedIn={isLoggedIn} />;
 }
