@@ -1,12 +1,12 @@
 {
-  "updatedAt": "2026-07-02T16:23:29.513Z",
+  "updatedAt": "2026-07-03T05:41:44.792Z",
   "sourceProject": "Barber & Dragons",
   "targetProject": "gmflow.app",
   "sourceRepoPath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App",
   "targetRepoPath": "/Users/alessandropetricciuolo/Desktop/masto-platform",
   "branch": "main",
-  "lastCommit": "6fa90f272727bff3228ec7dabadf60274acd5721",
-  "commitRange": "e2bcbd3..6fa90f2",
+  "lastCommit": "1a4d59a9ff6f320135ef473026f213af2728d621",
+  "commitRange": "c983095..1a4d59a",
   "items": [
     {
       "id": "BD-GMFLOW-PKG-2026-06-28-001",
@@ -16300,6 +16300,2069 @@
       "statusCode": "M",
       "createdAt": "2026-07-02T16:23:29.513Z",
       "updatedAt": "2026-07-02T16:23:29.513Z"
+    },
+    {
+      "id": "BD-GMFLOW-c983095-001",
+      "title": "AI: ai-assistant-canvas.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/components/command-center/ai-assistant-canvas.tsx` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/components/command-center/ai-assistant-canvas.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/command-center/ai-assistant-canvas.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "c983095f01e0d52f8b2815e26ae073a3650c3af8",
+      "commitShort": "c983095",
+      "commitSubject": "feat(command-center): modifica mirata anteprima e miglioramenti wiki AI",
+      "statusCode": "M",
+      "createdAt": "2026-07-02T16:23:34.822Z",
+      "updatedAt": "2026-07-02T16:23:34.822Z"
+    },
+    {
+      "id": "BD-GMFLOW-c983095-002",
+      "title": "AI: ai-assistant-panel.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/components/command-center/ai-assistant-panel.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/command-center/ai-assistant-panel.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "c983095f01e0d52f8b2815e26ae073a3650c3af8",
+      "commitShort": "c983095",
+      "commitSubject": "feat(command-center): modifica mirata anteprima e miglioramenti wiki AI",
+      "statusCode": "M",
+      "createdAt": "2026-07-02T16:23:34.822Z",
+      "updatedAt": "2026-07-02T16:23:34.822Z"
+    },
+    {
+      "id": "BD-GMFLOW-c983095-003",
+      "title": "UI_UX: command-center-client.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/command-center/command-center-client.tsx` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/command-center/command-center-client.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/command-center/command-center-client.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "c983095f01e0d52f8b2815e26ae073a3650c3af8",
+      "commitShort": "c983095",
+      "commitSubject": "feat(command-center): modifica mirata anteprima e miglioramenti wiki AI",
+      "statusCode": "M",
+      "createdAt": "2026-07-02T16:23:34.822Z",
+      "updatedAt": "2026-07-02T16:23:34.822Z"
+    },
+    {
+      "id": "BD-GMFLOW-c983095-004",
+      "title": "UI_UX: preview-selectable-text.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/command-center/preview-selectable-text.tsx` aggiunto nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/command-center/preview-selectable-text.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/command-center/preview-selectable-text.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "c983095f01e0d52f8b2815e26ae073a3650c3af8",
+      "commitShort": "c983095",
+      "commitSubject": "feat(command-center): modifica mirata anteprima e miglioramenti wiki AI",
+      "statusCode": "A",
+      "createdAt": "2026-07-02T16:23:34.822Z",
+      "updatedAt": "2026-07-02T16:23:34.822Z"
+    },
+    {
+      "id": "BD-GMFLOW-c983095-005",
+      "title": "WIKI: wiki-text-chat.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "WIKI",
+      "priority": "Media",
+      "description": "File `src/lib/actions/wiki-text-chat.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.",
+      "bdFiles": [
+        "src/lib/actions/wiki-text-chat.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/actions/wiki-text-chat.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "c983095f01e0d52f8b2815e26ae073a3650c3af8",
+      "commitShort": "c983095",
+      "commitSubject": "feat(command-center): modifica mirata anteprima e miglioramenti wiki AI",
+      "statusCode": "M",
+      "createdAt": "2026-07-02T16:23:34.822Z",
+      "updatedAt": "2026-07-02T16:23:34.822Z"
+    },
+    {
+      "id": "BD-GMFLOW-c983095-006",
+      "title": "OTHER: action-catalog.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/modules/command-center/actions/action-catalog.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/actions/action-catalog.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/actions/action-catalog.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "c983095f01e0d52f8b2815e26ae073a3650c3af8",
+      "commitShort": "c983095",
+      "commitSubject": "feat(command-center): modifica mirata anteprima e miglioramenti wiki AI",
+      "statusCode": "M",
+      "createdAt": "2026-07-02T16:23:34.822Z",
+      "updatedAt": "2026-07-02T16:23:34.822Z"
+    },
+    {
+      "id": "BD-GMFLOW-c983095-007",
+      "title": "WIKI: wiki.actions.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "WIKI",
+      "priority": "Media",
+      "description": "File `src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.",
+      "bdFiles": [
+        "src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "c983095f01e0d52f8b2815e26ae073a3650c3af8",
+      "commitShort": "c983095",
+      "commitSubject": "feat(command-center): modifica mirata anteprima e miglioramenti wiki AI",
+      "statusCode": "M",
+      "createdAt": "2026-07-02T16:23:34.822Z",
+      "updatedAt": "2026-07-02T16:23:34.822Z"
+    },
+    {
+      "id": "BD-GMFLOW-c983095-008",
+      "title": "AI: preview-text-selection.test.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/__tests__/preview-text-selection.test.ts` aggiunto nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/preview-text-selection.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/preview-text-selection.test.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "c983095f01e0d52f8b2815e26ae073a3650c3af8",
+      "commitShort": "c983095",
+      "commitSubject": "feat(command-center): modifica mirata anteprima e miglioramenti wiki AI",
+      "statusCode": "A",
+      "createdAt": "2026-07-02T16:23:34.822Z",
+      "updatedAt": "2026-07-02T16:23:34.822Z"
+    },
+    {
+      "id": "BD-GMFLOW-c983095-009",
+      "title": "AI: wiki-request-detector.test.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "c983095f01e0d52f8b2815e26ae073a3650c3af8",
+      "commitShort": "c983095",
+      "commitSubject": "feat(command-center): modifica mirata anteprima e miglioramenti wiki AI",
+      "statusCode": "M",
+      "createdAt": "2026-07-02T16:23:34.822Z",
+      "updatedAt": "2026-07-02T16:23:34.822Z"
+    },
+    {
+      "id": "BD-GMFLOW-c983095-010",
+      "title": "AI: campaign-proposal-builder.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "c983095f01e0d52f8b2815e26ae073a3650c3af8",
+      "commitShort": "c983095",
+      "commitSubject": "feat(command-center): modifica mirata anteprima e miglioramenti wiki AI",
+      "statusCode": "M",
+      "createdAt": "2026-07-02T16:23:34.822Z",
+      "updatedAt": "2026-07-02T16:23:34.822Z"
+    },
+    {
+      "id": "BD-GMFLOW-c983095-011",
+      "title": "AI: character-proposal-builder.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/character-proposal-builder.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/character-proposal-builder.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/character-proposal-builder.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "c983095f01e0d52f8b2815e26ae073a3650c3af8",
+      "commitShort": "c983095",
+      "commitSubject": "feat(command-center): modifica mirata anteprima e miglioramenti wiki AI",
+      "statusCode": "M",
+      "createdAt": "2026-07-02T16:23:34.822Z",
+      "updatedAt": "2026-07-02T16:23:34.822Z"
+    },
+    {
+      "id": "BD-GMFLOW-c983095-012",
+      "title": "AI: chat-assistant.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/chat-assistant.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/chat-assistant.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "c983095f01e0d52f8b2815e26ae073a3650c3af8",
+      "commitShort": "c983095",
+      "commitSubject": "feat(command-center): modifica mirata anteprima e miglioramenti wiki AI",
+      "statusCode": "M",
+      "createdAt": "2026-07-02T16:23:34.822Z",
+      "updatedAt": "2026-07-02T16:23:34.822Z"
+    },
+    {
+      "id": "BD-GMFLOW-c983095-013",
+      "title": "AI: domain-fallback-interpreter.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "c983095f01e0d52f8b2815e26ae073a3650c3af8",
+      "commitShort": "c983095",
+      "commitSubject": "feat(command-center): modifica mirata anteprima e miglioramenti wiki AI",
+      "statusCode": "M",
+      "createdAt": "2026-07-02T16:23:34.822Z",
+      "updatedAt": "2026-07-02T16:23:34.822Z"
+    },
+    {
+      "id": "BD-GMFLOW-c983095-014",
+      "title": "AI: draft-assistant.types.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/draft-assistant.types.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/draft-assistant.types.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/draft-assistant.types.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "c983095f01e0d52f8b2815e26ae073a3650c3af8",
+      "commitShort": "c983095",
+      "commitSubject": "feat(command-center): modifica mirata anteprima e miglioramenti wiki AI",
+      "statusCode": "M",
+      "createdAt": "2026-07-02T16:23:34.822Z",
+      "updatedAt": "2026-07-02T16:23:34.822Z"
+    },
+    {
+      "id": "BD-GMFLOW-c983095-015",
+      "title": "AI: format-proposal-chat.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/format-proposal-chat.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/format-proposal-chat.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/format-proposal-chat.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "c983095f01e0d52f8b2815e26ae073a3650c3af8",
+      "commitShort": "c983095",
+      "commitSubject": "feat(command-center): modifica mirata anteprima e miglioramenti wiki AI",
+      "statusCode": "M",
+      "createdAt": "2026-07-02T16:23:34.822Z",
+      "updatedAt": "2026-07-02T16:23:34.822Z"
+    },
+    {
+      "id": "BD-GMFLOW-c983095-016",
+      "title": "AI: interpreter.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/interpreter.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/interpreter.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/interpreter.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "c983095f01e0d52f8b2815e26ae073a3650c3af8",
+      "commitShort": "c983095",
+      "commitSubject": "feat(command-center): modifica mirata anteprima e miglioramenti wiki AI",
+      "statusCode": "M",
+      "createdAt": "2026-07-02T16:23:34.822Z",
+      "updatedAt": "2026-07-02T16:23:34.822Z"
+    },
+    {
+      "id": "BD-GMFLOW-c983095-017",
+      "title": "AI: mission-proposal-builder.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/mission-proposal-builder.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/mission-proposal-builder.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/mission-proposal-builder.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "c983095f01e0d52f8b2815e26ae073a3650c3af8",
+      "commitShort": "c983095",
+      "commitSubject": "feat(command-center): modifica mirata anteprima e miglioramenti wiki AI",
+      "statusCode": "M",
+      "createdAt": "2026-07-02T16:23:34.822Z",
+      "updatedAt": "2026-07-02T16:23:34.822Z"
+    },
+    {
+      "id": "BD-GMFLOW-c983095-018",
+      "title": "AI: preview-text-selection.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/preview-text-selection.ts` aggiunto nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/preview-text-selection.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/preview-text-selection.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "c983095f01e0d52f8b2815e26ae073a3650c3af8",
+      "commitShort": "c983095",
+      "commitSubject": "feat(command-center): modifica mirata anteprima e miglioramenti wiki AI",
+      "statusCode": "A",
+      "createdAt": "2026-07-02T16:23:34.822Z",
+      "updatedAt": "2026-07-02T16:23:34.822Z"
+    },
+    {
+      "id": "BD-GMFLOW-c983095-019",
+      "title": "AI: session-close-proposal-builder.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/session-close-proposal-builder.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/session-close-proposal-builder.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/session-close-proposal-builder.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "c983095f01e0d52f8b2815e26ae073a3650c3af8",
+      "commitShort": "c983095",
+      "commitSubject": "feat(command-center): modifica mirata anteprima e miglioramenti wiki AI",
+      "statusCode": "M",
+      "createdAt": "2026-07-02T16:23:34.822Z",
+      "updatedAt": "2026-07-02T16:23:34.822Z"
+    },
+    {
+      "id": "BD-GMFLOW-c983095-020",
+      "title": "AI: wiki-proposal-builder.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "c983095f01e0d52f8b2815e26ae073a3650c3af8",
+      "commitShort": "c983095",
+      "commitSubject": "feat(command-center): modifica mirata anteprima e miglioramenti wiki AI",
+      "statusCode": "M",
+      "createdAt": "2026-07-02T16:23:34.822Z",
+      "updatedAt": "2026-07-02T16:23:34.822Z"
+    },
+    {
+      "id": "BD-GMFLOW-c983095-021",
+      "title": "AI: wiki-request-detector.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/wiki-request-detector.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-request-detector.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-request-detector.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "c983095f01e0d52f8b2815e26ae073a3650c3af8",
+      "commitShort": "c983095",
+      "commitSubject": "feat(command-center): modifica mirata anteprima e miglioramenti wiki AI",
+      "statusCode": "M",
+      "createdAt": "2026-07-02T16:23:34.822Z",
+      "updatedAt": "2026-07-02T16:23:34.822Z"
+    },
+    {
+      "id": "BD-GMFLOW-1a4d59a-001",
+      "title": "UI_UX: create-character-dialog.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/characters/create-character-dialog.tsx` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/characters/create-character-dialog.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/characters/create-character-dialog.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "1a4d59a9ff6f320135ef473026f213af2728d621",
+      "commitShort": "1a4d59a",
+      "commitSubject": "feat(ai): add contextual name generator across create dialogs and command center",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T05:41:44.792Z",
+      "updatedAt": "2026-07-03T05:41:44.792Z"
+    },
+    {
+      "id": "BD-GMFLOW-1a4d59a-002",
+      "title": "AI: ai-assistant-canvas.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/components/command-center/ai-assistant-canvas.tsx` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/components/command-center/ai-assistant-canvas.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/command-center/ai-assistant-canvas.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "1a4d59a9ff6f320135ef473026f213af2728d621",
+      "commitShort": "1a4d59a",
+      "commitSubject": "feat(ai): add contextual name generator across create dialogs and command center",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T05:41:44.792Z",
+      "updatedAt": "2026-07-03T05:41:44.792Z"
+    },
+    {
+      "id": "BD-GMFLOW-1a4d59a-003",
+      "title": "AI: ai-assistant-panel.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/components/command-center/ai-assistant-panel.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/command-center/ai-assistant-panel.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "1a4d59a9ff6f320135ef473026f213af2728d621",
+      "commitShort": "1a4d59a",
+      "commitSubject": "feat(ai): add contextual name generator across create dialogs and command center",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T05:41:44.792Z",
+      "updatedAt": "2026-07-03T05:41:44.792Z"
+    },
+    {
+      "id": "BD-GMFLOW-1a4d59a-004",
+      "title": "UI_UX: command-center-client.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/command-center/command-center-client.tsx` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/command-center/command-center-client.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/command-center/command-center-client.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "1a4d59a9ff6f320135ef473026f213af2728d621",
+      "commitShort": "1a4d59a",
+      "commitSubject": "feat(ai): add contextual name generator across create dialogs and command center",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T05:41:44.792Z",
+      "updatedAt": "2026-07-03T05:41:44.792Z"
+    },
+    {
+      "id": "BD-GMFLOW-1a4d59a-005",
+      "title": "UI_UX: preview-selectable-text.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/command-center/preview-selectable-text.tsx` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/command-center/preview-selectable-text.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/command-center/preview-selectable-text.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "1a4d59a9ff6f320135ef473026f213af2728d621",
+      "commitShort": "1a4d59a",
+      "commitSubject": "feat(ai): add contextual name generator across create dialogs and command center",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T05:41:44.792Z",
+      "updatedAt": "2026-07-03T05:41:44.792Z"
+    },
+    {
+      "id": "BD-GMFLOW-1a4d59a-006",
+      "title": "UI_UX: create-campaign-dialog.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/create-campaign-dialog.tsx` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/create-campaign-dialog.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/create-campaign-dialog.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "1a4d59a9ff6f320135ef473026f213af2728d621",
+      "commitShort": "1a4d59a",
+      "commitSubject": "feat(ai): add contextual name generator across create dialogs and command center",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T05:41:44.792Z",
+      "updatedAt": "2026-07-03T05:41:44.792Z"
+    },
+    {
+      "id": "BD-GMFLOW-1a4d59a-007",
+      "title": "UI_UX: mission-board.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/missions/mission-board.tsx` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/missions/mission-board.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/missions/mission-board.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "1a4d59a9ff6f320135ef473026f213af2728d621",
+      "commitShort": "1a4d59a",
+      "commitSubject": "feat(ai): add contextual name generator across create dialogs and command center",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T05:41:44.792Z",
+      "updatedAt": "2026-07-03T05:41:44.792Z"
+    },
+    {
+      "id": "BD-GMFLOW-1a4d59a-008",
+      "title": "AI: name-generator-field.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/components/name-generator/name-generator-field.tsx` aggiunto nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/components/name-generator/name-generator-field.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/name-generator/name-generator-field.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "1a4d59a9ff6f320135ef473026f213af2728d621",
+      "commitShort": "1a4d59a",
+      "commitSubject": "feat(ai): add contextual name generator across create dialogs and command center",
+      "statusCode": "A",
+      "createdAt": "2026-07-03T05:41:44.792Z",
+      "updatedAt": "2026-07-03T05:41:44.792Z"
+    },
+    {
+      "id": "BD-GMFLOW-1a4d59a-009",
+      "title": "UI_UX: scene-editor-client.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/scene-editor/scene-editor-client.tsx` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/scene-editor/scene-editor-client.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/scene-editor/scene-editor-client.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "1a4d59a9ff6f320135ef473026f213af2728d621",
+      "commitShort": "1a4d59a",
+      "commitSubject": "feat(ai): add contextual name generator across create dialogs and command center",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T05:41:44.792Z",
+      "updatedAt": "2026-07-03T05:41:44.792Z"
+    },
+    {
+      "id": "BD-GMFLOW-1a4d59a-010",
+      "title": "WIKI: create-entity-dialog.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "WIKI",
+      "priority": "Media",
+      "description": "File `src/components/wiki/create-entity-dialog.tsx` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.",
+      "bdFiles": [
+        "src/components/wiki/create-entity-dialog.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/wiki/create-entity-dialog.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "1a4d59a9ff6f320135ef473026f213af2728d621",
+      "commitShort": "1a4d59a",
+      "commitSubject": "feat(ai): add contextual name generator across create dialogs and command center",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T05:41:44.792Z",
+      "updatedAt": "2026-07-03T05:41:44.792Z"
+    },
+    {
+      "id": "BD-GMFLOW-1a4d59a-011",
+      "title": "AI: name-generator-actions.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/lib/actions/name-generator-actions.ts` aggiunto nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/lib/actions/name-generator-actions.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/actions/name-generator-actions.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "1a4d59a9ff6f320135ef473026f213af2728d621",
+      "commitShort": "1a4d59a",
+      "commitSubject": "feat(ai): add contextual name generator across create dialogs and command center",
+      "statusCode": "A",
+      "createdAt": "2026-07-03T05:41:44.792Z",
+      "updatedAt": "2026-07-03T05:41:44.792Z"
+    },
+    {
+      "id": "BD-GMFLOW-1a4d59a-012",
+      "title": "WIKI: wiki-text-chat.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "WIKI",
+      "priority": "Media",
+      "description": "File `src/lib/actions/wiki-text-chat.ts` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.",
+      "bdFiles": [
+        "src/lib/actions/wiki-text-chat.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/actions/wiki-text-chat.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "1a4d59a9ff6f320135ef473026f213af2728d621",
+      "commitShort": "1a4d59a",
+      "commitSubject": "feat(ai): add contextual name generator across create dialogs and command center",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T05:41:44.792Z",
+      "updatedAt": "2026-07-03T05:41:44.792Z"
+    },
+    {
+      "id": "BD-GMFLOW-1a4d59a-013",
+      "title": "AI: campaign-text-generator.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/lib/ai/campaign-text-generator.ts` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/lib/ai/campaign-text-generator.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/ai/campaign-text-generator.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "1a4d59a9ff6f320135ef473026f213af2728d621",
+      "commitShort": "1a4d59a",
+      "commitSubject": "feat(ai): add contextual name generator across create dialogs and command center",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T05:41:44.792Z",
+      "updatedAt": "2026-07-03T05:41:44.792Z"
+    },
+    {
+      "id": "BD-GMFLOW-1a4d59a-014",
+      "title": "AI: character-text-generator.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/lib/ai/character-text-generator.ts` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/lib/ai/character-text-generator.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/ai/character-text-generator.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "1a4d59a9ff6f320135ef473026f213af2728d621",
+      "commitShort": "1a4d59a",
+      "commitSubject": "feat(ai): add contextual name generator across create dialogs and command center",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T05:41:44.792Z",
+      "updatedAt": "2026-07-03T05:41:44.792Z"
+    },
+    {
+      "id": "BD-GMFLOW-1a4d59a-015",
+      "title": "AI: contextual-names.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/lib/ai/contextual-names.ts` aggiunto nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/lib/ai/contextual-names.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/ai/contextual-names.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "1a4d59a9ff6f320135ef473026f213af2728d621",
+      "commitShort": "1a4d59a",
+      "commitSubject": "feat(ai): add contextual name generator across create dialogs and command center",
+      "statusCode": "A",
+      "createdAt": "2026-07-03T05:41:44.792Z",
+      "updatedAt": "2026-07-03T05:41:44.792Z"
+    },
+    {
+      "id": "BD-GMFLOW-1a4d59a-016",
+      "title": "AI: mission-text-generator.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/lib/ai/mission-text-generator.ts` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/lib/ai/mission-text-generator.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/ai/mission-text-generator.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "1a4d59a9ff6f320135ef473026f213af2728d621",
+      "commitShort": "1a4d59a",
+      "commitSubject": "feat(ai): add contextual name generator across create dialogs and command center",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T05:41:44.792Z",
+      "updatedAt": "2026-07-03T05:41:44.792Z"
+    },
+    {
+      "id": "BD-GMFLOW-1a4d59a-017",
+      "title": "AI: wiki-text-generator.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/lib/ai/wiki-text-generator.ts` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/lib/ai/wiki-text-generator.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/ai/wiki-text-generator.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "1a4d59a9ff6f320135ef473026f213af2728d621",
+      "commitShort": "1a4d59a",
+      "commitSubject": "feat(ai): add contextual name generator across create dialogs and command center",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T05:41:44.792Z",
+      "updatedAt": "2026-07-03T05:41:44.792Z"
+    },
+    {
+      "id": "BD-GMFLOW-1a4d59a-018",
+      "title": "AI: local-names.test.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/lib/name-generator/__tests__/local-names.test.ts` aggiunto nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/lib/name-generator/__tests__/local-names.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/name-generator/__tests__/local-names.test.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "1a4d59a9ff6f320135ef473026f213af2728d621",
+      "commitShort": "1a4d59a",
+      "commitSubject": "feat(ai): add contextual name generator across create dialogs and command center",
+      "statusCode": "A",
+      "createdAt": "2026-07-03T05:41:44.792Z",
+      "updatedAt": "2026-07-03T05:41:44.792Z"
+    },
+    {
+      "id": "BD-GMFLOW-1a4d59a-019",
+      "title": "AI: local-names.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/lib/name-generator/local-names.ts` aggiunto nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/lib/name-generator/local-names.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/name-generator/local-names.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "1a4d59a9ff6f320135ef473026f213af2728d621",
+      "commitShort": "1a4d59a",
+      "commitSubject": "feat(ai): add contextual name generator across create dialogs and command center",
+      "statusCode": "A",
+      "createdAt": "2026-07-03T05:41:44.792Z",
+      "updatedAt": "2026-07-03T05:41:44.792Z"
+    },
+    {
+      "id": "BD-GMFLOW-1a4d59a-020",
+      "title": "AI: types.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/lib/name-generator/types.ts` aggiunto nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/lib/name-generator/types.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/name-generator/types.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "1a4d59a9ff6f320135ef473026f213af2728d621",
+      "commitShort": "1a4d59a",
+      "commitSubject": "feat(ai): add contextual name generator across create dialogs and command center",
+      "statusCode": "A",
+      "createdAt": "2026-07-03T05:41:44.792Z",
+      "updatedAt": "2026-07-03T05:41:44.792Z"
+    },
+    {
+      "id": "BD-GMFLOW-1a4d59a-021",
+      "title": "AI: contextual-names.test.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/__tests__/contextual-names.test.ts` aggiunto nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/contextual-names.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/contextual-names.test.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "1a4d59a9ff6f320135ef473026f213af2728d621",
+      "commitShort": "1a4d59a",
+      "commitSubject": "feat(ai): add contextual name generator across create dialogs and command center",
+      "statusCode": "A",
+      "createdAt": "2026-07-03T05:41:44.792Z",
+      "updatedAt": "2026-07-03T05:41:44.792Z"
+    },
+    {
+      "id": "BD-GMFLOW-1a4d59a-022",
+      "title": "AI: conversation-intent.test.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "1a4d59a9ff6f320135ef473026f213af2728d621",
+      "commitShort": "1a4d59a",
+      "commitSubject": "feat(ai): add contextual name generator across create dialogs and command center",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T05:41:44.792Z",
+      "updatedAt": "2026-07-03T05:41:44.792Z"
+    },
+    {
+      "id": "BD-GMFLOW-1a4d59a-023",
+      "title": "AI: proposal-input.test.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/__tests__/proposal-input.test.ts` aggiunto nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/proposal-input.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/proposal-input.test.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "1a4d59a9ff6f320135ef473026f213af2728d621",
+      "commitShort": "1a4d59a",
+      "commitSubject": "feat(ai): add contextual name generator across create dialogs and command center",
+      "statusCode": "A",
+      "createdAt": "2026-07-03T05:41:44.792Z",
+      "updatedAt": "2026-07-03T05:41:44.792Z"
+    },
+    {
+      "id": "BD-GMFLOW-1a4d59a-024",
+      "title": "AI: campaign-proposal-builder.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "1a4d59a9ff6f320135ef473026f213af2728d621",
+      "commitShort": "1a4d59a",
+      "commitSubject": "feat(ai): add contextual name generator across create dialogs and command center",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T05:41:44.792Z",
+      "updatedAt": "2026-07-03T05:41:44.792Z"
+    },
+    {
+      "id": "BD-GMFLOW-1a4d59a-025",
+      "title": "AI: character-proposal-builder.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/character-proposal-builder.ts` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/character-proposal-builder.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/character-proposal-builder.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "1a4d59a9ff6f320135ef473026f213af2728d621",
+      "commitShort": "1a4d59a",
+      "commitSubject": "feat(ai): add contextual name generator across create dialogs and command center",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T05:41:44.792Z",
+      "updatedAt": "2026-07-03T05:41:44.792Z"
+    },
+    {
+      "id": "BD-GMFLOW-1a4d59a-026",
+      "title": "AI: chat-assistant.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/chat-assistant.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/chat-assistant.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "1a4d59a9ff6f320135ef473026f213af2728d621",
+      "commitShort": "1a4d59a",
+      "commitSubject": "feat(ai): add contextual name generator across create dialogs and command center",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T05:41:44.792Z",
+      "updatedAt": "2026-07-03T05:41:44.792Z"
+    },
+    {
+      "id": "BD-GMFLOW-1a4d59a-027",
+      "title": "AI: conversation-intent.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/conversation-intent.ts` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/conversation-intent.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/conversation-intent.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "1a4d59a9ff6f320135ef473026f213af2728d621",
+      "commitShort": "1a4d59a",
+      "commitSubject": "feat(ai): add contextual name generator across create dialogs and command center",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T05:41:44.792Z",
+      "updatedAt": "2026-07-03T05:41:44.792Z"
+    },
+    {
+      "id": "BD-GMFLOW-1a4d59a-028",
+      "title": "AI: domain-fallback-interpreter.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "1a4d59a9ff6f320135ef473026f213af2728d621",
+      "commitShort": "1a4d59a",
+      "commitSubject": "feat(ai): add contextual name generator across create dialogs and command center",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T05:41:44.792Z",
+      "updatedAt": "2026-07-03T05:41:44.792Z"
+    },
+    {
+      "id": "BD-GMFLOW-1a4d59a-029",
+      "title": "AI: proposal-input.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/proposal-input.ts` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/proposal-input.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/proposal-input.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "1a4d59a9ff6f320135ef473026f213af2728d621",
+      "commitShort": "1a4d59a",
+      "commitSubject": "feat(ai): add contextual name generator across create dialogs and command center",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T05:41:44.792Z",
+      "updatedAt": "2026-07-03T05:41:44.792Z"
+    },
+    {
+      "id": "BD-GMFLOW-1a4d59a-030",
+      "title": "AI: wiki-proposal-builder.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "1a4d59a9ff6f320135ef473026f213af2728d621",
+      "commitShort": "1a4d59a",
+      "commitSubject": "feat(ai): add contextual name generator across create dialogs and command center",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T05:41:44.792Z",
+      "updatedAt": "2026-07-03T05:41:44.792Z"
     }
   ]
 }
