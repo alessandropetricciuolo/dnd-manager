@@ -164,7 +164,7 @@ export function mergeManualAndTextRelations(
   return [...byKey.values()];
 }
 
-/** Raccoglie testo narrativo da body + attributi tipici. */
+/** Raccoglie testo narrativo pubblico da body + attributi non riservati. */
 export function collectNarrativeTexts(
   content: string,
   attributes: Record<string, unknown>
@@ -172,7 +172,7 @@ export function collectNarrativeTexts(
   const parts: string[] = [];
   if (content.trim()) parts.push(content);
 
-  const keys = ["gm_notes", "relationships", "summary", "description", "history", "backstory"];
+  const keys = ["summary", "description", "history", "backstory"];
   for (const key of keys) {
     const v = attributes[key];
     if (typeof v === "string" && v.trim()) parts.push(v);
