@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -52,6 +52,7 @@ import {
   listWikiEntitiesForCommandCenterAction,
 } from "@/modules/command-center/server/actions";
 import { COMMAND_LINK_ENTITY_LABELS_IT } from "@/modules/command-center/types/entities";
+import { createDebouncedSerialSaver } from "@/modules/command-center/utils/debounced-serial-save";
 import { AuditTimeline } from "@/components/command-center/audit-timeline";
 import { AiAssistantPanel } from "@/components/command-center/ai-assistant-panel";
 import {
@@ -133,6 +134,117 @@ export function CommandCenterClient({
 
   const selectedNote = notes.find((n) => n.id === selectedNoteId) ?? null;
   const selectedPage = pages.find((p) => p.id === selectedPageId) ?? null;
+
+  const noteFieldSaversRef = useRef<{
+    noteId: string;
+    title: ReturnType<typeof createDebouncedSerialSaver<string>>;
+    content: ReturnType<typeof createDebouncedSerialSaver<string>>;
+  } | null>(null);
+
+  const pageFieldSaversRef = useRef<{
+    pageId: string;
+    title: ReturnType<typeof createDebouncedSerialSaver<string>>;
+    contentMarkdown: ReturnType<typeof createDebouncedSerialSaver<string>>;
+  } | null>(null);
+
+  function ensureNoteFieldSavers(noteId: string) {
+    if (noteFieldSaversRef.current?.noteId === noteId) return noteFieldSaversRef.current;
+
+    noteFieldSaversRef.current = {
+      noteId,
+      title: createDebouncedSerialSaver({
+        delayMs: 400,
+        save: async (value) => {
+          const res = await updateCommandNoteAction(noteId, { title: value });
+          return res.success ? { success: true } : { success: false, error: res.error };
+        },
+        onError: (message) => toast.error(message),
+      }),
+      content: createDebouncedSerialSaver({
+        delayMs: 400,
+        save: async (value) => {
+          const res = await updateCommandNoteAction(noteId, { content: value });
+          return res.success ? { success: true } : { success: false, error: res.error };
+        },
+        onError: (message) => toast.error(message),
+      }),
+    };
+    return noteFieldSaversRef.current;
+  }
+
+  function ensurePageFieldSavers(pageId: string) {
+    if (pageFieldSaversRef.current?.pageId === pageId) return pageFieldSaversRef.current;
+
+    pageFieldSaversRef.current = {
+      pageId,
+      title: createDebouncedSerialSaver({
+        delayMs: 400,
+        save: async (value) => {
+          const res = await updateWorkspacePageAction(pageId, { title: value });
+          return res.success ? { success: true } : { success: false, error: res.error };
+        },
+        onError: (message) => toast.error(message),
+      }),
+      contentMarkdown: createDebouncedSerialSaver({
+        delayMs: 400,
+        save: async (value) => {
+          const res = await updateWorkspacePageAction(pageId, { contentMarkdown: value });
+          return res.success ? { success: true } : { success: false, error: res.error };
+        },
+        onError: (message) => toast.error(message),
+      }),
+    };
+    return pageFieldSaversRef.current;
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void (async () => {
+      if (
+        noteFieldSaversRef.current &&
+        noteFieldSaversRef.current.noteId !== selectedNoteId
+      ) {
+        await noteFieldSaversRef.current.title.flush();
+        await noteFieldSaversRef.current.content.flush();
+      }
+      if (cancelled || !selectedNoteId) return;
+      ensureNoteFieldSavers(selectedNoteId);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedNoteId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void (async () => {
+      if (
+        pageFieldSaversRef.current &&
+        pageFieldSaversRef.current.pageId !== selectedPageId
+      ) {
+        await pageFieldSaversRef.current.title.flush();
+        await pageFieldSaversRef.current.contentMarkdown.flush();
+      }
+      if (cancelled || !selectedPageId) return;
+      ensurePageFieldSavers(selectedPageId);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedPageId]);
+
+  useEffect(() => {
+    return () => {
+      void noteFieldSaversRef.current?.title.flush();
+      void noteFieldSaversRef.current?.content.flush();
+      void pageFieldSaversRef.current?.title.flush();
+      void pageFieldSaversRef.current?.contentMarkdown.flush();
+    };
+  }, []);
 
   const setCampaignInUrl = useCallback(
     (campaignId: string | "all") => {
@@ -236,16 +348,22 @@ export function CommandCenterClient({
     });
   }
 
-  function handleNoteFieldChange(field: "title" | "content" | "status", value: string) {
-    if (!selectedNote) return;
+  function handleNoteTextChange(field: "title" | "content", value: string) {
+    if (!selectedNoteId) return;
+    setNotes((prev) =>
+      prev.map((n) => (n.id === selectedNoteId ? { ...n, [field]: value } : n))
+    );
+    const savers = ensureNoteFieldSavers(selectedNoteId);
+    savers[field].schedule(value);
+  }
+
+  function handleNoteStatusChange(value: CommandNoteStatus) {
+    if (!selectedNoteId) return;
+    setNotes((prev) =>
+      prev.map((n) => (n.id === selectedNoteId ? { ...n, status: value } : n))
+    );
     startTransition(async () => {
-      const patch =
-        field === "title"
-          ? { title: value }
-          : field === "content"
-            ? { content: value }
-            : { status: value as CommandNoteStatus };
-      const res = await updateCommandNoteAction(selectedNote.id, patch);
+      const res = await updateCommandNoteAction(selectedNoteId, { status: value });
       if (!res.success) {
         toast.error(res.error);
         return;
@@ -341,19 +459,19 @@ export function CommandCenterClient({
     });
   }
 
-  function handlePageSave(field: "title" | "contentMarkdown", value: string) {
-    if (!selectedPage) return;
-    startTransition(async () => {
-      const patch = field === "title" ? { title: value } : { contentMarkdown: value };
-      const res = await updateWorkspacePageAction(selectedPage.id, patch);
-      if (!res.success) {
-        toast.error(res.error);
-        return;
-      }
-      if (res.data) {
-        setPages((prev) => prev.map((p) => (p.id === res.data!.id ? res.data! : p)));
-      }
-    });
+  function handlePageTextChange(field: "title" | "contentMarkdown", value: string) {
+    if (!selectedPageId) return;
+    setPages((prev) =>
+      prev.map((p) =>
+        p.id === selectedPageId
+          ? field === "title"
+            ? { ...p, title: value }
+            : { ...p, content_markdown: value }
+          : p
+      )
+    );
+    const savers = ensurePageFieldSavers(selectedPageId);
+    savers[field].schedule(value);
   }
 
   function handleDeleteTask(taskId: string, title: string) {
@@ -659,12 +777,12 @@ export function CommandCenterClient({
             <div className="mx-auto max-w-2xl space-y-4">
               <Input
                 value={selectedNote.title}
-                onChange={(e) => handleNoteFieldChange("title", e.target.value)}
+                onChange={(e) => handleNoteTextChange("title", e.target.value)}
                 className="border-barber-gold/30 bg-barber-dark/80 font-serif text-lg"
               />
               <Select
                 value={selectedNote.status}
-                onValueChange={(v) => handleNoteFieldChange("status", v)}
+                onValueChange={(v) => handleNoteStatusChange(v as CommandNoteStatus)}
               >
                 <SelectTrigger className="w-[180px] border-barber-gold/30">
                   <SelectValue />
@@ -679,7 +797,7 @@ export function CommandCenterClient({
               </Select>
               <Textarea
                 value={selectedNote.content}
-                onChange={(e) => handleNoteFieldChange("content", e.target.value)}
+                onChange={(e) => handleNoteTextChange("content", e.target.value)}
                 rows={12}
                 className="border-barber-gold/30 bg-barber-dark/80 font-mono text-sm"
               />
@@ -700,7 +818,7 @@ export function CommandCenterClient({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleNoteFieldChange("status", "archived")}
+                  onClick={() => handleNoteStatusChange("archived")}
                 >
                   <Archive className="mr-1 h-3.5 w-3.5" />
                   Archivia
@@ -712,7 +830,7 @@ export function CommandCenterClient({
               <div className="flex items-center justify-between gap-2">
                 <Input
                   value={selectedPage.title}
-                  onChange={(e) => handlePageSave("title", e.target.value)}
+                  onChange={(e) => handlePageTextChange("title", e.target.value)}
                   className="border-barber-gold/30 bg-barber-dark/80 font-serif text-lg"
                 />
                 <Button
@@ -729,7 +847,7 @@ export function CommandCenterClient({
               </div>
               <Textarea
                 value={selectedPage.content_markdown}
-                onChange={(e) => handlePageSave("contentMarkdown", e.target.value)}
+                onChange={(e) => handlePageTextChange("contentMarkdown", e.target.value)}
                 rows={16}
                 placeholder="Markdown…"
                 className="border-barber-gold/30 bg-barber-dark/80 font-mono text-sm"
