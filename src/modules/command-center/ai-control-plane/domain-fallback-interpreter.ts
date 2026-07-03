@@ -7,6 +7,12 @@ import { detectSessionCreateRequest } from "./session-request-detector";
 import { detectSessionCloseRequest } from "./session-close-request-detector";
 import { detectWikiCreateRequest, hasNpcMechanicsParams, resolveWikiVisibilityForAssistant } from "./wiki-request-detector";
 import type { WikiMarkdownExtraParams } from "@/lib/ai/wiki-text-generator";
+import {
+  isPlaceholderCampaignTitle,
+  isPlaceholderCharacterName,
+  isPlaceholderMissionTitle,
+  isPlaceholderWikiTitle,
+} from "@/lib/ai/contextual-names";
 
 export type DomainFallbackResult = {
   interpreted: AiInterpreterResult;
@@ -34,13 +40,18 @@ export function applyDomainFallbackInterpreter(
     const narrativeOnly =
       wikiDetected.entityType === "npc" && !hasNpcMechanicsParams(wikiDetected.extraParams);
     const visibility = resolveWikiVisibilityForAssistant(combinedContext, wikiDetected.userPrompt);
+    const wikiLabel = isPlaceholderWikiTitle(wikiDetected.title)
+      ? `un ${wikiDetected.entityType} per la campagna`
+      : `**${wikiDetected.title}**`;
     return {
       detectedExtraParams: wikiDetected.extraParams,
       interpreted: {
         reply: narrativeOnly
-          ? `Preparo il profilo narrativo di **${wikiDetected.title}** (visibilità: ${visibility === "public" ? "pubblica" : visibility === "selective" ? "selettiva" : "solo GM"}). Senza livello non genero lo statblock: puoi aggiungerlo in chat (es. «livello 5») e chiedere modifiche.`
-          : `Preparo una voce wiki per **${wikiDetected.title}** (visibilità: ${visibility === "public" ? "pubblica" : visibility === "selective" ? "selettiva" : "solo GM"}).`,
-        intent_summary: `Creare ${wikiDetected.entityType}: ${wikiDetected.title}`,
+          ? `Preparo il profilo narrativo di ${wikiLabel} (visibilità: ${visibility === "public" ? "pubblica" : visibility === "selective" ? "selettiva" : "solo GM"}). Senza livello non genero lo statblock: puoi aggiungerlo in chat (es. «livello 5») e chiedere modifiche.`
+          : `Preparo una voce wiki per ${wikiLabel} (visibilità: ${visibility === "public" ? "pubblica" : visibility === "selective" ? "selettiva" : "solo GM"}).`,
+        intent_summary: isPlaceholderWikiTitle(wikiDetected.title)
+          ? `Creare ${wikiDetected.entityType}`
+          : `Creare ${wikiDetected.entityType}: ${wikiDetected.title}`,
         proposals: [
           {
             action_name: "wiki.entity.create",
@@ -60,10 +71,15 @@ export function applyDomainFallbackInterpreter(
 
   const missionDetected = campaignId ? detectMissionCreateRequest(combinedContext) : null;
   if (missionDetected) {
+    const missionLabel = isPlaceholderMissionTitle(missionDetected.title)
+      ? `una missione (grado ${missionDetected.grade})`
+      : `la missione **${missionDetected.title}** (grado ${missionDetected.grade})`;
     return {
       interpreted: {
-        reply: `Preparo la missione **${missionDetected.title}** (grado ${missionDetected.grade}) per la bacheca gilda.`,
-        intent_summary: `Creare missione: ${missionDetected.title}`,
+        reply: `Preparo ${missionLabel} per la bacheca gilda.`,
+        intent_summary: isPlaceholderMissionTitle(missionDetected.title)
+          ? `Creare missione grado ${missionDetected.grade}`
+          : `Creare missione: ${missionDetected.title}`,
         proposals: [
           {
             action_name: "mission.create",
@@ -155,10 +171,15 @@ export function applyDomainFallbackInterpreter(
 
   const characterDetected = campaignId ? detectCharacterCreateRequest(combinedContext) : null;
   if (characterDetected) {
+    const pgLabel = isPlaceholderCharacterName(characterDetected.name)
+      ? "un personaggio giocatore"
+      : `il personaggio giocatore **${characterDetected.name}**`;
     return {
       interpreted: {
-        reply: `Preparo il personaggio giocatore **${characterDetected.name}**${characterDetected.characterClass ? ` (${characterDetected.characterClass})` : ""}.`,
-        intent_summary: `Creare PG: ${characterDetected.name}`,
+        reply: `Preparo ${pgLabel}${characterDetected.characterClass ? ` (${characterDetected.characterClass})` : ""}.`,
+        intent_summary: isPlaceholderCharacterName(characterDetected.name)
+          ? "Creare PG"
+          : `Creare PG: ${characterDetected.name}`,
         proposals: [
           {
             action_name: "character.create",
@@ -180,10 +201,15 @@ export function applyDomainFallbackInterpreter(
 
   const campaignDetected = detectCampaignCreateRequest(combinedContext);
   if (campaignDetected) {
+    const campaignLabel = isPlaceholderCampaignTitle(campaignDetected.title)
+      ? `una campagna (${campaignDetected.type})`
+      : `la campagna **${campaignDetected.title}** (${campaignDetected.type})`;
     return {
       interpreted: {
-        reply: `Preparo la campagna **${campaignDetected.title}** (${campaignDetected.type}).`,
-        intent_summary: `Creare campagna: ${campaignDetected.title}`,
+        reply: `Preparo ${campaignLabel}.`,
+        intent_summary: isPlaceholderCampaignTitle(campaignDetected.title)
+          ? `Creare campagna ${campaignDetected.type}`
+          : `Creare campagna: ${campaignDetected.title}`,
         proposals: [
           {
             action_name: "campaign.create",

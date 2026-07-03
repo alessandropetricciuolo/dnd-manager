@@ -35,7 +35,7 @@ export type WikiMarkdownChatDraft = {
 };
 
 export type WikiMarkdownChatResult =
-  | { success: true; draft: WikiMarkdownChatDraft; assistantMessage: string }
+  | { success: true; draft: WikiMarkdownChatDraft; assistantMessage: string; resolvedTitle?: string }
   | { success: false; message: string };
 
 async function assertGmAuth(): Promise<{ ok: true } | { ok: false; message: string }> {
@@ -211,6 +211,7 @@ export async function chatWikiMarkdownTextAction(
         success: true,
         draft,
         assistantMessage: formatMarkdownDraftForChat(draft.description, draft.statblock),
+        resolvedTitle: result.generatedTitle,
       };
     }
 

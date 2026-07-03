@@ -36,6 +36,8 @@ import {
   type PreviewTextSelection,
 } from "./preview-text-selection";
 import { applyDomainFallbackInterpreter } from "./domain-fallback-interpreter";
+import { preparePendingInputForExecute } from "./proposal-input";
+import { mergeCharacterInputFromSheet } from "./character-proposal-shared";
 import type { AiInterpreterResult } from "../types/ai-proposal";
 
 export type ChatPendingProposal = ChatPendingProposalPayload;
@@ -96,7 +98,8 @@ async function executePendingProposal(
   pending: ChatPendingProposal,
   campaignId: string | null
 ): Promise<{ success: true; data?: unknown } | { success: false; error: string }> {
-  const result = await executeAction(pending.action_name, pending.input, {
+  const input = preparePendingInputForExecute(pending, campaignId);
+  const result = await executeAction(pending.action_name, input, {
     actorType: "user",
     auditMetadata: {
       source: "ai_chat_confirm",
@@ -104,14 +107,52 @@ async function executePendingProposal(
     },
   });
 
+  const resolvedCampaignId =
+    typeof input.campaignId === "string" && input.campaignId.trim()
+      ? input.campaignId.trim()
+      : campaignId?.trim() || null;
+
   revalidatePath("/command-center");
   revalidatePath("/dashboard");
-  if (campaignId) revalidatePath(`/campaigns/${campaignId}`);
+  if (resolvedCampaignId) revalidatePath(`/campaigns/${resolvedCampaignId}`);
 
   if (!result.success) {
     return { success: false, error: result.error };
   }
   return { success: true, data: result.data };
+}
+
+async function executeCharacterCreate(
+  pending: ChatPendingProposal,
+  campaignId: string | null,
+  overrides?: { input?: Record<string, unknown> }
+): Promise<{ success: true; data?: unknown } | { success: false; error: string }> {
+  const baseInput = overrides?.input ?? preparePendingInputForExecute(pending, campaignId);
+  const prepared =
+    pending.characterMeta?.generatedSheet &&
+    typeof baseInput.campaignId === "string" &&
+    baseInput.campaignId.trim()
+      ? mergeCharacterInputFromSheet(
+          baseInput,
+          baseInput.campaignId.trim(),
+          pending.characterMeta.generatedSheet
+        )
+      : baseInput;
+
+  if (!hasCharacterGeneratedSheet({ ...pending, input: prepared })) {
+    return {
+      success: false,
+      error: "Collega una scheda PDF dal generatore prima di creare il personaggio.",
+    };
+  }
+
+  const campaignKey =
+    typeof prepared.campaignId === "string" ? prepared.campaignId.trim() : campaignId?.trim() || "";
+  if (!campaignKey) {
+    return { success: false, error: "Seleziona una campagna nel filtro prima di salvare il personaggio." };
+  }
+
+  return executePendingProposal({ ...pending, input: prepared }, campaignKey);
 }
 
 async function finalizeCampaignCreation(
@@ -394,7 +435,7 @@ export async function runAiChatAssistant(
   }
 
   if (intent === "image_no" && pending?.phase === "awaiting_avatar" && pending.action_name === "character.create") {
-    const exec = await executePendingProposal(pending, campaignId);
+    const exec = await executeCharacterCreate(pending, campaignId);
     if (!exec.success) {
       return {
         success: true,
@@ -444,7 +485,7 @@ export async function runAiChatAssistant(
       preview_payload: { ...pending.preview_payload, imageUrl: imageResult.imageUrl },
     };
 
-    const exec = await executePendingProposal(withImage, campaignId);
+    const exec = await executeCharacterCreate(withImage, campaignId, { input: withImage.input });
     if (!exec.success) {
       return {
         success: true,
@@ -660,20 +701,7 @@ export async function runAiChatAssistant(
         };
       }
 
-      if (!hasManualAvatar) {
-        return {
-          success: true,
-          data: {
-            reply: chatHintForProposal("awaiting_avatar"),
-            intentSummary: "In attesa ritratto o conferma senza avatar",
-            pendingProposal: pending,
-            executed: false,
-            clearedPending: false,
-          },
-        };
-      }
-
-      const exec = await executePendingProposal(pending, campaignId);
+      const exec = await executeCharacterCreate(pending, campaignId);
       if (!exec.success) {
         return {
           success: true,
@@ -690,8 +718,10 @@ export async function runAiChatAssistant(
       return {
         success: true,
         data: {
-          reply: `Personaggio **${pickCharacterName(pending.input)}** creato con scheda PDF e ritratto.`,
-          intentSummary: "PG creato",
+          reply: hasManualAvatar
+            ? `Personaggio **${pickCharacterName(pending.input)}** creato con scheda PDF e ritratto.`
+            : `Personaggio **${pickCharacterName(pending.input)}** creato con scheda PDF.`,
+          intentSummary: hasManualAvatar ? "PG creato con ritratto" : "PG creato",
           pendingProposal: null,
           executed: true,
           clearedPending: true,

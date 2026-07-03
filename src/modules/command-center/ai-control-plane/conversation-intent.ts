@@ -30,10 +30,18 @@ export function detectConversationIntent(
   const trimmed = message.trim();
   if (!hasPending) return "new";
 
-  if (phase === "awaiting_image" || phase === "awaiting_avatar") {
+  if (phase === "awaiting_image") {
     if (IMAGE_YES_RE.test(trimmed)) return "image_yes";
     if (IMAGE_NO_RE.test(trimmed)) return "image_no";
     if (REJECT_RE.test(trimmed)) return "reject";
+    return "refine";
+  }
+
+  if (phase === "awaiting_avatar") {
+    if (IMAGE_YES_RE.test(trimmed)) return "image_yes";
+    if (IMAGE_NO_RE.test(trimmed)) return "image_no";
+    if (REJECT_RE.test(trimmed)) return "reject";
+    if (CONFIRM_RE.test(trimmed)) return "confirm";
     return "refine";
   }
 

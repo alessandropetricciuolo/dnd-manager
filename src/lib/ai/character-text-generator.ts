@@ -6,9 +6,14 @@ import { extractJsonObject } from "@/modules/command-center/ai-control-plane/int
 import { formatCharacterStoryForChat } from "@/modules/command-center/ai-control-plane/character-proposal-shared";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import type { Json } from "@/types/database.types";
+import {
+  AUTO_NAME_CHARACTER_HINT,
+  isPlaceholderCharacterName,
+} from "@/lib/ai/contextual-names";
 
 export type CharacterAiStoryDraft = {
   characterStory: string;
+  generatedName?: string | null;
 };
 
 const CREATE_SYSTEM_PROMPT = `Sei un narratore per D&D 5e. Il Master vuole creare un nuovo personaggio giocatore (PG).
@@ -18,13 +23,15 @@ NON scegliere razza, classe, background meccanico o statistiche: li compilerà i
 
 Rispondi SOLO con JSON valido:
 {
-  "character_story": "2-4 paragrafi in italiano, tono da scheda PG"
+  "character_story": "2-4 paragrafi in italiano, tono da scheda PG",
+  "character_name": "nome proprio del PG — obbligatorio solo se il Master non ha indicato un nome"
 }
 
 Regole:
 - Coerente con il contesto di campagna se fornito
 - Utile per roleplay, non meta-gioco
-- Niente elenchi di regole o numeri di scheda`;
+- Niente elenchi di regole o numeri di scheda
+- Se il Master ha già indicato un nome, ometti character_name o ripetilo identico`;
 
 const REFINE_SYSTEM_PROMPT = `Aggiorna la storia narrativa del PG in base alle richieste del Master.
 
@@ -79,12 +86,15 @@ export function parseCharacterStoryJson(
   const o = parsed as Record<string, unknown>;
   const rawStory = o.character_story;
   const story = typeof rawStory === "string" ? rawStory.trim() : "";
+  const rawName = o.character_name;
+  const generatedName =
+    typeof rawName === "string" && rawName.trim() ? rawName.trim() : null;
 
   if (!story) {
     return { ok: false, error: "Storia del personaggio mancante nella risposta AI." };
   }
 
-  return { ok: true, data: { characterStory: story } };
+  return { ok: true, data: { characterStory: story, generatedName } };
 }
 
 export async function generateCharacterStoryFromPrompt(
@@ -98,12 +108,16 @@ export async function generateCharacterStoryFromPrompt(
   if (!trimmed) return { ok: false, error: "Descrivi il personaggio che vuoi creare." };
 
   const context = await loadCharacterStoryContext(campaignId);
+  const masterName = characterName?.trim();
+  const nameIsPlaceholder = !masterName || isPlaceholderCharacterName(masterName);
   const prompt = [
     CREATE_SYSTEM_PROMPT,
     "",
     "--- CONTESTO CAMPAGNA ---",
     context,
-    characterName ? `Nome PG suggerito: ${characterName}` : "",
+    nameIsPlaceholder
+      ? AUTO_NAME_CHARACTER_HINT
+      : `Nome PG indicato dal Master: ${masterName} (non cambiarlo).`,
     "",
     "--- RICHIESTA MASTER ---",
     trimmed,
@@ -115,11 +129,14 @@ export async function generateCharacterStoryFromPrompt(
     const raw = await generateOpenRouterChat(prompt, { temperature: 0.75, maxTokens: 1400 });
     const parsed = parseCharacterStoryJson(raw);
     if (!parsed.ok) return { ok: false, error: parsed.error };
-    const name = characterName?.trim() || "Nuovo personaggio";
+    const resolvedName =
+      nameIsPlaceholder && parsed.data.generatedName && !isPlaceholderCharacterName(parsed.data.generatedName)
+        ? parsed.data.generatedName
+        : characterName?.trim() || parsed.data.generatedName || "Nuovo personaggio";
     return {
       ok: true,
       draft: parsed.data,
-      assistantMessage: formatCharacterStoryForChat(name, parsed.data),
+      assistantMessage: formatCharacterStoryForChat(resolvedName, parsed.data),
     };
   } catch (err) {
     return {

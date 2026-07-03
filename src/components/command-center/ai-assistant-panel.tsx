@@ -45,6 +45,7 @@ type AiAssistantPanelProps = {
   noteId?: string | null;
   onCampaignChange?: (campaignId: string | null) => void;
   fullBleed?: boolean;
+  hideCampaignSelector?: boolean;
 };
 
 export function AiAssistantPanel({
@@ -53,6 +54,7 @@ export function AiAssistantPanel({
   noteId,
   onCampaignChange,
   fullBleed = false,
+  hideCampaignSelector = false,
 }: AiAssistantPanelProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -218,33 +220,47 @@ export function AiAssistantPanel({
         fullBleed ? "w-full" : "mx-auto w-full max-w-6xl"
       )}
     >
-      <div className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-barber-gold" />
-          <div>
-            <h2 className="font-serif text-lg font-semibold text-barber-paper">Assistente GM</h2>
-            <p className="text-xs text-barber-paper/50">
-              Chat a sinistra · anteprima a destra
-              {pendingProposal?.phase === "awaiting_sheet"
-                ? " · completa la scheda PDF"
-                : pendingProposal?.phase === "awaiting_avatar"
-                  ? " · ritratto opzionale"
-                  : pendingProposal?.phase === "awaiting_image"
-                    ? " · decisione immagine"
-                    : pendingProposal?.phase === "awaiting_architect"
-                      ? " · decisione Architect"
-                      : pendingProposal
-                        ? " · proposta attiva"
-                        : ""}
-            </p>
+      <div className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-3">
+        {!(fullBleed && hideCampaignSelector) ? (
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-barber-gold/10 ring-1 ring-barber-gold/20">
+              <Sparkles className="h-4 w-4 text-barber-gold" />
+            </div>
+            <div>
+              <h2 className="font-serif text-base font-semibold text-barber-paper sm:text-lg">
+                Assistente GM
+              </h2>
+              <p className="text-[11px] text-barber-paper/50">
+                Chat · anteprima live
+                {pendingProposal?.phase === "awaiting_sheet"
+                  ? " · scheda PDF"
+                  : pendingProposal?.phase === "awaiting_avatar"
+                    ? " · ritratto"
+                    : pendingProposal?.phase === "awaiting_image"
+                      ? " · immagine"
+                      : pendingProposal?.phase === "awaiting_architect"
+                        ? " · paletti IA"
+                        : pendingProposal
+                          ? " · in revisione"
+                          : ""}
+              </p>
+            </div>
           </div>
-        </div>
-        {campaigns.length > 0 && onCampaignChange ? (
+        ) : (
+          <p className="text-[11px] text-barber-paper/45">
+            {pendingProposal?.phase === "awaiting_image"
+              ? "Rispondi in chat per l'immagine"
+              : pendingProposal
+                ? "Conferma o modifica dall'anteprima"
+                : "Descrivi cosa vuoi creare"}
+          </p>
+        )}
+        {!hideCampaignSelector && campaigns.length > 0 && onCampaignChange ? (
           <Select
             value={campaignId ?? "all"}
             onValueChange={(v) => onCampaignChange(v === "all" ? null : v)}
           >
-            <SelectTrigger className="w-[220px] border-barber-gold/30 bg-barber-dark/80 text-sm">
+            <SelectTrigger className="h-9 w-[200px] border-barber-gold/20 bg-barber-dark/60 text-sm ring-1 ring-white/5">
               <SelectValue placeholder="Campagna" />
             </SelectTrigger>
             <SelectContent>
@@ -259,35 +275,42 @@ export function AiAssistantPanel({
         ) : null}
       </div>
 
-      <div className="grid h-full min-h-0 flex-1 grid-rows-2 gap-4 lg:grid-cols-[minmax(280px,380px)_1fr] lg:grid-rows-none">
+      <div className="grid h-full min-h-0 flex-1 grid-rows-[minmax(200px,36%)_minmax(0,1fr)] gap-2.5 lg:grid-cols-[minmax(280px,32%)_minmax(0,1fr)] lg:grid-rows-none lg:gap-3">
         {/* Chat */}
-        <div className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-barber-gold/20 bg-barber-dark/40">
-          <div className="min-h-0 flex-1 overflow-y-auto p-3">
-            <ul className="space-y-3 pb-2">
+        <div className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-2xl bg-barber-dark/35 ring-1 ring-inset ring-white/[0.06]">
+          <div className="scrollbar-barber-y min-h-0 flex-1 overflow-y-auto p-3 sm:p-4">
+            <ul className="space-y-2.5 pb-2">
               {messages.map((msg) => (
                 <li
                   key={msg.id}
                   className={cn(
-                    "max-w-[95%] rounded-lg px-3 py-2 text-sm",
-                    msg.role === "user"
-                      ? "ml-auto bg-barber-gold/20 text-barber-paper"
-                      : "bg-barber-dark/80 text-barber-paper/90"
+                    "max-w-[92%] text-sm leading-relaxed",
+                    msg.role === "user" ? "ml-auto" : "mr-auto"
                   )}
                 >
-                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                  <div
+                    className={cn(
+                      "px-3.5 py-2.5",
+                      msg.role === "user"
+                        ? "rounded-2xl rounded-br-md bg-barber-gold/12 text-barber-paper ring-1 ring-barber-gold/15"
+                        : "rounded-2xl rounded-bl-md bg-white/[0.04] text-barber-paper/90 ring-1 ring-white/[0.06]"
+                    )}
+                  >
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                  </div>
                   {msg.fromVoice ? (
-                    <p className="mt-1 text-[10px] text-barber-paper/40">Input vocale</p>
+                    <p className="mt-1 px-1 text-[10px] text-barber-paper/40">Input vocale</p>
                   ) : null}
                   {msg.intentSummary ? (
-                    <p className="mt-1 text-[10px] text-barber-paper/40">Intento: {msg.intentSummary}</p>
+                    <p className="mt-1 px-1 text-[10px] text-barber-paper/40">Intento: {msg.intentSummary}</p>
                   ) : null}
                   {msg.hasPendingProposal ? (
-                    <p className="mt-2 text-[10px] text-barber-gold/80">
+                    <p className="mt-1.5 px-1 text-[10px] text-barber-gold/75">
                       {msg.pendingPhase === "awaiting_image"
                         ? "→ Rispondi sì/no per l'immagine"
                         : msg.pendingPhase === "awaiting_architect"
                           ? "→ Rispondi sì/no per i paletti IA"
-                        : "→ Vedi anteprima a destra"}
+                          : "→ Vedi anteprima a destra"}
                     </p>
                   ) : null}
                 </li>
@@ -301,13 +324,13 @@ export function AiAssistantPanel({
               className="pointer-events-none absolute inset-x-0 bottom-[5.5rem] z-10 flex justify-center px-3"
               aria-live="polite"
             >
-              <div className="animate-pulse rounded-full border border-barber-gold/40 bg-barber-dark/95 px-4 py-2 text-sm text-barber-gold shadow-lg backdrop-blur-sm">
+              <div className="animate-pulse rounded-full border border-barber-gold/30 bg-barber-dark/95 px-4 py-2 text-sm text-barber-gold shadow-lg backdrop-blur-sm">
                 Sto pensando…
               </div>
             </div>
           ) : null}
 
-          <div className="shrink-0 border-t border-barber-gold/15 p-3">
+          <div className="shrink-0 border-t border-white/[0.06] bg-barber-dark/40 p-3 backdrop-blur-sm">
             {previewTextSelection ? (
               <div className="mb-2 flex items-start gap-2 rounded-lg border border-barber-gold/30 bg-barber-gold/10 px-3 py-2 text-xs text-barber-paper/90">
                 <Pencil className="mt-0.5 h-3.5 w-3.5 shrink-0 text-barber-gold" />
@@ -358,7 +381,7 @@ export function AiAssistantPanel({
                 }
                 rows={2}
                 disabled={isPending || voice.isListening}
-                className="min-h-0 flex-1 resize-none border-barber-gold/30 bg-barber-dark/80"
+                className="min-h-0 flex-1 resize-none border-barber-gold/20 bg-barber-dark/50 ring-1 ring-white/5"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();

@@ -1,6 +1,10 @@
 import { generateOpenRouterChat } from "@/lib/ai/openrouter-client";
 import { CAMPAIGN_TYPE_VALUES, type CampaignType } from "@/lib/campaign-type";
 import { extractJsonObject } from "@/modules/command-center/ai-control-plane/interpreter";
+import {
+  AUTO_NAME_CAMPAIGN_HINT,
+  isPlaceholderCampaignTitle,
+} from "@/lib/ai/contextual-names";
 
 export type CampaignAiDraft = {
   title: string;
@@ -61,7 +65,9 @@ export function parseCampaignDraftJson(raw: string): { ok: true; data: CampaignA
   const playerPrimerRaw = typeof o.player_primer === "string" ? o.player_primer.trim() : "";
   const isPublic = o.is_public === true;
 
-  if (!title) return { ok: false, error: "Titolo campagna mancante nella risposta AI." };
+  if (!title || isPlaceholderCampaignTitle(title)) {
+    return { ok: false, error: "Titolo campagna mancante o generico nella risposta AI." };
+  }
   if (!description) return { ok: false, error: "Descrizione campagna mancante nella risposta AI." };
 
   const playerPrimer =
@@ -93,12 +99,15 @@ export function formatCampaignDraftForChat(draft: CampaignAiDraft): string {
   return lines.join("\n");
 }
 
-export async function generateCampaignDraftFromPrompt(userPrompt: string): Promise<
+export async function generateCampaignDraftFromPrompt(
+  userPrompt: string,
+  options?: { titleIsPlaceholder?: boolean }
+): Promise<
   { ok: true; draft: CampaignAiDraft; assistantMessage: string } | { ok: false; error: string }
 > {
   const prompt = `${CREATE_SYSTEM_PROMPT}
 
---- RICHIESTA MASTER ---
+${options?.titleIsPlaceholder ? `${AUTO_NAME_CAMPAIGN_HINT}\n` : ""}--- RICHIESTA MASTER ---
 ${userPrompt.trim()}`;
 
   try {

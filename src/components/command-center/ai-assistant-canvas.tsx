@@ -1,7 +1,6 @@
 "use client";
 
-import { useRef } from "react";
-import Image from "next/image";
+import { useRef, type ComponentType, type ReactNode } from "react";
 import { BookOpen, CalendarDays, CheckCircle2, ClipboardCheck, GitBranch, ImageIcon, Sparkles } from "lucide-react";
 
 import { SheetGeneratorEmbed } from "@/components/sheet-generator/sheet-generator-embed";
@@ -15,6 +14,30 @@ import type {
 import type { SessionCloseMissingField } from "@/modules/command-center/ai-control-plane/session-close.types";
 import type { PreviewTextSelection } from "@/modules/command-center/ai-control-plane/preview-text-selection";
 import { PreviewSelectableText } from "@/components/command-center/preview-selectable-text";
+
+function PreviewSection({
+  title,
+  icon: Icon,
+  children,
+  className,
+}: {
+  title: string;
+  icon?: ComponentType<{ className?: string }>;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={cn("space-y-2", className)}>
+      <h4 className="flex items-center gap-1.5 text-[11px] font-medium text-barber-gold/75">
+        {Icon ? <Icon className="h-3.5 w-3.5" /> : null}
+        {title}
+      </h4>
+      <div className="rounded-xl bg-white/[0.03] p-3.5 ring-1 ring-inset ring-white/[0.06] sm:p-4">
+        {children}
+      </div>
+    </section>
+  );
+}
 
 const ACTION_LABELS: Record<string, string> = {
   "wiki.entity.create": "Entità wiki",
@@ -69,7 +92,7 @@ export function AiAssistantCanvas({
 
   if (executedSummary) {
     return (
-      <div className="flex h-full min-h-0 flex-col items-center justify-center overflow-y-auto rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-8 text-center">
+      <div className="flex h-full min-h-0 flex-col items-center justify-center overflow-y-auto rounded-2xl bg-emerald-950/15 p-8 text-center ring-1 ring-emerald-500/20">
         <CheckCircle2 className="mb-3 h-10 w-10 text-emerald-400" />
         <p className="font-serif text-lg text-barber-paper">{executedSummary}</p>
         <p className="mt-2 text-sm text-barber-paper/60">Puoi continuare a chattare per preparare altro.</p>
@@ -79,12 +102,12 @@ export function AiAssistantCanvas({
 
   if (!pendingProposal) {
     return (
-      <div className="flex h-full min-h-0 flex-col items-center justify-center overflow-y-auto rounded-xl border border-dashed border-barber-gold/25 bg-barber-dark/30 p-8 text-center">
-        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-barber-gold/30 bg-barber-gold/10">
+      <div className="flex h-full min-h-0 flex-col items-center justify-center overflow-y-auto rounded-2xl bg-barber-dark/25 p-8 text-center ring-1 ring-dashed ring-barber-gold/15">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-barber-gold/10 ring-1 ring-barber-gold/20">
           <Sparkles className="h-7 w-7 text-barber-gold" />
         </div>
         <h3 className="font-serif text-lg text-barber-paper">Anteprima generazione</h3>
-        <p className="mt-2 max-w-sm text-sm text-barber-paper/55">
+        <p className="mt-2 max-w-sm text-sm leading-relaxed text-barber-paper/55">
           {isThinking
             ? "Sto elaborando la richiesta…"
             : "Qui comparirà il risultato: testo wiki, missioni, schede PG e immagini generate dall'assistente."}
@@ -211,14 +234,16 @@ export function AiAssistantCanvas({
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-barber-gold/25 bg-gradient-to-b from-barber-dark/60 to-barber-dark/90">
-      <div className="shrink-0 border-b border-barber-gold/15 px-4 py-3">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl bg-gradient-to-br from-barber-dark/45 via-barber-dark/60 to-barber-dark/80 ring-1 ring-barber-gold/10">
+      <div className="shrink-0 px-4 py-3 sm:px-5 sm:py-4">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="min-w-0">
-            <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-barber-gold/70">
+            <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-barber-gold/60">
               {actionLabel}
             </p>
-            <h3 className="truncate font-serif text-xl font-semibold text-barber-paper">{title}</h3>
+            <h3 className="truncate font-serif text-xl font-semibold text-barber-paper sm:text-2xl">
+              {title}
+            </h3>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {type ? (
@@ -270,28 +295,22 @@ export function AiAssistantCanvas({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-4">
+      <div className="scrollbar-barber-y min-h-0 flex-1 space-y-4 overflow-y-auto px-4 pb-5 pt-1 sm:space-y-5 sm:px-5 sm:pb-6">
         {isCharacter && content ? (
-          <section className="mb-4 space-y-2">
-            <h4 className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-barber-gold/80">
-              <BookOpen className="h-3.5 w-3.5" />
-              Storia (AI)
-            </h4>
-            <div className="rounded-lg border border-barber-gold/15 bg-barber-dark/50 p-3">
-              <PreviewSelectableText
-                text={content}
-                field="character_story"
-                sectionLabel="Storia PG"
-                onSelectExcerpt={onPreviewTextSelect ?? (() => {})}
-                disabled={selectionDisabled}
-                active={isFieldActive("character_story")}
-              />
-            </div>
-          </section>
+          <PreviewSection title="Storia (AI)" icon={BookOpen}>
+            <PreviewSelectableText
+              text={content}
+              field="character_story"
+              sectionLabel="Storia PG"
+              onSelectExcerpt={onPreviewTextSelect ?? (() => {})}
+              disabled={selectionDisabled}
+              active={isFieldActive("character_story")}
+            />
+          </PreviewSection>
         ) : null}
 
         {isCharacter && campaignId ? (
-          <section className="mb-4 rounded-lg border border-barber-gold/20 bg-barber-dark/40 p-3">
+          <section className="rounded-xl bg-white/[0.03] p-3 ring-1 ring-inset ring-white/[0.06]">
             <SheetGeneratorEmbed
               initial={{
                 characterName: pendingProposal.characterMeta?.characterName ?? title,
@@ -305,10 +324,7 @@ export function AiAssistantCanvas({
         ) : null}
 
         {isCharacter && pendingProposal.phase === "awaiting_avatar" ? (
-          <section className="mb-4 space-y-2 rounded-lg border border-barber-gold/20 bg-barber-dark/40 p-3">
-            <h4 className="text-xs font-medium uppercase tracking-wide text-barber-gold/80">
-              Carica ritratto (opzionale)
-            </h4>
+          <PreviewSection title="Carica ritratto (opzionale)">
             <input
               ref={avatarInputRef}
               type="file"
@@ -330,40 +346,36 @@ export function AiAssistantCanvas({
                 Immagine caricata. Scrivi **conferma** in chat per creare il PG.
               </p>
             ) : null}
-          </section>
+          </PreviewSection>
         ) : null}
 
         {!isCharacter && content ? (
-          <section className="space-y-2">
-            <h4 className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-barber-gold/80">
-              <BookOpen className="h-3.5 w-3.5" />
-              {playerPrimer ? "Descrizione (GM)" : isWiki && wikiDraft ? "Descrizione" : "Contenuto"}
-            </h4>
-            <div className="rounded-lg border border-barber-gold/15 bg-barber-dark/50 p-4">
-              <PreviewSelectableText
-                text={content}
-                field={isWiki && wikiDraft ? "wiki_description" : "content"}
-                sectionLabel={
-                  isWiki && wikiDraft
-                    ? "Descrizione wiki"
-                    : pendingProposal.campaignMeta
-                      ? "Descrizione campagna"
-                      : pendingProposal.missionMeta
-                        ? "Descrizione missione"
-                        : "Contenuto"
-                }
-                onSelectExcerpt={onPreviewTextSelect ?? (() => {})}
-                disabled={selectionDisabled}
-                active={isFieldActive(isWiki && wikiDraft ? "wiki_description" : "content")}
-              />
-            </div>
-          </section>
+          <PreviewSection
+            title={playerPrimer ? "Descrizione (GM)" : isWiki && wikiDraft ? "Descrizione" : "Contenuto"}
+            icon={BookOpen}
+          >
+            <PreviewSelectableText
+              text={content}
+              field={isWiki && wikiDraft ? "wiki_description" : "content"}
+              sectionLabel={
+                isWiki && wikiDraft
+                  ? "Descrizione wiki"
+                  : pendingProposal.campaignMeta
+                    ? "Descrizione campagna"
+                    : pendingProposal.missionMeta
+                      ? "Descrizione missione"
+                      : "Contenuto"
+              }
+              onSelectExcerpt={onPreviewTextSelect ?? (() => {})}
+              disabled={selectionDisabled}
+              active={isFieldActive(isWiki && wikiDraft ? "wiki_description" : "content")}
+            />
+          </PreviewSection>
         ) : null}
 
         {pendingProposal.missionMeta ? (
-          <section className="mt-4 space-y-2">
-            <h4 className="text-xs font-medium uppercase tracking-wide text-barber-gold/80">Scheda missione</h4>
-            <div className="rounded-lg border border-barber-gold/15 bg-barber-dark/50 p-4 text-sm text-barber-paper/85">
+          <PreviewSection title="Scheda missione">
+            <div className="space-y-1 text-sm leading-relaxed text-barber-paper/85">
               <p>Committente: {pendingProposal.missionMeta.draft.committente}</p>
               <p>Ubicazione: {pendingProposal.missionMeta.draft.ubicazione}</p>
               <p>
@@ -372,16 +384,12 @@ export function AiAssistantCanvas({
                 {pendingProposal.missionMeta.draft.pointsReward}
               </p>
             </div>
-          </section>
+          </PreviewSection>
         ) : null}
 
         {pendingProposal.sessionMeta ? (
-          <section className="mt-4 space-y-2">
-            <h4 className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-barber-gold/80">
-              <CalendarDays className="h-3.5 w-3.5" />
-              Scheda sessione
-            </h4>
-            <div className="rounded-lg border border-barber-gold/15 bg-barber-dark/50 p-4 text-sm text-barber-paper/85">
+          <PreviewSection title="Scheda sessione" icon={CalendarDays}>
+            <div className="space-y-1 text-sm leading-relaxed text-barber-paper/85">
               <p>
                 Data: {pendingProposal.sessionMeta.draft.date} ore{" "}
                 {pendingProposal.sessionMeta.draft.time}
@@ -402,16 +410,15 @@ export function AiAssistantCanvas({
               ) : null}
               <p>Posti max: {pendingProposal.sessionMeta.draft.maxPlayers}</p>
             </div>
-          </section>
+          </PreviewSection>
         ) : null}
 
         {pendingProposal.sessionCloseMeta ? (
-          <section className="mt-4 space-y-2">
-            <h4 className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-barber-gold/80">
-              <ClipboardCheck className="h-3.5 w-3.5" />
-              Checklist chiusura — {pendingProposal.sessionCloseMeta.sessionLabel || "sessione"}
-            </h4>
-            <div className="rounded-lg border border-barber-gold/15 bg-barber-dark/50 p-4 text-sm text-barber-paper/85 space-y-2">
+          <PreviewSection
+            title={`Checklist chiusura — ${pendingProposal.sessionCloseMeta.sessionLabel || "sessione"}`}
+            icon={ClipboardCheck}
+          >
+            <div className="space-y-2 text-sm leading-relaxed text-barber-paper/85">
               <p>
                 <span className="text-barber-gold/80">XP base:</span>{" "}
                 {pendingProposal.sessionCloseMeta.resolved.xpGained} ·{" "}
@@ -469,109 +476,87 @@ export function AiAssistantCanvas({
                 </p>
               ) : null}
             </div>
-          </section>
+          </PreviewSection>
         ) : null}
 
         {relationshipPreview ? (
-          <section className="mt-4 space-y-2">
-            <h4 className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-barber-gold/80">
-              <GitBranch className="h-3.5 w-3.5" />
-              Mappa concettuale
-            </h4>
-            <div className="rounded-lg border border-barber-gold/15 bg-barber-dark/50 p-4">
-              <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-barber-paper/90">
-                <span className="rounded-md border border-barber-gold/25 bg-barber-dark/80 px-3 py-2 font-medium">
-                  {relationshipPreview.sourceName}
-                </span>
-                <span className="text-barber-gold/70">
-                  —[{relationshipPreview.label}]→
-                </span>
-                <span className="rounded-md border border-barber-gold/25 bg-barber-dark/80 px-3 py-2 font-medium">
-                  {relationshipPreview.targetName}
-                  {relationshipPreview.targetKind === "map" ? " (mappa)" : ""}
-                </span>
-              </div>
+          <PreviewSection title="Mappa concettuale" icon={GitBranch}>
+            <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-barber-paper/90">
+              <span className="rounded-lg bg-white/[0.04] px-3 py-2 font-medium ring-1 ring-white/[0.08]">
+                {relationshipPreview.sourceName}
+              </span>
+              <span className="text-barber-gold/70">—[{relationshipPreview.label}]→</span>
+              <span className="rounded-lg bg-white/[0.04] px-3 py-2 font-medium ring-1 ring-white/[0.08]">
+                {relationshipPreview.targetName}
+                {relationshipPreview.targetKind === "map" ? " (mappa)" : ""}
+              </span>
             </div>
-          </section>
+          </PreviewSection>
         ) : null}
 
         {playerPrimer ? (
-          <section className="mt-4 space-y-2">
-            <h4 className="text-xs font-medium uppercase tracking-wide text-barber-gold/80">
-              Guida del giocatore
-            </h4>
-            <div className="rounded-lg border border-barber-gold/15 bg-barber-dark/50 p-4">
-              <PreviewSelectableText
-                text={playerPrimer}
-                field="player_primer"
-                sectionLabel="Guida del giocatore"
-                onSelectExcerpt={onPreviewTextSelect ?? (() => {})}
-                disabled={selectionDisabled}
-                active={isFieldActive("player_primer")}
-              />
-            </div>
-          </section>
+          <PreviewSection title="Guida del giocatore">
+            <PreviewSelectableText
+              text={playerPrimer}
+              field="player_primer"
+              sectionLabel="Guida del giocatore"
+              onSelectExcerpt={onPreviewTextSelect ?? (() => {})}
+              disabled={selectionDisabled}
+              active={isFieldActive("player_primer")}
+            />
+          </PreviewSection>
         ) : null}
 
         {sessionSummary && pendingProposal.sessionCloseMeta ? (
-          <section className="mt-4 space-y-2">
-            <h4 className="text-xs font-medium uppercase tracking-wide text-barber-gold/80">
-              Riepilogo sessione
-            </h4>
-            <div className="rounded-lg border border-barber-gold/15 bg-barber-dark/50 p-4">
-              <PreviewSelectableText
-                text={sessionSummary}
-                field="session_summary"
-                sectionLabel="Riepilogo chiusura"
-                onSelectExcerpt={onPreviewTextSelect ?? (() => {})}
-                disabled={selectionDisabled}
-                active={isFieldActive("session_summary")}
-              />
-            </div>
-          </section>
+          <PreviewSection title="Riepilogo sessione">
+            <PreviewSelectableText
+              text={sessionSummary}
+              field="session_summary"
+              sectionLabel="Riepilogo chiusura"
+              onSelectExcerpt={onPreviewTextSelect ?? (() => {})}
+              disabled={selectionDisabled}
+              active={isFieldActive("session_summary")}
+            />
+          </PreviewSection>
         ) : null}
 
         {statblock ? (
-          <section className="mt-4 space-y-2">
-            <h4 className="text-xs font-medium uppercase tracking-wide text-barber-gold/80">Meccanica</h4>
-            <div className="rounded-lg border border-barber-gold/15 bg-barber-dark/50 p-4">
-              <PreviewSelectableText
-                text={statblock}
-                field="wiki_statblock"
-                sectionLabel="Meccanica"
-                onSelectExcerpt={onPreviewTextSelect ?? (() => {})}
-                disabled={selectionDisabled}
-                active={isFieldActive("wiki_statblock")}
-                className="font-sans text-barber-paper/80"
-              />
-            </div>
-          </section>
+          <PreviewSection title="Meccanica">
+            <PreviewSelectableText
+              text={statblock}
+              field="wiki_statblock"
+              sectionLabel="Meccanica"
+              onSelectExcerpt={onPreviewTextSelect ?? (() => {})}
+              disabled={selectionDisabled}
+              active={isFieldActive("wiki_statblock")}
+              className="font-sans text-barber-paper/80"
+            />
+          </PreviewSection>
         ) : null}
 
         {isWiki ? (
-          <section className="mt-4 space-y-2">
-            <h4 className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-barber-gold/80">
-              <ImageIcon className="h-3.5 w-3.5" />
-              Immagine contestuale
-            </h4>
+          <PreviewSection title="Immagine contestuale" icon={ImageIcon}>
             {imageUrl ? (
-              <div className="overflow-hidden rounded-lg border border-barber-gold/20">
-                <div className="relative aspect-[4/3] w-full max-h-72 bg-barber-dark">
-                  <Image src={imageUrl} alt={title} fill className="object-cover" unoptimized />
-                </div>
+              <div className="flex justify-center overflow-hidden rounded-lg bg-barber-dark/50 p-1">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={imageUrl}
+                  alt={title}
+                  className="max-h-[min(65vh,40rem)] w-full object-contain"
+                />
               </div>
             ) : isThinking && pendingProposal.phase === "awaiting_image" ? (
-              <div className="flex items-center gap-2 rounded-lg border border-dashed border-barber-gold/25 bg-barber-dark/50 px-3 py-3 text-xs text-barber-paper/60">
+              <div className="flex items-center gap-2 text-xs text-barber-paper/60">
                 <ImageIcon className="h-4 w-4 shrink-0 animate-pulse text-barber-gold/70" />
                 Generazione immagine in corso…
               </div>
             ) : pendingProposal.phase === "awaiting_image" ? (
-              <div className="flex items-center gap-2 rounded-lg border border-dashed border-barber-gold/25 bg-barber-dark/50 px-3 py-3 text-xs text-barber-paper/50">
+              <div className="flex items-center gap-2 text-xs text-barber-paper/50">
                 <ImageIcon className="h-4 w-4 shrink-0" />
                 Rispondi in chat (**sì** / **no**) per generare o saltare l&apos;immagine.
               </div>
             ) : null}
-          </section>
+          </PreviewSection>
         ) : null}
 
         {pendingProposal.rationale ? (

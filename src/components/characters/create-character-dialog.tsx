@@ -21,6 +21,7 @@ import { ImageSourceField } from "@/components/ui/image-source-field";
 import { Textarea } from "@/components/ui/textarea";
 import { createCharacter } from "@/app/campaigns/character-actions";
 import { CharacterBuildFormFields } from "@/components/characters/character-build-form-fields";
+import { NameGeneratorField } from "@/components/name-generator/name-generator-field";
 import { backgroundBySlug } from "@/lib/character-build-catalog";
 import type { QuickManualSection } from "@/lib/sheet-generator/quick-manual-builder";
 import { buildCompiledSheetPdfRequestBody } from "@/lib/sheet-generator/sheet-pdf-payload";
@@ -155,6 +156,7 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
   const router = useRouter();
   const [open, setOpen] = useState(!!initialOpen);
   const [isLoading, setIsLoading] = useState(false);
+  const [nameValue, setNameValue] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
   const sheetInputRef = useRef<HTMLInputElement>(null);
   const draftStorageKey = `${CREATE_CHARACTER_DRAFT_KEY_PREFIX}:${campaignId}`;
@@ -193,6 +195,14 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
   useEffect(() => {
     if (initialOpen) setOpen(true);
   }, [initialOpen]);
+
+  useEffect(() => {
+    if (!open) {
+      setNameValue("");
+      return;
+    }
+    setNameValue(formSeed?.draft.name ?? "");
+  }, [open, formMountSignature, formSeed?.draft.name]);
 
   function persistDraftFromForm(form: HTMLFormElement) {
     try {
@@ -373,21 +383,24 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
           onSubmit={handleSubmit}
           className="space-y-4"
         >
-          <div className="space-y-2">
-            <Label htmlFor="char-name">
-              <User className="mr-1.5 inline h-4 w-4" />
-              Nome
-            </Label>
-            <Input
-              id="char-name"
-              name="name"
-              required
-              placeholder="Es. Aelar il Saggio"
-              defaultValue={formSeed?.draft.name ?? ""}
-              className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
-              disabled={isLoading}
-            />
-          </div>
+          <NameGeneratorField
+            id="char-name"
+            name="name"
+            value={nameValue}
+            onChange={setNameValue}
+            kind="character"
+            campaignId={campaignId}
+            label={
+              <>
+                <User className="mr-1.5 inline h-4 w-4" />
+                Nome
+              </>
+            }
+            placeholder="Es. Aelar il Saggio"
+            required
+            disabled={isLoading}
+            inputClassName="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
+          />
 
           <CharacterBuildFormFields
             disabled={isLoading}

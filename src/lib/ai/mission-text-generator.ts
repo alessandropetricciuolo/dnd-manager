@@ -6,6 +6,10 @@ import { GUILD_RANK_LETTERS, parseGuildRank, type GuildRankLetter } from "@/lib/
 import { extractJsonObject } from "@/modules/command-center/ai-control-plane/interpreter";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import type { Json } from "@/types/database.types";
+import {
+  AUTO_NAME_MISSION_HINT,
+  isPlaceholderMissionTitle,
+} from "@/lib/ai/contextual-names";
 
 export type MissionAiDraft = {
   grade: GuildRankLetter;
@@ -103,7 +107,9 @@ export function parseMissionDraftJson(
   const description = ensureString(o.description, hints?.description ?? "");
   const pointsReward = normalizePointsReward(o.points_reward ?? o.pointsReward, grade);
 
-  if (!title) return { ok: false, error: "Titolo missione mancante nella risposta AI." };
+  if (!title || isPlaceholderMissionTitle(title)) {
+    return { ok: false, error: "Titolo missione mancante o generico nella risposta AI." };
+  }
   if (!description) return { ok: false, error: "Descrizione missione mancante nella risposta AI." };
 
   return {
@@ -199,7 +205,9 @@ function formatHintsBlock(hints: MissionDraftHints | undefined): string {
   if (!hints) return "";
   const lines: string[] = [];
   if (hints.grade) lines.push(`Grado suggerito: ${hints.grade}`);
-  if (hints.title) lines.push(`Titolo suggerito: ${hints.title}`);
+  if (hints.title && !isPlaceholderMissionTitle(hints.title)) {
+    lines.push(`Titolo suggerito: ${hints.title}`);
+  }
   if (hints.committente) lines.push(`Committente: ${hints.committente}`);
   if (hints.ubicazione) lines.push(`Ubicazione: ${hints.ubicazione}`);
   if (hints.paga) lines.push(`Paga: ${hints.paga}`);
@@ -224,12 +232,14 @@ export async function generateMissionDraftFromPrompt(
 
   const context = await loadMissionGenerationContext(campaignId);
   const hintsBlock = formatHintsBlock(hints);
+  const needsAutoTitle = !hints?.title || isPlaceholderMissionTitle(hints.title);
   const prompt = [
     CREATE_SYSTEM_PROMPT,
     "",
     "--- CONTESTO CAMPAGNA ---",
     context,
     hintsBlock,
+    needsAutoTitle ? AUTO_NAME_MISSION_HINT : "",
     "",
     "--- RICHIESTA MASTER ---",
     trimmed,

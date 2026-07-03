@@ -10,6 +10,7 @@ import { previewAction } from "../actions";
 import type { PreviewedProposal } from "./preview-proposals";
 import type { ChatCampaignMeta } from "./draft-assistant.types";
 import { resolveRefineUserMessage, type PreviewTextSelection } from "./preview-text-selection";
+import { isPlaceholderCampaignTitle } from "@/lib/ai/contextual-names";
 
 export function supportsCampaignArchitect(draft: Pick<CampaignAiDraft, "type">): boolean {
   return isLongCampaignType(draft.type);
@@ -69,9 +70,14 @@ export async function enrichCampaignProposal(
     ? [...(options.campaignMeta?.chatMessages ?? []), { role: "user" as const, content: refineMessage }]
     : [{ role: "user" as const, content: userMessage.trim() }];
 
+  const proposedTitle =
+    typeof proposal.input.title === "string" ? proposal.input.title.trim() : "";
+
   const generated = options?.refine && options.campaignMeta?.draft
     ? await refineCampaignDraftFromPrompt(refineMessage, options.campaignMeta.draft)
-    : await generateCampaignDraftFromPrompt(userPrompt);
+    : await generateCampaignDraftFromPrompt(userPrompt, {
+        titleIsPlaceholder: isPlaceholderCampaignTitle(proposedTitle),
+      });
 
   if (!generated.ok) {
     return { ok: false, error: generated.error };

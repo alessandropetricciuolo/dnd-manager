@@ -10,6 +10,7 @@ import {
 } from "./character-proposal-shared";
 import type { PreviewedProposal } from "./preview-proposals";
 import { resolveRefineUserMessage, type PreviewTextSelection } from "./preview-text-selection";
+import { isPlaceholderCharacterName } from "@/lib/ai/contextual-names";
 
 function ensureString(value: unknown, fallback: string): string {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
@@ -70,9 +71,16 @@ export async function enrichCharacterProposal(
     return { ok: false, error: generated.error };
   }
 
+  const resolvedCharacterName =
+    isPlaceholderCharacterName(characterName) &&
+    generated.draft.generatedName &&
+    !isPlaceholderCharacterName(generated.draft.generatedName)
+      ? generated.draft.generatedName
+      : characterName;
+
   const characterMeta: ChatCharacterMeta = {
     userPrompt,
-    characterName,
+    characterName: resolvedCharacterName,
     storyDraft: generated.draft,
     generatedSheet: options?.characterMeta?.generatedSheet ?? null,
     chatMessages: [
@@ -84,7 +92,7 @@ export async function enrichCharacterProposal(
   const input: Record<string, unknown> = {
     ...proposal.input,
     campaignId,
-    name: characterName,
+    name: resolvedCharacterName,
     background: generated.draft.characterStory,
     level: typeof proposal.input.level === "number" ? proposal.input.level : 1,
   };

@@ -33,6 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ExternalLink, Pencil, Plus, RefreshCw, Swords, Trash2 } from "lucide-react";
+import { NameGeneratorField } from "@/components/name-generator/name-generator-field";
 import { cn } from "@/lib/utils";
 
 import {
@@ -1044,14 +1045,15 @@ export function MissionBoard({
                 />
               </div>
               <div className="space-y-1 sm:col-span-2">
-                <Label htmlFor="m-title" className="text-zinc-200">
-                  Titolo
-                </Label>
-                <Input
+                <NameGeneratorField
                   id="m-title"
                   value={missionDraft.title}
-                  onChange={(e) => setMissionDraft((d) => ({ ...d, title: e.target.value }))}
-                  className="border-amber-600/30 bg-zinc-950"
+                  onChange={(title) => setMissionDraft((d) => ({ ...d, title }))}
+                  kind="mission"
+                  campaignId={campaignId}
+                  label="Titolo"
+                  inputClassName="border-amber-600/30 bg-zinc-950"
+                  hint={missionDraft.description.slice(0, 300) || undefined}
                 />
               </div>
               <div className="space-y-1">
@@ -1125,17 +1127,15 @@ export function MissionBoard({
           </DialogHeader>
 
           <div className="grid gap-4">
-            <div className="space-y-1">
-              <Label htmlFor="g-name" className="text-zinc-200">
-                Nome della gilda
-              </Label>
-              <Input
-                id="g-name"
-                value={guildDraft.name}
-                onChange={(e) => setGuildDraft((d) => ({ ...d, name: e.target.value }))}
-                className="border-amber-600/30 bg-zinc-950"
-              />
-            </div>
+            <NameGeneratorField
+              id="g-name"
+              value={guildDraft.name}
+              onChange={(name) => setGuildDraft((d) => ({ ...d, name }))}
+              kind="guild"
+              campaignId={campaignId}
+              label="Nome della gilda"
+              inputClassName="border-amber-600/30 bg-zinc-950"
+            />
 
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1">

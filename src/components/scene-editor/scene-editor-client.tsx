@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { saveSceneDocumentWithRastersAction } from "@/app/campaigns/scene-document-actions";
 import { Button } from "@/components/ui/button";
+import { NameGeneratorField } from "@/components/name-generator/name-generator-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -511,13 +512,15 @@ export function SceneEditorClient({
       </div>
 
       <div className="flex flex-wrap items-end gap-3">
-        <div className="min-w-[200px] flex-1 space-y-1">
-          <Label htmlFor="scene-name">Nome scena</Label>
-          <Input
+        <div className="min-w-[200px] flex-1">
+          <NameGeneratorField
             id="scene-name"
             value={document.name}
-            onChange={(e) => setDocument((d) => ({ ...d, name: e.target.value }))}
-            className="border-barber-gold/30 bg-barber-dark"
+            onChange={(name) => setDocument((d) => ({ ...d, name }))}
+            kind="scene"
+            campaignId={campaignId}
+            label="Nome scena"
+            inputClassName="border-barber-gold/30 bg-barber-dark"
           />
         </div>
         {missionOptions.length > 0 ? (

@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { createCampaign } from "@/app/dashboard/actions";
+import { NameGeneratorField } from "@/components/name-generator/name-generator-field";
 import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CAMPAIGN_TYPE_OPTIONS } from "@/lib/campaign-type";
@@ -44,6 +45,7 @@ export function CreateCampaignDialog({ collapsibleSidebar = false }: CreateCampa
   const [isLoading, setIsLoading] = useState(false);
   const [campaignType, setCampaignType] = useState<string>("quest");
   const [isLongCampaign, setIsLongCampaign] = useState(false);
+  const [titleValue, setTitleValue] = useState("");
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -63,6 +65,7 @@ export function CreateCampaignDialog({ collapsibleSidebar = false }: CreateCampa
         setOpen(false);
         form.reset();
         setCampaignType("quest");
+        setTitleValue("");
       } else {
         toast.error(result.message);
       }
@@ -102,17 +105,18 @@ export function CreateCampaignDialog({ collapsibleSidebar = false }: CreateCampa
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="campaign-title">Titolo</Label>
-            <Input
-              id="campaign-title"
-              name="title"
-              placeholder="Es. La taverna del drago"
-              className="bg-barber-dark border-barber-gold/30 text-barber-paper"
-              required
-              disabled={isLoading}
-            />
-          </div>
+          <NameGeneratorField
+            id="campaign-title"
+            name="title"
+            value={titleValue}
+            onChange={setTitleValue}
+            kind="campaign"
+            label="Titolo"
+            placeholder="Es. La taverna del drago"
+            required
+            disabled={isLoading}
+            inputClassName="bg-barber-dark border-barber-gold/30 text-barber-paper"
+          />
           <div className="space-y-2">
             <Label htmlFor="campaign-type">Tipo campagna</Label>
             <Select

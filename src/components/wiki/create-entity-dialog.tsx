@@ -50,6 +50,8 @@ import {
 import { generateMagicDraftImageAction } from "@/lib/actions/ai-wiki-chain";
 import { WikiTextGenChat } from "@/components/wiki/wiki-text-gen-chat";
 import { WikiImageRefineChat } from "@/components/wiki/wiki-image-refine-chat";
+import { NameGeneratorField } from "@/components/name-generator/name-generator-field";
+import type { NameGeneratorKind } from "@/lib/name-generator/types";
 import type { WikiMarkdownChatDraft } from "@/lib/actions/wiki-text-chat";
 import type { WikiAiTextGeneration } from "@/lib/ai/generator";
 import { generateContextualPortraitAction } from "@/lib/actions/ai-generator";
@@ -855,16 +857,19 @@ export function CreateEntityDialog({
               >
                 <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
                   <div className="space-y-2">
-                    <Label htmlFor="entity-title">Titolo</Label>
-                    <Input
+                    <NameGeneratorField
                       id="entity-title"
                       name="title"
                       value={titleValue}
-                      onChange={(e) => setTitleValue(e.target.value)}
+                      onChange={setTitleValue}
+                      kind={type as NameGeneratorKind}
+                      campaignId={campaignId}
+                      label="Titolo"
                       placeholder="Es. Taverna del Drago"
-                      className="bg-barber-dark border-barber-gold/30 text-barber-paper"
                       required
                       disabled={isLoading}
+                      inputClassName="bg-barber-dark border-barber-gold/30 text-barber-paper"
+                      hint={contentValue.slice(0, 300) || undefined}
                     />
                   </div>
                   <div className="space-y-2 sm:min-w-[180px]">

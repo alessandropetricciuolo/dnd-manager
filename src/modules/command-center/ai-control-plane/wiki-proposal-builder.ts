@@ -18,6 +18,7 @@ import {
   selectionTargetsWikiStatblock,
   type PreviewTextSelection,
 } from "./preview-text-selection";
+import { isPlaceholderWikiTitle } from "@/lib/ai/contextual-names";
 
 const WIKI_MARKDOWN_TYPES = new Set<string>([
   "npc",
@@ -163,6 +164,11 @@ export async function enrichWikiEntityProposal(
     return { ok: false, error: result.message };
   }
 
+  const resolvedTitle =
+    result.resolvedTitle && isPlaceholderWikiTitle(safeTitle)
+      ? result.resolvedTitle.trim()
+      : safeTitle;
+
   const visibility = resolveWikiVisibilityForAssistant(
     userMessage,
     userPrompt,
@@ -170,20 +176,20 @@ export async function enrichWikiEntityProposal(
     { preservePrevious: options?.refine }
   );
 
-  const input = buildWikiEntityInput(campaignId, entityType, safeTitle, result.draft, {
+  const input = buildWikiEntityInput(campaignId, entityType, resolvedTitle, result.draft, {
     visibility,
   });
   const previewResult = await previewAction("wiki.entity.create", input, { actorType: "ai" });
   const preview_payload = previewResult.success
     ? {
-        ...formatWikiDraftForPreview(safeTitle, entityType, result.draft, visibility),
+        ...formatWikiDraftForPreview(resolvedTitle, entityType, result.draft, visibility),
         ...(previewResult.data as Record<string, unknown>),
       }
     : { error: previewResult.error };
 
   const wikiMeta: ChatWikiMeta = {
     entityType,
-    entityTitle: safeTitle,
+    entityTitle: resolvedTitle,
     userPrompt,
     markdownDraft: result.draft,
     chatMessages: [

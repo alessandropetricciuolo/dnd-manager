@@ -15,6 +15,13 @@ import {
   hasNpcMechanicsParams,
   mergeWikiExtraParams,
 } from "@/lib/ai/wiki-npc-params";
+import {
+  generateContextualNameFromCampaign,
+  isPlaceholderWikiTitle,
+  resolveWikiTitleFromDescription,
+  syncMarkdownTitle,
+  wikiEntityNamePromptLine,
+} from "@/lib/ai/contextual-names";
 
 export type WikiMarkdownEntityType = "npc" | "location" | "item" | "lore" | "monster" | "magic_item";
 
@@ -51,6 +58,7 @@ export type GenerateWikiMarkdownResult =
       statblock: string;
       stats?: ExtractedWikiStats;
       npcTraits?: ExtractedNpcTraits;
+      generatedTitle?: string;
     }
   | { success: false; message: string };
 
@@ -352,6 +360,8 @@ export async function generateWikiMarkdownAction(
 
     const normalizedType: Exclude<WikiMarkdownEntityType, "magic_item"> =
       entityType === "magic_item" ? "item" : entityType;
+    const nameIsPlaceholder = isPlaceholderWikiTitle(safeName);
+    const entityNamePrompt = wikiEntityNamePromptLine(normalizedType, safeName);
 
     const templateInstructionMap: Record<Exclude<WikiMarkdownEntityType, "magic_item">, string> = {
       monster: [
@@ -441,7 +451,8 @@ export async function generateWikiMarkdownAction(
         `Tono narrativo campagna: ${loreTone}`,
         `Livello di magia: ${magicLevel}`,
         "",
-        `Il mostro "${safeName}" userà lo statblock copiato dal manuale indicizzato (testo sotto [MECCANICA], senza riscrittura). NON inventare né elencare CA, PF, punteggi caratteristica, TS, azioni, danni o CD.`,
+        `Il mostro userà lo statblock copiato dal manuale indicizzato (testo sotto [MECCANICA], senza riscrittura). NON inventare né elencare CA, PF, punteggi caratteristica, TS, azioni, danni o CD.`,
+        entityNamePrompt,
         `Richiesta narrativa e di trama: ${safeNarrativePrompt || "Nessuna istruzione aggiuntiva."}`,
         "",
         "Scrivi solo parte descrittiva (aspetto, comportamento, ruolo nella storia), in Markdown.",
@@ -465,7 +476,9 @@ export async function generateWikiMarkdownAction(
       }
       prebuiltMarkdown = `[NARRATIVA]\n${narrativeRaw}\n\n[MECCANICA]\n\n${verbatim}`;
     } else if (normalizedType === "monster") {
-      const searchQuery = `Regole, privilegi e statblock completo del mostro: ${safeName}. Dettagli tecnici: ${safeRetrievalPrompt || "nessuno"}.`;
+      const searchQuery = nameIsPlaceholder
+        ? `Regole, privilegi e statblock completo del mostro. Dettagli: ${safeRetrievalPrompt || safeNarrativePrompt || "nessuno"}.`
+        : `Regole, privilegi e statblock completo del mostro: ${safeName}. Dettagli tecnici: ${safeRetrievalPrompt || "nessuno"}.`;
       let technicalContext = "";
       try {
         const embedding = await generateRagEmbedding(searchQuery);
@@ -537,8 +550,8 @@ export async function generateWikiMarkdownAction(
         "Sei un motore di formattazione.",
         campaignMemoryPriorityBlock(wikiMemory),
         `[CONTESTO TECNICO]:\n${technicalContext}`,
-        `RICHIESTA SPECIFICA DELL'UTENTE: Il nome dell'entità è "${safeName}". Segui queste istruzioni per i dettagli: "${safeNarrativePrompt || "Nessuna istruzione aggiuntiva."}".`,
-        `Nome mostro richiesto: ${safeName}`,
+        entityNamePrompt,
+        `Segui queste istruzioni per i dettagli: "${safeNarrativePrompt || "Nessuna istruzione aggiuntiva."}".`,
         `Grado di Sfida target: ${cr || "1"}`,
         "Usa ESCLUSIVAMENTE il [CONTESTO TECNICO] fornito (fonte: manuali importati).",
         "Se contiene lo statblock di un mostro diverso, ignoralo.",
@@ -563,7 +576,7 @@ export async function generateWikiMarkdownAction(
           campaignMemoryPriorityBlock(wikiMemory),
           `Tono campagna: ${loreTone}`,
           `Livello magia: ${magicLevel}`,
-          `RICHIESTA: Il nome dell'NPC è "${safeName}". Dettagli: "${safeNarrativePrompt || safeUserPrompt}".`,
+          `RICHIESTA: ${entityNamePrompt} Dettagli: "${safeNarrativePrompt || safeUserPrompt}".`,
           resolvedRace ? `Razza indicata: ${resolvedRace}.` : "Razza non specificata: deducila dalla richiesta se possibile, altrimenti lascia generico.",
           resolvedClass ? `Classe indicata: ${resolvedClass}.` : "Classe non specificata: non inventare privilegi di classe.",
           templateInstructionMap.npc,
@@ -638,7 +651,7 @@ export async function generateWikiMarkdownAction(
         "Sei un motore di compilazione per schede NPC D&D 5e.",
         campaignMemoryPriorityBlock(wikiMemory),
         `[CONTESTO TECNICO — solo dai manuali importati]:\n${technicalContext}`,
-        `Nome PNG: ${safeName}`,
+        entityNamePrompt,
         `Razza (vincolata): ${resolvedRace}`,
         `Classe (vincolata): ${resolvedClass}`,
         `Livello (vincolato): ${resolvedLevel}`,
@@ -661,8 +674,8 @@ export async function generateWikiMarkdownAction(
         `Livello magia: ${magicLevel}`,
         `Focus meccanico: ${mechanics}`,
         `Tipo elemento: ${normalizedType}`,
-        `RICHIESTA SPECIFICA DELL'UTENTE: Il nome dell'entità è "${safeName}". Segui queste istruzioni per i dettagli: "${safeNarrativePrompt || "Nessuna istruzione aggiuntiva."}".`,
-        `Nome elemento: ${safeName}`,
+        entityNamePrompt,
+        `Segui queste istruzioni per i dettagli: "${safeNarrativePrompt || "Nessuna istruzione aggiuntiva."}".`,
         paramLine,
         templateInstructionMap[normalizedType],
         "Devi dividere la tua risposta esattamente in due parti usando questi delimitatori esatti: inizia la descrizione narrativa con il tag [NARRATIVA] e inizia lo statblock con il tag [MECCANICA]. Non inserire testo prima di [NARRATIVA].",
@@ -765,7 +778,7 @@ export async function generateWikiMarkdownAction(
           ? "Per NPC descrivi in modo concreto: aspetto, carattere, ruolo e modo di parlare/comportarsi."
           : "Per Mostro descrivi aspetto, comportamento e ruolo nel mondo/campagna.",
         "",
-        `NOME: ${safeName}`,
+        entityNamePrompt,
         `RICHIESTA UTENTE: ${safeNarrativePrompt || "Nessuna istruzione aggiuntiva."}`,
         "",
         "TESTO SORGENTE:",
@@ -807,12 +820,31 @@ export async function generateWikiMarkdownAction(
         })()
       : undefined;
 
+    let generatedTitle: string | undefined;
+    if (nameIsPlaceholder) {
+      let resolved = resolveWikiTitleFromDescription(description, safeName);
+      if (isPlaceholderWikiTitle(resolved)) {
+        const fallback = await generateContextualNameFromCampaign(
+          campaignId,
+          normalizedType,
+          safeUserPrompt,
+          description.slice(0, 600)
+        );
+        if (fallback) resolved = fallback;
+      }
+      if (!isPlaceholderWikiTitle(resolved)) {
+        generatedTitle = resolved;
+        description = syncMarkdownTitle(description, resolved);
+      }
+    }
+
     return {
       success: true,
       description,
       statblock,
       stats: extractedStats,
       npcTraits: extractedNpcTraits,
+      generatedTitle,
     };
   } catch (err) {
     console.error("[generateWikiMarkdownAction]", err);

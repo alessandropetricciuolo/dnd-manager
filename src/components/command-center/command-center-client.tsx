@@ -392,18 +392,44 @@ export function CommandCenterClient({
 
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden">
-      <header className="border-b border-barber-gold/20 bg-barber-dark/90 px-4 py-3 md:px-6">
+      <header
+        className={cn(
+          "shrink-0 px-4 py-3 md:px-6",
+          centerView === "assistant"
+            ? "border-b border-white/[0.06] bg-barber-dark/50 backdrop-blur-sm"
+            : "border-b border-barber-gold/20 bg-barber-dark/90"
+        )}
+      >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-barber-gold/70">
-              GM Workspace
-            </p>
-            <h1 className="font-serif text-xl font-bold text-barber-paper md:text-2xl">
-              Command Center
+            {centerView !== "assistant" ? (
+              <p className="text-xs font-medium uppercase tracking-[0.2em] text-barber-gold/70">
+                GM Workspace
+              </p>
+            ) : null}
+            <h1
+              className={cn(
+                "font-serif font-bold text-barber-paper",
+                centerView === "assistant" ? "text-lg md:text-xl" : "text-xl md:text-2xl"
+              )}
+            >
+              {centerView === "assistant" ? "Assistente GM" : "Command Center"}
             </h1>
+            {centerView === "assistant" ? (
+              <p className="mt-0.5 text-xs text-barber-paper/50">
+                Chat e anteprima live per wiki, missioni e schede
+              </p>
+            ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex rounded-md border border-barber-gold/30 p-0.5">
+            <div
+              className={cn(
+                "flex rounded-xl p-0.5",
+                centerView === "assistant"
+                  ? "bg-white/[0.04] ring-1 ring-white/[0.06]"
+                  : "rounded-md border border-barber-gold/30"
+              )}
+            >
               <button
                 type="button"
                 onClick={() => handleCenterViewChange("workspace")}
@@ -437,7 +463,14 @@ export function CommandCenterClient({
                 setCampaignInUrl(v as string | "all");
               }}
             >
-              <SelectTrigger className="w-[200px] border-barber-gold/30 bg-barber-dark">
+              <SelectTrigger
+                className={cn(
+                  "w-[200px] bg-barber-dark",
+                  centerView === "assistant"
+                    ? "border-white/10 ring-1 ring-white/5"
+                    : "border-barber-gold/30"
+                )}
+              >
                 <SelectValue placeholder="Tutte le campagne" />
               </SelectTrigger>
               <SelectContent>
@@ -643,7 +676,7 @@ export function CommandCenterClient({
           className={cn(
             "flex min-h-0 flex-1 flex-col",
             centerView === "assistant"
-              ? "overflow-hidden p-3 md:p-4"
+              ? "overflow-hidden p-2 md:p-3"
               : "min-h-[280px] overflow-auto p-4 md:p-6"
           )}
         >
@@ -654,6 +687,7 @@ export function CommandCenterClient({
               noteId={selectedNote?.id ?? null}
               onCampaignChange={handleAssistantCampaignChange}
               fullBleed
+              hideCampaignSelector
             />
           ) : sidebarTab === "inbox" && selectedNote ? (
             <div className="mx-auto max-w-2xl space-y-4">
