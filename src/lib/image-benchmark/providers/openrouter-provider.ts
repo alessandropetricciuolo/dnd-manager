@@ -2,11 +2,19 @@ import {
   buildOpenRouterHeaders,
   getOpenRouterApiKey,
 } from "@/lib/ai/openrouter-client";
+import {
+  aspectRatioFallbackChain,
+  clampOpenRouterImagePrompt,
+  extractReferenceUrlsFromMultimodal,
+  extractUnifiedImageFromResponse,
+  isOpenRouterClientError,
+} from "@/lib/ai/openrouter-image-request";
 import type { ImageGenerationInput, ImageGenerationOutput } from "../types";
 import type { ImageGenerationProvider } from "./types";
 
 const DEFAULT_OPENROUTER_BASE = "https://openrouter.ai/api/v1";
 const OPENROUTER_CHAT_PATH = "/chat/completions";
+const OPENROUTER_IMAGES_PATH = "/images";
 const IMAGE_TIMEOUT_MS = 180_000;
 
 function getOpenRouterBaseUrl(): string {
@@ -132,11 +140,12 @@ function extractEstimatedCost(data: unknown): number | undefined {
   return typeof cost === "number" && Number.isFinite(cost) ? cost : undefined;
 }
 
-async function postOpenRouterImageRequest(
+async function postOpenRouterJson(
+  path: string,
   apiKey: string,
   body: Record<string, unknown>
 ): Promise<{ data: unknown; durationMs: number }> {
-  const url = `${getOpenRouterBaseUrl()}${OPENROUTER_CHAT_PATH}`;
+  const url = `${getOpenRouterBaseUrl()}${path}`;
   const started = Date.now();
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), IMAGE_TIMEOUT_MS);
@@ -169,6 +178,65 @@ async function postOpenRouterImageRequest(
   }
 }
 
+type ImageAttempt = {
+  label: string;
+  path: string;
+  body: Record<string, unknown>;
+  parse: (data: unknown) => { imageUrl?: string; imageBase64?: string };
+};
+
+function buildImageAttempts(input: ImageGenerationInput): ImageAttempt[] {
+  const prompt = clampOpenRouterImagePrompt(input.prompt);
+  const hasMultimodal = Array.isArray(input.multimodalContent) && input.multimodalContent.length > 0;
+  const referenceUrls = extractReferenceUrlsFromMultimodal(input.multimodalContent);
+  const aspectRatios = aspectRatioFallbackChain(input.aspectRatio);
+  const attempts: ImageAttempt[] = [];
+
+  for (const aspectRatio of aspectRatios) {
+    const unifiedBody: Record<string, unknown> = {
+      model: input.model,
+      prompt,
+      aspect_ratio: aspectRatio,
+      output_format: "png",
+      n: 1,
+    };
+    if (referenceUrls.length > 0) {
+      unifiedBody.input_references = referenceUrls.map((url) => ({ image_url: { url } }));
+    }
+    attempts.push({
+      label: `unified:${aspectRatio}`,
+      path: OPENROUTER_IMAGES_PATH,
+      body: unifiedBody,
+      parse: extractUnifiedImageFromResponse,
+    });
+  }
+
+  const messageContent = hasMultimodal ? input.multimodalContent! : prompt;
+  const chatVariants: Array<Record<string, unknown>> = [
+    { modalities: ["image"], image_config: { aspect_ratio: aspectRatios[0] } },
+    { modalities: ["image"] },
+    { modalities: ["image", "text"], image_config: { aspect_ratio: aspectRatios[0] } },
+    { modalities: ["image", "text"] },
+    {},
+  ];
+
+  for (const variant of chatVariants) {
+    attempts.push({
+      label: `chat:${JSON.stringify(variant)}`,
+      path: OPENROUTER_CHAT_PATH,
+      body: {
+        model: input.model,
+        messages: [{ role: "user", content: messageContent }],
+        stream: false,
+        ...variant,
+      },
+      parse: extractImageFromOpenRouterResponse,
+    });
+  }
+
+  return attempts;
+}
+
 export async function generateImageWithOpenRouter(input: ImageGenerationInput): Promise<ImageGenerationOutput> {
   const apiKey = getOpenRouterApiKey();
   const prompt = input.prompt.trim();
@@ -182,23 +250,14 @@ export async function generateImageWithOpenRouter(input: ImageGenerationInput): 
     };
   }
 
-  const messageContent = hasMultimodal ? input.multimodalContent! : prompt;
-
-  const modalitiesOptions: Array<Array<"image" | "text">> = [["image"], ["image", "text"]];
+  const attempts = buildImageAttempts(input);
   let lastError: Error | null = null;
 
-  for (const modalities of modalitiesOptions) {
-    for (let attempt = 1; attempt <= 2; attempt++) {
+  for (const attempt of attempts) {
+    for (let retry = 1; retry <= 2; retry++) {
       try {
-        const { data, durationMs } = await postOpenRouterImageRequest(apiKey, {
-          model: input.model,
-          messages: [{ role: "user", content: messageContent }],
-          modalities,
-          image_config: { aspect_ratio: input.aspectRatio },
-          stream: false,
-        });
-
-        const extracted = extractImageFromOpenRouterResponse(data);
+        const { data, durationMs } = await postOpenRouterJson(attempt.path, apiKey, attempt.body);
+        const extracted = attempt.parse(data);
         return {
           success: true,
           ...extracted,
@@ -213,8 +272,12 @@ export async function generateImageWithOpenRouter(input: ImageGenerationInput): 
           lastError = error instanceof Error ? error : new Error(String(error));
         }
 
-        if (attempt < 2 && lastError.message.includes("HTTP 5")) {
-          await sleep(600 * attempt);
+        const retryable =
+          (lastError.message.includes("HTTP 5") && retry < 2) ||
+          (isOpenRouterClientError(lastError.message) && retry < 2);
+
+        if (retryable) {
+          await sleep(400 * retry);
           continue;
         }
         break;
@@ -222,11 +285,16 @@ export async function generateImageWithOpenRouter(input: ImageGenerationInput): 
     }
   }
 
+  const friendly = lastError?.message ?? "Errore sconosciuto OpenRouter.";
+  const hint = isOpenRouterClientError(friendly)
+    ? " Parametri immagine non accettati dal modello — riprova con una descrizione più breve o senza riferimento visivo."
+    : "";
+
   return {
     success: false,
     rawResponse: null,
     durationMs: 0,
-    errorMessage: lastError?.message ?? "Errore sconosciuto OpenRouter.",
+    errorMessage: `${friendly}${hint}`,
   };
 }
 

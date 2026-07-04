@@ -62,3 +62,28 @@ export async function fetchPublicImageAsDataUrl(publicUrl: string): Promise<stri
   const buffer = Buffer.from(await res.arrayBuffer());
   return `data:${mimeType};base64,${buffer.toString("base64")}`;
 }
+
+/**
+ * Riferimento per OpenRouter: preferisce URL https pubblico (più leggero del base64 inline).
+ * In locale usa data URL se l'URL non è raggiungibile dall'esterno.
+ */
+export async function resolveImageReferenceForOpenRouter(publicUrl: string): Promise<string> {
+  const trimmed = publicUrl.trim();
+  if (trimmed.startsWith("https://")) return trimmed;
+
+  const absolute = resolveAbsolutePublicUrl(trimmed);
+  const siteBase = process.env.NEXT_PUBLIC_SITE_URL?.trim() || "";
+  const isPublicHttps =
+    absolute.startsWith("https://") &&
+    !absolute.includes("localhost") &&
+    !absolute.includes("127.0.0.1");
+
+  if (isPublicHttps) return absolute;
+
+  if (siteBase.startsWith("https://") && absolute.startsWith("http")) {
+    const publicAbsolute = `${siteBase.replace(/\/$/, "")}${trimmed.startsWith("/") ? trimmed : `/${trimmed}`}`;
+    return publicAbsolute;
+  }
+
+  return fetchPublicImageAsDataUrl(trimmed);
+}

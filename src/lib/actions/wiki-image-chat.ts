@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import type { WikiImageEntityKind } from "@/lib/ai/image-prompt-builder";
-import { fetchPublicImageAsDataUrl } from "@/lib/ai/image-reference-fetch";
+import { resolveImageReferenceForOpenRouter } from "@/lib/ai/image-reference-fetch";
 import {
   buildImageRefineInstructionText,
   type WikiImageChatTurn,
@@ -69,10 +69,10 @@ export async function refineWikiImageAction(
   if (!auth.ok) return { success: false, message: auth.message };
 
   try {
-    const referenceDataUrl = await fetchPublicImageAsDataUrl(referenceImageUrl);
+    const referenceForApi = await resolveImageReferenceForOpenRouter(referenceImageUrl);
     const instruction = buildImageRefineInstructionText(entityType, baseDescription, messages);
     const model = getSiteImageModel();
-    const buffer = await generateSiteImageRefinement(instruction, referenceDataUrl, entityType, {
+    const buffer = await generateSiteImageRefinement(instruction, referenceForApi, entityType, {
       model,
     });
 

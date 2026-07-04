@@ -1,12 +1,12 @@
 {
-  "updatedAt": "2026-07-03T14:45:19.617Z",
+  "updatedAt": "2026-07-03T15:31:30.326Z",
   "sourceProject": "Barber & Dragons",
   "targetProject": "gmflow.app",
   "sourceRepoPath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App",
   "targetRepoPath": "/Users/alessandropetricciuolo/Desktop/masto-platform",
   "branch": "main",
-  "lastCommit": "a4a054564a5f4c082bbe1d1e89ba99a37c7879c7",
-  "commitRange": "508bd44..a4a0545",
+  "lastCommit": "cd6c7257bf11c9d5833c5e18f3eb17788119c620",
+  "commitRange": "a4a0545..cd6c725",
   "items": [
     {
       "id": "BD-GMFLOW-PKG-2026-06-28-001",
@@ -19159,6 +19159,258 @@
       "statusCode": "M",
       "createdAt": "2026-07-03T14:45:19.617Z",
       "updatedAt": "2026-07-03T14:45:19.617Z"
+    },
+    {
+      "id": "BD-GMFLOW-cd6c725-001",
+      "title": "AI: json-extract.test.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/lib/ai/__tests__/json-extract.test.ts` aggiunto nel commit «fix(ai): harden campaign draft JSON parsing and OpenRouter json mode». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/lib/ai/__tests__/json-extract.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/ai/__tests__/json-extract.test.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "cd6c7257bf11c9d5833c5e18f3eb17788119c620",
+      "commitShort": "cd6c725",
+      "commitSubject": "fix(ai): harden campaign draft JSON parsing and OpenRouter json mode",
+      "statusCode": "A",
+      "createdAt": "2026-07-03T15:31:30.326Z",
+      "updatedAt": "2026-07-03T15:31:30.326Z"
+    },
+    {
+      "id": "BD-GMFLOW-cd6c725-002",
+      "title": "AI: campaign-text-generator.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/lib/ai/campaign-text-generator.ts` modificato nel commit «fix(ai): harden campaign draft JSON parsing and OpenRouter json mode». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/lib/ai/campaign-text-generator.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/ai/campaign-text-generator.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "cd6c7257bf11c9d5833c5e18f3eb17788119c620",
+      "commitShort": "cd6c725",
+      "commitSubject": "fix(ai): harden campaign draft JSON parsing and OpenRouter json mode",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T15:31:30.326Z",
+      "updatedAt": "2026-07-03T15:31:30.326Z"
+    },
+    {
+      "id": "BD-GMFLOW-cd6c725-003",
+      "title": "AI: json-extract.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/lib/ai/json-extract.ts` aggiunto nel commit «fix(ai): harden campaign draft JSON parsing and OpenRouter json mode». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/lib/ai/json-extract.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/ai/json-extract.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "cd6c7257bf11c9d5833c5e18f3eb17788119c620",
+      "commitShort": "cd6c725",
+      "commitSubject": "fix(ai): harden campaign draft JSON parsing and OpenRouter json mode",
+      "statusCode": "A",
+      "createdAt": "2026-07-03T15:31:30.326Z",
+      "updatedAt": "2026-07-03T15:31:30.326Z"
+    },
+    {
+      "id": "BD-GMFLOW-cd6c725-004",
+      "title": "AI: openrouter-client.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/lib/ai/openrouter-client.ts` modificato nel commit «fix(ai): harden campaign draft JSON parsing and OpenRouter json mode». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/lib/ai/openrouter-client.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/ai/openrouter-client.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "cd6c7257bf11c9d5833c5e18f3eb17788119c620",
+      "commitShort": "cd6c725",
+      "commitSubject": "fix(ai): harden campaign draft JSON parsing and OpenRouter json mode",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T15:31:30.326Z",
+      "updatedAt": "2026-07-03T15:31:30.326Z"
+    },
+    {
+      "id": "BD-GMFLOW-cd6c725-005",
+      "title": "AI: campaign-text-generator.test.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/__tests__/campaign-text-generator.test.ts` modificato nel commit «fix(ai): harden campaign draft JSON parsing and OpenRouter json mode». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/campaign-text-generator.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/campaign-text-generator.test.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "cd6c7257bf11c9d5833c5e18f3eb17788119c620",
+      "commitShort": "cd6c725",
+      "commitSubject": "fix(ai): harden campaign draft JSON parsing and OpenRouter json mode",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T15:31:30.326Z",
+      "updatedAt": "2026-07-03T15:31:30.326Z"
+    },
+    {
+      "id": "BD-GMFLOW-cd6c725-006",
+      "title": "AI: interpreter.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/interpreter.ts` modificato nel commit «fix(ai): harden campaign draft JSON parsing and OpenRouter json mode». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/interpreter.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/interpreter.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "cd6c7257bf11c9d5833c5e18f3eb17788119c620",
+      "commitShort": "cd6c725",
+      "commitSubject": "fix(ai): harden campaign draft JSON parsing and OpenRouter json mode",
+      "statusCode": "M",
+      "createdAt": "2026-07-03T15:31:30.326Z",
+      "updatedAt": "2026-07-03T15:31:30.326Z"
     }
   ]
 }

@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-* Data aggiornamento: 2026-07-03T14:45:19.617Z
+* Data aggiornamento: 2026-07-03T15:31:30.326Z
 * Branch corrente: main
-* Ultimo commit analizzato: a4a054564a5f4c082bbe1d1e89ba99a37c7879c7
-* Range commit analizzato: 508bd44..a4a0545
-* Stato generale: 399 voci NEEDS_REVIEW
-* Voci totali: 499 (NEEDS_REVIEW: 399, TO_IMPORT: 24, IMPORTED: 0)
+* Ultimo commit analizzato: cd6c7257bf11c9d5833c5e18f3eb17788119c620
+* Range commit analizzato: a4a0545..cd6c725
+* Stato generale: 405 voci NEEDS_REVIEW
+* Voci totali: 505 (NEEDS_REVIEW: 405, TO_IMPORT: 24, IMPORTED: 0)
 
 ## Delta automatico non revisionato
 
@@ -19388,6 +19388,318 @@ Criterio di import completato:
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 * OPENROUTER_API_KEY configurata in gmflow
 
+### [BD-GMFLOW-cd6c725-001] AI: json-extract.test.ts (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/ai/__tests__/json-extract.test.ts` aggiunto nel commit «fix(ai): harden campaign draft JSON parsing and OpenRouter json mode». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/ai/__tests__/json-extract.test.ts
+
+File gmflow probabili:
+
+* src/lib/ai/__tests__/json-extract.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-cd6c725-002] AI: campaign-text-generator.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/ai/campaign-text-generator.ts` modificato nel commit «fix(ai): harden campaign draft JSON parsing and OpenRouter json mode». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/ai/campaign-text-generator.ts
+
+File gmflow probabili:
+
+* src/lib/ai/campaign-text-generator.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-cd6c725-003] AI: json-extract.ts (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/ai/json-extract.ts` aggiunto nel commit «fix(ai): harden campaign draft JSON parsing and OpenRouter json mode». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/ai/json-extract.ts
+
+File gmflow probabili:
+
+* src/lib/ai/json-extract.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-cd6c725-004] AI: openrouter-client.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/ai/openrouter-client.ts` modificato nel commit «fix(ai): harden campaign draft JSON parsing and OpenRouter json mode». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/ai/openrouter-client.ts
+
+File gmflow probabili:
+
+* src/lib/ai/openrouter-client.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-cd6c725-005] AI: campaign-text-generator.test.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/campaign-text-generator.test.ts` modificato nel commit «fix(ai): harden campaign draft JSON parsing and OpenRouter json mode». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/campaign-text-generator.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/campaign-text-generator.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-cd6c725-006] AI: interpreter.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/interpreter.ts` modificato nel commit «fix(ai): harden campaign draft JSON parsing and OpenRouter json mode». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/interpreter.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/interpreter.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
 ## Modifiche revisionate manualmente
 
 ### [BD-GMFLOW-PKG-2026-06-28-001] Package: Nuove funzioni e bugfix (no RLS, no grafica)
@@ -24099,9 +24411,9 @@ Questo ledger traccia modifiche Barber & Dragons da valutare per import in gmflo
 
 - Repository sorgente: `/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App`
 - Repository gmflow locale: `/Users/alessandropetricciuolo/Desktop/masto-platform`
-- Ultimo commit: `a4a0545` — feat(command-center): guided AI campaign create with type, description, and cover
-- File analizzati nell'ultimo run: 14
-- Nuove voci aggiunte: 14
+- Ultimo commit: `cd6c725` — fix(ai): harden campaign draft JSON parsing and OpenRouter json mode
+- File analizzati nell'ultimo run: 6
+- Nuove voci aggiunte: 6
 
 **Azioni consigliate:**
 1. Rivedere voci `NEEDS_REVIEW` nella sezione «Delta automatico».
