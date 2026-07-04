@@ -73,6 +73,8 @@ export type ChatCampaignMeta = {
   typeConfirmed?: boolean;
   /** Descrizione approvata e fase copertina completata. */
   coverDecided?: boolean;
+  /** Campagna già creata durante un tentativo precedente (retry Architect). */
+  createdCampaignId?: string;
 };
 
 export type ChatMissionMeta = {
