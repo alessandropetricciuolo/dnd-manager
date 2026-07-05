@@ -59,16 +59,24 @@ export async function executeAiProposal(
 
   const now = new Date().toISOString();
 
-  const { error: approveErr } = await ctx.supabase
+  const { data: claimed, error: approveErr } = await ctx.supabase
     .from("ai_action_requests")
     .update({ status: "approved", approved_at: now })
     .eq("id", proposalId)
     .eq("requested_by", ctx.userId)
-    .eq("status", "proposed");
+    .eq("status", "proposed")
+    .select("id")
+    .maybeSingle();
 
   if (approveErr) {
     console.error("[executeAiProposal] approve", approveErr);
     return { success: false, error: approveErr.message };
+  }
+  if (!claimed) {
+    return {
+      success: false,
+      error: "La proposta è già in esecuzione o non è più in attesa.",
+    };
   }
 
   const result = await executeAction(row.action_name, row.input_payload, {
