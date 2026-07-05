@@ -42,6 +42,11 @@ import { applyDomainFallbackInterpreter } from "./domain-fallback-interpreter";
 import { preparePendingInputForExecute } from "./proposal-input";
 import { mergeCharacterInputFromSheet } from "./character-proposal-shared";
 import {
+  pendingAfterPartialCampaignCreation,
+  resolveExistingCreatedCampaignId,
+  type CampaignCreationResult,
+} from "./campaign-creation-idempotency";
+import {
   formatCampaignTypeAck,
   formatCampaignTypeQuestion,
   hasExplicitCampaignType,
@@ -196,15 +201,21 @@ async function executeCharacterCreate(
 async function finalizeCampaignCreation(
   pending: ChatPendingProposal,
   options: { withArchitect: boolean }
-): Promise<{ success: true; title: string; campaignId?: string } | { success: false; error: string }> {
-  const exec = await executePendingProposal(pending, null);
-  if (!exec.success) {
-    return { success: false, error: exec.error };
-  }
+): Promise<CampaignCreationResult> {
+  const existingId = resolveExistingCreatedCampaignId(pending.campaignMeta);
+  let newCampaignId = existingId ?? undefined;
+  let title = pickCampaignTitle(pending.input) || "Campagna";
 
-  const created = exec.data as { id?: string; name?: string } | undefined;
-  const title = pickCampaignTitle(pending.input) || created?.name || "Campagna";
-  const newCampaignId = created?.id;
+  if (!existingId) {
+    const exec = await executePendingProposal(pending, null);
+    if (!exec.success) {
+      return { success: false, error: exec.error };
+    }
+
+    const created = exec.data as { id?: string; name?: string } | undefined;
+    title = pickCampaignTitle(pending.input) || created?.name || title;
+    newCampaignId = created?.id;
+  }
 
   if (options.withArchitect && newCampaignId && pending.campaignMeta?.draft) {
     const description = buildArchitectDescriptionFromDraft(pending.campaignMeta.draft);
@@ -220,6 +231,7 @@ async function finalizeCampaignCreation(
       return {
         success: false,
         error: `Campagna creata ma generazione paletti IA fallita: ${architect.error}`,
+        campaignId: newCampaignId,
       };
     }
     revalidatePath(`/campaigns/${newCampaignId}`);
@@ -687,7 +699,7 @@ export async function runAiChatAssistant(
         data: {
           reply: `Non sono riuscito a creare la campagna: ${result.error}`,
           intentSummary: "Esecuzione fallita",
-          pendingProposal: pending,
+          pendingProposal: pendingAfterPartialCampaignCreation(pending, result),
           executed: false,
           clearedPending: false,
         },
@@ -711,9 +723,9 @@ export async function runAiChatAssistant(
       return {
         success: true,
         data: {
-          reply: `${result.error}\n\nPuoi riprovare dalla scheda campagna o scrivere **annulla**.`,
+          reply: `${result.error}\n\nPuoi riprovare scrivendo **sì** di nuovo, dalla scheda campagna, o **annulla**.`,
           intentSummary: "Esecuzione parziale",
-          pendingProposal: pending,
+          pendingProposal: pendingAfterPartialCampaignCreation(pending, result),
           executed: false,
           clearedPending: false,
         },
@@ -815,7 +827,7 @@ export async function runAiChatAssistant(
           data: {
             reply: `Non sono riuscito a creare la campagna: ${campaignResult.error}`,
             intentSummary: "Esecuzione fallita",
-            pendingProposal: pending,
+            pendingProposal: pendingAfterPartialCampaignCreation(pending, campaignResult),
             executed: false,
             clearedPending: false,
           },
