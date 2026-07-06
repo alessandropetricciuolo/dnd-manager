@@ -1,12 +1,12 @@
 {
-  "updatedAt": "2026-07-06T08:54:21.834Z",
+  "updatedAt": "2026-07-06T11:54:26.498Z",
   "sourceProject": "Barber & Dragons",
   "targetProject": "gmflow.app",
   "sourceRepoPath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App",
   "targetRepoPath": "/Users/alessandropetricciuolo/Desktop/masto-platform",
   "branch": "main",
-  "lastCommit": "d3a640bf5f7f721fcb9acdbfa2dd8190b360c6e2",
-  "commitRange": "8133bf5..d3a640b",
+  "lastCommit": "12b3a1084226910c99557dade7c6136efacf2899",
+  "commitRange": "0d6345e..12b3a10",
   "items": [
     {
       "id": "BD-GMFLOW-PKG-2026-06-28-001",
@@ -20239,6 +20239,813 @@
       "statusCode": "M",
       "createdAt": "2026-07-06T08:54:21.834Z",
       "updatedAt": "2026-07-06T08:54:21.834Z"
+    },
+    {
+      "id": "BD-GMFLOW-0d6345e-001",
+      "title": "AI: ai-assistant-canvas.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/components/command-center/ai-assistant-canvas.tsx` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/components/command-center/ai-assistant-canvas.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/command-center/ai-assistant-canvas.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "0d6345ed57297a2933f62856af1cc4ef6f4c9828",
+      "commitShort": "0d6345e",
+      "commitSubject": "feat(command-center): gate NPC statblock on mechanics and speed up wiki generation",
+      "statusCode": "M",
+      "createdAt": "2026-07-06T08:54:29.432Z",
+      "updatedAt": "2026-07-06T08:54:29.432Z"
+    },
+    {
+      "id": "BD-GMFLOW-0d6345e-002",
+      "title": "AI: ai-assistant-panel.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/components/command-center/ai-assistant-panel.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/command-center/ai-assistant-panel.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "0d6345ed57297a2933f62856af1cc4ef6f4c9828",
+      "commitShort": "0d6345e",
+      "commitSubject": "feat(command-center): gate NPC statblock on mechanics and speed up wiki generation",
+      "statusCode": "M",
+      "createdAt": "2026-07-06T08:54:29.432Z",
+      "updatedAt": "2026-07-06T08:54:29.432Z"
+    },
+    {
+      "id": "BD-GMFLOW-0d6345e-003",
+      "title": "WIKI: wiki-text-chat.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "WIKI",
+      "priority": "Media",
+      "description": "File `src/lib/actions/wiki-text-chat.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.",
+      "bdFiles": [
+        "src/lib/actions/wiki-text-chat.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/actions/wiki-text-chat.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "0d6345ed57297a2933f62856af1cc4ef6f4c9828",
+      "commitShort": "0d6345e",
+      "commitSubject": "feat(command-center): gate NPC statblock on mechanics and speed up wiki generation",
+      "statusCode": "M",
+      "createdAt": "2026-07-06T08:54:29.432Z",
+      "updatedAt": "2026-07-06T08:54:29.432Z"
+    },
+    {
+      "id": "BD-GMFLOW-0d6345e-004",
+      "title": "AI: contextual-names.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/lib/ai/contextual-names.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/lib/ai/contextual-names.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/ai/contextual-names.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "0d6345ed57297a2933f62856af1cc4ef6f4c9828",
+      "commitShort": "0d6345e",
+      "commitSubject": "feat(command-center): gate NPC statblock on mechanics and speed up wiki generation",
+      "statusCode": "M",
+      "createdAt": "2026-07-06T08:54:29.432Z",
+      "updatedAt": "2026-07-06T08:54:29.432Z"
+    },
+    {
+      "id": "BD-GMFLOW-0d6345e-005",
+      "title": "AI: wiki-npc-params.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/lib/ai/wiki-npc-params.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/lib/ai/wiki-npc-params.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/ai/wiki-npc-params.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "0d6345ed57297a2933f62856af1cc4ef6f4c9828",
+      "commitShort": "0d6345e",
+      "commitSubject": "feat(command-center): gate NPC statblock on mechanics and speed up wiki generation",
+      "statusCode": "M",
+      "createdAt": "2026-07-06T08:54:29.432Z",
+      "updatedAt": "2026-07-06T08:54:29.432Z"
+    },
+    {
+      "id": "BD-GMFLOW-0d6345e-006",
+      "title": "AI: wiki-text-generator.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/lib/ai/wiki-text-generator.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/lib/ai/wiki-text-generator.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/ai/wiki-text-generator.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "0d6345ed57297a2933f62856af1cc4ef6f4c9828",
+      "commitShort": "0d6345e",
+      "commitSubject": "feat(command-center): gate NPC statblock on mechanics and speed up wiki generation",
+      "statusCode": "M",
+      "createdAt": "2026-07-06T08:54:29.432Z",
+      "updatedAt": "2026-07-06T08:54:29.432Z"
+    },
+    {
+      "id": "BD-GMFLOW-0d6345e-007",
+      "title": "AI: campaign-wiki-ai-memory.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/lib/campaign-wiki-ai-memory.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/lib/campaign-wiki-ai-memory.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/campaign-wiki-ai-memory.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "0d6345ed57297a2933f62856af1cc4ef6f4c9828",
+      "commitShort": "0d6345e",
+      "commitSubject": "feat(command-center): gate NPC statblock on mechanics and speed up wiki generation",
+      "statusCode": "M",
+      "createdAt": "2026-07-06T08:54:29.432Z",
+      "updatedAt": "2026-07-06T08:54:29.432Z"
+    },
+    {
+      "id": "BD-GMFLOW-0d6345e-008",
+      "title": "AI: wiki-npc-params.test.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/__tests__/wiki-npc-params.test.ts` aggiunto nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/wiki-npc-params.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/wiki-npc-params.test.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "0d6345ed57297a2933f62856af1cc4ef6f4c9828",
+      "commitShort": "0d6345e",
+      "commitSubject": "feat(command-center): gate NPC statblock on mechanics and speed up wiki generation",
+      "statusCode": "A",
+      "createdAt": "2026-07-06T08:54:29.432Z",
+      "updatedAt": "2026-07-06T08:54:29.432Z"
+    },
+    {
+      "id": "BD-GMFLOW-0d6345e-009",
+      "title": "AI: wiki-request-detector.test.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "0d6345ed57297a2933f62856af1cc4ef6f4c9828",
+      "commitShort": "0d6345e",
+      "commitSubject": "feat(command-center): gate NPC statblock on mechanics and speed up wiki generation",
+      "statusCode": "M",
+      "createdAt": "2026-07-06T08:54:29.432Z",
+      "updatedAt": "2026-07-06T08:54:29.432Z"
+    },
+    {
+      "id": "BD-GMFLOW-0d6345e-010",
+      "title": "AI: chat-assistant.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/chat-assistant.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/chat-assistant.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "0d6345ed57297a2933f62856af1cc4ef6f4c9828",
+      "commitShort": "0d6345e",
+      "commitSubject": "feat(command-center): gate NPC statblock on mechanics and speed up wiki generation",
+      "statusCode": "M",
+      "createdAt": "2026-07-06T08:54:29.432Z",
+      "updatedAt": "2026-07-06T08:54:29.432Z"
+    },
+    {
+      "id": "BD-GMFLOW-0d6345e-011",
+      "title": "AI: domain-fallback-interpreter.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "0d6345ed57297a2933f62856af1cc4ef6f4c9828",
+      "commitShort": "0d6345e",
+      "commitSubject": "feat(command-center): gate NPC statblock on mechanics and speed up wiki generation",
+      "statusCode": "M",
+      "createdAt": "2026-07-06T08:54:29.432Z",
+      "updatedAt": "2026-07-06T08:54:29.432Z"
+    },
+    {
+      "id": "BD-GMFLOW-0d6345e-012",
+      "title": "AI: draft-assistant.types.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/draft-assistant.types.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/draft-assistant.types.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/draft-assistant.types.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "0d6345ed57297a2933f62856af1cc4ef6f4c9828",
+      "commitShort": "0d6345e",
+      "commitSubject": "feat(command-center): gate NPC statblock on mechanics and speed up wiki generation",
+      "statusCode": "M",
+      "createdAt": "2026-07-06T08:54:29.432Z",
+      "updatedAt": "2026-07-06T08:54:29.432Z"
+    },
+    {
+      "id": "BD-GMFLOW-0d6345e-013",
+      "title": "AI: preview-text-selection.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/preview-text-selection.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/preview-text-selection.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/preview-text-selection.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "0d6345ed57297a2933f62856af1cc4ef6f4c9828",
+      "commitShort": "0d6345e",
+      "commitSubject": "feat(command-center): gate NPC statblock on mechanics and speed up wiki generation",
+      "statusCode": "M",
+      "createdAt": "2026-07-06T08:54:29.432Z",
+      "updatedAt": "2026-07-06T08:54:29.432Z"
+    },
+    {
+      "id": "BD-GMFLOW-0d6345e-014",
+      "title": "AI: wiki-proposal-builder.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "0d6345ed57297a2933f62856af1cc4ef6f4c9828",
+      "commitShort": "0d6345e",
+      "commitSubject": "feat(command-center): gate NPC statblock on mechanics and speed up wiki generation",
+      "statusCode": "M",
+      "createdAt": "2026-07-06T08:54:29.432Z",
+      "updatedAt": "2026-07-06T08:54:29.432Z"
+    },
+    {
+      "id": "BD-GMFLOW-0d6345e-015",
+      "title": "AI: wiki-request-detector.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/wiki-request-detector.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-request-detector.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-request-detector.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "0d6345ed57297a2933f62856af1cc4ef6f4c9828",
+      "commitShort": "0d6345e",
+      "commitSubject": "feat(command-center): gate NPC statblock on mechanics and speed up wiki generation",
+      "statusCode": "M",
+      "createdAt": "2026-07-06T08:54:29.432Z",
+      "updatedAt": "2026-07-06T08:54:29.432Z"
+    },
+    {
+      "id": "BD-GMFLOW-12b3a10-001",
+      "title": "CAMPAIGNS: page.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "CAMPAIGNS",
+      "priority": "Media",
+      "description": "File `src/app/campaigns/[id]/gm-only/regia-immagini/proiezione/page.tsx` aggiunto nel commit «feat(gm): add regia immagini projection and wiki related links». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Logica campagne potenzialmente generalizzabile per multi-tenant.",
+      "bdFiles": [
+        "src/app/campaigns/[id]/gm-only/regia-immagini/proiezione/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/campaigns/[id]/gm-only/regia-immagini/proiezione/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "12b3a1084226910c99557dade7c6136efacf2899",
+      "commitShort": "12b3a10",
+      "commitSubject": "feat(gm): add regia immagini projection and wiki related links",
+      "statusCode": "A",
+      "createdAt": "2026-07-06T11:54:26.498Z",
+      "updatedAt": "2026-07-06T11:54:26.498Z"
+    },
+    {
+      "id": "BD-GMFLOW-12b3a10-002",
+      "title": "CAMPAIGNS: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "CAMPAIGNS",
+      "priority": "Media",
+      "description": "File `src/app/campaigns/[id]/wiki/[entityId]/page.tsx` modificato nel commit «feat(gm): add regia immagini projection and wiki related links». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Logica campagne potenzialmente generalizzabile per multi-tenant.",
+      "bdFiles": [
+        "src/app/campaigns/[id]/wiki/[entityId]/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/campaigns/[id]/wiki/[entityId]/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "12b3a1084226910c99557dade7c6136efacf2899",
+      "commitShort": "12b3a10",
+      "commitSubject": "feat(gm): add regia immagini projection and wiki related links",
+      "statusCode": "M",
+      "createdAt": "2026-07-06T11:54:26.498Z",
+      "updatedAt": "2026-07-06T11:54:26.498Z"
+    },
+    {
+      "id": "BD-GMFLOW-12b3a10-003",
+      "title": "CAMPAIGNS: entity-graph-actions.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "CAMPAIGNS",
+      "priority": "Media",
+      "description": "File `src/app/campaigns/entity-graph-actions.ts` modificato nel commit «feat(gm): add regia immagini projection and wiki related links». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Logica campagne potenzialmente generalizzabile per multi-tenant.",
+      "bdFiles": [
+        "src/app/campaigns/entity-graph-actions.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/campaigns/entity-graph-actions.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "12b3a1084226910c99557dade7c6136efacf2899",
+      "commitShort": "12b3a10",
+      "commitSubject": "feat(gm): add regia immagini projection and wiki related links",
+      "statusCode": "M",
+      "createdAt": "2026-07-06T11:54:26.498Z",
+      "updatedAt": "2026-07-06T11:54:26.498Z"
+    },
+    {
+      "id": "BD-GMFLOW-12b3a10-004",
+      "title": "GM_SCREEN: gm-gallery-sheet.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/gm-gallery-sheet.tsx` modificato nel commit «feat(gm): add regia immagini projection and wiki related links». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/gm-gallery-sheet.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/gm-gallery-sheet.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "12b3a1084226910c99557dade7c6136efacf2899",
+      "commitShort": "12b3a10",
+      "commitSubject": "feat(gm): add regia immagini projection and wiki related links",
+      "statusCode": "M",
+      "createdAt": "2026-07-06T11:54:26.498Z",
+      "updatedAt": "2026-07-06T11:54:26.498Z"
+    },
+    {
+      "id": "BD-GMFLOW-12b3a10-005",
+      "title": "WIKI: related-entities-section.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "WIKI",
+      "priority": "Media",
+      "description": "File `src/components/wiki/related-entities-section.tsx` aggiunto nel commit «feat(gm): add regia immagini projection and wiki related links». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.",
+      "bdFiles": [
+        "src/components/wiki/related-entities-section.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/wiki/related-entities-section.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "12b3a1084226910c99557dade7c6136efacf2899",
+      "commitShort": "12b3a10",
+      "commitSubject": "feat(gm): add regia immagini projection and wiki related links",
+      "statusCode": "A",
+      "createdAt": "2026-07-06T11:54:26.498Z",
+      "updatedAt": "2026-07-06T11:54:26.498Z"
     }
   ]
 }
