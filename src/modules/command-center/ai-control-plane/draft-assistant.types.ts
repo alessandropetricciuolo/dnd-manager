@@ -78,6 +78,8 @@ export type ChatCampaignMeta = {
   typeConfirmed?: boolean;
   /** Descrizione approvata e fase copertina completata. */
   coverDecided?: boolean;
+  /** Set after campaign.create succeeds so Architect retries do not duplicate rows. */
+  createdCampaignId?: string;
 };
 
 export type ChatMissionMeta = {
