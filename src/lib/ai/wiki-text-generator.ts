@@ -22,6 +22,7 @@ import {
   syncMarkdownTitle,
   wikiEntityNamePromptLine,
 } from "@/lib/ai/contextual-names";
+import { splitPromptByDash } from "@/lib/ai/wiki-prompt-split";
 
 export type WikiMarkdownEntityType = "npc" | "location" | "item" | "lore" | "monster" | "magic_item";
 
@@ -114,25 +115,6 @@ function buildKeywordCandidates(name: string, userPrompt: string): string[] {
 
   const unique = Array.from(new Set([name.toLowerCase().trim(), ...words]));
   return unique.slice(0, 8);
-}
-
-export function splitPromptByDash(userPrompt: string): { retrievalPrompt: string; narrativePrompt: string } {
-  const raw = userPrompt.trim();
-  if (!raw) return { retrievalPrompt: "", narrativePrompt: "" };
-
-  // Split on the first spaced dash ("retrieval - narrative") so hyphenated words
-  // like "Half-elf" stay in the retrieval segment.
-  const spacedDash = /\s+-\s+/;
-  const match = raw.match(spacedDash);
-  if (match && typeof match.index === "number") {
-    const left = raw.slice(0, match.index).trim();
-    const right = raw.slice(match.index + match[0].length).trim();
-    if (left && right) {
-      return { retrievalPrompt: left, narrativePrompt: right };
-    }
-  }
-
-  return { retrievalPrompt: raw, narrativePrompt: raw };
 }
 
 function extractStatsFromMarkdown(markdown: string): ExtractedWikiStats {

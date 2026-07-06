@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { splitPromptByDash } from "../wiki-text-generator";
+import { splitPromptByDash } from "../wiki-prompt-split";
 
 test("splitPromptByDash splits on first spaced dash", () => {
   const result = splitPromptByDash("Half-elf - ladro livello 5 - taverna");
