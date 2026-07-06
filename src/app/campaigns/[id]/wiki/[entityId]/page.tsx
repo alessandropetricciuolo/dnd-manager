@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { getEntity } from "@/app/campaigns/wiki-actions";
 import { getCampaignEligiblePlayers } from "@/app/campaigns/character-actions";
 import { WikiDetails } from "@/components/wiki/wiki-details";
+import { RelatedEntitiesSection } from "@/components/wiki/related-entities-section";
+import { getRelatedEntityLinks } from "@/app/campaigns/entity-graph-actions";
 import { WikiEntityEditButton } from "@/components/wiki/wiki-entity-edit-button";
 import { WikiEntityDeleteButton } from "@/components/wiki/wiki-entity-delete-button";
 import { getWikiContentBody } from "@/lib/wiki/content";
@@ -90,6 +92,9 @@ export default async function WikiEntityPage({ params, searchParams }: PageProps
 
   const contentBody = getWikiContentBody(entity.content);
 
+  const relatedResult = await getRelatedEntityLinks(campaignId, entityId);
+  const relatedLinks = relatedResult.success ? relatedResult.data : [];
+
   const entityWithDefaults = {
     ...entity,
     attributes: entity.attributes ?? {},
@@ -149,6 +154,11 @@ export default async function WikiEntityPage({ params, searchParams }: PageProps
             </h1>
           )}
           <WikiDetails entity={entityWithDefaults} contentBody={contentBody} isGmOrAdmin={isGmOrAdmin} />
+          {relatedLinks.length > 0 && (
+            <div className="mt-8">
+              <RelatedEntitiesSection campaignId={campaignId} links={relatedLinks} />
+            </div>
+          )}
         </article>
       </div>
     </div>
