@@ -43,11 +43,43 @@ export function extractNpcBuildParams(text: string): WikiMarkdownExtraParams {
       break;
     }
   }
-  const levelMatch = text.match(/\blivello\s*(\d{1,2})\b/i) ?? text.match(/\blvl\s*(\d{1,2})\b/i);
+  const levelMatch =
+    text.match(/\blivello\s*(\d{1,2})\b/i) ??
+    text.match(/\blvl\.?\s*(\d{1,2})\b/i) ??
+    text.match(/\blv\.?\s*(\d{1,2})\b/i) ??
+    text.match(/\b(\d{1,2})\s*°?\s*livello\b/i);
   if (levelMatch?.[1]) {
     params.npcLevel = levelMatch[1];
   }
   return params;
+}
+
+export function listMissingNpcMechanics(params: WikiMarkdownExtraParams): string[] {
+  const missing: string[] = [];
+  if (!params.npcRace?.trim()) missing.push("razza");
+  if (!params.npcClass?.trim()) missing.push("classe");
+  if (!params.npcLevel?.trim()) missing.push("livello");
+  return missing;
+}
+
+export function formatNpcMechanicsQuestion(params: WikiMarkdownExtraParams): string {
+  const missing = listMissingNpcMechanics(params);
+  if (missing.length === 0) return "";
+
+  const known = [
+    params.npcRace?.trim() ? `Razza: **${params.npcRace.trim()}**` : null,
+    params.npcClass?.trim() ? `Classe: **${params.npcClass.trim()}**` : null,
+    params.npcLevel?.trim() ? `Livello: **${params.npcLevel.trim()}**` : null,
+  ].filter(Boolean);
+
+  return [
+    "Per generare lo **statblock D&D 5e** dell'NPC servono **razza**, **classe** e **livello**.",
+    known.length ? `Ho già: ${known.join(" · ")}.` : null,
+    `Mancano: **${missing.join(", ")}**.`,
+    "Scrivi i dati mancanti in chat (es. `ladro livello 5` o `halfling guerriero livello 3`).",
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 export function hasNpcMechanicsParams(params: WikiMarkdownExtraParams): boolean {

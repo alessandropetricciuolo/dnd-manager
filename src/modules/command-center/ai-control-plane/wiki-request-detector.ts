@@ -11,7 +11,7 @@ export type DetectedWikiRequest = {
   extraParams: WikiMarkdownExtraParams;
 };
 
-export { extractNpcBuildParams, hasNpcMechanicsParams, mergeWikiExtraParams } from "@/lib/ai/wiki-npc-params";
+export { extractNpcBuildParams, hasNpcMechanicsParams, mergeWikiExtraParams, formatNpcMechanicsQuestion, listMissingNpcMechanics } from "@/lib/ai/wiki-npc-params";
 
 const NPC_VERBS =
   /\b(crea(?:mi)?|genera(?:mi)?|voglio|vorrei|ho\s+bisogno|fammi|scrivi)\b/i;

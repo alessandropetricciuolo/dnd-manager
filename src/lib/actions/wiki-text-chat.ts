@@ -197,7 +197,8 @@ export async function chatWikiMarkdownTextAction(
         entityType,
         entityName,
         last.content.trim(),
-        extraParams
+        extraParams,
+        { skipAuthCheck: true }
       );
       if (!result.success) {
         return { success: false, message: result.message };

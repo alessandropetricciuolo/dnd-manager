@@ -48,6 +48,13 @@ import {
   parseCampaignTypeFromUserMessage,
 } from "./campaign-type-selection";
 import { isCampaignType } from "@/lib/campaign-type";
+import {
+  detectWikiCreateRequest,
+  extractNpcBuildParams,
+  formatNpcMechanicsQuestion,
+  hasNpcMechanicsParams,
+  mergeWikiExtraParams,
+} from "./wiki-request-detector";
 import type { AiInterpreterResult } from "../types/ai-proposal";
 
 export type ChatPendingProposal = ChatPendingProposalPayload;
@@ -63,6 +70,9 @@ export type AiChatAssistantResult = {
 function chatHintForProposal(phase?: ChatPendingProposal["phase"]): string {
   if (phase === "awaiting_campaign_type") {
     return "Scegli il **tipo di evento** (oneshot, quest, campagna lunga, torneo) prima di scrivere la descrizione.";
+  }
+  if (phase === "awaiting_npc_mechanics") {
+    return "Indica **razza**, **classe** e **livello** per lo statblock NPC (es. halfling ladro livello 5).";
   }
   if (phase === "awaiting_image") {
     return "Scrivi **sì** per generare l'immagine nell'anteprima, **no** per continuare senza, poi **conferma** per salvare.";
@@ -290,7 +300,47 @@ function pickWikiTitle(input: Record<string, unknown>): string {
 }
 
 function pickWikiType(input: Record<string, unknown>): string {
-  return typeof input.type === "string" ? input.type.trim() : "npc";
+  return typeof input.type === "string" ? input.type.trim().toLowerCase() : "npc";
+}
+
+function isWikiNpcPending(pending: ChatPendingProposal): boolean {
+  return pending.action_name === "wiki.entity.create" && pickWikiType(pending.input) === "npc";
+}
+
+function wikiNpcStatblockReady(pending: ChatPendingProposal): boolean {
+  return Boolean(pending.wikiMeta?.markdownDraft?.statblock?.trim());
+}
+
+function mergePendingNpcBuildParams(
+  pending: ChatPendingProposal,
+  message?: string
+): import("@/lib/ai/wiki-text-generator").WikiMarkdownExtraParams {
+  return mergeWikiExtraParams(
+    pending.wikiMeta?.npcBuildParams,
+    pending.wikiMeta ? extractNpcBuildParams(pending.wikiMeta.userPrompt) : null,
+    message ? extractNpcBuildParams(message) : null
+  );
+}
+
+function buildAwaitingNpcMechanicsPending(
+  pending: ChatPendingProposal,
+  userPrompt: string,
+  partialParams: import("@/lib/ai/wiki-text-generator").WikiMarkdownExtraParams
+): ChatPendingProposal {
+  const title = pickWikiTitle(pending.input) || "Nuovo NPC";
+  return {
+    ...pending,
+    phase: "awaiting_npc_mechanics",
+    wikiMeta: {
+      entityType: "npc",
+      entityTitle: title,
+      userPrompt,
+      markdownDraft: { description: "", statblock: "" },
+      chatMessages: [],
+      npcBuildParams: partialParams,
+    },
+    preview_payload: {},
+  };
 }
 
 function hasWikiContextualImage(pending: ChatPendingProposal): boolean {
@@ -755,6 +805,37 @@ export async function runAiChatAssistant(
       };
     }
 
+    if (pending.action_name === "wiki.entity.create" && pending.phase === "awaiting_npc_mechanics") {
+      return {
+        success: true,
+        data: {
+          reply: formatNpcMechanicsQuestion(mergePendingNpcBuildParams(pending)),
+          intentSummary: "Dati statblock NPC mancanti",
+          pendingProposal: pending,
+          executed: false,
+          clearedPending: false,
+        },
+      };
+    }
+
+    if (isWikiNpcPending(pending) && !wikiNpcStatblockReady(pending)) {
+      const merged = mergePendingNpcBuildParams(pending);
+      return {
+        success: true,
+        data: {
+          reply: formatNpcMechanicsQuestion(merged),
+          intentSummary: "Statblock NPC richiesto",
+          pendingProposal: buildAwaitingNpcMechanicsPending(
+            pending,
+            pending.wikiMeta?.userPrompt ?? pickWikiTitle(pending.input),
+            merged
+          ),
+          executed: false,
+          clearedPending: false,
+        },
+      };
+    }
+
     if (pending.action_name === "campaign.create") {
       if (pending.phase === "awaiting_campaign_type") {
         return {
@@ -1039,6 +1120,65 @@ export async function runAiChatAssistant(
     };
   }
 
+  if (intent === "refine" && pending?.phase === "awaiting_npc_mechanics" && pending.action_name === "wiki.entity.create") {
+    if (!campaignId) {
+      return {
+        success: false,
+        error: "Seleziona una campagna nel filtro per creare NPC con l'AI contestuale.",
+      };
+    }
+
+    const merged = mergePendingNpcBuildParams(pending, message);
+    if (!hasNpcMechanicsParams(merged)) {
+      return {
+        success: true,
+        data: {
+          reply: formatNpcMechanicsQuestion(merged),
+          intentSummary: "Dati statblock incompleti",
+          pendingProposal: buildAwaitingNpcMechanicsPending(
+            pending,
+            pending.wikiMeta?.userPrompt ?? message.trim(),
+            merged
+          ),
+          executed: false,
+          clearedPending: false,
+        },
+      };
+    }
+
+    const enriched = await tryEnrichWikiProposal(campaignId, pending.wikiMeta?.userPrompt ?? message, pending, {
+      pending,
+      extraParams: merged,
+    });
+
+    if (enriched.error) {
+      return { success: false, error: enriched.error };
+    }
+
+    const { nextPending, replyExtra } = finalizeWikiProposalAfterText(
+      pending,
+      enriched.proposal,
+      enriched.wikiMeta
+    );
+
+    return {
+      success: true,
+      data: {
+        reply: [
+          "Perfetto, genero narrativa e statblock dall'archivio regole.",
+          replyExtra,
+          chatHintForProposal(nextPending.phase ?? "text"),
+        ]
+          .filter(Boolean)
+          .join("\n\n"),
+        intentSummary: "Bozza NPC con statblock",
+        pendingProposal: nextPending,
+        executed: false,
+        clearedPending: false,
+      },
+    };
+  }
+
   if (intent === "refine" && pending?.phase === "awaiting_campaign_type" && pending.action_name === "campaign.create") {
     const selectedType = parseCampaignTypeFromUserMessage(message);
     if (!selectedType) {
@@ -1131,7 +1271,7 @@ export async function runAiChatAssistant(
     };
   }
 
-  if (intent === "refine" && pending?.wikiMeta && pending.phase !== "awaiting_image" && pending.phase !== "awaiting_architect" && pending.phase !== "awaiting_avatar" && pending.phase !== "awaiting_sheet") {
+  if (intent === "refine" && pending?.wikiMeta && pending.phase !== "awaiting_image" && pending.phase !== "awaiting_architect" && pending.phase !== "awaiting_avatar" && pending.phase !== "awaiting_sheet" && pending.phase !== "awaiting_campaign_type" && pending.phase !== "awaiting_npc_mechanics") {
     if (!campaignId) {
       return {
         success: false,
@@ -1432,39 +1572,56 @@ export async function runAiChatAssistant(
     message
   );
 
-  let interpreted;
-  try {
-    interpreted = await interpretUserMessage(message, commandContext, {
-      mode: intent === "refine" && pending ? "refine" : "new",
-      pendingProposal: pending
-        ? {
-            action_name: pending.action_name,
-            input: pending.input,
-            rationale: pending.rationale ?? undefined,
-          }
-        : undefined,
-    });
-  } catch (err) {
-    console.error("[runAiChatAssistant] interpret", err);
-    return {
-      success: false,
-      error:
-        err instanceof Error
-          ? err.message
-          : "Servizio AI non disponibile. Verifica la configurazione API.",
-    };
-  }
-
+  let interpreted: AiInterpreterResult;
   let detectedExtraParams: import("@/lib/ai/wiki-text-generator").WikiMarkdownExtraParams | undefined;
 
-  const fallback = applyDomainFallbackInterpreter(
-    message,
-    campaignId,
-    input.recentUserMessages,
-    interpreted
-  );
-  interpreted = fallback.interpreted;
-  detectedExtraParams = fallback.detectedExtraParams;
+  const wikiFastPathContext = [...(input.recentUserMessages ?? []), message].filter(Boolean).join("\n");
+  const wikiFastPath =
+    intent === "new" &&
+    !pending &&
+    campaignId &&
+    detectWikiCreateRequest(wikiFastPathContext);
+
+  if (wikiFastPath) {
+    const fallback = applyDomainFallbackInterpreter(message, campaignId, input.recentUserMessages, {
+      reply: "",
+      intent_summary: "Parse fallito",
+      proposals: [],
+    });
+    interpreted = fallback.interpreted;
+    detectedExtraParams = fallback.detectedExtraParams;
+  } else {
+    try {
+      interpreted = await interpretUserMessage(message, commandContext, {
+        mode: intent === "refine" && pending ? "refine" : "new",
+        pendingProposal: pending
+          ? {
+              action_name: pending.action_name,
+              input: pending.input,
+              rationale: pending.rationale ?? undefined,
+            }
+          : undefined,
+      });
+    } catch (err) {
+      console.error("[runAiChatAssistant] interpret", err);
+      return {
+        success: false,
+        error:
+          err instanceof Error
+            ? err.message
+            : "Servizio AI non disponibile. Verifica la configurazione API.",
+      };
+    }
+
+    const fallback = applyDomainFallbackInterpreter(
+      message,
+      campaignId,
+      input.recentUserMessages,
+      interpreted
+    );
+    interpreted = fallback.interpreted;
+    detectedExtraParams = fallback.detectedExtraParams;
+  }
 
   let previews = await previewInterpreterProposals(interpreted.proposals, campaignId);
   let nextPending: ChatPendingProposal | null = previews[0]
@@ -1477,29 +1634,45 @@ export async function runAiChatAssistant(
       campaignId &&
       isWikiMarkdownEntityType(pickWikiType(nextPending.input))
     ) {
-      const enriched = await tryEnrichWikiProposal(campaignId, message, nextPending, {
-        refine: intent === "refine",
-        pending,
-        extraParams: detectedExtraParams,
-      });
-
-      if (enriched.error) {
-        return { success: false, error: enriched.error };
-      }
-
-      const finalized = finalizeWikiProposalAfterText(
-        { ...nextPending, rationale: nextPending.rationale ?? previews[0]?.rationale ?? null },
-        enriched.proposal,
-        enriched.wikiMeta
+      const entityType = pickWikiType(nextPending.input);
+      const userPrompt = pending?.wikiMeta?.userPrompt ?? message.trim();
+      const npcParams = mergeWikiExtraParams(
+        detectedExtraParams,
+        extractNpcBuildParams(userPrompt),
+        extractNpcBuildParams(message)
       );
 
-      nextPending = finalized.nextPending;
-
-      if (finalized.replyExtra) {
+      if (entityType === "npc" && !hasNpcMechanicsParams(npcParams)) {
+        nextPending = buildAwaitingNpcMechanicsPending(nextPending, userPrompt, npcParams);
         interpreted = {
           ...interpreted,
-          reply: [interpreted.reply, finalized.replyExtra].filter(Boolean).join("\n\n"),
+          reply: [interpreted.reply, formatNpcMechanicsQuestion(npcParams)].filter(Boolean).join("\n\n"),
         };
+      } else {
+        const enriched = await tryEnrichWikiProposal(campaignId, message, nextPending, {
+          refine: intent === "refine",
+          pending,
+          extraParams: detectedExtraParams ?? npcParams,
+        });
+
+        if (enriched.error) {
+          return { success: false, error: enriched.error };
+        }
+
+        const finalized = finalizeWikiProposalAfterText(
+          { ...nextPending, rationale: nextPending.rationale ?? previews[0]?.rationale ?? null },
+          enriched.proposal,
+          enriched.wikiMeta
+        );
+
+        nextPending = finalized.nextPending;
+
+        if (finalized.replyExtra) {
+          interpreted = {
+            ...interpreted,
+            reply: [interpreted.reply, finalized.replyExtra].filter(Boolean).join("\n\n"),
+          };
+        }
       }
     } else if (nextPending.action_name === "wiki.entity.create" && !campaignId) {
       return {

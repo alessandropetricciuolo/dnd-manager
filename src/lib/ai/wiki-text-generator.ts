@@ -51,6 +51,17 @@ export type ExtractedNpcTraits = {
   age: string | null;
 };
 
+export type GenerateWikiMarkdownOptions = {
+  /** Evita doppio controllo auth quando il chiamante ha già verificato GM/admin. */
+  skipAuthCheck?: boolean;
+};
+
+const MAX_TECHNICAL_CONTEXT_CHARS = 14_000;
+/** Soglie RAG: partenza intermedia + fallback basso (max 2 RPC invece di 3). */
+const RAG_MATCH_THRESHOLDS = [0.28, 0.18] as const;
+
+type RagRow = { content?: string | null; metadata?: Record<string, unknown> | null };
+
 export type GenerateWikiMarkdownResult =
   | {
       success: true;
@@ -244,11 +255,15 @@ function hasLikelyNarrativeContent(text: string): boolean {
   return /[a-zàèéìòóù]/i.test(t);
 }
 
-async function generateAiTextWithRepair(prompt: string, maxAttempts = 2): Promise<string> {
+async function generateAiTextWithRepair(
+  prompt: string,
+  maxAttempts = 2,
+  options?: { maxTokens?: number }
+): Promise<string> {
   let lastError: unknown = null;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      return await generateOpenRouterWikiText(prompt);
+      return await generateOpenRouterWikiText(prompt, { maxTokens: options?.maxTokens ?? 1800 });
     } catch (e) {
       lastError = e;
       if (attempt >= maxAttempts) break;
@@ -266,6 +281,97 @@ function filterRowsByExcludedManuals<T extends { metadata?: unknown }>(rows: T[]
     if (typeof k !== "string") return true;
     return !ex.has(k);
   });
+}
+
+function capTechnicalContext(raw: string): string {
+  const trimmed = raw.trim();
+  if (trimmed.length <= MAX_TECHNICAL_CONTEXT_CHARS) return trimmed;
+  const cut = trimmed.slice(0, MAX_TECHNICAL_CONTEXT_CHARS);
+  const lastBreak = cut.lastIndexOf("\n\n");
+  return (lastBreak > MAX_TECHNICAL_CONTEXT_CHARS * 0.5 ? cut.slice(0, lastBreak) : cut).trim();
+}
+
+async function fetchManualsKnowledgeContext(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  embedding: number[],
+  excludedManuals: string[],
+  matchCount: number
+): Promise<string> {
+  const runRpc = admin.rpc as unknown as (
+    fn: string,
+    args: Record<string, unknown>
+  ) => Promise<{ data: unknown; error: { message: string } | null }>;
+
+  let lastFiltered: RagRow[] = [];
+  let rpcError: { message: string } | null = null;
+
+  for (const threshold of RAG_MATCH_THRESHOLDS) {
+    const res = await runRpc("match_manuals_knowledge", {
+      query_embedding: embedding,
+      match_threshold: threshold,
+      match_count: matchCount,
+    });
+    rpcError = res.error;
+    if (rpcError) break;
+    const list = filterRowsByExcludedManuals((res.data ?? []) as RagRow[], excludedManuals);
+    lastFiltered = list;
+    if (list.some((c) => typeof c.content === "string" && c.content.trim().length > 0)) {
+      break;
+    }
+  }
+
+  if (rpcError) {
+    throw new Error(`Errore RPC match_manuals_knowledge: ${rpcError.message}`);
+  }
+
+  return capTechnicalContext(
+    lastFiltered
+      .map((c) => (typeof c.content === "string" ? c.content.trim() : ""))
+      .filter(Boolean)
+      .join("\n\n")
+  );
+}
+
+async function fetchManualsKnowledgeTextFallback(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  keywords: string[],
+  excludedManuals: string[]
+): Promise<string> {
+  const orExpr = keywords.map((kw) => `content.ilike.%${kw}%`).join(",");
+  const { data: rows, error: textErr } = await admin
+    .from("manuals_knowledge")
+    .select("content, metadata")
+    .or(orExpr)
+    .limit(24);
+  if (textErr) {
+    throw new Error(textErr.message);
+  }
+  const filtered = filterRowsByExcludedManuals((rows ?? []) as RagRow[], excludedManuals);
+  return capTechnicalContext(
+    filtered
+      .map((r) => (typeof r.content === "string" ? r.content.trim() : ""))
+      .filter(Boolean)
+      .join("\n\n")
+  );
+}
+
+async function retrieveManualsKnowledgeContext(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  searchQuery: string,
+  keywordFallbackSeed: string,
+  keywordFallbackPrompt: string,
+  excludedManuals: string[],
+  matchCount: number,
+  precomputedEmbedding?: number[] | null
+): Promise<string> {
+  try {
+    const embedding = precomputedEmbedding ?? (await generateRagEmbedding(searchQuery));
+    return await fetchManualsKnowledgeContext(admin, embedding, excludedManuals, matchCount);
+  } catch (ragError) {
+    console.error("[retrieveManualsKnowledgeContext] semantic RAG failed, fallback text", ragError);
+    const keywords = buildKeywordCandidates(keywordFallbackSeed, keywordFallbackPrompt);
+    return await fetchManualsKnowledgeTextFallback(admin, keywords, excludedManuals);
+  }
 }
 
 function campaignMemoryPriorityBlock(wikiMemory: string): string {
@@ -311,7 +417,8 @@ export async function generateWikiMarkdownAction(
   entityType: WikiMarkdownEntityType,
   name: string,
   userPrompt: string,
-  extraParams: WikiMarkdownExtraParams = {}
+  extraParams: WikiMarkdownExtraParams = {},
+  options?: GenerateWikiMarkdownOptions
 ): Promise<GenerateWikiMarkdownResult> {
   const safeName = cleanSingleLine(name ?? "");
   const safeUserPrompt = cleanSingleLine(userPrompt ?? "");
@@ -322,33 +429,76 @@ export async function generateWikiMarkdownAction(
   if (!safeName) return { success: false, message: "Inserisci un nome valido." };
 
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-    if (userError || !user) return { success: false, message: "Devi essere autenticato." };
+    const admin = createSupabaseAdminClient();
 
-    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-    if (profile?.role !== "gm" && profile?.role !== "admin") {
-      return { success: false, message: "Solo GM e Admin possono generare contenuti AI." };
+    if (!options?.skipAuthCheck) {
+      const supabase = await createSupabaseServerClient();
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+      if (userError || !user) return { success: false, message: "Devi essere autenticato." };
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+      if (profile?.role !== "gm" && profile?.role !== "admin") {
+        return { success: false, message: "Solo GM e Admin possono generare contenuti AI." };
+      }
     }
 
-    const admin = createSupabaseAdminClient();
-    const { data: campaign, error: campaignError } = await admin
+    const normalizedTypeEarly: Exclude<WikiMarkdownEntityType, "magic_item"> =
+      entityType === "magic_item" ? "item" : entityType;
+    const mergedNpcParamsEarly = mergeWikiExtraParams(extraParams, extractNpcBuildParams(safeUserPrompt));
+    const nameIsPlaceholderEarly = isPlaceholderWikiTitle(safeName);
+
+    let ragSearchQuery: string | null = null;
+    let ragMatchCount = 10;
+    let ragKeywordSeed = safeName;
+    let ragKeywordPrompt = safeRetrievalPrompt || safeUserPrompt;
+
+    if (normalizedTypeEarly === "monster" && !extraParams.verbatimMonsterStatblock?.trim()) {
+      ragSearchQuery = nameIsPlaceholderEarly
+        ? `Regole, privilegi e statblock completo del mostro. Dettagli: ${safeRetrievalPrompt || safeNarrativePrompt || "nessuno"}.`
+        : `Regole, privilegi e statblock completo del mostro: ${safeName}. Dettagli tecnici: ${safeRetrievalPrompt || "nessuno"}.`;
+    } else if (
+      normalizedTypeEarly === "npc" &&
+      hasNpcMechanicsParams(mergedNpcParamsEarly)
+    ) {
+      const resolvedRace = cleanSingleLine(mergedNpcParamsEarly.npcRace ?? "");
+      const resolvedClass = cleanSingleLine(mergedNpcParamsEarly.npcClass ?? "");
+      const resolvedLevel = cleanSingleLine(mergedNpcParamsEarly.npcLevel ?? "");
+      ragSearchQuery = `D&D 5e razza ${resolvedRace}: tratti, taglia, velocità. Classe ${resolvedClass} livello ${resolvedLevel}: privilegi di classe, tabella progressione, sottoclasse se presente. ${safeRetrievalPrompt || ""}`;
+      ragMatchCount = 14;
+      ragKeywordSeed = `${resolvedRace} ${resolvedClass} ${resolvedLevel}`;
+    }
+
+    const campaignPromise = admin
       .from("campaigns")
       .select("ai_context, type")
       .eq("id", campaignId)
       .single();
+
+    const embeddingPromise =
+      ragSearchQuery != null ? generateRagEmbedding(ragSearchQuery) : Promise.resolve(null as number[] | null);
+
+    const { data: campaign, error: campaignError } = await campaignPromise;
+
     if (campaignError) {
       return { success: false, message: campaignError.message ?? "Impossibile leggere la campagna." };
     }
 
+    const campaignType = (campaign as { type?: string } | null)?.type ?? null;
+    const [wikiMemory, precomputedEmbedding] = await Promise.all([
+      campaignType === "long"
+        ? fetchLongCampaignWikiMemoryPromptBlock(admin, campaignId, { campaignType })
+        : Promise.resolve(""),
+      embeddingPromise,
+    ]);
+
     const ctx = parseCampaignAiContextFromDb((campaign as { ai_context: Json | null } | null)?.ai_context ?? null);
-    const wikiMemory =
-      (campaign as { type?: string }).type === "long"
-        ? await fetchLongCampaignWikiMemoryPromptBlock(admin, campaignId)
-        : "";
     const loreTone = ctx?.narrative_tone?.trim() || "fantasy epico e coerente con D&D 5e";
     const magicLevel = ctx?.magic_level?.trim() || "livello di magia standard D&D 5e";
     const mechanics = ctx?.mechanics_focus?.trim() || "regole ufficiali D&D 5e";
@@ -432,17 +582,10 @@ export async function generateWikiMarkdownAction(
           ? `Parametro richiesto: Rarita' target = ${rarity || "scegli una rarita' coerente e bilanciata."}`
           : "Parametro richiesto: mantieni coerenza con ambientazione, tono e regole della campagna.";
 
-    const runRpc = admin.rpc as unknown as (
-      fn: string,
-      args: Record<string, unknown>
-    ) => Promise<{ data: unknown; error: { message: string } | null }>;
-
-    type RagRow = { content?: string | null; metadata?: Record<string, unknown> | null };
-
     let prompt = "";
     let prebuiltMarkdown: string | null = null;
     let npcNarrativeOnly = false;
-    const mergedNpcParams = mergeWikiExtraParams(extraParams, extractNpcBuildParams(safeUserPrompt));
+    const mergedNpcParams = mergedNpcParamsEarly;
 
     if (normalizedType === "monster" && extraParams.verbatimMonsterStatblock?.trim()) {
       const verbatim = extraParams.verbatimMonsterStatblock.trim();
@@ -462,7 +605,7 @@ export async function generateWikiMarkdownAction(
         .join("\n");
       let narrativeRaw = "";
       try {
-        narrativeRaw = (await generateAiTextWithRepair(narrativePrompt, 2)).trim();
+        narrativeRaw = (await generateAiTextWithRepair(narrativePrompt, 2, { maxTokens: 1400 })).trim();
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Errore generazione narrativa.";
         return { success: false, message: msg };
@@ -476,64 +619,20 @@ export async function generateWikiMarkdownAction(
       }
       prebuiltMarkdown = `[NARRATIVA]\n${narrativeRaw}\n\n[MECCANICA]\n\n${verbatim}`;
     } else if (normalizedType === "monster") {
-      const searchQuery = nameIsPlaceholder
-        ? `Regole, privilegi e statblock completo del mostro. Dettagli: ${safeRetrievalPrompt || safeNarrativePrompt || "nessuno"}.`
-        : `Regole, privilegi e statblock completo del mostro: ${safeName}. Dettagli tecnici: ${safeRetrievalPrompt || "nessuno"}.`;
       let technicalContext = "";
       try {
-        const embedding = await generateRagEmbedding(searchQuery);
-        let lastFiltered: RagRow[] = [];
-        let rpcError: { message: string } | null = null;
-        for (const threshold of [0.35, 0.28, 0.2]) {
-          const res = await runRpc("match_manuals_knowledge", {
-            query_embedding: embedding,
-            match_threshold: threshold,
-            match_count: 10,
-          });
-          rpcError = res.error;
-          if (rpcError) break;
-          const list = filterRowsByExcludedManuals((res.data ?? []) as RagRow[], excludedManuals);
-          lastFiltered = list;
-          if (list.some((c) => typeof c.content === "string" && c.content.trim().length > 0)) {
-            break;
-          }
-        }
-
-        if (rpcError) {
-          return { success: false, message: `Errore RPC match_manuals_knowledge: ${rpcError.message}` };
-        }
-
-        const list = lastFiltered;
-        technicalContext = list
-          .map((c) => (typeof c.content === "string" ? c.content.trim() : ""))
-          .filter(Boolean)
-          .join("\n\n");
-      } catch (ragError) {
-        console.error("[generateWikiMarkdownAction] semantic RAG failed, fallback text", ragError);
-        const keywords = buildKeywordCandidates(safeName, safeRetrievalPrompt || safeUserPrompt);
-
-        try {
-          const orExpr = keywords.map((kw) => `content.ilike.%${kw}%`).join(",");
-          const { data: rows, error: textErr } = await admin
-            .from("manuals_knowledge")
-            .select("content, metadata")
-            .or(orExpr)
-            .limit(24);
-          if (textErr) {
-            return {
-              success: false,
-              message: `Errore fallback retrieval testuale manuals_knowledge: ${textErr.message}`,
-            };
-          }
-          const filtered = filterRowsByExcludedManuals((rows ?? []) as RagRow[], excludedManuals);
-          technicalContext = filtered
-            .map((r) => (typeof r.content === "string" ? r.content.trim() : ""))
-            .filter(Boolean)
-            .join("\n\n");
-        } catch (fallbackErr) {
-          console.error("[generateWikiMarkdownAction] text fallback failed", fallbackErr);
-          return { success: false, message: "Errore durante il retrieval tecnico dei manuali." };
-        }
+        technicalContext = await retrieveManualsKnowledgeContext(
+          admin,
+          ragSearchQuery ?? "",
+          ragKeywordSeed,
+          ragKeywordPrompt,
+          excludedManuals,
+          ragMatchCount,
+          precomputedEmbedding
+        );
+      } catch (retrieveErr) {
+        const msg = retrieveErr instanceof Error ? retrieveErr.message : "Errore durante il retrieval tecnico dei manuali.";
+        return { success: false, message: msg };
       }
 
       if (!technicalContext.trim()) {
@@ -588,55 +687,21 @@ export async function generateWikiMarkdownAction(
           .filter((s) => typeof s === "string" && s.trim().length > 0)
           .join("\n\n");
       } else {
-      const searchQuery = `D&D 5e razza ${resolvedRace}: tratti, taglia, velocità. Classe ${resolvedClass} livello ${resolvedLevel}: privilegi di classe, tabella progressione, sottoclasse se presente. ${safeRetrievalPrompt || ""}`;
       let technicalContext = "";
       try {
-        const embedding = await generateRagEmbedding(searchQuery);
-        let picked: RagRow[] = [];
-        let rpcError: { message: string } | null = null;
-        for (const threshold of [0.34, 0.26, 0.18]) {
-          const res = await runRpc("match_manuals_knowledge", {
-            query_embedding: embedding,
-            match_threshold: threshold,
-            match_count: 14,
-          });
-          rpcError = res.error;
-          if (rpcError) break;
-          const list = filterRowsByExcludedManuals((res.data ?? []) as RagRow[], excludedManuals);
-          if (list.some((c) => typeof c.content === "string" && c.content.trim().length > 0)) {
-            picked = list;
-            break;
-          }
-        }
-        if (rpcError) {
-          return { success: false, message: `Errore RPC match_manuals_knowledge: ${rpcError.message}` };
-        }
-        technicalContext = picked
-          .map((c) => (typeof c.content === "string" ? c.content.trim() : ""))
-          .filter(Boolean)
-          .join("\n\n");
-      } catch (ragError) {
-        console.error("[generateWikiMarkdownAction] NPC RAG failed, fallback", ragError);
-        const keywords = buildKeywordCandidates(`${resolvedRace} ${resolvedClass} ${resolvedLevel}`, safeUserPrompt);
-        try {
-          const orExpr = keywords.map((kw) => `content.ilike.%${kw}%`).join(",");
-          const { data: rows, error: textErr } = await admin
-            .from("manuals_knowledge")
-            .select("content, metadata")
-            .or(orExpr)
-            .limit(24);
-          if (textErr) {
-            return { success: false, message: `Errore retrieval NPC: ${textErr.message}` };
-          }
-          const filtered = filterRowsByExcludedManuals((rows ?? []) as RagRow[], excludedManuals);
-          technicalContext = filtered
-            .map((r) => (typeof r.content === "string" ? r.content.trim() : ""))
-            .filter(Boolean)
-            .join("\n\n");
-        } catch (fallbackErr) {
-          console.error("[generateWikiMarkdownAction] NPC text fallback failed", fallbackErr);
-          return { success: false, message: "Errore durante il retrieval dai manuali per l'NPC." };
-        }
+        technicalContext = await retrieveManualsKnowledgeContext(
+          admin,
+          ragSearchQuery ?? "",
+          ragKeywordSeed,
+          ragKeywordPrompt,
+          excludedManuals,
+          ragMatchCount,
+          precomputedEmbedding
+        );
+      } catch (retrieveErr) {
+        const msg =
+          retrieveErr instanceof Error ? retrieveErr.message : "Errore durante il retrieval dai manuali per l'NPC.";
+        return { success: false, message: msg };
       }
       if (!technicalContext.trim()) {
         return {
@@ -685,12 +750,17 @@ export async function generateWikiMarkdownAction(
         .join("\n\n");
     }
 
+    const primaryMaxTokens =
+      npcNarrativeOnly ? 1400 : normalizedType === "npc" || normalizedType === "monster" ? 2200 : 1800;
+
     let markdown = "";
     try {
       if (prebuiltMarkdown) {
         markdown = prebuiltMarkdown;
       } else {
-        const first = sanitizeMarkdownResponse((await generateAiTextWithRepair(prompt, 2)).trim());
+        const first = sanitizeMarkdownResponse(
+          (await generateAiTextWithRepair(prompt, 2, { maxTokens: primaryMaxTokens })).trim()
+        );
         const narrativeOnlyOk =
           npcNarrativeOnly &&
           (/^\[NARRATIVA\]/i.test(first) || hasLikelyNarrativeContent(first));
@@ -711,7 +781,9 @@ export async function generateWikiMarkdownAction(
             "OUTPUT DA CORREGGERE:",
             first,
           ].join("\n");
-          markdown = sanitizeMarkdownResponse((await generateAiTextWithRepair(repairPrompt, 2)).trim());
+          markdown = sanitizeMarkdownResponse(
+            (await generateAiTextWithRepair(repairPrompt, 2, { maxTokens: primaryMaxTokens })).trim()
+          );
         }
       }
     } catch (err) {
@@ -741,59 +813,80 @@ export async function generateWikiMarkdownAction(
     }
 
     let { description, statblock } = splitNarrativeAndMechanics(normalized);
-    if (
+    const needsMechanicsRecovery =
       (normalizedType === "monster" || (normalizedType === "npc" && !npcNarrativeOnly)) &&
-      !hasLikelyMechanicalContent(statblock)
-    ) {
-      const mechanicsRecoveryPrompt = [
-        "Ricostruisci SOLO la sezione [MECCANICA] in Markdown valido.",
-        "Requisiti: niente narrativa, niente meta-commenti, niente JSON.",
-        "Inizia con [MECCANICA] come prima riga.",
-        normalizedType === "monster"
-          ? "Includi obbligatoriamente: CA/AC, PF/HP, CR/GS, almeno FOR/DES/COS/INT/SAG/CAR, Tratti, Azioni."
-          : "Includi obbligatoriamente: almeno AC/CA o HP/PF e una sezione Capacita/Azioni.",
-        "Usa solo i dati pertinenti presenti nel testo sotto; se manca qualcosa usa valori plausibili D&D 5e coerenti con il livello/CR richiesto.",
-        "",
-        "TESTO DA RIPARARE:",
-        normalized,
-      ].join("\n");
-      try {
-        const repaired = sanitizeMarkdownResponse((await generateAiTextWithRepair(mechanicsRecoveryPrompt, 2)).trim());
-        const reSplit = splitNarrativeAndMechanics(repaired);
+      !hasLikelyMechanicalContent(statblock);
+    const needsNarrativeRecovery =
+      (normalizedType === "monster" || normalizedType === "npc") && !hasLikelyNarrativeContent(description);
+
+    if (needsMechanicsRecovery || needsNarrativeRecovery) {
+      const mechanicsRecoveryPrompt = needsMechanicsRecovery
+        ? [
+            "Ricostruisci SOLO la sezione [MECCANICA] in Markdown valido.",
+            "Requisiti: niente narrativa, niente meta-commenti, niente JSON.",
+            "Inizia con [MECCANICA] come prima riga.",
+            normalizedType === "monster"
+              ? "Includi obbligatoriamente: CA/AC, PF/HP, CR/GS, almeno FOR/DES/COS/INT/SAG/CAR, Tratti, Azioni."
+              : "Includi obbligatoriamente: almeno AC/CA o HP/PF e una sezione Capacita/Azioni.",
+            "Usa solo i dati pertinenti presenti nel testo sotto; se manca qualcosa usa valori plausibili D&D 5e coerenti con il livello/CR richiesto.",
+            "",
+            "TESTO DA RIPARARE:",
+            normalized,
+          ].join("\n")
+        : null;
+
+      const narrativeRecoveryPrompt = needsNarrativeRecovery
+        ? [
+            "Ricostruisci SOLO la sezione [NARRATIVA] in Markdown valido.",
+            "Requisiti: niente meccanica, niente JSON, niente meta-commenti.",
+            "Inizia con [NARRATIVA] come prima riga.",
+            "Mantieni coerenza con il testo sorgente, col nome e con la richiesta utente.",
+            normalizedType === "npc"
+              ? "Per NPC descrivi in modo concreto: aspetto, carattere, ruolo e modo di parlare/comportarsi."
+              : "Per Mostro descrivi aspetto, comportamento e ruolo nel mondo/campagna.",
+            "",
+            entityNamePrompt,
+            `RICHIESTA UTENTE: ${safeNarrativePrompt || "Nessuna istruzione aggiuntiva."}`,
+            "",
+            "TESTO SORGENTE:",
+            normalized,
+          ].join("\n")
+        : null;
+
+      const [mechanicsResult, narrativeResult] = await Promise.all([
+        mechanicsRecoveryPrompt
+          ? generateAiTextWithRepair(mechanicsRecoveryPrompt, 2, { maxTokens: 1200 })
+              .then((raw) => sanitizeMarkdownResponse(raw.trim()))
+              .catch((repairErr) => {
+                console.warn("[generateWikiMarkdownAction] mechanics recovery failed", repairErr);
+                return null;
+              })
+          : Promise.resolve(null),
+        narrativeRecoveryPrompt
+          ? generateAiTextWithRepair(narrativeRecoveryPrompt, 2, { maxTokens: 1200 })
+              .then((raw) => sanitizeMarkdownResponse(raw.trim()))
+              .catch((repairErr) => {
+                console.warn("[generateWikiMarkdownAction] narrative recovery failed", repairErr);
+                return null;
+              })
+          : Promise.resolve(null),
+      ]);
+
+      if (mechanicsResult) {
+        const reSplit = splitNarrativeAndMechanics(mechanicsResult);
         if (hasLikelyMechanicalContent(reSplit.statblock)) {
           statblock = reSplit.statblock.trim();
           if (!description.trim()) description = reSplit.description.trim();
         }
-      } catch (repairErr) {
-        console.warn("[generateWikiMarkdownAction] mechanics recovery failed", repairErr);
       }
-    }
-    if ((normalizedType === "monster" || normalizedType === "npc") && !hasLikelyNarrativeContent(description)) {
-      const narrativeRecoveryPrompt = [
-        "Ricostruisci SOLO la sezione [NARRATIVA] in Markdown valido.",
-        "Requisiti: niente meccanica, niente JSON, niente meta-commenti.",
-        "Inizia con [NARRATIVA] come prima riga.",
-        "Mantieni coerenza con il testo sorgente, col nome e con la richiesta utente.",
-        normalizedType === "npc"
-          ? "Per NPC descrivi in modo concreto: aspetto, carattere, ruolo e modo di parlare/comportarsi."
-          : "Per Mostro descrivi aspetto, comportamento e ruolo nel mondo/campagna.",
-        "",
-        entityNamePrompt,
-        `RICHIESTA UTENTE: ${safeNarrativePrompt || "Nessuna istruzione aggiuntiva."}`,
-        "",
-        "TESTO SORGENTE:",
-        normalized,
-      ].join("\n");
-      try {
-        const repaired = sanitizeMarkdownResponse((await generateAiTextWithRepair(narrativeRecoveryPrompt, 2)).trim());
-        const reSplit = splitNarrativeAndMechanics(repaired);
+
+      if (narrativeResult) {
+        const reSplit = splitNarrativeAndMechanics(narrativeResult);
         if (hasLikelyNarrativeContent(reSplit.description)) {
           description = reSplit.description.trim();
-        } else if (hasLikelyNarrativeContent(repaired)) {
-          description = repaired.replace(/^\[NARRATIVA\]\s*/i, "").trim();
+        } else if (hasLikelyNarrativeContent(narrativeResult)) {
+          description = narrativeResult.replace(/^\[NARRATIVA\]\s*/i, "").trim();
         }
-      } catch (repairErr) {
-        console.warn("[generateWikiMarkdownAction] narrative recovery failed", repairErr);
       }
     }
     const extractedStats = normalizedType === "monster"

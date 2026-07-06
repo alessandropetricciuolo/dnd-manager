@@ -47,8 +47,8 @@ export function applyDomainFallbackInterpreter(
       detectedExtraParams: wikiDetected.extraParams,
       interpreted: {
         reply: narrativeOnly
-          ? `Preparo il profilo narrativo di ${wikiLabel} (visibilità: ${visibility === "public" ? "pubblica" : visibility === "selective" ? "selettiva" : "solo GM"}). Senza livello non genero lo statblock: puoi aggiungerlo in chat (es. «livello 5») e chiedere modifiche.`
-          : `Preparo una voce wiki per ${wikiLabel} (visibilità: ${visibility === "public" ? "pubblica" : visibility === "selective" ? "selettiva" : "solo GM"}).`,
+          ? `Preparo ${wikiLabel} (visibilità: ${visibility === "public" ? "pubblica" : visibility === "selective" ? "selettiva" : "solo GM"}). Prima ti chiederò **razza, classe e livello** per generare lo statblock.`
+          : `Preparo una voce wiki per ${wikiLabel} (visibilità: ${visibility === "public" ? "pubblica" : visibility === "selective" ? "selettiva" : "solo GM"}) con narrativa e statblock.`,
         intent_summary: isPlaceholderWikiTitle(wikiDetected.title)
           ? `Creare ${wikiDetected.entityType}`
           : `Creare ${wikiDetected.entityType}: ${wikiDetected.title}`,

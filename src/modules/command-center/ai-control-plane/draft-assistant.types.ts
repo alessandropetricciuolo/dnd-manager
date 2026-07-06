@@ -2,6 +2,7 @@ import type { SessionAiDraft } from "@/lib/ai/session-text-generator";
 import type { CharacterAiStoryDraft } from "@/lib/ai/character-text-generator";
 import type { CampaignAiDraft } from "@/lib/ai/campaign-text-generator";
 import type { MissionAiDraft } from "@/lib/ai/mission-text-generator";
+import type { WikiMarkdownExtraParams } from "@/lib/ai/wiki-text-generator";
 import type { CommandInputSource } from "../types/workspace";
 import type { CommandInputVoicePayload } from "../voice/command-input-voice";
 import type { PreviewTextSelection } from "./preview-text-selection";
@@ -21,6 +22,7 @@ export type RunAiDraftAssistantParams = {
 export type ChatPendingPhase =
   | "text"
   | "awaiting_campaign_type"
+  | "awaiting_npc_mechanics"
   | "awaiting_sheet"
   | "awaiting_image"
   | "awaiting_avatar"
@@ -53,6 +55,7 @@ export type CharacterGeneratedSheetPayload = {
   characterName: string;
 };
 
+
 export type ChatWikiMeta = {
   entityType: string;
   entityTitle: string;
@@ -63,6 +66,8 @@ export type ChatWikiMeta = {
     npcTraits?: { race: string | null; class: string | null; age: string | null };
   };
   chatMessages: { role: "user" | "assistant"; content: string }[];
+  /** Parametri meccanici raccolti in fase awaiting_npc_mechanics. */
+  npcBuildParams?: WikiMarkdownExtraParams;
 };
 
 export type ChatCampaignMeta = {

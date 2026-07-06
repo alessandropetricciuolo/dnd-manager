@@ -192,6 +192,7 @@ export function AiAssistantCanvas({
     isThinking ||
     !onPreviewTextSelect ||
     pendingProposal.phase === "awaiting_campaign_type" ||
+    pendingProposal.phase === "awaiting_npc_mechanics" ||
     pendingProposal.phase === "awaiting_image" ||
     pendingProposal.phase === "awaiting_avatar" ||
     pendingProposal.phase === "awaiting_sheet" ||
@@ -268,6 +269,10 @@ export function AiAssistantCanvas({
               <span className="rounded-full border border-sky-500/40 bg-sky-500/10 px-2.5 py-0.5 text-[10px] text-sky-200">
                 Tipo evento
               </span>
+            ) : pendingProposal.phase === "awaiting_npc_mechanics" ? (
+              <span className="rounded-full border border-violet-500/40 bg-violet-500/10 px-2.5 py-0.5 text-[10px] text-violet-200">
+                Statblock NPC
+              </span>
             ) : pendingProposal.phase === "awaiting_sheet" ? (
               <span className="rounded-full border border-sky-500/40 bg-sky-500/10 px-2.5 py-0.5 text-[10px] text-sky-200">
                 Scheda richiesta
@@ -307,6 +312,16 @@ export function AiAssistantCanvas({
             <p className="text-sm leading-relaxed text-barber-paper/75">
               Scegli il formato in chat: oneshot, quest, campagna lunga o torneo. Poi l&apos;assistente
               ti aiuterà a scrivere la descrizione che diventerà la memoria della campagna.
+            </p>
+          </PreviewSection>
+        ) : null}
+
+        {isWiki && pendingProposal.phase === "awaiting_npc_mechanics" ? (
+          <PreviewSection title="Statblock NPC" icon={BookOpen}>
+            <p className="text-sm leading-relaxed text-barber-paper/75">
+              Indica in chat <strong>razza</strong>, <strong>classe</strong> e <strong>livello</strong>{" "}
+              (es. halfling ladro livello 5). L&apos;assistente genererà narrativa e meccanica dai manuali
+              indicizzati.
             </p>
           </PreviewSection>
         ) : null}

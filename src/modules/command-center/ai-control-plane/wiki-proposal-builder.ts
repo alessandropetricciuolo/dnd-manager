@@ -138,6 +138,7 @@ export async function enrichWikiEntityProposal(
 
   const extraParams = mergeWikiExtraParams(
     options?.extraParams,
+    options?.wikiMeta?.npcBuildParams,
     options?.wikiMeta ? extractNpcBuildParams(options.wikiMeta.userPrompt) : null,
     extractNpcBuildParams(userMessage)
   );
@@ -196,6 +197,7 @@ export async function enrichWikiEntityProposal(
       ...chatMessages,
       { role: "assistant", content: result.assistantMessage },
     ],
+    npcBuildParams: extraParams,
   };
 
   return {

@@ -27,6 +27,12 @@ test("extractNpcBuildParams from trait-only message", () => {
   assert.equal(hasNpcMechanicsParams(params), false);
 });
 
+test("extractNpcBuildParams parses livello variants", () => {
+  assert.equal(extractNpcBuildParams("ladro livello 5").npcLevel, "5");
+  assert.equal(extractNpcBuildParams("guerriero lv 3").npcLevel, "3");
+  assert.equal(extractNpcBuildParams("5° livello").npcLevel, "5");
+});
+
 test("detectWikiCreateRequest returns null for short unrelated text", () => {
   assert.equal(detectWikiCreateRequest("ciao"), null);
 });

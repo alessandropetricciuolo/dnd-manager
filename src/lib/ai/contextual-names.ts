@@ -167,7 +167,9 @@ async function loadCampaignNameContext(campaignId: string): Promise<string> {
   blocks.push(buildCampaignContextBlock(parseCampaignAiContextFromDb(row.ai_context ?? null)));
 
   if (row.type === "long") {
-    const wiki = await fetchLongCampaignWikiMemoryPromptBlock(admin, campaignId);
+    const wiki = await fetchLongCampaignWikiMemoryPromptBlock(admin, campaignId, {
+      campaignType: row.type,
+    });
     if (wiki.trim()) blocks.push(wiki);
   }
 

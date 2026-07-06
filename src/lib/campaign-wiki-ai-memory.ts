@@ -67,12 +67,14 @@ type AdminClient = ReturnType<typeof import("@/utils/supabase/admin").createSupa
 export async function fetchLongCampaignWikiMemoryPromptBlock(
   admin: AdminClient,
   campaignId: string,
-  options?: { excludeEntityId?: string }
+  options?: { excludeEntityId?: string; campaignType?: string | null }
 ): Promise<string> {
-  const { data: camp, error } = await admin.from("campaigns").select("type").eq("id", campaignId).maybeSingle();
-
-  if (error || !camp) return "";
-  const campaignType = (camp as { type?: string | null }).type;
+  let campaignType = options?.campaignType;
+  if (campaignType == null) {
+    const { data: camp, error } = await admin.from("campaigns").select("type").eq("id", campaignId).maybeSingle();
+    if (error || !camp) return "";
+    campaignType = (camp as { type?: string | null }).type;
+  }
   if (campaignType !== "long") return "";
 
   type MemRow = {
@@ -95,23 +97,26 @@ export async function fetchLongCampaignWikiMemoryPromptBlock(
     updated_at: string;
   };
 
-  const { data: rowsRaw, error: qErr } = await admin
-    .from("wiki_entities")
-    .select("*")
-    .eq("campaign_id", campaignId)
-    .order("updated_at", { ascending: true });
+  const [wikiRes, charactersRes] = await Promise.all([
+    admin
+      .from("wiki_entities")
+      .select("*")
+      .eq("campaign_id", campaignId)
+      .order("updated_at", { ascending: true }),
+    admin
+      .from("campaign_characters")
+      .select("id, name, level, character_class, class_subclass, background, updated_at")
+      .eq("campaign_id", campaignId)
+      .order("updated_at", { ascending: true }),
+  ]);
 
+  const { data: rowsRaw, error: qErr } = wikiRes;
   if (qErr) {
     console.error("[fetchLongCampaignWikiMemoryPromptBlock]", qErr);
     return "";
   }
 
-  const { data: charactersRaw, error: charErr } = await admin
-    .from("campaign_characters")
-    .select("id, name, level, character_class, class_subclass, background, updated_at")
-    .eq("campaign_id", campaignId)
-    .order("updated_at", { ascending: true });
-
+  const { data: charactersRaw, error: charErr } = charactersRes;
   if (charErr) {
     console.error("[fetchLongCampaignWikiMemoryPromptBlock][campaign_characters]", charErr);
   }

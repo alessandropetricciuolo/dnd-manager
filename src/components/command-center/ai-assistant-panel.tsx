@@ -234,7 +234,9 @@ export function AiAssistantPanel({
                 Chat · anteprima live
                 {pendingProposal?.phase === "awaiting_campaign_type"
                   ? " · tipo evento"
-                  : pendingProposal?.phase === "awaiting_sheet"
+                  : pendingProposal?.phase === "awaiting_npc_mechanics"
+                    ? " · statblock NPC"
+                    : pendingProposal?.phase === "awaiting_sheet"
                   ? " · scheda PDF"
                   : pendingProposal?.phase === "awaiting_avatar"
                     ? " · ritratto"
@@ -310,7 +312,9 @@ export function AiAssistantPanel({
                     <p className="mt-1.5 px-1 text-[10px] text-barber-gold/75">
                       {msg.pendingPhase === "awaiting_campaign_type"
                         ? "→ Scegli il tipo di evento in chat"
-                        : msg.pendingPhase === "awaiting_image"
+                        : msg.pendingPhase === "awaiting_npc_mechanics"
+                          ? "→ Indica razza, classe e livello NPC"
+                          : msg.pendingPhase === "awaiting_image"
                           ? pendingProposal?.action_name === "campaign.create"
                             ? "→ Rispondi sì/no per la copertina"
                             : "→ Rispondi sì/no per l'immagine"
