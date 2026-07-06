@@ -26,7 +26,7 @@ const unifrakturMissions = UnifrakturMaguntia({
 
 export const metadata: Metadata = {
   title: "Barber & Dragons - D&D Campaign Manager",
-  description: "Wiki-style platform per gestire campagne D&D 5e",
+  description: "La migliore community di D&D della provincia di Napoli.",
 };
 
 export default function RootLayout({
