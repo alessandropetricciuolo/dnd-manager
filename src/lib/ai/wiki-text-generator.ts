@@ -116,19 +116,23 @@ function buildKeywordCandidates(name: string, userPrompt: string): string[] {
   return unique.slice(0, 8);
 }
 
-function splitPromptByDash(userPrompt: string): { retrievalPrompt: string; narrativePrompt: string } {
+export function splitPromptByDash(userPrompt: string): { retrievalPrompt: string; narrativePrompt: string } {
   const raw = userPrompt.trim();
   if (!raw) return { retrievalPrompt: "", narrativePrompt: "" };
-  const dashIdx = raw.indexOf("-");
-  if (dashIdx < 0) {
-    return { retrievalPrompt: raw, narrativePrompt: raw };
+
+  // Split on the first spaced dash ("retrieval - narrative") so hyphenated words
+  // like "Half-elf" stay in the retrieval segment.
+  const spacedDash = /\s+-\s+/;
+  const match = raw.match(spacedDash);
+  if (match && typeof match.index === "number") {
+    const left = raw.slice(0, match.index).trim();
+    const right = raw.slice(match.index + match[0].length).trim();
+    if (left && right) {
+      return { retrievalPrompt: left, narrativePrompt: right };
+    }
   }
-  const left = raw.slice(0, dashIdx).trim();
-  const right = raw.slice(dashIdx + 1).trim();
-  return {
-    retrievalPrompt: left || raw,
-    narrativePrompt: right || left || raw,
-  };
+
+  return { retrievalPrompt: raw, narrativePrompt: raw };
 }
 
 function extractStatsFromMarkdown(markdown: string): ExtractedWikiStats {
