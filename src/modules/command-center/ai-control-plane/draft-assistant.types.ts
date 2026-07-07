@@ -91,6 +91,9 @@ export type ChatWikiBatchMeta = {
   items: ChatWikiBatchItem[];
   activeIndex: number;
   sharedNpcBuildParams?: WikiMarkdownExtraParams;
+  missionName: string | null;
+  linkedEntityName: string | null;
+  roleSpecs?: import("./wiki-npc-batch").NpcBatchRoleSpec[];
   visibility: "public" | "secret" | "selective";
 };
 

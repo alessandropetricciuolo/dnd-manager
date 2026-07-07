@@ -6,12 +6,14 @@ import {
 import { extractWikiEntityMemoryText } from "@/lib/campaign-wiki-ai-memory";
 import type { Json } from "@/types/database.types";
 import type { WikiMarkdownExtraParams } from "@/lib/ai/wiki-text-generator";
+import { mergeWikiExtraParams } from "@/lib/ai/wiki-npc-params";
 import type { ChatPendingProposalPayload, ChatWikiBatchItem, ChatWikiBatchMeta } from "./draft-assistant.types";
 import type { PreviewedProposal } from "./preview-proposals";
 import {
   buildNpcRolePrompt,
   type DetectedNpcBatchRequest,
   formatNpcBatchIntro,
+  type NpcBatchRoleSpec,
 } from "./wiki-npc-batch";
 import {
   activateBatchItem,
@@ -122,6 +124,26 @@ function stubBatchProposal(campaignId: string): PreviewedProposal {
   };
 }
 
+async function resolveLinkedEntityRelations(
+  campaignId: string,
+  linkedEntityName: string | null
+): Promise<WikiEntityRelationInput[]> {
+  if (!linkedEntityName?.trim()) return [];
+  const catalog = await loadCampaignCatalog(campaignId);
+  const entry = findCatalogEntryByName(linkedEntityName, catalog);
+  if (!entry) return [];
+  return [{ targetType: entry.kind, targetId: entry.id, label: "Legato a" }];
+}
+
+function roleSpecsForBatch(batch: DetectedNpcBatchRequest): NpcBatchRoleSpec[] {
+  if (batch.roleSpecs.length > 0) return batch.roleSpecs;
+  return batch.roles.map((roleLabel) => ({
+    roleLabel,
+    linePrompt: roleLabel,
+    extraParams: {},
+  }));
+}
+
 export async function enrichNpcBatchProposals(
   campaignId: string,
   batch: DetectedNpcBatchRequest,
@@ -131,16 +153,22 @@ export async function enrichNpcBatchProposals(
   | { ok: false; error: string }
 > {
   const location = await resolveBatchLocationContext(campaignId, batch.locationName);
+  const linkedRelations = await resolveLinkedEntityRelations(campaignId, batch.linkedEntityName);
+  const relations = [...location.relations, ...linkedRelations];
   const visibility = resolveWikiVisibilityForAssistant(batch.userPrompt, batch.userPrompt);
+  const specs = roleSpecsForBatch(batch);
 
   const enrichedItems = await Promise.all(
-    batch.roles.map(async (roleLabel) => {
-      const rolePrompt = buildNpcRolePrompt(
-        roleLabel,
-        location.locationName,
-        location.locationExcerpt,
-        batch.userPrompt
-      );
+    specs.map(async (spec) => {
+      const roleLabel = spec.roleLabel;
+      const extraParams = mergeWikiExtraParams(sharedNpcBuildParams, spec.extraParams);
+      const rolePrompt = buildNpcRolePrompt(spec, {
+        locationName: location.locationName,
+        locationExcerpt: location.locationExcerpt,
+        missionName: batch.missionName,
+        linkedEntityName: batch.linkedEntityName,
+        originalPrompt: batch.userPrompt,
+      });
 
       const enriched = await enrichWikiEntityProposal(
         campaignId,
@@ -148,9 +176,9 @@ export async function enrichNpcBatchProposals(
         "npc",
         roleLabel,
         {
-          extraParams: sharedNpcBuildParams,
+          extraParams,
           userPromptOverride: rolePrompt,
-          relations: location.relations,
+          relations,
           visibilityOverride: visibility,
         }
       );
@@ -166,7 +194,10 @@ export async function enrichNpcBatchProposals(
           typeof enriched.proposal.input.title === "string"
             ? enriched.proposal.input.title
             : roleLabel,
-        wikiMeta: enriched.wikiMeta,
+        wikiMeta: {
+          ...enriched.wikiMeta,
+          npcBuildParams: extraParams,
+        },
         input: enriched.proposal.input,
         preview_payload: enriched.proposal.preview_payload,
         phase: "text",
@@ -179,10 +210,13 @@ export async function enrichNpcBatchProposals(
   const wikiBatchMeta: ChatWikiBatchMeta = {
     originalPrompt: batch.userPrompt,
     roles: batch.roles,
+    roleSpecs: specs,
     locationName: location.locationName,
     locationTargetId: location.locationTargetId,
     locationTargetKind: location.locationTargetKind,
     locationExcerpt: location.locationExcerpt,
+    missionName: batch.missionName,
+    linkedEntityName: batch.linkedEntityName,
     items: enrichedItems,
     activeIndex: 0,
     sharedNpcBuildParams,
@@ -192,20 +226,23 @@ export async function enrichNpcBatchProposals(
   let pending: ChatPendingProposalPayload = {
     ...stubBatchProposal(campaignId),
     wikiBatchMeta,
-    rationale: "Batch NPC per luogo",
+    rationale: "Batch NPC",
   };
 
   pending = activateBatchItem(pending, 0);
   pending = applyWikiImageOfferPhaseForBatchItem(pending);
 
-  const locHint = location.locationName
-    ? location.locationTargetId
-      ? ` collegati a **${location.locationName}**`
-      : ` ambientati a **${location.locationName}** (luogo non trovato nel catalogo: nessun collegamento automatico)`
-    : "";
+  const contextHints = [
+    batch.missionName ? `missione **${batch.missionName}**` : null,
+    batch.linkedEntityName ? `legati a **${batch.linkedEntityName}**` : null,
+    location.locationName ? `luogo **${location.locationName}**` : null,
+  ].filter(Boolean);
+
+  const contextLine =
+    contextHints.length > 0 ? ` (${contextHints.join(" · ")})` : "";
 
   const assistantSummary = [
-    `Ho generato **${batch.roles.length} NPC**${locHint}: ${batch.roles.map((r) => `**${r}**`).join(", ")}.`,
+    `Ho generato **${batch.roles.length} NPC**${contextLine}: ${batch.roles.map((r) => `**${r}**`).join(", ")}.`,
     formatNpcBatchIntro(batch.roles, location.locationName, 0),
     pending.phase === "awaiting_image"
       ? "Vuoi generare l'immagine per il primo PNG? Scrivi **sì** o **no**."
@@ -222,28 +259,32 @@ export function buildAwaitingNpcBatchMechanicsPending(
   batch: DetectedNpcBatchRequest,
   partialParams: WikiMarkdownExtraParams
 ): ChatPendingProposalPayload {
+  const specs = roleSpecsForBatch(batch);
   const wikiBatchMeta: ChatWikiBatchMeta = {
     originalPrompt: batch.userPrompt,
     roles: batch.roles,
+    roleSpecs: specs,
     locationName: batch.locationName,
     locationTargetId: null,
     locationTargetKind: null,
     locationExcerpt: null,
-    items: batch.roles.map((roleLabel) => ({
-      roleLabel,
+    missionName: batch.missionName,
+    linkedEntityName: batch.linkedEntityName,
+    items: specs.map((spec) => ({
+      roleLabel: spec.roleLabel,
       status: "pending" as const,
-      entityTitle: roleLabel,
+      entityTitle: spec.roleLabel,
       wikiMeta: {
         entityType: "npc",
-        entityTitle: roleLabel,
-        userPrompt: batch.userPrompt,
+        entityTitle: spec.roleLabel,
+        userPrompt: spec.linePrompt,
         markdownDraft: { description: "", statblock: "" },
         chatMessages: [],
-        npcBuildParams: partialParams,
+        npcBuildParams: mergeWikiExtraParams(partialParams, spec.extraParams),
       },
       input: {
         campaignId,
-        title: roleLabel,
+        title: spec.roleLabel,
         type: "npc",
         content: "",
         visibility: "secret",

@@ -55,7 +55,7 @@ import {
   hasNpcMechanicsParams,
   mergeWikiExtraParams,
 } from "./wiki-request-detector";
-import { detectNpcBatchCreateRequest } from "./wiki-npc-batch";
+import { detectNpcBatchCreateRequest, batchHasCompleteMechanics } from "./wiki-npc-batch";
 import {
   buildAwaitingNpcBatchMechanicsPending,
   enrichNpcBatchProposals,
@@ -1254,7 +1254,16 @@ export async function runAiChatAssistant(
           userPrompt: pending.wikiBatchMeta.originalPrompt,
           count: pending.wikiBatchMeta.roles.length,
           roles: pending.wikiBatchMeta.roles,
+          roleSpecs:
+            pending.wikiBatchMeta.roleSpecs ??
+            pending.wikiBatchMeta.roles.map((roleLabel) => ({
+              roleLabel,
+              linePrompt: roleLabel,
+              extraParams: {},
+            })),
           locationName: pending.wikiBatchMeta.locationName,
+          missionName: pending.wikiBatchMeta.missionName ?? null,
+          linkedEntityName: pending.wikiBatchMeta.linkedEntityName ?? null,
           extraParams: merged,
         },
         merged
@@ -1780,7 +1789,7 @@ export async function runAiChatAssistant(
         extractNpcBuildParams(message)
       );
 
-      if (!hasNpcMechanicsParams(npcParams)) {
+      if (!batchHasCompleteMechanics({ ...detectedNpcBatch, extraParams: npcParams })) {
         nextPending = buildAwaitingNpcBatchMechanicsPending(campaignId, detectedNpcBatch, npcParams);
         interpreted = {
           ...interpreted,

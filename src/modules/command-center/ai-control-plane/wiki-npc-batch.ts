@@ -1,11 +1,22 @@
 import type { WikiMarkdownExtraParams } from "@/lib/ai/wiki-text-generator";
-import { extractNpcBuildParams } from "@/lib/ai/wiki-npc-params";
+import { extractNpcBuildParams, hasNpcMechanicsParams } from "@/lib/ai/wiki-npc-params";
+
+export type NpcBatchRoleSpec = {
+  /** Etichetta leggibile (es. Padre di Bartolo). */
+  roleLabel: string;
+  /** Riga o frammento originale del Master per questo PNG. */
+  linePrompt: string;
+  extraParams: WikiMarkdownExtraParams;
+};
 
 export type DetectedNpcBatchRequest = {
   userPrompt: string;
   count: number;
   roles: string[];
+  roleSpecs: NpcBatchRoleSpec[];
   locationName: string | null;
+  missionName: string | null;
+  linkedEntityName: string | null;
   extraParams: WikiMarkdownExtraParams;
 };
 
@@ -54,6 +65,9 @@ const TOWN_PROFESSIONS = [
   "Tessitore",
 ] as const;
 
+const RELATION_ROLE_PATTERN =
+  /^(padre|madre|maggiordomo|maggiordoma|figlio|figlia|fratello|sorella|zio|zia|nonno|nonna|marito|moglie|servo|serva|nipote|cugino|cugina|protettore|protettrice)\s+(?:di\s+)?/i;
+
 const ROLE_STOPWORDS = new Set([
   "npc",
   "png",
@@ -61,10 +75,12 @@ const ROLE_STOPWORDS = new Set([
   "personaggi",
   "genera",
   "generami",
+  "generi",
   "crea",
   "creami",
   "voglio",
   "vorrei",
+  "bisogno",
   "nella",
   "nel",
   "nello",
@@ -82,6 +98,10 @@ const ROLE_STOPWORDS = new Set([
   "lavorino",
   "abitano",
   "abitino",
+  "collegati",
+  "collegato",
+  "collegata",
+  "sono",
   "della",
   "del",
   "di",
@@ -94,6 +114,8 @@ const ROLE_STOPWORDS = new Set([
   "un",
   "una",
   "e",
+  "missione",
+  "incarico",
 ]);
 
 function capitalizePlaceName(raw: string): string {
@@ -111,29 +133,156 @@ function capitalizeRole(raw: string): string {
   return t.charAt(0).toUpperCase() + t.slice(1).toLowerCase();
 }
 
+function titleCasePhrase(raw: string): string {
+  return raw
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => {
+      const lower = w.toLowerCase();
+      if (["de", "di", "del", "della", "degli", "delle", "da", "van", "von"].includes(lower)) {
+        return lower;
+      }
+      return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+    })
+    .join(" ");
+}
+
+function stripMechanicsTail(text: string): string {
+  return text
+    .replace(/,?\s*(?:umano|umana|nano|nana|elfo|elfa|mezzelfo|tiefling|gnomo|gnoma|mezzorco|dragonide|drow)\b/gi, "")
+    .replace(/,?\s*aristocratic[oa]\b/gi, "")
+    .replace(/,?\s*popolan[oa]\b/gi, "")
+    .replace(/,?\s*espert[oa]\b/gi, "")
+    .replace(/,?\s*combattente\b/gi, "")
+    .replace(/,?\s*adept[oa]\b/gi, "")
+    .replace(/,?\s*livello\s*\d{1,2}\b/gi, "")
+    .replace(/,?\s*lv\.?\s*\d{1,2}\b/gi, "")
+    .replace(/,?\s*\d{1,2}\s*°?\s*livello\b/gi, "")
+    .trim();
+}
+
+export function deriveRoleLabelFromLine(body: string): string {
+  const trimmed = body.trim();
+  const relation = trimmed.match(
+    /^(padre|madre|maggiordomo|maggiordoma|figlio|figlia|fratello|sorella|zio|zia|nonno|nonna|marito|moglie|servo|serva|nipote|cugino|cugina|protettore|protettrice)\s+(?:di\s+)?(.+)$/i
+  );
+  if (relation) {
+    const who = stripMechanicsTail(relation[2] ?? "");
+    if (who.length >= 2) {
+      return `${capitalizeRole(relation[1])} di ${titleCasePhrase(who)}`;
+    }
+    return capitalizeRole(relation[1]);
+  }
+
+  const stripped = stripMechanicsTail(trimmed);
+  if (stripped.length >= 3) {
+    return capitalizeRole(stripped);
+  }
+  return capitalizeRole(trimmed.split(/\s+/).slice(0, 4).join(" "));
+}
+
+export function parseNpcRoleLine(line: string): NpcBatchRoleSpec | null {
+  const cleaned = line.replace(/^[-*•\d.)]+\s*/, "").trim();
+  if (cleaned.length < 6) return null;
+
+  const articleMatch = cleaned.match(/^(?:il|la|l'|lo|i|gli|le)\s+(.+)$/i);
+  if (!articleMatch) return null;
+
+  const body = articleMatch[1].trim();
+  if (body.length < 4) return null;
+  if (/\b(npc|png|personaggi?|missione|incarico)\b/i.test(body) && !RELATION_ROLE_PATTERN.test(body)) {
+    return null;
+  }
+
+  return {
+    roleLabel: deriveRoleLabelFromLine(body),
+    linePrompt: cleaned,
+    extraParams: extractNpcBuildParams(body),
+  };
+}
+
+/** Estrae righe strutturate (il padre di…, la madre di…, ecc.) dal prompt multiriga. */
+export function extractStructuredNpcRoleSpecs(message: string): NpcBatchRoleSpec[] {
+  const specs: NpcBatchRoleSpec[] = [];
+  const seen = new Set<string>();
+
+  for (const rawLine of message.split(/\r?\n/)) {
+    const spec = parseNpcRoleLine(rawLine);
+    if (!spec) continue;
+    const key = spec.roleLabel.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    specs.push(spec);
+  }
+
+  // Fallback: segmento dopo "sono:" sulla stessa riga
+  if (specs.length === 0) {
+    const sonoBlock = message.match(/\bsono\s*:?\s*([\s\S]+)$/i);
+    if (sonoBlock?.[1]) {
+      for (const chunk of sonoBlock[1].split(/\s*(?:;|\n)\s*/)) {
+        const spec = parseNpcRoleLine(chunk.trim());
+        if (!spec) continue;
+        const key = spec.roleLabel.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        specs.push(spec);
+      }
+    }
+  }
+
+  return specs;
+}
+
 export function extractBatchCount(message: string): number | null {
   const t = message.trim();
-  const digit = t.match(/\b(\d{1,2})\s*(?:npc|png|personaggi?)\b/i);
-  if (digit?.[1]) {
-    const n = Number(digit[1]);
-    if (n >= 2 && n <= 20) return n;
-  }
 
-  const word = t.match(
-    /\b(uno|una|due|tre|quattro|cinque|sei|sette|otto|nove|dieci)\s+(?:npc|png|personaggi?)\b/i
-  );
-  if (word?.[1]) {
-    const n = ITALIAN_NUMBERS[word[1].toLowerCase()];
-    if (n && n >= 2) return n;
-  }
+  const patterns = [
+    /\b(\d{1,2})\s*(?:npc|png|personaggi?)\b/i,
+    /\b(?:genera|generi|crea|crei|fammi|scrivi)\w*\s+(\d{1,2})\s*(?:npc|png|personaggi?)\b/i,
+    /\bmi\s+generi\s+(\d{1,2})\s*(?:npc|png|personaggi?)\b/i,
+    /\b(?:uno|una|due|tre|quattro|cinque|sei|sette|otto|nove|dieci)\s+(?:npc|png|personaggi?)\b/i,
+    /\bgenera(?:mi)?\s+(uno|una|due|tre|quattro|cinque|sei|sette|otto|nove|dieci|\d{1,2})\s+(?:npc|png)\b/i,
+  ];
 
-  const generami = t.match(/\bgenera(?:mi)?\s+(uno|una|due|tre|quattro|cinque|sei|sette|otto|nove|dieci|\d{1,2})\s+(?:npc|png)\b/i);
-  if (generami?.[1]) {
-    const raw = generami[1].toLowerCase();
+  for (const re of patterns) {
+    const m = t.match(re);
+    if (!m?.[1]) continue;
+    const raw = m[1].toLowerCase();
     const n = /^\d+$/.test(raw) ? Number(raw) : ITALIAN_NUMBERS[raw];
     if (n && n >= 2 && n <= 20) return n;
   }
 
+  return null;
+}
+
+export function extractMissionNameFromPrompt(message: string): string | null {
+  const patterns = [
+    /\bcollegat\w*\s+alla\s+missione\s+["«]?([^"»\n.]+?)["»]?(?:\s*\.|,|$)/i,
+    /\bmissione\s+["«]([^"»]+)["»]/i,
+    /\bmissione\s+([A-ZÀ-ÿ][\wÀ-ÿ'’\-\s]{2,60}?)(?:\s*\.|,|$)/,
+  ];
+  for (const re of patterns) {
+    const m = message.match(re);
+    const name = m?.[1]?.trim();
+    if (name && name.length >= 3) return titleCasePhrase(name);
+  }
+  return null;
+}
+
+export function extractLinkedEntityNameFromPrompt(message: string): string | null {
+  const patterns = [
+    /\bcollegat\w*\s+a\s+([a-zà-ÿ][\wà-ÿ'’\-\s]{2,60}?)(?:\s*\.|,|\s+sono\b|\n|$)/i,
+    /\blegat\w*\s+a\s+([a-zà-ÿ][\wà-ÿ'’\-\s]{2,60}?)(?:\s*\.|,|\s+sono\b|\n|$)/i,
+  ];
+  for (const re of patterns) {
+    const m = message.match(re);
+    let name = m?.[1]?.trim().replace(/\s+sono\s*$/i, "");
+    if (!name || name.length < 3) continue;
+    if (ROLE_STOPWORDS.has(name.toLowerCase())) continue;
+    if (/^missione\b/i.test(name)) continue;
+    return titleCasePhrase(name);
+  }
   return null;
 }
 
@@ -159,7 +308,7 @@ export function extractNamedRolesFromPrompt(message: string): string[] {
   const roles: string[] = [];
 
   const listMatch = message.match(
-    /(?:genera(?:mi)?|crea(?:mi)?|voglio)\s+(?:il|la|l'|i|gli|le)?\s*([\s\S]+?)(?:\s+(?:nella?|nel|a|per|di)\s+(?:citt[aà]|villaggio|borgo|luogo)|$)/i
+    /(?:(?:genera|generi|crea|crei|voglio|fammi)\w*\s+(?:il|la|l'|i|gli|le)?\s*|ho\s+bisogno\s+che\s+mi\s+generi\s+)([\s\S]+?)(?:\s+(?:nella?|nel|a|per|di)\s+(?:citt[aà]|villaggio|borgo|luogo)|$)/i
   );
   let segment = listMatch?.[1]?.trim() ?? message;
   segment = segment.replace(
@@ -173,6 +322,14 @@ export function extractNamedRolesFromPrompt(message: string): string[] {
     .filter(Boolean);
 
   for (const chunk of chunks) {
+    const spec = parseNpcRoleLine(chunk);
+    if (spec) {
+      if (!roles.some((r) => r.toLowerCase() === spec.roleLabel.toLowerCase())) {
+        roles.push(spec.roleLabel);
+      }
+      continue;
+    }
+
     const m =
       chunk.match(/^(?:il|la|l'|lo|i|gli|le)\s+(.+)$/i) ??
       chunk.match(/^([A-Za-zÀ-ÿ][\wÀ-ÿ'’\-]{2,40})$/);
@@ -190,12 +347,17 @@ export function extractNamedRolesFromPrompt(message: string): string[] {
   return roles;
 }
 
+/** Riempie professioni casuali solo se il Master non ha indicato ruoli espliciti. */
 export function planNpcBatchRoles(count: number, explicitRoles: string[]): string[] {
-  const target = Math.max(count, explicitRoles.length, 2);
-  const picked = [...explicitRoles];
+  if (explicitRoles.length >= 2) {
+    return explicitRoles.slice(0, Math.max(count, explicitRoles.length));
+  }
 
+  if (count < 2) return explicitRoles;
+
+  const picked = [...explicitRoles];
   const pool = [...TOWN_PROFESSIONS];
-  while (picked.length < target) {
+  while (picked.length < count) {
     const next = pool.shift();
     if (!next) break;
     if (picked.some((r) => r.toLowerCase() === next.toLowerCase())) {
@@ -205,13 +367,22 @@ export function planNpcBatchRoles(count: number, explicitRoles: string[]): strin
     picked.push(next);
   }
 
-  return picked.slice(0, target);
+  return picked.slice(0, count);
+}
+
+export function batchHasCompleteMechanics(batch: Pick<DetectedNpcBatchRequest, "roleSpecs" | "extraParams">): boolean {
+  if (batch.roleSpecs.length > 0) {
+    return batch.roleSpecs.every((spec) => hasNpcMechanicsParams(spec.extraParams));
+  }
+  return hasNpcMechanicsParams(batch.extraParams);
 }
 
 function looksLikeNpcBatchCreate(message: string): boolean {
   const t = message.trim();
   if (t.length < 12) return false;
   if (!/\b(npc|png|personaggi?)\b/i.test(t)) return false;
+
+  if (extractStructuredNpcRoleSpecs(t).length >= 2) return true;
 
   const count = extractBatchCount(t);
   if (count && count >= 2) return true;
@@ -228,37 +399,61 @@ export function detectNpcBatchCreateRequest(message: string): DetectedNpcBatchRe
   const userPrompt = message.trim();
   if (!looksLikeNpcBatchCreate(userPrompt)) return null;
 
-  const explicitRoles = extractNamedRolesFromPrompt(userPrompt);
+  const roleSpecs = extractStructuredNpcRoleSpecs(userPrompt);
+  const explicitRoles =
+    roleSpecs.length > 0 ? roleSpecs.map((s) => s.roleLabel) : extractNamedRolesFromPrompt(userPrompt);
   const count = extractBatchCount(userPrompt) ?? explicitRoles.length;
-  if (count < 2 && explicitRoles.length < 2) return null;
+  if (count < 2 && explicitRoles.length < 2 && roleSpecs.length < 2) return null;
 
   const roles = planNpcBatchRoles(count, explicitRoles);
-  const locationName = extractLocationNameFromPrompt(userPrompt);
+  const finalSpecs =
+    roleSpecs.length > 0
+      ? roleSpecs.slice(0, roles.length)
+      : roles.map((roleLabel) => ({
+          roleLabel,
+          linePrompt: roleLabel,
+          extraParams: extractNpcBuildParams(userPrompt),
+        }));
 
   return {
     userPrompt,
     count: roles.length,
     roles,
-    locationName,
+    roleSpecs: finalSpecs,
+    locationName: extractLocationNameFromPrompt(userPrompt),
+    missionName: extractMissionNameFromPrompt(userPrompt),
+    linkedEntityName: extractLinkedEntityNameFromPrompt(userPrompt),
     extraParams: extractNpcBuildParams(userPrompt),
   };
 }
 
 export function buildNpcRolePrompt(
-  roleLabel: string,
-  locationName: string | null,
-  locationExcerpt: string | null,
-  originalPrompt: string
+  spec: NpcBatchRoleSpec,
+  context: {
+    locationName: string | null;
+    locationExcerpt: string | null;
+    missionName: string | null;
+    linkedEntityName: string | null;
+    originalPrompt: string;
+  }
 ): string {
   const parts = [
-    `Genera un NPC con ruolo/professione: **${roleLabel}**.`,
-    locationName
-      ? `Vive e lavora a **${locationName}**. Deve essere coerente con la storia e l'ambientazione di quel luogo.`
-      : "Integra l'NPC nel mondo della campagna in modo coerente con la cronaca.",
-    locationExcerpt?.trim()
-      ? `Contesto del luogo (memoria campagna):\n${locationExcerpt.trim().slice(0, 1200)}`
+    `Genera l'NPC richiesto dal Master: **${spec.roleLabel}**.`,
+    `Istruzioni specifiche per questo PNG (segui alla lettera ruolo, legami e tratti indicati): ${spec.linePrompt}`,
+    context.missionName
+      ? `Contesto missione: **${context.missionName}**. L'NPC deve essere coerente con questa trama.`
       : null,
-    `Richiesta originale del Master: ${originalPrompt}`,
+    context.linkedEntityName
+      ? `Legame narrativo con **${context.linkedEntityName}**: rispetta la cronaca di campagna e le relazioni già note.`
+      : null,
+    context.locationName
+      ? `Ambientazione / luogo: **${context.locationName}**.`
+      : null,
+    context.locationExcerpt?.trim()
+      ? `Contesto del luogo (memoria campagna):\n${context.locationExcerpt.trim().slice(0, 1200)}`
+      : null,
+    `NON inventare un mestiere generico (es. panettiere, fabbro) se il Master ha indicato un ruolo familiare o narrativo diverso.`,
+    `Richiesta completa del Master:\n${context.originalPrompt}`,
   ];
   return parts.filter(Boolean).join("\n\n");
 }
@@ -268,7 +463,7 @@ export function formatNpcBatchIntro(
   locationName: string | null,
   activeIndex: number
 ): string {
-  const loc = locationName ? ` per **${locationName}**` : "";
+  const loc = locationName ? ` · ${locationName}` : "";
   const role = roles[activeIndex] ?? `NPC ${activeIndex + 1}`;
-  return `Batch **${activeIndex + 1}/${roles.length}**${loc}: **${role}**. Puoi affinare il testo in chat; poi decidi l'immagine e scrivi **conferma** per salvare solo questo PNG. Scrivi **salta** per passare al successivo senza salvare.`;
+  return `Batch **${activeIndex + 1}/${roles.length}**${loc}: **${role}**. Affina il testo in chat; poi decidi l'immagine e scrivi **conferma** per salvare solo questo PNG. **Salta** per il successivo senza salvare.`;
 }
