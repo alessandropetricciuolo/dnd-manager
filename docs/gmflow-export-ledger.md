@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-* Data aggiornamento: 2026-07-06T11:54:26.498Z
+* Data aggiornamento: 2026-07-07T04:55:44.581Z
 * Branch corrente: main
-* Ultimo commit analizzato: 12b3a1084226910c99557dade7c6136efacf2899
-* Range commit analizzato: 0d6345e..12b3a10
-* Stato generale: 445 voci NEEDS_REVIEW
-* Voci totali: 545 (NEEDS_REVIEW: 445, TO_IMPORT: 24, IMPORTED: 0)
+* Ultimo commit analizzato: 7ed15beca2237160cde9d84cb20dcec7304437c7
+* Range commit analizzato: 648cf37..7ed15be
+* Stato generale: 156 voci NEEDS_REVIEW
+* Voci totali: 551 (NEEDS_REVIEW: 156, TO_IMPORT: 319, IMPORTED: 0)
 
 ## Delta automatico non revisionato
 
@@ -376,53 +376,6 @@ File B&D coinvolti:
 File gmflow probabili:
 
 * src/app/campaigns/exploration-map-actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-94b0f4e-007] CAMPAIGNS: scene-document-actions.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-CAMPAIGNS
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/app/campaigns/scene-document-actions.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Logica campagne potenzialmente generalizzabile per multi-tenant.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* SaaS/billing
-
-File B&D coinvolti:
-
-* src/app/campaigns/scene-document-actions.ts
-
-File gmflow probabili:
-
-* src/app/campaigns/scene-document-actions.ts
 
 Rischi:
 
@@ -1523,51 +1476,6 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
-### [BD-GMFLOW-94b0f4e-034] OTHER: floor-raster.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/lib/map-core/raster-export/floor-raster.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/lib/map-core/raster-export/floor-raster.ts
-
-File gmflow probabili:
-
-* src/lib/map-core/raster-export/floor-raster.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
 ### [BD-GMFLOW-94b0f4e-035] OTHER: draw-floor.ts (aggiunto)
 
 Stato:
@@ -2245,53 +2153,6 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
-### [BD-GMFLOW-3cf1907-002] CAMPAIGNS: scene-document-actions.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-CAMPAIGNS
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/app/campaigns/scene-document-actions.ts` modificato nel commit «fix(maps): sync Scene Editor scenes to Esplorazione e FoW on create.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Logica campagne potenzialmente generalizzabile per multi-tenant.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* SaaS/billing
-
-File B&D coinvolti:
-
-* src/app/campaigns/scene-document-actions.ts
-
-File gmflow probabili:
-
-* src/app/campaigns/scene-document-actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
 ### [BD-GMFLOW-3cf1907-003] UI_UX: vista-dall-alto-client.tsx (modificato)
 
 Stato:
@@ -2384,98 +2245,6 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
-### [BD-GMFLOW-3cf1907-005] OTHER: floor-raster.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/lib/map-core/raster-export/floor-raster.ts` modificato nel commit «fix(maps): sync Scene Editor scenes to Esplorazione e FoW on create.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/lib/map-core/raster-export/floor-raster.ts
-
-File gmflow probabili:
-
-* src/lib/map-core/raster-export/floor-raster.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-f9bcd77-001] CAMPAIGNS: scene-document-actions.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-CAMPAIGNS
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/app/campaigns/scene-document-actions.ts` modificato nel commit «fix(maps): upload full Scene Editor rasters from FormData on save.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Logica campagne potenzialmente generalizzabile per multi-tenant.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* SaaS/billing
-
-File B&D coinvolti:
-
-* src/app/campaigns/scene-document-actions.ts
-
-File gmflow probabili:
-
-* src/app/campaigns/scene-document-actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
 ### [BD-GMFLOW-f9bcd77-002] UI_UX: scene-editor-client.tsx (modificato)
 
 Stato:
@@ -2522,53 +2291,6 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
-### [BD-GMFLOW-f9bcd77-003] MEDIA_STORAGE: exploration-map-upload-core.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-MEDIA_STORAGE
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/lib/exploration/exploration-map-upload-core.ts` modificato nel commit «fix(maps): upload full Scene Editor rasters from FormData on save.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Upload/storage media — adattare a R2 o storage gmflow.
-
-Adattamenti necessari:
-
-* Storage R2
-
-File B&D coinvolti:
-
-* src/lib/exploration/exploration-map-upload-core.ts
-
-File gmflow probabili:
-
-* src/lib/exploration/exploration-map-upload-core.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Divergenza storage B&D (Telegram) vs gmflow (R2)
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Quale adapter storage usare in gmflow?
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
 ### [BD-GMFLOW-f9bcd77-004] OTHER: scene-document.ts (modificato)
 
 Stato:
@@ -2599,51 +2321,6 @@ File B&D coinvolti:
 File gmflow probabili:
 
 * src/lib/map-core-bd/scene-document.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-f9bcd77-005] OTHER: floor-raster.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/lib/map-core/raster-export/floor-raster.ts` modificato nel commit «fix(maps): upload full Scene Editor rasters from FormData on save.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/lib/map-core/raster-export/floor-raster.ts
-
-File gmflow probabili:
-
-* src/lib/map-core/raster-export/floor-raster.ts
 
 Rischi:
 
@@ -2984,186 +2661,6 @@ Criterio di import completato:
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 * OPENROUTER_API_KEY configurata in gmflow
 
-### [BD-GMFLOW-09a5000-003] OTHER: command-center-export.md (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `docs/command-center-export.md` aggiunto nel commit «feat(command-center): add Phase 1 GM workspace and inbox.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* docs/command-center-export.md
-
-File gmflow probabili:
-
-* docs/imports/command-center-export.md
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-09a5000-004] OTHER: command-center-vision.md (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `docs/command-center-vision.md` aggiunto nel commit «feat(command-center): add Phase 1 GM workspace and inbox.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* docs/command-center-vision.md
-
-File gmflow probabili:
-
-* docs/imports/command-center-vision.md
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-09a5000-005] OTHER: layout.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/app/command-center/layout.tsx` aggiunto nel commit «feat(command-center): add Phase 1 GM workspace and inbox.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/app/command-center/layout.tsx
-
-File gmflow probabili:
-
-* src/app/command-center/layout.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-09a5000-006] OTHER: page.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/app/command-center/page.tsx` aggiunto nel commit «feat(command-center): add Phase 1 GM workspace and inbox.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/app/command-center/page.tsx
-
-File gmflow probabili:
-
-* src/app/command-center/page.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
 ### [BD-GMFLOW-09a5000-007] OTHER: page.tsx (modificato)
 
 Stato:
@@ -3198,52 +2695,6 @@ File gmflow probabili:
 Rischi:
 
 * Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-09a5000-008] UI_UX: command-center-client.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-UI_UX
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/command-center/command-center-client.tsx` aggiunto nel commit «feat(command-center): add Phase 1 GM workspace and inbox.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Miglioramento interfaccia — valutare design system gmflow.
-
-Adattamenti necessari:
-
-* i18n
-
-File B&D coinvolti:
-
-* src/components/command-center/command-center-client.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/command-center-client.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Divergenza design system / CSS tema
 
 Decisioni richieste:
 
@@ -3438,366 +2889,6 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
-### [BD-GMFLOW-09a5000-013] OTHER: barber-dragons.adapter.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/adapters/barber-dragons.adapter.ts` aggiunto nel commit «feat(command-center): add Phase 1 GM workspace and inbox.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/adapters/barber-dragons.adapter.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/adapters/barber-dragons.adapter.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-09a5000-014] OTHER: index.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/adapters/index.ts` aggiunto nel commit «feat(command-center): add Phase 1 GM workspace and inbox.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/adapters/index.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/adapters/index.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-09a5000-015] OTHER: types.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/adapters/types.ts` aggiunto nel commit «feat(command-center): add Phase 1 GM workspace and inbox.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/adapters/types.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/adapters/types.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-09a5000-016] OTHER: index.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/index.ts` aggiunto nel commit «feat(command-center): add Phase 1 GM workspace and inbox.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/index.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/index.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-09a5000-017] OTHER: actions.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/server/actions.ts` aggiunto nel commit «feat(command-center): add Phase 1 GM workspace and inbox.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/server/actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/server/actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-09a5000-018] OTHER: entities.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/types/entities.ts` aggiunto nel commit «feat(command-center): add Phase 1 GM workspace and inbox.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/types/entities.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/types/entities.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-09a5000-019] OTHER: index.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/types/index.ts` aggiunto nel commit «feat(command-center): add Phase 1 GM workspace and inbox.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/types/index.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/types/index.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-09a5000-020] OTHER: workspace.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/types/workspace.ts` aggiunto nel commit «feat(command-center): add Phase 1 GM workspace and inbox.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/types/workspace.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/types/workspace.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
 ### [BD-GMFLOW-09a5000-021] OTHER: database.types.ts (modificato)
 
 Stato:
@@ -3936,96 +3027,6 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
-### [BD-GMFLOW-d00079b-002] OTHER: command-center-export.md (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `docs/command-center-export.md` modificato nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* docs/command-center-export.md
-
-File gmflow probabili:
-
-* docs/imports/command-center-export.md
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d00079b-003] OTHER: command-center-vision.md (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `docs/command-center-vision.md` modificato nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* docs/command-center-vision.md
-
-File gmflow probabili:
-
-* docs/imports/command-center-vision.md
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
 ### [BD-GMFLOW-d00079b-004] OTHER: package.json (modificato)
 
 Stato:
@@ -4056,774 +3057,6 @@ File B&D coinvolti:
 File gmflow probabili:
 
 * src/package.json
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d00079b-005] OTHER: page.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/app/command-center/page.tsx` modificato nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/app/command-center/page.tsx
-
-File gmflow probabili:
-
-* src/app/command-center/page.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d00079b-006] UI_UX: audit-timeline.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-UI_UX
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/command-center/audit-timeline.tsx` aggiunto nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Miglioramento interfaccia — valutare design system gmflow.
-
-Adattamenti necessari:
-
-* i18n
-
-File B&D coinvolti:
-
-* src/components/command-center/audit-timeline.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/audit-timeline.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Divergenza design system / CSS tema
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d00079b-007] UI_UX: command-center-client.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-UI_UX
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/command-center/command-center-client.tsx` modificato nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Miglioramento interfaccia — valutare design system gmflow.
-
-Adattamenti necessari:
-
-* i18n
-
-File B&D coinvolti:
-
-* src/components/command-center/command-center-client.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/command-center-client.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Divergenza design system / CSS tema
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d00079b-008] OTHER: registry.test.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/__tests__/registry.test.ts` aggiunto nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/__tests__/registry.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/__tests__/registry.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d00079b-009] OTHER: audit.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/audit.ts` aggiunto nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/audit.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/audit.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d00079b-010] OTHER: workspace.actions.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/definitions/workspace.actions.ts` aggiunto nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/definitions/workspace.actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/definitions/workspace.actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d00079b-011] OTHER: gm-note.actions.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/definitions/wrappers/gm-note.actions.ts` aggiunto nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/definitions/wrappers/gm-note.actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/definitions/wrappers/gm-note.actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d00079b-012] OTHER: session.actions.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/definitions/wrappers/session.actions.ts` aggiunto nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/definitions/wrappers/session.actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/definitions/wrappers/session.actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d00079b-013] WIKI: wiki.actions.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-WIKI
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts` aggiunto nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d00079b-014] OTHER: index.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/index.ts` aggiunto nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/index.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/index.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d00079b-015] OTHER: register-all.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/register-all.ts` aggiunto nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/register-all.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/register-all.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d00079b-016] OTHER: registry.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/registry.ts` aggiunto nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/registry.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/registry.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d00079b-017] OTHER: index.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/index.ts` modificato nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/index.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/index.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d00079b-018] OTHER: actions.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/server/actions.ts` modificato nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/server/actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/server/actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d00079b-019] OTHER: actions.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/types/actions.ts` aggiunto nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/types/actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/types/actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d00079b-020] OTHER: audit.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/types/audit.ts` aggiunto nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/types/audit.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/types/audit.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d00079b-021] OTHER: index.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/types/index.ts` modificato nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/types/index.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/types/index.ts
 
 Rischi:
 
@@ -5074,655 +3307,6 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
-### [BD-GMFLOW-f17432f-004] OTHER: page.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/app/command-center/page.tsx` modificato nel commit «feat(command-center): add AI Draft Mode (Phase 3).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/app/command-center/page.tsx
-
-File gmflow probabili:
-
-* src/app/command-center/page.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-f17432f-005] AI: ai-assistant-panel.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/components/command-center/ai-assistant-panel.tsx` aggiunto nel commit «feat(command-center): add AI Draft Mode (Phase 3).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/components/command-center/ai-assistant-panel.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/ai-assistant-panel.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-f17432f-006] AI: ai-proposal-panel.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/components/command-center/ai-proposal-panel.tsx` aggiunto nel commit «feat(command-center): add AI Draft Mode (Phase 3).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/components/command-center/ai-proposal-panel.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/ai-proposal-panel.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-f17432f-007] UI_UX: command-center-client.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-UI_UX
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/command-center/command-center-client.tsx` modificato nel commit «feat(command-center): add AI Draft Mode (Phase 3).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Miglioramento interfaccia — valutare design system gmflow.
-
-Adattamenti necessari:
-
-* i18n
-
-File B&D coinvolti:
-
-* src/components/command-center/command-center-client.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/command-center-client.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Divergenza design system / CSS tema
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-f17432f-008] AI: interpreter.test.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/interpreter.test.ts` aggiunto nel commit «feat(command-center): add AI Draft Mode (Phase 3).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/interpreter.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/interpreter.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-f17432f-009] AI: autonomy.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/autonomy.ts` aggiunto nel commit «feat(command-center): add AI Draft Mode (Phase 3).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/autonomy.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/autonomy.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-f17432f-010] AI: context-resolver.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/context-resolver.ts` aggiunto nel commit «feat(command-center): add AI Draft Mode (Phase 3).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/context-resolver.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/context-resolver.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-f17432f-011] AI: draft-assistant.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/draft-assistant.ts` aggiunto nel commit «feat(command-center): add AI Draft Mode (Phase 3).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/draft-assistant.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/draft-assistant.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-f17432f-012] AI: interpreter.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/interpreter.ts` aggiunto nel commit «feat(command-center): add AI Draft Mode (Phase 3).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/interpreter.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/interpreter.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-f17432f-013] AI: proposal-builder.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/proposal-builder.ts` aggiunto nel commit «feat(command-center): add AI Draft Mode (Phase 3).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/proposal-builder.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/proposal-builder.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-f17432f-014] OTHER: actions.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/server/actions.ts` modificato nel commit «feat(command-center): add AI Draft Mode (Phase 3).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/server/actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/server/actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-f17432f-015] AI: ai-proposal.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/types/ai-proposal.ts` aggiunto nel commit «feat(command-center): add AI Draft Mode (Phase 3).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/types/ai-proposal.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/types/ai-proposal.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-f17432f-016] OTHER: index.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/types/index.ts` modificato nel commit «feat(command-center): add AI Draft Mode (Phase 3).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/types/index.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/types/index.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
 ### [BD-GMFLOW-f17432f-017] OTHER: database.types.ts (modificato)
 
 Stato:
@@ -5815,103 +3399,6 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 * RLS/policy verificate per multi-tenant
-
-### [BD-GMFLOW-ef0984c-001] AI: ai-proposal-panel.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/components/command-center/ai-proposal-panel.tsx` modificato nel commit «fix(command-center): show AI proposal previews for workspace pages.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/components/command-center/ai-proposal-panel.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/ai-proposal-panel.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-ef0984c-002] OTHER: workspace.actions.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/definitions/workspace.actions.ts` modificato nel commit «fix(command-center): show AI proposal previews for workspace pages.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/definitions/workspace.actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/definitions/workspace.actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
 ### [BD-GMFLOW-1e31f94-001] OTHER: action-registry.md (modificato)
 
@@ -6010,51 +3497,6 @@ Criterio di import completato:
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 * OPENROUTER_API_KEY configurata in gmflow
 
-### [BD-GMFLOW-1e31f94-003] OTHER: command-center-vision.md (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `docs/command-center-vision.md` modificato nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* docs/command-center-vision.md
-
-File gmflow probabili:
-
-* docs/imports/command-center-vision.md
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
 ### [BD-GMFLOW-1e31f94-004] OTHER: package.json (modificato)
 
 Stato:
@@ -6085,1017 +3527,6 @@ File B&D coinvolti:
 File gmflow probabili:
 
 * src/package.json
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-1e31f94-005] AI: ai-assistant-panel.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/components/command-center/ai-assistant-panel.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/ai-assistant-panel.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-1e31f94-006] AI: ai-proposal-panel.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/components/command-center/ai-proposal-panel.tsx` modificato nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/components/command-center/ai-proposal-panel.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/ai-proposal-panel.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-1e31f94-007] UI_UX: audit-timeline.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-UI_UX
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/command-center/audit-timeline.tsx` modificato nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Miglioramento interfaccia — valutare design system gmflow.
-
-Adattamenti necessari:
-
-* i18n
-
-File B&D coinvolti:
-
-* src/components/command-center/audit-timeline.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/audit-timeline.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Divergenza design system / CSS tema
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-1e31f94-008] UI_UX: command-center-client.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-UI_UX
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/command-center/command-center-client.tsx` modificato nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Miglioramento interfaccia — valutare design system gmflow.
-
-Adattamenti necessari:
-
-* i18n
-
-File B&D coinvolti:
-
-* src/components/command-center/command-center-client.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/command-center-client.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Divergenza design system / CSS tema
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-1e31f94-009] UI_UX: voice-capture-button.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-UI_UX
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/command-center/voice-capture-button.tsx` aggiunto nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Miglioramento interfaccia — valutare design system gmflow.
-
-Adattamenti necessari:
-
-* i18n
-
-File B&D coinvolti:
-
-* src/components/command-center/voice-capture-button.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/voice-capture-button.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Divergenza design system / CSS tema
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-1e31f94-010] OTHER: registry.test.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/__tests__/registry.test.ts` modificato nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/__tests__/registry.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/__tests__/registry.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-1e31f94-011] AI: ai-proposal.actions.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/actions/definitions/ai-proposal.actions.ts` aggiunto nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/definitions/ai-proposal.actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/definitions/ai-proposal.actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-1e31f94-012] OTHER: workspace.actions.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/definitions/workspace.actions.ts` modificato nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/definitions/workspace.actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/definitions/workspace.actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-1e31f94-013] OTHER: register-all.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/register-all.ts` modificato nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/register-all.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/register-all.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-1e31f94-014] OTHER: registry.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/registry.ts` modificato nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/registry.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/registry.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-1e31f94-015] AI: interpreter.test.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/interpreter.test.ts` modificato nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/interpreter.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/interpreter.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-1e31f94-016] AI: proposal-executor.test.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/proposal-executor.test.ts` aggiunto nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/proposal-executor.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/proposal-executor.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-1e31f94-017] AI: autonomy.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/autonomy.ts` modificato nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/autonomy.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/autonomy.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-1e31f94-018] AI: draft-assistant.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/draft-assistant.ts` modificato nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/draft-assistant.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/draft-assistant.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-1e31f94-019] AI: draft-assistant.types.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/draft-assistant.types.ts` aggiunto nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-1e31f94-020] AI: proposal-executor.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/proposal-executor.ts` aggiunto nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/proposal-executor.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/proposal-executor.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-1e31f94-021] OTHER: actions.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/server/actions.ts` modificato nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/server/actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/server/actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-1e31f94-022] OTHER: actions.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/types/actions.ts` modificato nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/types/actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/types/actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-1e31f94-023] OTHER: command-input-voice.test.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/voice/__tests__/command-input-voice.test.ts` aggiunto nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/voice/__tests__/command-input-voice.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/voice/__tests__/command-input-voice.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-1e31f94-024] OTHER: command-input-voice.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/voice/command-input-voice.ts` aggiunto nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/voice/command-input-voice.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/voice/command-input-voice.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-1e31f94-025] OTHER: use-voice-dictation.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/voice/use-voice-dictation.ts` aggiunto nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/voice/use-voice-dictation.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/voice/use-voice-dictation.ts
 
 Rischi:
 
@@ -7156,1704 +3587,6 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
-### [BD-GMFLOW-0a78de3-002] AI: ai-assistant-panel.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/components/command-center/ai-assistant-panel.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/ai-assistant-panel.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0a78de3-003] AI: ai-proposal-panel.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/components/command-center/ai-proposal-panel.tsx` modificato nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/components/command-center/ai-proposal-panel.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/ai-proposal-panel.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0a78de3-004] UI_UX: audit-timeline.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-UI_UX
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/command-center/audit-timeline.tsx` modificato nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Miglioramento interfaccia — valutare design system gmflow.
-
-Adattamenti necessari:
-
-* i18n
-
-File B&D coinvolti:
-
-* src/components/command-center/audit-timeline.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/audit-timeline.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Divergenza design system / CSS tema
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-0a78de3-005] OTHER: action-catalog.test.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/__tests__/action-catalog.test.ts` aggiunto nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/__tests__/action-catalog.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/__tests__/action-catalog.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-0a78de3-006] OTHER: registry.test.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/__tests__/registry.test.ts` modificato nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/__tests__/registry.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/__tests__/registry.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-0a78de3-007] OTHER: action-catalog.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/action-catalog.ts` aggiunto nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/action-catalog.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/action-catalog.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-0a78de3-008] OTHER: command-input.actions.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/definitions/command-input.actions.ts` aggiunto nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/definitions/command-input.actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/definitions/command-input.actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-0a78de3-009] OTHER: memory.actions.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/definitions/memory.actions.ts` aggiunto nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/definitions/memory.actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/definitions/memory.actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-0a78de3-010] OTHER: campaign.actions.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/definitions/wrappers/campaign.actions.ts` aggiunto nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/definitions/wrappers/campaign.actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/definitions/wrappers/campaign.actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-0a78de3-011] OTHER: character.actions.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/definitions/wrappers/character.actions.ts` aggiunto nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/definitions/wrappers/character.actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/definitions/wrappers/character.actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-0a78de3-012] OTHER: mission.actions.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/definitions/wrappers/mission.actions.ts` aggiunto nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/definitions/wrappers/mission.actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/definitions/wrappers/mission.actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-0a78de3-013] OTHER: session.actions.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/definitions/wrappers/session.actions.ts` modificato nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/definitions/wrappers/session.actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/definitions/wrappers/session.actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-0a78de3-014] WIKI: wiki.actions.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-WIKI
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts` modificato nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-0a78de3-015] OTHER: register-all.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/register-all.ts` modificato nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/register-all.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/register-all.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-0a78de3-016] AI: interpreter.test.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/interpreter.test.ts` modificato nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/interpreter.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/interpreter.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0a78de3-017] AI: proposal-executor.test.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/proposal-executor.test.ts` modificato nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/proposal-executor.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/proposal-executor.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0a78de3-018] AI: interpreter.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/interpreter.ts` modificato nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/interpreter.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/interpreter.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0a78de3-019] AI: proposal-executor.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/proposal-executor.ts` modificato nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/proposal-executor.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/proposal-executor.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0a78de3-020] AI: ai-proposal.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/types/ai-proposal.ts` modificato nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/types/ai-proposal.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/types/ai-proposal.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0accbfa-001] UI_UX: audit-timeline.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-UI_UX
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/command-center/audit-timeline.tsx` modificato nel commit «fix(command-center): resolve Vercel build type errors.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Miglioramento interfaccia — valutare design system gmflow.
-
-Adattamenti necessari:
-
-* i18n
-
-File B&D coinvolti:
-
-* src/components/command-center/audit-timeline.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/audit-timeline.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Divergenza design system / CSS tema
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-0accbfa-002] OTHER: character.actions.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/definitions/wrappers/character.actions.ts` modificato nel commit «fix(command-center): resolve Vercel build type errors.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/definitions/wrappers/character.actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/definitions/wrappers/character.actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-478d341-001] OTHER: page.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/app/command-center/page.tsx` modificato nel commit «feat(command-center): move AI proposals to conversational chat confirmation.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/app/command-center/page.tsx
-
-File gmflow probabili:
-
-* src/app/command-center/page.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-478d341-002] AI: ai-assistant-panel.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(command-center): move AI proposals to conversational chat confirmation.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/components/command-center/ai-assistant-panel.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/ai-assistant-panel.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-478d341-003] UI_UX: command-center-client.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-UI_UX
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/command-center/command-center-client.tsx` modificato nel commit «feat(command-center): move AI proposals to conversational chat confirmation.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Miglioramento interfaccia — valutare design system gmflow.
-
-Adattamenti necessari:
-
-* i18n
-
-File B&D coinvolti:
-
-* src/components/command-center/command-center-client.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/command-center-client.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Divergenza design system / CSS tema
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-478d341-004] AI: conversation-intent.test.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts` aggiunto nel commit «feat(command-center): move AI proposals to conversational chat confirmation.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-478d341-005] AI: chat-assistant.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/chat-assistant.ts` aggiunto nel commit «feat(command-center): move AI proposals to conversational chat confirmation.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/chat-assistant.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/chat-assistant.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-478d341-006] AI: conversation-intent.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/conversation-intent.ts` aggiunto nel commit «feat(command-center): move AI proposals to conversational chat confirmation.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/conversation-intent.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/conversation-intent.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-478d341-007] AI: draft-assistant.types.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/draft-assistant.types.ts` modificato nel commit «feat(command-center): move AI proposals to conversational chat confirmation.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-478d341-008] AI: format-proposal-chat.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/format-proposal-chat.ts` aggiunto nel commit «feat(command-center): move AI proposals to conversational chat confirmation.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/format-proposal-chat.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/format-proposal-chat.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-478d341-009] AI: interpreter.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/interpreter.ts` modificato nel commit «feat(command-center): move AI proposals to conversational chat confirmation.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/interpreter.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/interpreter.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-478d341-010] AI: preview-proposals.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/preview-proposals.ts` aggiunto nel commit «feat(command-center): move AI proposals to conversational chat confirmation.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/preview-proposals.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/preview-proposals.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-478d341-011] AI: proposal-builder.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/proposal-builder.ts` modificato nel commit «feat(command-center): move AI proposals to conversational chat confirmation.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/proposal-builder.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/proposal-builder.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-478d341-012] AI: proposal-input.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/proposal-input.ts` aggiunto nel commit «feat(command-center): move AI proposals to conversational chat confirmation.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/proposal-input.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/proposal-input.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-478d341-013] OTHER: actions.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/server/actions.ts` modificato nel commit «feat(command-center): move AI proposals to conversational chat confirmation.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/server/actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/server/actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-fd82d7b-001] OTHER: page.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/app/command-center/page.tsx` modificato nel commit «feat(command-center): wiki AI canvas layout and dashboard assistant link.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/app/command-center/page.tsx
-
-File gmflow probabili:
-
-* src/app/command-center/page.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
 ### [BD-GMFLOW-fd82d7b-002] OTHER: page.tsx (modificato)
 
 Stato:
@@ -8888,156 +3621,6 @@ File gmflow probabili:
 Rischi:
 
 * Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-fd82d7b-003] AI: ai-assistant-canvas.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/components/command-center/ai-assistant-canvas.tsx` aggiunto nel commit «feat(command-center): wiki AI canvas layout and dashboard assistant link.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/components/command-center/ai-assistant-canvas.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/ai-assistant-canvas.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-fd82d7b-004] AI: ai-assistant-panel.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(command-center): wiki AI canvas layout and dashboard assistant link.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/components/command-center/ai-assistant-panel.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/ai-assistant-panel.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-fd82d7b-005] UI_UX: command-center-client.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-UI_UX
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/command-center/command-center-client.tsx` modificato nel commit «feat(command-center): wiki AI canvas layout and dashboard assistant link.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Miglioramento interfaccia — valutare design system gmflow.
-
-Adattamenti necessari:
-
-* i18n
-
-File B&D coinvolti:
-
-* src/components/command-center/command-center-client.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/command-center-client.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Divergenza design system / CSS tema
 
 Decisioni richieste:
 
@@ -9125,560 +3708,6 @@ File B&D coinvolti:
 File gmflow probabili:
 
 * src/components/dashboard/mobile-nav-menu.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Divergenza design system / CSS tema
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-fd82d7b-008] WIKI: wiki.actions.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-WIKI
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts` modificato nel commit «feat(command-center): wiki AI canvas layout and dashboard assistant link.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-fd82d7b-009] AI: conversation-intent.test.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts` modificato nel commit «feat(command-center): wiki AI canvas layout and dashboard assistant link.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-fd82d7b-010] AI: chat-assistant.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(command-center): wiki AI canvas layout and dashboard assistant link.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/chat-assistant.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/chat-assistant.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-fd82d7b-011] AI: conversation-intent.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/conversation-intent.ts` modificato nel commit «feat(command-center): wiki AI canvas layout and dashboard assistant link.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/conversation-intent.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/conversation-intent.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-fd82d7b-012] AI: draft-assistant.types.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/draft-assistant.types.ts` modificato nel commit «feat(command-center): wiki AI canvas layout and dashboard assistant link.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-fd82d7b-013] AI: format-proposal-chat.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/format-proposal-chat.ts` modificato nel commit «feat(command-center): wiki AI canvas layout and dashboard assistant link.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/format-proposal-chat.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/format-proposal-chat.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-fd82d7b-014] AI: interpreter.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/interpreter.ts` modificato nel commit «feat(command-center): wiki AI canvas layout and dashboard assistant link.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/interpreter.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/interpreter.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-fd82d7b-015] AI: wiki-proposal-builder.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts` aggiunto nel commit «feat(command-center): wiki AI canvas layout and dashboard assistant link.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-1a5921c-001] AI: ai-assistant-panel.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(command-center): wiki assistant fallback and workspace deletes.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/components/command-center/ai-assistant-panel.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/ai-assistant-panel.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-1a5921c-002] UI_UX: audit-timeline.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-UI_UX
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/command-center/audit-timeline.tsx` modificato nel commit «feat(command-center): wiki assistant fallback and workspace deletes.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Miglioramento interfaccia — valutare design system gmflow.
-
-Adattamenti necessari:
-
-* i18n
-
-File B&D coinvolti:
-
-* src/components/command-center/audit-timeline.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/audit-timeline.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Divergenza design system / CSS tema
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-1a5921c-003] UI_UX: command-center-client.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-UI_UX
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/command-center/command-center-client.tsx` modificato nel commit «feat(command-center): wiki assistant fallback and workspace deletes.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Miglioramento interfaccia — valutare design system gmflow.
-
-Adattamenti necessari:
-
-* i18n
-
-File B&D coinvolti:
-
-* src/components/command-center/command-center-client.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/command-center-client.tsx
 
 Rischi:
 
@@ -9798,356 +3827,6 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 * OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-1a5921c-006] OTHER: workspace.actions.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/definitions/workspace.actions.ts` modificato nel commit «feat(command-center): wiki assistant fallback and workspace deletes.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/definitions/workspace.actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/definitions/workspace.actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-1a5921c-007] AI: wiki-request-detector.test.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts` aggiunto nel commit «feat(command-center): wiki assistant fallback and workspace deletes.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-1a5921c-008] AI: chat-assistant.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(command-center): wiki assistant fallback and workspace deletes.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/chat-assistant.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/chat-assistant.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-1a5921c-009] AI: draft-assistant.types.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/draft-assistant.types.ts` modificato nel commit «feat(command-center): wiki assistant fallback and workspace deletes.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-1a5921c-010] AI: wiki-proposal-builder.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts` modificato nel commit «feat(command-center): wiki assistant fallback and workspace deletes.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-1a5921c-011] AI: wiki-request-detector.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/wiki-request-detector.ts` aggiunto nel commit «feat(command-center): wiki assistant fallback and workspace deletes.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/wiki-request-detector.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/wiki-request-detector.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-1a5921c-012] OTHER: actions.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/server/actions.ts` modificato nel commit «feat(command-center): wiki assistant fallback and workspace deletes.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/server/actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/server/actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
 ### [BD-GMFLOW-6d1ad30-001] OTHER: global-env.d.ts (modificato)
 
@@ -10442,58 +4121,6 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
-### [BD-GMFLOW-089f6f1-003] AI: ai-assistant-canvas.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/components/command-center/ai-assistant-canvas.tsx` modificato nel commit «feat(command-center): GM assistant phase 0 foundations.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/components/command-center/ai-assistant-canvas.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/ai-assistant-canvas.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
 ### [BD-GMFLOW-089f6f1-004] GM_SCREEN: campaign-memory-query-panel.tsx (modificato)
 
 Stato:
@@ -10772,474 +4399,6 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
-### [BD-GMFLOW-089f6f1-010] AI: character-request-detector.test.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/character-request-detector.test.ts` aggiunto nel commit «feat(command-center): GM assistant phase 0 foundations.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/character-request-detector.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/character-request-detector.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-089f6f1-011] AI: mission-request-detector.test.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/mission-request-detector.test.ts` aggiunto nel commit «feat(command-center): GM assistant phase 0 foundations.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/mission-request-detector.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/mission-request-detector.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-089f6f1-012] AI: campaign-request-detector.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/campaign-request-detector.ts` aggiunto nel commit «feat(command-center): GM assistant phase 0 foundations.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/campaign-request-detector.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/campaign-request-detector.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-089f6f1-013] AI: character-request-detector.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/character-request-detector.ts` aggiunto nel commit «feat(command-center): GM assistant phase 0 foundations.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/character-request-detector.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/character-request-detector.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-089f6f1-014] AI: chat-assistant.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(command-center): GM assistant phase 0 foundations.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/chat-assistant.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/chat-assistant.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-089f6f1-015] AI: domain-fallback-interpreter.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts` aggiunto nel commit «feat(command-center): GM assistant phase 0 foundations.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-089f6f1-016] AI: interpreter.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/interpreter.ts` modificato nel commit «feat(command-center): GM assistant phase 0 foundations.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/interpreter.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/interpreter.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-089f6f1-017] AI: mission-request-detector.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/mission-request-detector.ts` aggiunto nel commit «feat(command-center): GM assistant phase 0 foundations.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/mission-request-detector.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/mission-request-detector.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-089f6f1-018] AI: proposal-enricher.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/proposal-enricher.ts` aggiunto nel commit «feat(command-center): GM assistant phase 0 foundations.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/proposal-enricher.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/proposal-enricher.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
 ### [BD-GMFLOW-089f6f1-019] OTHER: database.types.ts (modificato)
 
 Stato:
@@ -11332,110 +4491,6 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 * RLS/policy verificate per multi-tenant
-
-### [BD-GMFLOW-10b04a7-001] AI: ai-assistant-canvas.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/components/command-center/ai-assistant-canvas.tsx` modificato nel commit «feat(command-center): AI campaign and mission proposals (phases 1–2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/components/command-center/ai-assistant-canvas.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/ai-assistant-canvas.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-10b04a7-002] AI: ai-assistant-panel.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(command-center): AI campaign and mission proposals (phases 1–2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/components/command-center/ai-assistant-panel.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/ai-assistant-panel.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
 
 ### [BD-GMFLOW-10b04a7-003] OTHER: campaign-memory-export-actions.ts (modificato)
 
@@ -11676,571 +4731,6 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
-### [BD-GMFLOW-10b04a7-008] OTHER: campaign.actions.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/definitions/wrappers/campaign.actions.ts` modificato nel commit «feat(command-center): AI campaign and mission proposals (phases 1–2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/definitions/wrappers/campaign.actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/definitions/wrappers/campaign.actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-10b04a7-009] AI: campaign-text-generator.test.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/campaign-text-generator.test.ts` aggiunto nel commit «feat(command-center): AI campaign and mission proposals (phases 1–2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/campaign-text-generator.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/campaign-text-generator.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-10b04a7-010] AI: conversation-intent.test.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts` modificato nel commit «feat(command-center): AI campaign and mission proposals (phases 1–2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-10b04a7-011] AI: mission-text-generator.test.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/mission-text-generator.test.ts` aggiunto nel commit «feat(command-center): AI campaign and mission proposals (phases 1–2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/mission-text-generator.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/mission-text-generator.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-10b04a7-012] AI: campaign-proposal-builder.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts` aggiunto nel commit «feat(command-center): AI campaign and mission proposals (phases 1–2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-10b04a7-013] AI: chat-assistant.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(command-center): AI campaign and mission proposals (phases 1–2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/chat-assistant.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/chat-assistant.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-10b04a7-014] AI: conversation-intent.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/conversation-intent.ts` modificato nel commit «feat(command-center): AI campaign and mission proposals (phases 1–2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/conversation-intent.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/conversation-intent.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-10b04a7-015] AI: draft-assistant.types.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/draft-assistant.types.ts` modificato nel commit «feat(command-center): AI campaign and mission proposals (phases 1–2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-10b04a7-016] AI: interpreter.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/interpreter.ts` modificato nel commit «feat(command-center): AI campaign and mission proposals (phases 1–2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/interpreter.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/interpreter.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-10b04a7-017] AI: mission-proposal-builder.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/mission-proposal-builder.ts` aggiunto nel commit «feat(command-center): AI campaign and mission proposals (phases 1–2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/mission-proposal-builder.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/mission-proposal-builder.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-10b04a7-018] AI: proposal-enricher.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/proposal-enricher.ts` modificato nel commit «feat(command-center): AI campaign and mission proposals (phases 1–2).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/proposal-enricher.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/proposal-enricher.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
 ### [BD-GMFLOW-0a086f7-001] CAMPAIGNS: character-actions.ts (modificato)
 
 Stato:
@@ -12287,110 +4777,6 @@ Criterio di import completato:
 * Codice portato in gmflow con adattamenti documentati
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-0a086f7-002] AI: ai-assistant-canvas.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/components/command-center/ai-assistant-canvas.tsx` modificato nel commit «feat(command-center): AI character proposals with embedded sheet generator (phase 3).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/components/command-center/ai-assistant-canvas.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/ai-assistant-canvas.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0a086f7-003] AI: ai-assistant-panel.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(command-center): AI character proposals with embedded sheet generator (phase 3).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/components/command-center/ai-assistant-panel.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/ai-assistant-panel.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
 
 ### [BD-GMFLOW-0a086f7-004] AI: sheet-generator-embed.tsx (aggiunto)
 
@@ -12652,571 +5038,6 @@ Criterio di import completato:
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 * OPENROUTER_API_KEY configurata in gmflow
 
-### [BD-GMFLOW-0a086f7-009] OTHER: character.actions.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/definitions/wrappers/character.actions.ts` modificato nel commit «feat(command-center): AI character proposals with embedded sheet generator (phase 3).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/definitions/wrappers/character.actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/definitions/wrappers/character.actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-0a086f7-010] AI: character-text-generator.test.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/character-text-generator.test.ts` aggiunto nel commit «feat(command-center): AI character proposals with embedded sheet generator (phase 3).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/character-text-generator.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/character-text-generator.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0a086f7-011] AI: conversation-intent.test.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts` modificato nel commit «feat(command-center): AI character proposals with embedded sheet generator (phase 3).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0a086f7-012] AI: character-proposal-builder.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/character-proposal-builder.ts` aggiunto nel commit «feat(command-center): AI character proposals with embedded sheet generator (phase 3).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/character-proposal-builder.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/character-proposal-builder.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0a086f7-013] AI: character-proposal-shared.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/character-proposal-shared.ts` aggiunto nel commit «feat(command-center): AI character proposals with embedded sheet generator (phase 3).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/character-proposal-shared.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/character-proposal-shared.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0a086f7-014] AI: chat-assistant.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(command-center): AI character proposals with embedded sheet generator (phase 3).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/chat-assistant.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/chat-assistant.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0a086f7-015] AI: conversation-intent.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/conversation-intent.ts` modificato nel commit «feat(command-center): AI character proposals with embedded sheet generator (phase 3).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/conversation-intent.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/conversation-intent.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0a086f7-016] AI: draft-assistant.types.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/draft-assistant.types.ts` modificato nel commit «feat(command-center): AI character proposals with embedded sheet generator (phase 3).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0a086f7-017] AI: proposal-enricher.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/proposal-enricher.ts` modificato nel commit «feat(command-center): AI character proposals with embedded sheet generator (phase 3).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/proposal-enricher.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/proposal-enricher.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0dc3ba6-001] AI: ai-assistant-canvas.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/components/command-center/ai-assistant-canvas.tsx` modificato nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/components/command-center/ai-assistant-canvas.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/ai-assistant-canvas.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0dc3ba6-002] AI: ai-assistant-panel.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/components/command-center/ai-assistant-panel.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/ai-assistant-panel.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
 ### [BD-GMFLOW-0dc3ba6-003] AI: session-close-text-generator.ts (aggiunto)
 
 Stato:
@@ -13367,1168 +5188,6 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
-### [BD-GMFLOW-0dc3ba6-006] OTHER: registry.test.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/__tests__/registry.test.ts` modificato nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/__tests__/registry.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/__tests__/registry.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-0dc3ba6-007] OTHER: action-catalog.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/action-catalog.ts` modificato nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/action-catalog.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/action-catalog.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-0dc3ba6-008] OTHER: session.actions.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/definitions/wrappers/session.actions.ts` modificato nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/definitions/wrappers/session.actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/definitions/wrappers/session.actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-0dc3ba6-009] WIKI: wiki-relationship.actions.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-WIKI
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/definitions/wrappers/wiki-relationship.actions.ts` aggiunto nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/definitions/wrappers/wiki-relationship.actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/definitions/wrappers/wiki-relationship.actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-0dc3ba6-010] OTHER: register-all.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/register-all.ts` modificato nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/register-all.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/register-all.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-0dc3ba6-011] AI: conversation-intent.test.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts` modificato nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0dc3ba6-012] AI: relationship-request-detector.test.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/relationship-request-detector.test.ts` aggiunto nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/relationship-request-detector.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/relationship-request-detector.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0dc3ba6-013] AI: session-close-request-detector.test.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/session-close-request-detector.test.ts` aggiunto nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/session-close-request-detector.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/session-close-request-detector.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0dc3ba6-014] AI: session-close-text-generator.test.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/session-close-text-generator.test.ts` aggiunto nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/session-close-text-generator.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/session-close-text-generator.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0dc3ba6-015] AI: session-request-detector.test.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/session-request-detector.test.ts` aggiunto nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/session-request-detector.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/session-request-detector.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0dc3ba6-016] AI: chat-assistant.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/chat-assistant.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/chat-assistant.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0dc3ba6-017] AI: conversation-intent.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/conversation-intent.ts` modificato nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/conversation-intent.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/conversation-intent.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0dc3ba6-018] AI: domain-fallback-interpreter.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts` modificato nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0dc3ba6-019] AI: draft-assistant.types.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/draft-assistant.types.ts` modificato nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0dc3ba6-020] AI: format-proposal-chat.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/format-proposal-chat.ts` modificato nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/format-proposal-chat.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/format-proposal-chat.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0dc3ba6-021] AI: proposal-input.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/proposal-input.ts` modificato nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/proposal-input.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/proposal-input.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0dc3ba6-022] AI: relationship-proposal-builder.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/relationship-proposal-builder.ts` aggiunto nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/relationship-proposal-builder.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/relationship-proposal-builder.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0dc3ba6-023] AI: relationship-request-detector.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/relationship-request-detector.ts` aggiunto nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/relationship-request-detector.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/relationship-request-detector.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0dc3ba6-024] AI: session-close-proposal-builder.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/session-close-proposal-builder.ts` aggiunto nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/session-close-proposal-builder.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/session-close-proposal-builder.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0dc3ba6-025] AI: session-close-request-detector.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/session-close-request-detector.ts` aggiunto nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/session-close-request-detector.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/session-close-request-detector.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0dc3ba6-026] AI: session-close.types.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/session-close.types.ts` aggiunto nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/session-close.types.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/session-close.types.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0dc3ba6-027] AI: session-proposal-builder.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/session-proposal-builder.ts` aggiunto nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/session-proposal-builder.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/session-proposal-builder.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0dc3ba6-028] AI: session-request-detector.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/session-request-detector.ts` aggiunto nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/session-request-detector.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/session-request-detector.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
 ### [BD-GMFLOW-e2bcbd3-001] CAMPAIGNS: route.ts (modificato)
 
 Stato:
@@ -14668,51 +5327,6 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
-### [BD-GMFLOW-e2bcbd3-004] OTHER: build-sheets-zip.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/lib/character-sheets/build-sheets-zip.ts` modificato nel commit «feat(characters): export all campaign sheet PDFs as a single ZIP.». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/lib/character-sheets/build-sheets-zip.ts
-
-File gmflow probabili:
-
-* src/lib/character-sheets/build-sheets-zip.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
 ### [BD-GMFLOW-e2bcbd3-005] AUTH: campaign-sheet-export-auth.ts (aggiunto)
 
 Stato:
@@ -14747,202 +5361,6 @@ File gmflow probabili:
 Rischi:
 
 * Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-6fa90f2-001] AI: ai-assistant-canvas.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/components/command-center/ai-assistant-canvas.tsx` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/components/command-center/ai-assistant-canvas.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/ai-assistant-canvas.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-6fa90f2-002] AI: ai-assistant-panel.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/components/command-center/ai-assistant-panel.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/ai-assistant-panel.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-6fa90f2-003] UI_UX: command-center-client.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-UI_UX
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/command-center/command-center-client.tsx` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Miglioramento interfaccia — valutare design system gmflow.
-
-Adattamenti necessari:
-
-* i18n
-
-File B&D coinvolti:
-
-* src/components/command-center/command-center-client.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/command-center-client.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Divergenza design system / CSS tema
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-6fa90f2-004] UI_UX: preview-selectable-text.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-UI_UX
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/command-center/preview-selectable-text.tsx` aggiunto nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Miglioramento interfaccia — valutare design system gmflow.
-
-Adattamenti necessari:
-
-* i18n
-
-File B&D coinvolti:
-
-* src/components/command-center/preview-selectable-text.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/preview-selectable-text.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Divergenza design system / CSS tema
 
 Decisioni richieste:
 
@@ -15000,1021 +5418,6 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
-### [BD-GMFLOW-6fa90f2-006] OTHER: action-catalog.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/action-catalog.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/action-catalog.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/action-catalog.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-6fa90f2-007] WIKI: wiki.actions.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-WIKI
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-6fa90f2-008] AI: preview-text-selection.test.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/preview-text-selection.test.ts` aggiunto nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/preview-text-selection.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/preview-text-selection.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-6fa90f2-009] AI: wiki-request-detector.test.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-6fa90f2-010] AI: campaign-proposal-builder.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-6fa90f2-011] AI: character-proposal-builder.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/character-proposal-builder.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/character-proposal-builder.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/character-proposal-builder.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-6fa90f2-012] AI: chat-assistant.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/chat-assistant.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/chat-assistant.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-6fa90f2-013] AI: domain-fallback-interpreter.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-6fa90f2-014] AI: draft-assistant.types.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/draft-assistant.types.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-6fa90f2-015] AI: format-proposal-chat.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/format-proposal-chat.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/format-proposal-chat.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/format-proposal-chat.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-6fa90f2-016] AI: interpreter.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/interpreter.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/interpreter.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/interpreter.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-6fa90f2-017] AI: mission-proposal-builder.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/mission-proposal-builder.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/mission-proposal-builder.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/mission-proposal-builder.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-6fa90f2-018] AI: preview-text-selection.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/preview-text-selection.ts` aggiunto nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/preview-text-selection.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/preview-text-selection.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-6fa90f2-019] AI: session-close-proposal-builder.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/session-close-proposal-builder.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/session-close-proposal-builder.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/session-close-proposal-builder.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-6fa90f2-020] AI: wiki-proposal-builder.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-6fa90f2-021] AI: wiki-request-detector.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/wiki-request-detector.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/wiki-request-detector.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/wiki-request-detector.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-c983095-001] AI: ai-assistant-canvas.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/components/command-center/ai-assistant-canvas.tsx` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/components/command-center/ai-assistant-canvas.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/ai-assistant-canvas.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-c983095-002] AI: ai-assistant-panel.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/components/command-center/ai-assistant-panel.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/ai-assistant-panel.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-c983095-003] UI_UX: command-center-client.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-UI_UX
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/command-center/command-center-client.tsx` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Miglioramento interfaccia — valutare design system gmflow.
-
-Adattamenti necessari:
-
-* i18n
-
-File B&D coinvolti:
-
-* src/components/command-center/command-center-client.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/command-center-client.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Divergenza design system / CSS tema
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-c983095-004] UI_UX: preview-selectable-text.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-UI_UX
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/command-center/preview-selectable-text.tsx` aggiunto nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Miglioramento interfaccia — valutare design system gmflow.
-
-Adattamenti necessari:
-
-* i18n
-
-File B&D coinvolti:
-
-* src/components/command-center/preview-selectable-text.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/preview-selectable-text.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Divergenza design system / CSS tema
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
 ### [BD-GMFLOW-c983095-005] WIKI: wiki-text-chat.ts (modificato)
 
 Stato:
@@ -16061,825 +5464,6 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
-### [BD-GMFLOW-c983095-006] OTHER: action-catalog.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/action-catalog.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/action-catalog.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/action-catalog.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-c983095-007] WIKI: wiki.actions.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-WIKI
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-c983095-008] AI: preview-text-selection.test.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/preview-text-selection.test.ts` aggiunto nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/preview-text-selection.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/preview-text-selection.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-c983095-009] AI: wiki-request-detector.test.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-c983095-010] AI: campaign-proposal-builder.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-c983095-011] AI: character-proposal-builder.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/character-proposal-builder.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/character-proposal-builder.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/character-proposal-builder.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-c983095-012] AI: chat-assistant.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/chat-assistant.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/chat-assistant.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-c983095-013] AI: domain-fallback-interpreter.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-c983095-014] AI: draft-assistant.types.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/draft-assistant.types.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-c983095-015] AI: format-proposal-chat.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/format-proposal-chat.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/format-proposal-chat.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/format-proposal-chat.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-c983095-016] AI: interpreter.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/interpreter.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/interpreter.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/interpreter.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-c983095-017] AI: mission-proposal-builder.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/mission-proposal-builder.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/mission-proposal-builder.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/mission-proposal-builder.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-c983095-018] AI: preview-text-selection.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/preview-text-selection.ts` aggiunto nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/preview-text-selection.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/preview-text-selection.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-c983095-019] AI: session-close-proposal-builder.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/session-close-proposal-builder.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/session-close-proposal-builder.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/session-close-proposal-builder.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-c983095-020] AI: wiki-proposal-builder.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-c983095-021] AI: wiki-request-detector.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/wiki-request-detector.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/wiki-request-detector.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/wiki-request-detector.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
 ### [BD-GMFLOW-1a4d59a-001] UI_UX: create-character-dialog.tsx (modificato)
 
 Stato:
@@ -16910,202 +5494,6 @@ File B&D coinvolti:
 File gmflow probabili:
 
 * src/components/characters/create-character-dialog.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Divergenza design system / CSS tema
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-1a4d59a-002] AI: ai-assistant-canvas.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/components/command-center/ai-assistant-canvas.tsx` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/components/command-center/ai-assistant-canvas.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/ai-assistant-canvas.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-1a4d59a-003] AI: ai-assistant-panel.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/components/command-center/ai-assistant-panel.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/ai-assistant-panel.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-1a4d59a-004] UI_UX: command-center-client.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-UI_UX
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/command-center/command-center-client.tsx` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Miglioramento interfaccia — valutare design system gmflow.
-
-Adattamenti necessari:
-
-* i18n
-
-File B&D coinvolti:
-
-* src/components/command-center/command-center-client.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/command-center-client.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Divergenza design system / CSS tema
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-1a4d59a-005] UI_UX: preview-selectable-text.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-UI_UX
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/command-center/preview-selectable-text.tsx` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Miglioramento interfaccia — valutare design system gmflow.
-
-Adattamenti necessari:
-
-* i18n
-
-File B&D coinvolti:
-
-* src/components/command-center/preview-selectable-text.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/preview-selectable-text.tsx
 
 Rischi:
 
@@ -17214,58 +5602,6 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
-### [BD-GMFLOW-1a4d59a-008] AI: name-generator-field.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/components/name-generator/name-generator-field.tsx` aggiunto nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/components/name-generator/name-generator-field.tsx
-
-File gmflow probabili:
-
-* src/components/name-generator/name-generator-field.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
 ### [BD-GMFLOW-1a4d59a-009] UI_UX: scene-editor-client.tsx (modificato)
 
 Stato:
@@ -17357,58 +5693,6 @@ Criterio di import completato:
 * Codice portato in gmflow con adattamenti documentati
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-1a4d59a-011] AI: name-generator-actions.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/lib/actions/name-generator-actions.ts` aggiunto nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/lib/actions/name-generator-actions.ts
-
-File gmflow probabili:
-
-* src/lib/actions/name-generator-actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
 
 ### [BD-GMFLOW-1a4d59a-012] WIKI: wiki-text-chat.ts (modificato)
 
@@ -17716,682 +6000,6 @@ Criterio di import completato:
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 * OPENROUTER_API_KEY configurata in gmflow
 
-### [BD-GMFLOW-1a4d59a-018] AI: local-names.test.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/lib/name-generator/__tests__/local-names.test.ts` aggiunto nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/lib/name-generator/__tests__/local-names.test.ts
-
-File gmflow probabili:
-
-* src/lib/name-generator/__tests__/local-names.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-1a4d59a-019] AI: local-names.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/lib/name-generator/local-names.ts` aggiunto nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/lib/name-generator/local-names.ts
-
-File gmflow probabili:
-
-* src/lib/name-generator/local-names.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-1a4d59a-020] AI: types.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/lib/name-generator/types.ts` aggiunto nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/lib/name-generator/types.ts
-
-File gmflow probabili:
-
-* src/lib/name-generator/types.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-1a4d59a-021] AI: contextual-names.test.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/contextual-names.test.ts` aggiunto nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/contextual-names.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/contextual-names.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-1a4d59a-022] AI: conversation-intent.test.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-1a4d59a-023] AI: proposal-input.test.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/proposal-input.test.ts` aggiunto nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/proposal-input.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/proposal-input.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-1a4d59a-024] AI: campaign-proposal-builder.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-1a4d59a-025] AI: character-proposal-builder.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/character-proposal-builder.ts` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/character-proposal-builder.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/character-proposal-builder.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-1a4d59a-026] AI: chat-assistant.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/chat-assistant.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/chat-assistant.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-1a4d59a-027] AI: conversation-intent.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/conversation-intent.ts` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/conversation-intent.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/conversation-intent.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-1a4d59a-028] AI: domain-fallback-interpreter.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-1a4d59a-029] AI: proposal-input.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/proposal-input.ts` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/proposal-input.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/proposal-input.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-1a4d59a-030] AI: wiki-proposal-builder.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
 ### [BD-GMFLOW-240d27c-001] OTHER: page.tsx (modificato)
 
 Stato:
@@ -18575,202 +6183,6 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
-### [BD-GMFLOW-508bd44-001] UI_UX: audit-timeline.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-UI_UX
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/command-center/audit-timeline.tsx` modificato nel commit «feat(command-center): align workspace UI with assistant fluid shell». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Miglioramento interfaccia — valutare design system gmflow.
-
-Adattamenti necessari:
-
-* i18n
-
-File B&D coinvolti:
-
-* src/components/command-center/audit-timeline.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/audit-timeline.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Divergenza design system / CSS tema
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-508bd44-002] UI_UX: command-center-client.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-UI_UX
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/command-center/command-center-client.tsx` modificato nel commit «feat(command-center): align workspace UI with assistant fluid shell». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Miglioramento interfaccia — valutare design system gmflow.
-
-Adattamenti necessari:
-
-* i18n
-
-File B&D coinvolti:
-
-* src/components/command-center/command-center-client.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/command-center-client.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Divergenza design system / CSS tema
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-a4a0545-001] AI: ai-assistant-canvas.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/components/command-center/ai-assistant-canvas.tsx` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/components/command-center/ai-assistant-canvas.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/ai-assistant-canvas.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-a4a0545-002] AI: ai-assistant-panel.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/components/command-center/ai-assistant-panel.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/ai-assistant-panel.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
 ### [BD-GMFLOW-a4a0545-003] AI: ai-generator.ts (modificato)
 
 Stato:
@@ -18856,519 +6268,6 @@ File B&D coinvolti:
 File gmflow probabili:
 
 * src/lib/ai/campaign-text-generator.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-a4a0545-005] OTHER: campaign.actions.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/modules/command-center/actions/definitions/wrappers/campaign.actions.ts` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/modules/command-center/actions/definitions/wrappers/campaign.actions.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/actions/definitions/wrappers/campaign.actions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-a4a0545-006] AI: campaign-type-selection.test.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/campaign-type-selection.test.ts` aggiunto nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/campaign-type-selection.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/campaign-type-selection.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-a4a0545-007] AI: conversation-intent.test.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-a4a0545-008] AI: campaign-proposal-builder.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-a4a0545-009] AI: campaign-request-detector.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/campaign-request-detector.ts` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/campaign-request-detector.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/campaign-request-detector.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-a4a0545-010] AI: campaign-type-selection.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/campaign-type-selection.ts` aggiunto nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/campaign-type-selection.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/campaign-type-selection.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-a4a0545-011] AI: chat-assistant.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/chat-assistant.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/chat-assistant.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-a4a0545-012] AI: domain-fallback-interpreter.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-a4a0545-013] AI: draft-assistant.types.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/draft-assistant.types.ts` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-a4a0545-014] AI: preview-text-selection.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/preview-text-selection.ts` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/preview-text-selection.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/preview-text-selection.ts
 
 Rischi:
 
@@ -19492,58 +6391,6 @@ Criterio di import completato:
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 * OPENROUTER_API_KEY configurata in gmflow
 
-### [BD-GMFLOW-cd6c725-003] AI: json-extract.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/lib/ai/json-extract.ts` aggiunto nel commit «fix(ai): harden campaign draft JSON parsing and OpenRouter json mode». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/lib/ai/json-extract.ts
-
-File gmflow probabili:
-
-* src/lib/ai/json-extract.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
 ### [BD-GMFLOW-cd6c725-004] AI: openrouter-client.ts (modificato)
 
 Stato:
@@ -19577,110 +6424,6 @@ File B&D coinvolti:
 File gmflow probabili:
 
 * src/lib/ai/openrouter-client.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-cd6c725-005] AI: campaign-text-generator.test.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/campaign-text-generator.test.ts` modificato nel commit «fix(ai): harden campaign draft JSON parsing and OpenRouter json mode». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/campaign-text-generator.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/campaign-text-generator.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-cd6c725-006] AI: interpreter.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/interpreter.ts` modificato nel commit «fix(ai): harden campaign draft JSON parsing and OpenRouter json mode». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/interpreter.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/interpreter.ts
 
 Rischi:
 
@@ -19850,58 +6593,6 @@ Criterio di import completato:
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 * OPENROUTER_API_KEY configurata in gmflow
 
-### [BD-GMFLOW-8133bf5-004] AI: openrouter-image-request.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/lib/ai/openrouter-image-request.ts` aggiunto nel commit «fix(ai): reduce OpenRouter HTTP 400 on image generation and save». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/lib/ai/openrouter-image-request.ts
-
-File gmflow probabili:
-
-* src/lib/ai/openrouter-image-request.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
 ### [BD-GMFLOW-8133bf5-005] AI: openrouter-provider.ts (modificato)
 
 Stato:
@@ -19935,110 +6626,6 @@ File B&D coinvolti:
 File gmflow probabili:
 
 * src/lib/image-benchmark/providers/openrouter-provider.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-d3a640b-001] AI: ai-assistant-canvas.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/components/command-center/ai-assistant-canvas.tsx` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/components/command-center/ai-assistant-canvas.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/ai-assistant-canvas.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-d3a640b-002] AI: ai-assistant-panel.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/components/command-center/ai-assistant-panel.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/ai-assistant-panel.tsx
 
 Rischi:
 
@@ -20312,526 +6899,6 @@ Criterio di import completato:
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 * OPENROUTER_API_KEY configurata in gmflow
 
-### [BD-GMFLOW-d3a640b-008] AI: wiki-npc-params.test.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/wiki-npc-params.test.ts` aggiunto nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/wiki-npc-params.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/wiki-npc-params.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-d3a640b-009] AI: wiki-request-detector.test.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-d3a640b-010] AI: chat-assistant.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/chat-assistant.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/chat-assistant.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-d3a640b-011] AI: domain-fallback-interpreter.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-d3a640b-012] AI: draft-assistant.types.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/draft-assistant.types.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-d3a640b-013] AI: preview-text-selection.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/preview-text-selection.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/preview-text-selection.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/preview-text-selection.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-d3a640b-014] AI: wiki-proposal-builder.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-d3a640b-015] AI: wiki-request-detector.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/wiki-request-detector.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/wiki-request-detector.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/wiki-request-detector.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0d6345e-001] AI: ai-assistant-canvas.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/components/command-center/ai-assistant-canvas.tsx` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/components/command-center/ai-assistant-canvas.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/ai-assistant-canvas.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0d6345e-002] AI: ai-assistant-panel.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/components/command-center/ai-assistant-panel.tsx
-
-File gmflow probabili:
-
-* src/components/command-center/ai-assistant-panel.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
 ### [BD-GMFLOW-0d6345e-003] WIKI: wiki-text-chat.ts (modificato)
 
 Stato:
@@ -21086,469 +7153,6 @@ Criterio di import completato:
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 * OPENROUTER_API_KEY configurata in gmflow
 
-### [BD-GMFLOW-0d6345e-008] AI: wiki-npc-params.test.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/wiki-npc-params.test.ts` aggiunto nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/wiki-npc-params.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/wiki-npc-params.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0d6345e-009] AI: wiki-request-detector.test.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0d6345e-010] AI: chat-assistant.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/chat-assistant.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/chat-assistant.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0d6345e-011] AI: domain-fallback-interpreter.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0d6345e-012] AI: draft-assistant.types.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/draft-assistant.types.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0d6345e-013] AI: preview-text-selection.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/preview-text-selection.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/preview-text-selection.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/preview-text-selection.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0d6345e-014] AI: wiki-proposal-builder.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-0d6345e-015] AI: wiki-request-detector.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/wiki-request-detector.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/wiki-request-detector.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/wiki-request-detector.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-12b3a10-001] CAMPAIGNS: page.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-CAMPAIGNS
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/app/campaigns/[id]/gm-only/regia-immagini/proiezione/page.tsx` aggiunto nel commit «feat(gm): add regia immagini projection and wiki related links». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Logica campagne potenzialmente generalizzabile per multi-tenant.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* SaaS/billing
-
-File B&D coinvolti:
-
-* src/app/campaigns/[id]/gm-only/regia-immagini/proiezione/page.tsx
-
-File gmflow probabili:
-
-* src/app/campaigns/[id]/gm-only/regia-immagini/proiezione/page.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
 ### [BD-GMFLOW-12b3a10-002] CAMPAIGNS: page.tsx (modificato)
 
 Stato:
@@ -21596,38 +7200,36 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
-### [BD-GMFLOW-12b3a10-003] CAMPAIGNS: entity-graph-actions.ts (modificato)
+### [BD-GMFLOW-648cf37-001] OTHER: layout.tsx (modificato)
 
 Stato:
 NEEDS_REVIEW
 
 Categoria:
-CAMPAIGNS
+OTHER
 
 Priorità per gmflow:
 Media
 
 Descrizione:
 
-* File `src/app/campaigns/entity-graph-actions.ts` modificato nel commit «feat(gm): add regia immagini projection and wiki related links». Classificazione automatica — richiede revisione umana.
+* File `src/app/layout.tsx` modificato nel commit «Aggiorna la meta description del sito con messaggio community Napoli.». Classificazione automatica — richiede revisione umana.
 
 Perché potrebbe servire a gmflow:
 
-* Logica campagne potenzialmente generalizzabile per multi-tenant.
+* Modifica generica — valutare manualmente rilevanza gmflow.
 
 Adattamenti necessari:
 
-* Multi-tenant
-* Permessi
-* SaaS/billing
+* altro
 
 File B&D coinvolti:
 
-* src/app/campaigns/entity-graph-actions.ts
+* src/app/layout.tsx
 
 File gmflow probabili:
 
-* src/app/campaigns/entity-graph-actions.ts
+* src/app/layout.tsx
 
 Rischi:
 
@@ -21643,53 +7245,7 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
-### [BD-GMFLOW-12b3a10-004] GM_SCREEN: gm-gallery-sheet.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/gm-gallery-sheet.tsx` modificato nel commit «feat(gm): add regia immagini projection and wiki related links». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/gm-gallery-sheet.tsx
-
-File gmflow probabili:
-
-* src/components/gm/gm-gallery-sheet.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-12b3a10-005] WIKI: related-entities-section.tsx (aggiunto)
+### [BD-GMFLOW-7ed15be-001] WIKI: create-entity-dialog.tsx (modificato)
 
 Stato:
 NEEDS_REVIEW
@@ -21702,7 +7258,7 @@ Media
 
 Descrizione:
 
-* File `src/components/wiki/related-entities-section.tsx` aggiunto nel commit «feat(gm): add regia immagini projection and wiki related links». Classificazione automatica — richiede revisione umana.
+* File `src/components/wiki/create-entity-dialog.tsx` modificato nel commit «feat(wiki): add NPC class select with PHB and enemy class options». Classificazione automatica — richiede revisione umana.
 
 Perché potrebbe servire a gmflow:
 
@@ -21715,11 +7271,11 @@ Adattamenti necessari:
 
 File B&D coinvolti:
 
-* src/components/wiki/related-entities-section.tsx
+* src/components/wiki/create-entity-dialog.tsx
 
 File gmflow probabili:
 
-* src/components/wiki/related-entities-section.tsx
+* src/components/wiki/create-entity-dialog.tsx
 
 Rischi:
 
@@ -21735,7 +7291,204 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
+### [BD-GMFLOW-7ed15be-002] WIKI: edit-entity-dialog.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+WIKI
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/wiki/edit-entity-dialog.tsx` modificato nel commit «feat(wiki): add NPC class select with PHB and enemy class options». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/wiki/edit-entity-dialog.tsx
+
+File gmflow probabili:
+
+* src/components/wiki/edit-entity-dialog.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-7ed15be-003] AI: wiki-npc-ai-options.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/wiki-npc-ai-options.ts` modificato nel commit «feat(wiki): add NPC class select with PHB and enemy class options». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/wiki-npc-ai-options.ts
+
+File gmflow probabili:
+
+* src/lib/wiki-npc-ai-options.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
 ## Modifiche revisionate manualmente
+
+### [BD-GMFLOW-PKG-2026-07-06-001] Package: Funzionalità e bugfix luglio 2026
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* Map fixes, AI hardening OpenRouter, name generator, wiki board, bestiary fix, PDF ZIP, regia immagini.
+
+Perché potrebbe servire a gmflow:
+
+* Bugfix critici + feature GM incrementali post-giugno.
+
+Adattamenti necessari:
+
+* Storage R2
+* Multi-tenant
+* i18n name pools
+
+File B&D coinvolti:
+
+* docs/gmflow-export-packages/2026-07-06-features-bugfixes-export.md
+
+File gmflow probabili:
+
+* docs/imports/gmflow-export-packages/2026-07-06-features-bugfixes-export.md
+
+Rischi:
+
+* Overlap con package map Rev 4
+* Non importare homepage copy
+
+Decisioni richieste:
+
+* —
+
+Criterio di import completato:
+
+* Checklist test package
+* Map FoW sync verificato
+
+### [BD-GMFLOW-PKG-2026-07-06-CC] Package: Command Center (GM Workspace + AI Control Plane)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* Modulo Command Center Fasi 0-6: Action Registry, AI proposte confermate, voice, workspace GM.
+
+Perché potrebbe servire a gmflow:
+
+* Assistente GM unificato SaaS — alto valore differenziante.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* workspace_id NOT NULL
+* TenantAdapter
+* RLS gmflow-native
+* Billing AI
+
+File B&D coinvolti:
+
+* docs/gmflow-export-packages/2026-07-06-command-center-export.md
+
+File gmflow probabili:
+
+* docs/imports/gmflow-export-packages/2026-07-06-command-center-export.md
+
+Rischi:
+
+* Modulo grande
+* Non importare RLS B&D
+* barber-dragons.adapter da riscrivere
+
+Decisioni richieste:
+
+* command_notes vs gm_notes UX
+* Guild GM vs org workspace scope
+
+Criterio di import completato:
+
+* npm run test:command-center
+* Proposte AI con conferma funzionanti
+* Zero CREATE POLICY B&D
 
 ### [BD-GMFLOW-PKG-2026-06-28-001] Package: Nuove funzioni e bugfix (no RLS, no grafica)
 
@@ -22820,6 +8573,98 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
+### [BD-GMFLOW-94b0f4e-007] CAMPAIGNS: scene-document-actions.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+CAMPAIGNS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/campaigns/scene-document-actions.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Logica campagne potenzialmente generalizzabile per multi-tenant.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/campaigns/scene-document-actions.ts
+
+File gmflow probabili:
+
+* src/app/campaigns/scene-document-actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-94b0f4e-034] OTHER: floor-raster.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/raster-export/floor-raster.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/raster-export/floor-raster.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/raster-export/floor-raster.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
 ### [BD-GMFLOW-94b0f4e-049] DATABASE: 20260628120000_scene_documents_and_map_source.sql (aggiunto)
 
 Stato:
@@ -22900,6 +8745,14449 @@ File B&D coinvolti:
 File gmflow probabili:
 
 * src/app/campaigns/character-actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-3cf1907-002] CAMPAIGNS: scene-document-actions.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+CAMPAIGNS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/campaigns/scene-document-actions.ts` modificato nel commit «fix(maps): sync Scene Editor scenes to Esplorazione e FoW on create.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Logica campagne potenzialmente generalizzabile per multi-tenant.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/campaigns/scene-document-actions.ts
+
+File gmflow probabili:
+
+* src/app/campaigns/scene-document-actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-3cf1907-005] OTHER: floor-raster.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/raster-export/floor-raster.ts` modificato nel commit «fix(maps): sync Scene Editor scenes to Esplorazione e FoW on create.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/raster-export/floor-raster.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/raster-export/floor-raster.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-f9bcd77-001] CAMPAIGNS: scene-document-actions.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+CAMPAIGNS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/campaigns/scene-document-actions.ts` modificato nel commit «fix(maps): upload full Scene Editor rasters from FormData on save.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Logica campagne potenzialmente generalizzabile per multi-tenant.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/campaigns/scene-document-actions.ts
+
+File gmflow probabili:
+
+* src/app/campaigns/scene-document-actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-f9bcd77-003] MEDIA_STORAGE: exploration-map-upload-core.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+MEDIA_STORAGE
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/exploration/exploration-map-upload-core.ts` modificato nel commit «fix(maps): upload full Scene Editor rasters from FormData on save.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Upload/storage media — adattare a R2 o storage gmflow.
+
+Adattamenti necessari:
+
+* Storage R2
+
+File B&D coinvolti:
+
+* src/lib/exploration/exploration-map-upload-core.ts
+
+File gmflow probabili:
+
+* src/lib/exploration/exploration-map-upload-core.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza storage B&D (Telegram) vs gmflow (R2)
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Quale adapter storage usare in gmflow?
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-f9bcd77-005] OTHER: floor-raster.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/raster-export/floor-raster.ts` modificato nel commit «fix(maps): upload full Scene Editor rasters from FormData on save.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/raster-export/floor-raster.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/raster-export/floor-raster.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-09a5000-003] OTHER: command-center-export.md (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `docs/command-center-export.md` aggiunto nel commit «feat(command-center): add Phase 1 GM workspace and inbox.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* docs/command-center-export.md
+
+File gmflow probabili:
+
+* docs/imports/command-center-export.md
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-09a5000-004] OTHER: command-center-vision.md (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `docs/command-center-vision.md` aggiunto nel commit «feat(command-center): add Phase 1 GM workspace and inbox.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* docs/command-center-vision.md
+
+File gmflow probabili:
+
+* docs/imports/command-center-vision.md
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-09a5000-005] OTHER: layout.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/command-center/layout.tsx` aggiunto nel commit «feat(command-center): add Phase 1 GM workspace and inbox.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/app/command-center/layout.tsx
+
+File gmflow probabili:
+
+* src/app/command-center/layout.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-09a5000-006] OTHER: page.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/command-center/page.tsx` aggiunto nel commit «feat(command-center): add Phase 1 GM workspace and inbox.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/app/command-center/page.tsx
+
+File gmflow probabili:
+
+* src/app/command-center/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-09a5000-008] UI_UX: command-center-client.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/command-center/command-center-client.tsx` aggiunto nel commit «feat(command-center): add Phase 1 GM workspace and inbox.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/command-center/command-center-client.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/command-center-client.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-09a5000-013] OTHER: barber-dragons.adapter.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/adapters/barber-dragons.adapter.ts` aggiunto nel commit «feat(command-center): add Phase 1 GM workspace and inbox.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/adapters/barber-dragons.adapter.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/adapters/barber-dragons.adapter.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-09a5000-014] OTHER: index.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/adapters/index.ts` aggiunto nel commit «feat(command-center): add Phase 1 GM workspace and inbox.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/adapters/index.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/adapters/index.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-09a5000-015] OTHER: types.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/adapters/types.ts` aggiunto nel commit «feat(command-center): add Phase 1 GM workspace and inbox.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/adapters/types.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/adapters/types.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-09a5000-016] OTHER: index.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/index.ts` aggiunto nel commit «feat(command-center): add Phase 1 GM workspace and inbox.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/index.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/index.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-09a5000-017] OTHER: actions.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/server/actions.ts` aggiunto nel commit «feat(command-center): add Phase 1 GM workspace and inbox.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/server/actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/server/actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-09a5000-018] OTHER: entities.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/types/entities.ts` aggiunto nel commit «feat(command-center): add Phase 1 GM workspace and inbox.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/types/entities.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/types/entities.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-09a5000-019] OTHER: index.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/types/index.ts` aggiunto nel commit «feat(command-center): add Phase 1 GM workspace and inbox.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/types/index.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/types/index.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-09a5000-020] OTHER: workspace.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/types/workspace.ts` aggiunto nel commit «feat(command-center): add Phase 1 GM workspace and inbox.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/types/workspace.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/types/workspace.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d00079b-002] OTHER: command-center-export.md (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `docs/command-center-export.md` modificato nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* docs/command-center-export.md
+
+File gmflow probabili:
+
+* docs/imports/command-center-export.md
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d00079b-003] OTHER: command-center-vision.md (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `docs/command-center-vision.md` modificato nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* docs/command-center-vision.md
+
+File gmflow probabili:
+
+* docs/imports/command-center-vision.md
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d00079b-005] OTHER: page.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/command-center/page.tsx` modificato nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/app/command-center/page.tsx
+
+File gmflow probabili:
+
+* src/app/command-center/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d00079b-006] UI_UX: audit-timeline.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/command-center/audit-timeline.tsx` aggiunto nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/command-center/audit-timeline.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/audit-timeline.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d00079b-007] UI_UX: command-center-client.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/command-center/command-center-client.tsx` modificato nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/command-center/command-center-client.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/command-center-client.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d00079b-008] OTHER: registry.test.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/__tests__/registry.test.ts` aggiunto nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/__tests__/registry.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/__tests__/registry.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d00079b-009] OTHER: audit.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/audit.ts` aggiunto nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/audit.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/audit.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d00079b-010] OTHER: workspace.actions.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/definitions/workspace.actions.ts` aggiunto nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/definitions/workspace.actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/definitions/workspace.actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d00079b-011] OTHER: gm-note.actions.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/definitions/wrappers/gm-note.actions.ts` aggiunto nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/definitions/wrappers/gm-note.actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/definitions/wrappers/gm-note.actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d00079b-012] OTHER: session.actions.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/definitions/wrappers/session.actions.ts` aggiunto nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/definitions/wrappers/session.actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/definitions/wrappers/session.actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d00079b-013] WIKI: wiki.actions.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+WIKI
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts` aggiunto nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d00079b-014] OTHER: index.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/index.ts` aggiunto nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/index.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/index.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d00079b-015] OTHER: register-all.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/register-all.ts` aggiunto nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/register-all.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/register-all.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d00079b-016] OTHER: registry.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/registry.ts` aggiunto nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/registry.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/registry.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d00079b-017] OTHER: index.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/index.ts` modificato nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/index.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/index.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d00079b-018] OTHER: actions.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/server/actions.ts` modificato nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/server/actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/server/actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d00079b-019] OTHER: actions.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/types/actions.ts` aggiunto nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/types/actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/types/actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d00079b-020] OTHER: audit.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/types/audit.ts` aggiunto nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/types/audit.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/types/audit.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d00079b-021] OTHER: index.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/types/index.ts` modificato nel commit «feat(command-center): add Action Registry and audit log (Phase 2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/types/index.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/types/index.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-f17432f-004] OTHER: page.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/command-center/page.tsx` modificato nel commit «feat(command-center): add AI Draft Mode (Phase 3).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/app/command-center/page.tsx
+
+File gmflow probabili:
+
+* src/app/command-center/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-f17432f-005] AI: ai-assistant-panel.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/components/command-center/ai-assistant-panel.tsx` aggiunto nel commit «feat(command-center): add AI Draft Mode (Phase 3).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/components/command-center/ai-assistant-panel.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/ai-assistant-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-f17432f-006] AI: ai-proposal-panel.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/components/command-center/ai-proposal-panel.tsx` aggiunto nel commit «feat(command-center): add AI Draft Mode (Phase 3).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/components/command-center/ai-proposal-panel.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/ai-proposal-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-f17432f-007] UI_UX: command-center-client.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/command-center/command-center-client.tsx` modificato nel commit «feat(command-center): add AI Draft Mode (Phase 3).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/command-center/command-center-client.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/command-center-client.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-f17432f-008] AI: interpreter.test.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/interpreter.test.ts` aggiunto nel commit «feat(command-center): add AI Draft Mode (Phase 3).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/interpreter.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/interpreter.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-f17432f-009] AI: autonomy.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/autonomy.ts` aggiunto nel commit «feat(command-center): add AI Draft Mode (Phase 3).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/autonomy.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/autonomy.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-f17432f-010] AI: context-resolver.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/context-resolver.ts` aggiunto nel commit «feat(command-center): add AI Draft Mode (Phase 3).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/context-resolver.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/context-resolver.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-f17432f-011] AI: draft-assistant.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/draft-assistant.ts` aggiunto nel commit «feat(command-center): add AI Draft Mode (Phase 3).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/draft-assistant.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/draft-assistant.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-f17432f-012] AI: interpreter.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/interpreter.ts` aggiunto nel commit «feat(command-center): add AI Draft Mode (Phase 3).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/interpreter.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/interpreter.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-f17432f-013] AI: proposal-builder.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/proposal-builder.ts` aggiunto nel commit «feat(command-center): add AI Draft Mode (Phase 3).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/proposal-builder.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/proposal-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-f17432f-014] OTHER: actions.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/server/actions.ts` modificato nel commit «feat(command-center): add AI Draft Mode (Phase 3).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/server/actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/server/actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-f17432f-015] AI: ai-proposal.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/types/ai-proposal.ts` aggiunto nel commit «feat(command-center): add AI Draft Mode (Phase 3).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/types/ai-proposal.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/types/ai-proposal.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-f17432f-016] OTHER: index.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/types/index.ts` modificato nel commit «feat(command-center): add AI Draft Mode (Phase 3).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/types/index.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/types/index.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-ef0984c-001] AI: ai-proposal-panel.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/components/command-center/ai-proposal-panel.tsx` modificato nel commit «fix(command-center): show AI proposal previews for workspace pages.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/components/command-center/ai-proposal-panel.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/ai-proposal-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-ef0984c-002] OTHER: workspace.actions.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/definitions/workspace.actions.ts` modificato nel commit «fix(command-center): show AI proposal previews for workspace pages.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/definitions/workspace.actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/definitions/workspace.actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-1e31f94-003] OTHER: command-center-vision.md (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `docs/command-center-vision.md` modificato nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* docs/command-center-vision.md
+
+File gmflow probabili:
+
+* docs/imports/command-center-vision.md
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-1e31f94-005] AI: ai-assistant-panel.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/components/command-center/ai-assistant-panel.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/ai-assistant-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1e31f94-006] AI: ai-proposal-panel.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/components/command-center/ai-proposal-panel.tsx` modificato nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/components/command-center/ai-proposal-panel.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/ai-proposal-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1e31f94-007] UI_UX: audit-timeline.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/command-center/audit-timeline.tsx` modificato nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/command-center/audit-timeline.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/audit-timeline.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-1e31f94-008] UI_UX: command-center-client.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/command-center/command-center-client.tsx` modificato nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/command-center/command-center-client.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/command-center-client.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-1e31f94-009] UI_UX: voice-capture-button.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/command-center/voice-capture-button.tsx` aggiunto nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/command-center/voice-capture-button.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/voice-capture-button.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-1e31f94-010] OTHER: registry.test.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/__tests__/registry.test.ts` modificato nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/__tests__/registry.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/__tests__/registry.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-1e31f94-011] AI: ai-proposal.actions.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/actions/definitions/ai-proposal.actions.ts` aggiunto nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/definitions/ai-proposal.actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/definitions/ai-proposal.actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1e31f94-012] OTHER: workspace.actions.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/definitions/workspace.actions.ts` modificato nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/definitions/workspace.actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/definitions/workspace.actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-1e31f94-013] OTHER: register-all.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/register-all.ts` modificato nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/register-all.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/register-all.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-1e31f94-014] OTHER: registry.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/registry.ts` modificato nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/registry.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/registry.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-1e31f94-015] AI: interpreter.test.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/interpreter.test.ts` modificato nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/interpreter.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/interpreter.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1e31f94-016] AI: proposal-executor.test.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/proposal-executor.test.ts` aggiunto nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/proposal-executor.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/proposal-executor.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1e31f94-017] AI: autonomy.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/autonomy.ts` modificato nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/autonomy.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/autonomy.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1e31f94-018] AI: draft-assistant.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/draft-assistant.ts` modificato nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/draft-assistant.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/draft-assistant.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1e31f94-019] AI: draft-assistant.types.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/draft-assistant.types.ts` aggiunto nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1e31f94-020] AI: proposal-executor.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/proposal-executor.ts` aggiunto nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/proposal-executor.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/proposal-executor.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1e31f94-021] OTHER: actions.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/server/actions.ts` modificato nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/server/actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/server/actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-1e31f94-022] OTHER: actions.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/types/actions.ts` modificato nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/types/actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/types/actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-1e31f94-023] OTHER: command-input-voice.test.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/voice/__tests__/command-input-voice.test.ts` aggiunto nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/voice/__tests__/command-input-voice.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/voice/__tests__/command-input-voice.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-1e31f94-024] OTHER: command-input-voice.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/voice/command-input-voice.ts` aggiunto nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/voice/command-input-voice.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/voice/command-input-voice.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-1e31f94-025] OTHER: use-voice-dictation.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/voice/use-voice-dictation.ts` aggiunto nel commit «feat(command-center): add confirmed AI actions and voice input (Phases 4–5).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/voice/use-voice-dictation.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/voice/use-voice-dictation.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-0a78de3-002] AI: ai-assistant-panel.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/components/command-center/ai-assistant-panel.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/ai-assistant-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0a78de3-003] AI: ai-proposal-panel.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/components/command-center/ai-proposal-panel.tsx` modificato nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/components/command-center/ai-proposal-panel.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/ai-proposal-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0a78de3-004] UI_UX: audit-timeline.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/command-center/audit-timeline.tsx` modificato nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/command-center/audit-timeline.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/audit-timeline.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-0a78de3-005] OTHER: action-catalog.test.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/__tests__/action-catalog.test.ts` aggiunto nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/__tests__/action-catalog.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/__tests__/action-catalog.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-0a78de3-006] OTHER: registry.test.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/__tests__/registry.test.ts` modificato nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/__tests__/registry.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/__tests__/registry.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-0a78de3-007] OTHER: action-catalog.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/action-catalog.ts` aggiunto nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/action-catalog.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/action-catalog.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-0a78de3-008] OTHER: command-input.actions.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/definitions/command-input.actions.ts` aggiunto nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/definitions/command-input.actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/definitions/command-input.actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-0a78de3-009] OTHER: memory.actions.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/definitions/memory.actions.ts` aggiunto nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/definitions/memory.actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/definitions/memory.actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-0a78de3-010] OTHER: campaign.actions.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/definitions/wrappers/campaign.actions.ts` aggiunto nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/definitions/wrappers/campaign.actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/definitions/wrappers/campaign.actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-0a78de3-011] OTHER: character.actions.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/definitions/wrappers/character.actions.ts` aggiunto nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/definitions/wrappers/character.actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/definitions/wrappers/character.actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-0a78de3-012] OTHER: mission.actions.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/definitions/wrappers/mission.actions.ts` aggiunto nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/definitions/wrappers/mission.actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/definitions/wrappers/mission.actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-0a78de3-013] OTHER: session.actions.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/definitions/wrappers/session.actions.ts` modificato nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/definitions/wrappers/session.actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/definitions/wrappers/session.actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-0a78de3-014] WIKI: wiki.actions.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+WIKI
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts` modificato nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-0a78de3-015] OTHER: register-all.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/register-all.ts` modificato nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/register-all.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/register-all.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-0a78de3-016] AI: interpreter.test.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/interpreter.test.ts` modificato nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/interpreter.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/interpreter.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0a78de3-017] AI: proposal-executor.test.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/proposal-executor.test.ts` modificato nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/proposal-executor.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/proposal-executor.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0a78de3-018] AI: interpreter.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/interpreter.ts` modificato nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/interpreter.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/interpreter.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0a78de3-019] AI: proposal-executor.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/proposal-executor.ts` modificato nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/proposal-executor.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/proposal-executor.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0a78de3-020] AI: ai-proposal.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/types/ai-proposal.ts` modificato nel commit «feat(command-center): extend Action Registry for campaign domain.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/types/ai-proposal.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/types/ai-proposal.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0accbfa-001] UI_UX: audit-timeline.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/command-center/audit-timeline.tsx` modificato nel commit «fix(command-center): resolve Vercel build type errors.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/command-center/audit-timeline.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/audit-timeline.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-0accbfa-002] OTHER: character.actions.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/definitions/wrappers/character.actions.ts` modificato nel commit «fix(command-center): resolve Vercel build type errors.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/definitions/wrappers/character.actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/definitions/wrappers/character.actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-478d341-001] OTHER: page.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/command-center/page.tsx` modificato nel commit «feat(command-center): move AI proposals to conversational chat confirmation.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/app/command-center/page.tsx
+
+File gmflow probabili:
+
+* src/app/command-center/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-478d341-002] AI: ai-assistant-panel.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(command-center): move AI proposals to conversational chat confirmation.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/components/command-center/ai-assistant-panel.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/ai-assistant-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-478d341-003] UI_UX: command-center-client.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/command-center/command-center-client.tsx` modificato nel commit «feat(command-center): move AI proposals to conversational chat confirmation.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/command-center/command-center-client.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/command-center-client.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-478d341-004] AI: conversation-intent.test.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts` aggiunto nel commit «feat(command-center): move AI proposals to conversational chat confirmation.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-478d341-005] AI: chat-assistant.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/chat-assistant.ts` aggiunto nel commit «feat(command-center): move AI proposals to conversational chat confirmation.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-478d341-006] AI: conversation-intent.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/conversation-intent.ts` aggiunto nel commit «feat(command-center): move AI proposals to conversational chat confirmation.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/conversation-intent.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/conversation-intent.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-478d341-007] AI: draft-assistant.types.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/draft-assistant.types.ts` modificato nel commit «feat(command-center): move AI proposals to conversational chat confirmation.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-478d341-008] AI: format-proposal-chat.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/format-proposal-chat.ts` aggiunto nel commit «feat(command-center): move AI proposals to conversational chat confirmation.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/format-proposal-chat.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/format-proposal-chat.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-478d341-009] AI: interpreter.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/interpreter.ts` modificato nel commit «feat(command-center): move AI proposals to conversational chat confirmation.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/interpreter.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/interpreter.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-478d341-010] AI: preview-proposals.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/preview-proposals.ts` aggiunto nel commit «feat(command-center): move AI proposals to conversational chat confirmation.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/preview-proposals.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/preview-proposals.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-478d341-011] AI: proposal-builder.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/proposal-builder.ts` modificato nel commit «feat(command-center): move AI proposals to conversational chat confirmation.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/proposal-builder.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/proposal-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-478d341-012] AI: proposal-input.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/proposal-input.ts` aggiunto nel commit «feat(command-center): move AI proposals to conversational chat confirmation.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/proposal-input.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/proposal-input.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-478d341-013] OTHER: actions.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/server/actions.ts` modificato nel commit «feat(command-center): move AI proposals to conversational chat confirmation.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/server/actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/server/actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-fd82d7b-001] OTHER: page.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/command-center/page.tsx` modificato nel commit «feat(command-center): wiki AI canvas layout and dashboard assistant link.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/app/command-center/page.tsx
+
+File gmflow probabili:
+
+* src/app/command-center/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-fd82d7b-003] AI: ai-assistant-canvas.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/components/command-center/ai-assistant-canvas.tsx` aggiunto nel commit «feat(command-center): wiki AI canvas layout and dashboard assistant link.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/components/command-center/ai-assistant-canvas.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/ai-assistant-canvas.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-fd82d7b-004] AI: ai-assistant-panel.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(command-center): wiki AI canvas layout and dashboard assistant link.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/components/command-center/ai-assistant-panel.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/ai-assistant-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-fd82d7b-005] UI_UX: command-center-client.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/command-center/command-center-client.tsx` modificato nel commit «feat(command-center): wiki AI canvas layout and dashboard assistant link.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/command-center/command-center-client.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/command-center-client.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-fd82d7b-008] WIKI: wiki.actions.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+WIKI
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts` modificato nel commit «feat(command-center): wiki AI canvas layout and dashboard assistant link.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-fd82d7b-009] AI: conversation-intent.test.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts` modificato nel commit «feat(command-center): wiki AI canvas layout and dashboard assistant link.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-fd82d7b-010] AI: chat-assistant.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(command-center): wiki AI canvas layout and dashboard assistant link.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-fd82d7b-011] AI: conversation-intent.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/conversation-intent.ts` modificato nel commit «feat(command-center): wiki AI canvas layout and dashboard assistant link.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/conversation-intent.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/conversation-intent.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-fd82d7b-012] AI: draft-assistant.types.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/draft-assistant.types.ts` modificato nel commit «feat(command-center): wiki AI canvas layout and dashboard assistant link.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-fd82d7b-013] AI: format-proposal-chat.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/format-proposal-chat.ts` modificato nel commit «feat(command-center): wiki AI canvas layout and dashboard assistant link.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/format-proposal-chat.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/format-proposal-chat.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-fd82d7b-014] AI: interpreter.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/interpreter.ts` modificato nel commit «feat(command-center): wiki AI canvas layout and dashboard assistant link.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/interpreter.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/interpreter.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-fd82d7b-015] AI: wiki-proposal-builder.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts` aggiunto nel commit «feat(command-center): wiki AI canvas layout and dashboard assistant link.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1a5921c-001] AI: ai-assistant-panel.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(command-center): wiki assistant fallback and workspace deletes.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/components/command-center/ai-assistant-panel.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/ai-assistant-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1a5921c-002] UI_UX: audit-timeline.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/command-center/audit-timeline.tsx` modificato nel commit «feat(command-center): wiki assistant fallback and workspace deletes.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/command-center/audit-timeline.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/audit-timeline.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-1a5921c-003] UI_UX: command-center-client.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/command-center/command-center-client.tsx` modificato nel commit «feat(command-center): wiki assistant fallback and workspace deletes.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/command-center/command-center-client.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/command-center-client.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-1a5921c-006] OTHER: workspace.actions.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/definitions/workspace.actions.ts` modificato nel commit «feat(command-center): wiki assistant fallback and workspace deletes.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/definitions/workspace.actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/definitions/workspace.actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-1a5921c-007] AI: wiki-request-detector.test.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts` aggiunto nel commit «feat(command-center): wiki assistant fallback and workspace deletes.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1a5921c-008] AI: chat-assistant.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(command-center): wiki assistant fallback and workspace deletes.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1a5921c-009] AI: draft-assistant.types.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/draft-assistant.types.ts` modificato nel commit «feat(command-center): wiki assistant fallback and workspace deletes.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1a5921c-010] AI: wiki-proposal-builder.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts` modificato nel commit «feat(command-center): wiki assistant fallback and workspace deletes.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1a5921c-011] AI: wiki-request-detector.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/wiki-request-detector.ts` aggiunto nel commit «feat(command-center): wiki assistant fallback and workspace deletes.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/wiki-request-detector.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/wiki-request-detector.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1a5921c-012] OTHER: actions.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/server/actions.ts` modificato nel commit «feat(command-center): wiki assistant fallback and workspace deletes.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/server/actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/server/actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-089f6f1-003] AI: ai-assistant-canvas.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/components/command-center/ai-assistant-canvas.tsx` modificato nel commit «feat(command-center): GM assistant phase 0 foundations.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/components/command-center/ai-assistant-canvas.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/ai-assistant-canvas.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-089f6f1-010] AI: character-request-detector.test.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/character-request-detector.test.ts` aggiunto nel commit «feat(command-center): GM assistant phase 0 foundations.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/character-request-detector.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/character-request-detector.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-089f6f1-011] AI: mission-request-detector.test.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/mission-request-detector.test.ts` aggiunto nel commit «feat(command-center): GM assistant phase 0 foundations.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/mission-request-detector.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/mission-request-detector.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-089f6f1-012] AI: campaign-request-detector.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/campaign-request-detector.ts` aggiunto nel commit «feat(command-center): GM assistant phase 0 foundations.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/campaign-request-detector.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/campaign-request-detector.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-089f6f1-013] AI: character-request-detector.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/character-request-detector.ts` aggiunto nel commit «feat(command-center): GM assistant phase 0 foundations.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/character-request-detector.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/character-request-detector.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-089f6f1-014] AI: chat-assistant.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(command-center): GM assistant phase 0 foundations.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-089f6f1-015] AI: domain-fallback-interpreter.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts` aggiunto nel commit «feat(command-center): GM assistant phase 0 foundations.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-089f6f1-016] AI: interpreter.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/interpreter.ts` modificato nel commit «feat(command-center): GM assistant phase 0 foundations.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/interpreter.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/interpreter.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-089f6f1-017] AI: mission-request-detector.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/mission-request-detector.ts` aggiunto nel commit «feat(command-center): GM assistant phase 0 foundations.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/mission-request-detector.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/mission-request-detector.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-089f6f1-018] AI: proposal-enricher.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/proposal-enricher.ts` aggiunto nel commit «feat(command-center): GM assistant phase 0 foundations.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/proposal-enricher.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/proposal-enricher.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-10b04a7-001] AI: ai-assistant-canvas.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/components/command-center/ai-assistant-canvas.tsx` modificato nel commit «feat(command-center): AI campaign and mission proposals (phases 1–2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/components/command-center/ai-assistant-canvas.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/ai-assistant-canvas.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-10b04a7-002] AI: ai-assistant-panel.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(command-center): AI campaign and mission proposals (phases 1–2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/components/command-center/ai-assistant-panel.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/ai-assistant-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-10b04a7-008] OTHER: campaign.actions.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/definitions/wrappers/campaign.actions.ts` modificato nel commit «feat(command-center): AI campaign and mission proposals (phases 1–2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/definitions/wrappers/campaign.actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/definitions/wrappers/campaign.actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-10b04a7-009] AI: campaign-text-generator.test.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/campaign-text-generator.test.ts` aggiunto nel commit «feat(command-center): AI campaign and mission proposals (phases 1–2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/campaign-text-generator.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/campaign-text-generator.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-10b04a7-010] AI: conversation-intent.test.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts` modificato nel commit «feat(command-center): AI campaign and mission proposals (phases 1–2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-10b04a7-011] AI: mission-text-generator.test.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/mission-text-generator.test.ts` aggiunto nel commit «feat(command-center): AI campaign and mission proposals (phases 1–2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/mission-text-generator.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/mission-text-generator.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-10b04a7-012] AI: campaign-proposal-builder.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts` aggiunto nel commit «feat(command-center): AI campaign and mission proposals (phases 1–2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-10b04a7-013] AI: chat-assistant.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(command-center): AI campaign and mission proposals (phases 1–2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-10b04a7-014] AI: conversation-intent.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/conversation-intent.ts` modificato nel commit «feat(command-center): AI campaign and mission proposals (phases 1–2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/conversation-intent.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/conversation-intent.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-10b04a7-015] AI: draft-assistant.types.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/draft-assistant.types.ts` modificato nel commit «feat(command-center): AI campaign and mission proposals (phases 1–2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-10b04a7-016] AI: interpreter.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/interpreter.ts` modificato nel commit «feat(command-center): AI campaign and mission proposals (phases 1–2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/interpreter.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/interpreter.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-10b04a7-017] AI: mission-proposal-builder.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/mission-proposal-builder.ts` aggiunto nel commit «feat(command-center): AI campaign and mission proposals (phases 1–2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/mission-proposal-builder.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/mission-proposal-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-10b04a7-018] AI: proposal-enricher.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/proposal-enricher.ts` modificato nel commit «feat(command-center): AI campaign and mission proposals (phases 1–2).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/proposal-enricher.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/proposal-enricher.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0a086f7-002] AI: ai-assistant-canvas.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/components/command-center/ai-assistant-canvas.tsx` modificato nel commit «feat(command-center): AI character proposals with embedded sheet generator (phase 3).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/components/command-center/ai-assistant-canvas.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/ai-assistant-canvas.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0a086f7-003] AI: ai-assistant-panel.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(command-center): AI character proposals with embedded sheet generator (phase 3).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/components/command-center/ai-assistant-panel.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/ai-assistant-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0a086f7-009] OTHER: character.actions.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/definitions/wrappers/character.actions.ts` modificato nel commit «feat(command-center): AI character proposals with embedded sheet generator (phase 3).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/definitions/wrappers/character.actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/definitions/wrappers/character.actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-0a086f7-010] AI: character-text-generator.test.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/character-text-generator.test.ts` aggiunto nel commit «feat(command-center): AI character proposals with embedded sheet generator (phase 3).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/character-text-generator.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/character-text-generator.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0a086f7-011] AI: conversation-intent.test.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts` modificato nel commit «feat(command-center): AI character proposals with embedded sheet generator (phase 3).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0a086f7-012] AI: character-proposal-builder.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/character-proposal-builder.ts` aggiunto nel commit «feat(command-center): AI character proposals with embedded sheet generator (phase 3).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/character-proposal-builder.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/character-proposal-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0a086f7-013] AI: character-proposal-shared.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/character-proposal-shared.ts` aggiunto nel commit «feat(command-center): AI character proposals with embedded sheet generator (phase 3).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/character-proposal-shared.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/character-proposal-shared.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0a086f7-014] AI: chat-assistant.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(command-center): AI character proposals with embedded sheet generator (phase 3).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0a086f7-015] AI: conversation-intent.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/conversation-intent.ts` modificato nel commit «feat(command-center): AI character proposals with embedded sheet generator (phase 3).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/conversation-intent.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/conversation-intent.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0a086f7-016] AI: draft-assistant.types.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/draft-assistant.types.ts` modificato nel commit «feat(command-center): AI character proposals with embedded sheet generator (phase 3).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0a086f7-017] AI: proposal-enricher.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/proposal-enricher.ts` modificato nel commit «feat(command-center): AI character proposals with embedded sheet generator (phase 3).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/proposal-enricher.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/proposal-enricher.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0dc3ba6-001] AI: ai-assistant-canvas.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/components/command-center/ai-assistant-canvas.tsx` modificato nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/components/command-center/ai-assistant-canvas.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/ai-assistant-canvas.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0dc3ba6-002] AI: ai-assistant-panel.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/components/command-center/ai-assistant-panel.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/ai-assistant-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0dc3ba6-006] OTHER: registry.test.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/__tests__/registry.test.ts` modificato nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/__tests__/registry.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/__tests__/registry.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-0dc3ba6-007] OTHER: action-catalog.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/action-catalog.ts` modificato nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/action-catalog.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/action-catalog.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-0dc3ba6-008] OTHER: session.actions.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/definitions/wrappers/session.actions.ts` modificato nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/definitions/wrappers/session.actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/definitions/wrappers/session.actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-0dc3ba6-009] WIKI: wiki-relationship.actions.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+WIKI
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/definitions/wrappers/wiki-relationship.actions.ts` aggiunto nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/definitions/wrappers/wiki-relationship.actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/definitions/wrappers/wiki-relationship.actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-0dc3ba6-010] OTHER: register-all.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/register-all.ts` modificato nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/register-all.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/register-all.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-0dc3ba6-011] AI: conversation-intent.test.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts` modificato nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0dc3ba6-012] AI: relationship-request-detector.test.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/relationship-request-detector.test.ts` aggiunto nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/relationship-request-detector.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/relationship-request-detector.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0dc3ba6-013] AI: session-close-request-detector.test.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/session-close-request-detector.test.ts` aggiunto nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/session-close-request-detector.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/session-close-request-detector.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0dc3ba6-014] AI: session-close-text-generator.test.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/session-close-text-generator.test.ts` aggiunto nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/session-close-text-generator.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/session-close-text-generator.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0dc3ba6-015] AI: session-request-detector.test.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/session-request-detector.test.ts` aggiunto nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/session-request-detector.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/session-request-detector.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0dc3ba6-016] AI: chat-assistant.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0dc3ba6-017] AI: conversation-intent.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/conversation-intent.ts` modificato nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/conversation-intent.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/conversation-intent.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0dc3ba6-018] AI: domain-fallback-interpreter.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts` modificato nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0dc3ba6-019] AI: draft-assistant.types.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/draft-assistant.types.ts` modificato nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0dc3ba6-020] AI: format-proposal-chat.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/format-proposal-chat.ts` modificato nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/format-proposal-chat.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/format-proposal-chat.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0dc3ba6-021] AI: proposal-input.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/proposal-input.ts` modificato nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/proposal-input.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/proposal-input.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0dc3ba6-022] AI: relationship-proposal-builder.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/relationship-proposal-builder.ts` aggiunto nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/relationship-proposal-builder.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/relationship-proposal-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0dc3ba6-023] AI: relationship-request-detector.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/relationship-request-detector.ts` aggiunto nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/relationship-request-detector.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/relationship-request-detector.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0dc3ba6-024] AI: session-close-proposal-builder.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/session-close-proposal-builder.ts` aggiunto nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/session-close-proposal-builder.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/session-close-proposal-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0dc3ba6-025] AI: session-close-request-detector.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/session-close-request-detector.ts` aggiunto nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/session-close-request-detector.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/session-close-request-detector.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0dc3ba6-026] AI: session-close.types.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/session-close.types.ts` aggiunto nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/session-close.types.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/session-close.types.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0dc3ba6-027] AI: session-proposal-builder.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/session-proposal-builder.ts` aggiunto nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/session-proposal-builder.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/session-proposal-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0dc3ba6-028] AI: session-request-detector.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/session-request-detector.ts` aggiunto nel commit «feat(command-center): AI relationships, sessions, and session close (phases 4–6).». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/session-request-detector.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/session-request-detector.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-e2bcbd3-004] OTHER: build-sheets-zip.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/character-sheets/build-sheets-zip.ts` modificato nel commit «feat(characters): export all campaign sheet PDFs as a single ZIP.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/character-sheets/build-sheets-zip.ts
+
+File gmflow probabili:
+
+* src/lib/character-sheets/build-sheets-zip.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-6fa90f2-001] AI: ai-assistant-canvas.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/components/command-center/ai-assistant-canvas.tsx` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/components/command-center/ai-assistant-canvas.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/ai-assistant-canvas.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-6fa90f2-002] AI: ai-assistant-panel.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/components/command-center/ai-assistant-panel.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/ai-assistant-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-6fa90f2-003] UI_UX: command-center-client.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/command-center/command-center-client.tsx` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/command-center/command-center-client.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/command-center-client.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-6fa90f2-004] UI_UX: preview-selectable-text.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/command-center/preview-selectable-text.tsx` aggiunto nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/command-center/preview-selectable-text.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/preview-selectable-text.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-6fa90f2-006] OTHER: action-catalog.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/action-catalog.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/action-catalog.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/action-catalog.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-6fa90f2-007] WIKI: wiki.actions.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+WIKI
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-6fa90f2-008] AI: preview-text-selection.test.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/preview-text-selection.test.ts` aggiunto nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/preview-text-selection.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/preview-text-selection.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-6fa90f2-009] AI: wiki-request-detector.test.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-6fa90f2-010] AI: campaign-proposal-builder.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-6fa90f2-011] AI: character-proposal-builder.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/character-proposal-builder.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/character-proposal-builder.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/character-proposal-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-6fa90f2-012] AI: chat-assistant.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-6fa90f2-013] AI: domain-fallback-interpreter.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-6fa90f2-014] AI: draft-assistant.types.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/draft-assistant.types.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-6fa90f2-015] AI: format-proposal-chat.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/format-proposal-chat.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/format-proposal-chat.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/format-proposal-chat.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-6fa90f2-016] AI: interpreter.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/interpreter.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/interpreter.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/interpreter.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-6fa90f2-017] AI: mission-proposal-builder.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/mission-proposal-builder.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/mission-proposal-builder.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/mission-proposal-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-6fa90f2-018] AI: preview-text-selection.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/preview-text-selection.ts` aggiunto nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/preview-text-selection.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/preview-text-selection.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-6fa90f2-019] AI: session-close-proposal-builder.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/session-close-proposal-builder.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/session-close-proposal-builder.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/session-close-proposal-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-6fa90f2-020] AI: wiki-proposal-builder.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-6fa90f2-021] AI: wiki-request-detector.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/wiki-request-detector.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/wiki-request-detector.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/wiki-request-detector.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-c983095-001] AI: ai-assistant-canvas.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/components/command-center/ai-assistant-canvas.tsx` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/components/command-center/ai-assistant-canvas.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/ai-assistant-canvas.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-c983095-002] AI: ai-assistant-panel.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/components/command-center/ai-assistant-panel.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/ai-assistant-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-c983095-003] UI_UX: command-center-client.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/command-center/command-center-client.tsx` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/command-center/command-center-client.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/command-center-client.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-c983095-004] UI_UX: preview-selectable-text.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/command-center/preview-selectable-text.tsx` aggiunto nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/command-center/preview-selectable-text.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/preview-selectable-text.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-c983095-006] OTHER: action-catalog.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/action-catalog.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/action-catalog.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/action-catalog.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-c983095-007] WIKI: wiki.actions.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+WIKI
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-c983095-008] AI: preview-text-selection.test.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/preview-text-selection.test.ts` aggiunto nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/preview-text-selection.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/preview-text-selection.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-c983095-009] AI: wiki-request-detector.test.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-c983095-010] AI: campaign-proposal-builder.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-c983095-011] AI: character-proposal-builder.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/character-proposal-builder.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/character-proposal-builder.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/character-proposal-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-c983095-012] AI: chat-assistant.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-c983095-013] AI: domain-fallback-interpreter.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-c983095-014] AI: draft-assistant.types.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/draft-assistant.types.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-c983095-015] AI: format-proposal-chat.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/format-proposal-chat.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/format-proposal-chat.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/format-proposal-chat.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-c983095-016] AI: interpreter.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/interpreter.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/interpreter.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/interpreter.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-c983095-017] AI: mission-proposal-builder.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/mission-proposal-builder.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/mission-proposal-builder.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/mission-proposal-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-c983095-018] AI: preview-text-selection.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/preview-text-selection.ts` aggiunto nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/preview-text-selection.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/preview-text-selection.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-c983095-019] AI: session-close-proposal-builder.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/session-close-proposal-builder.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/session-close-proposal-builder.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/session-close-proposal-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-c983095-020] AI: wiki-proposal-builder.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-c983095-021] AI: wiki-request-detector.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/wiki-request-detector.ts` modificato nel commit «feat(command-center): modifica mirata anteprima e miglioramenti wiki AI». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/wiki-request-detector.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/wiki-request-detector.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1a4d59a-002] AI: ai-assistant-canvas.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/components/command-center/ai-assistant-canvas.tsx` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/components/command-center/ai-assistant-canvas.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/ai-assistant-canvas.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1a4d59a-003] AI: ai-assistant-panel.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/components/command-center/ai-assistant-panel.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/ai-assistant-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1a4d59a-004] UI_UX: command-center-client.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/command-center/command-center-client.tsx` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/command-center/command-center-client.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/command-center-client.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-1a4d59a-005] UI_UX: preview-selectable-text.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/command-center/preview-selectable-text.tsx` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/command-center/preview-selectable-text.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/preview-selectable-text.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-1a4d59a-008] AI: name-generator-field.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/components/name-generator/name-generator-field.tsx` aggiunto nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/components/name-generator/name-generator-field.tsx
+
+File gmflow probabili:
+
+* src/components/name-generator/name-generator-field.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1a4d59a-011] AI: name-generator-actions.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/actions/name-generator-actions.ts` aggiunto nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/actions/name-generator-actions.ts
+
+File gmflow probabili:
+
+* src/lib/actions/name-generator-actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1a4d59a-018] AI: local-names.test.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/name-generator/__tests__/local-names.test.ts` aggiunto nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/name-generator/__tests__/local-names.test.ts
+
+File gmflow probabili:
+
+* src/lib/name-generator/__tests__/local-names.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1a4d59a-019] AI: local-names.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/name-generator/local-names.ts` aggiunto nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/name-generator/local-names.ts
+
+File gmflow probabili:
+
+* src/lib/name-generator/local-names.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1a4d59a-020] AI: types.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/name-generator/types.ts` aggiunto nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/name-generator/types.ts
+
+File gmflow probabili:
+
+* src/lib/name-generator/types.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1a4d59a-021] AI: contextual-names.test.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/contextual-names.test.ts` aggiunto nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/contextual-names.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/contextual-names.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1a4d59a-022] AI: conversation-intent.test.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1a4d59a-023] AI: proposal-input.test.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/proposal-input.test.ts` aggiunto nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/proposal-input.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/proposal-input.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1a4d59a-024] AI: campaign-proposal-builder.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1a4d59a-025] AI: character-proposal-builder.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/character-proposal-builder.ts` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/character-proposal-builder.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/character-proposal-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1a4d59a-026] AI: chat-assistant.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1a4d59a-027] AI: conversation-intent.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/conversation-intent.ts` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/conversation-intent.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/conversation-intent.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1a4d59a-028] AI: domain-fallback-interpreter.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1a4d59a-029] AI: proposal-input.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/proposal-input.ts` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/proposal-input.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/proposal-input.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-1a4d59a-030] AI: wiki-proposal-builder.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts` modificato nel commit «feat(ai): add contextual name generator across create dialogs and command center». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-508bd44-001] UI_UX: audit-timeline.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/command-center/audit-timeline.tsx` modificato nel commit «feat(command-center): align workspace UI with assistant fluid shell». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/command-center/audit-timeline.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/audit-timeline.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-508bd44-002] UI_UX: command-center-client.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/command-center/command-center-client.tsx` modificato nel commit «feat(command-center): align workspace UI with assistant fluid shell». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/command-center/command-center-client.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/command-center-client.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-a4a0545-001] AI: ai-assistant-canvas.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/components/command-center/ai-assistant-canvas.tsx` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/components/command-center/ai-assistant-canvas.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/ai-assistant-canvas.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-a4a0545-002] AI: ai-assistant-panel.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/components/command-center/ai-assistant-panel.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/ai-assistant-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-a4a0545-005] OTHER: campaign.actions.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/modules/command-center/actions/definitions/wrappers/campaign.actions.ts` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/modules/command-center/actions/definitions/wrappers/campaign.actions.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/actions/definitions/wrappers/campaign.actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-a4a0545-006] AI: campaign-type-selection.test.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/campaign-type-selection.test.ts` aggiunto nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/campaign-type-selection.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/campaign-type-selection.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-a4a0545-007] AI: conversation-intent.test.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-a4a0545-008] AI: campaign-proposal-builder.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/campaign-proposal-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-a4a0545-009] AI: campaign-request-detector.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/campaign-request-detector.ts` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/campaign-request-detector.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/campaign-request-detector.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-a4a0545-010] AI: campaign-type-selection.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/campaign-type-selection.ts` aggiunto nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/campaign-type-selection.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/campaign-type-selection.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-a4a0545-011] AI: chat-assistant.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-a4a0545-012] AI: domain-fallback-interpreter.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-a4a0545-013] AI: draft-assistant.types.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/draft-assistant.types.ts` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-a4a0545-014] AI: preview-text-selection.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/preview-text-selection.ts` modificato nel commit «feat(command-center): guided AI campaign create with type, description, and cover». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/preview-text-selection.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/preview-text-selection.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-cd6c725-003] AI: json-extract.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/ai/json-extract.ts` aggiunto nel commit «fix(ai): harden campaign draft JSON parsing and OpenRouter json mode». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/ai/json-extract.ts
+
+File gmflow probabili:
+
+* src/lib/ai/json-extract.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-cd6c725-005] AI: campaign-text-generator.test.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/campaign-text-generator.test.ts` modificato nel commit «fix(ai): harden campaign draft JSON parsing and OpenRouter json mode». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/campaign-text-generator.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/campaign-text-generator.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-cd6c725-006] AI: interpreter.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/interpreter.ts` modificato nel commit «fix(ai): harden campaign draft JSON parsing and OpenRouter json mode». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/interpreter.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/interpreter.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-8133bf5-004] AI: openrouter-image-request.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/ai/openrouter-image-request.ts` aggiunto nel commit «fix(ai): reduce OpenRouter HTTP 400 on image generation and save». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/ai/openrouter-image-request.ts
+
+File gmflow probabili:
+
+* src/lib/ai/openrouter-image-request.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-d3a640b-001] AI: ai-assistant-canvas.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/components/command-center/ai-assistant-canvas.tsx` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/components/command-center/ai-assistant-canvas.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/ai-assistant-canvas.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-d3a640b-002] AI: ai-assistant-panel.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/components/command-center/ai-assistant-panel.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/ai-assistant-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-d3a640b-008] AI: wiki-npc-params.test.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/wiki-npc-params.test.ts` aggiunto nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/wiki-npc-params.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/wiki-npc-params.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-d3a640b-009] AI: wiki-request-detector.test.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-d3a640b-010] AI: chat-assistant.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-d3a640b-011] AI: domain-fallback-interpreter.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-d3a640b-012] AI: draft-assistant.types.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/draft-assistant.types.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-d3a640b-013] AI: preview-text-selection.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/preview-text-selection.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/preview-text-selection.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/preview-text-selection.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-d3a640b-014] AI: wiki-proposal-builder.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-d3a640b-015] AI: wiki-request-detector.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/wiki-request-detector.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/wiki-request-detector.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/wiki-request-detector.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0d6345e-001] AI: ai-assistant-canvas.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/components/command-center/ai-assistant-canvas.tsx` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/components/command-center/ai-assistant-canvas.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/ai-assistant-canvas.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0d6345e-002] AI: ai-assistant-panel.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/components/command-center/ai-assistant-panel.tsx
+
+File gmflow probabili:
+
+* src/components/command-center/ai-assistant-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0d6345e-008] AI: wiki-npc-params.test.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/wiki-npc-params.test.ts` aggiunto nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/wiki-npc-params.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/wiki-npc-params.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0d6345e-009] AI: wiki-request-detector.test.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/wiki-request-detector.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0d6345e-010] AI: chat-assistant.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0d6345e-011] AI: domain-fallback-interpreter.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0d6345e-012] AI: draft-assistant.types.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/draft-assistant.types.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/draft-assistant.types.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0d6345e-013] AI: preview-text-selection.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/preview-text-selection.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/preview-text-selection.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/preview-text-selection.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0d6345e-014] AI: wiki-proposal-builder.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-0d6345e-015] AI: wiki-request-detector.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/wiki-request-detector.ts` modificato nel commit «feat(command-center): gate NPC statblock on mechanics and speed up wiki generation». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/wiki-request-detector.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/wiki-request-detector.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-12b3a10-001] CAMPAIGNS: page.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+CAMPAIGNS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/campaigns/[id]/gm-only/regia-immagini/proiezione/page.tsx` aggiunto nel commit «feat(gm): add regia immagini projection and wiki related links». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Logica campagne potenzialmente generalizzabile per multi-tenant.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/campaigns/[id]/gm-only/regia-immagini/proiezione/page.tsx
+
+File gmflow probabili:
+
+* src/app/campaigns/[id]/gm-only/regia-immagini/proiezione/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-12b3a10-003] CAMPAIGNS: entity-graph-actions.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+CAMPAIGNS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/campaigns/entity-graph-actions.ts` modificato nel commit «feat(gm): add regia immagini projection and wiki related links». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Logica campagne potenzialmente generalizzabile per multi-tenant.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/campaigns/entity-graph-actions.ts
+
+File gmflow probabili:
+
+* src/app/campaigns/entity-graph-actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-12b3a10-004] GM_SCREEN: gm-gallery-sheet.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/gm-gallery-sheet.tsx` modificato nel commit «feat(gm): add regia immagini projection and wiki related links». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/gm-gallery-sheet.tsx
+
+File gmflow probabili:
+
+* src/components/gm/gm-gallery-sheet.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-12b3a10-005] WIKI: related-entities-section.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+WIKI
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/wiki/related-entities-section.tsx` aggiunto nel commit «feat(gm): add regia immagini projection and wiki related links». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/wiki/related-entities-section.tsx
+
+File gmflow probabili:
+
+* src/components/wiki/related-entities-section.tsx
 
 Rischi:
 
@@ -26414,6 +26702,8 @@ Criterio di import completato:
 
 ## Coda import consigliata
 
+- **[BD-GMFLOW-PKG-2026-07-06-001]** Package: Funzionalità e bugfix luglio 2026 — priorità Alta (OTHER)
+- **[BD-GMFLOW-PKG-2026-07-06-CC]** Package: Command Center (GM Workspace + AI Control Plane) — priorità Alta (GM_SCREEN)
 - **[BD-GMFLOW-PKG-2026-06-28-001]** Package: Nuove funzioni e bugfix (no RLS, no grafica) — priorità Alta (OTHER)
 - **[BD-GMFLOW-041d96c-005]** AI: image-refine-prompt.test.ts (aggiunto) — priorità Alta (AI)
 - **[BD-GMFLOW-041d96c-006]** AI: image-provider.ts (modificato) — priorità Alta (AI)
@@ -26428,6 +26718,193 @@ Criterio di import completato:
 - **[BD-GMFLOW-688720b-006]** AI: build-engine.ts (modificato) — priorità Alta (AI)
 - **[BD-GMFLOW-688720b-007]** AI: skill-rules.ts (aggiunto) — priorità Alta (AI)
 - **[BD-GMFLOW-94b0f4e-049]** DATABASE: 20260628120000_scene_documents_and_map_source.sql (aggiunto) — priorità Alta (DATABASE)
+- **[BD-GMFLOW-f17432f-005]** AI: ai-assistant-panel.tsx (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-f17432f-006]** AI: ai-proposal-panel.tsx (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-f17432f-008]** AI: interpreter.test.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-f17432f-009]** AI: autonomy.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-f17432f-010]** AI: context-resolver.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-f17432f-011]** AI: draft-assistant.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-f17432f-012]** AI: interpreter.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-f17432f-013]** AI: proposal-builder.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-f17432f-015]** AI: ai-proposal.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-ef0984c-001]** AI: ai-proposal-panel.tsx (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-1e31f94-005]** AI: ai-assistant-panel.tsx (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-1e31f94-006]** AI: ai-proposal-panel.tsx (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-1e31f94-011]** AI: ai-proposal.actions.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-1e31f94-015]** AI: interpreter.test.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-1e31f94-016]** AI: proposal-executor.test.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-1e31f94-017]** AI: autonomy.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-1e31f94-018]** AI: draft-assistant.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-1e31f94-019]** AI: draft-assistant.types.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-1e31f94-020]** AI: proposal-executor.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-0a78de3-002]** AI: ai-assistant-panel.tsx (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0a78de3-003]** AI: ai-proposal-panel.tsx (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0a78de3-016]** AI: interpreter.test.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0a78de3-017]** AI: proposal-executor.test.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0a78de3-018]** AI: interpreter.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0a78de3-019]** AI: proposal-executor.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0a78de3-020]** AI: ai-proposal.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-478d341-002]** AI: ai-assistant-panel.tsx (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-478d341-004]** AI: conversation-intent.test.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-478d341-005]** AI: chat-assistant.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-478d341-006]** AI: conversation-intent.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-478d341-007]** AI: draft-assistant.types.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-478d341-008]** AI: format-proposal-chat.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-478d341-009]** AI: interpreter.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-478d341-010]** AI: preview-proposals.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-478d341-011]** AI: proposal-builder.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-478d341-012]** AI: proposal-input.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-fd82d7b-003]** AI: ai-assistant-canvas.tsx (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-fd82d7b-004]** AI: ai-assistant-panel.tsx (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-fd82d7b-009]** AI: conversation-intent.test.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-fd82d7b-010]** AI: chat-assistant.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-fd82d7b-011]** AI: conversation-intent.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-fd82d7b-012]** AI: draft-assistant.types.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-fd82d7b-013]** AI: format-proposal-chat.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-fd82d7b-014]** AI: interpreter.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-fd82d7b-015]** AI: wiki-proposal-builder.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-1a5921c-001]** AI: ai-assistant-panel.tsx (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-1a5921c-007]** AI: wiki-request-detector.test.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-1a5921c-008]** AI: chat-assistant.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-1a5921c-009]** AI: draft-assistant.types.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-1a5921c-010]** AI: wiki-proposal-builder.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-1a5921c-011]** AI: wiki-request-detector.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-089f6f1-003]** AI: ai-assistant-canvas.tsx (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-089f6f1-010]** AI: character-request-detector.test.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-089f6f1-011]** AI: mission-request-detector.test.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-089f6f1-012]** AI: campaign-request-detector.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-089f6f1-013]** AI: character-request-detector.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-089f6f1-014]** AI: chat-assistant.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-089f6f1-015]** AI: domain-fallback-interpreter.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-089f6f1-016]** AI: interpreter.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-089f6f1-017]** AI: mission-request-detector.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-089f6f1-018]** AI: proposal-enricher.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-10b04a7-001]** AI: ai-assistant-canvas.tsx (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-10b04a7-002]** AI: ai-assistant-panel.tsx (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-10b04a7-009]** AI: campaign-text-generator.test.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-10b04a7-010]** AI: conversation-intent.test.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-10b04a7-011]** AI: mission-text-generator.test.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-10b04a7-012]** AI: campaign-proposal-builder.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-10b04a7-013]** AI: chat-assistant.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-10b04a7-014]** AI: conversation-intent.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-10b04a7-015]** AI: draft-assistant.types.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-10b04a7-016]** AI: interpreter.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-10b04a7-017]** AI: mission-proposal-builder.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-10b04a7-018]** AI: proposal-enricher.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0a086f7-002]** AI: ai-assistant-canvas.tsx (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0a086f7-003]** AI: ai-assistant-panel.tsx (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0a086f7-010]** AI: character-text-generator.test.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-0a086f7-011]** AI: conversation-intent.test.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0a086f7-012]** AI: character-proposal-builder.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-0a086f7-013]** AI: character-proposal-shared.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-0a086f7-014]** AI: chat-assistant.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0a086f7-015]** AI: conversation-intent.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0a086f7-016]** AI: draft-assistant.types.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0a086f7-017]** AI: proposal-enricher.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0dc3ba6-001]** AI: ai-assistant-canvas.tsx (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0dc3ba6-002]** AI: ai-assistant-panel.tsx (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0dc3ba6-011]** AI: conversation-intent.test.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0dc3ba6-012]** AI: relationship-request-detector.test.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-0dc3ba6-013]** AI: session-close-request-detector.test.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-0dc3ba6-014]** AI: session-close-text-generator.test.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-0dc3ba6-015]** AI: session-request-detector.test.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-0dc3ba6-016]** AI: chat-assistant.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0dc3ba6-017]** AI: conversation-intent.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0dc3ba6-018]** AI: domain-fallback-interpreter.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0dc3ba6-019]** AI: draft-assistant.types.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0dc3ba6-020]** AI: format-proposal-chat.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0dc3ba6-021]** AI: proposal-input.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0dc3ba6-022]** AI: relationship-proposal-builder.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-0dc3ba6-023]** AI: relationship-request-detector.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-0dc3ba6-024]** AI: session-close-proposal-builder.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-0dc3ba6-025]** AI: session-close-request-detector.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-0dc3ba6-026]** AI: session-close.types.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-0dc3ba6-027]** AI: session-proposal-builder.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-0dc3ba6-028]** AI: session-request-detector.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-6fa90f2-001]** AI: ai-assistant-canvas.tsx (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-6fa90f2-002]** AI: ai-assistant-panel.tsx (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-6fa90f2-008]** AI: preview-text-selection.test.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-6fa90f2-009]** AI: wiki-request-detector.test.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-6fa90f2-010]** AI: campaign-proposal-builder.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-6fa90f2-011]** AI: character-proposal-builder.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-6fa90f2-012]** AI: chat-assistant.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-6fa90f2-013]** AI: domain-fallback-interpreter.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-6fa90f2-014]** AI: draft-assistant.types.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-6fa90f2-015]** AI: format-proposal-chat.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-6fa90f2-016]** AI: interpreter.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-6fa90f2-017]** AI: mission-proposal-builder.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-6fa90f2-018]** AI: preview-text-selection.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-6fa90f2-019]** AI: session-close-proposal-builder.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-6fa90f2-020]** AI: wiki-proposal-builder.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-6fa90f2-021]** AI: wiki-request-detector.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-c983095-001]** AI: ai-assistant-canvas.tsx (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-c983095-002]** AI: ai-assistant-panel.tsx (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-c983095-008]** AI: preview-text-selection.test.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-c983095-009]** AI: wiki-request-detector.test.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-c983095-010]** AI: campaign-proposal-builder.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-c983095-011]** AI: character-proposal-builder.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-c983095-012]** AI: chat-assistant.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-c983095-013]** AI: domain-fallback-interpreter.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-c983095-014]** AI: draft-assistant.types.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-c983095-015]** AI: format-proposal-chat.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-c983095-016]** AI: interpreter.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-c983095-017]** AI: mission-proposal-builder.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-c983095-018]** AI: preview-text-selection.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-c983095-019]** AI: session-close-proposal-builder.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-c983095-020]** AI: wiki-proposal-builder.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-c983095-021]** AI: wiki-request-detector.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-1a4d59a-002]** AI: ai-assistant-canvas.tsx (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-1a4d59a-003]** AI: ai-assistant-panel.tsx (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-1a4d59a-008]** AI: name-generator-field.tsx (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-1a4d59a-011]** AI: name-generator-actions.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-1a4d59a-018]** AI: local-names.test.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-1a4d59a-019]** AI: local-names.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-1a4d59a-020]** AI: types.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-1a4d59a-021]** AI: contextual-names.test.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-1a4d59a-022]** AI: conversation-intent.test.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-1a4d59a-023]** AI: proposal-input.test.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-1a4d59a-024]** AI: campaign-proposal-builder.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-1a4d59a-025]** AI: character-proposal-builder.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-1a4d59a-026]** AI: chat-assistant.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-1a4d59a-027]** AI: conversation-intent.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-1a4d59a-028]** AI: domain-fallback-interpreter.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-1a4d59a-029]** AI: proposal-input.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-1a4d59a-030]** AI: wiki-proposal-builder.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-a4a0545-001]** AI: ai-assistant-canvas.tsx (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-a4a0545-002]** AI: ai-assistant-panel.tsx (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-a4a0545-006]** AI: campaign-type-selection.test.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-a4a0545-007]** AI: conversation-intent.test.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-a4a0545-008]** AI: campaign-proposal-builder.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-a4a0545-009]** AI: campaign-request-detector.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-a4a0545-010]** AI: campaign-type-selection.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-a4a0545-011]** AI: chat-assistant.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-a4a0545-012]** AI: domain-fallback-interpreter.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-a4a0545-013]** AI: draft-assistant.types.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-a4a0545-014]** AI: preview-text-selection.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-cd6c725-003]** AI: json-extract.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-cd6c725-005]** AI: campaign-text-generator.test.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-cd6c725-006]** AI: interpreter.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-8133bf5-004]** AI: openrouter-image-request.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-d3a640b-001]** AI: ai-assistant-canvas.tsx (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-d3a640b-002]** AI: ai-assistant-panel.tsx (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-d3a640b-008]** AI: wiki-npc-params.test.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-d3a640b-009]** AI: wiki-request-detector.test.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-d3a640b-010]** AI: chat-assistant.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-d3a640b-011]** AI: domain-fallback-interpreter.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-d3a640b-012]** AI: draft-assistant.types.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-d3a640b-013]** AI: preview-text-selection.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-d3a640b-014]** AI: wiki-proposal-builder.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-d3a640b-015]** AI: wiki-request-detector.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0d6345e-001]** AI: ai-assistant-canvas.tsx (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0d6345e-002]** AI: ai-assistant-panel.tsx (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0d6345e-008]** AI: wiki-npc-params.test.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-0d6345e-009]** AI: wiki-request-detector.test.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0d6345e-010]** AI: chat-assistant.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0d6345e-011]** AI: domain-fallback-interpreter.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0d6345e-012]** AI: draft-assistant.types.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0d6345e-013]** AI: preview-text-selection.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0d6345e-014]** AI: wiki-proposal-builder.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-0d6345e-015]** AI: wiki-request-detector.ts (modificato) — priorità Alta (AI)
 - **[BD-GMFLOW-041d96c-001]** WIKI: create-entity-dialog.tsx (modificato) — priorità Media (WIKI)
 - **[BD-GMFLOW-041d96c-002]** WIKI: edit-entity-dialog.tsx (modificato) — priorità Media (WIKI)
 - **[BD-GMFLOW-041d96c-004]** WIKI: wiki-image-chat.ts (aggiunto) — priorità Media (WIKI)
@@ -26437,7 +26914,113 @@ Criterio di import completato:
 - **[BD-GMFLOW-fef9b75-001]** WIKI: wiki-bestiary-search-actions.ts (modificato) — priorità Media (WIKI)
 - **[BD-GMFLOW-fef9b75-002]** OTHER: bestiary-statblock-parser.test.ts (aggiunto) — priorità Media (OTHER)
 - **[BD-GMFLOW-fef9b75-003]** OTHER: bestiary-statblock-parser.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-94b0f4e-007]** CAMPAIGNS: scene-document-actions.ts (aggiunto) — priorità Media (CAMPAIGNS)
+- **[BD-GMFLOW-94b0f4e-034]** OTHER: floor-raster.ts (aggiunto) — priorità Media (OTHER)
 - **[BD-GMFLOW-c75aa38-001]** CAMPAIGNS: character-actions.ts (modificato) — priorità Media (CAMPAIGNS)
+- **[BD-GMFLOW-3cf1907-002]** CAMPAIGNS: scene-document-actions.ts (modificato) — priorità Media (CAMPAIGNS)
+- **[BD-GMFLOW-3cf1907-005]** OTHER: floor-raster.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-f9bcd77-001]** CAMPAIGNS: scene-document-actions.ts (modificato) — priorità Media (CAMPAIGNS)
+- **[BD-GMFLOW-f9bcd77-003]** MEDIA_STORAGE: exploration-map-upload-core.ts (modificato) — priorità Media (MEDIA_STORAGE)
+- **[BD-GMFLOW-f9bcd77-005]** OTHER: floor-raster.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-09a5000-003]** OTHER: command-center-export.md (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-09a5000-004]** OTHER: command-center-vision.md (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-09a5000-005]** OTHER: layout.tsx (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-09a5000-006]** OTHER: page.tsx (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-09a5000-008]** UI_UX: command-center-client.tsx (aggiunto) — priorità Media (UI_UX)
+- **[BD-GMFLOW-09a5000-013]** OTHER: barber-dragons.adapter.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-09a5000-014]** OTHER: index.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-09a5000-015]** OTHER: types.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-09a5000-016]** OTHER: index.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-09a5000-017]** OTHER: actions.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-09a5000-018]** OTHER: entities.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-09a5000-019]** OTHER: index.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-09a5000-020]** OTHER: workspace.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-d00079b-002]** OTHER: command-center-export.md (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-d00079b-003]** OTHER: command-center-vision.md (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-d00079b-005]** OTHER: page.tsx (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-d00079b-006]** UI_UX: audit-timeline.tsx (aggiunto) — priorità Media (UI_UX)
+- **[BD-GMFLOW-d00079b-007]** UI_UX: command-center-client.tsx (modificato) — priorità Media (UI_UX)
+- **[BD-GMFLOW-d00079b-008]** OTHER: registry.test.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-d00079b-009]** OTHER: audit.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-d00079b-010]** OTHER: workspace.actions.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-d00079b-011]** OTHER: gm-note.actions.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-d00079b-012]** OTHER: session.actions.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-d00079b-013]** WIKI: wiki.actions.ts (aggiunto) — priorità Media (WIKI)
+- **[BD-GMFLOW-d00079b-014]** OTHER: index.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-d00079b-015]** OTHER: register-all.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-d00079b-016]** OTHER: registry.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-d00079b-017]** OTHER: index.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-d00079b-018]** OTHER: actions.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-d00079b-019]** OTHER: actions.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-d00079b-020]** OTHER: audit.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-d00079b-021]** OTHER: index.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-f17432f-004]** OTHER: page.tsx (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-f17432f-007]** UI_UX: command-center-client.tsx (modificato) — priorità Media (UI_UX)
+- **[BD-GMFLOW-f17432f-014]** OTHER: actions.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-f17432f-016]** OTHER: index.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-ef0984c-002]** OTHER: workspace.actions.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-1e31f94-003]** OTHER: command-center-vision.md (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-1e31f94-007]** UI_UX: audit-timeline.tsx (modificato) — priorità Media (UI_UX)
+- **[BD-GMFLOW-1e31f94-008]** UI_UX: command-center-client.tsx (modificato) — priorità Media (UI_UX)
+- **[BD-GMFLOW-1e31f94-009]** UI_UX: voice-capture-button.tsx (aggiunto) — priorità Media (UI_UX)
+- **[BD-GMFLOW-1e31f94-010]** OTHER: registry.test.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-1e31f94-012]** OTHER: workspace.actions.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-1e31f94-013]** OTHER: register-all.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-1e31f94-014]** OTHER: registry.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-1e31f94-021]** OTHER: actions.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-1e31f94-022]** OTHER: actions.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-1e31f94-023]** OTHER: command-input-voice.test.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-1e31f94-024]** OTHER: command-input-voice.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-1e31f94-025]** OTHER: use-voice-dictation.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-0a78de3-004]** UI_UX: audit-timeline.tsx (modificato) — priorità Media (UI_UX)
+- **[BD-GMFLOW-0a78de3-005]** OTHER: action-catalog.test.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-0a78de3-006]** OTHER: registry.test.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-0a78de3-007]** OTHER: action-catalog.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-0a78de3-008]** OTHER: command-input.actions.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-0a78de3-009]** OTHER: memory.actions.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-0a78de3-010]** OTHER: campaign.actions.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-0a78de3-011]** OTHER: character.actions.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-0a78de3-012]** OTHER: mission.actions.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-0a78de3-013]** OTHER: session.actions.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-0a78de3-014]** WIKI: wiki.actions.ts (modificato) — priorità Media (WIKI)
+- **[BD-GMFLOW-0a78de3-015]** OTHER: register-all.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-0accbfa-001]** UI_UX: audit-timeline.tsx (modificato) — priorità Media (UI_UX)
+- **[BD-GMFLOW-0accbfa-002]** OTHER: character.actions.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-478d341-001]** OTHER: page.tsx (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-478d341-003]** UI_UX: command-center-client.tsx (modificato) — priorità Media (UI_UX)
+- **[BD-GMFLOW-478d341-013]** OTHER: actions.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-fd82d7b-001]** OTHER: page.tsx (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-fd82d7b-005]** UI_UX: command-center-client.tsx (modificato) — priorità Media (UI_UX)
+- **[BD-GMFLOW-fd82d7b-008]** WIKI: wiki.actions.ts (modificato) — priorità Media (WIKI)
+- **[BD-GMFLOW-1a5921c-002]** UI_UX: audit-timeline.tsx (modificato) — priorità Media (UI_UX)
+- **[BD-GMFLOW-1a5921c-003]** UI_UX: command-center-client.tsx (modificato) — priorità Media (UI_UX)
+- **[BD-GMFLOW-1a5921c-006]** OTHER: workspace.actions.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-1a5921c-012]** OTHER: actions.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-10b04a7-008]** OTHER: campaign.actions.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-0a086f7-009]** OTHER: character.actions.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-0dc3ba6-006]** OTHER: registry.test.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-0dc3ba6-007]** OTHER: action-catalog.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-0dc3ba6-008]** OTHER: session.actions.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-0dc3ba6-009]** WIKI: wiki-relationship.actions.ts (aggiunto) — priorità Media (WIKI)
+- **[BD-GMFLOW-0dc3ba6-010]** OTHER: register-all.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-e2bcbd3-004]** OTHER: build-sheets-zip.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-6fa90f2-003]** UI_UX: command-center-client.tsx (modificato) — priorità Media (UI_UX)
+- **[BD-GMFLOW-6fa90f2-004]** UI_UX: preview-selectable-text.tsx (aggiunto) — priorità Media (UI_UX)
+- **[BD-GMFLOW-6fa90f2-006]** OTHER: action-catalog.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-6fa90f2-007]** WIKI: wiki.actions.ts (modificato) — priorità Media (WIKI)
+- **[BD-GMFLOW-c983095-003]** UI_UX: command-center-client.tsx (modificato) — priorità Media (UI_UX)
+- **[BD-GMFLOW-c983095-004]** UI_UX: preview-selectable-text.tsx (aggiunto) — priorità Media (UI_UX)
+- **[BD-GMFLOW-c983095-006]** OTHER: action-catalog.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-c983095-007]** WIKI: wiki.actions.ts (modificato) — priorità Media (WIKI)
+- **[BD-GMFLOW-1a4d59a-004]** UI_UX: command-center-client.tsx (modificato) — priorità Media (UI_UX)
+- **[BD-GMFLOW-1a4d59a-005]** UI_UX: preview-selectable-text.tsx (modificato) — priorità Media (UI_UX)
+- **[BD-GMFLOW-508bd44-001]** UI_UX: audit-timeline.tsx (modificato) — priorità Media (UI_UX)
+- **[BD-GMFLOW-508bd44-002]** UI_UX: command-center-client.tsx (modificato) — priorità Media (UI_UX)
+- **[BD-GMFLOW-a4a0545-005]** OTHER: campaign.actions.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-12b3a10-001]** CAMPAIGNS: page.tsx (aggiunto) — priorità Media (CAMPAIGNS)
+- **[BD-GMFLOW-12b3a10-003]** CAMPAIGNS: entity-graph-actions.ts (modificato) — priorità Media (CAMPAIGNS)
+- **[BD-GMFLOW-12b3a10-004]** GM_SCREEN: gm-gallery-sheet.tsx (modificato) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-12b3a10-005]** WIKI: related-entities-section.tsx (aggiunto) — priorità Media (WIKI)
 
 ## Sintesi per ChatGPT
 
@@ -26446,9 +27029,9 @@ Questo ledger traccia modifiche Barber & Dragons da valutare per import in gmflo
 
 - Repository sorgente: `/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App`
 - Repository gmflow locale: `/Users/alessandropetricciuolo/Desktop/masto-platform`
-- Ultimo commit: `12b3a10` — feat(gm): add regia immagini projection and wiki related links
-- File analizzati nell'ultimo run: 5
-- Nuove voci aggiunte: 5
+- Ultimo commit: `7ed15be` — feat(wiki): add NPC class select with PHB and enemy class options
+- File analizzati nell'ultimo run: 3
+- Nuove voci aggiunte: 3
 
 **Azioni consigliate:**
 1. Rivedere voci `NEEDS_REVIEW` nella sezione «Delta automatico».

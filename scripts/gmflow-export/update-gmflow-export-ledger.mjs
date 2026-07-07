@@ -480,7 +480,54 @@ function main() {
   }
 
   if (changedFiles.length === 0) {
-    console.log("Nessun file applicativo nel commit — ledger invariato.");
+    const existingItems = loadExistingItems();
+    if (existingItems.length === 0) {
+      console.log("Nessun file applicativo nel commit — ledger invariato.");
+      return;
+    }
+    const now = new Date().toISOString();
+    const needsReviewCount = existingItems.filter((i) => i.status === "NEEDS_REVIEW").length;
+    const snapshot = {
+      updatedAt: now,
+      sourceProject: "Barber & Dragons",
+      targetProject: "gmflow.app",
+      sourceRepoPath: BD_ROOT,
+      targetRepoPath: gmflowRepoPath,
+      branch,
+      lastCommit,
+      lastCommitShort,
+      commitSubject,
+      commitRange,
+      filesAnalyzed: 0,
+      newItemsAdded: 0,
+      overallStatus:
+        needsReviewCount > 0
+          ? `${needsReviewCount} voci NEEDS_REVIEW`
+          : "Nessuna voce in attesa di revisione automatica",
+    };
+    const jsonOutput = {
+      updatedAt: now,
+      sourceProject: snapshot.sourceProject,
+      targetProject: snapshot.targetProject,
+      sourceRepoPath: snapshot.sourceRepoPath,
+      targetRepoPath: snapshot.targetRepoPath,
+      branch,
+      lastCommit,
+      commitRange,
+      items: existingItems.map(({ _key, ...rest }) => rest),
+    };
+    mkdirSync(dirname(LEDGER_PATH), { recursive: true });
+    writeFileSync(LEDGER_PATH, renderMarkdown(snapshot, existingItems), "utf8");
+    writeFileSync(JSON_PATH, JSON.stringify(jsonOutput, null, 2) + "\n", "utf8");
+    const copiedPaths = copyToGmflow(gmflowRepoPath);
+    console.log("── B&D → gmflow Export Ledger (sync da JSON) ──");
+    console.log(`Ledger rigenerato da ${existingItems.length} voci esistenti.`);
+    console.log(`Ledger B&D:          ${LEDGER_PATH}`);
+    console.log(`JSON B&D:            ${JSON_PATH}`);
+    if (copiedPaths.length) {
+      console.log("Copiati in gmflow:");
+      for (const p of copiedPaths) console.log(`  → ${p}`);
+    }
     return;
   }
 

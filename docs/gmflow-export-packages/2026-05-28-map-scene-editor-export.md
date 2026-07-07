@@ -4,7 +4,7 @@
 
 bnd-map-scene-editor-2026-05-28
 
-**Revisione 3** — Union auto-walls, corridoi curvi, import gmflow — 2026-06-28
+**Revisione 4** — FoW sync on create, raster FormData fix — 2026-07-06
 
 ## Origine
 
@@ -25,6 +25,34 @@ Export completo del modulo **mappe tattiche / Scene Editor / Fog of War** (Fasi 
 | `94b0f4e` | Map Core portabile, Scene Editor, FoW integration, schema DB |
 | `be804da` | DS rendering, auto-walls per-area, layer presets, normalize-floor |
 | `e9c93e5` | **Union auto-walls** (`polygon-clipping`) — solo parte map-core, non shell layout |
+| `3cf1907` | **FoW sync on create** — mappe exploration upsert immediato, heal scene orfane |
+| `f9bcd77` | **Raster FormData** — upload completo PNG, no placeholder 1×1 |
+
+---
+
+## Fase 7 — FoW sync e raster upload (Rev 4)
+
+| Componente | Comportamento |
+|------------|---------------|
+| `createSceneDocumentAction` | Upsert `campaign_exploration_maps` per ogni piano subito alla creazione |
+| Heal orphaned | Al load lista scene, ripara documenti senza mappe collegate |
+| `saveSceneDocumentWithRastersAction` | Riceve raster via **FormData** (no `instanceof Blob` server-side) |
+| `floor-raster.ts` | Export **PNG** (compatibilità storage; gmflow può usare WebP) |
+| `exploration-map-upload-core.ts` | Upload binario da FormData; rifiuta raster mancanti |
+| Tolleranza errori | Salvataggio documento OK anche se singolo raster fallisce (log + retry manuale) |
+
+**File delta Rev 4:**
+
+```
+src/app/campaigns/scene-document-actions.ts
+src/lib/map-core-bd/scene-document.ts
+src/lib/map-core/raster-export/floor-raster.ts
+src/lib/exploration/exploration-map-upload-core.ts
+src/components/scene-editor/scene-editor-client.tsx
+src/components/scene-editor/scene-editor-list-actions.tsx
+src/components/exploration/vista-dall-alto-client.tsx
+src/app/campaigns/[id]/gm-only/vista-dall-alto/page.tsx
+```
 
 ---
 
@@ -442,6 +470,9 @@ exportFloorRasterBlob(floor): Promise<Blob>
 - [ ] Props visibili in raster DS; note GM in GM view, assenti in proiezione
 - [ ] Upload immagine + import JSON DA ancora funzionanti
 - [ ] Documento legacy (pre-layer) si apre e salva correttamente
+- [ ] **Rev 4:** Crea scena → compare in Vista dall'alto senza publish separato
+- [ ] **Rev 4:** Salva scena → raster reale (non placeholder 1×1)
+- [ ] **Rev 4:** Scene orfane riparate al load lista
 
 ## Import Contract per gmflow
 
@@ -486,19 +517,21 @@ rg "map-core" src --glob "!**/node_modules/**"
 ## Prompt per gmflow Import Agent
 
 ```
-Import Agent gmflow — Export ID: bnd-map-scene-editor-2026-05-28 (Revisione 3)
+Import Agent gmflow — Export ID: bnd-map-scene-editor-2026-05-28 (Revisione 4)
 
 Package: docs/gmflow-export-packages/2026-05-28-map-scene-editor-export.md
 (sincronizzato in docs/imports/gmflow-export-packages/ se presente)
 
 OBIETTIVO
 Importare il modulo completo Map Core + Scene Editor + FoW da Barber & Dragons,
-inclusa Revisione 3 (union auto-walls, corridoi curvi).
+inclusa Revisione 3–4 (union auto-walls, corridoi curvi, FoW sync, raster FormData).
 
 COMMIT B&D
 - 94b0f4e feat(maps): scene editor + map-core + FoW
 - be804da feat(maps): DS rendering, auto-walls, layer presets
 - e9c93e5 feat(maps): union-based auto-walls (SOLO map-core, NON shell layout)
+- 3cf1907 fix(maps): sync Scene Editor scenes to Esplorazione e FoW on create
+- f9bcd77 fix(maps): upload full Scene Editor rasters from FormData on save
 
 IMPORTARE
 1. src/lib/map-core/** (intero albero)
@@ -546,14 +579,15 @@ Checklist integrazione nel package. npm run test:map-core deve passare.
 | 1 | 2026-05-28 | Fasi 0–4: Map Core, Scene Editor, griglia, props, note GM, duplicazione |
 | 2 | 2026-05-28 | Fase 5: layer + preset DS, auto-walls per-area, renderer DS, migrazione legacy |
 | 3 | 2026-06-28 | Fase 6: union auto-walls (`polygon-clipping`), corridoi curvi Catmull-Rom, tool-overlay, server actions complete, note RLS/adapter gmflow, prompt Import Agent |
+| 4 | 2026-07-06 | Fase 7: FoW sync on create, heal orphaned scenes, raster FormData/PNG, no placeholder 1×1 |
 
 ## Riferimenti
 
 - ADR: `docs/adr-map-scene-editor.md`
-- Piano: Strategia C (Map Core refactor), decisioni maggio–giugno 2026
+- Piano: Strategia C (Map Core refactor), decisioni maggio–luglio 2026
 - Ispirazione rendering: [Dungeon Scrawl](https://app.dungeonscrawl.com/)
-- Package correlato: `bnd-features-bugfixes-2026-06-28` (solo delta union-walls se map-core già parzialmente importato — preferire questo package completo)
+- Package correlato: `bnd-features-bugfixes-2026-07-06` (delta mappe se package completo già importato)
 
 ---
 
-**Generato/aggiornato:** 2026-06-28 — Export Agent Barber & Dragons
+**Generato/aggiornato:** 2026-07-06 — Export Agent Barber & Dragons
