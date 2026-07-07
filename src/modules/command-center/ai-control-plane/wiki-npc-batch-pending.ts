@@ -73,9 +73,8 @@ function hasWikiImage(pending: ChatPendingProposalPayload): boolean {
 export function applyWikiImageOfferPhaseForBatchItem(
   pending: ChatPendingProposalPayload
 ): ChatPendingProposalPayload {
-  if (!supportsWikiContextualImage("npc")) return { ...pending, phase: pending.phase ?? "text" };
-  if (hasWikiImage(pending)) return { ...pending, phase: "text" };
-  return { ...pending, phase: "awaiting_image" };
+  // Mantieni fase "text": il Master può affinare il testo prima di decidere sull'immagine.
+  return { ...pending, phase: pending.phase ?? "text" };
 }
 
 export function wikiBatchImageOfferReply(pending: ChatPendingProposalPayload): string {
@@ -83,7 +82,7 @@ export function wikiBatchImageOfferReply(pending: ChatPendingProposalPayload): s
   const title =
     typeof pending.input.title === "string" ? pending.input.title : batch?.items[batch.activeIndex]?.entityTitle;
   const progress = batch ? ` (${batch.activeIndex + 1}/${batch.items.length})` : "";
-  return `Testo pronto per **${title || "l'NPC"}**${progress}.\n\nVuoi generare un'immagine per questo PNG? Ogni personaggio ha la propria immagine.\n\nScrivi **sì** o **no**.`;
+  return `Testo pronto per **${title || "l'NPC"}**${progress}.\n\nPuoi **descrivere modifiche** al testo in chat o selezionare un passaggio nell'anteprima. Quando va bene, scrivi **immagine** per generare il ritratto, **conferma** per salvare questo PNG, o **salta** per passare al successivo senza salvare.`;
 }
 
 export function markBatchItemStatus(
@@ -151,7 +150,7 @@ export function formatBatchSaveReply(
     nextPending.wikiBatchMeta.activeIndex
   );
   const imageHint =
-    nextPending.phase === "awaiting_image"
+    supportsWikiContextualImage("npc") && !hasWikiImage(nextPending)
       ? `\n\n${wikiBatchImageOfferReply(nextPending)}`
       : "\n\nPuoi affinare il testo in chat, poi **conferma** per salvare.";
 

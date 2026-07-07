@@ -18,9 +18,11 @@ import {
 import {
   activateBatchItem,
   applyWikiImageOfferPhaseForBatchItem,
+  wikiBatchImageOfferReply,
 } from "./wiki-npc-batch-pending";
 import {
   enrichWikiEntityProposal,
+  supportsWikiContextualImage,
   type WikiEntityRelationInput,
 } from "./wiki-proposal-builder";
 import { resolveWikiVisibilityForAssistant } from "./wiki-request-detector";
@@ -244,9 +246,7 @@ export async function enrichNpcBatchProposals(
   const assistantSummary = [
     `Ho generato **${batch.roles.length} NPC**${contextLine}: ${batch.roles.map((r) => `**${r}**`).join(", ")}.`,
     formatNpcBatchIntro(batch.roles, location.locationName, 0),
-    pending.phase === "awaiting_image"
-      ? "Vuoi generare l'immagine per il primo PNG? Scrivi **sì** o **no**."
-      : null,
+    supportsWikiContextualImage("npc") ? wikiBatchImageOfferReply(pending) : null,
   ]
     .filter(Boolean)
     .join("\n\n");

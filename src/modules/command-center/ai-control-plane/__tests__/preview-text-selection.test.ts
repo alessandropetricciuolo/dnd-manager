@@ -35,7 +35,7 @@ test("resolveRefineUserMessage passes through without selection", () => {
 test("shouldTreatAsSelectionRefine respects intent and phase", () => {
   assert.equal(shouldTreatAsSelectionRefine("new", selection, "text"), true);
   assert.equal(shouldTreatAsSelectionRefine("confirm", selection, "text"), false);
-  assert.equal(shouldTreatAsSelectionRefine("new", selection, "awaiting_image"), false);
+  assert.equal(shouldTreatAsSelectionRefine("new", selection, "awaiting_image"), true);
 });
 
 test("truncateSelectionPreview shortens long excerpts", () => {

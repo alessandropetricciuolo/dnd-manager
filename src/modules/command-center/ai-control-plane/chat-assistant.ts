@@ -8,7 +8,7 @@ import { isAiDraftAllowedAction } from "../actions/action-catalog";
 import { executeAction, resolveActionContext } from "../actions/registry";
 import { assertCanProposeDrafts } from "./autonomy";
 import { resolveCommandContext } from "./context-resolver";
-import { detectConversationIntent } from "./conversation-intent";
+import { detectConversationIntent, isWikiImageRequestMessage } from "./conversation-intent";
 import type { ChatPendingProposalPayload } from "./draft-assistant.types";
 import { interpretUserMessage } from "./interpreter";
 import { previewInterpreterProposals, type PreviewedProposal } from "./preview-proposals";
@@ -88,7 +88,7 @@ function chatHintForProposal(phase?: ChatPendingProposal["phase"]): string {
     return "Indica **razza**, **classe** e **livello** per lo statblock NPC (es. halfling ladro livello 5). Per i batch vale per tutti gli NPC.";
   }
   if (phase === "awaiting_image") {
-    return "Scrivi **sì** per generare l'immagine nell'anteprima, **no** per continuare senza, poi **conferma** per salvare questo PNG. **Salta** per passare al successivo.";
+    return "Scrivi **sì** per generare l'immagine, **no** per continuare senza. Puoi anche descrivere modifiche al testo, poi **conferma** per salvare.";
   }
   if (phase === "awaiting_avatar") {
     return "Scrivi **sì** per generare un ritratto, **no** per creare il PG senza avatar, oppure carica un'immagine nel pannello a destra.";
@@ -367,13 +367,11 @@ function shouldOfferWikiContextualImage(pending: ChatPendingProposal): boolean {
 }
 
 function applyWikiImageOfferPhase(pending: ChatPendingProposal): ChatPendingProposal {
-  if (!shouldOfferWikiContextualImage(pending)) return { ...pending, phase: pending.phase ?? "text" };
-  if (hasWikiContextualImage(pending)) return { ...pending, phase: "text" };
-  return { ...pending, phase: "awaiting_image" };
+  return { ...pending, phase: pending.phase ?? "text" };
 }
 
 function wikiImageOfferReply(title: string): string {
-  return `Testo pronto per **${title || "la voce wiki"}**.\n\nVuoi che generi anche un'immagine contestuale? Comparirà sotto il testo nell'anteprima a destra prima del salvataggio.\n\nScrivi **sì** o **no**.`;
+  return `Testo pronto per **${title || "la voce wiki"}**.\n\nPuoi **descrivere modifiche** al testo in chat o selezionare un passaggio nell'anteprima. Scrivi **immagine** per generare un'illustrazione contestuale, oppure **conferma** per salvare.`;
 }
 
 function finalizeWikiProposalAfterText(
@@ -395,7 +393,7 @@ function finalizeWikiProposalAfterText(
     ? applyWikiImageOfferPhaseForBatchItem(base)
     : applyWikiImageOfferPhase(base);
   const replyExtra =
-    nextPending.phase === "awaiting_image"
+    shouldOfferWikiContextualImage(nextPending) && !hasWikiContextualImage(nextPending)
       ? isNpcBatchPending(nextPending)
         ? wikiBatchImageOfferReply(nextPending)
         : wikiImageOfferReply(pickWikiTitle(nextPending.input))
@@ -511,15 +509,13 @@ export async function runAiChatAssistant(
     };
   }
 
-  if (pending?.phase === "awaiting_image" && intent === "refine") {
-    const isCampaign = pending.action_name === "campaign.create";
+  if (pending?.phase === "awaiting_image" && intent === "refine" && pending.action_name === "campaign.create") {
     return {
       success: true,
       data: {
-        reply: isCampaign
-          ? "Per procedere scrivi **sì** per generare la copertina nell'anteprima, **no** per continuare senza, oppure **annulla**."
-          : "Per procedere scrivi **sì** per generare l'immagine nell'anteprima, **no** per continuare senza immagine, oppure **annulla**.",
-        intentSummary: isCampaign ? "In attesa decisione copertina" : "In attesa decisione immagine",
+        reply:
+          "Per procedere scrivi **sì** per generare la copertina nell'anteprima, **no** per continuare senza, oppure **annulla**.",
+        intentSummary: "In attesa decisione copertina",
         pendingProposal: pending,
         executed: false,
         clearedPending: false,
@@ -638,7 +634,14 @@ export async function runAiChatAssistant(
     };
   }
 
-  if (intent === "image_yes" && pending?.phase === "awaiting_image" && pending.action_name === "wiki.entity.create") {
+  const wantsWikiImage =
+    pending?.action_name === "wiki.entity.create" &&
+    shouldOfferWikiContextualImage(pending) &&
+    !hasWikiContextualImage(pending) &&
+    (intent === "image_yes" ||
+      (pending.phase === "text" && isWikiImageRequestMessage(message)));
+
+  if (wantsWikiImage && (pending?.phase === "awaiting_image" || pending?.phase === "text")) {
     if (!campaignId) {
       return { success: false, error: "Seleziona una campagna per generare l'immagine." };
     }
@@ -1410,7 +1413,7 @@ export async function runAiChatAssistant(
     };
   }
 
-  if (intent === "refine" && pending?.wikiMeta && pending.phase !== "awaiting_image" && pending.phase !== "awaiting_architect" && pending.phase !== "awaiting_avatar" && pending.phase !== "awaiting_sheet" && pending.phase !== "awaiting_campaign_type" && pending.phase !== "awaiting_npc_mechanics") {
+  if (intent === "refine" && pending?.wikiMeta && pending.phase !== "awaiting_architect" && pending.phase !== "awaiting_avatar" && pending.phase !== "awaiting_sheet" && pending.phase !== "awaiting_campaign_type" && pending.phase !== "awaiting_npc_mechanics") {
     if (!campaignId) {
       return {
         success: false,

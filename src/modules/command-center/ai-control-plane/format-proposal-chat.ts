@@ -68,7 +68,7 @@ function formatPreviewBody(
 
 function footerForPhase(phase?: ChatPendingPhase): string {
   if (phase === "awaiting_image") {
-    return "Scrivi sì per generare l'immagine nell'anteprima, no per continuare senza, poi conferma per salvare.";
+    return "Scrivi sì per generare l'immagine, no per continuare senza, oppure descrivi modifiche al testo; poi conferma per salvare.";
   }
   return "Scrivi conferma per approvare il testo, annulla per scartare, oppure descrivi le modifiche.";
 }

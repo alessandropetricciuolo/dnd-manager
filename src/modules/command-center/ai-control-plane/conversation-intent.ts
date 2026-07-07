@@ -25,6 +25,12 @@ const IMAGE_YES_RE =
 const IMAGE_NO_RE =
   /^(no|senza|salta|solo testo|non serve|niente immagine|senza immagine)\b/i;
 
+export function isWikiImageRequestMessage(message: string): boolean {
+  const trimmed = message.trim();
+  if (!trimmed) return false;
+  return /^(genera\s+(un['']?\s*)?(immagine|ritratto)|immagine|ritratto)\b/i.test(trimmed);
+}
+
 export function detectConversationIntent(
   message: string,
   hasPending: boolean,

@@ -1,7 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { detectConversationIntent } from "../conversation-intent";
+import { detectConversationIntent, isWikiImageRequestMessage } from "../conversation-intent";
+
+test("isWikiImageRequestMessage detects portrait commands", () => {
+  assert.equal(isWikiImageRequestMessage("immagine"), true);
+  assert.equal(isWikiImageRequestMessage("genera immagine"), true);
+  assert.equal(isWikiImageRequestMessage("ritratto"), true);
+  assert.equal(isWikiImageRequestMessage("rendilo più burbero"), false);
+});
 
 test("detectConversationIntent without pending is always new", () => {
   assert.equal(detectConversationIntent("conferma", false), "new");

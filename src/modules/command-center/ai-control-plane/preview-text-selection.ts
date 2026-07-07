@@ -60,7 +60,6 @@ const SELECTION_BLOCKED_INTENTS = new Set(["confirm", "reject", "image_yes", "im
 const SELECTION_BLOCKED_PHASES = new Set([
   "awaiting_campaign_type",
   "awaiting_npc_mechanics",
-  "awaiting_image",
   "awaiting_avatar",
   "awaiting_sheet",
   "awaiting_architect",
