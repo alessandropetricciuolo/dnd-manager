@@ -1,12 +1,12 @@
 {
-  "updatedAt": "2026-07-07T04:56:29.403Z",
+  "updatedAt": "2026-07-07T05:21:47.614Z",
   "sourceProject": "Barber & Dragons",
   "targetProject": "gmflow.app",
   "sourceRepoPath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App",
   "targetRepoPath": "/Users/alessandropetricciuolo/Desktop/masto-platform",
   "branch": "main",
-  "lastCommit": "18f4840fa2f0ea74e56bb5433bb4526053b98707",
-  "commitRange": "6bc2dcf..18f4840",
+  "lastCommit": "a6f8c45af5ec2815853a790276ee7cdee3f2c5a3",
+  "commitRange": "c12520a..a6f8c45",
   "items": [
     {
       "id": "BD-GMFLOW-PKG-2026-07-06-001",
@@ -21633,6 +21633,246 @@
       "statusCode": "M",
       "createdAt": "2026-07-07T04:56:29.403Z",
       "updatedAt": "2026-07-07T04:56:29.403Z"
+    },
+    {
+      "id": "BD-GMFLOW-a6f8c45-001",
+      "title": "WIKI: create-entity-dialog.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "WIKI",
+      "priority": "Media",
+      "description": "File `src/components/wiki/create-entity-dialog.tsx` modificato nel commit «feat(wiki): civilian NPC classes drive tame statblocks and coherent portraits». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.",
+      "bdFiles": [
+        "src/components/wiki/create-entity-dialog.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/wiki/create-entity-dialog.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "a6f8c45af5ec2815853a790276ee7cdee3f2c5a3",
+      "commitShort": "a6f8c45",
+      "commitSubject": "feat(wiki): civilian NPC classes drive tame statblocks and coherent portraits",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T05:21:47.614Z",
+      "updatedAt": "2026-07-07T05:21:47.614Z"
+    },
+    {
+      "id": "BD-GMFLOW-a6f8c45-002",
+      "title": "WIKI: edit-entity-dialog.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "WIKI",
+      "priority": "Media",
+      "description": "File `src/components/wiki/edit-entity-dialog.tsx` modificato nel commit «feat(wiki): civilian NPC classes drive tame statblocks and coherent portraits». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.",
+      "bdFiles": [
+        "src/components/wiki/edit-entity-dialog.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/wiki/edit-entity-dialog.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "a6f8c45af5ec2815853a790276ee7cdee3f2c5a3",
+      "commitShort": "a6f8c45",
+      "commitSubject": "feat(wiki): civilian NPC classes drive tame statblocks and coherent portraits",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T05:21:47.614Z",
+      "updatedAt": "2026-07-07T05:21:47.614Z"
+    },
+    {
+      "id": "BD-GMFLOW-a6f8c45-003",
+      "title": "AI: wiki-npc-params.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/lib/ai/wiki-npc-params.ts` modificato nel commit «feat(wiki): civilian NPC classes drive tame statblocks and coherent portraits». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/lib/ai/wiki-npc-params.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/ai/wiki-npc-params.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "a6f8c45af5ec2815853a790276ee7cdee3f2c5a3",
+      "commitShort": "a6f8c45",
+      "commitSubject": "feat(wiki): civilian NPC classes drive tame statblocks and coherent portraits",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T05:21:47.614Z",
+      "updatedAt": "2026-07-07T05:21:47.614Z"
+    },
+    {
+      "id": "BD-GMFLOW-a6f8c45-004",
+      "title": "AI: wiki-text-generator.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/lib/ai/wiki-text-generator.ts` modificato nel commit «feat(wiki): civilian NPC classes drive tame statblocks and coherent portraits». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/lib/ai/wiki-text-generator.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/ai/wiki-text-generator.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "a6f8c45af5ec2815853a790276ee7cdee3f2c5a3",
+      "commitShort": "a6f8c45",
+      "commitSubject": "feat(wiki): civilian NPC classes drive tame statblocks and coherent portraits",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T05:21:47.614Z",
+      "updatedAt": "2026-07-07T05:21:47.614Z"
+    },
+    {
+      "id": "BD-GMFLOW-a6f8c45-005",
+      "title": "AI: wiki-npc-ai-options.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/lib/wiki-npc-ai-options.ts` modificato nel commit «feat(wiki): civilian NPC classes drive tame statblocks and coherent portraits». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/lib/wiki-npc-ai-options.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/wiki-npc-ai-options.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "a6f8c45af5ec2815853a790276ee7cdee3f2c5a3",
+      "commitShort": "a6f8c45",
+      "commitSubject": "feat(wiki): civilian NPC classes drive tame statblocks and coherent portraits",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T05:21:47.614Z",
+      "updatedAt": "2026-07-07T05:21:47.614Z"
+    },
+    {
+      "id": "BD-GMFLOW-a6f8c45-006",
+      "title": "AI: wiki-npc-params.test.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/__tests__/wiki-npc-params.test.ts` modificato nel commit «feat(wiki): civilian NPC classes drive tame statblocks and coherent portraits». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/wiki-npc-params.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/wiki-npc-params.test.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "a6f8c45af5ec2815853a790276ee7cdee3f2c5a3",
+      "commitShort": "a6f8c45",
+      "commitSubject": "feat(wiki): civilian NPC classes drive tame statblocks and coherent portraits",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T05:21:47.614Z",
+      "updatedAt": "2026-07-07T05:21:47.614Z"
     }
   ]
 }
