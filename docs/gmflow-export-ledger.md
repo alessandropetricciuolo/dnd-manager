@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-* Data aggiornamento: 2026-07-07T04:55:44.581Z
+* Data aggiornamento: 2026-07-07T04:55:52.812Z
 * Branch corrente: main
-* Ultimo commit analizzato: 7ed15beca2237160cde9d84cb20dcec7304437c7
-* Range commit analizzato: 648cf37..7ed15be
-* Stato generale: 156 voci NEEDS_REVIEW
-* Voci totali: 551 (NEEDS_REVIEW: 156, TO_IMPORT: 319, IMPORTED: 0)
+* Ultimo commit analizzato: 28fe02cd7195efcdda5e42962c50ac41ed94a86a
+* Range commit analizzato: 7ed15be..28fe02c
+* Stato generale: 157 voci NEEDS_REVIEW
+* Voci totali: 552 (NEEDS_REVIEW: 157, TO_IMPORT: 319, IMPORTED: 0)
 
 ## Delta automatico non revisionato
 
@@ -7388,6 +7388,51 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 * OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-28fe02c-001] OTHER: update-gmflow-export-ledger.mjs (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `scripts/gmflow-export/update-gmflow-export-ledger.mjs` modificato nel commit «chore(gmflow): add July export packages and ledger-only sync script». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* scripts/gmflow-export/update-gmflow-export-ledger.mjs
+
+File gmflow probabili:
+
+* src/scripts/gmflow-export/update-gmflow-export-ledger.mjs
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
 ## Modifiche revisionate manualmente
 
@@ -27029,9 +27074,9 @@ Questo ledger traccia modifiche Barber & Dragons da valutare per import in gmflo
 
 - Repository sorgente: `/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App`
 - Repository gmflow locale: `/Users/alessandropetricciuolo/Desktop/masto-platform`
-- Ultimo commit: `7ed15be` — feat(wiki): add NPC class select with PHB and enemy class options
-- File analizzati nell'ultimo run: 3
-- Nuove voci aggiunte: 3
+- Ultimo commit: `28fe02c` — chore(gmflow): add July export packages and ledger-only sync script
+- File analizzati nell'ultimo run: 1
+- Nuove voci aggiunte: 1
 
 **Azioni consigliate:**
 1. Rivedere voci `NEEDS_REVIEW` nella sezione «Delta automatico».

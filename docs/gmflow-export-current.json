@@ -1,12 +1,12 @@
 {
-  "updatedAt": "2026-07-07T04:55:44.581Z",
+  "updatedAt": "2026-07-07T04:55:52.812Z",
   "sourceProject": "Barber & Dragons",
   "targetProject": "gmflow.app",
   "sourceRepoPath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App",
   "targetRepoPath": "/Users/alessandropetricciuolo/Desktop/masto-platform",
   "branch": "main",
-  "lastCommit": "7ed15beca2237160cde9d84cb20dcec7304437c7",
-  "commitRange": "648cf37..7ed15be",
+  "lastCommit": "28fe02cd7195efcdda5e42962c50ac41ed94a86a",
+  "commitRange": "7ed15be..28fe02c",
   "items": [
     {
       "id": "BD-GMFLOW-PKG-2026-07-06-001",
@@ -21563,6 +21563,41 @@
       "statusCode": "M",
       "createdAt": "2026-07-07T04:55:44.581Z",
       "updatedAt": "2026-07-07T04:55:44.581Z"
+    },
+    {
+      "id": "BD-GMFLOW-28fe02c-001",
+      "title": "OTHER: update-gmflow-export-ledger.mjs (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `scripts/gmflow-export/update-gmflow-export-ledger.mjs` modificato nel commit «chore(gmflow): add July export packages and ledger-only sync script». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "scripts/gmflow-export/update-gmflow-export-ledger.mjs"
+      ],
+      "gmflowLikelyFiles": [
+        "src/scripts/gmflow-export/update-gmflow-export-ledger.mjs"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "28fe02cd7195efcdda5e42962c50ac41ed94a86a",
+      "commitShort": "28fe02c",
+      "commitSubject": "chore(gmflow): add July export packages and ledger-only sync script",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T04:55:52.812Z",
+      "updatedAt": "2026-07-07T04:55:52.812Z"
     }
   ]
 }
