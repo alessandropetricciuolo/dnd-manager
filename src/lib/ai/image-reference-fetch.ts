@@ -1,3 +1,5 @@
+import { isSafeTelegramProxyPath, parseSafeExternalUrl } from "@/lib/security/url";
+
 const TELEGRAM_API = "https://api.telegram.org/bot";
 const TELEGRAM_FILE_BASE = "https://api.telegram.org/file/bot";
 
@@ -45,6 +47,31 @@ async function fetchTelegramFileAsBuffer(fileId: string): Promise<{ buffer: Buff
   return { buffer: Buffer.from(await fileRes.arrayBuffer()), mimeType };
 }
 
+function resolveSafeFetchUrl(publicUrl: string): string {
+  const trimmed = publicUrl.trim();
+  if (!trimmed) {
+    throw new Error("URL immagine non valido.");
+  }
+
+  if (extractTelegramFileId(trimmed) || isSafeTelegramProxyPath(trimmed)) {
+    return resolveAbsolutePublicUrl(trimmed);
+  }
+
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    const safe = parseSafeExternalUrl(trimmed, { allowedProtocols: ["https:", "http:"] });
+    if (!safe) {
+      throw new Error("URL immagine non consentito.");
+    }
+    return safe;
+  }
+
+  if (!trimmed.startsWith("/")) {
+    throw new Error("URL immagine non valido.");
+  }
+
+  return resolveAbsolutePublicUrl(trimmed);
+}
+
 /** Scarica un'immagine pubblicata via `/api/tg-image/…` o URL assoluto e la converte in data URL. */
 export async function fetchPublicImageAsDataUrl(publicUrl: string): Promise<string> {
   const fileId = extractTelegramFileId(publicUrl);
@@ -53,7 +80,7 @@ export async function fetchPublicImageAsDataUrl(publicUrl: string): Promise<stri
     return `data:${mimeType};base64,${buffer.toString("base64")}`;
   }
 
-  const absolute = resolveAbsolutePublicUrl(publicUrl);
+  const absolute = resolveSafeFetchUrl(publicUrl);
   const res = await fetch(absolute);
   if (!res.ok) {
     throw new Error(`Download immagine di riferimento fallito (HTTP ${res.status}).`);
