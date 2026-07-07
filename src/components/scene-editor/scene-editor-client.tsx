@@ -32,6 +32,11 @@ import { exportFloorRasterBlob } from "@/lib/map-core/raster-export/floor-raster
 import { sceneEditorNewId } from "@/lib/map-core/scene-editor/ids";
 import { distancePointToSegment, snapPoint } from "@/lib/map-core/scene-editor/snap";
 import { finalizeCorridorPolygon } from "@/lib/map-core/scene-editor/corridor-geometry";
+import { DOOR_WALL_ID_PREFIX, generateWallsFromAreas, isPersistentDoorWall } from "@/lib/map-core/scene-editor/auto-walls";
+import {
+  generateRandomDungeon,
+  recommendedDungeonGrid,
+} from "@/lib/map-core/scene-editor/random-dungeon";
 import { pointInPolygon } from "@/lib/map-core/coordinates";
 import {
   createDefaultLayer,
@@ -55,6 +60,10 @@ import {
   type SceneEditorTool,
 } from "@/components/scene-editor/scene-editor-canvas";
 import { SceneEditorToolOverlay } from "@/components/scene-editor/scene-editor-tool-overlay";
+import {
+  RandomDungeonDialog,
+  type RandomDungeonSettings,
+} from "@/components/scene-editor/random-dungeon-dialog";
 
 type MissionOption = { id: string; title: string };
 
@@ -135,6 +144,7 @@ export function SceneEditorClient({
     null
   );
   const [pending, startTransition] = useTransition();
+  const [lastDungeonSeedUsed, setLastDungeonSeedUsed] = useState<string | null>(null);
 
   const activeFloor = useMemo(
     () => document.floors.find((f) => f.id === activeFloorId) ?? document.floors[0],
@@ -208,6 +218,91 @@ export function SceneEditorClient({
       });
     },
     [updateFloor]
+  );
+
+  const handleGenerateDungeon = useCallback(
+    (settings: RandomDungeonSettings) => {
+      if (!activeFloor || !activeLayer) return;
+      const cellPx = activeFloor.grid.cellPx;
+      const recommended = recommendedDungeonGrid(settings.roomCount, settings.roomSize);
+      const cols = Math.max(Math.floor(activeFloor.width / cellPx), recommended.cols);
+      const rows = Math.max(Math.floor(activeFloor.height / cellPx), recommended.rows);
+
+      const existingAreas = settings.appendToLayer ? activeLayer.areas : [];
+      const existingDoorWalls = settings.appendToLayer
+        ? activeLayer.walls.filter((w) => isPersistentDoorWall(w))
+        : [];
+      const roomLabelStart =
+        existingAreas.filter((a) => a.kind === "room").length + 1;
+
+      const result = generateRandomDungeon({
+        roomCount: settings.roomCount,
+        cols,
+        rows,
+        cellPx,
+        offsetX: activeFloor.grid.offsetX,
+        offsetY: activeFloor.grid.offsetY,
+        withDoors: settings.withDoors,
+        withProps: settings.withProps,
+        roomSize: settings.roomSize,
+        propTheme: settings.propTheme,
+        seed: settings.seed || undefined,
+        roomLabelStart,
+      });
+      if (result.roomsPlaced < 2) {
+        toast.error("Generazione fallita: spazio insufficiente sul piano. Riprova.");
+        return;
+      }
+
+      const mergedAreas = settings.appendToLayer
+        ? [...existingAreas, ...result.areas]
+        : result.areas;
+      const mergedDoorWalls = settings.appendToLayer
+        ? [...existingDoorWalls, ...result.doorWalls]
+        : result.doorWalls;
+
+      updateFloor(activeFloor.id, (f) => {
+        const normalized = normalizeSceneFloor(f);
+        const width = Math.max(normalized.width, normalized.grid.offsetX + cols * cellPx);
+        const height = Math.max(normalized.height, normalized.grid.offsetY + rows * cellPx);
+        const layers = normalized.layers.map((layer) =>
+          layer.id === normalized.activeLayerId
+            ? {
+                ...layer,
+                areas: mergedAreas,
+                walls: generateWallsFromAreas(mergedAreas, mergedDoorWalls),
+              }
+            : layer
+        );
+        const baseProps = settings.appendToLayer
+          ? normalized.props
+          : normalized.props.filter((p) => !p.id.startsWith("rnd-prop-"));
+        return {
+          ...normalized,
+          width,
+          height,
+          layers,
+          areas: layers.filter((l) => l.visible).flatMap((l) => l.areas),
+          walls: layers.filter((l) => l.visible).flatMap((l) => l.walls),
+          props: [...baseProps, ...result.props],
+        };
+      });
+      setSelectedAreaId(null);
+      setSelectedWallId(null);
+      setSelectedPropId(null);
+      if (result.seedUsed != null) {
+        setLastDungeonSeedUsed(String(result.seedUsed));
+      }
+      const modeLabel = settings.appendToLayer ? "aggiunto al layer" : "generato";
+      const seedHint =
+        result.seedUsed != null ? ` Seed: ${result.seedUsed}.` : "";
+      toast.success(
+        result.roomsPlaced === settings.roomCount
+          ? `Dungeon ${modeLabel}: ${result.roomsPlaced} stanze collegate.${seedHint}`
+          : `Dungeon ${modeLabel} con ${result.roomsPlaced} stanze (spazio insufficiente per ${settings.roomCount}).${seedHint}`
+      );
+    },
+    [activeFloor, activeLayer, updateFloor]
   );
 
   const handleSave = useCallback(() => {
@@ -363,9 +458,11 @@ export function SceneEditorClient({
         updateFloor(activeFloor.id, (f) =>
           updateActiveLayer(f, (layer) => ({
             ...layer,
-            walls: layer.walls.map((w) =>
-              w.id === wallId ? { ...w, door: undefined } : w
-            ),
+            // I muri-porta dedicati (dungeon casuale) si eliminano del tutto,
+            // altrimenti resterebbe un muro pieno attraverso il corridoio.
+            walls: wallId.startsWith(DOOR_WALL_ID_PREFIX)
+              ? layer.walls.filter((w) => w.id !== wallId)
+              : layer.walls.map((w) => (w.id === wallId ? { ...w, door: undefined } : w)),
           }))
         );
         setSelectedWallId(null);
@@ -507,6 +604,8 @@ export function SceneEditorClient({
     <div className="flex flex-col gap-4">
       <div className="rounded-md border border-sky-500/30 bg-sky-950/30 px-3 py-2 text-xs text-sky-100/90">
         Stile <strong>Dungeon Scrawl</strong>: stanze e corridoi generano i muri automaticamente.{" "}
+        Usa <strong>Dungeon casuale</strong> per generare stanze, corridoi, porte e prop sul layer attivo
+        (sostituendo o aggiungendo al contenuto).{" "}
         <strong>Rotella del mouse</strong> = zoom; <strong>click rotella</strong> = pan. La scena
         compare in Esplorazione e FoW solo dopo <strong>Salva scena</strong>.
       </div>
@@ -549,6 +648,10 @@ export function SceneEditorClient({
             </Select>
           </div>
         ) : null}
+        <RandomDungeonDialog
+          onGenerate={handleGenerateDungeon}
+          lastSeedUsed={lastDungeonSeedUsed}
+        />
         <Button
           type="button"
           className="bg-barber-gold text-barber-dark hover:bg-barber-gold/90"
