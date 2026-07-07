@@ -34,7 +34,7 @@ import { generateContextualPortraitAction } from "@/lib/actions/ai-generator";
 import { WikiTextGenChat } from "@/components/wiki/wiki-text-gen-chat";
 import { WikiImageRefineChat } from "@/components/wiki/wiki-image-refine-chat";
 import type { WikiMarkdownChatDraft } from "@/lib/actions/wiki-text-chat";
-import { WIKI_NPC_LEVEL_OPTIONS } from "@/lib/wiki-npc-ai-options";
+import { WIKI_NPC_CLASS_OPTIONS, WIKI_NPC_LEVEL_OPTIONS } from "@/lib/wiki-npc-ai-options";
 
 type EntityType = WikiEntityType;
 
@@ -777,14 +777,23 @@ export function EditEntityDialog({
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="attr-class-npc-edit">Classe</Label>
-                  <Input
+                  <select
                     id="attr-class-npc-edit"
                     value={getAttr("class")}
                     onChange={(e) => setAttr("class", e.target.value)}
-                    placeholder="Es. Mago, Guerriero, Ladro..."
-                    className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
+                    className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
                     disabled={isLoading}
-                  />
+                  >
+                    <option value="">— Nessuna classe —</option>
+                    {getAttr("class") && !WIKI_NPC_CLASS_OPTIONS.includes(getAttr("class")) && (
+                      <option value={getAttr("class")}>{getAttr("class")}</option>
+                    )}
+                    {WIKI_NPC_CLASS_OPTIONS.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="attr-age-npc-edit">Età</Label>

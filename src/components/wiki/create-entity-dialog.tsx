@@ -1010,14 +1010,23 @@ export function CreateEntityDialog({
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="attr-class-npc">Classe</Label>
-                        <Input
+                        <select
                           id="attr-class-npc"
                           value={getAttr("class")}
                           onChange={(e) => setAttr("class", e.target.value)}
-                          placeholder="Es. Mago, Guerriero, Ladro..."
-                          className="bg-barber-dark border-barber-gold/30 text-barber-paper"
+                          className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
                           disabled={isLoading}
-                        />
+                        >
+                          <option value="">— Nessuna classe —</option>
+                          {getAttr("class") && !WIKI_NPC_CLASS_OPTIONS.includes(getAttr("class")) && (
+                            <option value={getAttr("class")}>{getAttr("class")}</option>
+                          )}
+                          {WIKI_NPC_CLASS_OPTIONS.map((c) => (
+                            <option key={c} value={c}>
+                              {c}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="attr-age-npc">Età</Label>
