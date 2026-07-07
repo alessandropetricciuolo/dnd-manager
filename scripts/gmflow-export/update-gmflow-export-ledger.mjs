@@ -479,7 +479,23 @@ function main() {
     changedFiles.push(parsed);
   }
 
+  const commitOnlyGmflowExport =
+    diffLines.length > 0 &&
+    diffLines.every((line) => {
+      const parsed = parseNameStatusLine(line);
+      if (!parsed?.filePath) return true;
+      return (
+        parsed.filePath.startsWith("docs/gmflow-export-") ||
+        parsed.filePath === ".gmflow-sync.local.json" ||
+        parsed.filePath.startsWith("scripts/gmflow-export/")
+      );
+    });
+
   if (changedFiles.length === 0) {
+    if (commitOnlyGmflowExport) {
+      console.log("Commit solo ledger/gmflow export — ledger invariato.");
+      return;
+    }
     const existingItems = loadExistingItems();
     if (existingItems.length === 0) {
       console.log("Nessun file applicativo nel commit — ledger invariato.");

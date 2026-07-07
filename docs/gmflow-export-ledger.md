@@ -2,10 +2,10 @@
 
 ## Snapshot
 
-* Data aggiornamento: 2026-07-07T04:55:52.812Z
+* Data aggiornamento: 2026-07-07T04:55:58.224Z
 * Branch corrente: main
-* Ultimo commit analizzato: 28fe02cd7195efcdda5e42962c50ac41ed94a86a
-* Range commit analizzato: 7ed15be..28fe02c
+* Ultimo commit analizzato: 6bc2dcfde88cc76da0b10ae8581912f15444fdac
+* Range commit analizzato: 28fe02c..6bc2dcf
 * Stato generale: 157 voci NEEDS_REVIEW
 * Voci totali: 552 (NEEDS_REVIEW: 157, TO_IMPORT: 319, IMPORTED: 0)
 
@@ -27074,9 +27074,9 @@ Questo ledger traccia modifiche Barber & Dragons da valutare per import in gmflo
 
 - Repository sorgente: `/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App`
 - Repository gmflow locale: `/Users/alessandropetricciuolo/Desktop/masto-platform`
-- Ultimo commit: `28fe02c` — chore(gmflow): add July export packages and ledger-only sync script
-- File analizzati nell'ultimo run: 1
-- Nuove voci aggiunte: 1
+- Ultimo commit: `6bc2dcf` — chore(gmflow): sync export ledger after July packages commit
+- File analizzati nell'ultimo run: 0
+- Nuove voci aggiunte: 0
 
 **Azioni consigliate:**
 1. Rivedere voci `NEEDS_REVIEW` nella sezione «Delta automatico».
