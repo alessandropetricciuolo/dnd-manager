@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-* Data aggiornamento: 2026-07-07T04:55:58.224Z
+* Data aggiornamento: 2026-07-07T04:56:29.403Z
 * Branch corrente: main
-* Ultimo commit analizzato: 6bc2dcfde88cc76da0b10ae8581912f15444fdac
-* Range commit analizzato: 28fe02c..6bc2dcf
-* Stato generale: 157 voci NEEDS_REVIEW
-* Voci totali: 552 (NEEDS_REVIEW: 157, TO_IMPORT: 319, IMPORTED: 0)
+* Ultimo commit analizzato: 18f4840fa2f0ea74e56bb5433bb4526053b98707
+* Range commit analizzato: 6bc2dcf..18f4840
+* Stato generale: 158 voci NEEDS_REVIEW
+* Voci totali: 553 (NEEDS_REVIEW: 158, TO_IMPORT: 319, IMPORTED: 0)
 
 ## Delta automatico non revisionato
 
@@ -7403,6 +7403,51 @@ Media
 Descrizione:
 
 * File `scripts/gmflow-export/update-gmflow-export-ledger.mjs` modificato nel commit «chore(gmflow): add July export packages and ledger-only sync script». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* scripts/gmflow-export/update-gmflow-export-ledger.mjs
+
+File gmflow probabili:
+
+* src/scripts/gmflow-export/update-gmflow-export-ledger.mjs
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-18f4840-001] OTHER: update-gmflow-export-ledger.mjs (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `scripts/gmflow-export/update-gmflow-export-ledger.mjs` modificato nel commit «fix(gmflow): skip ledger rewrite on export-only commits». Classificazione automatica — richiede revisione umana.
 
 Perché potrebbe servire a gmflow:
 
@@ -27074,9 +27119,9 @@ Questo ledger traccia modifiche Barber & Dragons da valutare per import in gmflo
 
 - Repository sorgente: `/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App`
 - Repository gmflow locale: `/Users/alessandropetricciuolo/Desktop/masto-platform`
-- Ultimo commit: `6bc2dcf` — chore(gmflow): sync export ledger after July packages commit
-- File analizzati nell'ultimo run: 0
-- Nuove voci aggiunte: 0
+- Ultimo commit: `18f4840` — fix(gmflow): skip ledger rewrite on export-only commits
+- File analizzati nell'ultimo run: 1
+- Nuove voci aggiunte: 1
 
 **Azioni consigliate:**
 1. Rivedere voci `NEEDS_REVIEW` nella sezione «Delta automatico».

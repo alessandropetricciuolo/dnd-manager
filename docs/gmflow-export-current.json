@@ -1,12 +1,12 @@
 {
-  "updatedAt": "2026-07-07T04:55:58.224Z",
+  "updatedAt": "2026-07-07T04:56:29.403Z",
   "sourceProject": "Barber & Dragons",
   "targetProject": "gmflow.app",
   "sourceRepoPath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App",
   "targetRepoPath": "/Users/alessandropetricciuolo/Desktop/masto-platform",
   "branch": "main",
-  "lastCommit": "6bc2dcfde88cc76da0b10ae8581912f15444fdac",
-  "commitRange": "28fe02c..6bc2dcf",
+  "lastCommit": "18f4840fa2f0ea74e56bb5433bb4526053b98707",
+  "commitRange": "6bc2dcf..18f4840",
   "items": [
     {
       "id": "BD-GMFLOW-PKG-2026-07-06-001",
@@ -21598,6 +21598,41 @@
       "statusCode": "M",
       "createdAt": "2026-07-07T04:55:52.812Z",
       "updatedAt": "2026-07-07T04:55:52.812Z"
+    },
+    {
+      "id": "BD-GMFLOW-18f4840-001",
+      "title": "OTHER: update-gmflow-export-ledger.mjs (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `scripts/gmflow-export/update-gmflow-export-ledger.mjs` modificato nel commit «fix(gmflow): skip ledger rewrite on export-only commits». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "scripts/gmflow-export/update-gmflow-export-ledger.mjs"
+      ],
+      "gmflowLikelyFiles": [
+        "src/scripts/gmflow-export/update-gmflow-export-ledger.mjs"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "18f4840fa2f0ea74e56bb5433bb4526053b98707",
+      "commitShort": "18f4840",
+      "commitSubject": "fix(gmflow): skip ledger rewrite on export-only commits",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T04:56:29.403Z",
+      "updatedAt": "2026-07-07T04:56:29.403Z"
     }
   ]
 }
