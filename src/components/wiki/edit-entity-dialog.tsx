@@ -34,7 +34,11 @@ import { generateContextualPortraitAction } from "@/lib/actions/ai-generator";
 import { WikiTextGenChat } from "@/components/wiki/wiki-text-gen-chat";
 import { WikiImageRefineChat } from "@/components/wiki/wiki-image-refine-chat";
 import type { WikiMarkdownChatDraft } from "@/lib/actions/wiki-text-chat";
-import { WIKI_NPC_CLASS_OPTIONS, WIKI_NPC_LEVEL_OPTIONS } from "@/lib/wiki-npc-ai-options";
+import {
+  WIKI_NPC_CLASS_GROUPS,
+  WIKI_NPC_CLASS_OPTIONS,
+  WIKI_NPC_LEVEL_OPTIONS,
+} from "@/lib/wiki-npc-ai-options";
 
 type EntityType = WikiEntityType;
 
@@ -788,10 +792,14 @@ export function EditEntityDialog({
                     {getAttr("class") && !WIKI_NPC_CLASS_OPTIONS.includes(getAttr("class")) && (
                       <option value={getAttr("class")}>{getAttr("class")}</option>
                     )}
-                    {WIKI_NPC_CLASS_OPTIONS.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
+                    {WIKI_NPC_CLASS_GROUPS.map((group) => (
+                      <optgroup key={group.label} label={group.label}>
+                        {group.options.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </optgroup>
                     ))}
                   </select>
                 </div>

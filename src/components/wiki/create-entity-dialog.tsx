@@ -65,7 +65,12 @@ import {
 import { getWikiEntitiesForCampaign, getMapsForCampaign } from "@/app/campaigns/entity-graph-actions";
 import { getEmptyAttributes } from "@/types/wiki";
 import { CHALLENGE_RATING_OPTIONS } from "@/lib/dnd-constants";
-import { WIKI_NPC_CLASS_OPTIONS, WIKI_NPC_LEVEL_OPTIONS, WIKI_NPC_RACE_OPTIONS } from "@/lib/wiki-npc-ai-options";
+import {
+  WIKI_NPC_CLASS_GROUPS,
+  WIKI_NPC_CLASS_OPTIONS,
+  WIKI_NPC_LEVEL_OPTIONS,
+  WIKI_NPC_RACE_OPTIONS,
+} from "@/lib/wiki-npc-ai-options";
 import { type WikiEntityType, WIKI_ENTITY_LABELS_IT, WIKI_ENTITY_OPTIONS } from "@/lib/wiki/entity-types";
 
 /** Tipi supportati dal generatore rapido AI (Fase 2). */
@@ -1021,10 +1026,14 @@ export function CreateEntityDialog({
                           {getAttr("class") && !WIKI_NPC_CLASS_OPTIONS.includes(getAttr("class")) && (
                             <option value={getAttr("class")}>{getAttr("class")}</option>
                           )}
-                          {WIKI_NPC_CLASS_OPTIONS.map((c) => (
-                            <option key={c} value={c}>
-                              {c}
-                            </option>
+                          {WIKI_NPC_CLASS_GROUPS.map((group) => (
+                            <optgroup key={group.label} label={group.label}>
+                              {group.options.map((c) => (
+                                <option key={c} value={c}>
+                                  {c}
+                                </option>
+                              ))}
+                            </optgroup>
                           ))}
                         </select>
                       </div>
@@ -1418,10 +1427,14 @@ export function CreateEntityDialog({
                           className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-2 text-sm text-barber-paper"
                         >
                           <option value="">— Come campo «Classe» sopra —</option>
-                          {WIKI_NPC_CLASS_OPTIONS.map((c) => (
-                            <option key={c} value={c}>
-                              {c}
-                            </option>
+                          {WIKI_NPC_CLASS_GROUPS.map((group) => (
+                            <optgroup key={group.label} label={group.label}>
+                              {group.options.map((c) => (
+                                <option key={c} value={c}>
+                                  {c}
+                                </option>
+                              ))}
+                            </optgroup>
                           ))}
                         </select>
                       </div>

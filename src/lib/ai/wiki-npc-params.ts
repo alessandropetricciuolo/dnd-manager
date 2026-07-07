@@ -14,6 +14,13 @@ const RACE_ALIASES: { pattern: RegExp; label: string }[] = [
 ];
 
 const CLASS_ALIASES: { pattern: RegExp; label: string }[] = [
+  // Classi di PNG (Guida del DM cap. 4). Per parole comuni (esperto, combattente)
+  // il match richiede il contesto "classe X" o "X livello N" per evitare falsi positivi.
+  { pattern: /\bpopolan[oa]\b|\bcommoner\b/i, label: "Popolano" },
+  { pattern: /\badept[oa]\b|\badept\b/i, label: "Adepto" },
+  { pattern: /\baristocratic[oa]\b|\baristocrat\b/i, label: "Aristocratico" },
+  { pattern: /\bclasse\s+combattente\b|\bcombattente\s+(?:di\s+)?livello\b|\bwarrior\b/i, label: "Combattente" },
+  { pattern: /\bclasse\s+espert[oa]\b|\bespert[oa]\s+(?:di\s+)?livello\b|\bexpert\b/i, label: "Esperto" },
   { pattern: /\bbarbaro\b|\bbarbarian\b/i, label: "Barbaro" },
   { pattern: /\bguerriero\b|\bfighter\b/i, label: "Guerriero" },
   { pattern: /\bmago\b|\bwizard\b/i, label: "Mago" },
@@ -28,6 +35,57 @@ const CLASS_ALIASES: { pattern: RegExp; label: string }[] = [
   { pattern: /\bwarlock\b|\bstregone\s+di\s+patto\b/i, label: "Warlock" },
   { pattern: /\bartefice\b|\bartificer\b/i, label: "Artefice" },
 ];
+
+/**
+ * Classi di PNG "civili" (Guida del DM cap. 4): non hanno privilegi di classe
+ * sui manuali del giocatore, quindi statblock e ritratto seguono l'occupazione,
+ * non l'archetipo da avventuriero.
+ */
+const CIVILIAN_NPC_CLASS_ALIASES: { pattern: RegExp; label: string }[] = [
+  { pattern: /^popolan[oa]$|^commoner$/i, label: "Popolano" },
+  { pattern: /^adept[oa]$|^adept$/i, label: "Adepto" },
+  { pattern: /^aristocratic[oa]$|^aristocrat$/i, label: "Aristocratico" },
+  { pattern: /^combattente$|^warrior$/i, label: "Combattente" },
+  { pattern: /^espert[oa]$|^expert$/i, label: "Esperto" },
+];
+
+/** Se la classe indicata è una classe di PNG civile, restituisce il nome canonico; altrimenti null. */
+export function normalizeNpcCivilianClass(value: string | null | undefined): string | null {
+  const trimmed = (value ?? "").trim();
+  if (!trimmed) return null;
+  for (const { pattern, label } of CIVILIAN_NPC_CLASS_ALIASES) {
+    if (pattern.test(trimmed)) return label;
+  }
+  return null;
+}
+
+/** Istruzioni statblock/aspetto per le classi di PNG civili (statblock "tranquillo"). */
+export function civilianNpcPromptGuide(civilianClass: string): string {
+  const base = [
+    "Questa è una CLASSE DI PNG (Guida del DM), NON una classe da avventuriero:",
+    "per la [MECCANICA] genera uno statblock SEMPLICE da PNG: CA e PF bassi/modesti,",
+    "caratteristiche vicine a 10 (salvo 1-2 legate al mestiere), poche abilità coerenti",
+    "con l'occupazione, al massimo 1 attacco base. NESSUN privilegio di classe da avventuriero",
+    "(niente ira, attacco furtivo, incantesimi da mago, ecc.).",
+  ].join(" ");
+  const perClass: Record<string, string> = {
+    Popolano:
+      "Archetipo Popolano: cittadino comune (contadino, cameriera, locandiere, bottegaio). CA 10 (nessuna armatura), PF molto bassi (circa 4, +2-3 per livello oltre il 1°), attacco improvvisato (+2, 1d4). Nessuna magia.",
+    Esperto:
+      "Archetipo Esperto: professionista qualificato (artigiano, guida, studioso, mercante esperto). CA 10-12, PF modesti, bonus alti (+4/+6) in 3-4 abilità del mestiere. Nessuna magia, niente armi da guerra.",
+    Aristocratico:
+      "Archetipo Aristocratico: nobile o alto borghese. CA 11 (abiti pregiati), PF modesti, Carisma alto, abilità sociali (Persuasione, Intuizione, Storia). Al massimo un'arma elegante da parata (es. stocco +2).",
+    Adepto:
+      "Archetipo Adepto: praticante minore di magia (guaritore di villaggio, accolito, cartomante). PF modesti, 2-3 trucchetti e pochi incantesimi di basso livello a tema (cure minori, benedizioni o piccoli malefici). Nessun incantesimo di livello superiore a metà del livello del PNG.",
+    Combattente:
+      "Archetipo Combattente: guardia cittadina, soldato semplice, miliziano. CA 12-16 (armatura semplice, eventuale scudo), PF discreti, 1-2 attacchi con armi comuni (lancia, spada corta, balestra leggera). Nessun privilegio da Guerriero (niente Azione Impetuosa o Recupero Energie).",
+  };
+  const appearance =
+    civilianClass === "Combattente"
+      ? "Aspetto: equipaggiamento da servizio (uniforme, armatura semplice), non da eroe leggendario."
+      : "Aspetto e abbigliamento devono riflettere l'occupazione civile e il rango sociale (abiti da lavoro, grembiule, vesti pregiate…): NIENTE armi da guerra, armature o pose da combattimento, salvo esplicita richiesta del Master.";
+  return [base, perClass[civilianClass] ?? "", appearance].filter(Boolean).join("\n");
+}
 
 export function extractNpcBuildParams(text: string): WikiMarkdownExtraParams {
   const params: WikiMarkdownExtraParams = {};

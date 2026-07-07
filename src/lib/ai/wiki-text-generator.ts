@@ -11,9 +11,11 @@ import {
 } from "@/lib/campaign-ai-context";
 import { fetchLongCampaignWikiMemoryPromptBlock } from "@/lib/campaign-wiki-ai-memory";
 import {
+  civilianNpcPromptGuide,
   extractNpcBuildParams,
   hasNpcMechanicsParams,
   mergeWikiExtraParams,
+  normalizeNpcCivilianClass,
 } from "@/lib/ai/wiki-npc-params";
 import {
   generateContextualNameFromCampaign,
@@ -470,9 +472,17 @@ export async function generateWikiMarkdownAction(
       const resolvedRace = cleanSingleLine(mergedNpcParamsEarly.npcRace ?? "");
       const resolvedClass = cleanSingleLine(mergedNpcParamsEarly.npcClass ?? "");
       const resolvedLevel = cleanSingleLine(mergedNpcParamsEarly.npcLevel ?? "");
-      ragSearchQuery = `D&D 5e razza ${resolvedRace}: tratti, taglia, velocità. Classe ${resolvedClass} livello ${resolvedLevel}: privilegi di classe, tabella progressione, sottoclasse se presente. ${safeRetrievalPrompt || ""}`;
-      ragMatchCount = 14;
-      ragKeywordSeed = `${resolvedRace} ${resolvedClass} ${resolvedLevel}`;
+      if (normalizeNpcCivilianClass(resolvedClass)) {
+        // Classe di PNG civile: nei manuali non esistono privilegi di classe,
+        // recupero solo i tratti razziali.
+        ragSearchQuery = `D&D 5e razza ${resolvedRace}: tratti razziali, taglia, velocità, linguaggi. ${safeRetrievalPrompt || ""}`;
+        ragMatchCount = 6;
+        ragKeywordSeed = resolvedRace;
+      } else {
+        ragSearchQuery = `D&D 5e razza ${resolvedRace}: tratti, taglia, velocità. Classe ${resolvedClass} livello ${resolvedLevel}: privilegi di classe, tabella progressione, sottoclasse se presente. ${safeRetrievalPrompt || ""}`;
+        ragMatchCount = 14;
+        ragKeywordSeed = `${resolvedRace} ${resolvedClass} ${resolvedLevel}`;
+      }
     }
 
     const campaignPromise = admin
@@ -667,6 +677,7 @@ export async function generateWikiMarkdownAction(
       const resolvedClass = cleanSingleLine(mergedNpcParams.npcClass ?? "");
       const resolvedLevel = cleanSingleLine(mergedNpcParams.npcLevel ?? "");
       const hasMechanicsParams = hasNpcMechanicsParams(mergedNpcParams);
+      const civilianClass = hasMechanicsParams ? normalizeNpcCivilianClass(resolvedClass) : null;
 
       if (!hasMechanicsParams) {
         npcNarrativeOnly = true;
@@ -683,6 +694,45 @@ export async function generateWikiMarkdownAction(
           "NON includere statblock, CA, PF, tiri salvezza, attacchi o meccanica di combattimento.",
           "Apri con il tag [NARRATIVA] sulla prima riga. NON aggiungere [MECCANICA].",
           "Rispondi SOLO in Markdown valido.",
+        ]
+          .filter((s) => typeof s === "string" && s.trim().length > 0)
+          .join("\n\n");
+      } else if (civilianClass) {
+        // Classe di PNG civile (Popolano, Esperto, ecc.): statblock semplice guidato
+        // dall'occupazione. I tratti razziali dai manuali sono utili ma non obbligatori.
+        let raceContext = "";
+        try {
+          raceContext = await retrieveManualsKnowledgeContext(
+            admin,
+            ragSearchQuery ?? "",
+            ragKeywordSeed,
+            ragKeywordPrompt,
+            excludedManuals,
+            ragMatchCount,
+            precomputedEmbedding
+          );
+        } catch {
+          raceContext = "";
+        }
+        prompt = [
+          "Sei un Senior D&D 5e Content Designer specializzato in PNG di ambientazione.",
+          campaignMemoryPriorityBlock(wikiMemory),
+          `Tono campagna: ${loreTone}`,
+          raceContext.trim()
+            ? `[CONTESTO TECNICO — tratti razziali dai manuali]:\n${raceContext}`
+            : "",
+          entityNamePrompt,
+          `Razza (vincolata): ${resolvedRace}`,
+          `Classe PNG (vincolata): ${civilianClass}`,
+          `Livello (vincolato): ${resolvedLevel}`,
+          `Richiesta narrativa/aggiuntiva: ${safeNarrativePrompt || "Nessuna."}`,
+          civilianNpcPromptGuide(civilianClass),
+          "Applica i tratti razziali (velocità, scurovisione, linguaggi...) se presenti nel contesto tecnico.",
+          "La [NARRATIVA] (personalità, aspetto, storia nel mondo) deve rispettare la memoria di campagna quando presente.",
+          templateInstructionMap.npc,
+          "Nelle righe Profilo Rapido usa esattamente la razza e la classe indicate.",
+          "Apri con [NARRATIVA] poi dopo [MECCANICA] come da formato standard.",
+          "Rispondi SOLO in Markdown, senza JSON.",
         ]
           .filter((s) => typeof s === "string" && s.trim().length > 0)
           .join("\n\n");
