@@ -1,12 +1,12 @@
 {
-  "updatedAt": "2026-07-07T05:21:47.614Z",
+  "updatedAt": "2026-07-07T11:32:21.375Z",
   "sourceProject": "Barber & Dragons",
   "targetProject": "gmflow.app",
   "sourceRepoPath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App",
   "targetRepoPath": "/Users/alessandropetricciuolo/Desktop/masto-platform",
   "branch": "main",
-  "lastCommit": "a6f8c45af5ec2815853a790276ee7cdee3f2c5a3",
-  "commitRange": "c12520a..a6f8c45",
+  "lastCommit": "3e981c67849c9ae6551835d72cca7f0c83233f29",
+  "commitRange": "6a0d694..3e981c6",
   "items": [
     {
       "id": "BD-GMFLOW-PKG-2026-07-06-001",
@@ -21873,6 +21873,256 @@
       "statusCode": "M",
       "createdAt": "2026-07-07T05:21:47.614Z",
       "updatedAt": "2026-07-07T05:21:47.614Z"
+    },
+    {
+      "id": "BD-GMFLOW-6a0d694-001",
+      "title": "CAMPAIGNS: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "CAMPAIGNS",
+      "priority": "Media",
+      "description": "File `src/app/campaigns/[id]/gm-only/vista-dall-alto/page.tsx` modificato nel commit «feat(exploration): reorganize FoW editor with map-first two-column layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Logica campagne potenzialmente generalizzabile per multi-tenant.",
+      "bdFiles": [
+        "src/app/campaigns/[id]/gm-only/vista-dall-alto/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/campaigns/[id]/gm-only/vista-dall-alto/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "6a0d6940114c2b9f9db0a15dad305915a37f142b",
+      "commitShort": "6a0d694",
+      "commitSubject": "feat(exploration): reorganize FoW editor with map-first two-column layout",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T10:49:17.982Z",
+      "updatedAt": "2026-07-07T10:49:17.982Z"
+    },
+    {
+      "id": "BD-GMFLOW-6a0d694-002",
+      "title": "UI_UX: vista-dall-alto-client.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/exploration/vista-dall-alto-client.tsx` modificato nel commit «feat(exploration): reorganize FoW editor with map-first two-column layout». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/exploration/vista-dall-alto-client.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/exploration/vista-dall-alto-client.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "6a0d6940114c2b9f9db0a15dad305915a37f142b",
+      "commitShort": "6a0d694",
+      "commitSubject": "feat(exploration): reorganize FoW editor with map-first two-column layout",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T10:49:17.982Z",
+      "updatedAt": "2026-07-07T10:49:17.982Z"
+    },
+    {
+      "id": "BD-GMFLOW-3e981c6-001",
+      "title": "UI_UX: random-dungeon-dialog.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/scene-editor/random-dungeon-dialog.tsx` aggiunto nel commit «feat(maps): add random dungeon generator to scene editor». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/scene-editor/random-dungeon-dialog.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/scene-editor/random-dungeon-dialog.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "3e981c67849c9ae6551835d72cca7f0c83233f29",
+      "commitShort": "3e981c6",
+      "commitSubject": "feat(maps): add random dungeon generator to scene editor",
+      "statusCode": "A",
+      "createdAt": "2026-07-07T11:32:21.375Z",
+      "updatedAt": "2026-07-07T11:32:21.375Z"
+    },
+    {
+      "id": "BD-GMFLOW-3e981c6-002",
+      "title": "UI_UX: scene-editor-client.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/scene-editor/scene-editor-client.tsx` modificato nel commit «feat(maps): add random dungeon generator to scene editor». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/scene-editor/scene-editor-client.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/scene-editor/scene-editor-client.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "3e981c67849c9ae6551835d72cca7f0c83233f29",
+      "commitShort": "3e981c6",
+      "commitSubject": "feat(maps): add random dungeon generator to scene editor",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T11:32:21.375Z",
+      "updatedAt": "2026-07-07T11:32:21.375Z"
+    },
+    {
+      "id": "BD-GMFLOW-3e981c6-003",
+      "title": "OTHER: random-dungeon.test.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/__tests__/random-dungeon.test.ts` aggiunto nel commit «feat(maps): add random dungeon generator to scene editor». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/__tests__/random-dungeon.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/__tests__/random-dungeon.test.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "3e981c67849c9ae6551835d72cca7f0c83233f29",
+      "commitShort": "3e981c6",
+      "commitSubject": "feat(maps): add random dungeon generator to scene editor",
+      "statusCode": "A",
+      "createdAt": "2026-07-07T11:32:21.375Z",
+      "updatedAt": "2026-07-07T11:32:21.375Z"
+    },
+    {
+      "id": "BD-GMFLOW-3e981c6-004",
+      "title": "OTHER: auto-walls.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/scene-editor/auto-walls.ts` modificato nel commit «feat(maps): add random dungeon generator to scene editor». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/scene-editor/auto-walls.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/scene-editor/auto-walls.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "3e981c67849c9ae6551835d72cca7f0c83233f29",
+      "commitShort": "3e981c6",
+      "commitSubject": "feat(maps): add random dungeon generator to scene editor",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T11:32:21.375Z",
+      "updatedAt": "2026-07-07T11:32:21.375Z"
+    },
+    {
+      "id": "BD-GMFLOW-3e981c6-005",
+      "title": "OTHER: random-dungeon.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/map-core/scene-editor/random-dungeon.ts` aggiunto nel commit «feat(maps): add random dungeon generator to scene editor». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/map-core/scene-editor/random-dungeon.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/map-core/scene-editor/random-dungeon.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "3e981c67849c9ae6551835d72cca7f0c83233f29",
+      "commitShort": "3e981c6",
+      "commitSubject": "feat(maps): add random dungeon generator to scene editor",
+      "statusCode": "A",
+      "createdAt": "2026-07-07T11:32:21.375Z",
+      "updatedAt": "2026-07-07T11:32:21.375Z"
     }
   ]
 }

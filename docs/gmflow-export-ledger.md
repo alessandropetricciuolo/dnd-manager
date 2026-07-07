@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-* Data aggiornamento: 2026-07-07T05:21:47.614Z
+* Data aggiornamento: 2026-07-07T11:32:21.375Z
 * Branch corrente: main
-* Ultimo commit analizzato: a6f8c45af5ec2815853a790276ee7cdee3f2c5a3
-* Range commit analizzato: c12520a..a6f8c45
-* Stato generale: 164 voci NEEDS_REVIEW
-* Voci totali: 559 (NEEDS_REVIEW: 164, TO_IMPORT: 319, IMPORTED: 0)
+* Ultimo commit analizzato: 3e981c67849c9ae6551835d72cca7f0c83233f29
+* Range commit analizzato: 6a0d694..3e981c6
+* Stato generale: 171 voci NEEDS_REVIEW
+* Voci totali: 566 (NEEDS_REVIEW: 171, TO_IMPORT: 319, IMPORTED: 0)
 
 ## Delta automatico non revisionato
 
@@ -7778,6 +7778,326 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 * OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-6a0d694-001] CAMPAIGNS: page.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+CAMPAIGNS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/campaigns/[id]/gm-only/vista-dall-alto/page.tsx` modificato nel commit «feat(exploration): reorganize FoW editor with map-first two-column layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Logica campagne potenzialmente generalizzabile per multi-tenant.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/campaigns/[id]/gm-only/vista-dall-alto/page.tsx
+
+File gmflow probabili:
+
+* src/app/campaigns/[id]/gm-only/vista-dall-alto/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-6a0d694-002] UI_UX: vista-dall-alto-client.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/exploration/vista-dall-alto-client.tsx` modificato nel commit «feat(exploration): reorganize FoW editor with map-first two-column layout». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/exploration/vista-dall-alto-client.tsx
+
+File gmflow probabili:
+
+* src/components/exploration/vista-dall-alto-client.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-3e981c6-001] UI_UX: random-dungeon-dialog.tsx (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/scene-editor/random-dungeon-dialog.tsx` aggiunto nel commit «feat(maps): add random dungeon generator to scene editor». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/scene-editor/random-dungeon-dialog.tsx
+
+File gmflow probabili:
+
+* src/components/scene-editor/random-dungeon-dialog.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-3e981c6-002] UI_UX: scene-editor-client.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/scene-editor/scene-editor-client.tsx` modificato nel commit «feat(maps): add random dungeon generator to scene editor». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/scene-editor/scene-editor-client.tsx
+
+File gmflow probabili:
+
+* src/components/scene-editor/scene-editor-client.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-3e981c6-003] OTHER: random-dungeon.test.ts (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/__tests__/random-dungeon.test.ts` aggiunto nel commit «feat(maps): add random dungeon generator to scene editor». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/__tests__/random-dungeon.test.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/__tests__/random-dungeon.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-3e981c6-004] OTHER: auto-walls.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/scene-editor/auto-walls.ts` modificato nel commit «feat(maps): add random dungeon generator to scene editor». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/scene-editor/auto-walls.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/scene-editor/auto-walls.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-3e981c6-005] OTHER: random-dungeon.ts (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/scene-editor/random-dungeon.ts` aggiunto nel commit «feat(maps): add random dungeon generator to scene editor». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/scene-editor/random-dungeon.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/scene-editor/random-dungeon.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
 ## Modifiche revisionate manualmente
 
@@ -27419,9 +27739,9 @@ Questo ledger traccia modifiche Barber & Dragons da valutare per import in gmflo
 
 - Repository sorgente: `/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App`
 - Repository gmflow locale: `/Users/alessandropetricciuolo/Desktop/masto-platform`
-- Ultimo commit: `a6f8c45` — feat(wiki): civilian NPC classes drive tame statblocks and coherent portraits
-- File analizzati nell'ultimo run: 6
-- Nuove voci aggiunte: 6
+- Ultimo commit: `3e981c6` — feat(maps): add random dungeon generator to scene editor
+- File analizzati nell'ultimo run: 5
+- Nuove voci aggiunte: 5
 
 **Azioni consigliate:**
 1. Rivedere voci `NEEDS_REVIEW` nella sezione «Delta automatico».
