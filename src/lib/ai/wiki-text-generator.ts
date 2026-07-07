@@ -24,6 +24,7 @@ import {
   syncMarkdownTitle,
   wikiEntityNamePromptLine,
 } from "@/lib/ai/contextual-names";
+import { splitPromptByDash } from "@/lib/ai/wiki-prompt-split";
 
 export type WikiMarkdownEntityType = "npc" | "location" | "item" | "lore" | "monster" | "magic_item";
 
@@ -116,21 +117,6 @@ function buildKeywordCandidates(name: string, userPrompt: string): string[] {
 
   const unique = Array.from(new Set([name.toLowerCase().trim(), ...words]));
   return unique.slice(0, 8);
-}
-
-function splitPromptByDash(userPrompt: string): { retrievalPrompt: string; narrativePrompt: string } {
-  const raw = userPrompt.trim();
-  if (!raw) return { retrievalPrompt: "", narrativePrompt: "" };
-  const dashIdx = raw.indexOf("-");
-  if (dashIdx < 0) {
-    return { retrievalPrompt: raw, narrativePrompt: raw };
-  }
-  const left = raw.slice(0, dashIdx).trim();
-  const right = raw.slice(dashIdx + 1).trim();
-  return {
-    retrievalPrompt: left || raw,
-    narrativePrompt: right || left || raw,
-  };
 }
 
 function extractStatsFromMarkdown(markdown: string): ExtractedWikiStats {
