@@ -10,6 +10,10 @@ import { assertCanProposeDrafts } from "./autonomy";
 import { resolveCommandContext } from "./context-resolver";
 import { detectConversationIntent, isWikiImageRequestMessage } from "./conversation-intent";
 import type { ChatPendingProposalPayload } from "./draft-assistant.types";
+import {
+  getCreatedCampaignId,
+  setCreatedCampaignId,
+} from "./campaign-creation-idempotency";
 import { interpretUserMessage } from "./interpreter";
 import { previewInterpreterProposals, type PreviewedProposal } from "./preview-proposals";
 import type { RunAiChatAssistantParams } from "./draft-assistant.types";
@@ -219,17 +223,29 @@ async function executeCharacterCreate(
 async function finalizeCampaignCreation(
   pending: ChatPendingProposal,
   options: { withArchitect: boolean }
-): Promise<{ success: true; title: string; campaignId?: string } | { success: false; error: string }> {
-  const exec = await executePendingProposal(pending, null);
-  if (!exec.success) {
-    return { success: false, error: exec.error };
+): Promise<
+  | { success: true; title: string; campaignId?: string }
+  | { success: false; error: string; campaignId?: string }
+> {
+  let newCampaignId = getCreatedCampaignId(pending) ?? undefined;
+  let title = pickCampaignTitle(pending.input) || "Campagna";
+
+  if (!newCampaignId) {
+    const exec = await executePendingProposal(pending, null);
+    if (!exec.success) {
+      return { success: false, error: exec.error };
+    }
+
+    const created = exec.data as { id?: string; name?: string } | undefined;
+    title = pickCampaignTitle(pending.input) || created?.name || "Campagna";
+    newCampaignId = created?.id;
   }
 
-  const created = exec.data as { id?: string; name?: string } | undefined;
-  const title = pickCampaignTitle(pending.input) || created?.name || "Campagna";
-  const newCampaignId = created?.id;
+  if (!newCampaignId) {
+    return { success: false, error: "Campagna creata ma ID non recuperato." };
+  }
 
-  if (options.withArchitect && newCampaignId && pending.campaignMeta?.draft) {
+  if (options.withArchitect && pending.campaignMeta?.draft) {
     const description = buildArchitectDescriptionFromDraft(pending.campaignMeta.draft);
     const architect = await executeAction(
       "campaign.aiContext.generate",
@@ -243,6 +259,7 @@ async function finalizeCampaignCreation(
       return {
         success: false,
         error: `Campagna creata ma generazione paletti IA fallita: ${architect.error}`,
+        campaignId: newCampaignId,
       };
     }
     revalidatePath(`/campaigns/${newCampaignId}`);
@@ -761,12 +778,15 @@ export async function runAiChatAssistant(
   if (intent === "architect_no" && pending?.phase === "awaiting_architect") {
     const result = await finalizeCampaignCreation(pending, { withArchitect: false });
     if (!result.success) {
+      const nextPending = result.campaignId
+        ? setCreatedCampaignId(pending, result.campaignId)
+        : pending;
       return {
         success: true,
         data: {
           reply: `Non sono riuscito a creare la campagna: ${result.error}`,
           intentSummary: "Esecuzione fallita",
-          pendingProposal: pending,
+          pendingProposal: nextPending,
           executed: false,
           clearedPending: false,
         },
@@ -787,12 +807,15 @@ export async function runAiChatAssistant(
   if (intent === "architect_yes" && pending?.phase === "awaiting_architect") {
     const result = await finalizeCampaignCreation(pending, { withArchitect: true });
     if (!result.success) {
+      const nextPending = result.campaignId
+        ? setCreatedCampaignId(pending, result.campaignId)
+        : pending;
       return {
         success: true,
         data: {
           reply: `${result.error}\n\nPuoi riprovare dalla scheda campagna o scrivere **annulla**.`,
           intentSummary: "Esecuzione parziale",
-          pendingProposal: pending,
+          pendingProposal: nextPending,
           executed: false,
           clearedPending: false,
         },
