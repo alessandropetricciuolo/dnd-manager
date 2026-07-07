@@ -273,6 +273,10 @@ export function AiAssistantCanvas({
               <span className="rounded-full border border-violet-500/40 bg-violet-500/10 px-2.5 py-0.5 text-[10px] text-violet-200">
                 Statblock NPC
               </span>
+            ) : pendingProposal.wikiBatchMeta ? (
+              <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] text-emerald-200">
+                Batch {pendingProposal.wikiBatchMeta.activeIndex + 1}/{pendingProposal.wikiBatchMeta.items.length}
+              </span>
             ) : pendingProposal.phase === "awaiting_sheet" ? (
               <span className="rounded-full border border-sky-500/40 bg-sky-500/10 px-2.5 py-0.5 text-[10px] text-sky-200">
                 Scheda richiesta

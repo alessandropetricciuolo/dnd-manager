@@ -24,6 +24,24 @@ export function registerWikiWrapperActions(): void {
           : undefined;
       const imageUrl =
         typeof o.imageUrl === "string" && o.imageUrl.trim() ? o.imageUrl.trim() : undefined;
+      const relationsRaw = o.relations;
+      const relations = Array.isArray(relationsRaw)
+        ? relationsRaw
+            .filter(
+              (r): r is { targetType: "wiki" | "map"; targetId: string; label: string } =>
+                r != null &&
+                typeof r === "object" &&
+                ((r as { targetType?: string }).targetType === "wiki" ||
+                  (r as { targetType?: string }).targetType === "map") &&
+                typeof (r as { targetId?: unknown }).targetId === "string" &&
+                typeof (r as { label?: unknown }).label === "string"
+            )
+            .map((r) => ({
+              targetType: r.targetType,
+              targetId: r.targetId.trim(),
+              label: r.label.trim() || "—",
+            }))
+        : undefined;
       return {
         ok: true,
         data: {
@@ -34,6 +52,7 @@ export function registerWikiWrapperActions(): void {
           visibility: typeof o.visibility === "string" ? o.visibility : "secret",
           attributes,
           imageUrl,
+          relations,
         },
       };
     },
@@ -57,6 +76,9 @@ export function registerWikiWrapperActions(): void {
       }
       if (input.imageUrl) {
         fd.set("image_url", input.imageUrl);
+      }
+      if (input.relations?.length) {
+        fd.set("relations", JSON.stringify(input.relations));
       }
 
       const result = await createEntity(input.campaignId, fd);

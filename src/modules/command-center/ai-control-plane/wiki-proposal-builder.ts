@@ -37,12 +37,22 @@ export function supportsWikiContextualImage(type: string): type is "npc" | "loca
   return type === "npc" || type === "location" || type === "monster";
 }
 
+export type WikiEntityRelationInput = {
+  targetType: "wiki" | "map";
+  targetId: string;
+  label: string;
+};
+
 export function buildWikiEntityInput(
   campaignId: string,
   entityType: WikiMarkdownEntityType,
   title: string,
   draft: WikiMarkdownChatDraft,
-  options?: { visibility?: WikiVisibility; imageUrl?: string | null }
+  options?: {
+    visibility?: WikiVisibility;
+    imageUrl?: string | null;
+    relations?: WikiEntityRelationInput[];
+  }
 ): Record<string, unknown> {
   const input: Record<string, unknown> = {
     campaignId,
@@ -66,6 +76,9 @@ export function buildWikiEntityInput(
   }
   if (options?.imageUrl) {
     input.imageUrl = options.imageUrl;
+  }
+  if (options?.relations?.length) {
+    input.relations = options.relations;
   }
 
   return input;
@@ -109,6 +122,9 @@ export async function enrichWikiEntityProposal(
     extraParams?: WikiMarkdownExtraParams;
     previousVisibility?: string | null;
     previewTextSelection?: PreviewTextSelection | null;
+    userPromptOverride?: string;
+    relations?: WikiEntityRelationInput[];
+    visibilityOverride?: WikiVisibility;
   }
 ): Promise<
   | {
@@ -126,7 +142,7 @@ export async function enrichWikiEntityProposal(
 
   const priorMessages = options?.wikiMeta?.chatMessages ?? [];
   const currentDraft = options?.wikiMeta?.markdownDraft ?? null;
-  const userPrompt = options?.wikiMeta?.userPrompt?.trim() || userMessage.trim();
+  const userPrompt = options?.userPromptOverride?.trim() || options?.wikiMeta?.userPrompt?.trim() || userMessage.trim();
 
   const refineMessage = options?.refine
     ? resolveRefineUserMessage(userMessage, options.previewTextSelection)
@@ -170,15 +186,15 @@ export async function enrichWikiEntityProposal(
       ? result.resolvedTitle.trim()
       : safeTitle;
 
-  const visibility = resolveWikiVisibilityForAssistant(
-    userMessage,
-    userPrompt,
-    options?.previousVisibility,
-    { preservePrevious: options?.refine }
-  );
+  const visibility =
+    options?.visibilityOverride ??
+    resolveWikiVisibilityForAssistant(userMessage, userPrompt, options?.previousVisibility, {
+      preservePrevious: options?.refine,
+    });
 
   const input = buildWikiEntityInput(campaignId, entityType, resolvedTitle, result.draft, {
     visibility,
+    relations: options?.relations,
   });
   const previewResult = await previewAction("wiki.entity.create", input, { actorType: "ai" });
   const preview_payload = previewResult.success

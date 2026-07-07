@@ -232,7 +232,9 @@ export function AiAssistantPanel({
               </h2>
               <p className="text-[11px] text-barber-paper/50">
                 Chat · anteprima live
-                {pendingProposal?.phase === "awaiting_campaign_type"
+                {pendingProposal?.wikiBatchMeta
+                  ? ` · batch NPC ${pendingProposal.wikiBatchMeta.activeIndex + 1}/${pendingProposal.wikiBatchMeta.items.length}`
+                  : pendingProposal?.phase === "awaiting_campaign_type"
                   ? " · tipo evento"
                   : pendingProposal?.phase === "awaiting_npc_mechanics"
                     ? " · statblock NPC"

@@ -6,6 +6,7 @@ import { detectRelationshipCreateRequest } from "./relationship-request-detector
 import { detectSessionCreateRequest } from "./session-request-detector";
 import { detectSessionCloseRequest } from "./session-close-request-detector";
 import { detectWikiCreateRequest, hasNpcMechanicsParams, resolveWikiVisibilityForAssistant } from "./wiki-request-detector";
+import { detectNpcBatchCreateRequest } from "./wiki-npc-batch";
 import type { WikiMarkdownExtraParams } from "@/lib/ai/wiki-text-generator";
 import {
   isPlaceholderCampaignTitle,
@@ -17,6 +18,7 @@ import {
 export type DomainFallbackResult = {
   interpreted: AiInterpreterResult;
   detectedExtraParams?: WikiMarkdownExtraParams;
+  detectedNpcBatch?: import("./wiki-npc-batch").DetectedNpcBatchRequest;
 };
 
 function shouldTryFallback(interpreted: AiInterpreterResult): boolean {
@@ -34,6 +36,37 @@ export function applyDomainFallbackInterpreter(
   }
 
   const combinedContext = [...(recentUserMessages ?? []), message].filter(Boolean).join("\n");
+
+  const npcBatchDetected = campaignId ? detectNpcBatchCreateRequest(combinedContext) : null;
+  if (npcBatchDetected && campaignId) {
+    const visibility = resolveWikiVisibilityForAssistant(combinedContext, npcBatchDetected.userPrompt);
+    const loc = npcBatchDetected.locationName ? ` a **${npcBatchDetected.locationName}**` : "";
+    const rolesList = npcBatchDetected.roles.map((r) => `**${r}**`).join(", ");
+    const narrativeOnly = !hasNpcMechanicsParams(npcBatchDetected.extraParams);
+    return {
+      detectedNpcBatch: npcBatchDetected,
+      detectedExtraParams: npcBatchDetected.extraParams,
+      interpreted: {
+        reply: narrativeOnly
+          ? `Preparo **${npcBatchDetected.count} NPC**${loc}: ${rolesList}. Prima ti chiederò **razza, classe e livello** (valgono per tutti) per generare gli statblock.`
+          : `Preparo **${npcBatchDetected.count} NPC**${loc}: ${rolesList}, con narrativa e statblock coerenti con la storia.`,
+        intent_summary: `Creare ${npcBatchDetected.count} NPC in batch`,
+        proposals: [
+          {
+            action_name: "wiki.entity.create",
+            input: {
+              campaignId,
+              title: npcBatchDetected.roles[0] ?? "Nuovo NPC",
+              type: "npc",
+              content: "",
+              visibility,
+            },
+            rationale: "Batch NPC rilevato dal messaggio",
+          },
+        ],
+      },
+    };
+  }
 
   const wikiDetected = campaignId ? detectWikiCreateRequest(combinedContext) : null;
   if (wikiDetected && campaignId) {

@@ -70,6 +70,30 @@ export type ChatWikiMeta = {
   npcBuildParams?: WikiMarkdownExtraParams;
 };
 
+export type ChatWikiBatchItem = {
+  roleLabel: string;
+  status: "pending" | "ready" | "saved" | "skipped";
+  entityTitle: string;
+  wikiMeta: ChatWikiMeta;
+  input: Record<string, unknown>;
+  preview_payload: Record<string, unknown>;
+  phase?: ChatPendingPhase;
+  savedEntityId?: string;
+};
+
+export type ChatWikiBatchMeta = {
+  originalPrompt: string;
+  roles: string[];
+  locationName: string | null;
+  locationTargetId: string | null;
+  locationTargetKind: "wiki" | "map" | null;
+  locationExcerpt: string | null;
+  items: ChatWikiBatchItem[];
+  activeIndex: number;
+  sharedNpcBuildParams?: WikiMarkdownExtraParams;
+  visibility: "public" | "secret" | "selective";
+};
+
 export type ChatCampaignMeta = {
   userPrompt: string;
   draft: CampaignAiDraft;
@@ -136,6 +160,7 @@ export type ChatPendingProposalPayload = {
   preview_payload: Record<string, unknown>;
   phase?: ChatPendingPhase;
   wikiMeta?: ChatWikiMeta;
+  wikiBatchMeta?: ChatWikiBatchMeta;
   campaignMeta?: ChatCampaignMeta;
   missionMeta?: ChatMissionMeta;
   characterMeta?: ChatCharacterMeta;

@@ -8,7 +8,10 @@ export type ConversationIntent =
   | "image_yes"
   | "image_no"
   | "architect_yes"
-  | "architect_no";
+  | "architect_no"
+  | "batch_skip";
+
+const BATCH_SKIP_RE = /^(salta|passa|prossimo|skip)\b/i;
 
 const CONFIRM_RE =
   /^(sì|si|ok|okay|va bene|perfetto|conferma|applica|vai|procedi|fallo|esegui|approvo|dai|certo)\b/i;
@@ -31,6 +34,7 @@ export function detectConversationIntent(
   if (!hasPending) return "new";
 
   if (phase === "awaiting_image") {
+    if (BATCH_SKIP_RE.test(trimmed)) return "batch_skip";
     if (IMAGE_YES_RE.test(trimmed)) return "image_yes";
     if (IMAGE_NO_RE.test(trimmed)) return "image_no";
     if (REJECT_RE.test(trimmed)) return "reject";
@@ -59,6 +63,7 @@ export function detectConversationIntent(
   }
 
   if (CONFIRM_RE.test(trimmed)) return "confirm";
+  if (BATCH_SKIP_RE.test(trimmed)) return "batch_skip";
   if (REJECT_RE.test(trimmed)) return "reject";
   return "refine";
 }

@@ -1,12 +1,12 @@
 {
-  "updatedAt": "2026-07-07T11:32:21.375Z",
+  "updatedAt": "2026-07-07T14:35:16.051Z",
   "sourceProject": "Barber & Dragons",
   "targetProject": "gmflow.app",
   "sourceRepoPath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App",
   "targetRepoPath": "/Users/alessandropetricciuolo/Desktop/masto-platform",
   "branch": "main",
-  "lastCommit": "3e981c67849c9ae6551835d72cca7f0c83233f29",
-  "commitRange": "6a0d694..3e981c6",
+  "lastCommit": "27976ddf2384e87616190c0835f1c36babea6daf",
+  "commitRange": "dff849b..27976dd",
   "items": [
     {
       "id": "BD-GMFLOW-PKG-2026-07-06-001",
@@ -22123,6 +22123,504 @@
       "statusCode": "A",
       "createdAt": "2026-07-07T11:32:21.375Z",
       "updatedAt": "2026-07-07T11:32:21.375Z"
+    },
+    {
+      "id": "BD-GMFLOW-27976dd-001",
+      "title": "AI: ai-assistant-canvas.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/components/command-center/ai-assistant-canvas.tsx` modificato nel commit «feat(command-center): batch NPC generation with per-entity save and images». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/components/command-center/ai-assistant-canvas.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/command-center/ai-assistant-canvas.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "27976ddf2384e87616190c0835f1c36babea6daf",
+      "commitShort": "27976dd",
+      "commitSubject": "feat(command-center): batch NPC generation with per-entity save and images",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T14:35:16.051Z",
+      "updatedAt": "2026-07-07T14:35:16.051Z"
+    },
+    {
+      "id": "BD-GMFLOW-27976dd-002",
+      "title": "AI: ai-assistant-panel.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(command-center): batch NPC generation with per-entity save and images». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/components/command-center/ai-assistant-panel.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/command-center/ai-assistant-panel.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "27976ddf2384e87616190c0835f1c36babea6daf",
+      "commitShort": "27976dd",
+      "commitSubject": "feat(command-center): batch NPC generation with per-entity save and images",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T14:35:16.051Z",
+      "updatedAt": "2026-07-07T14:35:16.051Z"
+    },
+    {
+      "id": "BD-GMFLOW-27976dd-003",
+      "title": "WIKI: wiki.actions.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "WIKI",
+      "priority": "Media",
+      "description": "File `src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts` modificato nel commit «feat(command-center): batch NPC generation with per-entity save and images». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.",
+      "bdFiles": [
+        "src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "27976ddf2384e87616190c0835f1c36babea6daf",
+      "commitShort": "27976dd",
+      "commitSubject": "feat(command-center): batch NPC generation with per-entity save and images",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T14:35:16.051Z",
+      "updatedAt": "2026-07-07T14:35:16.051Z"
+    },
+    {
+      "id": "BD-GMFLOW-27976dd-004",
+      "title": "AI: wiki-npc-batch.test.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/__tests__/wiki-npc-batch.test.ts` aggiunto nel commit «feat(command-center): batch NPC generation with per-entity save and images». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/wiki-npc-batch.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/wiki-npc-batch.test.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "27976ddf2384e87616190c0835f1c36babea6daf",
+      "commitShort": "27976dd",
+      "commitSubject": "feat(command-center): batch NPC generation with per-entity save and images",
+      "statusCode": "A",
+      "createdAt": "2026-07-07T14:35:16.051Z",
+      "updatedAt": "2026-07-07T14:35:16.051Z"
+    },
+    {
+      "id": "BD-GMFLOW-27976dd-005",
+      "title": "AI: chat-assistant.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(command-center): batch NPC generation with per-entity save and images». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/chat-assistant.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/chat-assistant.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "27976ddf2384e87616190c0835f1c36babea6daf",
+      "commitShort": "27976dd",
+      "commitSubject": "feat(command-center): batch NPC generation with per-entity save and images",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T14:35:16.051Z",
+      "updatedAt": "2026-07-07T14:35:16.051Z"
+    },
+    {
+      "id": "BD-GMFLOW-27976dd-006",
+      "title": "AI: conversation-intent.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/conversation-intent.ts` modificato nel commit «feat(command-center): batch NPC generation with per-entity save and images». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/conversation-intent.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/conversation-intent.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "27976ddf2384e87616190c0835f1c36babea6daf",
+      "commitShort": "27976dd",
+      "commitSubject": "feat(command-center): batch NPC generation with per-entity save and images",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T14:35:16.051Z",
+      "updatedAt": "2026-07-07T14:35:16.051Z"
+    },
+    {
+      "id": "BD-GMFLOW-27976dd-007",
+      "title": "AI: domain-fallback-interpreter.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts` modificato nel commit «feat(command-center): batch NPC generation with per-entity save and images». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "27976ddf2384e87616190c0835f1c36babea6daf",
+      "commitShort": "27976dd",
+      "commitSubject": "feat(command-center): batch NPC generation with per-entity save and images",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T14:35:16.051Z",
+      "updatedAt": "2026-07-07T14:35:16.051Z"
+    },
+    {
+      "id": "BD-GMFLOW-27976dd-008",
+      "title": "AI: draft-assistant.types.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/draft-assistant.types.ts` modificato nel commit «feat(command-center): batch NPC generation with per-entity save and images». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/draft-assistant.types.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/draft-assistant.types.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "27976ddf2384e87616190c0835f1c36babea6daf",
+      "commitShort": "27976dd",
+      "commitSubject": "feat(command-center): batch NPC generation with per-entity save and images",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T14:35:16.051Z",
+      "updatedAt": "2026-07-07T14:35:16.051Z"
+    },
+    {
+      "id": "BD-GMFLOW-27976dd-009",
+      "title": "AI: wiki-npc-batch-builder.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/wiki-npc-batch-builder.ts` aggiunto nel commit «feat(command-center): batch NPC generation with per-entity save and images». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-npc-batch-builder.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-npc-batch-builder.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "27976ddf2384e87616190c0835f1c36babea6daf",
+      "commitShort": "27976dd",
+      "commitSubject": "feat(command-center): batch NPC generation with per-entity save and images",
+      "statusCode": "A",
+      "createdAt": "2026-07-07T14:35:16.051Z",
+      "updatedAt": "2026-07-07T14:35:16.051Z"
+    },
+    {
+      "id": "BD-GMFLOW-27976dd-010",
+      "title": "AI: wiki-npc-batch-pending.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/wiki-npc-batch-pending.ts` aggiunto nel commit «feat(command-center): batch NPC generation with per-entity save and images». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-npc-batch-pending.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-npc-batch-pending.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "27976ddf2384e87616190c0835f1c36babea6daf",
+      "commitShort": "27976dd",
+      "commitSubject": "feat(command-center): batch NPC generation with per-entity save and images",
+      "statusCode": "A",
+      "createdAt": "2026-07-07T14:35:16.051Z",
+      "updatedAt": "2026-07-07T14:35:16.051Z"
+    },
+    {
+      "id": "BD-GMFLOW-27976dd-011",
+      "title": "AI: wiki-npc-batch.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/wiki-npc-batch.ts` aggiunto nel commit «feat(command-center): batch NPC generation with per-entity save and images». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-npc-batch.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-npc-batch.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "27976ddf2384e87616190c0835f1c36babea6daf",
+      "commitShort": "27976dd",
+      "commitSubject": "feat(command-center): batch NPC generation with per-entity save and images",
+      "statusCode": "A",
+      "createdAt": "2026-07-07T14:35:16.051Z",
+      "updatedAt": "2026-07-07T14:35:16.051Z"
+    },
+    {
+      "id": "BD-GMFLOW-27976dd-012",
+      "title": "AI: wiki-proposal-builder.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts` modificato nel commit «feat(command-center): batch NPC generation with per-entity save and images». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "27976ddf2384e87616190c0835f1c36babea6daf",
+      "commitShort": "27976dd",
+      "commitSubject": "feat(command-center): batch NPC generation with per-entity save and images",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T14:35:16.051Z",
+      "updatedAt": "2026-07-07T14:35:16.051Z"
     }
   ]
 }

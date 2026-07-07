@@ -55,6 +55,19 @@ import {
   hasNpcMechanicsParams,
   mergeWikiExtraParams,
 } from "./wiki-request-detector";
+import { detectNpcBatchCreateRequest } from "./wiki-npc-batch";
+import {
+  buildAwaitingNpcBatchMechanicsPending,
+  enrichNpcBatchProposals,
+} from "./wiki-npc-batch-builder";
+import {
+  advanceBatchAfterAction,
+  applyWikiImageOfferPhaseForBatchItem,
+  formatBatchSaveReply,
+  isNpcBatchPending,
+  persistActiveBatchItem,
+  wikiBatchImageOfferReply,
+} from "./wiki-npc-batch-pending";
 import type { AiInterpreterResult } from "../types/ai-proposal";
 
 export type ChatPendingProposal = ChatPendingProposalPayload;
@@ -72,10 +85,10 @@ function chatHintForProposal(phase?: ChatPendingProposal["phase"]): string {
     return "Scegli il **tipo di evento** (oneshot, quest, campagna lunga, torneo) prima di scrivere la descrizione.";
   }
   if (phase === "awaiting_npc_mechanics") {
-    return "Indica **razza**, **classe** e **livello** per lo statblock NPC (es. halfling ladro livello 5).";
+    return "Indica **razza**, **classe** e **livello** per lo statblock NPC (es. halfling ladro livello 5). Per i batch vale per tutti gli NPC.";
   }
   if (phase === "awaiting_image") {
-    return "Scrivi **sì** per generare l'immagine nell'anteprima, **no** per continuare senza, poi **conferma** per salvare.";
+    return "Scrivi **sì** per generare l'immagine nell'anteprima, **no** per continuare senza, poi **conferma** per salvare questo PNG. **Salta** per passare al successivo.";
   }
   if (phase === "awaiting_avatar") {
     return "Scrivi **sì** per generare un ritratto, **no** per creare il PG senza avatar, oppure carica un'immagine nel pannello a destra.";
@@ -378,10 +391,14 @@ function finalizeWikiProposalAfterText(
   delete base.input.imageUrl;
   delete base.preview_payload.imageUrl;
 
-  const nextPending = applyWikiImageOfferPhase(base);
+  const nextPending = isNpcBatchPending(base)
+    ? applyWikiImageOfferPhaseForBatchItem(base)
+    : applyWikiImageOfferPhase(base);
   const replyExtra =
     nextPending.phase === "awaiting_image"
-      ? wikiImageOfferReply(pickWikiTitle(nextPending.input))
+      ? isNpcBatchPending(nextPending)
+        ? wikiBatchImageOfferReply(nextPending)
+        : wikiImageOfferReply(pickWikiTitle(nextPending.input))
       : null;
 
   return { nextPending, replyExtra };
@@ -602,12 +619,19 @@ export async function runAiChatAssistant(
   }
 
   if (intent === "image_no" && pending?.phase === "awaiting_image" && pending.action_name === "wiki.entity.create") {
+    const basePending = isNpcBatchPending(pending) ? persistActiveBatchItem(pending) : pending;
+    const nextPending: ChatPendingProposal = { ...basePending, phase: "text" };
+    const batchSuffix = isNpcBatchPending(nextPending)
+      ? " Poi **conferma** per salvare solo questo PNG, o **salta** per il successivo."
+      : "";
     return {
       success: true,
       data: {
-        reply: `Ok, **${pickWikiTitle(pending.input)}** verrà salvata senza immagine. Scrivi **conferma** quando sei pronto, oppure descrivi modifiche al testo.`,
-        intentSummary: "Wiki senza immagine",
-        pendingProposal: { ...pending, phase: "text" },
+        reply: `Ok, **${pickWikiTitle(nextPending.input)}** verrà salvato senza immagine.${batchSuffix} Puoi anche descrivere modifiche al testo.`,
+        intentSummary: isNpcBatchPending(nextPending) ? "Batch NPC senza immagine" : "Wiki senza immagine",
+        pendingProposal: isNpcBatchPending(nextPending)
+          ? persistActiveBatchItem(nextPending)
+          : nextPending,
         executed: false,
         clearedPending: false,
       },
@@ -634,7 +658,7 @@ export async function runAiChatAssistant(
     }
 
     const withImage: ChatPendingProposal = {
-      ...pending,
+      ...(isNpcBatchPending(pending) ? persistActiveBatchItem(pending) : pending),
       input: { ...pending.input, imageUrl: imageResult.imageUrl },
       preview_payload: {
         ...pending.preview_payload,
@@ -643,12 +667,14 @@ export async function runAiChatAssistant(
       phase: "text",
     };
 
+    const stored = isNpcBatchPending(withImage) ? persistActiveBatchItem(withImage) : withImage;
+
     return {
       success: true,
       data: {
-        reply: `Immagine generata per **${pickWikiTitle(withImage.input)}**. Vedi testo e immagine nell'anteprima a destra, poi scrivi **conferma** per salvare la voce wiki.`,
-        intentSummary: "Immagine wiki in anteprima",
-        pendingProposal: withImage,
+        reply: `Immagine generata per **${pickWikiTitle(stored.input)}**. Vedi testo e immagine nell'anteprima a destra, poi scrivi **conferma** per salvare${isNpcBatchPending(stored) ? " questo PNG" : " la voce wiki"}.`,
+        intentSummary: isNpcBatchPending(stored) ? "Immagine batch in anteprima" : "Immagine wiki in anteprima",
+        pendingProposal: stored,
         executed: false,
         clearedPending: false,
       },
@@ -777,6 +803,36 @@ export async function runAiChatAssistant(
         pendingProposal: null,
         executed: true,
         clearedPending: true,
+      },
+    };
+  }
+
+  if (intent === "batch_skip" && pending && isNpcBatchPending(pending)) {
+    const persisted = persistActiveBatchItem(pending);
+    const next = advanceBatchAfterAction(persisted, { skipped: true });
+    if (!next) {
+      return {
+        success: true,
+        data: {
+          reply: "Batch completato: nessun altro PNG da revisionare.",
+          intentSummary: "Batch NPC completato",
+          pendingProposal: null,
+          executed: false,
+          clearedPending: true,
+        },
+      };
+    }
+    return {
+      success: true,
+      data: {
+        reply: [
+          `PNG saltato.`,
+          formatBatchSaveReply(pickWikiTitle(persisted.input), persisted.wikiBatchMeta!, next),
+        ].join("\n\n"),
+        intentSummary: "Batch NPC — prossimo",
+        pendingProposal: next,
+        executed: false,
+        clearedPending: false,
       },
     };
   }
@@ -1042,7 +1098,9 @@ export async function runAiChatAssistant(
       };
     }
 
-    const exec = await executePendingProposal(pending, campaignId);
+    const toExecute = isNpcBatchPending(pending) ? persistActiveBatchItem(pending) : pending;
+
+    const exec = await executePendingProposal(toExecute, campaignId);
     if (!exec.success) {
       return {
         success: true,
@@ -1051,6 +1109,36 @@ export async function runAiChatAssistant(
           intentSummary: "Esecuzione fallita",
           pendingProposal: pending,
           executed: false,
+          clearedPending: false,
+        },
+      };
+    }
+
+    if (toExecute.action_name === "wiki.entity.create" && isNpcBatchPending(toExecute)) {
+      const savedTitle = pickWikiTitle(toExecute.input);
+      const batchMeta = toExecute.wikiBatchMeta!;
+      const next = advanceBatchAfterAction(toExecute, {});
+
+      if (!next) {
+        return {
+          success: true,
+          data: {
+            reply: formatBatchSaveReply(savedTitle, batchMeta, null),
+            intentSummary: "Batch NPC completato",
+            pendingProposal: null,
+            executed: true,
+            clearedPending: true,
+          },
+        };
+      }
+
+      return {
+        success: true,
+        data: {
+          reply: formatBatchSaveReply(savedTitle, batchMeta, next),
+          intentSummary: "PNG batch salvato",
+          pendingProposal: next,
+          executed: true,
           clearedPending: false,
         },
       };
@@ -1130,16 +1218,58 @@ export async function runAiChatAssistant(
 
     const merged = mergePendingNpcBuildParams(pending, message);
     if (!hasNpcMechanicsParams(merged)) {
+      const nextMechanicsPending = pending.wikiBatchMeta
+        ? {
+            ...pending,
+            phase: "awaiting_npc_mechanics" as const,
+            wikiBatchMeta: {
+              ...pending.wikiBatchMeta,
+              sharedNpcBuildParams: merged,
+            },
+            wikiMeta: pending.wikiMeta
+              ? { ...pending.wikiMeta, npcBuildParams: merged }
+              : pending.wikiMeta,
+          }
+        : buildAwaitingNpcMechanicsPending(
+            pending,
+            pending.wikiMeta?.userPrompt ?? message.trim(),
+            merged
+          );
       return {
         success: true,
         data: {
           reply: formatNpcMechanicsQuestion(merged),
           intentSummary: "Dati statblock incompleti",
-          pendingProposal: buildAwaitingNpcMechanicsPending(
-            pending,
-            pending.wikiMeta?.userPrompt ?? message.trim(),
-            merged
-          ),
+          pendingProposal: nextMechanicsPending,
+          executed: false,
+          clearedPending: false,
+        },
+      };
+    }
+
+    if (pending.wikiBatchMeta) {
+      const batchResult = await enrichNpcBatchProposals(
+        campaignId,
+        {
+          userPrompt: pending.wikiBatchMeta.originalPrompt,
+          count: pending.wikiBatchMeta.roles.length,
+          roles: pending.wikiBatchMeta.roles,
+          locationName: pending.wikiBatchMeta.locationName,
+          extraParams: merged,
+        },
+        merged
+      );
+
+      if (!batchResult.ok) {
+        return { success: false, error: batchResult.error };
+      }
+
+      return {
+        success: true,
+        data: {
+          reply: [batchResult.assistantSummary, chatHintForProposal(batchResult.pending.phase)].filter(Boolean).join("\n\n"),
+          intentSummary: "Batch NPC generato",
+          pendingProposal: batchResult.pending,
           executed: false,
           clearedPending: false,
         },
@@ -1279,9 +1409,11 @@ export async function runAiChatAssistant(
       };
     }
 
-    const enriched = await tryEnrichWikiProposal(campaignId, message, pending, {
+    const workingPending = isNpcBatchPending(pending) ? persistActiveBatchItem(pending) : pending;
+
+    const enriched = await tryEnrichWikiProposal(campaignId, message, workingPending, {
       refine: true,
-      pending,
+      pending: workingPending,
       previewTextSelection,
     });
 
@@ -1290,10 +1422,12 @@ export async function runAiChatAssistant(
     }
 
     const { nextPending, replyExtra } = finalizeWikiProposalAfterText(
-      pending,
+      workingPending,
       enriched.proposal,
       enriched.wikiMeta
     );
+
+    const stored = isNpcBatchPending(nextPending) ? persistActiveBatchItem(nextPending) : nextPending;
 
     const reply = [
       "Ho aggiornato la proposta in base alle tue indicazioni.",
@@ -1314,7 +1448,7 @@ export async function runAiChatAssistant(
           : selectionRefine
             ? "Modifica mirata (wiki)"
             : "Bozza wiki aggiornata",
-        pendingProposal: nextPending,
+        pendingProposal: stored,
         executed: false,
         clearedPending: false,
       },
@@ -1574,15 +1708,19 @@ export async function runAiChatAssistant(
 
   let interpreted: AiInterpreterResult;
   let detectedExtraParams: import("@/lib/ai/wiki-text-generator").WikiMarkdownExtraParams | undefined;
+  let detectedNpcBatch: import("./wiki-npc-batch").DetectedNpcBatchRequest | undefined;
 
   const wikiFastPathContext = [...(input.recentUserMessages ?? []), message].filter(Boolean).join("\n");
+  const batchDetected = campaignId ? detectNpcBatchCreateRequest(wikiFastPathContext) : null;
+  const batchFastPath = intent === "new" && !pending && batchDetected != null;
   const wikiFastPath =
+    !batchFastPath &&
     intent === "new" &&
     !pending &&
     campaignId &&
     detectWikiCreateRequest(wikiFastPathContext);
 
-  if (wikiFastPath) {
+  if (batchFastPath || wikiFastPath) {
     const fallback = applyDomainFallbackInterpreter(message, campaignId, input.recentUserMessages, {
       reply: "",
       intent_summary: "Parse fallito",
@@ -1590,6 +1728,7 @@ export async function runAiChatAssistant(
     });
     interpreted = fallback.interpreted;
     detectedExtraParams = fallback.detectedExtraParams;
+    detectedNpcBatch = fallback.detectedNpcBatch ?? batchDetected ?? undefined;
   } else {
     try {
       interpreted = await interpretUserMessage(message, commandContext, {
@@ -1621,6 +1760,7 @@ export async function runAiChatAssistant(
     );
     interpreted = fallback.interpreted;
     detectedExtraParams = fallback.detectedExtraParams;
+    detectedNpcBatch = fallback.detectedNpcBatch;
   }
 
   let previews = await previewInterpreterProposals(interpreted.proposals, campaignId);
@@ -1630,6 +1770,34 @@ export async function runAiChatAssistant(
 
   if (nextPending) {
     if (
+      detectedNpcBatch &&
+      campaignId &&
+      nextPending.action_name === "wiki.entity.create"
+    ) {
+      const npcParams = mergeWikiExtraParams(
+        detectedExtraParams,
+        detectedNpcBatch.extraParams,
+        extractNpcBuildParams(message)
+      );
+
+      if (!hasNpcMechanicsParams(npcParams)) {
+        nextPending = buildAwaitingNpcBatchMechanicsPending(campaignId, detectedNpcBatch, npcParams);
+        interpreted = {
+          ...interpreted,
+          reply: [interpreted.reply, formatNpcMechanicsQuestion(npcParams)].filter(Boolean).join("\n\n"),
+        };
+      } else {
+        const batchResult = await enrichNpcBatchProposals(campaignId, detectedNpcBatch, npcParams);
+        if (!batchResult.ok) {
+          return { success: false, error: batchResult.error };
+        }
+        nextPending = batchResult.pending;
+        interpreted = {
+          ...interpreted,
+          reply: [interpreted.reply, batchResult.assistantSummary].filter(Boolean).join("\n\n"),
+        };
+      }
+    } else if (
       nextPending.action_name === "wiki.entity.create" &&
       campaignId &&
       isWikiMarkdownEntityType(pickWikiType(nextPending.input))
