@@ -39,8 +39,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ExternalLink, Map, Pencil, Trash2, Undo2 } from "lucide-react";
+import { ExternalLink, ChevronDown, Map, Pencil, Trash2, Undo2 } from "lucide-react";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
+import type { ReactNode } from "react";
 
 /**
  * Mappe FoW: sotto 4 MB per la route API.
@@ -52,6 +54,36 @@ const MAP_UPLOAD_COMPRESSION = {
   useWebWorker: true,
   fileType: "image/webp" as const,
 };
+
+const FIELD_CLASS = "border-white/10 bg-barber-dark/50 ring-1 ring-white/5";
+
+function ToolDetails({
+  title,
+  description,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  description?: string;
+  defaultOpen?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <details
+      className="group rounded-xl bg-white/[0.03] ring-1 ring-inset ring-white/[0.06]"
+      {...(defaultOpen ? { open: true } : {})}
+    >
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5 text-sm font-medium text-barber-paper [&::-webkit-details-marker]:hidden">
+        <span>{title}</span>
+        <ChevronDown className="h-4 w-4 shrink-0 text-barber-paper/40 transition-transform group-open:rotate-180" />
+      </summary>
+      {description ? (
+        <p className="px-3 pb-1 text-xs leading-relaxed text-barber-paper/55">{description}</p>
+      ) : null}
+      <div className="space-y-3 border-t border-white/[0.06] px-3 py-3">{children}</div>
+    </details>
+  );
+}
 
 type Props = {
   campaignId: string;
@@ -578,126 +610,404 @@ export function VistaDallAltoClient({
 
 
   return (
-    <div className="flex min-h-[70vh] flex-col gap-6">
-      <section className="rounded-xl border border-barber-gold/25 bg-barber-dark/50 p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h3 className="text-sm font-semibold text-barber-gold">Scene Editor</h3>
-            <p className="text-xs text-barber-paper/60">
-              Crea mappe con stanze, corridoi, muri e FoW automatica per area.
-            </p>
-          </div>
-          <Button
-            type="button"
-            asChild
-            className="bg-barber-gold text-barber-dark hover:bg-barber-gold/90"
-          >
-            <Link href={`/campaigns/${campaignId}/gm-only/scene-editor`}>
-              <Map className="mr-2 h-4 w-4" />
-              Scene Editor
-            </Link>
-          </Button>
-        </div>
-      </section>
+    <div className="flex min-h-0 flex-1 flex-col gap-2 lg:gap-3">
+      <div className="shrink-0 rounded-2xl bg-barber-dark/35 p-3 ring-1 ring-inset ring-white/[0.06] sm:p-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="flex min-w-0 flex-1 flex-wrap items-end gap-3">
+            <div className="space-y-1">
+              <Label className="text-[11px] text-barber-gold/75">Piano / mappa</Label>
+              <Select
+                value={selectedMapId ?? ""}
+                onValueChange={(v) => {
+                  setSelectedMapId(v);
+                  setDraftPoints([]);
+                  setSelectedRegionId(null);
+                  setUndoReveal([]);
+                }}
+              >
+                <SelectTrigger className={cn("w-full min-w-[220px] sm:w-[260px]", FIELD_CLASS)}>
+                  <SelectValue placeholder="Seleziona una mappa" />
+                </SelectTrigger>
+                <SelectContent>
+                  {maps.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.floor_label?.trim() || "Senza nome"} (ord. {m.sort_order})
+                      {m.source_type === "generated_scene" ? " · generata" : ""}
+                      {m.linked_mission_id ? " · missione" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-      <div className="flex flex-wrap items-end gap-4">
-        <div className="space-y-1">
-          <Label>Piano / mappa</Label>
-          <Select
-            value={selectedMapId ?? ""}
-            onValueChange={(v) => {
-              setSelectedMapId(v);
-              setDraftPoints([]);
-              setSelectedRegionId(null);
-              setUndoReveal([]);
-            }}
-          >
-            <SelectTrigger className="w-[280px] border-barber-gold/30 bg-barber-dark">
-              <SelectValue placeholder="Seleziona una mappa" />
-            </SelectTrigger>
-            <SelectContent>
-              {maps.map((m) => (
-                <SelectItem key={m.id} value={m.id}>
-                  {m.floor_label?.trim() || "Senza nome"} (ord. {m.sort_order})
-                  {m.source_type === "generated_scene" ? " · generata" : ""}
-                  {m.linked_mission_id ? " · missione" : ""}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            {selectedMap ? (
+              <div className="flex flex-wrap gap-1 rounded-xl bg-white/[0.03] p-1 ring-1 ring-inset ring-white/[0.06]">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={mode === "prepare" ? "default" : "ghost"}
+                  className={cn("h-8 rounded-lg text-xs", mode === "prepare" && "bg-barber-gold text-barber-dark")}
+                  onClick={() => setMode("prepare")}
+                >
+                  Prepara poligoni
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={mode === "explore" ? "default" : "ghost"}
+                  className={cn("h-8 rounded-lg text-xs", mode === "explore" && "bg-barber-gold text-barber-dark")}
+                  onClick={() => {
+                    setMode("explore");
+                    setDraftPoints([]);
+                  }}
+                >
+                  Esplora (rivela)
+                </Button>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="button" asChild size="sm" variant="outline" className="h-8 border-white/10 text-xs ring-1 ring-white/5">
+              <Link href={`/campaigns/${campaignId}/gm-only/scene-editor`}>
+                <Map className="mr-1.5 h-3.5 w-3.5" />
+                Scene Editor
+              </Link>
+            </Button>
+            {selectedMapId ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 border-white/10 text-xs ring-1 ring-white/5"
+                onClick={openProjectionFullscreenWindow}
+              >
+                <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+                Proiezione
+              </Button>
+            ) : null}
+            {selectedMap?.source_type === "generated_scene" && selectedMap.scene_document_id ? (
+              <Button type="button" variant="outline" size="sm" className="h-8 border-white/10 text-xs ring-1 ring-white/5" asChild>
+                <Link href={`/campaigns/${campaignId}/gm-only/scene-editor/${selectedMap.scene_document_id}`}>
+                  <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                  Modifica scena
+                </Link>
+              </Button>
+            ) : null}
+          </div>
         </div>
-        {selectedMapId && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="border-barber-gold/40"
-            onClick={openProjectionFullscreenWindow}
-          >
-            <ExternalLink className="mr-2 h-4 w-4" />
-            Apri proiezione (2° schermo)
-          </Button>
-        )}
-        {selectedMap?.source_type === "generated_scene" && selectedMap.scene_document_id ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="border-barber-gold/40"
-            asChild
-          >
-            <Link
-              href={`/campaigns/${campaignId}/gm-only/scene-editor/${selectedMap.scene_document_id}`}
-            >
-              <Pencil className="mr-2 h-4 w-4" />
-              Modifica scena
-            </Link>
-          </Button>
+
+        {selectedMap ? (
+          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/[0.06] pt-3">
+            {mode === "prepare" ? (
+              <>
+                <Button type="button" size="sm" variant="secondary" className="h-8 text-xs" onClick={() => setDraftPoints([])}>
+                  Annulla bozza
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  className="h-8 text-xs"
+                  onClick={() => void closeDraftPolygon()}
+                  disabled={draftPoints.length < 3}
+                >
+                  Chiudi poligono
+                </Button>
+                <Button type="button" size="sm" variant="outline" className="h-8 border-white/10 text-xs ring-1 ring-white/5" onClick={handleDeleteRegion} disabled={!selectedRegionId}>
+                  <Trash2 className="mr-1 h-3.5 w-3.5" />
+                  Elimina poligono
+                </Button>
+                <Select value={selectedRegionId ?? "__none__"} onValueChange={(v) => setSelectedRegionId(v === "__none__" ? null : v)}>
+                  <SelectTrigger className={cn("h-8 w-[180px] text-xs", FIELD_CLASS)}>
+                    <SelectValue placeholder="Poligono" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— Nessuno —</SelectItem>
+                    {regionsForMap.map((r) => (
+                      <SelectItem key={r.id} value={r.id}>
+                        Poligono {r.sort_order + 1}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </>
+            ) : (
+              <>
+                <Button type="button" size="sm" variant="outline" className="h-8 border-white/10 text-xs ring-1 ring-white/5" onClick={undoRevealAction} disabled={undoReveal.length === 0}>
+                  <Undo2 className="mr-1 h-3.5 w-3.5" />
+                  Undo
+                </Button>
+                <Button type="button" size="sm" variant="outline" className="h-8 border-white/10 text-xs ring-1 ring-white/5" onClick={() => void handleBulkReveal(true)}>
+                  Rivela tutto
+                </Button>
+                <Button type="button" size="sm" variant="outline" className="h-8 border-white/10 text-xs ring-1 ring-white/5" onClick={() => void handleBulkReveal(false)}>
+                  Oscura tutto
+                </Button>
+                <Button type="button" size="sm" variant="outline" className="h-8 border-white/10 text-xs ring-1 ring-white/5" onClick={() => void handleResetFog()}>
+                  Reset nebbia
+                </Button>
+              </>
+            )}
+            <Button type="button" size="sm" variant="destructive" className="ml-auto h-8 text-xs" onClick={() => void handleDeleteMap()}>
+              Elimina mappa
+            </Button>
+          </div>
         ) : null}
       </div>
 
-      <section className="rounded-xl border border-barber-gold/25 bg-barber-dark/50 p-4">
-        <h3 className="mb-3 text-sm font-semibold text-barber-gold">Nuova mappa</h3>
-        <form
-          encType="multipart/form-data"
-          onSubmit={(e) => void handleAddMap(e)}
-          className="flex flex-wrap items-end gap-3"
-        >
+      {maps.length === 0 ? (
+        <div className="flex min-h-0 flex-1 flex-col gap-3 lg:flex-row">
+          <div className="flex flex-1 flex-col items-center justify-center rounded-2xl bg-white/[0.02] p-8 text-center ring-1 ring-dashed ring-barber-gold/15">
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-barber-gold/10 ring-1 ring-barber-gold/20">
+              <Map className="h-7 w-7 text-barber-gold" />
+            </div>
+            <p className="font-serif text-base text-barber-paper">Nessuna mappa FoW</p>
+            <p className="mt-2 max-w-md text-sm leading-relaxed text-barber-paper/55">
+              Crea una scena con lo Scene Editor oppure carica un&apos;immagine dal pannello a destra.
+            </p>
+          </div>
+          <aside className="scrollbar-barber-y w-full shrink-0 space-y-2 overflow-y-auto lg:w-80">
+            <NewMapPanel
+              maps={maps}
+              missionOptions={missionOptions}
+              newMapMissionId={newMapMissionId}
+              setNewMapMissionId={setNewMapMissionId}
+              mapCompressing={mapCompressing}
+              mapUploading={mapUploading}
+              onSubmit={handleAddMap}
+              defaultOpen
+            />
+          </aside>
+        </div>
+      ) : selectedMap ? (
+        <div className="grid min-h-0 flex-1 gap-2 lg:grid-cols-[minmax(0,1fr)_minmax(260px,300px)] lg:gap-3">
+          <div className="flex min-h-[min(52vh,520px)] min-w-0 flex-col overflow-hidden rounded-2xl bg-gradient-to-br from-barber-dark/45 via-barber-dark/60 to-barber-dark/80 ring-1 ring-barber-gold/10 lg:min-h-0">
+            <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-white/[0.06] px-3 py-2 text-xs text-barber-paper/75">
+              <span className="rounded-md bg-barber-gold/15 px-1.5 py-0.5 text-[10px] font-medium text-barber-gold">
+                {mapSourceLabel(selectedMap.source_type ?? "uploaded_image")}
+              </span>
+              <span>
+                {regionsForMap.length} zone · bozza {draftPoints.length} vertici
+              </span>
+              {gridOverlay.showGrid ? <span className="text-emerald-400/90">Griglia attiva</span> : null}
+              {selectedMap.grid_cell_meters != null ? (
+                <span>1 quadretto ≈ {String(selectedMap.grid_cell_meters)} m</span>
+              ) : null}
+            </div>
+            <div className="min-h-0 flex-1 overflow-hidden p-2">
+              <ExplorationMapStage
+                imageUrl={imageUrl}
+                imageAlt={selectedMap.floor_label || "Mappa"}
+                regions={vm}
+                mode={mode}
+                draftPoints={draftPoints}
+                selectedRegionId={selectedRegionId}
+                onImageSized={gridOverlay.onImageSized}
+                onCanvasClick={onCanvasClick}
+                onShapeCreate={handleShapeCreate}
+                onVertexDragEnd={handleVertexDragEnd}
+                onRegionPolygonChange={handleRegionPolygonChange}
+                onRegionDelete={handleDeleteRegionById}
+                onRevealClick={mode === "explore" ? onRevealClick : undefined}
+                fillViewport
+                showGrid={gridOverlay.showGrid}
+                gridCellSourcePxX={gridOverlay.gridCellSourcePxX}
+                gridOffsetXCells={gridOverlay.gridOffsetXCells}
+                gridOffsetYCells={gridOverlay.gridOffsetYCells}
+                showGmNotes={gmNotesOverlay.length > 0}
+                gmNotes={gmNotesOverlay}
+              />
+            </div>
+            <p className="shrink-0 px-3 pb-2 text-[11px] leading-relaxed text-barber-paper/50">
+              {mode === "prepare"
+                ? "Clic per vertici, poi «Chiudi poligono». Tasto destro: menu radiale con forme rapide."
+                : "Clic su un'area per rivelarla ai giocatori; la proiezione si aggiorna in tempo reale."}
+            </p>
+          </div>
+
+          <aside className="scrollbar-barber-y flex min-h-0 flex-col gap-2 overflow-y-auto lg:max-h-none">
+            <section className="rounded-xl bg-white/[0.03] p-3 ring-1 ring-inset ring-white/[0.06]">
+              <div className="mb-2 flex items-center justify-between">
+                <h4 className="text-[11px] font-medium text-barber-gold/75">Zone FoW</h4>
+                <span className="text-[10px] text-barber-paper/50">{regionsForMap.length}</span>
+              </div>
+              <div className="max-h-36 space-y-1 overflow-y-auto pr-0.5">
+                {regionsForMap.map((r, idx) => (
+                  <div
+                    key={r.id}
+                    className="flex items-center justify-between rounded-lg bg-white/[0.02] px-2 py-1.5 text-xs ring-1 ring-inset ring-white/[0.04]"
+                  >
+                    <button
+                      type="button"
+                      className="truncate text-left text-barber-paper/90 hover:text-barber-gold"
+                      onClick={() => setSelectedRegionId(r.id)}
+                    >
+                      Zona {idx + 1}
+                    </button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2 text-[10px]"
+                      onClick={() => void handleToggleRegion(r.id, !r.is_revealed)}
+                    >
+                      {r.is_revealed ? "Nascondi" : "Rivela"}
+                    </Button>
+                  </div>
+                ))}
+                {regionsForMap.length === 0 ? (
+                  <p className="text-xs italic leading-relaxed text-barber-paper/55">
+                    {selectedMap.source_type === "generated_scene"
+                      ? "Salva la scena nello Scene Editor oppure disegna poligoni in «Prepara»."
+                      : "Disegna poligoni o importa un JSON scena."}
+                  </p>
+                ) : null}
+              </div>
+            </section>
+
+            {selectedMap.source_type !== "generated_scene" ? (
+              <ToolDetails title="Calibrazione griglia" description="Celle Roll20 (W×H) come in Dungeon Alchemist / Foundry.">
+                <div className="flex flex-wrap items-end gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Celle W</Label>
+                    <Input value={gridCellsW} onChange={(e) => setGridCellsW(e.target.value)} type="number" min={1} className={cn("w-20 text-sm", FIELD_CLASS)} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Celle H</Label>
+                    <Input value={gridCellsH} onChange={(e) => setGridCellsH(e.target.value)} type="number" min={1} className={cn("w-20 text-sm", FIELD_CLASS)} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Off. X</Label>
+                    <Input value={gridOffsetX} onChange={(e) => setGridOffsetX(e.target.value)} type="number" className={cn("w-20 text-sm", FIELD_CLASS)} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Off. Y</Label>
+                    <Input value={gridOffsetY} onChange={(e) => setGridOffsetY(e.target.value)} type="number" className={cn("w-20 text-sm", FIELD_CLASS)} />
+                  </div>
+                  <Button type="button" size="sm" variant="outline" className="h-8 border-white/10 text-xs ring-1 ring-white/5" disabled={savingGrid} onClick={() => void handleSaveGridCalibration()}>
+                    {savingGrid ? "Salvataggio…" : "Salva"}
+                  </Button>
+                </div>
+              </ToolDetails>
+            ) : (
+              <p className="rounded-xl bg-white/[0.02] px-3 py-2 text-xs text-barber-paper/55 ring-1 ring-inset ring-white/[0.04]">
+                Griglia gestita dallo Scene Editor.
+              </p>
+            )}
+
+            {missionOptions.length > 0 ? (
+              <ToolDetails title="Missione collegata">
+                <div className="flex flex-wrap items-end gap-2">
+                  <Select value={selectedMapMissionId} onValueChange={setSelectedMapMissionId}>
+                    <SelectTrigger className={cn("w-full text-sm", FIELD_CLASS)}>
+                      <SelectValue placeholder="Nessuna missione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Nessuna missione</SelectItem>
+                      {missionOptions.map((m) => (
+                        <SelectItem key={m.id} value={m.id}>
+                          {m.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button type="button" size="sm" variant="outline" className="h-8 border-white/10 text-xs ring-1 ring-white/5" disabled={savingMapMission} onClick={() => void handleSaveMapMission()}>
+                    {savingMapMission ? "Salvataggio…" : "Salva missione"}
+                  </Button>
+                </div>
+              </ToolDetails>
+            ) : null}
+
+            <ToolDetails title="Import scena JSON" description="Export Foundry / Dungeon Alchemist: genera zone FoW e griglia.">
+              <Input
+                type="file"
+                accept=".json,application/json"
+                className={cn("max-w-full text-sm", FIELD_CLASS)}
+                onChange={(e) => {
+                  const file = e.currentTarget.files?.[0];
+                  if (!file) return;
+                  void file.text().then((txt) => setImportText(txt));
+                }}
+              />
+              <textarea
+                value={importText}
+                onChange={(e) => setImportText(e.target.value)}
+                rows={5}
+                className={cn("w-full rounded-md p-2 font-mono text-xs text-barber-paper", FIELD_CLASS)}
+                placeholder='{"name":"Treno","width":...}'
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" size="sm" className="h-8 bg-barber-gold text-barber-dark hover:bg-barber-gold/90" disabled={importLoading || !importText.trim()} onClick={() => void handleImportSceneJson()}>
+                  {importLoading ? "Import…" : "Importa JSON"}
+                </Button>
+                <Button type="button" size="sm" variant="ghost" className="h-8" disabled={importLoading} onClick={() => setImportText("")}>
+                  Svuota
+                </Button>
+              </div>
+            </ToolDetails>
+
+            <NewMapPanel
+              maps={maps}
+              missionOptions={missionOptions}
+              newMapMissionId={newMapMissionId}
+              setNewMapMissionId={setNewMapMissionId}
+              mapCompressing={mapCompressing}
+              mapUploading={mapUploading}
+              onSubmit={handleAddMap}
+            />
+          </aside>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function NewMapPanel({
+  maps,
+  missionOptions,
+  newMapMissionId,
+  setNewMapMissionId,
+  mapCompressing,
+  mapUploading,
+  onSubmit,
+  defaultOpen = false,
+}: {
+  maps: ExplorationMapRow[];
+  missionOptions: { id: string; title: string }[];
+  newMapMissionId: string;
+  setNewMapMissionId: (v: string) => void;
+  mapCompressing: boolean;
+  mapUploading: boolean;
+  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  defaultOpen?: boolean;
+}) {
+  return (
+    <ToolDetails
+      title="Carica nuova mappa"
+      description="Immagine o link Drive; opzionale missione e scala quadretto."
+      defaultOpen={defaultOpen}
+    >
+      <form encType="multipart/form-data" onSubmit={(e) => void onSubmit(e)} className="space-y-3">
+        <div className="grid gap-2 sm:grid-cols-2">
           <div className="space-y-1">
             <Label htmlFor="f-floor">Nome piano</Label>
-            <Input
-              id="f-floor"
-              name="floor_label"
-              placeholder="es. Piano terra"
-              className="w-56 border-barber-gold/30 bg-barber-dark"
-            />
+            <Input id="f-floor" name="floor_label" placeholder="Piano terra" className={FIELD_CLASS} />
           </div>
           <div className="space-y-1">
             <Label htmlFor="f-sort">Ordine</Label>
-            <Input
-              id="f-sort"
-              name="sort_order"
-              type="number"
-              defaultValue={maps.length}
-              className="w-20 border-barber-gold/30 bg-barber-dark"
-            />
+            <Input id="f-sort" name="sort_order" type="number" defaultValue={maps.length} className={FIELD_CLASS} />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="f-grid">Quadretto (m), opz.</Label>
-            <Input
-              id="f-grid"
-              name="grid_cell_meters"
-              type="text"
-              placeholder="1.5"
-              className="w-24 border-barber-gold/30 bg-barber-dark"
-            />
+            <Label htmlFor="f-grid">Quadretto (m)</Label>
+            <Input id="f-grid" name="grid_cell_meters" placeholder="1.5" className={FIELD_CLASS} />
           </div>
           {missionOptions.length > 0 ? (
-            <div className="space-y-1">
-              <Label>Missione collegata</Label>
+            <div className="space-y-1 sm:col-span-2">
+              <Label>Missione</Label>
               <Select value={newMapMissionId} onValueChange={setNewMapMissionId}>
-                <SelectTrigger className="w-56 border-barber-gold/30 bg-barber-dark">
-                  <SelectValue placeholder="Nessuna missione" />
+                <SelectTrigger className={FIELD_CLASS}>
+                  <SelectValue placeholder="Nessuna" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Nessuna missione</SelectItem>
@@ -710,386 +1020,19 @@ export function VistaDallAltoClient({
               </Select>
             </div>
           ) : null}
-          <div className="space-y-1">
-            <Label htmlFor="f-img">Immagine</Label>
-            <Input
-              id="f-img"
-              name="image"
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              disabled={mapCompressing || mapUploading}
-              className="max-w-xs text-sm text-barber-paper"
-            />
-            <p className="max-w-md text-xs text-barber-paper/60">
-              Facoltativo: se scegli un file verrà compresso in WebP e caricato su Telegram.
-            </p>
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="f-img-url">Oppure link Google Drive</Label>
-            <Input
-              id="f-img-url"
-              name="image_url"
-              type="url"
-              placeholder="https://drive.google.com/..."
-              disabled={mapCompressing || mapUploading}
-              className="w-80 border-barber-gold/30 bg-barber-dark text-sm"
-            />
-            <p className="max-w-md text-xs text-barber-paper/60">
-              Accetta link Google Drive/Googleusercontent; l&apos;immagine viene importata su Telegram.
-            </p>
-          </div>
-          <Button
-            type="submit"
-            disabled={mapCompressing || mapUploading}
-            className="bg-barber-red hover:bg-barber-red/90"
-          >
-            {mapCompressing ? "Compressione…" : mapUploading ? "Caricamento…" : "Carica"}
-          </Button>
-        </form>
-      </section>
-
-      {selectedMap && (
-        <>
-          <section className="rounded-xl border border-barber-gold/25 bg-barber-dark/50 p-4">
-            <h3 className="mb-2 text-sm font-semibold text-barber-gold">
-              Import scena (Treno-first)
-            </h3>
-            <p className="mb-3 text-xs text-barber-paper/70">
-              Incolla il JSON export Foundry/Dungeon Alchemist. Verranno generate automaticamente
-              le zone FoW e impostata la griglia della mappa.
-            </p>
-            <div className="flex flex-col gap-2">
-              <Input
-                type="file"
-                accept=".json,application/json"
-                className="max-w-sm border-barber-gold/30 bg-barber-dark text-sm"
-                onChange={(e) => {
-                  const file = e.currentTarget.files?.[0];
-                  if (!file) return;
-                  void file.text().then((txt) => setImportText(txt));
-                }}
-              />
-              <textarea
-                value={importText}
-                onChange={(e) => setImportText(e.target.value)}
-                rows={7}
-                className="w-full rounded-md border border-barber-gold/30 bg-barber-dark p-2 font-mono text-xs text-barber-paper"
-                placeholder='Incolla qui il JSON scena (es. {"name":"Treno","width":...})'
-              />
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  className="bg-barber-gold text-barber-dark hover:bg-barber-gold/90"
-                  disabled={importLoading || !importText.trim()}
-                  onClick={() => void handleImportSceneJson()}
-                >
-                  {importLoading ? "Import in corso..." : "Importa JSON e rigenera FoW"}
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  disabled={importLoading}
-                  onClick={() => setImportText("")}
-                >
-                  Svuota
-                </Button>
-              </div>
-            </div>
-          </section>
-
-          <div className="flex flex-wrap items-center gap-2 border-b border-barber-gold/20 pb-3">
-            <div className="mr-4 flex gap-1 rounded-lg border border-barber-gold/30 p-1">
-              <Button
-                type="button"
-                size="sm"
-                variant={mode === "prepare" ? "default" : "ghost"}
-                className={mode === "prepare" ? "bg-barber-gold text-barber-dark" : ""}
-                onClick={() => setMode("prepare")}
-              >
-                Prepara poligoni
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant={mode === "explore" ? "default" : "ghost"}
-                className={mode === "explore" ? "bg-barber-gold text-barber-dark" : ""}
-                onClick={() => {
-                  setMode("explore");
-                  setDraftPoints([]);
-                }}
-              >
-                Esplora (rivela)
-              </Button>
-            </div>
-            {mode === "prepare" && (
-              <>
-                <Button type="button" size="sm" variant="secondary" onClick={() => setDraftPoints([])}>
-                  Annulla bozza
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => void closeDraftPolygon()}
-                  disabled={draftPoints.length < 3}
-                >
-                  Chiudi poligono
-                </Button>
-                <Button type="button" size="sm" variant="outline" onClick={handleDeleteRegion} disabled={!selectedRegionId}>
-                  <Trash2 className="mr-1 h-4 w-4" />
-                  Elimina poligono
-                </Button>
-              </>
-            )}
-            {mode === "explore" && (
-              <>
-                <Button type="button" size="sm" variant="outline" onClick={undoRevealAction} disabled={undoReveal.length === 0}>
-                  <Undo2 className="mr-1 h-4 w-4" />
-                  Undo rivelazione
-                </Button>
-                <Button type="button" size="sm" variant="outline" onClick={() => void handleBulkReveal(true)}>
-                  Rivela tutte le zone
-                </Button>
-                <Button type="button" size="sm" variant="outline" onClick={() => void handleBulkReveal(false)}>
-                  Oscura tutte le zone
-                </Button>
-                <Button type="button" size="sm" variant="outline" onClick={() => void handleResetFog()}>
-                  Reset nebbia
-                </Button>
-              </>
-            )}
-            <Button type="button" size="sm" variant="destructive" onClick={() => void handleDeleteMap()}>
-              Elimina mappa
-            </Button>
-          </div>
-
-          <div className="mb-2 flex flex-wrap gap-4 text-sm text-barber-paper/80">
-            <span>
-              <span className="rounded bg-barber-gold/15 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-barber-gold">
-                {mapSourceLabel(selectedMap.source_type ?? "uploaded_image")}
-              </span>
-            </span>
-            <span>
-              Poligoni: {regionsForMap.length} · Bozza: {draftPoints.length} vertici
-            </span>
-            {gridOverlay.showGrid ? (
-              <span className="text-emerald-400/90">Griglia attiva</span>
-            ) : null}
-            {selectedMap.grid_cell_meters != null && (
-              <span>Scala: 1 quadretto ≈ {String(selectedMap.grid_cell_meters)} m</span>
-            )}
-          </div>
-
-          {selectedMap.source_type === "generated_scene" ? (
-            <p className="mb-3 text-xs text-barber-paper/55">
-              Griglia da Scene Editor. Per modificarla apri{" "}
-              <Link
-                href={`/campaigns/${campaignId}/gm-only/scene-editor/${selectedMap.scene_document_id}`}
-                className="text-barber-gold underline"
-              >
-                Modifica scena
-              </Link>
-              .
-            </p>
-          ) : (
-            <section className="mb-3 rounded-lg border border-barber-gold/20 bg-barber-dark/40 p-3">
-              <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-barber-gold">
-                Calibrazione griglia (mappe importate)
-              </h4>
-              <p className="mb-2 text-xs text-barber-paper/55">
-                Imposta celle Roll20 (larghezza × altezza in quadretti) come in Dungeon Alchemist / Foundry.
-                L&apos;import JSON scena può precompilare questi valori.
-              </p>
-              <div className="flex flex-wrap items-end gap-2">
-                <div className="space-y-1">
-                  <Label className="text-xs">Celle W</Label>
-                  <Input
-                    value={gridCellsW}
-                    onChange={(e) => setGridCellsW(e.target.value)}
-                    type="number"
-                    min={1}
-                    className="w-24 border-barber-gold/30 bg-barber-dark text-sm"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Celle H</Label>
-                  <Input
-                    value={gridCellsH}
-                    onChange={(e) => setGridCellsH(e.target.value)}
-                    type="number"
-                    min={1}
-                    className="w-24 border-barber-gold/30 bg-barber-dark text-sm"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Offset X (celle)</Label>
-                  <Input
-                    value={gridOffsetX}
-                    onChange={(e) => setGridOffsetX(e.target.value)}
-                    type="number"
-                    className="w-24 border-barber-gold/30 bg-barber-dark text-sm"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Offset Y (celle)</Label>
-                  <Input
-                    value={gridOffsetY}
-                    onChange={(e) => setGridOffsetY(e.target.value)}
-                    type="number"
-                    className="w-24 border-barber-gold/30 bg-barber-dark text-sm"
-                  />
-                </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="border-barber-gold/40"
-                  disabled={savingGrid}
-                  onClick={() => void handleSaveGridCalibration()}
-                >
-                  {savingGrid ? "Salvataggio..." : "Salva griglia"}
-                </Button>
-              </div>
-            </section>
-          )}
-
-          {missionOptions.length > 0 ? (
-            <section className="mb-3 rounded-lg border border-barber-gold/20 bg-barber-dark/40 p-3">
-              <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-barber-gold">
-                Missione mappa esplorazione
-              </h4>
-              <div className="flex flex-wrap items-end gap-2">
-                <Select value={selectedMapMissionId} onValueChange={setSelectedMapMissionId}>
-                  <SelectTrigger className="w-72 border-barber-gold/30 bg-barber-dark text-sm">
-                    <SelectValue placeholder="Nessuna missione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Nessuna missione</SelectItem>
-                    {missionOptions.map((m) => (
-                      <SelectItem key={m.id} value={m.id}>
-                        {m.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="border-barber-gold/40"
-                  disabled={savingMapMission}
-                  onClick={() => void handleSaveMapMission()}
-                >
-                  {savingMapMission ? "Salvataggio..." : "Salva missione"}
-                </Button>
-              </div>
-            </section>
-          ) : null}
-
-          {mode === "prepare" && (
-            <div className="mb-2 flex flex-wrap gap-2">
-              <Label className="text-xs text-barber-paper/60">Seleziona poligono (modifica vertici)</Label>
-              <Select
-                value={selectedRegionId ?? "__none__"}
-                onValueChange={(v) => setSelectedRegionId(v === "__none__" ? null : v)}
-              >
-                <SelectTrigger className="h-8 w-[220px] border-barber-gold/30 bg-barber-dark text-xs">
-                  <SelectValue placeholder="Nessuno" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">— Nessuno —</SelectItem>
-                  {regionsForMap.map((r) => (
-                    <SelectItem key={r.id} value={r.id}>
-                      Poligono {r.sort_order + 1}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          <section className="mb-2 rounded-lg border border-barber-gold/20 bg-barber-dark/40 p-3">
-            <div className="mb-2 flex items-center justify-between">
-              <h4 className="text-xs font-semibold uppercase tracking-wide text-barber-gold">
-                Zone FoW
-              </h4>
-              <span className="text-xs text-barber-paper/65">{regionsForMap.length} zone</span>
-            </div>
-            <div className="max-h-44 space-y-1 overflow-y-auto pr-1">
-              {regionsForMap.map((r, idx) => (
-                <div
-                  key={r.id}
-                  className="flex items-center justify-between rounded border border-barber-gold/15 px-2 py-1 text-xs"
-                >
-                  <button
-                    type="button"
-                    className="truncate text-left text-barber-paper/90 hover:text-barber-gold"
-                    onClick={() => setSelectedRegionId(r.id)}
-                  >
-                    Zona {idx + 1}
-                  </button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 px-2 text-xs"
-                    onClick={() => void handleToggleRegion(r.id, !r.is_revealed)}
-                  >
-                    {r.is_revealed ? "Nascondi" : "Rivela"}
-                  </Button>
-                </div>
-              ))}
-              {regionsForMap.length === 0 ? (
-                <p className="text-xs italic text-barber-paper/60">
-                  {selectedMap?.source_type === "generated_scene"
-                    ? "Nessuna zona FoW: disegna stanze/corridoi nello Scene Editor e salva, oppure crea poligoni manuali in «Prepara poligoni»."
-                    : "Nessuna zona FoW: crea poligoni manuali o importa un JSON scena."}
-                </p>
-              ) : null}
-            </div>
-          </section>
-
-          <ExplorationMapStage
-            imageUrl={imageUrl}
-            imageAlt={selectedMap.floor_label || "Mappa"}
-            regions={vm}
-            mode={mode}
-            draftPoints={draftPoints}
-            selectedRegionId={selectedRegionId}
-            onImageSized={gridOverlay.onImageSized}
-            onCanvasClick={onCanvasClick}
-            onShapeCreate={handleShapeCreate}
-            onVertexDragEnd={handleVertexDragEnd}
-            onRegionPolygonChange={handleRegionPolygonChange}
-            onRegionDelete={handleDeleteRegionById}
-            onRevealClick={mode === "explore" ? onRevealClick : undefined}
-            showGrid={gridOverlay.showGrid}
-            gridCellSourcePxX={gridOverlay.gridCellSourcePxX}
-            gridOffsetXCells={gridOverlay.gridOffsetXCells}
-            gridOffsetYCells={gridOverlay.gridOffsetYCells}
-            showGmNotes={gmNotesOverlay.length > 0}
-            gmNotes={gmNotesOverlay}
-          />
-
-          <p className="text-xs text-barber-paper/55">
-            Preparazione: clic per vertici, «Chiudi poligono» per salvare; oppure tasto destro sulla mappa per menu
-            radiale (forme rapide e azioni contestuali sposta/ridimensiona/elimina). Esplora: clic su un&apos;area
-            per mostrarla ai giocatori (proiezione si aggiorna in tempo reale).
-          </p>
-        </>
-      )}
-
-      {maps.length === 0 && (
-        <p className="text-sm text-barber-paper/70">
-          Nessuna mappa disponibile. Crea una scena con lo{" "}
-          <Link href={`/campaigns/${campaignId}/gm-only/scene-editor`} className="text-barber-gold underline">
-            Scene Editor
-          </Link>{" "}
-          (salva la scena per aggiornare l&apos;immagine) oppure carica un&apos;immagine qui sotto.
-        </p>
-      )}
-    </div>
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="f-img">Immagine</Label>
+          <Input id="f-img" name="image" type="file" accept="image/jpeg,image/png,image/webp,image/gif" disabled={mapCompressing || mapUploading} className={cn("text-sm", FIELD_CLASS)} />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="f-img-url">Oppure link Google Drive</Label>
+          <Input id="f-img-url" name="image_url" type="url" placeholder="https://drive.google.com/..." disabled={mapCompressing || mapUploading} className={cn("text-sm", FIELD_CLASS)} />
+        </div>
+        <Button type="submit" disabled={mapCompressing || mapUploading} className="h-8 w-full bg-barber-red hover:bg-barber-red/90">
+          {mapCompressing ? "Compressione…" : mapUploading ? "Caricamento…" : "Carica mappa"}
+        </Button>
+      </form>
+    </ToolDetails>
   );
 }

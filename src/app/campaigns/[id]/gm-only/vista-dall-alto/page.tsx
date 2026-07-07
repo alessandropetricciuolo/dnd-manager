@@ -4,7 +4,6 @@ import { ChevronLeft, Layers } from "lucide-react";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { Button } from "@/components/ui/button";
 import { VistaDallAltoClient } from "@/components/exploration/vista-dall-alto-client";
-import { CAMPAIGN_CONTENT_SHELL } from "@/lib/layout/shell-classes";
 import { healCampaignSceneExplorationMapsAction } from "@/app/campaigns/scene-document-actions";
 import type { ExplorationMapRow, FowRegionRow } from "@/app/campaigns/exploration-map-actions";
 
@@ -66,19 +65,23 @@ export default async function VistaDallAltoPage({ params }: PageProps) {
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-theme(spacing.16))] flex-col bg-gradient-to-b from-[#12100f] to-[#1d1714] text-barber-paper">
-      <header className="flex shrink-0 flex-wrap items-center gap-4 border-b border-barber-gold/25 bg-barber-dark/90 px-4 py-3">
-        <Button variant="ghost" size="sm" asChild className="text-barber-gold hover:bg-barber-gold/10">
-          <Link href={`/campaigns/${campaignId}/gm-screen`}>
-            <ChevronLeft className="mr-1 h-4 w-4" />
-            GM Screen
-          </Link>
-        </Button>
-        <Layers className="h-5 w-5 text-barber-gold" aria-hidden />
-        <h1 className="text-lg font-semibold text-barber-gold">Esplorazione e FOW</h1>
-        <span className="text-sm text-barber-paper/60">{campaign.name}</span>
+    <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden bg-[#0b0a10] text-barber-paper">
+      <header className="shrink-0 border-b border-white/[0.06] bg-barber-dark/50 px-4 py-3 backdrop-blur-sm md:px-6">
+        <div className="flex flex-wrap items-center gap-3">
+          <Button variant="ghost" size="sm" asChild className="h-8 text-barber-gold hover:bg-barber-gold/10">
+            <Link href={`/campaigns/${campaignId}/gm-screen`}>
+              <ChevronLeft className="mr-1 h-4 w-4" />
+              GM Screen
+            </Link>
+          </Button>
+          <Layers className="h-5 w-5 text-barber-gold" aria-hidden />
+          <div className="min-w-0">
+            <h1 className="font-serif text-lg font-bold text-barber-paper md:text-xl">Esplorazione e FOW</h1>
+            <p className="truncate text-xs text-barber-paper/50">{campaign.name}</p>
+          </div>
+        </div>
       </header>
-      <div className={`${CAMPAIGN_CONTENT_SHELL} flex min-h-0 flex-1 flex-col`}>
+      <div className="flex min-h-0 flex-1 flex-col px-3 py-2 sm:px-4 sm:py-3 lg:px-6">
         <VistaDallAltoClient
           campaignId={campaignId}
           initialMaps={mapList}
