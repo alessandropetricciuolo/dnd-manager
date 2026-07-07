@@ -14,7 +14,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { CampaignMapOption } from "./interactive-map";
 import { UploadMapInlineForm } from "@/components/maps/upload-map-inline-form";
+import { listWikiLocationsForMapAction, type WikiLocationPinOption } from "@/app/campaigns/map-actions";
 import { ChevronDown, ChevronRight } from "lucide-react";
+
+type LinkKind = "none" | "map" | "location";
 
 type NewPinDialogProps = {
   open: boolean;
@@ -47,18 +50,29 @@ export function NewPinDialog({
   onSubmapCreated,
 }: NewPinDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [linkKind, setLinkKind] = useState<LinkKind>("none");
   const [linkedMapId, setLinkedMapId] = useState("");
+  const [linkedEntityId, setLinkedEntityId] = useState("");
+  const [wikiLocations, setWikiLocations] = useState<WikiLocationPinOption[]>([]);
+  const [loadingLocations, setLoadingLocations] = useState(false);
   const [extraMapOption, setExtraMapOption] = useState<{ id: string; name: string } | null>(null);
   const [showSubmapPanel, setShowSubmapPanel] = useState(false);
   const [uploadFormKey, setUploadFormKey] = useState(0);
 
   useEffect(() => {
     if (!open) return;
+    setLinkKind("none");
     setLinkedMapId("");
+    setLinkedEntityId("");
     setExtraMapOption(null);
     setShowSubmapPanel(false);
     setUploadFormKey((k) => k + 1);
-  }, [open]);
+    setLoadingLocations(true);
+    void listWikiLocationsForMapAction(campaignId).then((res) => {
+      if (res.success) setWikiLocations(res.data);
+      setLoadingLocations(false);
+    });
+  }, [open, campaignId]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -67,7 +81,8 @@ export function NewPinDialog({
     const formData = new FormData(form);
     formData.set("x", String(coords.x));
     formData.set("y", String(coords.y));
-    formData.set("linked_map_id", linkedMapId);
+    formData.set("linked_map_id", linkKind === "map" ? linkedMapId : "");
+    formData.set("linked_entity_id", linkKind === "location" ? linkedEntityId : "");
     setIsLoading(true);
     try {
       await onSubmit(formData);
@@ -84,7 +99,8 @@ export function NewPinDialog({
         <DialogHeader>
           <DialogTitle>Nuovo pin</DialogTitle>
           <DialogDescription className="text-slate-400">
-            Aggiungi un&apos;etichetta e opzionalmente collega a un&apos;altra mappa.
+            Etichetta opzionale. Collega a un&apos;altra mappa o a un luogo wiki: se il luogo ha una
+            mappa interattiva (interno edificio, dungeon, ecc.) il pin aprirà quella mappa.
           </DialogDescription>
         </DialogHeader>
         <form id={PIN_FORM_ID} onSubmit={handleSubmit} className="space-y-4">
@@ -98,31 +114,76 @@ export function NewPinDialog({
               disabled={isLoading}
             />
           </div>
+
           <div className="space-y-2">
-            <Label htmlFor="pin-linked-map">Collega a mappa</Label>
+            <Label htmlFor="pin-link-kind">Collegamento</Label>
             <select
-              id="pin-linked-map"
-              value={linkedMapId}
-              onChange={(e) => setLinkedMapId(e.target.value)}
+              id="pin-link-kind"
+              value={linkKind}
+              onChange={(e) => setLinkKind(e.target.value as LinkKind)}
               className="flex h-10 w-full rounded-md border border-slate-700 bg-slate-900/70 px-3 py-2 text-sm text-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               disabled={isLoading}
             >
-              <option value="">Nessuna mappa</option>
-              {extraMapOption && (
-                <option value={extraMapOption.id}>
-                  {extraMapOption.name} (appena caricata)
-                </option>
-              )}
-              {campaignMaps.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
+              <option value="none">Nessuno (solo etichetta)</option>
+              <option value="map">Altra mappa</option>
+              <option value="location">Luogo wiki</option>
             </select>
           </div>
+
+          {linkKind === "map" && (
+            <div className="space-y-2">
+              <Label htmlFor="pin-linked-map">Mappa destinazione</Label>
+              <select
+                id="pin-linked-map"
+                value={linkedMapId}
+                onChange={(e) => setLinkedMapId(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-slate-700 bg-slate-900/70 px-3 py-2 text-sm text-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                disabled={isLoading}
+              >
+                <option value="">Seleziona mappa</option>
+                {extraMapOption && (
+                  <option value={extraMapOption.id}>
+                    {extraMapOption.name} (appena caricata)
+                  </option>
+                )}
+                {campaignMaps.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {linkKind === "location" && (
+            <div className="space-y-2">
+              <Label htmlFor="pin-linked-location">Luogo wiki</Label>
+              <select
+                id="pin-linked-location"
+                value={linkedEntityId}
+                onChange={(e) => setLinkedEntityId(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-slate-700 bg-slate-900/70 px-3 py-2 text-sm text-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                disabled={isLoading || loadingLocations}
+              >
+                <option value="">
+                  {loadingLocations ? "Caricamento luoghi…" : "Seleziona luogo"}
+                </option>
+                {wikiLocations.map((loc) => (
+                  <option key={loc.id} value={loc.id}>
+                    {loc.name}
+                    {loc.boundMapId ? " (con mappa)" : ""}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-slate-500">
+                Un solo elemento wiki per luogo: lore e mappa interattiva restano collegati senza
+                duplicare la scheda.
+              </p>
+            </div>
+          )}
         </form>
 
-        {pinSubmapUpload && (
+        {pinSubmapUpload && linkKind === "map" && (
           <div className="space-y-2 border-t border-slate-700/80 pt-4">
             <button
               type="button"
@@ -137,7 +198,9 @@ export function NewPinDialog({
               )}
               <span>
                 <span className="font-medium text-emerald-400/95">Carica nuova sottomappa</span>
-                <span className="block text-xs text-slate-500">Crea una mappa figlia di questa e collega il pin in un solo flusso.</span>
+                <span className="block text-xs text-slate-500">
+                  Crea una mappa figlia di questa e collega il pin in un solo flusso.
+                </span>
               </span>
             </button>
             {showSubmapPanel && (

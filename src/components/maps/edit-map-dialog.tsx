@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { listMapsForParentPickerAction, updateMap, type MapParentOption } from "@/app/campaigns/map-actions";
+import { listMapsForParentPickerAction, listWikiLocationsForMapAction, updateMap, type MapParentOption } from "@/app/campaigns/map-actions";
 
 const MAP_TYPE_OPTIONS: { label: string; value: string }[] = [
   { label: "Mondo", value: "world" },
@@ -61,6 +61,7 @@ type EditMapDialogProps = {
   initialDescription?: string | null;
   initialMapType: string;
   initialParentMapId?: string | null;
+  initialWikiEntityId?: string | null;
   initialVisibility?: string;
   initialAllowedUserIds?: string[];
   initialAllowedPartyIds?: string[];
@@ -80,6 +81,7 @@ export function EditMapDialog({
   initialDescription = null,
   initialMapType,
   initialParentMapId = null,
+  initialWikiEntityId = null,
   initialVisibility = "public",
   initialAllowedUserIds = [],
   initialAllowedPartyIds = [],
@@ -101,6 +103,9 @@ export function EditMapDialog({
     return opts.some((o) => o.value === n) ? n : "city";
   });
   const [parentMapId, setParentMapId] = useState<string>(initialParentMapId ?? "");
+  const [wikiEntityId, setWikiEntityId] = useState<string>(initialWikiEntityId ?? "");
+  const [wikiLocations, setWikiLocations] = useState<Array<{ id: string; name: string; boundMapId: string | null }>>([]);
+  const [loadingWikiLocations, setLoadingWikiLocations] = useState(false);
   const [parentOptions, setParentOptions] = useState<MapParentOption[]>([]);
   const [loadingParents, setLoadingParents] = useState(false);
   const [visibility, setVisibility] = useState(
@@ -147,6 +152,20 @@ export function EditMapDialog({
   }, [dialogOpen, isLongCampaign, campaignId]);
 
   useEffect(() => {
+    if (!dialogOpen) return;
+    let cancelled = false;
+    setLoadingWikiLocations(true);
+    void listWikiLocationsForMapAction(campaignId).then((res) => {
+      if (cancelled) return;
+      if (res.success) setWikiLocations(res.data);
+      setLoadingWikiLocations(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [dialogOpen, campaignId]);
+
+  useEffect(() => {
     if (mapType === "world") setParentMapId("");
   }, [mapType]);
 
@@ -160,6 +179,7 @@ export function EditMapDialog({
         return opts.some((o) => o.value === n) ? n : "city";
       });
       setParentMapId(initialParentMapId ?? "");
+      setWikiEntityId(initialWikiEntityId ?? "");
       setVisibility(VISIBILITY_OPTIONS.some((o) => o.value === initialVisibility) ? initialVisibility : "public");
       setSelectedPlayerIds(initialAllowedUserIds);
       setSelectedPartyIds(initialAllowedPartyIds);
@@ -210,6 +230,7 @@ export function EditMapDialog({
               parent_map_id: mapType === "world" ? null : parentMapId || null,
             }
           : {}),
+        wiki_entity_id: wikiEntityId || null,
         allowed_user_ids: visibility === "selective" ? selectedPlayerIds : [],
         allowed_party_ids: visibility === "selective" ? selectedPartyIds : [],
       });
@@ -333,6 +354,32 @@ export function EditMapDialog({
               )}
             </div>
           )}
+          <div className="space-y-2">
+            <Label htmlFor="edit-map-wiki-location">Scheda wiki luogo (opzionale)</Label>
+            <select
+              id="edit-map-wiki-location"
+              className="h-10 w-full rounded-md border border-slate-700 bg-slate-900/70 px-3 text-sm text-slate-50"
+              value={wikiEntityId}
+              onChange={(e) => setWikiEntityId(e.target.value)}
+              disabled={isLoading || loadingWikiLocations}
+            >
+              <option value="">
+                {loadingWikiLocations ? "Caricamento luoghi…" : "Nessun collegamento"}
+              </option>
+              {wikiLocations.map((loc) => {
+                const taken = Boolean(loc.boundMapId && loc.boundMapId !== mapId);
+                return (
+                  <option key={loc.id} value={loc.id} disabled={taken}>
+                    {loc.name}
+                    {taken ? " (già collegato ad altra mappa)" : ""}
+                  </option>
+                );
+              })}
+            </select>
+            <p className="text-xs text-slate-500">
+              Collega questa mappa alla scheda wiki del luogo: lore e navigazione restano unificati.
+            </p>
+          </div>
           <div className="space-y-2">
             <Label>Visibilità</Label>
             <Select value={visibility} onValueChange={setVisibility} disabled={isLoading}>

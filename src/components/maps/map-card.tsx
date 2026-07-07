@@ -26,6 +26,7 @@ type MapCardProps = {
     map_type?: string;
     visibility?: string;
     parent_map_id?: string | null;
+    wiki_entity_id?: string | null;
   };
   isGmOrAdmin: boolean;
   eligiblePlayers?: { id: string; label: string }[];
@@ -83,6 +84,7 @@ export function MapCard({
               initialDescription={map.description ?? null}
               initialMapType={map.map_type ?? "city"}
               initialParentMapId={map.parent_map_id ?? null}
+              initialWikiEntityId={map.wiki_entity_id ?? null}
               initialVisibility={map.visibility ?? "public"}
               initialAllowedUserIds={permittedUserIds}
               initialAllowedPartyIds={inferredPartyIds}

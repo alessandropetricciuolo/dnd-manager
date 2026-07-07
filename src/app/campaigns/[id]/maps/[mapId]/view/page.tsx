@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { parseMapOverlayItems } from "@/lib/maps/overlay-parse";
 import { InteractiveMap } from "@/components/maps/interactive-map";
+import { buildWikiLocationMapIndex } from "@/lib/maps/wiki-location-link";
 
 type PageProps = {
   params: Promise<{ id: string; mapId: string }>;
@@ -72,9 +73,18 @@ export default async function MapViewPage({ params }: PageProps) {
 
   const { data: pins } = await supabase
     .from("map_pins")
-    .select("id, x, y, label, link_map_id")
+    .select("id, x, y, label, link_map_id, link_entity_id")
     .eq("map_id", mapId)
     .order("created_at", { ascending: true });
+
+  const { data: boundMapRows } = await supabase
+    .from("maps")
+    .select("id, wiki_entity_id")
+    .eq("campaign_id", campaignId)
+    .not("wiki_entity_id", "is", null);
+  const wikiLocationMapIds = buildWikiLocationMapIndex(
+    (boundMapRows ?? []) as Array<{ id: string; wiki_entity_id: string | null }>
+  );
 
   const { data: campaignMaps } = await supabase
     .from("maps")
@@ -101,8 +111,10 @@ export default async function MapViewPage({ params }: PageProps) {
             y: Number(p.y),
             label: p.label ?? undefined,
             linkMapId: p.link_map_id ?? undefined,
+            linkEntityId: (p as { link_entity_id?: string | null }).link_entity_id ?? undefined,
           }))}
           isCreator={false}
+          wikiLocationMapIds={wikiLocationMapIds}
           campaignMaps={(campaignMaps ?? []).map((m) => ({
             id: m.id,
             name: m.name,

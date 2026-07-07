@@ -23,6 +23,7 @@ type MapRow = {
   map_type?: string;
   visibility?: string;
   parent_map_id?: string | null;
+  wiki_entity_id?: string | null;
 };
 
 function toGalleryMap(m: MapRow, hasMapType: boolean, hasParentMapId: boolean): GalleryMap {
@@ -38,6 +39,7 @@ function toGalleryMap(m: MapRow, hasMapType: boolean, hasParentMapId: boolean): 
     map_type: mapType,
     visibility: m.visibility ?? "public",
     parent_map_id: hasParentMapId ? m.parent_map_id ?? null : null,
+    wiki_entity_id: m.wiki_entity_id ?? null,
   };
 }
 
@@ -59,12 +61,24 @@ export async function MapGallery({
 
   const resFull = await supabase
     .from("maps")
-    .select("id, name, image_url, description, created_at, map_type, visibility, parent_map_id")
+    .select("id, name, image_url, description, created_at, map_type, visibility, parent_map_id, wiki_entity_id")
     .eq("campaign_id", campaignId)
     .order("created_at", { ascending: false });
 
   if (resFull.error) {
-    if (resFull.error.message?.includes("parent_map_id")) {
+    if (resFull.error.message?.includes("wiki_entity_id")) {
+      const resNoWiki = await supabase
+        .from("maps")
+        .select("id, name, image_url, description, created_at, map_type, visibility, parent_map_id")
+        .eq("campaign_id", campaignId)
+        .order("created_at", { ascending: false });
+      if (!resNoWiki.error) {
+        maps = (resNoWiki.data ?? []) as MapRow[];
+        hasMapType = true;
+        hasParentMapId = true;
+      }
+    }
+    if (!maps && resFull.error.message?.includes("parent_map_id")) {
       const resNoParent = await supabase
         .from("maps")
         .select("id, name, image_url, description, created_at, map_type, visibility")

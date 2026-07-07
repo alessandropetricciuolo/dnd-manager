@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { InteractiveMap } from "@/components/maps/interactive-map";
 import { MapDetailActions } from "@/components/maps/map-detail-actions";
 import { parseMapOverlayItems } from "@/lib/maps/overlay-parse";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, BookOpen } from "lucide-react";
 import { getCampaignEligiblePlayers } from "@/app/campaigns/character-actions";
+import { buildWikiLocationMapIndex } from "@/lib/maps/wiki-location-link";
 
 type PageProps = {
   params: Promise<{ id: string; mapId: string }>;
@@ -25,7 +26,7 @@ export default async function CampaignMapPage({ params }: PageProps) {
 
   const { data: map, error: mapError } = await supabase
     .from("maps")
-    .select("id, name, image_url, campaign_id, parent_map_id, description, overlay_items, map_type")
+    .select("id, name, image_url, campaign_id, parent_map_id, description, overlay_items, map_type, wiki_entity_id")
     .eq("id", mapId)
     .eq("campaign_id", campaignId)
     .single();
@@ -85,9 +86,30 @@ export default async function CampaignMapPage({ params }: PageProps) {
 
   const { data: pins } = await supabase
     .from("map_pins")
-    .select("id, x, y, label, link_map_id")
+    .select("id, x, y, label, link_map_id, link_entity_id")
     .eq("map_id", mapId)
     .order("created_at", { ascending: true });
+
+  const { data: boundMapRows } = await supabase
+    .from("maps")
+    .select("id, wiki_entity_id")
+    .eq("campaign_id", campaignId)
+    .not("wiki_entity_id", "is", null);
+  const wikiLocationMapIds = buildWikiLocationMapIndex(
+    (boundMapRows ?? []) as Array<{ id: string; wiki_entity_id: string | null }>
+  );
+
+  const wikiEntityId = (map as { wiki_entity_id?: string | null }).wiki_entity_id ?? null;
+  let linkedWikiName: string | null = null;
+  if (wikiEntityId) {
+    const { data: wikiRow } = await supabase
+      .from("wiki_entities")
+      .select("name")
+      .eq("id", wikiEntityId)
+      .eq("campaign_id", campaignId)
+      .maybeSingle();
+    linkedWikiName = (wikiRow as { name?: string } | null)?.name ?? null;
+  }
 
   const { data: campaignMaps } = await supabase
     .from("maps")
@@ -179,6 +201,19 @@ export default async function CampaignMapPage({ params }: PageProps) {
         <h1 className="min-w-0 flex-1 truncate text-lg font-semibold text-slate-50">
           {map.name}
         </h1>
+        {wikiEntityId && (
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="hidden border-amber-500/40 text-amber-200 sm:inline-flex"
+          >
+            <Link href={`/campaigns/${campaignId}/wiki/${wikiEntityId}`}>
+              <BookOpen className="mr-2 h-4 w-4" />
+              {linkedWikiName ? `Scheda: ${linkedWikiName}` : "Scheda luogo"}
+            </Link>
+          </Button>
+        )}
         <div className="flex flex-wrap items-center gap-2">
           {canEditMapOverlay && (
             <Button
@@ -214,8 +249,10 @@ export default async function CampaignMapPage({ params }: PageProps) {
                 y: Number(p.y),
                 label: p.label ?? undefined,
                 linkMapId: p.link_map_id ?? undefined,
+                linkEntityId: (p as { link_entity_id?: string | null }).link_entity_id ?? undefined,
               }))}
               isCreator={isGmOrAdmin}
+              wikiLocationMapIds={wikiLocationMapIds}
               campaignMaps={(campaignMaps ?? []).map((m) => ({
                 id: m.id,
                 name: m.name,

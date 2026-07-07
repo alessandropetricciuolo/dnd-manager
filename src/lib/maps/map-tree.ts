@@ -6,6 +6,7 @@ export type GalleryMap = {
   map_type: string;
   visibility: string;
   parent_map_id: string | null;
+  wiki_entity_id?: string | null;
 };
 
 export type MapTreeNode = {

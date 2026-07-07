@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { getEntity } from "@/app/campaigns/wiki-actions";
 import { getCampaignEligiblePlayers } from "@/app/campaigns/character-actions";
 import { WikiDetails } from "@/components/wiki/wiki-details";
+import { WikiLocationMapPanel } from "@/components/wiki/wiki-location-map-panel";
 import { RelatedEntitiesSection } from "@/components/wiki/related-entities-section";
 import { getRelatedEntityLinks } from "@/app/campaigns/entity-graph-actions";
 import { WikiEntityEditButton } from "@/components/wiki/wiki-entity-edit-button";
@@ -95,6 +96,21 @@ export default async function WikiEntityPage({ params, searchParams }: PageProps
   const relatedResult = await getRelatedEntityLinks(campaignId, entityId);
   const relatedLinks = relatedResult.success ? relatedResult.data : [];
 
+  let boundMapId: string | null = null;
+  let boundMapName: string | null = null;
+  if (entity.type === "location") {
+    const { data: boundMap } = await supabase
+      .from("maps")
+      .select("id, name")
+      .eq("campaign_id", campaignId)
+      .eq("wiki_entity_id", entityId)
+      .maybeSingle();
+    if (boundMap) {
+      boundMapId = (boundMap as { id: string }).id;
+      boundMapName = (boundMap as { name?: string }).name ?? null;
+    }
+  }
+
   const entityWithDefaults = {
     ...entity,
     attributes: entity.attributes ?? {},
@@ -152,6 +168,19 @@ export default async function WikiEntityPage({ params, searchParams }: PageProps
             <h1 className="mb-4 md:mb-6 text-2xl font-bold tracking-tight text-barber-paper break-words md:text-3xl lg:text-4xl">
               {entity.name}
             </h1>
+          )}
+          {entity.type === "location" && (
+            <div className="mb-6">
+              <WikiLocationMapPanel
+                campaignId={campaignId}
+                wikiEntityId={entity.id}
+                wikiEntityName={entity.name}
+                boundMapId={boundMapId}
+                boundMapName={boundMapName}
+                hasImage={Boolean(entity.image_url?.trim())}
+                isGmOrAdmin={isGmOrAdmin}
+              />
+            </div>
           )}
           <WikiDetails entity={entityWithDefaults} contentBody={contentBody} isGmOrAdmin={isGmOrAdmin} />
           {relatedLinks.length > 0 && (

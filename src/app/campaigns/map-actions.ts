@@ -259,6 +259,7 @@ export async function updateMap(
     map_type?: string;
     visibility?: Visibility;
     parent_map_id?: string | null;
+    wiki_entity_id?: string | null;
     allowed_user_ids?: string[];
     allowed_party_ids?: string[];
   }
@@ -277,11 +278,24 @@ export async function updateMap(
       : payload.parent_map_id === null || payload.parent_map_id === ""
         ? null
         : payload.parent_map_id.trim();
+  const wikiEntityId =
+    payload.wiki_entity_id === undefined
+      ? undefined
+      : payload.wiki_entity_id === null || payload.wiki_entity_id === ""
+        ? null
+        : payload.wiki_entity_id.trim();
   const allowedUserIds = payload.allowed_user_ids ?? [];
   const allowedPartyIds = payload.allowed_party_ids ?? [];
 
-  if (!name && description === undefined && !mapType && visibility === undefined && parentMapId === undefined) {
-    return { success: false, message: "Inserisci nome, descrizione, categoria, genitore o visibilità da aggiornare." };
+  if (
+    !name &&
+    description === undefined &&
+    !mapType &&
+    visibility === undefined &&
+    parentMapId === undefined &&
+    wikiEntityId === undefined
+  ) {
+    return { success: false, message: "Inserisci nome, descrizione, categoria, genitore, luogo wiki o visibilità da aggiornare." };
   }
   try {
     const supabase = await createSupabaseServerClient();
@@ -306,6 +320,7 @@ export async function updateMap(
       map_type?: string;
       visibility?: Visibility;
       parent_map_id?: string | null;
+      wiki_entity_id?: string | null;
     } = {};
     if (name) updates.name = name;
     if (description !== undefined) updates.description = description;
@@ -317,6 +332,29 @@ export async function updateMap(
     }
     if (parentMapId !== undefined) {
       updates.parent_map_id = parentMapId;
+    }
+    if (wikiEntityId !== undefined) {
+      if (wikiEntityId) {
+        const { data: entityRow, error: entityErr } = await supabase
+          .from("wiki_entities")
+          .select("id, type, campaign_id")
+          .eq("id", wikiEntityId)
+          .eq("campaign_id", campaignId)
+          .maybeSingle();
+        if (entityErr || !entityRow) {
+          return { success: false, message: "Luogo wiki non trovato in questa campagna." };
+        }
+        if ((entityRow as { type?: string }).type !== "location") {
+          return { success: false, message: "Puoi collegare solo schede di tipo Luogo." };
+        }
+        await supabase
+          .from("maps")
+          .update({ wiki_entity_id: null })
+          .eq("campaign_id", campaignId)
+          .eq("wiki_entity_id", wikiEntityId)
+          .neq("id", mapId);
+      }
+      updates.wiki_entity_id = wikiEntityId;
     }
     if (Object.keys(updates).length > 0) {
       const { error } = await supabase
@@ -413,7 +451,7 @@ export type AddPinResult = {
   message: string;
 };
 
-/** x, y in 0-1 (frazione sull'immagine). linked_map_id opzionale. */
+/** x, y in 0-1 (frazione sull'immagine). linked_map_id o linked_entity_id opzionali (mutuamente esclusivi). */
 export async function addPin(
   mapId: string,
   campaignId: string,
@@ -423,6 +461,7 @@ export async function addPin(
   const yStr = (formData.get("y") as string | null)?.trim();
   const label = (formData.get("label") as string | null)?.trim() ?? "";
   const linkedMapId = (formData.get("linked_map_id") as string | null)?.trim() || null;
+  const linkedEntityId = (formData.get("linked_entity_id") as string | null)?.trim() || null;
 
   const x = xStr != null ? parseFloat(xStr) : NaN;
   const y = yStr != null ? parseFloat(yStr) : NaN;
@@ -459,7 +498,8 @@ export async function addPin(
       x: Math.round(x * 10000) / 10000,
       y: Math.round(y * 10000) / 10000,
       label: label || null,
-      link_map_id: linkedMapId || null,
+      link_map_id: linkedEntityId ? null : linkedMapId || null,
+      link_entity_id: linkedEntityId || null,
     });
 
     if (error) {
@@ -479,5 +519,168 @@ export async function addPin(
       success: false,
       message: "Si è verificato un errore imprevisto. Riprova.",
     };
+  }
+}
+
+export type WikiLocationPinOption = {
+  id: string;
+  name: string;
+  boundMapId: string | null;
+};
+
+export type ListWikiLocationsForMapResult =
+  | { success: true; data: WikiLocationPinOption[] }
+  | { success: false; message: string };
+
+/** Luoghi wiki della campagna, con eventuale mappa interattiva collegata. */
+export async function listWikiLocationsForMapAction(
+  campaignId: string
+): Promise<ListWikiLocationsForMapResult> {
+  if (!campaignId?.trim()) return { success: false, message: "Campagna non valida." };
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) return { success: false, message: "Non autenticato." };
+
+    const [{ data: entities, error: entErr }, { data: boundMaps, error: mapErr }] = await Promise.all([
+      supabase
+        .from("wiki_entities")
+        .select("id, name")
+        .eq("campaign_id", campaignId)
+        .eq("type", "location")
+        .order("name", { ascending: true }),
+      supabase
+        .from("maps")
+        .select("id, wiki_entity_id")
+        .eq("campaign_id", campaignId)
+        .not("wiki_entity_id", "is", null),
+    ]);
+    if (entErr) return { success: false, message: entErr.message };
+    if (mapErr && !mapErr.message?.includes("wiki_entity_id")) {
+      return { success: false, message: mapErr.message };
+    }
+
+    const mapByEntity = new Map<string, string>();
+    for (const row of (boundMaps ?? []) as Array<{ id: string; wiki_entity_id: string | null }>) {
+      if (row.wiki_entity_id) mapByEntity.set(row.wiki_entity_id, row.id);
+    }
+
+    return {
+      success: true,
+      data: ((entities ?? []) as Array<{ id: string; name: string }>).map((e) => ({
+        id: e.id,
+        name: e.name,
+        boundMapId: mapByEntity.get(e.id) ?? null,
+      })),
+    };
+  } catch (err) {
+    console.error("[listWikiLocationsForMapAction]", err);
+    return { success: false, message: "Errore imprevisto." };
+  }
+}
+
+export type CreateMapFromWikiLocationResult =
+  | { success: true; message: string; mapId: string }
+  | { success: false; message: string };
+
+/** Crea una mappa interattiva collegata 1:1 a un luogo wiki (stesso nome/immagine). */
+export async function createMapFromWikiLocationAction(
+  campaignId: string,
+  wikiEntityId: string,
+  options?: { parentMapId?: string | null; mapType?: string }
+): Promise<CreateMapFromWikiLocationResult> {
+  if (!campaignId?.trim() || !wikiEntityId?.trim()) {
+    return { success: false, message: "Parametri non validi." };
+  }
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) return { success: false, message: "Devi essere autenticato." };
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    if (profile?.role !== "gm" && profile?.role !== "admin") {
+      return { success: false, message: "Non autorizzato." };
+    }
+
+    const { data: entity, error: entErr } = await supabase
+      .from("wiki_entities")
+      .select("id, name, type, image_url, campaign_id, visibility")
+      .eq("id", wikiEntityId)
+      .eq("campaign_id", campaignId)
+      .maybeSingle();
+    if (entErr || !entity) return { success: false, message: "Luogo wiki non trovato." };
+    if ((entity as { type?: string }).type !== "location") {
+      return { success: false, message: "Solo le schede Luogo possono avere una mappa collegata." };
+    }
+
+    const { data: existing } = await supabase
+      .from("maps")
+      .select("id")
+      .eq("campaign_id", campaignId)
+      .eq("wiki_entity_id", wikiEntityId)
+      .maybeSingle();
+    if (existing?.id) {
+      return { success: false, message: "Questo luogo ha già una mappa collegata." };
+    }
+
+    const imageUrl = (entity as { image_url?: string | null }).image_url?.trim();
+    if (!imageUrl) {
+      return {
+        success: false,
+        message: "Aggiungi un'immagine al luogo wiki prima di creare la mappa interattiva.",
+      };
+    }
+
+    const mapTypeRaw = options?.mapType?.trim() || "building";
+    const mapType = MAP_TYPES_ALL.includes(mapTypeRaw as (typeof MAP_TYPES_ALL)[number])
+      ? mapTypeRaw
+      : "building";
+    const parentMapId = options?.parentMapId?.trim() || null;
+    const visibility = (entity as { visibility?: Visibility }).visibility ?? "public";
+    const vis = VISIBILITY_VALUES.includes(visibility as Visibility) ? (visibility as Visibility) : "public";
+
+    const insertPayload: Record<string, unknown> = {
+      campaign_id: campaignId,
+      name: (entity as { name: string }).name,
+      description: null,
+      map_type: mapType,
+      image_url: imageUrl,
+      visibility: vis,
+      wiki_entity_id: wikiEntityId,
+    };
+    if (parentMapId) insertPayload.parent_map_id = parentMapId;
+
+    const { data: inserted, error: insertError } = await supabase
+      .from("maps")
+      .insert(insertPayload as never)
+      .select("id")
+      .single();
+    if (insertError || !inserted) {
+      console.error("[createMapFromWikiLocationAction]", insertError);
+      return { success: false, message: insertError?.message ?? "Errore creazione mappa." };
+    }
+
+    try {
+      const admin = createSupabaseAdminClient();
+      await syncMapDescriptionToCampaignMemory(admin, inserted.id, { campaignId });
+    } catch (memoryErr) {
+      console.error("[createMapFromWikiLocationAction] memory", memoryErr);
+    }
+
+    revalidatePath(`/campaigns/${campaignId}`);
+    revalidatePath(`/campaigns/${campaignId}/wiki/${wikiEntityId}`);
+    return {
+      success: true,
+      message: "Mappa interattiva creata e collegata al luogo.",
+      mapId: inserted.id,
+    };
+  } catch (err) {
+    console.error("[createMapFromWikiLocationAction]", err);
+    return { success: false, message: "Errore imprevisto." };
   }
 }

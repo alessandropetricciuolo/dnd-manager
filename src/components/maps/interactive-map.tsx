@@ -11,6 +11,7 @@ import { addPin } from "@/app/campaigns/map-actions";
 import { NewPinDialog } from "./new-pin-dialog";
 import { MapOverlayLayer } from "./map-overlay-layer";
 import { cn } from "@/lib/utils";
+import { resolveMapPinTarget } from "@/lib/maps/wiki-location-link";
 import type { MapOverlayItem } from "@/types/map-overlay";
 
 const DEFAULT_ASPECT_RATIO = 16 / 9;
@@ -21,6 +22,7 @@ export type MapPinData = {
   y: number;
   label?: string;
   linkMapId?: string;
+  linkEntityId?: string;
 };
 
 export type CampaignMapOption = {
@@ -45,6 +47,8 @@ type InteractiveMapProps = {
   campaignMaps: CampaignMapOption[];
   /** Annotazioni pubblicate (campagne lunghe). */
   overlayItems?: MapOverlayItem[];
+  /** entityId → mapId per luoghi wiki con mappa interattiva collegata. */
+  wikiLocationMapIds?: Record<string, string>;
   /** GM: consente di caricare una sottomappa dal dialog pin (mappa corrente come genitore). */
   pinSubmapUpload?: PinSubmapUploadProps | null;
 };
@@ -58,6 +62,7 @@ export function InteractiveMap({
   isCreator,
   campaignMaps,
   overlayItems = [],
+  wikiLocationMapIds = {},
   pinSubmapUpload = null,
 }: InteractiveMapProps) {
   const router = useRouter();
@@ -160,6 +165,7 @@ export function InteractiveMap({
                     key={pin.id}
                     pin={pin}
                     campaignId={campaignId}
+                    wikiLocationMapIds={wikiLocationMapIds}
                   />
                 ))}
               </div>
@@ -198,17 +204,24 @@ export function InteractiveMap({
 function PinMarker({
   pin,
   campaignId,
+  wikiLocationMapIds,
 }: {
   pin: MapPinData;
   campaignId: string;
+  wikiLocationMapIds: Record<string, string>;
 }) {
   const router = useRouter();
-  const hasLink = !!pin.linkMapId;
+  const target = resolveMapPinTarget(pin, wikiLocationMapIds);
+  const hasLink = target != null;
+  const opensMap = target?.kind === "map";
 
   const handleClick = () => {
-    if (hasLink && pin.linkMapId) {
-      router.push(`/campaigns/${campaignId}/maps/${pin.linkMapId}`);
+    if (!target) return;
+    if (target.kind === "map") {
+      router.push(`/campaigns/${campaignId}/maps/${target.mapId}`);
+      return;
     }
+    router.push(`/campaigns/${campaignId}/wiki/${target.entityId}`);
   };
 
   return (
@@ -231,14 +244,23 @@ function PinMarker({
       }}
       role={hasLink ? "link" : "img"}
       tabIndex={hasLink ? 0 : undefined}
-      aria-label={pin.label ?? (hasLink ? "Vai alla mappa collegata" : "Pin")}
+      aria-label={
+        pin.label ??
+        (target?.kind === "wiki"
+          ? "Vai alla scheda luogo"
+          : hasLink
+            ? "Vai alla mappa collegata"
+            : "Pin")
+      }
     >
       <MapPin
         className={cn(
           "h-8 w-8 drop-shadow-md",
-          hasLink
+          opensMap
             ? "text-emerald-400 fill-emerald-500/50"
-            : "text-slate-300 fill-slate-500/50"
+            : target?.kind === "wiki"
+              ? "text-amber-300 fill-amber-500/40"
+              : "text-slate-300 fill-slate-500/50"
         )}
       />
       {pin.label && (
