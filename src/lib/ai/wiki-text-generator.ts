@@ -17,6 +17,7 @@ import {
   mergeWikiExtraParams,
   normalizeNpcCivilianClass,
 } from "@/lib/ai/wiki-npc-params";
+import { splitPromptByDash } from "@/lib/ai/wiki-prompt-split";
 import {
   generateContextualNameFromCampaign,
   isPlaceholderWikiTitle,
@@ -117,22 +118,6 @@ function buildKeywordCandidates(name: string, userPrompt: string): string[] {
   const unique = Array.from(new Set([name.toLowerCase().trim(), ...words]));
   return unique.slice(0, 8);
 }
-
-function splitPromptByDash(userPrompt: string): { retrievalPrompt: string; narrativePrompt: string } {
-  const raw = userPrompt.trim();
-  if (!raw) return { retrievalPrompt: "", narrativePrompt: "" };
-  const dashIdx = raw.indexOf("-");
-  if (dashIdx < 0) {
-    return { retrievalPrompt: raw, narrativePrompt: raw };
-  }
-  const left = raw.slice(0, dashIdx).trim();
-  const right = raw.slice(dashIdx + 1).trim();
-  return {
-    retrievalPrompt: left || raw,
-    narrativePrompt: right || left || raw,
-  };
-}
-
 function extractStatsFromMarkdown(markdown: string): ExtractedWikiStats {
   const source = markdown.replace(/\r/g, "");
 
