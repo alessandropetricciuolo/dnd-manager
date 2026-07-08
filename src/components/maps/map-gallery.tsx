@@ -66,7 +66,8 @@ export async function MapGallery({
     .order("created_at", { ascending: false });
 
   if (resFull.error) {
-    if (resFull.error.message?.includes("wiki_entity_id")) {
+    const msg = resFull.error.message ?? "";
+    if (msg.includes("wiki_entity_id")) {
       const resNoWiki = await supabase
         .from("maps")
         .select("id, name, image_url, description, created_at, map_type, visibility, parent_map_id")
@@ -77,72 +78,34 @@ export async function MapGallery({
         hasMapType = true;
         hasParentMapId = true;
       }
-    }
-    if (!maps && resFull.error.message?.includes("parent_map_id")) {
+    } else if (msg.includes("parent_map_id")) {
       const resNoParent = await supabase
         .from("maps")
         .select("id, name, image_url, description, created_at, map_type, visibility")
         .eq("campaign_id", campaignId)
         .order("created_at", { ascending: false });
-      if (resNoParent.error) {
-        if (resNoParent.error.message?.includes("map_type")) {
-          const resFallback = await supabase
-            .from("maps")
-            .select("id, name, image_url, description, created_at, visibility")
-            .eq("campaign_id", campaignId)
-            .order("created_at", { ascending: false });
-          if (resFallback.error) {
-            console.error("[MapGallery]", resFallback.error);
-            return (
-              <p className="text-sm text-red-400">
-                Errore nel caricamento delle mappe.
-                {process.env.NODE_ENV === "development" && (
-                  <span className="mt-2 block text-xs text-red-300">{resFallback.error.message}</span>
-                )}
-              </p>
-            );
-          }
-          maps = resFallback.data as MapRow[];
-        } else {
-          console.error("[MapGallery]", resNoParent.error);
-          return (
-            <p className="text-sm text-red-400">
-              Errore nel caricamento delle mappe.
-              {process.env.NODE_ENV === "development" && (
-                <span className="mt-2 block text-xs text-red-300">{resNoParent.error.message}</span>
-              )}
-            </p>
-          );
-        }
-      } else {
+      if (!resNoParent.error) {
         maps = (resNoParent.data ?? []) as MapRow[];
         hasMapType = true;
       }
-    } else if (resFull.error.message?.includes("map_type")) {
+    } else if (msg.includes("map_type")) {
       const resFallback = await supabase
         .from("maps")
         .select("id, name, image_url, description, created_at, visibility")
         .eq("campaign_id", campaignId)
         .order("created_at", { ascending: false });
-      if (resFallback.error) {
-        console.error("[MapGallery]", resFallback.error);
-        return (
-          <p className="text-sm text-red-400">
-            Errore nel caricamento delle mappe.
-            {process.env.NODE_ENV === "development" && (
-              <span className="mt-2 block text-xs text-red-300">{resFallback.error.message}</span>
-            )}
-          </p>
-        );
+      if (!resFallback.error) {
+        maps = resFallback.data as MapRow[];
       }
-      maps = resFallback.data as MapRow[];
-    } else {
+    }
+
+    if (!maps) {
       console.error("[MapGallery]", resFull.error);
       return (
         <p className="text-sm text-red-400">
           Errore nel caricamento delle mappe.
           {process.env.NODE_ENV === "development" && (
-            <span className="mt-2 block text-xs text-red-300">{resFull.error.message}</span>
+            <span className="mt-2 block text-xs text-red-300">{msg}</span>
           )}
         </p>
       );
