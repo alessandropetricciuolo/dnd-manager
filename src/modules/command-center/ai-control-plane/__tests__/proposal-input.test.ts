@@ -15,6 +15,44 @@ test("normalizeProposalInput prefers active campaign filter", () => {
   assert.equal(input.campaignId, "active-campaign-id");
 });
 
+test("normalizeProposalInput keeps proposal campaign when sessionId is scoped elsewhere", () => {
+  const input = normalizeProposalInput(
+    "session.close",
+    {
+      campaignId: "campaign-a",
+      sessionId: "session-from-a",
+      summary: "Riassunto",
+      attendance: { "player-1": "attended" },
+    },
+    "campaign-b"
+  );
+  assert.equal(input.campaignId, "campaign-a");
+  assert.equal(input.sessionId, "session-from-a");
+});
+
+test("normalizeProposalInput keeps proposal campaign for wiki relationships", () => {
+  const input = normalizeProposalInput(
+    "wiki.relationship.create",
+    {
+      campaignId: "campaign-a",
+      sourceId: "entity-a",
+      targetId: "entity-b",
+      label: "alleato",
+    },
+    "campaign-b"
+  );
+  assert.equal(input.campaignId, "campaign-a");
+});
+
+test("normalizeProposalInput still applies filter for session.create without resolved IDs", () => {
+  const input = normalizeProposalInput(
+    "session.create",
+    { campaignId: "campaign-a", date: "2026-07-06" },
+    "campaign-b"
+  );
+  assert.equal(input.campaignId, "campaign-b");
+});
+
 test("preparePendingInputForExecute merges sheet from characterMeta", () => {
   const prepared = preparePendingInputForExecute(
     {

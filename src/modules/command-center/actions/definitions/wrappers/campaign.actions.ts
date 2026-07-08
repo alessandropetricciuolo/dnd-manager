@@ -56,6 +56,10 @@ export function registerCampaignWrapperActions(): void {
       const result = await createCampaign(fd);
       if (!result.success) throw new Error(result.message);
 
+      if (result.campaignId) {
+        return { id: result.campaignId, name: input.title, type: input.type };
+      }
+
       const { data: row } = await ctx.supabase
         .from("campaigns")
         .select("id, name, type")
