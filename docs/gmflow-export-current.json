@@ -1,12 +1,12 @@
 {
-  "updatedAt": "2026-07-07T14:35:16.051Z",
+  "updatedAt": "2026-07-08T04:16:57.855Z",
   "sourceProject": "Barber & Dragons",
   "targetProject": "gmflow.app",
   "sourceRepoPath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App",
   "targetRepoPath": "/Users/alessandropetricciuolo/Desktop/masto-platform",
   "branch": "main",
-  "lastCommit": "27976ddf2384e87616190c0835f1c36babea6daf",
-  "commitRange": "dff849b..27976dd",
+  "lastCommit": "a5750c6d1d7857b51c7d11d6ea35bf2a892ce883",
+  "commitRange": "094031d..a5750c6",
   "items": [
     {
       "id": "BD-GMFLOW-PKG-2026-07-06-001",
@@ -22621,6 +22621,1596 @@
       "statusCode": "M",
       "createdAt": "2026-07-07T14:35:16.051Z",
       "updatedAt": "2026-07-07T14:35:16.051Z"
+    },
+    {
+      "id": "BD-GMFLOW-b993c22-001",
+      "title": "AI: ai-assistant-canvas.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/components/command-center/ai-assistant-canvas.tsx` modificato nel commit «feat(command-center): batch NPC generation with per-entity save and images». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/components/command-center/ai-assistant-canvas.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/command-center/ai-assistant-canvas.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "b993c2261b8d2d0d8543a843d55958bbd71fd586",
+      "commitShort": "b993c22",
+      "commitSubject": "feat(command-center): batch NPC generation with per-entity save and images",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T14:35:21.352Z",
+      "updatedAt": "2026-07-07T14:35:21.352Z"
+    },
+    {
+      "id": "BD-GMFLOW-b993c22-002",
+      "title": "AI: ai-assistant-panel.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/components/command-center/ai-assistant-panel.tsx` modificato nel commit «feat(command-center): batch NPC generation with per-entity save and images». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/components/command-center/ai-assistant-panel.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/command-center/ai-assistant-panel.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "b993c2261b8d2d0d8543a843d55958bbd71fd586",
+      "commitShort": "b993c22",
+      "commitSubject": "feat(command-center): batch NPC generation with per-entity save and images",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T14:35:21.352Z",
+      "updatedAt": "2026-07-07T14:35:21.352Z"
+    },
+    {
+      "id": "BD-GMFLOW-b993c22-003",
+      "title": "WIKI: wiki.actions.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "WIKI",
+      "priority": "Media",
+      "description": "File `src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts` modificato nel commit «feat(command-center): batch NPC generation with per-entity save and images». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.",
+      "bdFiles": [
+        "src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/actions/definitions/wrappers/wiki.actions.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "b993c2261b8d2d0d8543a843d55958bbd71fd586",
+      "commitShort": "b993c22",
+      "commitSubject": "feat(command-center): batch NPC generation with per-entity save and images",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T14:35:21.352Z",
+      "updatedAt": "2026-07-07T14:35:21.352Z"
+    },
+    {
+      "id": "BD-GMFLOW-b993c22-004",
+      "title": "AI: wiki-npc-batch.test.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/__tests__/wiki-npc-batch.test.ts` aggiunto nel commit «feat(command-center): batch NPC generation with per-entity save and images». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/wiki-npc-batch.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/wiki-npc-batch.test.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "b993c2261b8d2d0d8543a843d55958bbd71fd586",
+      "commitShort": "b993c22",
+      "commitSubject": "feat(command-center): batch NPC generation with per-entity save and images",
+      "statusCode": "A",
+      "createdAt": "2026-07-07T14:35:21.352Z",
+      "updatedAt": "2026-07-07T14:35:21.352Z"
+    },
+    {
+      "id": "BD-GMFLOW-b993c22-005",
+      "title": "AI: chat-assistant.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(command-center): batch NPC generation with per-entity save and images». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/chat-assistant.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/chat-assistant.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "b993c2261b8d2d0d8543a843d55958bbd71fd586",
+      "commitShort": "b993c22",
+      "commitSubject": "feat(command-center): batch NPC generation with per-entity save and images",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T14:35:21.352Z",
+      "updatedAt": "2026-07-07T14:35:21.352Z"
+    },
+    {
+      "id": "BD-GMFLOW-b993c22-006",
+      "title": "AI: conversation-intent.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/conversation-intent.ts` modificato nel commit «feat(command-center): batch NPC generation with per-entity save and images». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/conversation-intent.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/conversation-intent.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "b993c2261b8d2d0d8543a843d55958bbd71fd586",
+      "commitShort": "b993c22",
+      "commitSubject": "feat(command-center): batch NPC generation with per-entity save and images",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T14:35:21.352Z",
+      "updatedAt": "2026-07-07T14:35:21.352Z"
+    },
+    {
+      "id": "BD-GMFLOW-b993c22-007",
+      "title": "AI: domain-fallback-interpreter.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts` modificato nel commit «feat(command-center): batch NPC generation with per-entity save and images». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/domain-fallback-interpreter.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "b993c2261b8d2d0d8543a843d55958bbd71fd586",
+      "commitShort": "b993c22",
+      "commitSubject": "feat(command-center): batch NPC generation with per-entity save and images",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T14:35:21.352Z",
+      "updatedAt": "2026-07-07T14:35:21.352Z"
+    },
+    {
+      "id": "BD-GMFLOW-b993c22-008",
+      "title": "AI: draft-assistant.types.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/draft-assistant.types.ts` modificato nel commit «feat(command-center): batch NPC generation with per-entity save and images». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/draft-assistant.types.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/draft-assistant.types.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "b993c2261b8d2d0d8543a843d55958bbd71fd586",
+      "commitShort": "b993c22",
+      "commitSubject": "feat(command-center): batch NPC generation with per-entity save and images",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T14:35:21.352Z",
+      "updatedAt": "2026-07-07T14:35:21.352Z"
+    },
+    {
+      "id": "BD-GMFLOW-b993c22-009",
+      "title": "AI: wiki-npc-batch-builder.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/wiki-npc-batch-builder.ts` aggiunto nel commit «feat(command-center): batch NPC generation with per-entity save and images». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-npc-batch-builder.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-npc-batch-builder.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "b993c2261b8d2d0d8543a843d55958bbd71fd586",
+      "commitShort": "b993c22",
+      "commitSubject": "feat(command-center): batch NPC generation with per-entity save and images",
+      "statusCode": "A",
+      "createdAt": "2026-07-07T14:35:21.352Z",
+      "updatedAt": "2026-07-07T14:35:21.352Z"
+    },
+    {
+      "id": "BD-GMFLOW-b993c22-010",
+      "title": "AI: wiki-npc-batch-pending.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/wiki-npc-batch-pending.ts` aggiunto nel commit «feat(command-center): batch NPC generation with per-entity save and images». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-npc-batch-pending.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-npc-batch-pending.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "b993c2261b8d2d0d8543a843d55958bbd71fd586",
+      "commitShort": "b993c22",
+      "commitSubject": "feat(command-center): batch NPC generation with per-entity save and images",
+      "statusCode": "A",
+      "createdAt": "2026-07-07T14:35:21.352Z",
+      "updatedAt": "2026-07-07T14:35:21.352Z"
+    },
+    {
+      "id": "BD-GMFLOW-b993c22-011",
+      "title": "AI: wiki-npc-batch.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/wiki-npc-batch.ts` aggiunto nel commit «feat(command-center): batch NPC generation with per-entity save and images». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-npc-batch.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-npc-batch.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "b993c2261b8d2d0d8543a843d55958bbd71fd586",
+      "commitShort": "b993c22",
+      "commitSubject": "feat(command-center): batch NPC generation with per-entity save and images",
+      "statusCode": "A",
+      "createdAt": "2026-07-07T14:35:21.352Z",
+      "updatedAt": "2026-07-07T14:35:21.352Z"
+    },
+    {
+      "id": "BD-GMFLOW-b993c22-012",
+      "title": "AI: wiki-proposal-builder.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts` modificato nel commit «feat(command-center): batch NPC generation with per-entity save and images». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "b993c2261b8d2d0d8543a843d55958bbd71fd586",
+      "commitShort": "b993c22",
+      "commitSubject": "feat(command-center): batch NPC generation with per-entity save and images",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T14:35:21.352Z",
+      "updatedAt": "2026-07-07T14:35:21.352Z"
+    },
+    {
+      "id": "BD-GMFLOW-58c006e-001",
+      "title": "CAMPAIGNS: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "CAMPAIGNS",
+      "priority": "Media",
+      "description": "File `src/app/campaigns/[id]/maps/[mapId]/page.tsx` modificato nel commit «feat(maps): unify wiki locations with interactive maps and pin links.». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Logica campagne potenzialmente generalizzabile per multi-tenant.",
+      "bdFiles": [
+        "src/app/campaigns/[id]/maps/[mapId]/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/campaigns/[id]/maps/[mapId]/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "58c006ee9acec6dcc41fa9d05618a6e97055c2ef",
+      "commitShort": "58c006e",
+      "commitSubject": "feat(maps): unify wiki locations with interactive maps and pin links.",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T14:59:46.229Z",
+      "updatedAt": "2026-07-07T14:59:46.229Z"
+    },
+    {
+      "id": "BD-GMFLOW-58c006e-002",
+      "title": "CAMPAIGNS: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "CAMPAIGNS",
+      "priority": "Media",
+      "description": "File `src/app/campaigns/[id]/maps/[mapId]/view/page.tsx` modificato nel commit «feat(maps): unify wiki locations with interactive maps and pin links.». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Logica campagne potenzialmente generalizzabile per multi-tenant.",
+      "bdFiles": [
+        "src/app/campaigns/[id]/maps/[mapId]/view/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/campaigns/[id]/maps/[mapId]/view/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "58c006ee9acec6dcc41fa9d05618a6e97055c2ef",
+      "commitShort": "58c006e",
+      "commitSubject": "feat(maps): unify wiki locations with interactive maps and pin links.",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T14:59:46.229Z",
+      "updatedAt": "2026-07-07T14:59:46.229Z"
+    },
+    {
+      "id": "BD-GMFLOW-58c006e-003",
+      "title": "CAMPAIGNS: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "CAMPAIGNS",
+      "priority": "Media",
+      "description": "File `src/app/campaigns/[id]/wiki/[entityId]/page.tsx` modificato nel commit «feat(maps): unify wiki locations with interactive maps and pin links.». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Logica campagne potenzialmente generalizzabile per multi-tenant.",
+      "bdFiles": [
+        "src/app/campaigns/[id]/wiki/[entityId]/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/campaigns/[id]/wiki/[entityId]/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "58c006ee9acec6dcc41fa9d05618a6e97055c2ef",
+      "commitShort": "58c006e",
+      "commitSubject": "feat(maps): unify wiki locations with interactive maps and pin links.",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T14:59:46.229Z",
+      "updatedAt": "2026-07-07T14:59:46.229Z"
+    },
+    {
+      "id": "BD-GMFLOW-58c006e-004",
+      "title": "CAMPAIGNS: map-actions.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "CAMPAIGNS",
+      "priority": "Media",
+      "description": "File `src/app/campaigns/map-actions.ts` modificato nel commit «feat(maps): unify wiki locations with interactive maps and pin links.». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Logica campagne potenzialmente generalizzabile per multi-tenant.",
+      "bdFiles": [
+        "src/app/campaigns/map-actions.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/campaigns/map-actions.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "58c006ee9acec6dcc41fa9d05618a6e97055c2ef",
+      "commitShort": "58c006e",
+      "commitSubject": "feat(maps): unify wiki locations with interactive maps and pin links.",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T14:59:46.229Z",
+      "updatedAt": "2026-07-07T14:59:46.229Z"
+    },
+    {
+      "id": "BD-GMFLOW-58c006e-005",
+      "title": "MAPS: edit-map-dialog.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "MAPS",
+      "priority": "Media",
+      "description": "File `src/components/maps/edit-map-dialog.tsx` modificato nel commit «feat(maps): unify wiki locations with interactive maps and pin links.». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Feature mappe — verificare allineamento architettura gmflow.",
+      "bdFiles": [
+        "src/components/maps/edit-map-dialog.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/maps/edit-map-dialog.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "58c006ee9acec6dcc41fa9d05618a6e97055c2ef",
+      "commitShort": "58c006e",
+      "commitSubject": "feat(maps): unify wiki locations with interactive maps and pin links.",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T14:59:46.229Z",
+      "updatedAt": "2026-07-07T14:59:46.229Z"
+    },
+    {
+      "id": "BD-GMFLOW-58c006e-006",
+      "title": "MAPS: interactive-map.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "MAPS",
+      "priority": "Media",
+      "description": "File `src/components/maps/interactive-map.tsx` modificato nel commit «feat(maps): unify wiki locations with interactive maps and pin links.». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Feature mappe — verificare allineamento architettura gmflow.",
+      "bdFiles": [
+        "src/components/maps/interactive-map.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/maps/interactive-map.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "58c006ee9acec6dcc41fa9d05618a6e97055c2ef",
+      "commitShort": "58c006e",
+      "commitSubject": "feat(maps): unify wiki locations with interactive maps and pin links.",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T14:59:46.229Z",
+      "updatedAt": "2026-07-07T14:59:46.229Z"
+    },
+    {
+      "id": "BD-GMFLOW-58c006e-007",
+      "title": "MAPS: map-card.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "MAPS",
+      "priority": "Media",
+      "description": "File `src/components/maps/map-card.tsx` modificato nel commit «feat(maps): unify wiki locations with interactive maps and pin links.». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Feature mappe — verificare allineamento architettura gmflow.",
+      "bdFiles": [
+        "src/components/maps/map-card.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/maps/map-card.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "58c006ee9acec6dcc41fa9d05618a6e97055c2ef",
+      "commitShort": "58c006e",
+      "commitSubject": "feat(maps): unify wiki locations with interactive maps and pin links.",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T14:59:46.229Z",
+      "updatedAt": "2026-07-07T14:59:46.229Z"
+    },
+    {
+      "id": "BD-GMFLOW-58c006e-008",
+      "title": "MAPS: map-gallery.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "MAPS",
+      "priority": "Media",
+      "description": "File `src/components/maps/map-gallery.tsx` modificato nel commit «feat(maps): unify wiki locations with interactive maps and pin links.». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Feature mappe — verificare allineamento architettura gmflow.",
+      "bdFiles": [
+        "src/components/maps/map-gallery.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/maps/map-gallery.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "58c006ee9acec6dcc41fa9d05618a6e97055c2ef",
+      "commitShort": "58c006e",
+      "commitSubject": "feat(maps): unify wiki locations with interactive maps and pin links.",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T14:59:46.229Z",
+      "updatedAt": "2026-07-07T14:59:46.229Z"
+    },
+    {
+      "id": "BD-GMFLOW-58c006e-009",
+      "title": "MAPS: new-pin-dialog.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "MAPS",
+      "priority": "Media",
+      "description": "File `src/components/maps/new-pin-dialog.tsx` modificato nel commit «feat(maps): unify wiki locations with interactive maps and pin links.». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Feature mappe — verificare allineamento architettura gmflow.",
+      "bdFiles": [
+        "src/components/maps/new-pin-dialog.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/maps/new-pin-dialog.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "58c006ee9acec6dcc41fa9d05618a6e97055c2ef",
+      "commitShort": "58c006e",
+      "commitSubject": "feat(maps): unify wiki locations with interactive maps and pin links.",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T14:59:46.229Z",
+      "updatedAt": "2026-07-07T14:59:46.229Z"
+    },
+    {
+      "id": "BD-GMFLOW-58c006e-010",
+      "title": "WIKI: wiki-location-map-panel.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "WIKI",
+      "priority": "Media",
+      "description": "File `src/components/wiki/wiki-location-map-panel.tsx` aggiunto nel commit «feat(maps): unify wiki locations with interactive maps and pin links.». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.",
+      "bdFiles": [
+        "src/components/wiki/wiki-location-map-panel.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/wiki/wiki-location-map-panel.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "58c006ee9acec6dcc41fa9d05618a6e97055c2ef",
+      "commitShort": "58c006e",
+      "commitSubject": "feat(maps): unify wiki locations with interactive maps and pin links.",
+      "statusCode": "A",
+      "createdAt": "2026-07-07T14:59:46.229Z",
+      "updatedAt": "2026-07-07T14:59:46.229Z"
+    },
+    {
+      "id": "BD-GMFLOW-58c006e-011",
+      "title": "WIKI: wiki-location-link.test.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "WIKI",
+      "priority": "Media",
+      "description": "File `src/lib/maps/__tests__/wiki-location-link.test.ts` aggiunto nel commit «feat(maps): unify wiki locations with interactive maps and pin links.». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.",
+      "bdFiles": [
+        "src/lib/maps/__tests__/wiki-location-link.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/maps/__tests__/wiki-location-link.test.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "58c006ee9acec6dcc41fa9d05618a6e97055c2ef",
+      "commitShort": "58c006e",
+      "commitSubject": "feat(maps): unify wiki locations with interactive maps and pin links.",
+      "statusCode": "A",
+      "createdAt": "2026-07-07T14:59:46.229Z",
+      "updatedAt": "2026-07-07T14:59:46.229Z"
+    },
+    {
+      "id": "BD-GMFLOW-58c006e-012",
+      "title": "MAPS: map-tree.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "MAPS",
+      "priority": "Media",
+      "description": "File `src/lib/maps/map-tree.ts` modificato nel commit «feat(maps): unify wiki locations with interactive maps and pin links.». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Feature mappe — verificare allineamento architettura gmflow.",
+      "bdFiles": [
+        "src/lib/maps/map-tree.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/maps/map-tree.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "58c006ee9acec6dcc41fa9d05618a6e97055c2ef",
+      "commitShort": "58c006e",
+      "commitSubject": "feat(maps): unify wiki locations with interactive maps and pin links.",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T14:59:46.229Z",
+      "updatedAt": "2026-07-07T14:59:46.229Z"
+    },
+    {
+      "id": "BD-GMFLOW-58c006e-013",
+      "title": "WIKI: wiki-location-link.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "WIKI",
+      "priority": "Media",
+      "description": "File `src/lib/maps/wiki-location-link.ts` aggiunto nel commit «feat(maps): unify wiki locations with interactive maps and pin links.». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.",
+      "bdFiles": [
+        "src/lib/maps/wiki-location-link.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/maps/wiki-location-link.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "58c006ee9acec6dcc41fa9d05618a6e97055c2ef",
+      "commitShort": "58c006e",
+      "commitSubject": "feat(maps): unify wiki locations with interactive maps and pin links.",
+      "statusCode": "A",
+      "createdAt": "2026-07-07T14:59:46.229Z",
+      "updatedAt": "2026-07-07T14:59:46.229Z"
+    },
+    {
+      "id": "BD-GMFLOW-58c006e-014",
+      "title": "DATABASE: 20260707140000_maps_wiki_entity_id.sql (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "DATABASE",
+      "priority": "Alta",
+      "description": "File `supabase/migrations/20260707140000_maps_wiki_entity_id.sql` aggiunto nel commit «feat(maps): unify wiki locations with interactive maps and pin links.». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schema o migrazione DB — valutare impatto RLS e tenant isolation.",
+      "bdFiles": [
+        "supabase/migrations/20260707140000_maps_wiki_entity_id.sql"
+      ],
+      "gmflowLikelyFiles": [
+        "supabase/migrations/20260707140000_maps_wiki_entity_id.sql"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Impatto RLS / isolamento tenant"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "RLS/policy verificate per multi-tenant"
+      ],
+      "commitHash": "58c006ee9acec6dcc41fa9d05618a6e97055c2ef",
+      "commitShort": "58c006e",
+      "commitSubject": "feat(maps): unify wiki locations with interactive maps and pin links.",
+      "statusCode": "A",
+      "createdAt": "2026-07-07T14:59:46.229Z",
+      "updatedAt": "2026-07-07T14:59:46.229Z"
+    },
+    {
+      "id": "BD-GMFLOW-5f25404-001",
+      "title": "AI: wiki-npc-batch.test.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/__tests__/wiki-npc-batch.test.ts` modificato nel commit «fix(command-center): parse multiline NPC batch prompts from user intent». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/wiki-npc-batch.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/wiki-npc-batch.test.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "5f254048db4f5189849db466463a6e5e3ad59ead",
+      "commitShort": "5f25404",
+      "commitSubject": "fix(command-center): parse multiline NPC batch prompts from user intent",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T15:13:18.670Z",
+      "updatedAt": "2026-07-07T15:13:18.670Z"
+    },
+    {
+      "id": "BD-GMFLOW-5f25404-002",
+      "title": "AI: chat-assistant.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «fix(command-center): parse multiline NPC batch prompts from user intent». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/chat-assistant.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/chat-assistant.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "5f254048db4f5189849db466463a6e5e3ad59ead",
+      "commitShort": "5f25404",
+      "commitSubject": "fix(command-center): parse multiline NPC batch prompts from user intent",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T15:13:18.670Z",
+      "updatedAt": "2026-07-07T15:13:18.670Z"
+    },
+    {
+      "id": "BD-GMFLOW-5f25404-003",
+      "title": "AI: draft-assistant.types.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/draft-assistant.types.ts` modificato nel commit «fix(command-center): parse multiline NPC batch prompts from user intent». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/draft-assistant.types.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/draft-assistant.types.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "5f254048db4f5189849db466463a6e5e3ad59ead",
+      "commitShort": "5f25404",
+      "commitSubject": "fix(command-center): parse multiline NPC batch prompts from user intent",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T15:13:18.670Z",
+      "updatedAt": "2026-07-07T15:13:18.670Z"
+    },
+    {
+      "id": "BD-GMFLOW-5f25404-004",
+      "title": "AI: wiki-npc-batch-builder.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/wiki-npc-batch-builder.ts` modificato nel commit «fix(command-center): parse multiline NPC batch prompts from user intent». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-npc-batch-builder.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-npc-batch-builder.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "5f254048db4f5189849db466463a6e5e3ad59ead",
+      "commitShort": "5f25404",
+      "commitSubject": "fix(command-center): parse multiline NPC batch prompts from user intent",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T15:13:18.670Z",
+      "updatedAt": "2026-07-07T15:13:18.670Z"
+    },
+    {
+      "id": "BD-GMFLOW-5f25404-005",
+      "title": "AI: wiki-npc-batch.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/wiki-npc-batch.ts` modificato nel commit «fix(command-center): parse multiline NPC batch prompts from user intent». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-npc-batch.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-npc-batch.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "5f254048db4f5189849db466463a6e5e3ad59ead",
+      "commitShort": "5f25404",
+      "commitSubject": "fix(command-center): parse multiline NPC batch prompts from user intent",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T15:13:18.670Z",
+      "updatedAt": "2026-07-07T15:13:18.670Z"
+    },
+    {
+      "id": "BD-GMFLOW-094031d-001",
+      "title": "AI: conversation-intent.test.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts` modificato nel commit «fix(command-center): allow wiki text edits before NPC image generation». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/conversation-intent.test.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "094031d752515dff0909798ee1059965036ad6df",
+      "commitShort": "094031d",
+      "commitSubject": "fix(command-center): allow wiki text edits before NPC image generation",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T15:25:52.915Z",
+      "updatedAt": "2026-07-07T15:25:52.915Z"
+    },
+    {
+      "id": "BD-GMFLOW-094031d-002",
+      "title": "AI: preview-text-selection.test.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/__tests__/preview-text-selection.test.ts` modificato nel commit «fix(command-center): allow wiki text edits before NPC image generation». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/preview-text-selection.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/__tests__/preview-text-selection.test.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "094031d752515dff0909798ee1059965036ad6df",
+      "commitShort": "094031d",
+      "commitSubject": "fix(command-center): allow wiki text edits before NPC image generation",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T15:25:52.915Z",
+      "updatedAt": "2026-07-07T15:25:52.915Z"
+    },
+    {
+      "id": "BD-GMFLOW-094031d-003",
+      "title": "AI: chat-assistant.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «fix(command-center): allow wiki text edits before NPC image generation». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/chat-assistant.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/chat-assistant.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "094031d752515dff0909798ee1059965036ad6df",
+      "commitShort": "094031d",
+      "commitSubject": "fix(command-center): allow wiki text edits before NPC image generation",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T15:25:52.915Z",
+      "updatedAt": "2026-07-07T15:25:52.915Z"
+    },
+    {
+      "id": "BD-GMFLOW-094031d-004",
+      "title": "AI: conversation-intent.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/conversation-intent.ts` modificato nel commit «fix(command-center): allow wiki text edits before NPC image generation». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/conversation-intent.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/conversation-intent.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "094031d752515dff0909798ee1059965036ad6df",
+      "commitShort": "094031d",
+      "commitSubject": "fix(command-center): allow wiki text edits before NPC image generation",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T15:25:52.915Z",
+      "updatedAt": "2026-07-07T15:25:52.915Z"
+    },
+    {
+      "id": "BD-GMFLOW-094031d-005",
+      "title": "AI: format-proposal-chat.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/format-proposal-chat.ts` modificato nel commit «fix(command-center): allow wiki text edits before NPC image generation». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/format-proposal-chat.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/format-proposal-chat.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "094031d752515dff0909798ee1059965036ad6df",
+      "commitShort": "094031d",
+      "commitSubject": "fix(command-center): allow wiki text edits before NPC image generation",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T15:25:52.915Z",
+      "updatedAt": "2026-07-07T15:25:52.915Z"
+    },
+    {
+      "id": "BD-GMFLOW-094031d-006",
+      "title": "AI: preview-text-selection.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/preview-text-selection.ts` modificato nel commit «fix(command-center): allow wiki text edits before NPC image generation». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/preview-text-selection.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/preview-text-selection.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "094031d752515dff0909798ee1059965036ad6df",
+      "commitShort": "094031d",
+      "commitSubject": "fix(command-center): allow wiki text edits before NPC image generation",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T15:25:52.915Z",
+      "updatedAt": "2026-07-07T15:25:52.915Z"
+    },
+    {
+      "id": "BD-GMFLOW-094031d-007",
+      "title": "AI: wiki-npc-batch-builder.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/wiki-npc-batch-builder.ts` modificato nel commit «fix(command-center): allow wiki text edits before NPC image generation». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-npc-batch-builder.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-npc-batch-builder.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "094031d752515dff0909798ee1059965036ad6df",
+      "commitShort": "094031d",
+      "commitSubject": "fix(command-center): allow wiki text edits before NPC image generation",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T15:25:52.915Z",
+      "updatedAt": "2026-07-07T15:25:52.915Z"
+    },
+    {
+      "id": "BD-GMFLOW-094031d-008",
+      "title": "AI: wiki-npc-batch-pending.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/wiki-npc-batch-pending.ts` modificato nel commit «fix(command-center): allow wiki text edits before NPC image generation». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-npc-batch-pending.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/wiki-npc-batch-pending.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "094031d752515dff0909798ee1059965036ad6df",
+      "commitShort": "094031d",
+      "commitSubject": "fix(command-center): allow wiki text edits before NPC image generation",
+      "statusCode": "M",
+      "createdAt": "2026-07-07T15:25:52.915Z",
+      "updatedAt": "2026-07-07T15:25:52.915Z"
+    },
+    {
+      "id": "BD-GMFLOW-a5750c6-001",
+      "title": "MAPS: map-gallery.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "MAPS",
+      "priority": "Media",
+      "description": "File `src/components/maps/map-gallery.tsx` modificato nel commit «fix(maps): stop showing gallery error when wiki_entity_id fallback succeeds.». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Feature mappe — verificare allineamento architettura gmflow.",
+      "bdFiles": [
+        "src/components/maps/map-gallery.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/maps/map-gallery.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "a5750c6d1d7857b51c7d11d6ea35bf2a892ce883",
+      "commitShort": "a5750c6",
+      "commitSubject": "fix(maps): stop showing gallery error when wiki_entity_id fallback succeeds.",
+      "statusCode": "M",
+      "createdAt": "2026-07-08T04:16:57.855Z",
+      "updatedAt": "2026-07-08T04:16:57.855Z"
     }
   ]
 }
