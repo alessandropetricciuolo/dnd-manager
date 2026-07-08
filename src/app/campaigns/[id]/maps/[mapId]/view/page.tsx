@@ -77,13 +77,17 @@ export default async function MapViewPage({ params }: PageProps) {
     .eq("map_id", mapId)
     .order("created_at", { ascending: true });
 
-  const { data: boundMapRows } = await supabase
+  let boundMapRows: Array<{ id: string; wiki_entity_id: string | null }> = [];
+  const boundMapsRes = await supabase
     .from("maps")
     .select("id, wiki_entity_id")
     .eq("campaign_id", campaignId)
     .not("wiki_entity_id", "is", null);
+  if (!boundMapsRes.error) {
+    boundMapRows = (boundMapsRes.data ?? []) as Array<{ id: string; wiki_entity_id: string | null }>;
+  }
   const wikiLocationMapIds = buildWikiLocationMapIndex(
-    (boundMapRows ?? []) as Array<{ id: string; wiki_entity_id: string | null }>
+    boundMapRows
   );
 
   const { data: campaignMaps } = await supabase

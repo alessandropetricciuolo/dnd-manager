@@ -24,12 +24,39 @@ export default async function CampaignMapPage({ params }: PageProps) {
     notFound();
   }
 
-  const { data: map, error: mapError } = await supabase
+  type MapPageRow = {
+    id: string;
+    name: string;
+    image_url: string;
+    campaign_id: string;
+    parent_map_id?: string | null;
+    description?: string | null;
+    overlay_items?: unknown;
+    map_type?: string;
+    wiki_entity_id?: string | null;
+  };
+  let map: MapPageRow | null = null;
+  let mapError: { message?: string } | null = null;
+
+  const mapFull = await supabase
     .from("maps")
     .select("id, name, image_url, campaign_id, parent_map_id, description, overlay_items, map_type, wiki_entity_id")
     .eq("id", mapId)
     .eq("campaign_id", campaignId)
     .single();
+  if (mapFull.error?.message?.includes("wiki_entity_id")) {
+    const mapLegacy = await supabase
+      .from("maps")
+      .select("id, name, image_url, campaign_id, parent_map_id, description, overlay_items, map_type")
+      .eq("id", mapId)
+      .eq("campaign_id", campaignId)
+      .single();
+    map = (mapLegacy.data as MapPageRow | null) ?? null;
+    mapError = mapLegacy.error ? { message: mapLegacy.error.message } : null;
+  } else {
+    map = (mapFull.data as MapPageRow | null) ?? null;
+    mapError = mapFull.error ? { message: mapFull.error.message } : null;
+  }
 
   if (mapError || !map) {
     notFound();
@@ -90,13 +117,17 @@ export default async function CampaignMapPage({ params }: PageProps) {
     .eq("map_id", mapId)
     .order("created_at", { ascending: true });
 
-  const { data: boundMapRows } = await supabase
+  let boundMapRows: Array<{ id: string; wiki_entity_id: string | null }> = [];
+  const boundMapsRes = await supabase
     .from("maps")
     .select("id, wiki_entity_id")
     .eq("campaign_id", campaignId)
     .not("wiki_entity_id", "is", null);
+  if (!boundMapsRes.error) {
+    boundMapRows = (boundMapsRes.data ?? []) as Array<{ id: string; wiki_entity_id: string | null }>;
+  }
   const wikiLocationMapIds = buildWikiLocationMapIndex(
-    (boundMapRows ?? []) as Array<{ id: string; wiki_entity_id: string | null }>
+    boundMapRows
   );
 
   const wikiEntityId = (map as { wiki_entity_id?: string | null }).wiki_entity_id ?? null;
