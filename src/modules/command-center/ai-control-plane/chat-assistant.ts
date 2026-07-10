@@ -383,6 +383,7 @@ function finalizeWikiProposalAfterText(
     ...enriched,
     rationale: pending.rationale,
     wikiMeta,
+    wikiBatchMeta: pending.wikiBatchMeta,
     input: { ...enriched.input },
     preview_payload: { ...enriched.preview_payload },
   };
