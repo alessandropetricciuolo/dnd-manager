@@ -1,12 +1,12 @@
 {
-  "updatedAt": "2026-07-08T04:16:57.855Z",
+  "updatedAt": "2026-07-10T14:29:50.135Z",
   "sourceProject": "Barber & Dragons",
   "targetProject": "gmflow.app",
   "sourceRepoPath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App",
   "targetRepoPath": "/Users/alessandropetricciuolo/Desktop/masto-platform",
   "branch": "main",
-  "lastCommit": "a5750c6d1d7857b51c7d11d6ea35bf2a892ce883",
-  "commitRange": "094031d..a5750c6",
+  "lastCommit": "d03095b546ffde4ac3a5612aece93792cb61eb31",
+  "commitRange": "21aa7a4..d03095b",
   "items": [
     {
       "id": "BD-GMFLOW-PKG-2026-07-06-001",
@@ -24211,6 +24211,411 @@
       "statusCode": "M",
       "createdAt": "2026-07-08T04:16:57.855Z",
       "updatedAt": "2026-07-08T04:16:57.855Z"
+    },
+    {
+      "id": "BD-GMFLOW-21aa7a4-001",
+      "title": "CAMPAIGNS: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "CAMPAIGNS",
+      "priority": "Media",
+      "description": "File `src/app/campaigns/[id]/maps/[mapId]/page.tsx` modificato nel commit «fix(maps): prevent 404 on map pages during wiki_entity_id rollout.». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Logica campagne potenzialmente generalizzabile per multi-tenant.",
+      "bdFiles": [
+        "src/app/campaigns/[id]/maps/[mapId]/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/campaigns/[id]/maps/[mapId]/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "21aa7a4ad8d1735cb819795ddd6d5441b3b7fd4c",
+      "commitShort": "21aa7a4",
+      "commitSubject": "fix(maps): prevent 404 on map pages during wiki_entity_id rollout.",
+      "statusCode": "M",
+      "createdAt": "2026-07-08T09:53:45.829Z",
+      "updatedAt": "2026-07-08T09:53:45.829Z"
+    },
+    {
+      "id": "BD-GMFLOW-21aa7a4-002",
+      "title": "CAMPAIGNS: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "CAMPAIGNS",
+      "priority": "Media",
+      "description": "File `src/app/campaigns/[id]/maps/[mapId]/view/page.tsx` modificato nel commit «fix(maps): prevent 404 on map pages during wiki_entity_id rollout.». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Logica campagne potenzialmente generalizzabile per multi-tenant.",
+      "bdFiles": [
+        "src/app/campaigns/[id]/maps/[mapId]/view/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/campaigns/[id]/maps/[mapId]/view/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "21aa7a4ad8d1735cb819795ddd6d5441b3b7fd4c",
+      "commitShort": "21aa7a4",
+      "commitSubject": "fix(maps): prevent 404 on map pages during wiki_entity_id rollout.",
+      "statusCode": "M",
+      "createdAt": "2026-07-08T09:53:45.829Z",
+      "updatedAt": "2026-07-08T09:53:45.829Z"
+    },
+    {
+      "id": "BD-GMFLOW-d03095b-001",
+      "title": "CAMPAIGNS: route.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "CAMPAIGNS",
+      "priority": "Media",
+      "description": "File `src/app/api/campaigns/[campaignId]/wiki-archive-zip/route.ts` aggiunto nel commit «feat(wiki,characters): export wiki archive ZIP and add character story chat». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Logica campagne potenzialmente generalizzabile per multi-tenant.",
+      "bdFiles": [
+        "src/app/api/campaigns/[campaignId]/wiki-archive-zip/route.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/api/campaigns/[campaignId]/wiki-archive-zip/route.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "d03095b546ffde4ac3a5612aece93792cb61eb31",
+      "commitShort": "d03095b",
+      "commitSubject": "feat(wiki,characters): export wiki archive ZIP and add character story chat",
+      "statusCode": "A",
+      "createdAt": "2026-07-10T14:29:50.135Z",
+      "updatedAt": "2026-07-10T14:29:50.135Z"
+    },
+    {
+      "id": "BD-GMFLOW-d03095b-002",
+      "title": "CAMPAIGNS: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "CAMPAIGNS",
+      "priority": "Media",
+      "description": "File `src/app/campaigns/[id]/page.tsx` modificato nel commit «feat(wiki,characters): export wiki archive ZIP and add character story chat». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Logica campagne potenzialmente generalizzabile per multi-tenant.",
+      "bdFiles": [
+        "src/app/campaigns/[id]/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/campaigns/[id]/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "d03095b546ffde4ac3a5612aece93792cb61eb31",
+      "commitShort": "d03095b",
+      "commitSubject": "feat(wiki,characters): export wiki archive ZIP and add character story chat",
+      "statusCode": "M",
+      "createdAt": "2026-07-10T14:29:50.135Z",
+      "updatedAt": "2026-07-10T14:29:50.135Z"
+    },
+    {
+      "id": "BD-GMFLOW-d03095b-003",
+      "title": "UI_UX: character-text-gen-chat.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/characters/character-text-gen-chat.tsx` aggiunto nel commit «feat(wiki,characters): export wiki archive ZIP and add character story chat». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/characters/character-text-gen-chat.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/characters/character-text-gen-chat.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "d03095b546ffde4ac3a5612aece93792cb61eb31",
+      "commitShort": "d03095b",
+      "commitSubject": "feat(wiki,characters): export wiki archive ZIP and add character story chat",
+      "statusCode": "A",
+      "createdAt": "2026-07-10T14:29:50.135Z",
+      "updatedAt": "2026-07-10T14:29:50.135Z"
+    },
+    {
+      "id": "BD-GMFLOW-d03095b-004",
+      "title": "UI_UX: create-character-dialog.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/characters/create-character-dialog.tsx` modificato nel commit «feat(wiki,characters): export wiki archive ZIP and add character story chat». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/characters/create-character-dialog.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/characters/create-character-dialog.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "d03095b546ffde4ac3a5612aece93792cb61eb31",
+      "commitShort": "d03095b",
+      "commitSubject": "feat(wiki,characters): export wiki archive ZIP and add character story chat",
+      "statusCode": "M",
+      "createdAt": "2026-07-10T14:29:50.135Z",
+      "updatedAt": "2026-07-10T14:29:50.135Z"
+    },
+    {
+      "id": "BD-GMFLOW-d03095b-005",
+      "title": "UI_UX: edit-character-dialog.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/characters/edit-character-dialog.tsx` modificato nel commit «feat(wiki,characters): export wiki archive ZIP and add character story chat». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/characters/edit-character-dialog.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/characters/edit-character-dialog.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "d03095b546ffde4ac3a5612aece93792cb61eb31",
+      "commitShort": "d03095b",
+      "commitSubject": "feat(wiki,characters): export wiki archive ZIP and add character story chat",
+      "statusCode": "M",
+      "createdAt": "2026-07-10T14:29:50.135Z",
+      "updatedAt": "2026-07-10T14:29:50.135Z"
+    },
+    {
+      "id": "BD-GMFLOW-d03095b-006",
+      "title": "WIKI: download-wiki-archive-button.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "WIKI",
+      "priority": "Media",
+      "description": "File `src/components/wiki/download-wiki-archive-button.tsx` aggiunto nel commit «feat(wiki,characters): export wiki archive ZIP and add character story chat». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.",
+      "bdFiles": [
+        "src/components/wiki/download-wiki-archive-button.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/wiki/download-wiki-archive-button.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "d03095b546ffde4ac3a5612aece93792cb61eb31",
+      "commitShort": "d03095b",
+      "commitSubject": "feat(wiki,characters): export wiki archive ZIP and add character story chat",
+      "statusCode": "A",
+      "createdAt": "2026-07-10T14:29:50.135Z",
+      "updatedAt": "2026-07-10T14:29:50.135Z"
+    },
+    {
+      "id": "BD-GMFLOW-d03095b-007",
+      "title": "OTHER: character-text-chat.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/actions/character-text-chat.ts` aggiunto nel commit «feat(wiki,characters): export wiki archive ZIP and add character story chat». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/actions/character-text-chat.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/actions/character-text-chat.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "d03095b546ffde4ac3a5612aece93792cb61eb31",
+      "commitShort": "d03095b",
+      "commitSubject": "feat(wiki,characters): export wiki archive ZIP and add character story chat",
+      "statusCode": "A",
+      "createdAt": "2026-07-10T14:29:50.135Z",
+      "updatedAt": "2026-07-10T14:29:50.135Z"
+    },
+    {
+      "id": "BD-GMFLOW-d03095b-008",
+      "title": "WIKI: build-wiki-archive-zip.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "WIKI",
+      "priority": "Media",
+      "description": "File `src/lib/wiki-export/build-wiki-archive-zip.ts` aggiunto nel commit «feat(wiki,characters): export wiki archive ZIP and add character story chat». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.",
+      "bdFiles": [
+        "src/lib/wiki-export/build-wiki-archive-zip.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/wiki-export/build-wiki-archive-zip.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "d03095b546ffde4ac3a5612aece93792cb61eb31",
+      "commitShort": "d03095b",
+      "commitSubject": "feat(wiki,characters): export wiki archive ZIP and add character story chat",
+      "statusCode": "A",
+      "createdAt": "2026-07-10T14:29:50.135Z",
+      "updatedAt": "2026-07-10T14:29:50.135Z"
+    },
+    {
+      "id": "BD-GMFLOW-d03095b-009",
+      "title": "AI: chat-assistant.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(wiki,characters): export wiki archive ZIP and add character story chat». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/modules/command-center/ai-control-plane/chat-assistant.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/modules/command-center/ai-control-plane/chat-assistant.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "d03095b546ffde4ac3a5612aece93792cb61eb31",
+      "commitShort": "d03095b",
+      "commitSubject": "feat(wiki,characters): export wiki archive ZIP and add character story chat",
+      "statusCode": "M",
+      "createdAt": "2026-07-10T14:29:50.135Z",
+      "updatedAt": "2026-07-10T14:29:50.135Z"
     }
   ]
 }

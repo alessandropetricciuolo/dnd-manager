@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-* Data aggiornamento: 2026-07-08T04:16:57.855Z
+* Data aggiornamento: 2026-07-10T14:29:50.135Z
 * Branch corrente: main
-* Ultimo commit analizzato: a5750c6d1d7857b51c7d11d6ea35bf2a892ce883
-* Range commit analizzato: 094031d..a5750c6
-* Stato generale: 223 voci NEEDS_REVIEW
-* Voci totali: 618 (NEEDS_REVIEW: 223, TO_IMPORT: 319, IMPORTED: 0)
+* Ultimo commit analizzato: d03095b546ffde4ac3a5612aece93792cb61eb31
+* Range commit analizzato: 21aa7a4..d03095b
+* Stato generale: 234 voci NEEDS_REVIEW
+* Voci totali: 629 (NEEDS_REVIEW: 234, TO_IMPORT: 319, IMPORTED: 0)
 
 ## Delta automatico non revisionato
 
@@ -10706,6 +10706,521 @@ Criterio di import completato:
 * Codice portato in gmflow con adattamenti documentati
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-21aa7a4-001] CAMPAIGNS: page.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+CAMPAIGNS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/campaigns/[id]/maps/[mapId]/page.tsx` modificato nel commit «fix(maps): prevent 404 on map pages during wiki_entity_id rollout.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Logica campagne potenzialmente generalizzabile per multi-tenant.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/campaigns/[id]/maps/[mapId]/page.tsx
+
+File gmflow probabili:
+
+* src/app/campaigns/[id]/maps/[mapId]/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-21aa7a4-002] CAMPAIGNS: page.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+CAMPAIGNS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/campaigns/[id]/maps/[mapId]/view/page.tsx` modificato nel commit «fix(maps): prevent 404 on map pages during wiki_entity_id rollout.». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Logica campagne potenzialmente generalizzabile per multi-tenant.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/campaigns/[id]/maps/[mapId]/view/page.tsx
+
+File gmflow probabili:
+
+* src/app/campaigns/[id]/maps/[mapId]/view/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d03095b-001] CAMPAIGNS: route.ts (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+CAMPAIGNS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/api/campaigns/[campaignId]/wiki-archive-zip/route.ts` aggiunto nel commit «feat(wiki,characters): export wiki archive ZIP and add character story chat». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Logica campagne potenzialmente generalizzabile per multi-tenant.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/api/campaigns/[campaignId]/wiki-archive-zip/route.ts
+
+File gmflow probabili:
+
+* src/app/api/campaigns/[campaignId]/wiki-archive-zip/route.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d03095b-002] CAMPAIGNS: page.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+CAMPAIGNS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/campaigns/[id]/page.tsx` modificato nel commit «feat(wiki,characters): export wiki archive ZIP and add character story chat». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Logica campagne potenzialmente generalizzabile per multi-tenant.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/campaigns/[id]/page.tsx
+
+File gmflow probabili:
+
+* src/app/campaigns/[id]/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d03095b-003] UI_UX: character-text-gen-chat.tsx (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/characters/character-text-gen-chat.tsx` aggiunto nel commit «feat(wiki,characters): export wiki archive ZIP and add character story chat». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/characters/character-text-gen-chat.tsx
+
+File gmflow probabili:
+
+* src/components/characters/character-text-gen-chat.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d03095b-004] UI_UX: create-character-dialog.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/characters/create-character-dialog.tsx` modificato nel commit «feat(wiki,characters): export wiki archive ZIP and add character story chat». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/characters/create-character-dialog.tsx
+
+File gmflow probabili:
+
+* src/components/characters/create-character-dialog.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d03095b-005] UI_UX: edit-character-dialog.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/characters/edit-character-dialog.tsx` modificato nel commit «feat(wiki,characters): export wiki archive ZIP and add character story chat». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/characters/edit-character-dialog.tsx
+
+File gmflow probabili:
+
+* src/components/characters/edit-character-dialog.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d03095b-006] WIKI: download-wiki-archive-button.tsx (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+WIKI
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/wiki/download-wiki-archive-button.tsx` aggiunto nel commit «feat(wiki,characters): export wiki archive ZIP and add character story chat». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/wiki/download-wiki-archive-button.tsx
+
+File gmflow probabili:
+
+* src/components/wiki/download-wiki-archive-button.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d03095b-007] OTHER: character-text-chat.ts (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/actions/character-text-chat.ts` aggiunto nel commit «feat(wiki,characters): export wiki archive ZIP and add character story chat». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/actions/character-text-chat.ts
+
+File gmflow probabili:
+
+* src/lib/actions/character-text-chat.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d03095b-008] WIKI: build-wiki-archive-zip.ts (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+WIKI
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/wiki-export/build-wiki-archive-zip.ts` aggiunto nel commit «feat(wiki,characters): export wiki archive ZIP and add character story chat». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/lib/wiki-export/build-wiki-archive-zip.ts
+
+File gmflow probabili:
+
+* src/lib/wiki-export/build-wiki-archive-zip.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d03095b-009] AI: chat-assistant.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(wiki,characters): export wiki archive ZIP and add character story chat». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
 
 ## Modifiche revisionate manualmente
 
@@ -30347,9 +30862,9 @@ Questo ledger traccia modifiche Barber & Dragons da valutare per import in gmflo
 
 - Repository sorgente: `/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App`
 - Repository gmflow locale: `/Users/alessandropetricciuolo/Desktop/masto-platform`
-- Ultimo commit: `a5750c6` — fix(maps): stop showing gallery error when wiki_entity_id fallback succeeds.
-- File analizzati nell'ultimo run: 1
-- Nuove voci aggiunte: 1
+- Ultimo commit: `d03095b` — feat(wiki,characters): export wiki archive ZIP and add character story chat
+- File analizzati nell'ultimo run: 9
+- Nuove voci aggiunte: 9
 
 **Azioni consigliate:**
 1. Rivedere voci `NEEDS_REVIEW` nella sezione «Delta automatico».
