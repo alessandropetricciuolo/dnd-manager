@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "nextjs-toploader/app";
 import { toast } from "sonner";
-import { FileText, User } from "lucide-react";
+import { FileText, Sparkles, User } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -21,7 +21,9 @@ import { ImageSourceField } from "@/components/ui/image-source-field";
 import { Textarea } from "@/components/ui/textarea";
 import { createCharacter } from "@/app/campaigns/character-actions";
 import { CharacterBuildFormFields } from "@/components/characters/character-build-form-fields";
+import { CharacterTextGenChat } from "@/components/characters/character-text-gen-chat";
 import { NameGeneratorField } from "@/components/name-generator/name-generator-field";
+import type { CharacterAiStoryDraft } from "@/lib/ai/character-text-generator";
 import { backgroundBySlug } from "@/lib/character-build-catalog";
 import type { QuickManualSection } from "@/lib/sheet-generator/quick-manual-builder";
 import { buildCompiledSheetPdfRequestBody } from "@/lib/sheet-generator/sheet-pdf-payload";
@@ -157,6 +159,10 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
   const [open, setOpen] = useState(!!initialOpen);
   const [isLoading, setIsLoading] = useState(false);
   const [nameValue, setNameValue] = useState("");
+  const [backgroundValue, setBackgroundValue] = useState("");
+  const [storyChatDraft, setStoryChatDraft] = useState<CharacterAiStoryDraft | null>(null);
+  const [storyChatKey, setStoryChatKey] = useState(0);
+  const [storyChatLoading, setStoryChatLoading] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const sheetInputRef = useRef<HTMLInputElement>(null);
   const draftStorageKey = `${CREATE_CHARACTER_DRAFT_KEY_PREFIX}:${campaignId}`;
@@ -199,10 +205,17 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
   useEffect(() => {
     if (!open) {
       setNameValue("");
+      setBackgroundValue("");
+      setStoryChatDraft(null);
       return;
     }
     setNameValue(formSeed?.draft.name ?? "");
-  }, [open, formMountSignature, formSeed?.draft.name]);
+    const initialBackground =
+      formSeed?.draft.background?.trim() || formSeed?.generated?.characterStory?.trim() || "";
+    setBackgroundValue(initialBackground);
+    setStoryChatDraft(null);
+    setStoryChatKey((k) => k + 1);
+  }, [open, formMountSignature, formSeed?.draft.name, formSeed?.draft.background, formSeed?.generated?.characterStory]);
 
   function persistDraftFromForm(form: HTMLFormElement) {
     try {
@@ -215,6 +228,15 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
     } catch {
       // ignore draft persistence failures
     }
+  }
+
+  function applyStoryChatDraft() {
+    if (!storyChatDraft?.characterStory?.trim()) return;
+    setBackgroundValue(storyChatDraft.characterStory.trim());
+    if (storyChatDraft.generatedName?.trim() && !nameValue.trim()) {
+      setNameValue(storyChatDraft.generatedName.trim());
+    }
+    toast.success("Storia applicata al form.");
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -505,13 +527,49 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
             )}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-3">
             <Label htmlFor="char-background">Background / Storia</Label>
+            <details className="rounded-lg border border-barber-gold/30 bg-barber-dark/50 p-3">
+              <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-medium text-barber-gold [&::-webkit-details-marker]:hidden">
+                <Sparkles className="h-4 w-4 shrink-0" />
+                Genera storia con IA
+              </summary>
+              <div className="mt-3 space-y-3">
+                <p className="text-xs text-barber-paper/60">
+                  Descrivi il personaggio in chat: l&apos;IA scrive solo la storia narrativa (non razza, classe o background PHB).
+                </p>
+                <CharacterTextGenChat
+                  key={`create-story-chat-${storyChatKey}`}
+                  campaignId={campaignId}
+                  characterName={nameValue.trim() || "Nuovo personaggio"}
+                  seedStory={backgroundValue.trim() || null}
+                  disabled={isLoading}
+                  onLoadingChange={setStoryChatLoading}
+                  onDraftChange={setStoryChatDraft}
+                  onResolvedName={(resolved) => {
+                    if (!nameValue.trim()) setNameValue(resolved);
+                  }}
+                  placeholder="Es: un guerriero cresciuto tra i portuali, leale ma rancoroso verso la nobiltà…"
+                  emptyHint="Primo messaggio = bozza storia. I successivi affinano il testo come in una chat."
+                />
+                {storyChatDraft ? (
+                  <Button
+                    type="button"
+                    onClick={applyStoryChatDraft}
+                    disabled={isLoading || storyChatLoading}
+                    className="bg-barber-gold text-barber-dark hover:bg-barber-gold/90"
+                  >
+                    Applica bozza chat al form
+                  </Button>
+                ) : null}
+              </div>
+            </details>
             <Textarea
               id="char-background"
               name="background"
               placeholder="Storia del personaggio, tratti, note..."
-              defaultValue={formSeed?.draft.background ?? ""}
+              value={backgroundValue}
+              onChange={(e) => setBackgroundValue(e.target.value)}
               className="min-h-[120px] resize-y bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
               disabled={isLoading}
             />

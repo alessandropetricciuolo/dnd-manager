@@ -11,6 +11,7 @@ import { UploadMapDialog } from "@/components/maps/upload-map-dialog";
 import { WikiList } from "@/components/wiki/wiki-list";
 import { CreateEntityDialog } from "@/components/wiki/create-entity-dialog";
 import { BulkImportWikiDialog } from "@/components/wiki/bulk-import-wiki-dialog";
+import { DownloadWikiArchiveButton } from "@/components/wiki/download-wiki-archive-button";
 import { DeleteCampaignButton } from "@/components/delete-campaign-button";
 import { CampaignVisibilityToggle } from "@/components/campaign-visibility-toggle";
 import { EditCampaignDialog } from "@/components/campaigns/edit-campaign-dialog";
@@ -523,6 +524,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
                       eligiblePlayers={eligiblePlayers}
                       eligibleParties={eligibleParties}
                     />
+                    <DownloadWikiArchiveButton campaignId={campaign.id} />
                     <BulkImportWikiDialog campaignId={campaign.id} />
                   </div>
                 ) : null}

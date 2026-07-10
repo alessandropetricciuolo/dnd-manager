@@ -97,7 +97,7 @@ function chatHintForProposal(phase?: ChatPendingProposal["phase"]): string {
     return "Scrivi **sì** per generare i paletti IA (Architect) o **no** per creare solo la campagna.";
   }
   if (phase === "awaiting_sheet") {
-    return "Compila il generatore scheda nel pannello a destra e premi **Usa questa scheda**, poi scrivi **conferma**.";
+    return "Puoi **descrivere modifiche** alla storia in chat. Poi compila il generatore scheda nel pannello a destra, premi **Usa questa scheda** e scrivi **conferma**.";
   }
   if (phase === "awaiting_close_info") {
     return "Rispondi alle domande mancanti in chat, poi scrivi **conferma** per chiudere la sessione o **annulla**.";

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "nextjs-toploader/app";
 import { toast } from "sonner";
-import { FileText, User } from "lucide-react";
+import { FileText, Sparkles, User } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +21,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { updateCharacter } from "@/app/campaigns/character-actions";
 import type { CampaignCharacterRow } from "@/app/campaigns/character-actions";
 import { CharacterBuildFormFields } from "@/components/characters/character-build-form-fields";
+import { CharacterTextGenChat } from "@/components/characters/character-text-gen-chat";
+import type { CharacterAiStoryDraft } from "@/lib/ai/character-text-generator";
 
 const MAX_TOTAL_MB = 4;
 const MAX_TOTAL_BYTES = MAX_TOTAL_MB * 1024 * 1024;
@@ -40,6 +42,10 @@ export function EditCharacterDialog({
 }: EditCharacterDialogProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [backgroundValue, setBackgroundValue] = useState(character.background ?? "");
+  const [storyChatDraft, setStoryChatDraft] = useState<CharacterAiStoryDraft | null>(null);
+  const [storyChatKey, setStoryChatKey] = useState(0);
+  const [storyChatLoading, setStoryChatLoading] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const sheetInputRef = useRef<HTMLInputElement>(null);
   const [removeImage, setRemoveImage] = useState(false);
@@ -49,9 +55,18 @@ export function EditCharacterDialog({
     if (open) {
       setRemoveImage(false);
       setRemoveSheet(false);
+      setBackgroundValue(character.background ?? "");
+      setStoryChatDraft(null);
+      setStoryChatKey((k) => k + 1);
       if (sheetInputRef.current) sheetInputRef.current.value = "";
     }
-  }, [open]);
+  }, [open, character.id, character.background]);
+
+  function applyStoryChatDraft() {
+    if (!storyChatDraft?.characterStory?.trim()) return;
+    setBackgroundValue(storyChatDraft.characterStory.trim());
+    toast.success("Storia applicata al form.");
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -359,12 +374,46 @@ export function EditCharacterDialog({
             )}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-3">
             <Label htmlFor="edit-char-background">Background / Storia</Label>
+            <details className="rounded-lg border border-barber-gold/30 bg-barber-dark/50 p-3">
+              <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-medium text-barber-gold [&::-webkit-details-marker]:hidden">
+                <Sparkles className="h-4 w-4 shrink-0" />
+                Genera o affina storia con IA
+              </summary>
+              <div className="mt-3 space-y-3">
+                <p className="text-xs text-barber-paper/60">
+                  La chat usa la storia attuale come base se presente. L&apos;IA modifica solo il testo narrativo.
+                </p>
+                <CharacterTextGenChat
+                  key={`edit-story-chat-${storyChatKey}-${character.id}`}
+                  campaignId={character.campaign_id}
+                  characterName={character.name}
+                  seedStory={backgroundValue.trim() || null}
+                  disabled={isLoading}
+                  onLoadingChange={setStoryChatLoading}
+                  onDraftChange={setStoryChatDraft}
+                  placeholder="Es: aggiungi un legame con la gilda dei ladri e un trauma d'infanzia…"
+                  emptyHint="Primo messaggio = nuova bozza o modifica della storia esistente. I successivi la affinano."
+                />
+                {storyChatDraft ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-barber-gold/40 text-barber-gold"
+                    disabled={isLoading || storyChatLoading}
+                    onClick={applyStoryChatDraft}
+                  >
+                    Applica bozza chat al form
+                  </Button>
+                ) : null}
+              </div>
+            </details>
             <Textarea
               id="edit-char-background"
               name="background"
-              defaultValue={character.background ?? ""}
+              value={backgroundValue}
+              onChange={(e) => setBackgroundValue(e.target.value)}
               placeholder="Storia del personaggio, tratti, note..."
               className="min-h-[120px] resize-y bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
               disabled={isLoading}
