@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useRouter } from "nextjs-toploader/app";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Download, Eye, Pencil, Trash2, Clock } from "lucide-react";
+import { Download, Eye, Pencil, Trash2, Clock, BookOpen } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { EditCharacterDialog } from "./edit-character-dialog";
+import { CharacterContentAccessSheet } from "./character-content-access-sheet";
 import {
   assignCharacter,
   deleteCharacter,
@@ -276,6 +277,7 @@ export function CharacterCardGm({
   const [assignedTo, setAssignedTo] = useState<string | null>(character.assigned_to);
   const [deleting, setDeleting] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [contentAccessOpen, setContentAccessOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [imgError, setImgError] = useState(false);
   const [sheetImgError, setSheetImgError] = useState(false);
@@ -926,6 +928,19 @@ export function CharacterCardGm({
             Dettagli
           </Button>
 
+          {isLongCampaign && assignedTo && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full border-emerald-600/40 text-emerald-200 hover:bg-emerald-500/10"
+              onClick={() => setContentAccessOpen(true)}
+            >
+              <BookOpen className="mr-2 h-4 w-4" />
+              Wiki e mappe sbloccati
+            </Button>
+          )}
+
           <div className="space-y-1.5">
             <label className="text-[10px] font-medium uppercase tracking-wide text-barber-paper/60">
               Assegna a
@@ -1153,6 +1168,17 @@ export function CharacterCardGm({
           open={editOpen}
           onOpenChange={setEditOpen}
           isLongCampaign={Boolean(isLongCampaign)}
+        />
+      )}
+
+      {isLongCampaign && assignedTo && contentAccessOpen && (
+        <CharacterContentAccessSheet
+          open={contentAccessOpen}
+          onOpenChange={setContentAccessOpen}
+          campaignId={character.campaign_id}
+          playerId={assignedTo}
+          playerName={eligiblePlayers.find((p) => p.id === assignedTo)?.label ?? "Giocatore"}
+          characterName={character.name}
         />
       )}
     </>

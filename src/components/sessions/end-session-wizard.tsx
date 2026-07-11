@@ -41,6 +41,11 @@ import {
   type AchievementForWizard,
 } from "@/app/campaigns/actions";
 import { getCoreEntitiesForDebrief, type CoreEntityForDebrief } from "@/app/campaigns/gm-actions";
+import { getCampaignCharacters, type CampaignCharacterRow } from "@/app/campaigns/character-actions";
+import {
+  computeSessionCloseXpFromDraft,
+  readSessionCloseDraft,
+} from "@/lib/gm/session-close-draft";
 import { cn } from "@/lib/utils";
 import {
   addHoursToFantasyDate,
@@ -144,6 +149,9 @@ export function EndSessionWizard({
 
   const [attendance, setAttendance] = useState<Record<string, "attended" | "absent">>({});
   const [xpGained, setXpGained] = useState(0);
+  const [resolvedPerPlayerXpAwards, setResolvedPerPlayerXpAwards] = useState<
+    { playerId: string; xp: number }[] | undefined
+  >(undefined);
   /** Ore di gioco (Epoch) sommate ai PG dei presenti (assigned_to). */
   const [elapsedHours, setElapsedHours] = useState(0);
   const [unlockContent, setUnlockContent] = useState(false);
@@ -252,6 +260,7 @@ export function EndSessionWizard({
     setEconomyMissions([]);
     setEconomyCharacters([]);
     setXpGained(Math.max(0, Math.floor(initialXpGained ?? 0)));
+    setResolvedPerPlayerXpAwards(perPlayerXpAwards);
     (async () => {
       // Metadati sessione: se è in pre-chiusura, salta direttamente allo step 2
       const meta = await getSessionWizardMeta(sessionId);
@@ -295,8 +304,32 @@ export function EndSessionWizard({
           setSignups([]);
         }
       }
+
+      if (
+        (initialXpGained == null || initialXpGained <= 0) &&
+        (!perPlayerXpAwards || perPlayerXpAwards.length === 0)
+      ) {
+        const draft = readSessionCloseDraft(campaignId, sessionId);
+        if (draft?.xpState) {
+          const charsRes = await getCampaignCharacters(campaignId);
+          const characters = (charsRes.success ? charsRes.data ?? [] : []) as CampaignCharacterRow[];
+          const computed = computeSessionCloseXpFromDraft(draft, characters);
+          if (computed.initialXpGained != null && computed.initialXpGained > 0) {
+            setXpGained(computed.initialXpGained);
+          }
+          if (computed.perPlayerXpAwards?.length) {
+            setResolvedPerPlayerXpAwards(computed.perPlayerXpAwards);
+          }
+          if (computed.initialElapsedHours != null && computed.initialElapsedHours > 0) {
+            setElapsedHours(Math.max(0, Math.floor(computed.initialElapsedHours)));
+          }
+          if (computed.initialAttendance && Object.keys(computed.initialAttendance).length > 0) {
+            setAttendance((current) => ({ ...current, ...computed.initialAttendance }));
+          }
+        }
+      }
     })();
-  }, [open, sessionId, initialApprovedSignups, initialAttendance, initialElapsedHours, initialXpGained]);
+  }, [open, sessionId, campaignId, initialApprovedSignups, initialAttendance, initialElapsedHours, initialXpGained, perPlayerXpAwards]);
 
   useEffect(() => {
     if (!open || step !== 1 || !unlockContent || !campaignId) return;
@@ -502,7 +535,9 @@ export function EndSessionWizard({
     const payload: CloseSessionActionPayload = {
       attendance,
       xpGained: Math.max(0, Math.floor(xpGained)),
-      perPlayerXpAwards: perPlayerXpAwards?.filter((award) => attendance[award.playerId] === "attended"),
+      perPlayerXpAwards: resolvedPerPlayerXpAwards?.filter(
+        (award) => attendance[award.playerId] === "attended"
+      ),
       unlockContent: unlockContent && selectedContentKeys.size > 0,
       unlockContentIds: unlockContent
         ? [...selectedContentKeys].map((key) => {
@@ -1190,8 +1225,8 @@ export function EndSessionWizard({
             <div className="space-y-3 text-sm">
               <p className="text-barber-paper/80">
                 <strong>Presenze:</strong> {presentCount} presenti su {signups.length} iscritti.
-                {perPlayerXpAwards?.length
-                  ? ` • XP personalizzati su ${perPlayerXpAwards.length} assegnazioni.`
+                {resolvedPerPlayerXpAwards?.length
+                  ? ` • XP personalizzati su ${resolvedPerPlayerXpAwards.length} assegnazioni.`
                   : xpGained > 0
                     ? ` • XP assegnati: ${xpGained} a ciascun presente.`
                     : ""}

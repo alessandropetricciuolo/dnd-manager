@@ -2026,44 +2026,137 @@ async function ensureCampaignMemberWithAdmin(
   campaignId: string,
   playerId: string,
   xpToAdd: number
-): Promise<void> {
-  const { data: existingRow } = await admin
+): Promise<{ success: true } | { success: false; error: string }> {
+  const safeXp = Math.max(0, Math.floor(xpToAdd));
+
+  const { data: characterRow, error: characterErr } = await admin
+    .from("campaign_characters")
+    .select("current_xp")
+    .eq("campaign_id", campaignId)
+    .eq("assigned_to", playerId)
+    .maybeSingle();
+  if (characterErr) {
+    return { success: false, error: characterErr.message ?? "Errore lettura XP personaggio." };
+  }
+  const characterXp = Math.max(0, Math.floor((characterRow as { current_xp?: number } | null)?.current_xp ?? 0));
+
+  const { data: existingRow, error: fetchErr } = await admin
     .from("campaign_members")
     .select("id, xp_earned")
     .eq("campaign_id", campaignId)
     .eq("player_id", playerId)
     .maybeSingle();
+  if (fetchErr) {
+    return { success: false, error: fetchErr.message ?? "Errore lettura membro campagna." };
+  }
 
   const existing = existingRow as { id: string; xp_earned?: number } | null;
   if (!existing) {
-    const nextXp = Math.max(0, Math.floor(xpToAdd));
-    await admin.from("campaign_members").insert({
+    const nextXp = characterXp + safeXp;
+    const { error: insertErr } = await admin.from("campaign_members").insert({
       campaign_id: campaignId,
       player_id: playerId,
       xp_earned: nextXp,
     } as never);
-    await admin
-      .from("campaign_characters")
-      .update({ current_xp: nextXp } as never)
-      .eq("campaign_id", campaignId)
-      .eq("assigned_to", playerId);
-    return;
+    if (insertErr) {
+      return { success: false, error: insertErr.message ?? "Errore creazione membro campagna." };
+    }
+    if (safeXp > 0 || characterXp > 0) {
+      const { error: charUpdateErr } = await admin
+        .from("campaign_characters")
+        .update({ current_xp: nextXp } as never)
+        .eq("campaign_id", campaignId)
+        .eq("assigned_to", playerId);
+      if (charUpdateErr) {
+        return { success: false, error: charUpdateErr.message ?? "Errore aggiornamento XP personaggio." };
+      }
+    }
+    return { success: true };
   }
 
-  const safeXp = Math.max(0, Math.floor(xpToAdd));
-  if (safeXp > 0) {
-    const currentXp = existing.xp_earned ?? 0;
-    const nextXp = currentXp + safeXp;
-    await admin
-      .from("campaign_members")
-      .update({ xp_earned: nextXp } as never)
-      .eq("id", existing.id);
-    await admin
-      .from("campaign_characters")
-      .update({ current_xp: nextXp } as never)
-      .eq("campaign_id", campaignId)
-      .eq("assigned_to", playerId);
+  if (safeXp <= 0) return { success: true };
+
+  const currentXp = Math.max(existing.xp_earned ?? 0, characterXp);
+  const nextXp = currentXp + safeXp;
+  const { error: memberUpdateErr } = await admin
+    .from("campaign_members")
+    .update({ xp_earned: nextXp } as never)
+    .eq("id", existing.id);
+  if (memberUpdateErr) {
+    return { success: false, error: memberUpdateErr.message ?? "Errore aggiornamento XP membro." };
   }
+
+  const { error: charUpdateErr } = await admin
+    .from("campaign_characters")
+    .update({ current_xp: nextXp } as never)
+    .eq("campaign_id", campaignId)
+    .eq("assigned_to", playerId);
+  if (charUpdateErr) {
+    return { success: false, error: charUpdateErr.message ?? "Errore aggiornamento XP personaggio." };
+  }
+
+  return { success: true };
+}
+
+function isSignupEligibleForSessionClose(status: string): boolean {
+  const normalized = status.toLowerCase();
+  return (
+    normalized === "approved" ||
+    normalized === "confirmed" ||
+    normalized === "attended" ||
+    normalized === "absent"
+  );
+}
+
+async function applySessionCloseAttendanceAndXp(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  campaignId: string,
+  signupsList: { id: string; player_id: string; status: string }[],
+  payload: Pick<CloseSessionActionPayload, "attendance" | "xpGained" | "perPlayerXpAwards">,
+  options: { awardXp: boolean }
+): Promise<{ success: true } | { success: false; error: string }> {
+  const xpToAdd = Math.max(0, Math.floor(payload.xpGained));
+  const perPlayerXp = new Map(
+    (payload.perPlayerXpAwards ?? [])
+      .filter((award) => award.playerId && Number.isFinite(award.xp) && award.xp > 0)
+      .map((award) => [award.playerId, Math.max(0, Math.floor(award.xp))])
+  );
+
+  for (const signup of signupsList) {
+    if (!isSignupEligibleForSessionClose(signup.status)) continue;
+
+    const newStatus = payload.attendance[signup.player_id] ?? "attended";
+    if (signup.status !== newStatus) {
+      const { error: signupErr } = await admin
+        .from("session_signups")
+        .update({ status: newStatus } as never)
+        .eq("id", signup.id);
+      if (signupErr) {
+        return { success: false, error: signupErr.message ?? "Errore aggiornamento presenza." };
+      }
+    }
+
+    if (newStatus !== "attended") continue;
+
+    if (signup.status !== "attended") {
+      try {
+        await incrementSessionsAttendedWithAdmin(admin, signup.player_id);
+      } catch (gamErr) {
+        console.error("[applySessionCloseAttendanceAndXp] gamification increment", gamErr);
+      }
+    }
+
+    const xpAward = options.awardXp ? perPlayerXp.get(signup.player_id) ?? xpToAdd : 0;
+    const memberResult = await ensureCampaignMemberWithAdmin(
+      admin,
+      campaignId,
+      signup.player_id,
+      xpAward
+    );
+    if (!memberResult.success) return memberResult;
+  }
+
+  return { success: true };
 }
 
 /** Payload unificato per chiusura sessione (EndSessionWizard). */
@@ -2122,8 +2215,6 @@ export async function closeSessionAction(
     if (session.status !== "scheduled") {
       return { success: false, message: "La sessione è già chiusa." };
     }
-    const isPreClosed =
-      (session as { is_pre_closed?: boolean | null }).is_pre_closed === true;
 
     const { data: campaign } = await supabase
       .from("campaigns")
@@ -2166,49 +2257,16 @@ export async function closeSessionAction(
       status: string;
     }[];
 
-    const xpToAdd = Math.max(0, Math.floor(payload.xpGained));
-    const perPlayerXp = new Map(
-      (payload.perPlayerXpAwards ?? [])
-        .filter((award) => award.playerId && Number.isFinite(award.xp) && award.xp > 0)
-        .map((award) => [award.playerId, Math.max(0, Math.floor(award.xp))])
+    const xpApplyResult = await applySessionCloseAttendanceAndXp(
+      admin,
+      session.campaign_id,
+      signupsList,
+      payload,
+      { awardXp: true }
     );
-    if (!isPreClosed) {
-
-      for (const signup of signupsList) {
-        const newStatus = payload.attendance[signup.player_id] ?? "attended";
-        if (signup.status === "approved" || signup.status === "confirmed") {
-          await admin
-            .from("session_signups")
-            .update({ status: newStatus } as never)
-            .eq("id", signup.id);
-          if (newStatus === "attended") {
-            try {
-              await incrementSessionsAttendedWithAdmin(admin, signup.player_id);
-            } catch (gamErr) {
-              console.error("[closeSessionAction] gamification increment", gamErr);
-            }
-            await ensureCampaignMemberWithAdmin(
-              admin,
-              session.campaign_id,
-              signup.player_id,
-              perPlayerXp.get(signup.player_id) ?? xpToAdd
-            );
-          }
-        }
-      }
-    }
-
-    // Garanzia: anche quando la sessione arriva già pre-chiusa, tutti i presenti
-    // vengono registrati come giocatori della campagna.
-    for (const signup of signupsList) {
-      const finalStatus = isPreClosed
-        ? signup.status
-        : signup.status === "approved" || signup.status === "confirmed"
-          ? payload.attendance[signup.player_id] ?? "attended"
-          : signup.status;
-      if (finalStatus === "attended") {
-        await ensureCampaignMemberWithAdmin(admin, session.campaign_id, signup.player_id, 0);
-      }
+    if (!xpApplyResult.success) {
+      console.error("[closeSessionAction] xp", xpApplyResult.error);
+      return { success: false, message: xpApplyResult.error ?? "Errore durante l'assegnazione XP." };
     }
 
     if (isLongCampaign && Object.keys(payload.entityStatusUpdates).length > 0) {
@@ -2400,31 +2458,26 @@ export async function preCloseSessionAction(
       status: string;
     }[];
 
-    const xpToAdd = Math.max(0, Math.floor(payload.xpGained));
-
-    for (const signup of signupsList) {
-      const newStatus = payload.attendance[signup.player_id] ?? "attended";
-      if (signup.status === "approved" || signup.status === "confirmed") {
-        await admin
-          .from("session_signups")
-          .update({ status: newStatus } as never)
-          .eq("id", signup.id);
-        if (newStatus === "attended") {
-          try {
-            await incrementSessionsAttendedWithAdmin(admin, signup.player_id);
-          } catch (gamErr) {
-            console.error("[preCloseSessionAction] gamification increment", gamErr);
-          }
-          await ensureCampaignMemberWithAdmin(admin, session.campaign_id, signup.player_id, xpToAdd);
-        }
-      }
+    const xpApplyResult = await applySessionCloseAttendanceAndXp(
+      admin,
+      session.campaign_id,
+      signupsList,
+      payload,
+      { awardXp: false }
+    );
+    if (!xpApplyResult.success) {
+      console.error("[preCloseSessionAction] attendance", xpApplyResult.error);
+      return {
+        success: false,
+        message: xpApplyResult.error ?? "Errore durante il salvataggio presenze.",
+      };
     }
 
     revalidatePath(`/campaigns/${session.campaign_id}`);
     revalidatePath("/dashboard");
     return {
       success: true,
-      message: "Sessione salvata in bozza. Presenze e XP registrati.",
+      message: "Sessione salvata in bozza. Presenze registrate; gli XP verranno applicati alla chiusura definitiva.",
       campaignId: session.campaign_id,
     };
   } catch (err) {
@@ -2976,6 +3029,257 @@ export async function unlockContent(
     return { success: true, message: "Contenuti sbloccati." };
   } catch (err) {
     console.error("[unlockContent]", err);
+    return { success: false, message: "Errore imprevisto. Riprova." };
+  }
+}
+
+export type PlayerContentAccessItem = {
+  id: string;
+  type: "wiki" | "map";
+  name: string;
+  groupLabel: string;
+  visibility: "public" | "secret" | "selective";
+  hasAccess: boolean;
+};
+
+export async function getPlayerContentAccess(
+  campaignId: string,
+  playerId: string
+): Promise<{ success: boolean; items: PlayerContentAccessItem[]; message?: string }> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const allowed = await isGmOrAdmin(supabase, campaignId);
+    if (!allowed) {
+      return { success: false, items: [], message: "Solo il GM o un Admin possono gestire gli sblocchi." };
+    }
+
+    const { data: member } = await supabase
+      .from("campaign_members")
+      .select("player_id")
+      .eq("campaign_id", campaignId)
+      .eq("player_id", playerId)
+      .maybeSingle();
+    if (!member) {
+      return { success: false, items: [], message: "Il giocatore non appartiene a questa campagna." };
+    }
+
+    const [wikiRes, mapsRes, explorationsRes, permissionsRes] = await Promise.all([
+      supabase
+        .from("wiki_entities")
+        .select("id, name, type, visibility, is_secret")
+        .eq("campaign_id", campaignId)
+        .order("name"),
+      supabase.from("maps").select("id, name, visibility").eq("campaign_id", campaignId).order("name"),
+      supabase.from("explorations").select("entity_id, map_id").eq("player_id", playerId),
+      supabase
+        .from("entity_permissions")
+        .select("entity_id, entity_type")
+        .eq("campaign_id", campaignId)
+        .eq("user_id", playerId),
+    ]);
+
+    let wikiRows = (wikiRes.data ??
+      []) as Array<{ id: string; name: string; type: string; visibility?: string | null; is_secret?: boolean | null }>;
+    if (wikiRes.error?.message?.toLowerCase().includes("visibility")) {
+      const fallback = await supabase
+        .from("wiki_entities")
+        .select("id, name, type, is_secret")
+        .eq("campaign_id", campaignId)
+        .order("name");
+      wikiRows = ((fallback.data ?? []) as Array<{ id: string; name: string; type: string; is_secret?: boolean | null }>).map(
+        (row) => ({
+          ...row,
+          visibility: row.is_secret ? "secret" : "public",
+        })
+      );
+    }
+
+    const mapRows = (mapsRes.data ?? []) as Array<{ id: string; name: string; visibility?: string | null }>;
+    const unlockedWikiIds = new Set(
+      (explorationsRes.data ?? []).map((e) => e.entity_id).filter(Boolean) as string[]
+    );
+    const unlockedMapIds = new Set(
+      (explorationsRes.data ?? []).map((e) => e.map_id).filter(Boolean) as string[]
+    );
+    const selectiveWikiIds = new Set(
+      (permissionsRes.data ?? [])
+        .filter((p) => p.entity_type === "wiki")
+        .map((p) => p.entity_id as string)
+    );
+    const selectiveMapIds = new Set(
+      (permissionsRes.data ?? [])
+        .filter((p) => p.entity_type === "map")
+        .map((p) => p.entity_id as string)
+    );
+
+    const normalizeVisibility = (raw: string | null | undefined, legacySecret?: boolean | null) => {
+      if (raw === "secret" || raw === "selective" || raw === "public") return raw;
+      return legacySecret ? "secret" : "public";
+    };
+
+    const wikiItems: PlayerContentAccessItem[] = wikiRows.map((e) => {
+      const visibility = normalizeVisibility(e.visibility, e.is_secret) as "public" | "secret" | "selective";
+      const hasAccess =
+        visibility === "public"
+          ? true
+          : visibility === "secret"
+            ? unlockedWikiIds.has(e.id)
+            : selectiveWikiIds.has(e.id);
+      return {
+        id: e.id,
+        type: "wiki" as const,
+        name: e.name,
+        groupLabel: WIKI_GROUP_LABELS[String(e.type)] ?? "Wiki",
+        visibility,
+        hasAccess,
+      };
+    });
+
+    const mapItems: PlayerContentAccessItem[] = mapRows.map((m) => {
+      const visibility = normalizeVisibility(m.visibility) as "public" | "secret" | "selective";
+      const hasAccess =
+        visibility === "public"
+          ? true
+          : visibility === "secret"
+            ? unlockedMapIds.has(m.id)
+            : selectiveMapIds.has(m.id);
+      return {
+        id: m.id,
+        type: "map" as const,
+        name: m.name,
+        groupLabel: "Mappe",
+        visibility,
+        hasAccess,
+      };
+    });
+
+    const items = [...mapItems, ...wikiItems].sort((a, b) => a.name.localeCompare(b.name, "it"));
+    return { success: true, items };
+  } catch (err) {
+    console.error("[getPlayerContentAccess]", err);
+    return { success: false, items: [], message: "Errore nel caricamento degli sblocchi." };
+  }
+}
+
+export type SyncPlayerContentAccessResult = { success: boolean; message: string };
+
+/** Concede o revoca accesso a contenuti segreti (explorations) o selettivi (entity_permissions). */
+export async function syncPlayerContentAccess(
+  campaignId: string,
+  playerId: string,
+  changes: { id: string; type: "wiki" | "map"; granted: boolean }[]
+): Promise<SyncPlayerContentAccessResult> {
+  if (changes.length === 0) {
+    return { success: true, message: "Nessuna modifica da applicare." };
+  }
+  try {
+    const supabase = await createSupabaseServerClient();
+    const allowed = await isGmOrAdmin(supabase, campaignId);
+    if (!allowed) {
+      return { success: false, message: "Solo il GM o un Admin possono gestire gli sblocchi." };
+    }
+
+    const { data: member } = await supabase
+      .from("campaign_members")
+      .select("player_id")
+      .eq("campaign_id", campaignId)
+      .eq("player_id", playerId)
+      .maybeSingle();
+    if (!member) {
+      return { success: false, message: "Il giocatore non appartiene a questa campagna." };
+    }
+
+    const accessRes = await getPlayerContentAccess(campaignId, playerId);
+    if (!accessRes.success) {
+      return { success: false, message: accessRes.message ?? "Impossibile verificare i contenuti." };
+    }
+    const itemByKey = new Map(accessRes.items.map((i) => [`${i.type}:${i.id}`, i]));
+
+    for (const change of changes) {
+      const item = itemByKey.get(`${change.type}:${change.id}`);
+      if (!item || item.visibility === "public") continue;
+      if (item.hasAccess === change.granted) continue;
+
+      const isWiki = change.type === "wiki";
+
+      if (item.visibility === "secret") {
+        if (change.granted) {
+          const { data: existing } = await supabase
+            .from("explorations")
+            .select("id")
+            .eq("player_id", playerId)
+            .eq(isWiki ? "entity_id" : "map_id", change.id)
+            .is(isWiki ? "map_id" : "entity_id", null)
+            .limit(1)
+            .maybeSingle();
+          if (!existing) {
+            const payload = isWiki
+              ? { player_id: playerId, entity_id: change.id, map_id: null }
+              : { player_id: playerId, map_id: change.id, entity_id: null };
+            const { error } = await supabase.from("explorations").insert(payload);
+            if (error) {
+              console.error("[syncPlayerContentAccess] insert exploration", error);
+              return { success: false, message: error.message ?? "Errore durante lo sblocco." };
+            }
+          }
+        } else {
+          const { error } = await supabase
+            .from("explorations")
+            .delete()
+            .eq("player_id", playerId)
+            .eq(isWiki ? "entity_id" : "map_id", change.id);
+          if (error) {
+            console.error("[syncPlayerContentAccess] delete exploration", error);
+            return { success: false, message: error.message ?? "Errore durante la revoca." };
+          }
+        }
+        continue;
+      }
+
+      if (item.visibility === "selective") {
+        const entityType = change.type;
+        if (change.granted) {
+          const { data: existingPerm } = await supabase
+            .from("entity_permissions")
+            .select("id")
+            .eq("campaign_id", campaignId)
+            .eq("user_id", playerId)
+            .eq("entity_type", entityType)
+            .eq("entity_id", change.id)
+            .limit(1)
+            .maybeSingle();
+          if (!existingPerm) {
+            const { error } = await supabase.from("entity_permissions").insert({
+              campaign_id: campaignId,
+              user_id: playerId,
+              entity_type: entityType,
+              entity_id: change.id,
+            });
+            if (error) {
+              console.error("[syncPlayerContentAccess] insert permission", error);
+              return { success: false, message: error.message ?? "Errore durante la concessione selettiva." };
+            }
+          }
+        } else {
+          const { error } = await supabase
+            .from("entity_permissions")
+            .delete()
+            .eq("campaign_id", campaignId)
+            .eq("user_id", playerId)
+            .eq("entity_type", entityType)
+            .eq("entity_id", change.id);
+          if (error) {
+            console.error("[syncPlayerContentAccess] delete permission", error);
+            return { success: false, message: error.message ?? "Errore durante la revoca selettiva." };
+          }
+        }
+      }
+    }
+
+    revalidatePath(`/campaigns/${campaignId}`);
+    return { success: true, message: "Sblocchi aggiornati." };
+  } catch (err) {
+    console.error("[syncPlayerContentAccess]", err);
     return { success: false, message: "Errore imprevisto. Riprova." };
   }
 }
