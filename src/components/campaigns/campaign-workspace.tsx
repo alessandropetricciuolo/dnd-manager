@@ -25,6 +25,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { IMAGE_BLUR_PLACEHOLDER, cn } from "@/lib/utils";
 import { CAMPAIGN_CONTENT_SHELL } from "@/lib/layout/shell-classes";
+import { CampaignPlayerSessionsHero } from "@/components/campaigns/campaign-player-sessions-hero";
 
 const PLACEHOLDER_IMAGE =
   "https://placehold.co/1200x400/1c1917/fbbf24/png?text=Campagna";
@@ -55,6 +56,7 @@ export type CampaignWorkspaceProps = {
   gmDisplayName: string | null;
   playerPrimerHref: string | null;
   hasPlayedCampaign: boolean;
+  isLongCampaign?: boolean;
   defaultTab?: CampaignTabValue;
   lockedOut?: boolean;
   headerActions?: React.ReactNode;
@@ -129,7 +131,7 @@ function NavItem({ value, active, disabled, locked, onSelect, variant }: NavItem
         aria-label={meta.label}
         title={meta.label}
         className={cn(
-          "inline-flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg border px-2 py-1.5 min-w-[3rem] transition-colors",
+          "inline-flex shrink-0 flex-col items-center justify-center gap-1 rounded-lg border px-2.5 py-2 min-w-[3.5rem] transition-colors",
           disabled && "cursor-not-allowed opacity-50",
           isGm
             ? active
@@ -140,8 +142,8 @@ function NavItem({ value, active, disabled, locked, onSelect, variant }: NavItem
               : "border-transparent bg-barber-dark/40 text-barber-paper/70 hover:bg-barber-gold/10 hover:text-barber-gold"
         )}
       >
-        <Icon className="h-4 w-4 shrink-0" />
-        <span className="max-w-[3.25rem] truncate text-[9px] font-medium leading-none">
+        <Icon className="h-[1.15rem] w-[1.15rem] shrink-0" />
+        <span className="max-w-[3.75rem] truncate text-[10.5px] font-medium leading-none">
           {meta.shortLabel}
         </span>
       </button>
@@ -295,6 +297,7 @@ export function CampaignWorkspace({
   gmDisplayName,
   playerPrimerHref,
   hasPlayedCampaign,
+  isLongCampaign = false,
   defaultTab = "sessioni",
   lockedOut = false,
   headerActions,
@@ -359,8 +362,8 @@ export function CampaignWorkspace({
   return (
     <div className="flex h-full min-h-0 flex-col">
       {/* Mobile: barra compatta + tab (niente hero immagine) */}
-      <div className="sticky top-14 z-40 shrink-0 border-b border-barber-gold/15 bg-barber-dark/95 backdrop-blur-md supports-[backdrop-filter]:bg-barber-dark/90 lg:hidden">
-        <div className="flex items-center gap-1.5 px-2 py-1.5 sm:px-3">
+      <div className="z-40 shrink-0 border-b border-barber-gold/15 bg-barber-dark/95 backdrop-blur-md supports-[backdrop-filter]:bg-barber-dark/90 lg:hidden">
+        <div className="flex items-center gap-1.5 px-2 py-1 sm:px-3">
           <MobileNavMenu isAdmin={isAdmin} isGmOrAdmin={isGmOrAdmin} iconOnly />
           <Button
             type="button"
@@ -395,8 +398,20 @@ export function CampaignWorkspace({
           >
             <Info className="h-4 w-4" />
           </Button>
+          {isLongCampaign && playerPrimerHref ? (
+            <Button
+              asChild
+              size="sm"
+              className="h-9 shrink-0 bg-barber-gold px-2.5 text-xs font-semibold text-barber-dark hover:bg-barber-gold/90 sm:px-3"
+            >
+              <Link href={playerPrimerHref}>
+                <BookOpen className="mr-1 h-3.5 w-3.5" />
+                Guida
+              </Link>
+            </Button>
+          ) : null}
         </div>
-        <div className="flex gap-1 overflow-x-auto px-2 pb-2 pt-0.5">
+        <div className="flex gap-1.5 overflow-x-auto px-2 pb-2 pt-0.5">
           {renderNav("pill-icon")}
         </div>
         {!hasPlayedCampaign ? (
@@ -548,7 +563,22 @@ export function CampaignWorkspace({
               ) : null}
 
               <TabsContent value="sessioni" className="mt-0 outline-none">
-                {effectiveTab === "sessioni" ? sessioniContent : null}
+                {effectiveTab === "sessioni" ? (
+                  <>
+                    {!isGmOrAdmin ? (
+                      <CampaignPlayerSessionsHero
+                        campaignName={campaignName}
+                        imageUrl={imageUrl}
+                        campaignTypeLabel={campaignTypeLabel}
+                        description={description}
+                        gmDisplayName={gmDisplayName}
+                        playerPrimerHref={playerPrimerHref}
+                        isLongCampaign={isLongCampaign}
+                      />
+                    ) : null}
+                    {sessioniContent}
+                  </>
+                ) : null}
               </TabsContent>
               <TabsContent value="wiki" className="mt-0 outline-none">
                 {effectiveTab === "wiki" ? wikiContent : null}

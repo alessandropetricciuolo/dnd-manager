@@ -402,6 +402,7 @@ export interface Database {
           visibility: string;
           parent_map_id: string | null;
           telegram_fallback_id: string | null;
+          wiki_entity_id: string | null;
           created_at: string;
           updated_at: string;
         };

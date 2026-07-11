@@ -77,6 +77,96 @@ function signupSummary(signups: SignupWithPlayer[]): string {
   return parts.join(" · ");
 }
 
+function PlayerSignupStatus({ status }: { status: string }) {
+  const normalized = normalizeStatus(status);
+  if (normalized === "pending") return <StatusBadge tone="warning">In attesa</StatusBadge>;
+  if (normalized === "approved") return <StatusBadge tone="info">Approvato</StatusBadge>;
+  if (normalized === "attended") return <StatusBadge tone="success">Presente</StatusBadge>;
+  if (normalized === "rejected") return <StatusBadge tone="muted">Rifiutato</StatusBadge>;
+  return null;
+}
+
+function PlayerSessionBookingCard({
+  session,
+  joinLoading,
+  onJoin,
+}: {
+  session: SessionWithSignups;
+  joinLoading: boolean;
+  onJoin: (sessionId: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const hasDetails = Boolean(session.dm_name || session.notes?.trim());
+  const dateLabel = formatSessionInRome(session.scheduled_at, "EEE d MMM yyyy", { locale: it });
+  const timeLabel = formatSessionInRome(session.scheduled_at, "HH:mm", { locale: it });
+  const isSignedUp = session.currentUserSignupStatus != null;
+
+  return (
+    <article className="overflow-hidden rounded-xl bg-barber-dark/80 ring-1 ring-barber-gold/25">
+      <div className="flex items-center gap-2 p-3">
+        <button
+          type="button"
+          className={cn("min-w-0 flex-1 text-left", hasDetails && "cursor-pointer")}
+          onClick={() => hasDetails && setExpanded((v) => !v)}
+          aria-expanded={hasDetails ? expanded : undefined}
+        >
+          <time dateTime={session.scheduled_at} className="block text-xs text-barber-paper/60">
+            {dateLabel}
+          </time>
+          <span className="font-serif text-2xl font-semibold leading-none text-barber-gold">{timeLabel}</span>
+        </button>
+
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+          {!isSignedUp ? (
+            <Button
+              size="sm"
+              className="h-9 bg-barber-red px-4 text-xs font-semibold hover:bg-barber-red/90"
+              disabled={joinLoading}
+              onClick={() => onJoin(session.id)}
+            >
+              <UserPlus className="mr-1 h-3.5 w-3.5" />
+              {joinLoading ? "…" : "Iscriviti"}
+            </Button>
+          ) : (
+            <PlayerSignupStatus status={session.currentUserSignupStatus!} />
+          )}
+          {hasDetails ? (
+            <button
+              type="button"
+              className="inline-flex items-center gap-0.5 text-[10px] text-barber-paper/45 hover:text-barber-gold"
+              onClick={() => setExpanded((v) => !v)}
+              aria-label={expanded ? "Nascondi dettagli" : "Mostra dettagli"}
+            >
+              Dettagli
+              {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      {expanded && hasDetails ? (
+        <div className="space-y-2 border-t border-barber-gold/15 px-3 py-2.5 text-sm">
+          <StatusBadge tone={session.status === "scheduled" ? "success" : "muted"}>
+            {session.status === "scheduled" ? "Open" : "Closed"}
+          </StatusBadge>
+          {session.dm_name ? (
+            <p className="text-barber-paper/75">
+              <span className="text-barber-paper/45">Master · </span>
+              {session.dm_name}
+            </p>
+          ) : null}
+          {session.notes ? (
+            <p className="flex items-start gap-2 text-barber-paper/75">
+              <MapPinIcon className="mt-0.5 h-4 w-4 shrink-0 text-barber-gold/70" />
+              <span>{session.notes}</span>
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
 export function SessionListClient({
   sessions,
   isGmOrAdmin,
@@ -211,7 +301,7 @@ export function SessionListClient({
     <>
       <div
         className={cn(
-          isGmOrAdmin ? "flex flex-col" : "grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          isGmOrAdmin ? "flex flex-col" : "flex flex-col gap-2 sm:grid sm:grid-cols-2 sm:gap-3 lg:grid-cols-3 lg:gap-4"
         )}
       >
         {sessions.map((session, sessionIndex) => {
@@ -574,9 +664,12 @@ export function SessionListClient({
 
           if (!isGmOrAdmin) {
             return (
-              <div key={session.id} className="min-w-0">
-                {sessionCard}
-              </div>
+              <PlayerSessionBookingCard
+                key={session.id}
+                session={session}
+                joinLoading={joinLoadingSessionId === session.id}
+                onJoin={handleJoin}
+              />
             );
           }
 

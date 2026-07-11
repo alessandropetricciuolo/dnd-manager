@@ -132,6 +132,121 @@ function missionRowTone(status: string | null | undefined): string {
   return "bg-red-900/20 hover:bg-red-700/20";
 }
 
+function missionStatusBadgeClass(status: string | null | undefined): string {
+  const normalized = normalizeMissionStatus(status);
+  if (normalized === "open") return "bg-emerald-900/50 text-emerald-200";
+  if (normalized === "in_progress") return "bg-amber-900/40 text-amber-200";
+  return "bg-red-900/40 text-red-200";
+}
+
+function MissionMobileCard({
+  mission,
+  onOpen,
+}: {
+  mission: MissionBoardMission;
+  onOpen: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className={cn(
+        "w-full rounded-xl border border-amber-600/20 p-3 text-left transition-colors active:scale-[0.99]",
+        missionRowTone(mission.status)
+      )}
+    >
+      <div className="flex items-start gap-3">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-600/15 font-serif text-xl font-bold text-amber-200 ring-1 ring-amber-500/25">
+          {mission.grade?.trim() || "?"}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={cn(
+                "rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                missionStatusBadgeClass(mission.status)
+              )}
+            >
+              {missionStatusLabel(mission.status)}
+            </span>
+            {(mission.points_reward ?? 0) > 0 ? (
+              <span className="text-[10px] tabular-nums text-zinc-400">{mission.points_reward} pt</span>
+            ) : null}
+          </div>
+          <p className="mt-1.5 font-serif text-base font-semibold leading-snug text-zinc-50">{mission.title}</p>
+          {mission.committente?.trim() ? (
+            <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-zinc-300">{mission.committente}</p>
+          ) : null}
+          {mission.ubicazione?.trim() ? (
+            <p className="mt-0.5 truncate text-[11px] text-zinc-500">{mission.ubicazione}</p>
+          ) : null}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function GuildMobileCard({
+  guild,
+  isGmOrAdmin,
+  isPending,
+  onEdit,
+  onDelete,
+  onSyncRank,
+}: {
+  guild: MissionBoardGuild;
+  isGmOrAdmin: boolean;
+  isPending: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+  onSyncRank: () => void;
+}) {
+  return (
+    <div className="rounded-xl border border-amber-600/20 bg-zinc-950/40 p-3">
+      <div className="flex items-center gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-600/15 font-serif text-lg font-bold text-amber-200">
+          {guild.rank ?? "—"}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-serif text-base font-semibold text-zinc-100">{guild.name}</p>
+          <p className="text-xs text-zinc-400">
+            {guild.score} punti · rango {guild.auto_rank !== false ? "automatico" : "manuale"}
+          </p>
+        </div>
+      </div>
+      {isGmOrAdmin ? (
+        <div className="mt-3 flex flex-wrap gap-2 border-t border-amber-600/15 pt-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={isPending}
+            onClick={onSyncRank}
+            className="h-8 border-sky-500/40 text-xs text-sky-100"
+          >
+            <RefreshCw className="mr-1 h-3 w-3" />
+            Rango da punti
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onEdit}
+            className="h-8 border-amber-600/40 text-xs text-amber-100"
+          >
+            <Pencil className="mr-1 h-3 w-3" />
+            Modifica
+          </Button>
+          <Button type="button" variant="destructive" size="sm" onClick={onDelete} className="h-8 text-xs">
+            <Trash2 className="mr-1 h-3 w-3" />
+            Elimina
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function MissionBoard({
   campaignId,
   missions,
@@ -489,7 +604,7 @@ export function MissionBoard({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-xl border p-4 font-serif md:p-6",
+        "relative overflow-hidden rounded-xl border p-3 font-serif sm:p-4 md:p-6",
         "font-[var(--font-missions)]",
         "border-amber-600/25 bg-[linear-gradient(180deg,rgba(28,25,23,0.2),rgba(0,0,0,0.35))]",
         "shadow-[0_0_0_1px_rgba(217,119,6,0.14),0_10px_24px_rgba(0,0,0,0.24)]"
@@ -510,12 +625,21 @@ export function MissionBoard({
       </div>
 
       <div className="relative">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold tracking-wide text-amber-200 md:text-xl">
+        <div className="mb-3 flex flex-wrap items-start justify-between gap-3 md:mb-4">
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold tracking-wide text-amber-200 sm:text-lg md:text-xl">
               Missioni
             </h2>
-            <p className="mt-1 max-w-xl text-xs text-zinc-300">
+            <details className="group mt-2 md:hidden">
+              <summary className="cursor-pointer text-xs text-amber-200/80 marker:content-none">
+                <span className="underline decoration-amber-600/40 underline-offset-2">Come funzionano i ranghi</span>
+              </summary>
+              <p className="mt-2 text-xs leading-relaxed text-zinc-300">
+                Ranghi gilda: D → C → B → A → S. I punti premio aumentano il punteggio; con «Rango automatico» attivo
+                il rango segue le soglie.
+              </p>
+            </details>
+            <p className="mt-1 hidden max-w-xl text-xs text-zinc-300 md:block">
               Ranghi gilda: D → C → B → A → S. I punti premio delle missioni completate aumentano il punteggio; se
               «Rango automatico» è attivo, il rango si aggiorna alle soglie (modificabili nel codice). Puoi sempre
               impostare rango e punti a mano nella gilda.
@@ -542,13 +666,29 @@ export function MissionBoard({
         </div>
 
         <Tabs defaultValue="missions">
-          <TabsList className="mb-3 bg-zinc-950/30 border border-amber-600/25 backdrop-blur supports-[backdrop-filter]:bg-zinc-950/40">
-            <TabsTrigger value="missions">Missioni</TabsTrigger>
-            <TabsTrigger value="ranking">Classifica</TabsTrigger>
+          <TabsList className="mb-3 grid h-auto w-full grid-cols-2 bg-zinc-950/30 border border-amber-600/25 backdrop-blur supports-[backdrop-filter]:bg-zinc-950/40 md:inline-flex md:w-auto">
+            <TabsTrigger value="missions" className="text-xs sm:text-sm">
+              Missioni
+            </TabsTrigger>
+            <TabsTrigger value="ranking" className="text-xs sm:text-sm">
+              Classifica
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="missions">
-            <div className="rounded-lg border border-amber-600/20 bg-zinc-950/30 p-3 overflow-x-auto">
+            <div className="flex flex-col gap-2 md:hidden">
+              {sortedMissions.length === 0 ? (
+                <p className="rounded-lg border border-amber-600/20 bg-zinc-950/30 px-4 py-6 text-center text-sm text-zinc-400">
+                  Nessuna missione disponibile.
+                </p>
+              ) : (
+                sortedMissions.map((m) => (
+                  <MissionMobileCard key={m.id} mission={m} onOpen={() => openDetailsMission(m)} />
+                ))
+              )}
+            </div>
+
+            <div className="hidden rounded-lg border border-amber-600/20 bg-zinc-950/30 p-3 md:block">
               <Table>
                 <TableHeader>
                   <TableRow className="border-amber-600/20 hover:bg-transparent">
@@ -598,7 +738,42 @@ export function MissionBoard({
           </TabsContent>
 
           <TabsContent value="ranking">
-            <div className="rounded-lg border border-amber-600/20 bg-zinc-950/30 p-3">
+            <div className="md:hidden">
+              {isGmOrAdmin ? (
+                <div className="mb-3 flex justify-end">
+                  <Button
+                    onClick={openAddGuild}
+                    disabled={isPending}
+                    size="sm"
+                    className="h-8 bg-amber-600 text-xs text-zinc-950 hover:bg-amber-500"
+                  >
+                    <Plus className="mr-1.5 h-3.5 w-3.5" />
+                    Nuova Gilda
+                  </Button>
+                </div>
+              ) : null}
+              <div className="flex flex-col gap-2">
+                {sortedGuilds.length === 0 ? (
+                  <p className="rounded-lg border border-amber-600/20 bg-zinc-950/30 px-4 py-6 text-center text-sm text-zinc-400">
+                    Nessuna gilda in classifica.
+                  </p>
+                ) : (
+                  sortedGuilds.map((g) => (
+                    <GuildMobileCard
+                      key={g.id}
+                      guild={g}
+                      isGmOrAdmin={isGmOrAdmin}
+                      isPending={isPending}
+                      onEdit={() => openEditGuild(g)}
+                      onDelete={() => void onDeleteGuild(g.id)}
+                      onSyncRank={() => syncRankFromPoints(g.id)}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="hidden rounded-lg border border-amber-600/20 bg-zinc-950/30 p-3 md:block">
               {isGmOrAdmin && (
                 <div className="mb-3 flex justify-end">
                   <Button

@@ -225,14 +225,25 @@ export function MapGalleryTree({
     : null;
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] lg:items-start xl:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
-      <aside className="flex max-h-[min(70vh,32rem)] min-h-0 flex-col overflow-hidden rounded-xl border border-barber-gold/25 bg-barber-dark/50 sm:max-h-[min(75vh,36rem)] lg:sticky lg:top-20 lg:max-h-[calc(100dvh-7rem)]">
+    <div className="flex flex-col-reverse gap-4 lg:grid lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] lg:items-start xl:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
+      <aside
+        className={cn(
+          "flex min-h-0 flex-col overflow-hidden rounded-xl border border-barber-gold/25 bg-barber-dark/50",
+          isGmOrAdmin
+            ? "max-h-[min(70vh,32rem)] sm:max-h-[min(75vh,36rem)] lg:sticky lg:top-20 lg:max-h-[calc(100dvh-7rem)]"
+            : "max-h-[min(45vh,16rem)] lg:max-h-[calc(100dvh-7rem)] lg:sticky lg:top-20"
+        )}
+      >
         <div className="shrink-0 border-b border-barber-gold/20 px-3 py-2.5">
           <p className="text-xs font-medium uppercase tracking-wide text-barber-gold/90">
-            Atlante
+            {isGmOrAdmin ? "Atlante" : "Scegli luogo"}
           </p>
           <p className="text-[11px] text-barber-paper/55">
-            {treeCount} {treeCount === 1 ? "mappa" : "mappe"} · seleziona un ramo
+            {isGmOrAdmin
+              ? `${treeCount} ${treeCount === 1 ? "mappa" : "mappe"} · seleziona un ramo`
+              : selectedMap
+                ? `Stai leggendo: ${selectedMap.name}`
+                : `${treeCount} ${treeCount === 1 ? "luogo" : "luoghi"} nell'atlante`}
           </p>
         </div>
         <div className="scrollbar-barber-y min-h-0 flex-1 overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch]">
@@ -277,7 +288,7 @@ export function MapGalleryTree({
         </div>
       </aside>
 
-      <section className="min-w-0">
+      <section className="min-w-0 lg:order-none">
         {cardProps ? (
           <MapCard {...cardProps} />
         ) : (

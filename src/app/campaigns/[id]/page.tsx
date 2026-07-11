@@ -43,6 +43,7 @@ import {
   isTorneoCampaignType,
   type CampaignType,
 } from "@/lib/campaign-type";
+import { cn } from "@/lib/utils";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -402,7 +403,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
   ) : undefined;
 
   return (
-    <div className="flex h-[calc(100dvh-3.5rem)] min-h-0 flex-col overflow-hidden bg-barber-dark sm:h-[calc(100dvh-4rem)]">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-barber-dark">
       <CampaignWorkspace
         campaignId={campaign.id}
         isAdmin={isAdmin}
@@ -415,6 +416,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
         playerPrimerHref={
           campaign.player_primer?.trim() ? `/campaigns/${campaign.id}/primer` : null
         }
+        isLongCampaign={isLongCampaign}
         hasPlayedCampaign={hasPlayedCampaign}
         defaultTab={defaultTab}
         lockedOut={isViewerLockedOut}
@@ -476,7 +478,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
                 </div>
               )}
               <SectionHeader
-                className="mb-3 lg:mb-6"
+                className={cn("mb-3 lg:mb-6", !isGmOrAdmin && "hidden lg:flex")}
                 eyebrow="Sessioni"
                 title="In programma"
                 description={

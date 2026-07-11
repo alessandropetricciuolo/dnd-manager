@@ -172,6 +172,7 @@ function NavLinks({
 export function DashboardShell({ children, isAdmin, isGmOrAdmin, hasForgeAccess = false, hasVaultAccess = false }: DashboardShellProps) {
   const pathname = usePathname();
   const isCampaignPage = pathname?.startsWith("/campaigns");
+  const isCampaignDetail = Boolean(pathname?.match(/^\/campaigns\/[^/]+$/));
   const isGmScreen = pathname?.includes("/gm-screen");
   const isVistaProiezione = pathname?.includes("/vista-dall-alto/proiezione");
 
@@ -180,7 +181,14 @@ export function DashboardShell({ children, isAdmin, isGmOrAdmin, hasForgeAccess 
   }
 
   return (
-    <div className="flex min-h-[calc(100dvh-3.5rem)] w-full sm:min-h-[calc(100vh-4rem)]">
+    <div
+      className={cn(
+        "flex w-full",
+        isCampaignDetail
+          ? "h-[calc(100dvh-3.5rem)] min-h-0 sm:h-[calc(100dvh-4rem)]"
+          : "min-h-[calc(100dvh-3.5rem)] sm:min-h-[calc(100vh-4rem)]"
+      )}
+    >
       <aside
         className={cn(
           "group/sidebar relative z-30 hidden shrink-0 flex-col overflow-hidden",
@@ -208,7 +216,9 @@ export function DashboardShell({ children, isAdmin, isGmOrAdmin, hasForgeAccess 
           </div>
         )}
 
-        <main className="min-w-0 flex-1">{children}</main>
+        <main className={cn("min-w-0 flex-1", isCampaignDetail && "flex min-h-0 flex-col")}>
+          {children}
+        </main>
       </div>
     </div>
   );
