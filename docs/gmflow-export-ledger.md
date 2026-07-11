@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-* Data aggiornamento: 2026-07-10T14:29:50.135Z
+* Data aggiornamento: 2026-07-11T06:15:37.408Z
 * Branch corrente: main
-* Ultimo commit analizzato: d03095b546ffde4ac3a5612aece93792cb61eb31
-* Range commit analizzato: 21aa7a4..d03095b
-* Stato generale: 234 voci NEEDS_REVIEW
-* Voci totali: 629 (NEEDS_REVIEW: 234, TO_IMPORT: 319, IMPORTED: 0)
+* Ultimo commit analizzato: 6e65c695bc94e52290f94c89fd9abc5f4a8b1478
+* Range commit analizzato: ef96da9..6e65c69
+* Stato generale: 243 voci NEEDS_REVIEW
+* Voci totali: 638 (NEEDS_REVIEW: 243, TO_IMPORT: 319, IMPORTED: 0)
 
 ## Delta automatico non revisionato
 
@@ -11221,6 +11221,422 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 * OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-6e65c69-001] CAMPAIGNS: page.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+CAMPAIGNS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/campaigns/[id]/page.tsx` modificato nel commit «feat(campaign): improve player mobile UX for sessions, maps, and missions». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Logica campagne potenzialmente generalizzabile per multi-tenant.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/campaigns/[id]/page.tsx
+
+File gmflow probabili:
+
+* src/app/campaigns/[id]/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-6e65c69-002] CAMPAIGNS: campaign-player-sessions-hero.tsx (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+CAMPAIGNS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/campaigns/campaign-player-sessions-hero.tsx` aggiunto nel commit «feat(campaign): improve player mobile UX for sessions, maps, and missions». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Logica campagne potenzialmente generalizzabile per multi-tenant.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/components/campaigns/campaign-player-sessions-hero.tsx
+
+File gmflow probabili:
+
+* src/components/campaigns/campaign-player-sessions-hero.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-6e65c69-003] CAMPAIGNS: campaign-workspace.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+CAMPAIGNS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/campaigns/campaign-workspace.tsx` modificato nel commit «feat(campaign): improve player mobile UX for sessions, maps, and missions». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Logica campagne potenzialmente generalizzabile per multi-tenant.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/components/campaigns/campaign-workspace.tsx
+
+File gmflow probabili:
+
+* src/components/campaigns/campaign-workspace.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-6e65c69-004] UI_UX: dashboard-shell.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/dashboard/dashboard-shell.tsx` modificato nel commit «feat(campaign): improve player mobile UX for sessions, maps, and missions». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/dashboard/dashboard-shell.tsx
+
+File gmflow probabili:
+
+* src/components/dashboard/dashboard-shell.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-6e65c69-005] MAPS: map-card.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+MAPS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/maps/map-card.tsx` modificato nel commit «feat(campaign): improve player mobile UX for sessions, maps, and missions». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Feature mappe — verificare allineamento architettura gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/maps/map-card.tsx
+
+File gmflow probabili:
+
+* src/components/maps/map-card.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-6e65c69-006] MAPS: map-gallery-tree.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+MAPS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/maps/map-gallery-tree.tsx` modificato nel commit «feat(campaign): improve player mobile UX for sessions, maps, and missions». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Feature mappe — verificare allineamento architettura gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/maps/map-gallery-tree.tsx
+
+File gmflow probabili:
+
+* src/components/maps/map-gallery-tree.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-6e65c69-007] UI_UX: mission-board.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/missions/mission-board.tsx` modificato nel commit «feat(campaign): improve player mobile UX for sessions, maps, and missions». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/missions/mission-board.tsx
+
+File gmflow probabili:
+
+* src/components/missions/mission-board.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-6e65c69-008] UI_UX: session-list-client.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/session-list-client.tsx` modificato nel commit «feat(campaign): improve player mobile UX for sessions, maps, and missions». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/session-list-client.tsx
+
+File gmflow probabili:
+
+* src/components/session-list-client.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-6e65c69-009] OTHER: database.types.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/types/database.types.ts` modificato nel commit «feat(campaign): improve player mobile UX for sessions, maps, and missions». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/types/database.types.ts
+
+File gmflow probabili:
+
+* src/types/database.types.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
 ## Modifiche revisionate manualmente
 
@@ -30862,7 +31278,7 @@ Questo ledger traccia modifiche Barber & Dragons da valutare per import in gmflo
 
 - Repository sorgente: `/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App`
 - Repository gmflow locale: `/Users/alessandropetricciuolo/Desktop/masto-platform`
-- Ultimo commit: `d03095b` — feat(wiki,characters): export wiki archive ZIP and add character story chat
+- Ultimo commit: `6e65c69` — feat(campaign): improve player mobile UX for sessions, maps, and missions
 - File analizzati nell'ultimo run: 9
 - Nuove voci aggiunte: 9
 

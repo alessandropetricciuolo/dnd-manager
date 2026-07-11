@@ -1,12 +1,12 @@
 {
-  "updatedAt": "2026-07-10T14:29:50.135Z",
+  "updatedAt": "2026-07-11T06:15:37.408Z",
   "sourceProject": "Barber & Dragons",
   "targetProject": "gmflow.app",
   "sourceRepoPath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App",
   "targetRepoPath": "/Users/alessandropetricciuolo/Desktop/masto-platform",
   "branch": "main",
-  "lastCommit": "d03095b546ffde4ac3a5612aece93792cb61eb31",
-  "commitRange": "21aa7a4..d03095b",
+  "lastCommit": "6e65c695bc94e52290f94c89fd9abc5f4a8b1478",
+  "commitRange": "ef96da9..6e65c69",
   "items": [
     {
       "id": "BD-GMFLOW-PKG-2026-07-06-001",
@@ -24616,6 +24616,332 @@
       "statusCode": "M",
       "createdAt": "2026-07-10T14:29:50.135Z",
       "updatedAt": "2026-07-10T14:29:50.135Z"
+    },
+    {
+      "id": "BD-GMFLOW-6e65c69-001",
+      "title": "CAMPAIGNS: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "CAMPAIGNS",
+      "priority": "Media",
+      "description": "File `src/app/campaigns/[id]/page.tsx` modificato nel commit «feat(campaign): improve player mobile UX for sessions, maps, and missions». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Logica campagne potenzialmente generalizzabile per multi-tenant.",
+      "bdFiles": [
+        "src/app/campaigns/[id]/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/campaigns/[id]/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "6e65c695bc94e52290f94c89fd9abc5f4a8b1478",
+      "commitShort": "6e65c69",
+      "commitSubject": "feat(campaign): improve player mobile UX for sessions, maps, and missions",
+      "statusCode": "M",
+      "createdAt": "2026-07-11T06:15:37.408Z",
+      "updatedAt": "2026-07-11T06:15:37.408Z"
+    },
+    {
+      "id": "BD-GMFLOW-6e65c69-002",
+      "title": "CAMPAIGNS: campaign-player-sessions-hero.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "CAMPAIGNS",
+      "priority": "Media",
+      "description": "File `src/components/campaigns/campaign-player-sessions-hero.tsx` aggiunto nel commit «feat(campaign): improve player mobile UX for sessions, maps, and missions». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Logica campagne potenzialmente generalizzabile per multi-tenant.",
+      "bdFiles": [
+        "src/components/campaigns/campaign-player-sessions-hero.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/campaigns/campaign-player-sessions-hero.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "6e65c695bc94e52290f94c89fd9abc5f4a8b1478",
+      "commitShort": "6e65c69",
+      "commitSubject": "feat(campaign): improve player mobile UX for sessions, maps, and missions",
+      "statusCode": "A",
+      "createdAt": "2026-07-11T06:15:37.408Z",
+      "updatedAt": "2026-07-11T06:15:37.408Z"
+    },
+    {
+      "id": "BD-GMFLOW-6e65c69-003",
+      "title": "CAMPAIGNS: campaign-workspace.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "CAMPAIGNS",
+      "priority": "Media",
+      "description": "File `src/components/campaigns/campaign-workspace.tsx` modificato nel commit «feat(campaign): improve player mobile UX for sessions, maps, and missions». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Logica campagne potenzialmente generalizzabile per multi-tenant.",
+      "bdFiles": [
+        "src/components/campaigns/campaign-workspace.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/campaigns/campaign-workspace.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "6e65c695bc94e52290f94c89fd9abc5f4a8b1478",
+      "commitShort": "6e65c69",
+      "commitSubject": "feat(campaign): improve player mobile UX for sessions, maps, and missions",
+      "statusCode": "M",
+      "createdAt": "2026-07-11T06:15:37.408Z",
+      "updatedAt": "2026-07-11T06:15:37.408Z"
+    },
+    {
+      "id": "BD-GMFLOW-6e65c69-004",
+      "title": "UI_UX: dashboard-shell.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/dashboard/dashboard-shell.tsx` modificato nel commit «feat(campaign): improve player mobile UX for sessions, maps, and missions». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/dashboard/dashboard-shell.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/dashboard/dashboard-shell.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "6e65c695bc94e52290f94c89fd9abc5f4a8b1478",
+      "commitShort": "6e65c69",
+      "commitSubject": "feat(campaign): improve player mobile UX for sessions, maps, and missions",
+      "statusCode": "M",
+      "createdAt": "2026-07-11T06:15:37.408Z",
+      "updatedAt": "2026-07-11T06:15:37.408Z"
+    },
+    {
+      "id": "BD-GMFLOW-6e65c69-005",
+      "title": "MAPS: map-card.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "MAPS",
+      "priority": "Media",
+      "description": "File `src/components/maps/map-card.tsx` modificato nel commit «feat(campaign): improve player mobile UX for sessions, maps, and missions». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Feature mappe — verificare allineamento architettura gmflow.",
+      "bdFiles": [
+        "src/components/maps/map-card.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/maps/map-card.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "6e65c695bc94e52290f94c89fd9abc5f4a8b1478",
+      "commitShort": "6e65c69",
+      "commitSubject": "feat(campaign): improve player mobile UX for sessions, maps, and missions",
+      "statusCode": "M",
+      "createdAt": "2026-07-11T06:15:37.408Z",
+      "updatedAt": "2026-07-11T06:15:37.408Z"
+    },
+    {
+      "id": "BD-GMFLOW-6e65c69-006",
+      "title": "MAPS: map-gallery-tree.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "MAPS",
+      "priority": "Media",
+      "description": "File `src/components/maps/map-gallery-tree.tsx` modificato nel commit «feat(campaign): improve player mobile UX for sessions, maps, and missions». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Feature mappe — verificare allineamento architettura gmflow.",
+      "bdFiles": [
+        "src/components/maps/map-gallery-tree.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/maps/map-gallery-tree.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "6e65c695bc94e52290f94c89fd9abc5f4a8b1478",
+      "commitShort": "6e65c69",
+      "commitSubject": "feat(campaign): improve player mobile UX for sessions, maps, and missions",
+      "statusCode": "M",
+      "createdAt": "2026-07-11T06:15:37.408Z",
+      "updatedAt": "2026-07-11T06:15:37.408Z"
+    },
+    {
+      "id": "BD-GMFLOW-6e65c69-007",
+      "title": "UI_UX: mission-board.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/missions/mission-board.tsx` modificato nel commit «feat(campaign): improve player mobile UX for sessions, maps, and missions». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/missions/mission-board.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/missions/mission-board.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "6e65c695bc94e52290f94c89fd9abc5f4a8b1478",
+      "commitShort": "6e65c69",
+      "commitSubject": "feat(campaign): improve player mobile UX for sessions, maps, and missions",
+      "statusCode": "M",
+      "createdAt": "2026-07-11T06:15:37.408Z",
+      "updatedAt": "2026-07-11T06:15:37.408Z"
+    },
+    {
+      "id": "BD-GMFLOW-6e65c69-008",
+      "title": "UI_UX: session-list-client.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/session-list-client.tsx` modificato nel commit «feat(campaign): improve player mobile UX for sessions, maps, and missions». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/session-list-client.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/session-list-client.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "6e65c695bc94e52290f94c89fd9abc5f4a8b1478",
+      "commitShort": "6e65c69",
+      "commitSubject": "feat(campaign): improve player mobile UX for sessions, maps, and missions",
+      "statusCode": "M",
+      "createdAt": "2026-07-11T06:15:37.408Z",
+      "updatedAt": "2026-07-11T06:15:37.408Z"
+    },
+    {
+      "id": "BD-GMFLOW-6e65c69-009",
+      "title": "OTHER: database.types.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/types/database.types.ts` modificato nel commit «feat(campaign): improve player mobile UX for sessions, maps, and missions». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/types/database.types.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/types/database.types.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "6e65c695bc94e52290f94c89fd9abc5f4a8b1478",
+      "commitShort": "6e65c69",
+      "commitSubject": "feat(campaign): improve player mobile UX for sessions, maps, and missions",
+      "statusCode": "M",
+      "createdAt": "2026-07-11T06:15:37.408Z",
+      "updatedAt": "2026-07-11T06:15:37.408Z"
     }
   ]
 }
