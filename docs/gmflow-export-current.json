@@ -1,12 +1,12 @@
 {
-  "updatedAt": "2026-07-11T06:15:37.408Z",
+  "updatedAt": "2026-07-11T12:49:56.270Z",
   "sourceProject": "Barber & Dragons",
   "targetProject": "gmflow.app",
   "sourceRepoPath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App",
   "targetRepoPath": "/Users/alessandropetricciuolo/Desktop/masto-platform",
   "branch": "main",
-  "lastCommit": "6e65c695bc94e52290f94c89fd9abc5f4a8b1478",
-  "commitRange": "ef96da9..6e65c69",
+  "lastCommit": "20e2cfd7adc9285103597cdf4a0579a568874b2e",
+  "commitRange": "f3b1190..20e2cfd",
   "items": [
     {
       "id": "BD-GMFLOW-PKG-2026-07-06-001",
@@ -24942,6 +24942,187 @@
       "statusCode": "M",
       "createdAt": "2026-07-11T06:15:37.408Z",
       "updatedAt": "2026-07-11T06:15:37.408Z"
+    },
+    {
+      "id": "BD-GMFLOW-20e2cfd-001",
+      "title": "CAMPAIGNS: actions.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "CAMPAIGNS",
+      "priority": "Media",
+      "description": "File `src/app/campaigns/actions.ts` modificato nel commit «feat(gm): per-player content access sheet and session close draft prefill». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Logica campagne potenzialmente generalizzabile per multi-tenant.",
+      "bdFiles": [
+        "src/app/campaigns/actions.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/campaigns/actions.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "20e2cfd7adc9285103597cdf4a0579a568874b2e",
+      "commitShort": "20e2cfd",
+      "commitSubject": "feat(gm): per-player content access sheet and session close draft prefill",
+      "statusCode": "M",
+      "createdAt": "2026-07-11T12:49:56.270Z",
+      "updatedAt": "2026-07-11T12:49:56.270Z"
+    },
+    {
+      "id": "BD-GMFLOW-20e2cfd-002",
+      "title": "UI_UX: character-card-gm.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/characters/character-card-gm.tsx` modificato nel commit «feat(gm): per-player content access sheet and session close draft prefill». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/characters/character-card-gm.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/characters/character-card-gm.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "20e2cfd7adc9285103597cdf4a0579a568874b2e",
+      "commitShort": "20e2cfd",
+      "commitSubject": "feat(gm): per-player content access sheet and session close draft prefill",
+      "statusCode": "M",
+      "createdAt": "2026-07-11T12:49:56.270Z",
+      "updatedAt": "2026-07-11T12:49:56.270Z"
+    },
+    {
+      "id": "BD-GMFLOW-20e2cfd-003",
+      "title": "UI_UX: character-content-access-sheet.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "UI_UX",
+      "priority": "Media",
+      "description": "File `src/components/characters/character-content-access-sheet.tsx` aggiunto nel commit «feat(gm): per-player content access sheet and session close draft prefill». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Miglioramento interfaccia — valutare design system gmflow.",
+      "bdFiles": [
+        "src/components/characters/character-content-access-sheet.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/characters/character-content-access-sheet.tsx"
+      ],
+      "requiredAdaptations": [
+        "i18n"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza design system / CSS tema"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "20e2cfd7adc9285103597cdf4a0579a568874b2e",
+      "commitShort": "20e2cfd",
+      "commitSubject": "feat(gm): per-player content access sheet and session close draft prefill",
+      "statusCode": "A",
+      "createdAt": "2026-07-11T12:49:56.270Z",
+      "updatedAt": "2026-07-11T12:49:56.270Z"
+    },
+    {
+      "id": "BD-GMFLOW-20e2cfd-004",
+      "title": "SESSIONS: end-session-wizard.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "SESSIONS",
+      "priority": "Media",
+      "description": "File `src/components/sessions/end-session-wizard.tsx` modificato nel commit «feat(gm): per-player content access sheet and session close draft prefill». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Gestione sessioni di gioco — valutare parità funzionale gmflow.",
+      "bdFiles": [
+        "src/components/sessions/end-session-wizard.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/sessions/end-session-wizard.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "20e2cfd7adc9285103597cdf4a0579a568874b2e",
+      "commitShort": "20e2cfd",
+      "commitSubject": "feat(gm): per-player content access sheet and session close draft prefill",
+      "statusCode": "M",
+      "createdAt": "2026-07-11T12:49:56.270Z",
+      "updatedAt": "2026-07-11T12:49:56.270Z"
+    },
+    {
+      "id": "BD-GMFLOW-20e2cfd-005",
+      "title": "GM_SCREEN: session-close-draft.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/lib/gm/session-close-draft.ts` aggiunto nel commit «feat(gm): per-player content access sheet and session close draft prefill». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/lib/gm/session-close-draft.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/gm/session-close-draft.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "20e2cfd7adc9285103597cdf4a0579a568874b2e",
+      "commitShort": "20e2cfd",
+      "commitSubject": "feat(gm): per-player content access sheet and session close draft prefill",
+      "statusCode": "A",
+      "createdAt": "2026-07-11T12:49:56.270Z",
+      "updatedAt": "2026-07-11T12:49:56.270Z"
     }
   ]
 }

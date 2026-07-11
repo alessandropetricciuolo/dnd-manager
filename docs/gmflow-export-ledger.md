@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-* Data aggiornamento: 2026-07-11T06:15:37.408Z
+* Data aggiornamento: 2026-07-11T12:49:56.270Z
 * Branch corrente: main
-* Ultimo commit analizzato: 6e65c695bc94e52290f94c89fd9abc5f4a8b1478
-* Range commit analizzato: ef96da9..6e65c69
-* Stato generale: 243 voci NEEDS_REVIEW
-* Voci totali: 638 (NEEDS_REVIEW: 243, TO_IMPORT: 319, IMPORTED: 0)
+* Ultimo commit analizzato: 20e2cfd7adc9285103597cdf4a0579a568874b2e
+* Range commit analizzato: f3b1190..20e2cfd
+* Stato generale: 248 voci NEEDS_REVIEW
+* Voci totali: 643 (NEEDS_REVIEW: 248, TO_IMPORT: 319, IMPORTED: 0)
 
 ## Delta automatico non revisionato
 
@@ -11623,6 +11623,237 @@ File B&D coinvolti:
 File gmflow probabili:
 
 * src/types/database.types.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-20e2cfd-001] CAMPAIGNS: actions.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+CAMPAIGNS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/campaigns/actions.ts` modificato nel commit «feat(gm): per-player content access sheet and session close draft prefill». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Logica campagne potenzialmente generalizzabile per multi-tenant.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/campaigns/actions.ts
+
+File gmflow probabili:
+
+* src/app/campaigns/actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-20e2cfd-002] UI_UX: character-card-gm.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/characters/character-card-gm.tsx` modificato nel commit «feat(gm): per-player content access sheet and session close draft prefill». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/characters/character-card-gm.tsx
+
+File gmflow probabili:
+
+* src/components/characters/character-card-gm.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-20e2cfd-003] UI_UX: character-content-access-sheet.tsx (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/characters/character-content-access-sheet.tsx` aggiunto nel commit «feat(gm): per-player content access sheet and session close draft prefill». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/characters/character-content-access-sheet.tsx
+
+File gmflow probabili:
+
+* src/components/characters/character-content-access-sheet.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-20e2cfd-004] SESSIONS: end-session-wizard.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+SESSIONS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/sessions/end-session-wizard.tsx` modificato nel commit «feat(gm): per-player content access sheet and session close draft prefill». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Gestione sessioni di gioco — valutare parità funzionale gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/sessions/end-session-wizard.tsx
+
+File gmflow probabili:
+
+* src/components/sessions/end-session-wizard.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-20e2cfd-005] GM_SCREEN: session-close-draft.ts (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/gm/session-close-draft.ts` aggiunto nel commit «feat(gm): per-player content access sheet and session close draft prefill». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/lib/gm/session-close-draft.ts
+
+File gmflow probabili:
+
+* src/lib/gm/session-close-draft.ts
 
 Rischi:
 
@@ -31278,9 +31509,9 @@ Questo ledger traccia modifiche Barber & Dragons da valutare per import in gmflo
 
 - Repository sorgente: `/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App`
 - Repository gmflow locale: `/Users/alessandropetricciuolo/Desktop/masto-platform`
-- Ultimo commit: `6e65c69` — feat(campaign): improve player mobile UX for sessions, maps, and missions
-- File analizzati nell'ultimo run: 9
-- Nuove voci aggiunte: 9
+- Ultimo commit: `20e2cfd` — feat(gm): per-player content access sheet and session close draft prefill
+- File analizzati nell'ultimo run: 5
+- Nuove voci aggiunte: 5
 
 **Azioni consigliate:**
 1. Rivedere voci `NEEDS_REVIEW` nella sezione «Delta automatico».
