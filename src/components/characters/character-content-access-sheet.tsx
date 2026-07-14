@@ -136,6 +136,7 @@ export function CharacterContentAccessSheet({
   }
 
   async function handleSave() {
+    const savePlayerId = playerId;
     const changes = items
       .filter((item) => item.visibility !== "public")
       .map((item) => {
@@ -154,11 +155,11 @@ export function CharacterContentAccessSheet({
     }
 
     setSaving(true);
-    const result = await syncPlayerContentAccess(campaignId, playerId, changes);
+    const result = await syncPlayerContentAccess(campaignId, savePlayerId, changes);
     setSaving(false);
     if (result.success) {
       toast.success(result.message);
-      const refresh = await getPlayerContentAccess(campaignId, playerId);
+      const refresh = await getPlayerContentAccess(campaignId, savePlayerId);
       if (refresh.success) {
         setItems(refresh.items);
         setDraft(new Map(refresh.items.map((i) => [`${i.type}:${i.id}`, i.hasAccess])));
