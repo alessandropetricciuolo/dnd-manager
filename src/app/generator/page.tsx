@@ -19,7 +19,10 @@ import {
   parseGeneratedSheetBuildMeta,
 } from "@/lib/character-sheet-build-meta";
 import { spellcastingMetaFromGeneratedSheet } from "@/lib/sheet-generator/spell-slots";
-import { buildCompiledSheetPdfRequestBody } from "@/lib/sheet-generator/sheet-pdf-payload";
+import {
+  buildCompiledSheetExportPayload,
+  buildCompiledSheetPdfRequestBody,
+} from "@/lib/sheet-generator/sheet-pdf-payload";
 import { formatSheetSaveError } from "@/lib/sheet-save-errors";
 import { arrayBufferToBase64 } from "@/lib/utils/array-buffer-base64";
 
@@ -244,14 +247,27 @@ function GeneratorPageContent() {
     const result = await generateSheetAction(formData);
     setResultMessage(result.message);
     setWarnings(result.warnings ?? []);
-    if (result.success && result.sheet) setSheet(result.sheet);
-    if (result.success && result.sheetData) {
+    if (result.success && result.sheet && result.sheetData) {
+      setSheet(result.sheet);
       setSheetDataObj(result.sheetData);
       setQuickManualSections(result.quickManualSections ?? []);
       setBackgroundPdfSections(result.backgroundPdfSections ?? []);
       setIncludeBackgroundStoryInPdf(!!result.includeBackgroundStoryInPdf);
       if (result.characterStory != null) setCharacterStory(result.characterStory);
-      setResultJson(JSON.stringify(result.sheetData, null, 2));
+      setResultJson(
+        JSON.stringify(
+          buildCompiledSheetExportPayload({
+            sheetData: result.sheetData,
+            sheet: result.sheet,
+            quickManualSections: result.quickManualSections,
+            backgroundPdfSections: result.backgroundPdfSections,
+            includeBackgroundStoryInPdf: !!result.includeBackgroundStoryInPdf,
+            characterStory: result.characterStory,
+          }),
+          null,
+          2
+        )
+      );
       setPhase("done");
     }
     return result;

@@ -2,7 +2,11 @@
 
 import type { GeneratedCharacterSheet } from "@/lib/sheet-generator/types";
 import type { QuickManualSection } from "@/lib/sheet-generator/quick-manual-builder";
-import { buildCompiledSheetPdfRequestBody } from "@/lib/sheet-generator/sheet-pdf-payload";
+import {
+  buildCompiledSheetExportPayload,
+  buildCompiledSheetPdfRequestBody,
+  compiledSheetJsonFileName,
+} from "@/lib/sheet-generator/sheet-pdf-payload";
 
 type Props = {
   sheet: GeneratedCharacterSheet;
@@ -41,6 +45,25 @@ export function GeneratedSheetView({
   const storyTrim = (characterStory ?? "").trim();
   const storyInPdf = includeBackgroundStoryInPdf && !!storyTrim;
 
+  function downloadCompiledJson() {
+    if (!sheetData) return;
+    const payload = buildCompiledSheetExportPayload({
+      sheetData,
+      sheet,
+      quickManualSections,
+      backgroundPdfSections,
+      includeBackgroundStoryInPdf,
+      characterStory,
+    });
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = compiledSheetJsonFileName(sheet);
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   async function downloadCompiledPdf() {
     if (!sheetData) return;
     const res = await fetch("/api/sheet-pdf", {
@@ -73,7 +96,15 @@ export function GeneratedSheetView({
 
   return (
     <div className="mt-6 space-y-4 print:mt-0">
-      <div className="flex justify-end gap-2 print:hidden">
+      <div className="flex flex-wrap justify-end gap-2 print:hidden">
+        <button
+          type="button"
+          onClick={downloadCompiledJson}
+          disabled={!sheetData}
+          className="rounded border border-barber-gold/40 bg-barber-dark px-4 py-2 text-sm font-medium text-barber-gold hover:bg-barber-gold/10 disabled:opacity-60"
+        >
+          Scarica JSON
+        </button>
         <button
           type="button"
           onClick={downloadCompiledPdf}
