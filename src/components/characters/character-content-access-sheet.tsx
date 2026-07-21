@@ -61,10 +61,15 @@ export function CharacterContentAccessSheet({
 
   useEffect(() => {
     if (!open) return;
+    let cancelled = false;
+    const requestedPlayerId = playerId;
     setLoading(true);
     setQuery("");
     setFilter("all");
-    getPlayerContentAccess(campaignId, playerId).then((res) => {
+    setItems([]);
+    setDraft(new Map());
+    getPlayerContentAccess(campaignId, requestedPlayerId).then((res) => {
+      if (cancelled) return;
       setLoading(false);
       if (res.success) {
         setItems(res.items);
@@ -75,6 +80,9 @@ export function CharacterContentAccessSheet({
         toast.error(res.message ?? "Errore nel caricamento.");
       }
     });
+    return () => {
+      cancelled = true;
+    };
   }, [open, campaignId, playerId]);
 
   const filteredItems = useMemo(() => {
