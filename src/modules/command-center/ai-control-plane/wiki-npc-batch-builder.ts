@@ -163,7 +163,7 @@ export async function enrichNpcBatchProposals(
   const enrichedItems = await Promise.all(
     specs.map(async (spec) => {
       const roleLabel = spec.roleLabel;
-      const extraParams = mergeWikiExtraParams(sharedNpcBuildParams, spec.extraParams);
+      const extraParams = mergeWikiExtraParams(spec.extraParams, sharedNpcBuildParams);
       const rolePrompt = buildNpcRolePrompt(spec, {
         locationName: location.locationName,
         locationExcerpt: location.locationExcerpt,
@@ -280,7 +280,7 @@ export function buildAwaitingNpcBatchMechanicsPending(
         userPrompt: spec.linePrompt,
         markdownDraft: { description: "", statblock: "" },
         chatMessages: [],
-        npcBuildParams: mergeWikiExtraParams(partialParams, spec.extraParams),
+        npcBuildParams: mergeWikiExtraParams(spec.extraParams, partialParams),
       },
       input: {
         campaignId,
