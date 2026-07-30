@@ -156,15 +156,19 @@ export async function createVaultTransferAction(input: {
   const movementDate = input.movement_date || new Date().toISOString();
   const note = input.note?.trim() || null;
 
-  const { error: outErr } = await supabase.from("vault_account_movements").insert({
-    account_id: input.from_account_id,
-    type: "uscita",
-    amount: -amount,
-    reason: note ? `Giroconto verso ${toAccount.name} — ${note}` : `Giroconto verso ${toAccount.name}`,
-    category: "giroconto",
-    movement_date: movementDate,
-    created_by: user?.id ?? null,
-  });
+  const { data: outMovement, error: outErr } = await supabase
+    .from("vault_account_movements")
+    .insert({
+      account_id: input.from_account_id,
+      type: "uscita",
+      amount: -amount,
+      reason: note ? `Giroconto verso ${toAccount.name} — ${note}` : `Giroconto verso ${toAccount.name}`,
+      category: "giroconto",
+      movement_date: movementDate,
+      created_by: user?.id ?? null,
+    })
+    .select("id")
+    .single();
   if (outErr) return { success: false, error: outErr.message };
 
   const { error: inErr } = await supabase.from("vault_account_movements").insert({
@@ -176,7 +180,10 @@ export async function createVaultTransferAction(input: {
     movement_date: movementDate,
     created_by: user?.id ?? null,
   });
-  if (inErr) return { success: false, error: inErr.message };
+  if (inErr) {
+    await supabase.from("vault_account_movements").delete().eq("id", outMovement.id);
+    return { success: false, error: inErr.message };
+  }
 
   revalidateVault();
   return { success: true };
