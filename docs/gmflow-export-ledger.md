@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-* Data aggiornamento: 2026-08-01T06:42:04.311Z
+* Data aggiornamento: 2026-08-01T12:31:41.837Z
 * Branch corrente: main
-* Ultimo commit analizzato: d9bd4d9204fdc5a50d86c4bf897732ce28325689
-* Range commit analizzato: fb25214..d9bd4d9
-* Stato generale: 307 voci NEEDS_REVIEW
-* Voci totali: 702 (NEEDS_REVIEW: 307, TO_IMPORT: 319, IMPORTED: 0)
+* Ultimo commit analizzato: b14782e9be079416d692913ef2e017a2e8414170
+* Range commit analizzato: 744d465..b14782e
+* Stato generale: 337 voci NEEDS_REVIEW
+* Voci totali: 732 (NEEDS_REVIEW: 337, TO_IMPORT: 319, IMPORTED: 0)
 
 ## Delta automatico non revisionato
 
@@ -14600,6 +14600,1444 @@ Criterio di import completato:
 * Codice portato in gmflow con adattamenti documentati
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-001] AI: prompt-debug-client.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/app/admin/ai-image-prompt-debug/prompt-debug-client.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/app/admin/ai-image-prompt-debug/prompt-debug-client.tsx
+
+File gmflow probabili:
+
+* src/app/admin/ai-image-prompt-debug/prompt-debug-client.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-b14782e-002] ADMIN: page.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+ADMIN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/admin/knowledge/page.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Tool admin interni — importare solo se gmflow ha pannello equivalente.
+
+Adattamenti necessari:
+
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/admin/knowledge/page.tsx
+
+File gmflow probabili:
+
+* src/app/admin/knowledge/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* gmflow ha equivalente admin o è solo tooling B&D?
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-003] OTHER: globals.css (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/globals.css` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/app/globals.css
+
+File gmflow probabili:
+
+* src/app/globals.css
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-004] ADMIN: rules-catalog-ingest-controls.tsx (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+ADMIN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/admin/rules-catalog-ingest-controls.tsx` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Tool admin interni — importare solo se gmflow ha pannello equivalente.
+
+Adattamenti necessari:
+
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/components/admin/rules-catalog-ingest-controls.tsx
+
+File gmflow probabili:
+
+* src/components/admin/rules-catalog-ingest-controls.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* gmflow ha equivalente admin o è solo tooling B&D?
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-005] UI_UX: exploration-map-stage.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/exploration/exploration-map-stage.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/exploration/exploration-map-stage.tsx
+
+File gmflow probabili:
+
+* src/components/exploration/exploration-map-stage.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-006] UI_UX: vista-dall-alto-client.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/exploration/vista-dall-alto-client.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/exploration/vista-dall-alto-client.tsx
+
+File gmflow probabili:
+
+* src/components/exploration/vista-dall-alto-client.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-007] GM_SCREEN: gm-screen-board.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/gm-screen-board.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/gm-screen-board.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/gm-screen-board.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-008] GM_SCREEN: rules-lookup-panel.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/panels/rules-lookup-panel.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/panels/rules-lookup-panel.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/panels/rules-lookup-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-009] WIKI: create-entity-dialog.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+WIKI
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/wiki/create-entity-dialog.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/wiki/create-entity-dialog.tsx
+
+File gmflow probabili:
+
+* src/components/wiki/create-entity-dialog.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-010] WIKI: edit-entity-dialog.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+WIKI
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/wiki/edit-entity-dialog.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/wiki/edit-entity-dialog.tsx
+
+File gmflow probabili:
+
+* src/components/wiki/edit-entity-dialog.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-011] AI: ai-wiki-chain.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/actions/ai-wiki-chain.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/actions/ai-wiki-chain.ts
+
+File gmflow probabili:
+
+* src/lib/actions/ai-wiki-chain.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-b14782e-012] OTHER: rules-catalog-ingest-actions.ts (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/actions/rules-catalog-ingest-actions.ts` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/actions/rules-catalog-ingest-actions.ts
+
+File gmflow probabili:
+
+* src/lib/actions/rules-catalog-ingest-actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-013] OTHER: rules-catalog-lookup-actions.ts (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/actions/rules-catalog-lookup-actions.ts` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/actions/rules-catalog-lookup-actions.ts
+
+File gmflow probabili:
+
+* src/lib/actions/rules-catalog-lookup-actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-014] AI: image-prompt-item-lore.test.ts (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/ai/__tests__/image-prompt-item-lore.test.ts` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/ai/__tests__/image-prompt-item-lore.test.ts
+
+File gmflow probabili:
+
+* src/lib/ai/__tests__/image-prompt-item-lore.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-b14782e-015] AI: image-prompt-builder.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/ai/image-prompt-builder.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/ai/image-prompt-builder.ts
+
+File gmflow probabili:
+
+* src/lib/ai/image-prompt-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-b14782e-016] AI: image-prompt-item-lore.ts (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/ai/image-prompt-item-lore.ts` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/ai/image-prompt-item-lore.ts
+
+File gmflow probabili:
+
+* src/lib/ai/image-prompt-item-lore.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-b14782e-017] AI: image-refine-prompt.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/ai/image-refine-prompt.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/ai/image-refine-prompt.ts
+
+File gmflow probabili:
+
+* src/lib/ai/image-refine-prompt.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-b14782e-018] AI: wiki-npc-params.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/ai/wiki-npc-params.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/ai/wiki-npc-params.ts
+
+File gmflow probabili:
+
+* src/lib/ai/wiki-npc-params.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-b14782e-019] AI: build-prompt.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/image-benchmark/build-prompt.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/image-benchmark/build-prompt.ts
+
+File gmflow probabili:
+
+* src/lib/image-benchmark/build-prompt.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-b14782e-020] OTHER: extract-phb-conditions.test.ts (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/manuals/rules-catalog/__tests__/extract-phb-conditions.test.ts` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/manuals/rules-catalog/__tests__/extract-phb-conditions.test.ts
+
+File gmflow probabili:
+
+* src/lib/manuals/rules-catalog/__tests__/extract-phb-conditions.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-021] OTHER: extract-phb-conditions.ts (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/manuals/rules-catalog/extract-phb-conditions.ts` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/manuals/rules-catalog/extract-phb-conditions.ts
+
+File gmflow probabili:
+
+* src/lib/manuals/rules-catalog/extract-phb-conditions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-022] OTHER: types.ts (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/manuals/rules-catalog/types.ts` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/manuals/rules-catalog/types.ts
+
+File gmflow probabili:
+
+* src/lib/manuals/rules-catalog/types.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-023] OTHER: coordinates.test.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/__tests__/coordinates.test.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/__tests__/coordinates.test.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/__tests__/coordinates.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-024] OTHER: index.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/coordinates/index.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/coordinates/index.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/coordinates/index.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-025] OTHER: object-contain.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/coordinates/object-contain.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/coordinates/object-contain.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/coordinates/object-contain.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-026] AI: wiki-npc-params.test.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/wiki-npc-params.test.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/wiki-npc-params.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/wiki-npc-params.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-b14782e-027] AI: chat-assistant.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-b14782e-028] AI: wiki-proposal-builder.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-b14782e-029] OTHER: database.types.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/types/database.types.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/types/database.types.ts
+
+File gmflow probabili:
+
+* src/types/database.types.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-030] DATABASE: 20260801140000_rules_catalog.sql (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+DATABASE
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `supabase/migrations/20260801140000_rules_catalog.sql` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schema o migrazione DB — valutare impatto RLS e tenant isolation.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* sicurezza
+
+File B&D coinvolti:
+
+* supabase/migrations/20260801140000_rules_catalog.sql
+
+File gmflow probabili:
+
+* supabase/migrations/20260801140000_rules_catalog.sql
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Impatto RLS / isolamento tenant
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* RLS/policy verificate per multi-tenant
 
 ## Modifiche revisionate manualmente
 
@@ -34241,9 +35679,9 @@ Questo ledger traccia modifiche Barber & Dragons da valutare per import in gmflo
 
 - Repository sorgente: `/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App`
 - Repository gmflow locale: `/Users/alessandropetricciuolo/Desktop/masto-platform`
-- Ultimo commit: `d9bd4d9` — feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters
-- File analizzati nell'ultimo run: 21
-- Nuove voci aggiunte: 21
+- Ultimo commit: `b14782e` — feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords
+- File analizzati nell'ultimo run: 30
+- Nuove voci aggiunte: 30
 
 **Azioni consigliate:**
 1. Rivedere voci `NEEDS_REVIEW` nella sezione «Delta automatico».
