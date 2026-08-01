@@ -47,6 +47,7 @@ CREATE TRIGGER rules_catalog_updated_at
 
 ALTER TABLE public.rules_catalog ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "GM and admin can read rules_catalog" ON public.rules_catalog;
 CREATE POLICY "GM and admin can read rules_catalog"
   ON public.rules_catalog FOR SELECT
   TO authenticated
@@ -57,6 +58,7 @@ CREATE POLICY "GM and admin can read rules_catalog"
     )
   );
 
+DROP POLICY IF EXISTS "Admins can manage rules_catalog" ON public.rules_catalog;
 CREATE POLICY "Admins can manage rules_catalog"
   ON public.rules_catalog FOR ALL
   TO authenticated

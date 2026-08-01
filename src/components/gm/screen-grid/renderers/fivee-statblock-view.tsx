@@ -29,6 +29,21 @@ function TraitRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+/** Rende *corsivo* markdown come span italic; il resto plain. */
+function formatInlineMd(text: string) {
+  const parts = text.split(/(\*[^*\n]+\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("*") && part.endsWith("*") && part.length > 2) {
+      return (
+        <em key={i} className="not-italic text-amber-100/95">
+          {part.slice(1, -1)}
+        </em>
+      );
+    }
+    return <span key={i}>{part}</span>;
+  });
+}
+
 function NamedBlocks({ title, blocks }: { title: string; blocks: DenseNamedBlock[] }) {
   if (!blocks.length) return null;
   return (
@@ -42,9 +57,55 @@ function NamedBlocks({ title, blocks }: { title: string; blocks: DenseNamedBlock
             {b.name ? (
               <span className="font-semibold italic text-zinc-100">{b.name}. </span>
             ) : null}
-            <span>{b.body}</span>
+            <span>{formatInlineMd(b.body)}</span>
           </p>
         ))}
+      </div>
+    </section>
+  );
+}
+
+function SpellcastingBlocks({ blocks }: { blocks: DenseNamedBlock[] }) {
+  if (!blocks.length) return null;
+  return (
+    <section className="mt-2">
+      <h3 className="border-b border-amber-700/50 pb-0.5 font-[family-name:var(--font-serif)] text-[12px] font-bold uppercase tracking-wide text-amber-300">
+        Incantesimi
+      </h3>
+      <div className="mt-1 space-y-2">
+        {blocks.map((b, idx) => {
+          const lines = b.body.split(/\n+/).map((l) => l.trim()).filter(Boolean);
+          const prose: string[] = [];
+          const list: string[] = [];
+          for (const line of lines) {
+            if (/^(a volont|trucchetti|\d+[°º]?(\s*livello)?|\d+\s*\/\s*giorno)/i.test(line)) {
+              list.push(line);
+            } else if (list.length > 0) {
+              list.push(line);
+            } else {
+              prose.push(line);
+            }
+          }
+          return (
+            <div key={`${b.name}-${idx}`} className="text-[11px] leading-snug text-zinc-200">
+              {b.name ? (
+                <p className="font-semibold italic text-zinc-100">{b.name}.</p>
+              ) : null}
+              {prose.length > 0 ? (
+                <p className="mt-0.5 text-zinc-300">{formatInlineMd(prose.join(" "))}</p>
+              ) : null}
+              {list.length > 0 ? (
+                <ul className="mt-1 space-y-0.5 border-l border-amber-700/30 pl-2">
+                  {list.map((line, li) => (
+                    <li key={li} className="text-zinc-200">
+                      {formatInlineMd(line)}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          );
+        })}
       </div>
     </section>
   );
@@ -118,6 +179,7 @@ export function FiveeStatblockView({ data, className }: FiveeStatblockViewProps)
       </div>
 
       <NamedBlocks title="Tratti" blocks={data.traits} />
+      <SpellcastingBlocks blocks={data.spellcasting} />
       <NamedBlocks title="Azioni" blocks={data.actions} />
       <NamedBlocks title="Azioni bonus" blocks={data.bonusActions} />
       <NamedBlocks title="Reazioni" blocks={data.reactions} />

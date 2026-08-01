@@ -20,6 +20,11 @@ const IMAGE_RE = /^\s*!\[.*?\]\(.*?\)\s*$/;
 const CHROME_RE = /^\s*APPENDICE\s+A\s*\|\s*CONDIZIONI(?:\s+\d+)?\s*$/i;
 const ORPHAN_PIETRIFICATO_BULLET =
   /^\*\s*La creatura è immune ai veleni e alle malattie/i;
+const SPAM_RE = /paypal\.me|offrimi un caff/i;
+const BARE_PAGE_RE = /^\s*\d{2,4}\s*$/;
+const CONDITION_NAME_ONLY = new Set(
+  PHB_CONDITIONS.map((n) => n.toUpperCase()).concat(PHB_CONDITIONS.map((n) => n.toUpperCase().replace(/\s+/g, " ")))
+);
 
 type ConditionHeadingMatch = {
   name: (typeof PHB_CONDITIONS)[number];
@@ -44,6 +49,11 @@ function titleCaseCondition(raw: string): (typeof PHB_CONDITIONS)[number] | null
   return null;
 }
 
+function isConditionNameOnlyLine(line: string): boolean {
+  const t = line.trim().replace(/\s+/g, " ").toUpperCase();
+  return CONDITION_NAME_ONLY.has(t);
+}
+
 function cleanBodyLines(raw: string, opts?: { dropOrphanExhaustionBullets?: boolean }): string {
   const lines = raw.split(/\r?\n/);
   const out: string[] = [];
@@ -53,6 +63,9 @@ function cleanBodyLines(raw: string, opts?: { dropOrphanExhaustionBullets?: bool
     if (IMAGE_RE.test(line)) continue;
     if (CHROME_RE.test(line)) continue;
     if (ORPHAN_PIETRIFICATO_BULLET.test(line)) continue;
+    if (SPAM_RE.test(line)) continue;
+    if (BARE_PAGE_RE.test(line)) continue;
+    if (isConditionNameOnlyLine(line)) continue;
     const trimmed = line.trimEnd();
     if (!trimmed.trim()) {
       if (out.length > 0 && out[out.length - 1] !== "") out.push("");

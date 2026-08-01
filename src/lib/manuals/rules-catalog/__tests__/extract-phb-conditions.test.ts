@@ -51,4 +51,9 @@ test("extractPhbConditionsFromMarkdown: 15 condizioni + overview da PHB MD", () 
   const pietrificato = conditions.find((c) => c.slug === "pietrificato");
   assert.ok(pietrificato);
   assert.match(pietrificato!.bodyMd, /immune ai veleni/i);
+
+  const trattenuto = conditions.find((c) => c.slug === "trattenuto");
+  assert.ok(trattenuto);
+  assert.doesNotMatch(trattenuto!.bodyMd, /paypal/i);
+  assert.doesNotMatch(trattenuto!.bodyMd, /^PRONO$/m);
 });

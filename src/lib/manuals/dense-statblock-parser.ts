@@ -36,6 +36,8 @@ export type DenseStatblock = {
   senses: string | null;
   languages: string | null;
   traits: DenseNamedBlock[];
+  /** Incantesimi / Incantesimi Innati (estratti dai tratti). */
+  spellcasting: DenseNamedBlock[];
   actions: DenseNamedBlock[];
   bonusActions: DenseNamedBlock[];
   reactions: DenseNamedBlock[];
@@ -173,18 +175,48 @@ function parseSavesIntoAbilities(
   }
 }
 
+function isSpellcastingTraitName(name: string): boolean {
+  const n = name.trim().toLowerCase();
+  return (
+    n === "incantesimi" ||
+    n.startsWith("incantesimi ") ||
+    n.startsWith("incantesimi innati") ||
+    n === "spellcasting" ||
+    n.startsWith("innate spellcasting") ||
+    n.startsWith("spellcasting (")
+  );
+}
+
+function partitionTraitsAndSpellcasting(blocks: DenseNamedBlock[]): {
+  traits: DenseNamedBlock[];
+  spellcasting: DenseNamedBlock[];
+} {
+  const traits: DenseNamedBlock[] = [];
+  const spellcasting: DenseNamedBlock[] = [];
+  for (const b of blocks) {
+    if (isSpellcastingTraitName(b.name)) spellcasting.push(b);
+    else traits.push(b);
+  }
+  return { traits, spellcasting };
+}
+
 function extractNamedBlocks(sectionText: string): DenseNamedBlock[] {
   const text = sectionText.replace(/\r/g, "").trim();
   if (!text) return [];
   const blocks: DenseNamedBlock[] = [];
-  // ***Name.*** body   OR   **Name.** body
+  // Supporta sia ***Nome.*** (MM classico) sia **Nome.** (draghi / OCR recente).
   const re =
-    /(?:\*\*\*|__)([^*\n]+?)\.?(?:\*\*\*|__)+\s*([\s\S]*?)(?=(?:\n(?:\*\*\*|__)[^*\n]+?\.?(?:\*\*\*|__)+)|\n#{1,3}\s+|$)/g;
+    /(?:\*{2,3}|__)([^*\n_]+?)\.?(?:\*{2,3}|__)+\s*([\s\S]*?)(?=(?:\n(?:\*{2,3}|__)[^*\n_]+?\.?(?:\*{2,3}|__)+)|\n#{1,3}\s+|$)/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(text)) != null) {
     const name = stripMd(m[1]).replace(/\.$/, "").trim();
     const body = m[2].trim();
-    if (name) blocks.push({ name, body });
+    // Evita campi meta tipo **Classe Armatura** senza punto-nome tipico di tratto/azione
+    if (!name) continue;
+    if (/^(classe armatura|punti ferita|punti vita|velocit|tiri salvezza|abilit|sfida|sensi|linguaggi|immunit|resistenze|vulnerabilit)/i.test(name)) {
+      continue;
+    }
+    blocks.push({ name, body });
   }
   if (blocks.length === 0 && text) {
     blocks.push({ name: "", body: text });
@@ -242,12 +274,12 @@ function splitSections(markdown: string): {
 }
 
 function extractTraitsFromHeader(header: string): { meta: string; traitsText: string } {
-  // Traits start after **Sfida** / CR line (or languages), as ***Name.*** blocks
+  // Traits start after **Sfida** / CR line (or languages), as ***Name.*** / **Name.** blocks
   const sfidaIdx = header.search(/\*\*Sfida\*\*/i);
   const crIdx = header.search(/\*\*(?:GS|CR|Challenge)\*\*/i);
   const cut = sfidaIdx >= 0 ? sfidaIdx : crIdx;
   if (cut < 0) {
-    const firstTrait = header.search(/\n\*\*\*[^*\n]+\.\*\*\*/);
+    const firstTrait = header.search(/\n\*{2,3}[^*\n]+\.\*{2,3}/);
     if (firstTrait >= 0) {
       return { meta: header.slice(0, firstTrait), traitsText: header.slice(firstTrait) };
     }
@@ -290,6 +322,7 @@ export function parseDenseStatblock(
     senses: null,
     languages: null,
     traits: [],
+    spellcasting: [],
     actions: [],
     bonusActions: [],
     reactions: [],
@@ -370,7 +403,8 @@ export function parseDenseStatblock(
   const legOnly = namedSection(/AZIONI LEGGENDARIE|LEGENDARY ACTIONS?/);
   if (legOnly) legendaryText = legOnly;
 
-  const traits = extractNamedBlocks(traitsText).filter((b) => b.name);
+  const traitsAll = extractNamedBlocks(traitsText).filter((b) => b.name);
+  const { traits, spellcasting } = partitionTraitsAndSpellcasting(traitsAll);
   const actions = extractNamedBlocks(actionsText).filter((b) => b.name);
   const bonusActions = extractNamedBlocks(bonusText).filter((b) => b.name);
   const reactions = extractNamedBlocks(reactionsText).filter((b) => b.name);
@@ -378,7 +412,7 @@ export function parseDenseStatblock(
 
   const hasCore = Boolean(ac || hp || cr || Object.keys(abilities).length >= 4);
   const confidence: DenseStatblock["parseConfidence"] = hasCore
-    ? actions.length || traits.length
+    ? actions.length || traits.length || spellcasting.length
       ? "high"
       : "medium"
     : "low";
@@ -403,6 +437,7 @@ export function parseDenseStatblock(
     senses,
     languages,
     traits,
+    spellcasting,
     actions,
     bonusActions,
     reactions,

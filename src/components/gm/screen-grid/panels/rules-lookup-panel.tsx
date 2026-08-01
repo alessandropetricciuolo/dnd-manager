@@ -115,7 +115,10 @@ export function RulesLookupPanel({ initialQuery = "" }: RulesLookupPanelProps) {
           condition === "all" ? "tutte le condizioni" : condition
         );
         if (!res.success) {
-          setError(res.message);
+          const emptyHint = res.notFound
+            ? `${res.message} Se il catalogo è vuoto, in Admin → Knowledge esegui «Estrai catalogo condizioni PHB».`
+            : res.message;
+          setError(emptyHint);
           setCatalogView(null);
           setPrimaryText(null);
           setHits([]);
