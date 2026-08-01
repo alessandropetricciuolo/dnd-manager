@@ -77,6 +77,7 @@ type StoredLongSessionState = {
 };
 
 type LongSessionContextValue = {
+  campaignId: string;
   sessions: CampaignSessionOption[];
   loadingSessions: boolean;
   selectedSessionId: string | null;
@@ -599,6 +600,7 @@ export function GmScreenLongStateProvider({
 
   const value = useMemo<LongSessionContextValue>(
     () => ({
+      campaignId,
       sessions,
       loadingSessions,
       selectedSessionId,
@@ -637,6 +639,7 @@ export function GmScreenLongStateProvider({
     [
       allCharacters,
       attendance,
+      campaignId,
       clearSelectedSessionState,
       economyDraft,
       elapsedHours,
@@ -679,4 +682,8 @@ export function useGmScreenLongState() {
     throw new Error("useGmScreenLongState must be used inside GmScreenLongStateProvider");
   }
   return context;
+}
+
+export function useGmScreenLongStateOptional() {
+  return useContext(LongSessionContext);
 }

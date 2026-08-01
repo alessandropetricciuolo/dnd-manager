@@ -41,6 +41,7 @@ import {
   Play,
   Pause,
   Timer,
+  BookOpen,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -261,6 +262,8 @@ type InitiativeTrackerProps = {
   } | null;
   /** Sync controlli timer con megatimer torneo (countdown su DB). */
   torneoMegatimer?: TorneoMegatimerControls | null;
+  /** Apri lo statblock mostro come pannello (GM Screen griglia). */
+  onOpenMonsterStat?: (entry: { id: string; name: string; entityId?: string }) => void;
 };
 
 export type InitiativeTrackerHandle = InitiativeRemoteCommandHandlers & {
@@ -281,6 +284,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       showTeamColumn = false,
       torneoScoreboard = null,
       torneoMegatimer = null,
+      onOpenMonsterStat,
     },
     ref
   ) {
@@ -1535,6 +1539,24 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
                   ) : null}
                   <TableCell className="px-1 py-1.5">
                     <div className="flex items-center gap-0.5">
+                      {(entry.type === "monster" || entry.type === "custom") && onOpenMonsterStat ? (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-amber-400 hover:bg-amber-500/20 hover:text-amber-200"
+                          onClick={() =>
+                            onOpenMonsterStat({
+                              id: entry.id,
+                              name: entry.name,
+                              entityId: entry.entityId,
+                            })
+                          }
+                          aria-label="Apri statblock"
+                          title="Apri statblock"
+                        >
+                          <BookOpen className="h-3.5 w-3.5" />
+                        </Button>
+                      ) : null}
                       {(entry.type === "monster" || entry.type === "custom") && (
                         <Button
                           variant="ghost"

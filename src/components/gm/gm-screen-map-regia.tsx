@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Layers, Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GmWikiMapsSheet } from "@/components/gm/gm-wiki-maps-sheet";
@@ -14,6 +14,17 @@ type GmScreenMapRegiaProps = {
 export function GmScreenMapRegia({ campaignId }: GmScreenMapRegiaProps) {
   const [wikiMapsOpen, setWikiMapsOpen] = useState(false);
   const [fowOpen, setFowOpen] = useState(false);
+
+  useEffect(() => {
+    const openMaps = () => setWikiMapsOpen(true);
+    const openFow = () => setFowOpen(true);
+    window.addEventListener("gm-screen-open-maps", openMaps);
+    window.addEventListener("gm-screen-open-fow", openFow);
+    return () => {
+      window.removeEventListener("gm-screen-open-maps", openMaps);
+      window.removeEventListener("gm-screen-open-fow", openFow);
+    };
+  }, []);
 
   return (
     <>

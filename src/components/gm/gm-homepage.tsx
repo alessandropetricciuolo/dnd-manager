@@ -82,6 +82,13 @@ export function GmHomepage({
             campaignId={campaignId}
             className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
           />
+          {!isTorneo ? (
+            <GmScreenLauncher
+              campaignId={campaignId}
+              variant="v2"
+              className="border-cyan-500/50 text-cyan-200 hover:bg-cyan-500/20"
+            />
+          ) : null}
           {isTorneo ? (
             <Button
               asChild

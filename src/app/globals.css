@@ -167,3 +167,12 @@ html.vista-proiezione-fullscreen iframe[src*="iubenda"] {
     opacity: 1;
   }
 }
+
+/* GM Screen modular grid (react-grid-layout) */
+.gm-screen-grid .react-grid-item > div {
+  height: 100%;
+}
+.gm-screen-grid .react-grid-item.react-grid-placeholder {
+  background: rgba(245, 158, 11, 0.2);
+  border-radius: 0.75rem;
+}

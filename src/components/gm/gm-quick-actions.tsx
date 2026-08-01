@@ -26,6 +26,11 @@ export function GmQuickActions({ campaignId }: GmQuickActionsProps) {
           campaignId={campaignId}
           className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
         />
+        <GmScreenLauncher
+          campaignId={campaignId}
+          variant="v2"
+          className="border-cyan-500/50 text-cyan-200 hover:bg-cyan-500/20"
+        />
         <Button asChild variant="outline" size="sm" className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20">
           <Link href={`/campaigns/${campaignId}?tab=mappe`}>
             <Map className="mr-2 h-4 w-4" />
