@@ -50,6 +50,8 @@ test("civilianNpcPromptGuide steers statblock and appearance", () => {
   assert.match(guide, /CLASSE DI PNG/i);
   assert.match(guide, /cameriera|contadino/i);
   assert.match(guide, /NIENTE armi da guerra/i);
+  assert.doesNotMatch(guide, /abiti da lavoro, grembiule/i);
+  assert.match(guide, /se non sono presenti nella richiesta del Master/i);
 });
 
 test("extractNpcBuildParams parses civilian NPC classes from chat text", () => {

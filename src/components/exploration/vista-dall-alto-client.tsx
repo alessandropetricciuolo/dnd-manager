@@ -57,6 +57,29 @@ const MAP_UPLOAD_COMPRESSION = {
 
 const FIELD_CLASS = "border-white/10 bg-barber-dark/50 ring-1 ring-white/5";
 
+function verifyMapImage(url: string, timeoutMs = 15_000): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    const timeout = window.setTimeout(() => {
+      image.src = "";
+      reject(new Error("La verifica dell’immagine ha impiegato troppo tempo."));
+    }, timeoutMs);
+    image.onload = () => {
+      window.clearTimeout(timeout);
+      if (image.naturalWidth <= 1 && image.naturalHeight <= 1) {
+        reject(new Error("Il servizio immagini ha restituito un file vuoto."));
+        return;
+      }
+      resolve({ width: image.naturalWidth, height: image.naturalHeight });
+    };
+    image.onerror = () => {
+      window.clearTimeout(timeout);
+      reject(new Error("Il file caricato non può essere visualizzato."));
+    };
+    image.src = url;
+  });
+}
+
 function ToolDetails({
   title,
   description,
@@ -115,6 +138,8 @@ export function VistaDallAltoClient({
   const [undoReveal, setUndoReveal] = useState<{ id: string; was: boolean }[]>([]);
   const [mapUploading, setMapUploading] = useState(false);
   const [mapCompressing, setMapCompressing] = useState(false);
+  const [mapVerifying, setMapVerifying] = useState(false);
+  const [mapUploadError, setMapUploadError] = useState<string | null>(null);
   const [importText, setImportText] = useState("");
   const [importLoading, setImportLoading] = useState(false);
   const [newMapMissionId, setNewMapMissionId] = useState<string>("none");
@@ -250,7 +275,7 @@ export function VistaDallAltoClient({
     };
   }, [selectedMapId]);
 
-  const refreshFromServer = useCallback(async () => {
+  const refreshFromServer = useCallback(async (): Promise<ExplorationMapRow[] | null> => {
     const { listExplorationMaps, listFowRegions } = await import("@/app/campaigns/exploration-map-actions");
     const m = await listExplorationMaps(campaignId);
     if (m?.success && m.data) setMaps(m.data);
@@ -263,24 +288,30 @@ export function VistaDallAltoClient({
         });
       }
     }
+    return m?.success && m.data ? m.data : null;
   }, [campaignId, selectedMapId]);
 
   async function handleAddMap(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setMapUploadError(null);
     const form = e.currentTarget;
     const fileInput = form.querySelector<HTMLInputElement>('input[name="image"]');
     const rawFile = fileInput?.files?.[0];
     const imageUrlRaw =
       (form.elements.namedItem("image_url") as HTMLInputElement | null)?.value?.trim() ?? "";
     if (!rawFile && !imageUrlRaw) {
-      toast.error("Seleziona un'immagine oppure incolla un link Google Drive.");
+      const message = "Seleziona un'immagine oppure incolla un link Google Drive.";
+      setMapUploadError(message);
+      toast.error(message);
       return;
     }
 
     let fileToSend: File | null = null;
     if (rawFile) {
       if (!rawFile.type.startsWith("image/")) {
-        toast.error("Seleziona un file immagine (JPG, PNG, WebP, GIF).");
+        const message = "Seleziona un file immagine (JPG, PNG, WebP, GIF).";
+        setMapUploadError(message);
+        toast.error(message);
         return;
       }
       setMapCompressing(true);
@@ -293,7 +324,10 @@ export function VistaDallAltoClient({
         );
       } catch (err) {
         console.error(err);
-        toast.error("Compressione fallita. Prova con un'immagine più piccola o un altro formato.");
+        const message =
+          "Compressione fallita. Prova con un'immagine più piccola o un altro formato.";
+        setMapUploadError(message);
+        toast.error(message);
         return;
       } finally {
         setMapCompressing(false);
@@ -324,6 +358,7 @@ export function VistaDallAltoClient({
     }
 
     setMapUploading(true);
+    let savedMapId: string | null = null;
     try {
       const httpRes = await fetch(
         `/api/campaigns/${encodeURIComponent(campaignId)}/exploration-maps`,
@@ -334,33 +369,65 @@ export function VistaDallAltoClient({
       try {
         res = (await httpRes.json()) as CreateMapJson;
       } catch {
-        toast.error(
+        const message =
           httpRes.status === 413
             ? "Richiesta ancora troppo grande (max ~4 MB). Prova un’immagine a risoluzione minore."
-            : `Errore dal server (${httpRes.status}). Riprova.`
-        );
+            : `Errore dal server (${httpRes.status}). Riprova.`;
+        setMapUploadError(message);
+        toast.error(message);
         return;
       }
       if (!res || typeof res.success !== "boolean") {
-        toast.error("Risposta dal server non valida. Ricarica la pagina.");
+        const message = "Risposta dal server non valida. Ricarica la pagina.";
+        setMapUploadError(message);
+        toast.error(message);
         return;
       }
       if (!res.success) {
-        toast.error(res.error ?? "Caricamento non riuscito.");
+        const message = res.error ?? "Caricamento non riuscito.";
+        setMapUploadError(message);
+        toast.error(message);
         return;
       }
-      toast.success("Mappa caricata.");
+
+      savedMapId = res.data?.id ?? null;
+      if (!savedMapId) {
+        const message = "Mappa salvata, ma il server non ha restituito il suo identificativo.";
+        setMapUploadError(message);
+        toast.error(message);
+        return;
+      }
+
+      setMapUploading(false);
+      setMapVerifying(true);
+      const refreshedMaps = await refreshFromServer();
+      const createdMap = refreshedMaps?.find((map) => map.id === savedMapId);
+      if (!createdMap) {
+        throw new Error(
+          "Non è ancora disponibile nell’elenco."
+        );
+      }
+
+      setSelectedMapId(createdMap.id);
+      const publicUrl = getExplorationMapPublicUrl(createdMap.image_path, createdMap.updated_at);
+      await verifyMapImage(publicUrl);
+
       form.reset();
       setNewMapMissionId("none");
-      await refreshFromServer();
-      if (res.data?.id) setSelectedMapId(res.data.id);
+      setMapUploadError(null);
+      toast.success("Mappa caricata e verificata.");
     } catch (err) {
       console.error(err);
-      toast.error(
-        err instanceof Error ? err.message : "Errore durante il caricamento. Riprova."
-      );
+      const detail =
+        err instanceof Error ? err.message : "Errore durante il caricamento. Riprova.";
+      const message = savedMapId
+        ? `Mappa salvata, ma la verifica non è riuscita: ${detail} Ricarica la pagina prima di riprovare, per evitare duplicati.`
+        : detail;
+      setMapUploadError(message);
+      toast.error(message);
     } finally {
       setMapUploading(false);
+      setMapVerifying(false);
     }
   }
 
@@ -775,6 +842,8 @@ export function VistaDallAltoClient({
               setNewMapMissionId={setNewMapMissionId}
               mapCompressing={mapCompressing}
               mapUploading={mapUploading}
+              mapVerifying={mapVerifying}
+              mapUploadError={mapUploadError}
               onSubmit={handleAddMap}
               defaultOpen
             />
@@ -821,8 +890,8 @@ export function VistaDallAltoClient({
             </div>
             <p className="shrink-0 px-3 pb-2 text-[11px] leading-relaxed text-barber-paper/50">
               {mode === "prepare"
-                ? "Clic per vertici, poi «Chiudi poligono». Tasto destro: menu radiale con forme rapide."
-                : "Clic su un'area per rivelarla ai giocatori; la proiezione si aggiorna in tempo reale."}
+                ? "Clic per vertici, poi «Chiudi poligono». Rotella per zoom, tasto centrale per spostare; tasto destro per le forme rapide."
+                : "Clic su un'area per rivelarla; rotella per zoom e tasto centrale per spostare. La proiezione si aggiorna in tempo reale."}
             </p>
           </div>
 
@@ -954,6 +1023,8 @@ export function VistaDallAltoClient({
               setNewMapMissionId={setNewMapMissionId}
               mapCompressing={mapCompressing}
               mapUploading={mapUploading}
+              mapVerifying={mapVerifying}
+              mapUploadError={mapUploadError}
               onSubmit={handleAddMap}
             />
           </aside>
@@ -970,6 +1041,8 @@ function NewMapPanel({
   setNewMapMissionId,
   mapCompressing,
   mapUploading,
+  mapVerifying,
+  mapUploadError,
   onSubmit,
   defaultOpen = false,
 }: {
@@ -979,16 +1052,37 @@ function NewMapPanel({
   setNewMapMissionId: (v: string) => void;
   mapCompressing: boolean;
   mapUploading: boolean;
+  mapVerifying: boolean;
+  mapUploadError: string | null;
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   defaultOpen?: boolean;
 }) {
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const busy = mapCompressing || mapUploading || mapVerifying;
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  function handlePreviewChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.[0];
+    setPreviewUrl(file ? URL.createObjectURL(file) : null);
+  }
+
   return (
     <ToolDetails
       title="Carica nuova mappa"
       description="Immagine o link Drive; opzionale missione e scala quadretto."
       defaultOpen={defaultOpen}
     >
-      <form encType="multipart/form-data" onSubmit={(e) => void onSubmit(e)} className="space-y-3">
+      <form
+        encType="multipart/form-data"
+        onSubmit={(e) => void onSubmit(e)}
+        onReset={() => setPreviewUrl(null)}
+        className="space-y-3"
+      >
         <div className="grid gap-2 sm:grid-cols-2">
           <div className="space-y-1">
             <Label htmlFor="f-floor">Nome piano</Label>
@@ -1023,14 +1117,51 @@ function NewMapPanel({
         </div>
         <div className="space-y-1">
           <Label htmlFor="f-img">Immagine</Label>
-          <Input id="f-img" name="image" type="file" accept="image/jpeg,image/png,image/webp,image/gif" disabled={mapCompressing || mapUploading} className={cn("text-sm", FIELD_CLASS)} />
+          <Input
+            id="f-img"
+            name="image"
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            disabled={busy}
+            onChange={handlePreviewChange}
+            className={cn("text-sm", FIELD_CLASS)}
+          />
         </div>
+        {previewUrl ? (
+          <div className="overflow-hidden rounded-lg bg-black/25 p-2 ring-1 ring-inset ring-white/10">
+            {/* eslint-disable-next-line @next/next/no-img-element -- local blob preview */}
+            <img
+              src={previewUrl}
+              alt="Anteprima della mappa selezionata"
+              className="max-h-44 w-full object-contain"
+            />
+          </div>
+        ) : null}
         <div className="space-y-1">
           <Label htmlFor="f-img-url">Oppure link Google Drive</Label>
-          <Input id="f-img-url" name="image_url" type="url" placeholder="https://drive.google.com/..." disabled={mapCompressing || mapUploading} className={cn("text-sm", FIELD_CLASS)} />
+          <Input id="f-img-url" name="image_url" type="url" placeholder="https://drive.google.com/..." disabled={busy} className={cn("text-sm", FIELD_CLASS)} />
         </div>
-        <Button type="submit" disabled={mapCompressing || mapUploading} className="h-8 w-full bg-barber-red hover:bg-barber-red/90">
-          {mapCompressing ? "Compressione…" : mapUploading ? "Caricamento…" : "Carica mappa"}
+        <div aria-live="polite" className="min-h-5 text-xs">
+          {mapCompressing ? (
+            <p className="text-barber-paper/65">1/3 · Ottimizzo l’immagine…</p>
+          ) : mapUploading ? (
+            <p className="text-barber-paper/65">2/3 · Carico e salvo la mappa…</p>
+          ) : mapVerifying ? (
+            <p className="text-barber-paper/65">3/3 · Verifico che sia visualizzabile…</p>
+          ) : mapUploadError ? (
+            <p role="alert" className="leading-relaxed text-red-300">{mapUploadError}</p>
+          ) : (
+            <p className="text-barber-paper/45">JPG, PNG, WebP o GIF. Il file verrà ottimizzato automaticamente.</p>
+          )}
+        </div>
+        <Button type="submit" disabled={busy} className="h-8 w-full bg-barber-red hover:bg-barber-red/90">
+          {mapCompressing
+            ? "Ottimizzazione…"
+            : mapUploading
+              ? "Caricamento…"
+              : mapVerifying
+                ? "Verifica…"
+                : "Carica mappa"}
         </Button>
       </form>
     </ToolDetails>

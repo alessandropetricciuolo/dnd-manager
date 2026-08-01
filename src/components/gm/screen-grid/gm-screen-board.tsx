@@ -332,7 +332,7 @@ export function GmScreenBoard({
               }}
               resizeConfig={{
                 enabled: true,
-                handles: ["se", "e", "s"],
+                handles: ["n", "s", "e", "w", "ne", "nw", "se", "sw"],
               }}
               onLayoutChange={onLayoutChange}
               className="gm-screen-grid"

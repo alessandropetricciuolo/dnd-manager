@@ -4,9 +4,13 @@ export { parsePolygonJson } from "./parse-polygon";
 export { clampNormPoint } from "./clamp";
 export {
   type ClientPointToNormInput,
+  type ClientPointToRectNormInput,
+  type ContainedElementSize,
   type ObjectContainLayout,
+  clientPointToRectNorm,
   clientPointToNorm,
   elementPxToNorm,
+  getContainedElementSize,
   getObjectContainLayout,
   intrinsicNormToElementPx,
   intrinsicNormToSvgUserUnits,

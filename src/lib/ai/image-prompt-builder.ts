@@ -17,6 +17,11 @@ import {
   buildCreatureTechnicalLine,
 } from "@/lib/ai/image-prompt-character-framing";
 import {
+  buildItemNegativeHints,
+  buildItemTechnicalLine,
+  buildLoreTechnicalLine,
+} from "@/lib/ai/image-prompt-item-lore";
+import {
   estimatePromptTokens,
   formatHuggingFaceImageInputs,
   mergeStats,
@@ -28,7 +33,16 @@ export const STANDARD_VISUAL_NEGATIVES =
 export const MONSTER_FULL_BODY_NEGATIVE_HINT =
   "cropped torso, bust-only shot, shoulders-up framing, face-only portrait, tight facial close-up, head-and-shoulders only composition";
 
-export type WikiImageEntityKind = "npc" | "location" | "monster";
+export type WikiImageEntityKind = "npc" | "location" | "monster" | "item" | "lore";
+
+/** Mappa il tipo voce wiki al kind usato dall'assemblaggio prompt immagine. */
+export function wikiTypeToImageEntityKind(type: string): WikiImageEntityKind {
+  if (type === "location") return "location";
+  if (type === "monster") return "monster";
+  if (type === "item") return "item";
+  if (type === "lore") return "lore";
+  return "npc";
+}
 
 export type ImagePromptSection = {
   id: string;
@@ -142,7 +156,52 @@ function buildTechnicalStyleLine(entityType: WikiImageEntityKind, haystack = "")
   if (entityType === "monster" || entityType === "npc") {
     return buildCreatureTechnicalLine(entityType, haystack);
   }
+  if (entityType === "item") {
+    return buildItemTechnicalLine();
+  }
+  if (entityType === "lore") {
+    return buildLoreTechnicalLine();
+  }
   return "portrait, close-up, high detail, photorealistic, cinematic lighting, professional fantasy art";
+}
+
+function buildStyleTail(entityType: WikiImageEntityKind, styleTemplate: string, technicalLine: string): string {
+  if (entityType === "lore") {
+    // Nessun framing obbligatorio: solo lo stile campagna (template DB), se presente.
+    return styleTemplate.trim();
+  }
+  return styleTemplate
+    ? `${styleTemplate}. ${technicalLine}. Photorealistic fantasy, non-anime, non-cartoon.`
+    : `${technicalLine}. Photorealistic fantasy, non-anime, non-cartoon.`;
+}
+
+function buildNegativePromptForEntity(params: {
+  entityType: WikiImageEntityKind;
+  styleNegativeTemplate: string;
+  visualNegative: string;
+  searchHaystack: string;
+  locationSceneKind: string | null;
+}): string {
+  const { entityType, styleNegativeTemplate, visualNegative, searchHaystack, locationSceneKind } =
+    params;
+
+  // Lore: solo negative di stile campagna (Architetto + template stile), nessun vincolo di soggetto/composizione.
+  if (entityType === "lore") {
+    return dedupeNegativePromptFragments(styleNegativeTemplate, visualNegative);
+  }
+
+  return dedupeNegativePromptFragments(
+    styleNegativeTemplate,
+    visualNegative,
+    STANDARD_VISUAL_NEGATIVES,
+    entityType === "npc" || entityType === "monster"
+      ? buildCreatureFullBodyNegativeHints(searchHaystack)
+      : "",
+    entityType === "item" ? buildItemNegativeHints() : "",
+    entityType === "location" && locationSceneKind && locationSceneKind !== "exterior"
+      ? LOCATION_INTERIOR_NEGATIVE_HINT
+      : ""
+  );
 }
 
 function buildEntitySearchHaystack(description: string, entityTitle?: string | null): string {
@@ -278,16 +337,24 @@ export async function buildContextualImagePrompts(
       excludeEntityId: params.excludeWikiEntityId?.trim() || undefined,
       forceIncludeEntityId: params.excludeWikiEntityId?.trim() || undefined,
     });
-    matchedEntityNames = diagnostics.references.map((r) => r.name);
-    matchedEntityReferences = diagnostics.references.map((r) => r.referenceLine);
+    const references =
+      entityType === "item"
+        ? diagnostics.references.filter((r) => r.source !== "character")
+        : diagnostics.references;
+    matchedEntityNames = references.map((r) => r.name);
+    matchedEntityReferences = references.map((r) => r.referenceLine);
     memorySourceCounts = {
       wiki: diagnostics.wikiMemoryCount,
       maps: diagnostics.mapCount,
-      characters: diagnostics.characterCount,
+      characters: entityType === "item" ? 0 : diagnostics.characterCount,
     };
-    loreBlock = buildEntityReferencesPromptBlock(diagnostics.references);
+    loreBlock = buildEntityReferencesPromptBlock(references);
     if (!loreBlock) {
-      loreSkipReason = buildEntityReferenceSkipReason(diagnostics);
+      loreSkipReason = buildEntityReferenceSkipReason({
+        ...diagnostics,
+        references,
+        characterCount: entityType === "item" ? 0 : diagnostics.characterCount,
+      });
     }
   }
 
@@ -296,7 +363,9 @@ export async function buildContextualImagePrompts(
       ? augmentLocationVisualAnchors(trimmed)
       : entityType === "npc" || entityType === "monster"
         ? augmentSpeciesAnchorsForCreatureImage(trimmed, entityType === "monster" ? "monster" : "npc")
-        : trimmed;
+        : entityType === "item"
+          ? `${trimmed}\nVisual focus: depict only the object/item itself as the sole subject; do not invent people around it.`
+          : trimmed;
 
   const subjectBlock = descriptionAnchored;
   const campaignVisualBlock = buildCampaignVisualContextBlock(ctx);
@@ -307,27 +376,19 @@ export async function buildContextualImagePrompts(
     entityType === "location" && locationSceneKind
       ? buildLocationTechnicalLine(locationSceneKind)
       : buildTechnicalStyleLine(entityType, searchHaystack);
-  const styleTail = styleTemplate
-    ? `${styleTemplate}. ${technicalLine}. Photorealistic fantasy, non-anime, non-cartoon.`
-    : `${technicalLine}. Photorealistic fantasy, non-anime, non-cartoon.`;
+  const styleTail = buildStyleTail(entityType, styleTemplate, technicalLine);
 
   const positivePrompt = [subjectBlock, campaignVisualBlock, loreBlock, styleTail]
     .filter((block) => typeof block === "string" && block.trim().length > 0)
     .join("\n\n");
 
-  const negativeCombined = dedupeNegativePromptFragments(
+  const negativeCombined = buildNegativePromptForEntity({
+    entityType,
     styleNegativeTemplate,
     visualNegative,
-    STANDARD_VISUAL_NEGATIVES,
-    entityType === "npc" || entityType === "monster"
-      ? buildCreatureFullBodyNegativeHints(searchHaystack)
-      : "",
-    entityType === "location" &&
-      locationSceneKind &&
-      locationSceneKind !== "exterior"
-      ? LOCATION_INTERIOR_NEGATIVE_HINT
-      : ""
-  );
+    searchHaystack,
+    locationSceneKind,
+  });
   const strictNegativePrompt = negativeCombined ? `STRICTLY FORBIDDEN: ${negativeCombined}` : "";
 
   const sections: ImagePromptSection[] = [

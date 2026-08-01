@@ -55,6 +55,7 @@ import type { NameGeneratorKind } from "@/lib/name-generator/types";
 import type { WikiMarkdownChatDraft } from "@/lib/actions/wiki-text-chat";
 import type { WikiAiTextGeneration } from "@/lib/ai/generator";
 import { generateContextualPortraitAction } from "@/lib/actions/ai-generator";
+import { wikiTypeToImageEntityKind } from "@/lib/ai/image-prompt-builder";
 import {
   searchBestiaryChunksAction,
   listBestiaryMonstersByCrAction,
@@ -637,12 +638,10 @@ export function CreateEntityDialog({
     startAiProgress("Generazione immagine IA coerente in corso...");
     let success = false;
     try {
-      const imageEntityType: "npc" | "location" | "monster" =
-        type === "location" ? "location" : type === "monster" ? "monster" : "npc";
       const result = await generateContextualPortraitAction(
         campaignId,
         narrativeDescription,
-        imageEntityType,
+        wikiTypeToImageEntityKind(type),
         {
           entityTitle: titleValue.trim() || null,
         }
@@ -730,7 +729,6 @@ export function CreateEntityDialog({
 
   async function handleMagicGenerateImage() {
     if (magicImageLoading || magicTextChatLoading || !magicDraft) return;
-    if (magicEntityType !== "npc" && magicEntityType !== "location") return;
 
     setMagicImageLoading(true);
     try {
@@ -1573,6 +1571,16 @@ export function CreateEntityDialog({
                         <strong className="font-medium text-barber-paper">a figura intera in piedi</strong>, salvo
                         che nel prompt chiedi esplicitamente una posa seduta.
                       </span>
+                    ) : type === "item" ? (
+                      <span className="mt-1 block text-barber-gold/85">
+                        Per gli <strong className="font-medium text-barber-paper">oggetti</strong> l&apos;immagine
+                        è centrata sull&apos;item isolato, senza personaggi.
+                      </span>
+                    ) : type === "lore" ? (
+                      <span className="mt-1 block text-barber-gold/85">
+                        Per la <strong className="font-medium text-barber-paper">lore</strong> non ci sono vincoli di
+                        soggetto: l&apos;immagine segue il testo (oggetto, persona, mappa, scena…).
+                      </span>
                     ) : null}
                   </p>
                   <Button
@@ -1593,14 +1601,11 @@ export function CreateEntityDialog({
                         </>
                       )}
                     </Button>
-                  {aiImagePreview &&
-                  (type === "npc" || type === "monster" || type === "location") ? (
+                  {aiImagePreview ? (
                     <WikiImageRefineChat
                       key={`assist-image-refine-${aiImagePreview}`}
                       campaignId={campaignId}
-                      entityType={
-                        type === "location" ? "location" : type === "monster" ? "monster" : "npc"
-                      }
+                      entityType={wikiTypeToImageEntityKind(type)}
                       baseDescription={contentValue.trim()}
                       imageUrl={aiImagePreview}
                       onImageChange={handleAssistImageRefined}
@@ -1900,10 +1905,8 @@ export function CreateEntityDialog({
               Chat generazione
             </DialogTitle>
             <DialogDescription className="text-sm text-barber-paper/70">
-              Prompt iniziale → bozza testo → chiedi modifiche in chat. Per{" "}
-              <strong className="font-medium text-barber-paper">NPC</strong> e{" "}
-              <strong className="font-medium text-barber-paper">Luoghi</strong> puoi generare l&apos;immagine
-              quando il testo ti convince.
+              Prompt iniziale → bozza testo → chiedi modifiche in chat. Quando il testo ti convince puoi generare
+              l&apos;immagine (NPC, luoghi, oggetti e lore).
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -1942,7 +1945,7 @@ export function CreateEntityDialog({
               emptyHint="Scrivi cosa vuoi creare. Poi chiedi modifiche («più cupo», «aggiungi un cliente nervoso»…) come in ChatGPT."
             />
 
-            {magicDraft && (magicEntityType === "npc" || magicEntityType === "location") ? (
+            {magicDraft ? (
               <div className="space-y-2">
                 {!magicPortraitPreview ? (
                   <Button
@@ -1973,7 +1976,7 @@ export function CreateEntityDialog({
                     <WikiImageRefineChat
                       key={`magic-image-refine-${magicPortraitPreview}`}
                       campaignId={campaignId}
-                      entityType={magicEntityType}
+                      entityType={wikiTypeToImageEntityKind(magicEntityType)}
                       baseDescription={magicDraft.content}
                       imageUrl={magicPortraitPreview}
                       onImageChange={handleMagicImageRefined}

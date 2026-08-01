@@ -83,7 +83,7 @@ export function civilianNpcPromptGuide(civilianClass: string): string {
   const appearance =
     civilianClass === "Combattente"
       ? "Aspetto: equipaggiamento da servizio (uniforme, armatura semplice), non da eroe leggendario."
-      : "Aspetto e abbigliamento devono riflettere l'occupazione civile e il rango sociale (abiti da lavoro, grembiule, vesti pregiate…): NIENTE armi da guerra, armature o pose da combattimento, salvo esplicita richiesta del Master.";
+      : "Aspetto e abbigliamento devono riflettere l'occupazione civile e il rango sociale (vesti comuni, abiti da mestiere o vesti pregiate secondo il ruolo): NIENTE armi da guerra, armature o pose da combattimento, salvo esplicita richiesta del Master. Non inventare di default indumenti specifici (es. grembiule) se non sono presenti nella richiesta del Master.";
   return [base, perClass[civilianClass] ?? "", appearance].filter(Boolean).join("\n");
 }
 

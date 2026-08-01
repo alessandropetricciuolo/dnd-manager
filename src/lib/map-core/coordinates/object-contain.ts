@@ -9,6 +9,68 @@ export type ObjectContainLayout = {
   oy: number;
 };
 
+export type ContainedElementSize = {
+  width: number;
+  height: number;
+};
+
+/**
+ * Dimensioni del bitmap contenuto in un viewport senza deformazione.
+ * Il risultato può essere usato direttamente come box condiviso da immagine e overlay.
+ */
+export function getContainedElementSize(
+  viewportWidth: number,
+  viewportHeight: number,
+  naturalWidth: number,
+  naturalHeight: number
+): ContainedElementSize {
+  if (
+    viewportWidth < 1 ||
+    viewportHeight < 1 ||
+    naturalWidth < 1 ||
+    naturalHeight < 1
+  ) {
+    return { width: 0, height: 0 };
+  }
+  const scale = Math.min(viewportWidth / naturalWidth, viewportHeight / naturalHeight);
+  return {
+    width: naturalWidth * scale,
+    height: naturalHeight * scale,
+  };
+}
+
+export type ClientPointToRectNormInput = {
+  clientX: number;
+  clientY: number;
+  boundingRect: { left: number; top: number; width: number; height: number };
+  /** Margine schermo fuori dal rettangolo prima di scartare il punto. */
+  slackPx?: number;
+};
+
+/**
+ * Converte un punto schermo nelle coordinate 0–1 di un box che coincide esattamente
+ * con il bitmap. `getBoundingClientRect` include già zoom e pan CSS.
+ */
+export function clientPointToRectNorm(input: ClientPointToRectNormInput): NormPoint | null {
+  const { clientX, clientY, boundingRect: rect } = input;
+  if (rect.width <= 0 || rect.height <= 0) return null;
+  const slack = input.slackPx ?? 12;
+  const xPx = clientX - rect.left;
+  const yPx = clientY - rect.top;
+  if (
+    xPx < -slack ||
+    xPx > rect.width + slack ||
+    yPx < -slack ||
+    yPx > rect.height + slack
+  ) {
+    return null;
+  }
+  return clampNormPoint({
+    x: xPx / rect.width,
+    y: yPx / rect.height,
+  });
+}
+
 /** Layout del bitmap con CSS object-fit: contain dentro un box elemento. */
 export function getObjectContainLayout(
   elW: number,

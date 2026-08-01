@@ -31,6 +31,7 @@ import { CHALLENGE_RATING_OPTIONS } from "@/lib/dnd-constants";
 import { Loader2, Plus, Trash2, Wand2 } from "lucide-react";
 import { type WikiEntityType, WIKI_ENTITY_OPTIONS } from "@/lib/wiki/entity-types";
 import { generateContextualPortraitAction } from "@/lib/actions/ai-generator";
+import { wikiTypeToImageEntityKind } from "@/lib/ai/image-prompt-builder";
 import { WikiTextGenChat } from "@/components/wiki/wiki-text-gen-chat";
 import { WikiImageRefineChat } from "@/components/wiki/wiki-image-refine-chat";
 import type { WikiMarkdownChatDraft } from "@/lib/actions/wiki-text-chat";
@@ -327,8 +328,8 @@ export function EditEntityDialog({
 
   async function handleAssistGenerateImage() {
     if (aiImageLoading || isLoading) return;
-    if (type !== "npc" && type !== "monster" && type !== "location") {
-      toast.error("La generazione immagine è disponibile per NPC, mostri e luoghi.");
+    if (type !== "npc" && type !== "monster" && type !== "location" && type !== "item" && type !== "lore") {
+      toast.error("La generazione immagine è disponibile per NPC, mostri, luoghi, oggetti e lore.");
       return;
     }
     const formEl = formRef.current;
@@ -344,14 +345,12 @@ export function EditEntityDialog({
       toast.error("Compila la descrizione narrativa prima di generare l'immagine.");
       return;
     }
-    const imageEntityType: "npc" | "location" | "monster" =
-      type === "location" ? "location" : type === "monster" ? "monster" : "npc";
     setAiImageLoading(true);
     try {
       const result = await generateContextualPortraitAction(
         campaignId,
         narrativeDescription,
-        imageEntityType,
+        wikiTypeToImageEntityKind(type),
         {
           entityTitle: entityTitle || entity.name.trim(),
           excludeWikiEntityId: entity.id,
@@ -554,7 +553,11 @@ export function EditEntityDialog({
                 </Label>
               </div>
             )}
-            {(type === "npc" || type === "monster" || type === "location") && (
+            {(type === "npc" ||
+              type === "monster" ||
+              type === "location" ||
+              type === "item" ||
+              type === "lore") && (
               <div className="flex flex-col gap-3 sm:max-w-md">
                 <Button
                   type="button"
@@ -576,9 +579,7 @@ export function EditEntityDialog({
                   <WikiImageRefineChat
                     key={`edit-image-refine-${aiImagePreviewUrl}`}
                     campaignId={campaignId}
-                    entityType={
-                      type === "location" ? "location" : type === "monster" ? "monster" : "npc"
-                    }
+                    entityType={wikiTypeToImageEntityKind(type)}
                     baseDescription={contentValue.trim()}
                     imageUrl={aiImagePreviewUrl}
                     onImageChange={handleEditImageRefined}

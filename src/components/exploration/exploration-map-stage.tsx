@@ -6,7 +6,8 @@ import { cn } from "@/lib/utils";
 import {
   type NormPoint,
   clampNormPoint,
-  clientPointToNorm,
+  clientPointToRectNorm,
+  getContainedElementSize,
   normToCssPercentPosition,
   pointInPolygon,
 } from "@/lib/map-core/coordinates";
@@ -209,13 +210,16 @@ export function ExplorationMapStage({
   gmNotes = [],
   showGmNotes = false,
 }: ExplorationMapStageProps) {
+  const stageRootRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   /** Box della mappa (img + overlay): stesso sistema di coordinate di SVG/canvas. */
   const mapSurfaceRef = useRef<HTMLDivElement>(null);
   const fogRef = useRef<HTMLCanvasElement>(null);
   const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
-  /** Dimensioni layout dell'img (per SVG allineato al bitmap con object-contain). */
+  const [viewportSize, setViewportSize] = useState<{ w: number; h: number } | null>(null);
+  /** Dimensioni del box condiviso da immagine, canvas e SVG. */
   const [layoutSize, setLayoutSize] = useState<{ w: number; h: number } | null>(null);
+  const [imageLoadError, setImageLoadError] = useState<string | null>(null);
   const [drag, setDrag] = useState<{ regionId: string; vi: number } | null>(null);
   const [dragPreview, setDragPreview] = useState<NormPoint | null>(null);
   const dragPreviewRef = useRef<NormPoint | null>(null);
@@ -402,15 +406,16 @@ export function ExplorationMapStage({
       last = now;
 
       const img = imgRef.current;
+      const surface = mapSurfaceRef.current;
       const naturalW = natural?.w ?? 0;
       const naturalH = natural?.h ?? 0;
-      if (!img || naturalW <= 0 || naturalH <= 0) {
+      if (!img || !surface || naturalW <= 0 || naturalH <= 0) {
         raf = requestAnimationFrame(tick);
         return;
       }
 
-      const w = img.offsetWidth;
-      const h = img.offsetHeight;
+      const w = surface.clientWidth;
+      const h = surface.clientHeight;
       const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
 
       const fxCv = effectsCanvasRef.current;
@@ -492,9 +497,10 @@ export function ExplorationMapStage({
 
   const syncFog = useCallback(() => {
     const img = imgRef.current;
-    if (!img || !img.naturalWidth) return;
-    const w = img.offsetWidth;
-    const h = img.offsetHeight;
+    const surface = mapSurfaceRef.current;
+    if (!img || !surface || !img.naturalWidth) return;
+    const w = surface.clientWidth;
+    const h = surface.clientHeight;
     if (w < 2 || h < 2) return;
     setLayoutSize((prev) => (prev?.w === w && prev?.h === h ? prev : { w, h }));
     const cv = fogRef.current;
@@ -522,6 +528,11 @@ export function ExplorationMapStage({
   useLayoutEffect(() => {
     const img = imgRef.current;
     if (!img?.naturalWidth || !img.naturalHeight) return;
+    if (img.naturalWidth <= 1 && img.naturalHeight <= 1) {
+      setImageLoadError("Il file della mappa non è disponibile. Riprova il caricamento.");
+      return;
+    }
+    setImageLoadError(null);
     setNatural((prev) => {
       const next = { w: img.naturalWidth, h: img.naturalHeight };
       if (prev?.w === next.w && prev?.h === next.h) return prev;
@@ -531,28 +542,43 @@ export function ExplorationMapStage({
   }, [imageUrl, onImageSized]);
 
   useEffect(() => {
+    setImageLoadError(null);
+  }, [imageUrl]);
+
+  useLayoutEffect(() => {
+    if (!fillViewport) return;
+    const root = stageRootRef.current;
+    if (!root) return;
+    const update = () => {
+      const w = root.clientWidth;
+      const h = root.clientHeight;
+      if (w < 1 || h < 1) return;
+      setViewportSize((prev) => (prev?.w === w && prev?.h === h ? prev : { w, h }));
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(root);
+    return () => observer.disconnect();
+  }, [fillViewport]);
+
+  useEffect(() => {
     syncFog();
   }, [syncFog, imageUrl, natural]);
 
   useEffect(() => {
     const ro = new ResizeObserver(() => syncFog());
-    const el = imgRef.current;
+    const el = mapSurfaceRef.current;
     if (el) ro.observe(el);
     return () => ro.disconnect();
   }, [syncFog]);
 
   const normFromEvent = useCallback((clientX: number, clientY: number): NormPoint | null => {
-    const img = imgRef.current;
-    if (!img || !img.naturalWidth || !img.naturalHeight) return null;
-    const sr = img.getBoundingClientRect();
-    return clientPointToNorm({
+    const surface = mapSurfaceRef.current;
+    if (!surface) return null;
+    return clientPointToRectNorm({
       clientX,
       clientY,
-      boundingRect: sr,
-      offsetWidth: img.offsetWidth,
-      offsetHeight: img.offsetHeight,
-      naturalWidth: img.naturalWidth,
-      naturalHeight: img.naturalHeight,
+      boundingRect: surface.getBoundingClientRect(),
     });
   }, []);
 
@@ -1151,6 +1177,11 @@ export function ExplorationMapStage({
 
   const onImgLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const img = e.currentTarget;
+    if (img.naturalWidth <= 1 && img.naturalHeight <= 1) {
+      setImageLoadError("Il file della mappa non è disponibile. Riprova il caricamento.");
+      return;
+    }
+    setImageLoadError(null);
     if (img.naturalWidth && img.naturalHeight) {
       setNatural({ w: img.naturalWidth, h: img.naturalHeight });
       onImageSized?.(img.naturalWidth, img.naturalHeight);
@@ -1264,6 +1295,10 @@ export function ExplorationMapStage({
   }, [drag, normFromEvent, onVertexDragEnd]);
 
   const aspect = natural ? natural.w / natural.h : 16 / 9;
+  const fittedViewportSize = useMemo(() => {
+    if (!fillViewport || !viewportSize || !natural) return null;
+    return getContainedElementSize(viewportSize.w, viewportSize.h, natural.w, natural.h);
+  }, [fillViewport, natural, viewportSize]);
 
   const vertexPreview = (r: FowRegionVm) => {
     let out = r.polygon;
@@ -1272,12 +1307,13 @@ export function ExplorationMapStage({
     return out.map((p, i) => (i === drag.vi ? dragPreview : p));
   };
 
-  const imgEl = imgRef.current;
-  /** Stesso box di normFromEvent e dei canvas (RAF): lo stato layoutSize può lagare dopo resize/zoom e spostare la guida SVG rispetto al mouse. */
+  const mapSurfaceEl = mapSurfaceRef.current;
+  /** Unico box condiviso: evita divergenze tra click, immagine, canvas e guida SVG. */
   const elW =
-    imgEl && imgEl.offsetWidth > 0 ? imgEl.offsetWidth : (layoutSize?.w ?? 0);
+    mapSurfaceEl && mapSurfaceEl.clientWidth > 0 ? mapSurfaceEl.clientWidth : (layoutSize?.w ?? 0);
   const elH =
-    imgEl && imgEl.offsetHeight > 0 ? imgEl.offsetHeight : (layoutSize?.h ?? 0);
+    mapSurfaceEl && mapSurfaceEl.clientHeight > 0 ? mapSurfaceEl.clientHeight : (layoutSize?.h ?? 0);
+  const imgEl = imgRef.current;
   const nw = natural?.w ?? imgEl?.naturalWidth ?? 0;
   const nh = natural?.h ?? imgEl?.naturalHeight ?? 0;
   const hasLayout = elW > 0 && elH > 0;
@@ -1340,10 +1376,11 @@ export function ExplorationMapStage({
         alt={imageAlt}
         className={cn(
           "pointer-events-none block select-none",
-          fillViewport ? "max-h-full max-w-full object-contain" : "h-auto w-full"
+          fillViewport ? "h-full w-full" : "h-auto w-full"
         )}
         draggable={false}
         onLoad={onImgLoad}
+        onError={() => setImageLoadError("Impossibile caricare il file della mappa.")}
       />
       {(mode === "explore" || readOnly) && (
         <canvas
@@ -1622,7 +1659,10 @@ export function ExplorationMapStage({
   );
 
   return (
-    <div className={cn("w-full", fillViewport ? "h-full min-h-0 bg-black" : "bg-black/50")}>
+    <div
+      ref={stageRootRef}
+      className={cn("relative w-full", fillViewport ? "h-full min-h-0 bg-black" : "bg-black/50")}
+    >
       <TransformWrapper
         initialScale={1}
         minScale={0.2}
@@ -1630,7 +1670,7 @@ export function ExplorationMapStage({
         centerOnInit
         limitToBounds={false}
         panning={
-          effectsEnabled
+          effectsEnabled || mode === "prepare" || Boolean(onRevealClick)
             ? {
                 allowLeftClickPan: false,
                 allowMiddleClickPan: true,
@@ -1664,14 +1704,32 @@ export function ExplorationMapStage({
               ref={mapSurfaceRef}
               className={cn(
                 "relative leading-none",
-                fillViewport ? "inline-block max-h-full max-w-full" : "block w-full"
+                fillViewport ? "shrink-0" : "block w-full"
               )}
+              style={
+                fittedViewportSize
+                  ? {
+                      width: `${fittedViewportSize.width}px`,
+                      height: `${fittedViewportSize.height}px`,
+                    }
+                  : fillViewport
+                    ? { width: "100%", height: "100%" }
+                    : undefined
+              }
             >
               {mapLayers}
             </div>
           </div>
         </TransformComponent>
       </TransformWrapper>
+      {imageLoadError ? (
+        <div
+          role="alert"
+          className="absolute inset-0 z-[70] flex items-center justify-center bg-black/85 p-6 text-center text-sm text-red-200"
+        >
+          {imageLoadError}
+        </div>
+      ) : null}
       <FowRadialMenu
         open={radial.open}
         x={radial.x}

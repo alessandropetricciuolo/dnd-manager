@@ -274,11 +274,11 @@ async function generateWikiContextualImage(
     return { imageUrl: res.imageUrl };
   }
 
-  if (entityType === "monster") {
+  if (entityType === "monster" || entityType === "item" || entityType === "lore") {
     const res = await generateContextualPortraitAction(
       campaignId,
       content,
-      "monster",
+      entityType,
       { entityTitle: title }
     );
     if (!res.success) return { error: res.message };

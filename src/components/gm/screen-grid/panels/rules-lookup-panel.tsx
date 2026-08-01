@@ -3,13 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronDown, Loader2, Search } from "lucide-react";
 import { searchManualsSemanticAction } from "@/lib/actions/manual-search-actions";
+import {
+  getRulesCatalogConditionAction,
+  getRulesCatalogDefinitionAction,
+} from "@/lib/actions/rules-catalog-lookup-actions";
 import type { ManualSearchHit } from "@/lib/manual-search-types";
 import { parseDenseRulesDoc } from "@/lib/manuals/dense-rules-parser";
-import {
-  PHB_CONDITIONS,
-  conditionSearchQuery,
-  type PhbCondition,
-} from "@/lib/manuals/phb-conditions";
+import { PHB_CONDITIONS, type PhbCondition } from "@/lib/manuals/phb-conditions";
 import { FiveeRulesView } from "@/components/gm/screen-grid/renderers/fivee-rules-view";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,47 +27,106 @@ type RulesLookupPanelProps = {
   initialQuery?: string;
 };
 
+type CatalogView = {
+  title: string;
+  bodyMd: string;
+  sourceLabel: string | null;
+};
+
 export function RulesLookupPanel({ initialQuery = "" }: RulesLookupPanelProps) {
   const [query, setQuery] = useState(initialQuery);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [catalogView, setCatalogView] = useState<CatalogView | null>(null);
   const [primaryText, setPrimaryText] = useState<string | null>(null);
   const [hits, setHits] = useState<ManualSearchHit[]>([]);
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [activeCondition, setActiveCondition] = useState<PhbCondition | "all" | null>(null);
 
-  const runSearch = useCallback(async (q: string) => {
-    const trimmed = q.trim();
-    if (trimmed.length < 2) {
-      setError("Inserisci almeno 2 caratteri.");
+  const showCatalogDefinition = useCallback((title: string, bodyMd: string, sourceLabel: string | null) => {
+    setCatalogView({ title, bodyMd, sourceLabel });
+    setPrimaryText(null);
+    setHits([]);
+    setSelectedIdx(0);
+    setError(null);
+  }, []);
+
+  const runRagSearch = useCallback(async (q: string) => {
+    const res = await searchManualsSemanticAction(q);
+    if (!res.success) {
+      setError(res.message);
+      setCatalogView(null);
+      setPrimaryText(null);
+      setHits([]);
       return;
     }
-    setLoading(true);
+    setCatalogView(null);
+    setPrimaryText(res.primaryText);
+    setHits(res.hits);
+    setSelectedIdx(0);
     setError(null);
-    try {
-      const res = await searchManualsSemanticAction(trimmed);
-      if (!res.success) {
-        setError(res.message);
-        setPrimaryText(null);
-        setHits([]);
+  }, []);
+
+  const runSearch = useCallback(
+    async (q: string) => {
+      const trimmed = q.trim();
+      if (trimmed.length < 2) {
+        setError("Inserisci almeno 2 caratteri.");
         return;
       }
-      setPrimaryText(res.primaryText);
-      setHits(res.hits);
-      setSelectedIdx(0);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+      setLoading(true);
+      setError(null);
+      try {
+        const catalog = await getRulesCatalogDefinitionAction({
+          nameOrSlug: trimmed,
+          kind: ["condition", "spell", "feature", "rule"],
+        });
+        if (catalog.success) {
+          showCatalogDefinition(
+            catalog.definition.name,
+            catalog.definition.bodyMd,
+            catalog.definition.sourceLabel
+          );
+          return;
+        }
+        if (!catalog.notFound) {
+          setError(catalog.message);
+          setCatalogView(null);
+          setPrimaryText(null);
+          setHits([]);
+          return;
+        }
+        await runRagSearch(trimmed);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [runRagSearch, showCatalogDefinition]
+  );
 
   const openCondition = useCallback(
     async (condition: PhbCondition | "all") => {
-      const q = conditionSearchQuery(condition);
       setActiveCondition(condition);
       setQuery(condition === "all" ? "Condizioni" : condition);
-      await runSearch(q);
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await getRulesCatalogConditionAction(
+          condition === "all" ? "tutte le condizioni" : condition
+        );
+        if (!res.success) {
+          setError(res.message);
+          setCatalogView(null);
+          setPrimaryText(null);
+          setHits([]);
+          return;
+        }
+        showCatalogDefinition(res.definition.name, res.definition.bodyMd, res.definition.sourceLabel);
+      } finally {
+        setLoading(false);
+      }
     },
-    [runSearch]
+    [showCatalogDefinition]
   );
 
   useEffect(() => {
@@ -77,18 +136,22 @@ export function RulesLookupPanel({ initialQuery = "" }: RulesLookupPanelProps) {
   }, [initialQuery, runSearch]);
 
   const activeHit = hits[selectedIdx] ?? null;
-  const displayText =
-    selectedIdx === 0 && primaryText
+  const displayText = catalogView
+    ? catalogView.bodyMd
+    : selectedIdx === 0 && primaryText
       ? primaryText
       : activeHit?.content ?? primaryText ?? "";
 
   const doc = useMemo(() => {
     if (!displayText.trim()) return null;
     return parseDenseRulesDoc(displayText, {
-      sourceLabel: activeHit?.sourceLabel ?? null,
-      fallbackTitle: activeHit?.sectionTitle ?? (query.trim() || "Regola"),
+      sourceLabel: catalogView?.sourceLabel ?? activeHit?.sourceLabel ?? null,
+      fallbackTitle:
+        catalogView?.title ?? activeHit?.sectionTitle ?? (query.trim() || "Regola"),
     });
-  }, [displayText, activeHit, query]);
+  }, [displayText, activeHit, query, catalogView]);
+
+  const showHitChips = !catalogView && hits.length > 0;
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-1">
@@ -165,7 +228,7 @@ export function RulesLookupPanel({ initialQuery = "" }: RulesLookupPanelProps) {
 
       {error ? <p className="text-[10px] text-red-300">{error}</p> : null}
 
-      {hits.length > 0 ? (
+      {showHitChips ? (
         <div className="flex shrink-0 flex-wrap gap-0.5">
           {hits.slice(0, 8).map((hit, idx) => (
             <button

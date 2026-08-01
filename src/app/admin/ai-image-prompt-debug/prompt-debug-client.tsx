@@ -143,9 +143,11 @@ export function ImagePromptDebugClient({ campaigns }: Props) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="npc">NPC (ritratto)</SelectItem>
+              <SelectItem value="npc">NPC (figura intera)</SelectItem>
               <SelectItem value="location">Luogo</SelectItem>
               <SelectItem value="monster">Mostro (full body)</SelectItem>
+              <SelectItem value="item">Oggetto (isolato)</SelectItem>
+              <SelectItem value="lore">Lore (libero)</SelectItem>
             </SelectContent>
           </Select>
         </div>

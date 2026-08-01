@@ -2,7 +2,9 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
   clientPointToNorm,
+  clientPointToRectNorm,
   elementPxToNorm,
+  getContainedElementSize,
   intrinsicNormToElementPx,
   pointInPolygon,
 } from "../coordinates";
@@ -53,6 +55,38 @@ describe("object-contain coordinate roundtrip", () => {
     assert.ok(norm);
     assert.ok(norm.x > 0 && norm.x < 1);
     assert.ok(norm.y > 0 && norm.y < 1);
+  });
+
+  it("fits square and portrait maps inside the full viewport", () => {
+    assert.deepEqual(getContainedElementSize(1000, 600, 1000, 1000), {
+      width: 600,
+      height: 600,
+    });
+    assert.deepEqual(getContainedElementSize(1000, 600, 900, 1600), {
+      width: 337.5,
+      height: 600,
+    });
+  });
+
+  it("maps clicks against the rendered bitmap rect after zoom and pan", () => {
+    const norm = clientPointToRectNorm({
+      clientX: 650,
+      clientY: 350,
+      boundingRect: { left: 50, top: 50, width: 800, height: 400 },
+    });
+    assert.deepEqual(norm, { x: 0.75, y: 0.75 });
+  });
+
+  it("rejects clicks outside the rendered bitmap", () => {
+    assert.equal(
+      clientPointToRectNorm({
+        clientX: 900,
+        clientY: 300,
+        boundingRect: { left: 100, top: 100, width: 600, height: 400 },
+        slackPx: 0,
+      }),
+      null
+    );
   });
 });
 

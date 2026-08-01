@@ -52,6 +52,7 @@ export function mapBenchmarkCategoryToEntityType(category: string): WikiImageEnt
     case "NPC fantasy":
     case "Token portrait":
     case "Oggetto magico":
+      return "item";
     default:
       return "npc";
   }

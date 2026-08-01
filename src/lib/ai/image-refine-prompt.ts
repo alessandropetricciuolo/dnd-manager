@@ -1,6 +1,7 @@
 import type { WikiImageEntityKind } from "@/lib/ai/image-prompt-builder";
 import { STANDARD_VISUAL_NEGATIVES } from "@/lib/ai/image-prompt-builder";
 import { buildCreatureTechnicalLine } from "@/lib/ai/image-prompt-character-framing";
+import { buildItemNegativeHints, buildItemTechnicalLine } from "@/lib/ai/image-prompt-item-lore";
 
 export type WikiImageChatTurn = {
   role: "user" | "assistant";
@@ -13,16 +14,36 @@ function truncate(text: string, max: number): string {
   return `${t.slice(0, max)}…`;
 }
 
+function refineTechnicalLine(entityType: WikiImageEntityKind, haystack: string): string {
+  if (entityType === "npc" || entityType === "monster") {
+    return buildCreatureTechnicalLine(entityType, haystack);
+  }
+  if (entityType === "item") {
+    return buildItemTechnicalLine();
+  }
+  if (entityType === "lore") {
+    return "follow the Master request and original brief; no forced subject framing";
+  }
+  return "high detail, photorealistic, cinematic lighting, fantasy art";
+}
+
+function refineNegativeLine(entityType: WikiImageEntityKind): string {
+  if (entityType === "lore") {
+    return "(solo stile campagna — nessun vincolo di soggetto aggiuntivo oltre alla richiesta del Master)";
+  }
+  if (entityType === "item") {
+    return `${STANDARD_VISUAL_NEGATIVES}, ${buildItemNegativeHints()}`;
+  }
+  return STANDARD_VISUAL_NEGATIVES;
+}
+
 export function buildImageRefineInstructionText(
   entityType: WikiImageEntityKind,
   baseDescription: string,
   messages: WikiImageChatTurn[]
 ): string {
   const haystack = [baseDescription, ...messages.map((m) => m.content)].join("\n");
-  const technical =
-    entityType === "npc" || entityType === "monster"
-      ? buildCreatureTechnicalLine(entityType, haystack)
-      : "high detail, photorealistic, cinematic lighting, fantasy art";
+  const technical = refineTechnicalLine(entityType, haystack);
 
   const history =
     messages.length > 0
@@ -45,7 +66,7 @@ export function buildImageRefineInstructionText(
     `Ultima richiesta del Master (priorità massima): ${latestUser}`,
     "",
     `Vincoli tecnici: ${technical}`,
-    `Vincoli negativi: ${STANDARD_VISUAL_NEGATIVES}`,
+    `Vincoli negativi: ${refineNegativeLine(entityType)}`,
     "",
     "Genera una nuova versione dell'immagine applicando l'ultima richiesta.",
   ].join("\n");

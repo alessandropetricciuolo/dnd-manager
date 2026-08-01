@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { ManualSemanticSearch } from "@/components/admin/manual-semantic-search";
 import { ManualV4IngestControls } from "@/components/admin/manual-v4-ingest-controls";
+import { RulesCatalogIngestControls } from "@/components/admin/rules-catalog-ingest-controls";
 import { ADMIN_PAGE_SHELL } from "@/lib/layout/shell-classes";
 
 export const dynamic = "force-dynamic";
@@ -46,6 +47,8 @@ export default async function AdminKnowledgePage({ searchParams }: KnowledgePage
         </header>
 
         <ManualSemanticSearch />
+
+        <RulesCatalogIngestControls />
 
         <ManualV4IngestControls />
 

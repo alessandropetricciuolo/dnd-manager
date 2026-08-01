@@ -10,7 +10,7 @@ export type FullAiWikiEntityPayload = {
   hp: string | null;
   ac: string | null;
   imageUrl: string | null;
-  entityType: "npc" | "location";
+  entityType: "npc" | "location" | "item" | "lore";
   /** Presente se la generazione immagine è fallita (il testo è comunque valido). */
   imageWarning?: string;
 };
@@ -47,7 +47,7 @@ function buildImageDescriptionFromNarrative(userPrompt: string, narrativeDescrip
 export async function generateFullAiWikiEntity(
   campaignId: string,
   userPrompt: string,
-  entityType: "npc" | "location"
+  entityType: "npc" | "location" | "item" | "lore"
 ): Promise<GenerateFullAiWikiEntityResult> {
   const prompt = userPrompt.trim();
   if (!prompt) {
@@ -123,11 +123,11 @@ export type GenerateMagicDraftImageResult =
   | { success: false; message: string };
 
 /**
- * Genera l'immagine per una bozza testuale già approvata in chat (NPC/Luogo).
+ * Genera l'immagine per una bozza testuale già approvata in chat (NPC/Luogo/Oggetto/Lore).
  */
 export async function generateMagicDraftImageAction(
   campaignId: string,
-  entityType: "npc" | "location",
+  entityType: "npc" | "location" | "item" | "lore",
   title: string,
   content: string,
   userPromptSeed: string

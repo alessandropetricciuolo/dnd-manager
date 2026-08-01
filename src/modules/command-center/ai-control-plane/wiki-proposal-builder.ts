@@ -33,8 +33,16 @@ export function isWikiMarkdownEntityType(type: string): type is WikiMarkdownEnti
   return WIKI_MARKDOWN_TYPES.has(type);
 }
 
-export function supportsWikiContextualImage(type: string): type is "npc" | "location" | "monster" {
-  return type === "npc" || type === "location" || type === "monster";
+export function supportsWikiContextualImage(
+  type: string
+): type is "npc" | "location" | "monster" | "item" | "lore" {
+  return (
+    type === "npc" ||
+    type === "location" ||
+    type === "monster" ||
+    type === "item" ||
+    type === "lore"
+  );
 }
 
 export type WikiEntityRelationInput = {

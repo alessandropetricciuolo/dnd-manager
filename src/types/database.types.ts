@@ -637,6 +637,66 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["character_catalog"]["Row"]>;
         Relationships: [];
       };
+      rules_catalog: {
+        Row: {
+          id: string;
+          kind: "condition" | "spell" | "feature" | "rule" | "trait" | "item";
+          slug: string;
+          name: string;
+          name_aliases: string[];
+          source_book: string;
+          source_file: string;
+          source_label: string | null;
+          parent_section: string | null;
+          heading_level: number | null;
+          heading_raw: string | null;
+          body_md: string;
+          body_hash: string;
+          facets: Json;
+          extraction_version: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          kind: "condition" | "spell" | "feature" | "rule" | "trait" | "item";
+          slug: string;
+          name: string;
+          name_aliases?: string[];
+          source_book: string;
+          source_file: string;
+          source_label?: string | null;
+          parent_section?: string | null;
+          heading_level?: number | null;
+          heading_raw?: string | null;
+          body_md: string;
+          body_hash: string;
+          facets?: Json;
+          extraction_version?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          kind?: "condition" | "spell" | "feature" | "rule" | "trait" | "item";
+          slug?: string;
+          name?: string;
+          name_aliases?: string[];
+          source_book?: string;
+          source_file?: string;
+          source_label?: string | null;
+          parent_section?: string | null;
+          heading_level?: number | null;
+          heading_raw?: string | null;
+          body_md?: string;
+          body_hash?: string;
+          facets?: Json;
+          extraction_version?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       campaign_characters: {
         Row: {
           id: string;
