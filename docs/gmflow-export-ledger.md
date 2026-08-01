@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-* Data aggiornamento: 2026-08-01T05:36:44.171Z
+* Data aggiornamento: 2026-08-01T06:42:04.311Z
 * Branch corrente: main
-* Ultimo commit analizzato: 9bc3a5f248d7c36980ee3504f12ab3134a0d294a
-* Range commit analizzato: e2f072a..9bc3a5f
-* Stato generale: 286 voci NEEDS_REVIEW
-* Voci totali: 681 (NEEDS_REVIEW: 286, TO_IMPORT: 319, IMPORTED: 0)
+* Ultimo commit analizzato: d9bd4d9204fdc5a50d86c4bf897732ce28325689
+* Range commit analizzato: fb25214..d9bd4d9
+* Stato generale: 307 voci NEEDS_REVIEW
+* Voci totali: 702 (NEEDS_REVIEW: 307, TO_IMPORT: 319, IMPORTED: 0)
 
 ## Delta automatico non revisionato
 
@@ -13625,6 +13625,967 @@ File B&D coinvolti:
 File gmflow probabili:
 
 * src/components/gm/screen-grid/types.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-001] OTHER: globals.css (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/globals.css` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/app/globals.css
+
+File gmflow probabili:
+
+* src/app/globals.css
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-002] GM_SCREEN: gm-screen-launcher.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/gm-screen-launcher.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/gm-screen-launcher.tsx
+
+File gmflow probabili:
+
+* src/components/gm/gm-screen-launcher.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-003] GM_SCREEN: gm-screen-legacy-layout-v2.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/gm-screen-legacy-layout-v2.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/gm-screen-legacy-layout-v2.tsx
+
+File gmflow probabili:
+
+* src/components/gm/gm-screen-legacy-layout-v2.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-004] GM_SCREEN: gm-screen-long-layout-v2.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/gm-screen-long-layout-v2.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/gm-screen-long-layout-v2.tsx
+
+File gmflow probabili:
+
+* src/components/gm/gm-screen-long-layout-v2.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-005] GM_SCREEN: gm-add-panel-menu.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/gm-add-panel-menu.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/gm-add-panel-menu.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/gm-add-panel-menu.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-006] MEDIA_STORAGE: gm-layout-storage.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+MEDIA_STORAGE
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/gm-layout-storage.ts` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Upload/storage media — adattare a R2 o storage gmflow.
+
+Adattamenti necessari:
+
+* Storage R2
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/gm-layout-storage.ts
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/gm-layout-storage.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza storage B&D (Telegram) vs gmflow (R2)
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Quale adapter storage usare in gmflow?
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-007] GM_SCREEN: gm-panel-chrome.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/gm-panel-chrome.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/gm-panel-chrome.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/gm-panel-chrome.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-008] GM_SCREEN: gm-panel-registry.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/gm-panel-registry.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/gm-panel-registry.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/gm-panel-registry.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-009] GM_SCREEN: gm-presets.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/gm-presets.ts` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/gm-presets.ts
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/gm-presets.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-010] GM_SCREEN: gm-screen-board.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/gm-screen-board.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/gm-screen-board.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/gm-screen-board.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-011] GM_SCREEN: monster-stat-panel.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/panels/monster-stat-panel.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/panels/monster-stat-panel.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/panels/monster-stat-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-012] GM_SCREEN: rules-lookup-panel.tsx (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/panels/rules-lookup-panel.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/panels/rules-lookup-panel.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/panels/rules-lookup-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-013] GM_SCREEN: fivee-rules-view.tsx (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/renderers/fivee-rules-view.tsx` aggiunto nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/renderers/fivee-rules-view.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/renderers/fivee-rules-view.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-014] GM_SCREEN: fivee-statblock-view.tsx (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/renderers/fivee-statblock-view.tsx` aggiunto nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/renderers/fivee-statblock-view.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/renderers/fivee-statblock-view.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-015] GM_SCREEN: types.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/types.ts` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/types.ts
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/types.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-016] WIKI: wiki-bestiary-search-actions.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+WIKI
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/actions/wiki-bestiary-search-actions.ts` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/lib/actions/wiki-bestiary-search-actions.ts
+
+File gmflow probabili:
+
+* src/lib/actions/wiki-bestiary-search-actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-017] OTHER: dense-parsers.test.ts (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/manuals/__tests__/dense-parsers.test.ts` aggiunto nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/manuals/__tests__/dense-parsers.test.ts
+
+File gmflow probabili:
+
+* src/lib/manuals/__tests__/dense-parsers.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-018] OTHER: bestiary-statblock-parser.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/manuals/bestiary-statblock-parser.ts` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/manuals/bestiary-statblock-parser.ts
+
+File gmflow probabili:
+
+* src/lib/manuals/bestiary-statblock-parser.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-019] OTHER: dense-rules-parser.ts (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/manuals/dense-rules-parser.ts` aggiunto nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/manuals/dense-rules-parser.ts
+
+File gmflow probabili:
+
+* src/lib/manuals/dense-rules-parser.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-020] OTHER: dense-statblock-parser.ts (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/manuals/dense-statblock-parser.ts` aggiunto nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/manuals/dense-statblock-parser.ts
+
+File gmflow probabili:
+
+* src/lib/manuals/dense-statblock-parser.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-021] OTHER: phb-conditions.ts (aggiunto)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/manuals/phb-conditions.ts` aggiunto nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/manuals/phb-conditions.ts
+
+File gmflow probabili:
+
+* src/lib/manuals/phb-conditions.ts
 
 Rischi:
 
@@ -33280,9 +34241,9 @@ Questo ledger traccia modifiche Barber & Dragons da valutare per import in gmflo
 
 - Repository sorgente: `/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App`
 - Repository gmflow locale: `/Users/alessandropetricciuolo/Desktop/masto-platform`
-- Ultimo commit: `9bc3a5f` — feat(gm): add modular GM Screen 2.0 beside classic screen
-- File analizzati nell'ultimo run: 34
-- Nuove voci aggiunte: 34
+- Ultimo commit: `d9bd4d9` — feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters
+- File analizzati nell'ultimo run: 21
+- Nuove voci aggiunte: 21
 
 **Azioni consigliate:**
 1. Rivedere voci `NEEDS_REVIEW` nella sezione «Delta automatico».

@@ -1,12 +1,12 @@
 {
-  "updatedAt": "2026-08-01T05:36:44.171Z",
+  "updatedAt": "2026-08-01T06:42:04.311Z",
   "sourceProject": "Barber & Dragons",
   "targetProject": "gmflow.app",
   "sourceRepoPath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App",
   "targetRepoPath": "/Users/alessandropetricciuolo/Desktop/masto-platform",
   "branch": "main",
-  "lastCommit": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
-  "commitRange": "e2f072a..9bc3a5f",
+  "lastCommit": "d9bd4d9204fdc5a50d86c4bf897732ce28325689",
+  "commitRange": "fb25214..d9bd4d9",
   "items": [
     {
       "id": "BD-GMFLOW-PKG-2026-07-06-001",
@@ -26514,6 +26514,757 @@
       "statusCode": "A",
       "createdAt": "2026-08-01T05:36:44.171Z",
       "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-d9bd4d9-001",
+      "title": "OTHER: globals.css (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/app/globals.css` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/app/globals.css"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/globals.css"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "d9bd4d9204fdc5a50d86c4bf897732ce28325689",
+      "commitShort": "d9bd4d9",
+      "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T06:42:04.311Z",
+      "updatedAt": "2026-08-01T06:42:04.311Z"
+    },
+    {
+      "id": "BD-GMFLOW-d9bd4d9-002",
+      "title": "GM_SCREEN: gm-screen-launcher.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/gm-screen-launcher.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/gm-screen-launcher.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/gm-screen-launcher.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "d9bd4d9204fdc5a50d86c4bf897732ce28325689",
+      "commitShort": "d9bd4d9",
+      "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T06:42:04.311Z",
+      "updatedAt": "2026-08-01T06:42:04.311Z"
+    },
+    {
+      "id": "BD-GMFLOW-d9bd4d9-003",
+      "title": "GM_SCREEN: gm-screen-legacy-layout-v2.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/gm-screen-legacy-layout-v2.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/gm-screen-legacy-layout-v2.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/gm-screen-legacy-layout-v2.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "d9bd4d9204fdc5a50d86c4bf897732ce28325689",
+      "commitShort": "d9bd4d9",
+      "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T06:42:04.311Z",
+      "updatedAt": "2026-08-01T06:42:04.311Z"
+    },
+    {
+      "id": "BD-GMFLOW-d9bd4d9-004",
+      "title": "GM_SCREEN: gm-screen-long-layout-v2.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/gm-screen-long-layout-v2.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/gm-screen-long-layout-v2.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/gm-screen-long-layout-v2.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "d9bd4d9204fdc5a50d86c4bf897732ce28325689",
+      "commitShort": "d9bd4d9",
+      "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T06:42:04.311Z",
+      "updatedAt": "2026-08-01T06:42:04.311Z"
+    },
+    {
+      "id": "BD-GMFLOW-d9bd4d9-005",
+      "title": "GM_SCREEN: gm-add-panel-menu.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/gm-add-panel-menu.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/gm-add-panel-menu.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/gm-add-panel-menu.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "d9bd4d9204fdc5a50d86c4bf897732ce28325689",
+      "commitShort": "d9bd4d9",
+      "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T06:42:04.311Z",
+      "updatedAt": "2026-08-01T06:42:04.311Z"
+    },
+    {
+      "id": "BD-GMFLOW-d9bd4d9-006",
+      "title": "MEDIA_STORAGE: gm-layout-storage.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "MEDIA_STORAGE",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/gm-layout-storage.ts` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Upload/storage media — adattare a R2 o storage gmflow.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/gm-layout-storage.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/gm-layout-storage.ts"
+      ],
+      "requiredAdaptations": [
+        "Storage R2"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza storage B&D (Telegram) vs gmflow (R2)"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Quale adapter storage usare in gmflow?"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "d9bd4d9204fdc5a50d86c4bf897732ce28325689",
+      "commitShort": "d9bd4d9",
+      "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T06:42:04.311Z",
+      "updatedAt": "2026-08-01T06:42:04.311Z"
+    },
+    {
+      "id": "BD-GMFLOW-d9bd4d9-007",
+      "title": "GM_SCREEN: gm-panel-chrome.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/gm-panel-chrome.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/gm-panel-chrome.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/gm-panel-chrome.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "d9bd4d9204fdc5a50d86c4bf897732ce28325689",
+      "commitShort": "d9bd4d9",
+      "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T06:42:04.311Z",
+      "updatedAt": "2026-08-01T06:42:04.311Z"
+    },
+    {
+      "id": "BD-GMFLOW-d9bd4d9-008",
+      "title": "GM_SCREEN: gm-panel-registry.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/gm-panel-registry.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/gm-panel-registry.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/gm-panel-registry.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "d9bd4d9204fdc5a50d86c4bf897732ce28325689",
+      "commitShort": "d9bd4d9",
+      "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T06:42:04.311Z",
+      "updatedAt": "2026-08-01T06:42:04.311Z"
+    },
+    {
+      "id": "BD-GMFLOW-d9bd4d9-009",
+      "title": "GM_SCREEN: gm-presets.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/gm-presets.ts` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/gm-presets.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/gm-presets.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "d9bd4d9204fdc5a50d86c4bf897732ce28325689",
+      "commitShort": "d9bd4d9",
+      "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T06:42:04.311Z",
+      "updatedAt": "2026-08-01T06:42:04.311Z"
+    },
+    {
+      "id": "BD-GMFLOW-d9bd4d9-010",
+      "title": "GM_SCREEN: gm-screen-board.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/gm-screen-board.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/gm-screen-board.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/gm-screen-board.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "d9bd4d9204fdc5a50d86c4bf897732ce28325689",
+      "commitShort": "d9bd4d9",
+      "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T06:42:04.311Z",
+      "updatedAt": "2026-08-01T06:42:04.311Z"
+    },
+    {
+      "id": "BD-GMFLOW-d9bd4d9-011",
+      "title": "GM_SCREEN: monster-stat-panel.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/panels/monster-stat-panel.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/panels/monster-stat-panel.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/panels/monster-stat-panel.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "d9bd4d9204fdc5a50d86c4bf897732ce28325689",
+      "commitShort": "d9bd4d9",
+      "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T06:42:04.311Z",
+      "updatedAt": "2026-08-01T06:42:04.311Z"
+    },
+    {
+      "id": "BD-GMFLOW-d9bd4d9-012",
+      "title": "GM_SCREEN: rules-lookup-panel.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/panels/rules-lookup-panel.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/panels/rules-lookup-panel.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/panels/rules-lookup-panel.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "d9bd4d9204fdc5a50d86c4bf897732ce28325689",
+      "commitShort": "d9bd4d9",
+      "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T06:42:04.311Z",
+      "updatedAt": "2026-08-01T06:42:04.311Z"
+    },
+    {
+      "id": "BD-GMFLOW-d9bd4d9-013",
+      "title": "GM_SCREEN: fivee-rules-view.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/renderers/fivee-rules-view.tsx` aggiunto nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/renderers/fivee-rules-view.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/renderers/fivee-rules-view.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "d9bd4d9204fdc5a50d86c4bf897732ce28325689",
+      "commitShort": "d9bd4d9",
+      "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
+      "statusCode": "A",
+      "createdAt": "2026-08-01T06:42:04.311Z",
+      "updatedAt": "2026-08-01T06:42:04.311Z"
+    },
+    {
+      "id": "BD-GMFLOW-d9bd4d9-014",
+      "title": "GM_SCREEN: fivee-statblock-view.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/renderers/fivee-statblock-view.tsx` aggiunto nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/renderers/fivee-statblock-view.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/renderers/fivee-statblock-view.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "d9bd4d9204fdc5a50d86c4bf897732ce28325689",
+      "commitShort": "d9bd4d9",
+      "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
+      "statusCode": "A",
+      "createdAt": "2026-08-01T06:42:04.311Z",
+      "updatedAt": "2026-08-01T06:42:04.311Z"
+    },
+    {
+      "id": "BD-GMFLOW-d9bd4d9-015",
+      "title": "GM_SCREEN: types.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/types.ts` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/types.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/types.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "d9bd4d9204fdc5a50d86c4bf897732ce28325689",
+      "commitShort": "d9bd4d9",
+      "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T06:42:04.311Z",
+      "updatedAt": "2026-08-01T06:42:04.311Z"
+    },
+    {
+      "id": "BD-GMFLOW-d9bd4d9-016",
+      "title": "WIKI: wiki-bestiary-search-actions.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "WIKI",
+      "priority": "Media",
+      "description": "File `src/lib/actions/wiki-bestiary-search-actions.ts` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.",
+      "bdFiles": [
+        "src/lib/actions/wiki-bestiary-search-actions.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/actions/wiki-bestiary-search-actions.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "d9bd4d9204fdc5a50d86c4bf897732ce28325689",
+      "commitShort": "d9bd4d9",
+      "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T06:42:04.311Z",
+      "updatedAt": "2026-08-01T06:42:04.311Z"
+    },
+    {
+      "id": "BD-GMFLOW-d9bd4d9-017",
+      "title": "OTHER: dense-parsers.test.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/manuals/__tests__/dense-parsers.test.ts` aggiunto nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/manuals/__tests__/dense-parsers.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/manuals/__tests__/dense-parsers.test.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "d9bd4d9204fdc5a50d86c4bf897732ce28325689",
+      "commitShort": "d9bd4d9",
+      "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
+      "statusCode": "A",
+      "createdAt": "2026-08-01T06:42:04.311Z",
+      "updatedAt": "2026-08-01T06:42:04.311Z"
+    },
+    {
+      "id": "BD-GMFLOW-d9bd4d9-018",
+      "title": "OTHER: bestiary-statblock-parser.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/manuals/bestiary-statblock-parser.ts` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/manuals/bestiary-statblock-parser.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/manuals/bestiary-statblock-parser.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "d9bd4d9204fdc5a50d86c4bf897732ce28325689",
+      "commitShort": "d9bd4d9",
+      "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T06:42:04.311Z",
+      "updatedAt": "2026-08-01T06:42:04.311Z"
+    },
+    {
+      "id": "BD-GMFLOW-d9bd4d9-019",
+      "title": "OTHER: dense-rules-parser.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/manuals/dense-rules-parser.ts` aggiunto nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/manuals/dense-rules-parser.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/manuals/dense-rules-parser.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "d9bd4d9204fdc5a50d86c4bf897732ce28325689",
+      "commitShort": "d9bd4d9",
+      "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
+      "statusCode": "A",
+      "createdAt": "2026-08-01T06:42:04.311Z",
+      "updatedAt": "2026-08-01T06:42:04.311Z"
+    },
+    {
+      "id": "BD-GMFLOW-d9bd4d9-020",
+      "title": "OTHER: dense-statblock-parser.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/manuals/dense-statblock-parser.ts` aggiunto nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/manuals/dense-statblock-parser.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/manuals/dense-statblock-parser.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "d9bd4d9204fdc5a50d86c4bf897732ce28325689",
+      "commitShort": "d9bd4d9",
+      "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
+      "statusCode": "A",
+      "createdAt": "2026-08-01T06:42:04.311Z",
+      "updatedAt": "2026-08-01T06:42:04.311Z"
+    },
+    {
+      "id": "BD-GMFLOW-d9bd4d9-021",
+      "title": "OTHER: phb-conditions.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/manuals/phb-conditions.ts` aggiunto nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/manuals/phb-conditions.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/manuals/phb-conditions.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "d9bd4d9204fdc5a50d86c4bf897732ce28325689",
+      "commitShort": "d9bd4d9",
+      "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
+      "statusCode": "A",
+      "createdAt": "2026-08-01T06:42:04.311Z",
+      "updatedAt": "2026-08-01T06:42:04.311Z"
     }
   ]
 }
