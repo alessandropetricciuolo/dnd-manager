@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-* Data aggiornamento: 2026-08-01T12:31:41.837Z
+* Data aggiornamento: 2026-08-01T12:35:20.182Z
 * Branch corrente: main
-* Ultimo commit analizzato: b14782e9be079416d692913ef2e017a2e8414170
-* Range commit analizzato: 744d465..b14782e
-* Stato generale: 337 voci NEEDS_REVIEW
-* Voci totali: 732 (NEEDS_REVIEW: 337, TO_IMPORT: 319, IMPORTED: 0)
+* Ultimo commit analizzato: 9ebb1ec23ca659efbfd15eb494eb8ec3024056c4
+* Range commit analizzato: 5b3b4d5..9ebb1ec
+* Stato generale: 338 voci NEEDS_REVIEW
+* Voci totali: 733 (NEEDS_REVIEW: 338, TO_IMPORT: 319, IMPORTED: 0)
 
 ## Delta automatico non revisionato
 
@@ -16038,6 +16038,58 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 * RLS/policy verificate per multi-tenant
+
+### [BD-GMFLOW-9ebb1ec-001] AI: image-prompt-builder.ts (modificato)
+
+Stato:
+NEEDS_REVIEW
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/ai/image-prompt-builder.ts` modificato nel commit «fix(ai): avoid server supabase import via image-prompt-builder». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/ai/image-prompt-builder.ts
+
+File gmflow probabili:
+
+* src/lib/ai/image-prompt-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
 
 ## Modifiche revisionate manualmente
 
@@ -35679,9 +35731,9 @@ Questo ledger traccia modifiche Barber & Dragons da valutare per import in gmflo
 
 - Repository sorgente: `/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App`
 - Repository gmflow locale: `/Users/alessandropetricciuolo/Desktop/masto-platform`
-- Ultimo commit: `b14782e` — feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords
-- File analizzati nell'ultimo run: 30
-- Nuove voci aggiunte: 30
+- Ultimo commit: `9ebb1ec` — fix(ai): avoid server supabase import via image-prompt-builder
+- File analizzati nell'ultimo run: 1
+- Nuove voci aggiunte: 1
 
 **Azioni consigliate:**
 1. Rivedere voci `NEEDS_REVIEW` nella sezione «Delta automatico».

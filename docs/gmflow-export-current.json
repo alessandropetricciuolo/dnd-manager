@@ -1,12 +1,12 @@
 {
-  "updatedAt": "2026-08-01T12:31:41.837Z",
+  "updatedAt": "2026-08-01T12:35:20.182Z",
   "sourceProject": "Barber & Dragons",
   "targetProject": "gmflow.app",
   "sourceRepoPath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App",
   "targetRepoPath": "/Users/alessandropetricciuolo/Desktop/masto-platform",
   "branch": "main",
-  "lastCommit": "b14782e9be079416d692913ef2e017a2e8414170",
-  "commitRange": "744d465..b14782e",
+  "lastCommit": "9ebb1ec23ca659efbfd15eb494eb8ec3024056c4",
+  "commitRange": "5b3b4d5..9ebb1ec",
   "items": [
     {
       "id": "BD-GMFLOW-PKG-2026-07-06-001",
@@ -28403,6 +28403,48 @@
       "statusCode": "A",
       "createdAt": "2026-08-01T12:31:41.837Z",
       "updatedAt": "2026-08-01T12:31:41.837Z"
+    },
+    {
+      "id": "BD-GMFLOW-9ebb1ec-001",
+      "title": "AI: image-prompt-builder.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/lib/ai/image-prompt-builder.ts` modificato nel commit «fix(ai): avoid server supabase import via image-prompt-builder». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/lib/ai/image-prompt-builder.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/ai/image-prompt-builder.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "9ebb1ec23ca659efbfd15eb494eb8ec3024056c4",
+      "commitShort": "9ebb1ec",
+      "commitSubject": "fix(ai): avoid server supabase import via image-prompt-builder",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T12:35:20.182Z",
+      "updatedAt": "2026-08-01T12:35:20.182Z"
     }
   ]
 }
