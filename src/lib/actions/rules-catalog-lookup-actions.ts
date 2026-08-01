@@ -3,8 +3,10 @@
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { PHB_CONDITIONS } from "@/lib/manuals/phb-conditions";
+import { SOURCE_BOOK_PRIORITY } from "@/lib/manuals/rules-catalog/sources";
 import {
   slugifyRulesCatalogName,
+  type RulesCatalogAlternative,
   type RulesCatalogDefinition,
   type RulesCatalogFacets,
   type RulesCatalogKind,
@@ -12,7 +14,11 @@ import {
 } from "@/lib/manuals/rules-catalog/types";
 
 export type GetRulesCatalogDefinitionResult =
-  | { success: true; definition: RulesCatalogDefinition }
+  | {
+      success: true;
+      definition: RulesCatalogDefinition;
+      alternatives: RulesCatalogAlternative[];
+    }
   | { success: false; message: string; notFound?: boolean };
 
 type CatalogRow = {
@@ -21,14 +27,29 @@ type CatalogRow = {
   name: string;
   name_aliases: string[] | null;
   source_label: string | null;
+  source_book: string | null;
   body_md: string;
   facets: RulesCatalogFacets | null;
 };
 
-const SELECT_COLS = "kind, slug, name, name_aliases, source_label, body_md, facets";
+const SELECT_COLS =
+  "kind, slug, name, name_aliases, source_label, source_book, body_md, facets";
 
 function isRulesCatalogKind(value: string): value is RulesCatalogKind {
   return (RULES_CATALOG_KINDS as readonly string[]).includes(value);
+}
+
+function sourcePriority(book: string | null | undefined): number {
+  if (!book) return 99;
+  return SOURCE_BOOK_PRIORITY[book] ?? 50;
+}
+
+function sortRowsByPriority(rows: CatalogRow[]): CatalogRow[] {
+  return [...rows].sort(
+    (a, b) =>
+      sourcePriority(a.source_book) - sourcePriority(b.source_book) ||
+      a.name.localeCompare(b.name, "it")
+  );
 }
 
 function rowToDefinition(row: CatalogRow): RulesCatalogDefinition {
@@ -37,8 +58,19 @@ function rowToDefinition(row: CatalogRow): RulesCatalogDefinition {
     slug: row.slug,
     name: row.name,
     sourceLabel: row.source_label,
+    sourceBook: row.source_book,
     bodyMd: row.body_md,
     facets: row.facets ?? {},
+  };
+}
+
+function rowToAlternative(row: CatalogRow): RulesCatalogAlternative {
+  return {
+    kind: row.kind,
+    slug: row.slug,
+    name: row.name,
+    sourceLabel: row.source_label,
+    sourceBook: row.source_book,
   };
 }
 
@@ -65,53 +97,73 @@ function normalizeQuery(q: string): string {
   return q.trim().replace(/\s+/g, " ");
 }
 
-async function findBySlugOrName(
+function withKindsFilter<T extends { eq: (c: string, v: string) => T; in: (c: string, v: string[]) => T }>(
+  q: T,
+  kinds: RulesCatalogKind[] | null
+): T {
+  if (!kinds || kinds.length === 0) return q;
+  if (kinds.length === 1) return q.eq("kind", kinds[0]!);
+  return q.in("kind", kinds);
+}
+
+async function findCandidates(
   admin: ReturnType<typeof createSupabaseAdminClient>,
   slug: string,
   nameLower: string,
   kinds: RulesCatalogKind[] | null
-): Promise<CatalogRow | null> {
-  const withKinds = <T extends { eq: (c: string, v: string) => T; in: (c: string, v: string[]) => T }>(
-    q: T
-  ): T => {
-    if (!kinds || kinds.length === 0) return q;
-    if (kinds.length === 1) return q.eq("kind", kinds[0]!);
-    return q.in("kind", kinds);
+): Promise<CatalogRow[]> {
+  const collected: CatalogRow[] = [];
+  const seen = new Set<string>();
+
+  const push = (rows: CatalogRow[]) => {
+    for (const r of rows) {
+      const key = `${r.kind}|${r.source_book}|${r.slug}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      collected.push(r);
+    }
   };
 
-  // 1) slug esatto
   {
-    const { data, error } = await withKinds(
-      admin.from("rules_catalog").select(SELECT_COLS).eq("slug", slug)
-    ).limit(5);
+    const { data, error } = await withKindsFilter(
+      admin.from("rules_catalog").select(SELECT_COLS).eq("slug", slug),
+      kinds
+    ).limit(20);
     if (error) throw new Error(error.message);
-    const rows = (data ?? []) as CatalogRow[];
-    if (rows[0]) return rows[0];
+    push((data ?? []) as CatalogRow[]);
   }
 
-  // 2) name case-insensitive
   {
-    const { data, error } = await withKinds(
-      admin.from("rules_catalog").select(SELECT_COLS).ilike("name", nameLower)
-    ).limit(5);
+    const { data, error } = await withKindsFilter(
+      admin.from("rules_catalog").select(SELECT_COLS).ilike("name", nameLower),
+      kinds
+    ).limit(20);
     if (error) throw new Error(error.message);
     const rows = (data ?? []) as CatalogRow[];
-    const exact = rows.find((r) => r.name.toLowerCase() === nameLower);
-    if (exact) return exact;
+    push(rows.filter((r) => r.name.toLowerCase() === nameLower));
   }
 
-  // 3) alias (contains array)
   const aliasCandidates = Array.from(new Set([nameLower, nameLower.toUpperCase(), slug]));
   for (const alias of aliasCandidates) {
-    const { data, error } = await withKinds(
-      admin.from("rules_catalog").select(SELECT_COLS).contains("name_aliases", [alias])
-    ).limit(5);
+    const { data, error } = await withKindsFilter(
+      admin.from("rules_catalog").select(SELECT_COLS).contains("name_aliases", [alias]),
+      kinds
+    ).limit(20);
     if (error) throw new Error(error.message);
-    const rows = (data ?? []) as CatalogRow[];
-    if (rows[0]) return rows[0];
+    push((data ?? []) as CatalogRow[]);
   }
 
-  return null;
+  // Prefisso nome (es. "copertur")
+  if (collected.length === 0 && nameLower.length >= 3) {
+    const { data, error } = await withKindsFilter(
+      admin.from("rules_catalog").select(SELECT_COLS).ilike("name", `${nameLower}%`),
+      kinds
+    ).limit(20);
+    if (error) throw new Error(error.message);
+    push((data ?? []) as CatalogRow[]);
+  }
+
+  return sortRowsByPriority(collected);
 }
 
 async function fetchConditionsOverview(
@@ -147,7 +199,7 @@ async function fetchConditionsOverview(
     return {
       success: false,
       message:
-        "Catalogo condizioni vuoto. In Admin → Knowledge esegui «Estrai catalogo condizioni PHB».",
+        "Catalogo condizioni vuoto. In Admin → Knowledge esegui «Condizioni PHB» o «Estrai tutto».",
       notFound: true,
     };
   }
@@ -166,19 +218,23 @@ async function fetchConditionsOverview(
       slug: "condizioni-overview",
       name: "Condizioni",
       sourceLabel: (overview as CatalogRow | null)?.source_label ?? "PHB Appendice A",
+      sourceBook: "player_handbook",
       bodyMd,
       facets: {},
     },
+    alternatives: [],
   };
 }
 
 /**
- * Ritorna una sola definizione ufficiale da `rules_catalog`.
- * Match: slug esatto, lower(name), oppure alias.
+ * Ritorna una definizione ufficiale da `rules_catalog`.
+ * Se esistono omonimi in più libri, preferisce PHB e espone le alternative.
  */
 export async function getRulesCatalogDefinitionAction(input: {
   kind?: RulesCatalogKind | RulesCatalogKind[];
   nameOrSlug: string;
+  /** Preferisci un source_book specifico (es. dungeon_masters_guide). */
+  preferSourceBook?: string;
 }): Promise<GetRulesCatalogDefinitionResult> {
   const gate = await assertGmOrAdmin();
   if (!gate.ok) return { success: false, message: gate.message };
@@ -222,21 +278,60 @@ export async function getRulesCatalogDefinitionAction(input: {
   }
 
   try {
-    const hit = await findBySlugOrName(admin, slugifyRulesCatalogName(raw), lower, kinds);
-    if (!hit) {
+    let candidates = await findCandidates(admin, slugifyRulesCatalogName(raw), lower, kinds);
+    if (candidates.length === 0) {
       return {
         success: false,
         message: `Nessuna definizione ufficiale per «${raw}».`,
         notFound: true,
       };
     }
-    return { success: true, definition: rowToDefinition(hit) };
+
+    if (input.preferSourceBook) {
+      const preferred = candidates.find((c) => c.source_book === input.preferSourceBook);
+      if (preferred) {
+        candidates = [preferred, ...candidates.filter((c) => c !== preferred)];
+      }
+    }
+
+    const primary = candidates[0]!;
+    const alternatives = candidates
+      .slice(1)
+      .filter(
+        (c) =>
+          c.slug === primary.slug ||
+          c.name.toLowerCase() === primary.name.toLowerCase() ||
+          normalizeLoose(c.name) === normalizeLoose(primary.name)
+      )
+      .map(rowToAlternative);
+
+    // Anche nomi correlati stesso kind (es. Copertura vs …) se slug diverso ma query matchata
+    const relatedExtra = candidates
+      .slice(1)
+      .filter((c) => !alternatives.some((a) => a.slug === c.slug && a.sourceBook === c.source_book))
+      .slice(0, 4)
+      .map(rowToAlternative);
+
+    return {
+      success: true,
+      definition: rowToDefinition(primary),
+      alternatives: [...alternatives, ...relatedExtra].slice(0, 8),
+    };
   } catch (e) {
     return {
       success: false,
       message: e instanceof Error ? e.message : "Errore lookup catalogo regole.",
     };
   }
+}
+
+function normalizeLoose(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 /**
@@ -258,4 +353,73 @@ export async function getRulesCatalogConditionAction(
     kind: "condition",
     nameOrSlug,
   });
+}
+
+/**
+ * Lookup spell da catalogo (`kind: spell`) con priorità PHB.
+ */
+export async function getRulesCatalogSpellAction(
+  nameOrSlug: string
+): Promise<GetRulesCatalogDefinitionResult> {
+  return getRulesCatalogDefinitionAction({
+    kind: "spell",
+    nameOrSlug,
+  });
+}
+
+/**
+ * Suggerimenti nomi da catalogo (spell o regole).
+ */
+export async function suggestRulesCatalogNamesAction(input: {
+  prefix: string;
+  kind?: RulesCatalogKind | RulesCatalogKind[];
+  limit?: number;
+}): Promise<{ success: true; names: string[] } | { success: false; message: string }> {
+  const gate = await assertGmOrAdmin();
+  if (!gate.ok) return { success: false, message: gate.message };
+
+  const prefix = normalizeQuery(input.prefix);
+  if (prefix.length < 2) return { success: true, names: [] };
+
+  const kinds: RulesCatalogKind[] | null = input.kind
+    ? Array.isArray(input.kind)
+      ? input.kind.filter(isRulesCatalogKind)
+      : isRulesCatalogKind(input.kind)
+        ? [input.kind]
+        : null
+    : null;
+
+  let admin: ReturnType<typeof createSupabaseAdminClient>;
+  try {
+    admin = createSupabaseAdminClient();
+  } catch (e) {
+    return {
+      success: false,
+      message: e instanceof Error ? e.message : "Client admin Supabase non disponibile.",
+    };
+  }
+
+  const limit = Math.min(input.limit ?? 12, 24);
+  const { data, error } = await withKindsFilter(
+    admin.from("rules_catalog").select("name, source_book").ilike("name", `%${prefix}%`),
+    kinds
+  ).limit(40);
+
+  if (error) return { success: false, message: error.message };
+
+  const rows = [...((data ?? []) as { name: string; source_book: string | null }[])].sort(
+    (a, b) =>
+      sourcePriority(a.source_book) - sourcePriority(b.source_book) ||
+      a.name.localeCompare(b.name, "it")
+  );
+  const names: string[] = [];
+  const seen = new Set<string>();
+  for (const r of rows) {
+    const key = r.name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    names.push(r.name);
+    if (names.length >= limit) break;
+  }
+  return { success: true, names };
 }

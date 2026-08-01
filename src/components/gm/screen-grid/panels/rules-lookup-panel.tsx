@@ -31,6 +31,7 @@ type CatalogView = {
   title: string;
   bodyMd: string;
   sourceLabel: string | null;
+  alternatives: { name: string; sourceLabel: string | null; sourceBook?: string | null }[];
 };
 
 export function RulesLookupPanel({ initialQuery = "" }: RulesLookupPanelProps) {
@@ -43,13 +44,21 @@ export function RulesLookupPanel({ initialQuery = "" }: RulesLookupPanelProps) {
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [activeCondition, setActiveCondition] = useState<PhbCondition | "all" | null>(null);
 
-  const showCatalogDefinition = useCallback((title: string, bodyMd: string, sourceLabel: string | null) => {
-    setCatalogView({ title, bodyMd, sourceLabel });
-    setPrimaryText(null);
-    setHits([]);
-    setSelectedIdx(0);
-    setError(null);
-  }, []);
+  const showCatalogDefinition = useCallback(
+    (
+      title: string,
+      bodyMd: string,
+      sourceLabel: string | null,
+      alternatives: { name: string; sourceLabel: string | null; sourceBook?: string | null }[] = []
+    ) => {
+      setCatalogView({ title, bodyMd, sourceLabel, alternatives });
+      setPrimaryText(null);
+      setHits([]);
+      setSelectedIdx(0);
+      setError(null);
+    },
+    []
+  );
 
   const runRagSearch = useCallback(async (q: string) => {
     const res = await searchManualsSemanticAction(q);
@@ -68,7 +77,7 @@ export function RulesLookupPanel({ initialQuery = "" }: RulesLookupPanelProps) {
   }, []);
 
   const runSearch = useCallback(
-    async (q: string) => {
+    async (q: string, preferSourceBook?: string) => {
       const trimmed = q.trim();
       if (trimmed.length < 2) {
         setError("Inserisci almeno 2 caratteri.");
@@ -79,13 +88,19 @@ export function RulesLookupPanel({ initialQuery = "" }: RulesLookupPanelProps) {
       try {
         const catalog = await getRulesCatalogDefinitionAction({
           nameOrSlug: trimmed,
-          kind: ["condition", "spell", "feature", "rule"],
+          kind: ["condition", "rule", "feature", "trait"],
+          preferSourceBook,
         });
         if (catalog.success) {
           showCatalogDefinition(
             catalog.definition.name,
             catalog.definition.bodyMd,
-            catalog.definition.sourceLabel
+            catalog.definition.sourceLabel,
+            catalog.alternatives.map((a) => ({
+              name: a.name,
+              sourceLabel: a.sourceLabel,
+              sourceBook: a.sourceBook,
+            }))
           );
           return;
         }
@@ -116,7 +131,7 @@ export function RulesLookupPanel({ initialQuery = "" }: RulesLookupPanelProps) {
         );
         if (!res.success) {
           const emptyHint = res.notFound
-            ? `${res.message} Se il catalogo è vuoto, in Admin → Knowledge esegui «Estrai catalogo condizioni PHB».`
+            ? `${res.message} Se il catalogo è vuoto, in Admin → Knowledge esegui «Condizioni PHB» o «Estrai tutto».`
             : res.message;
           setError(emptyHint);
           setCatalogView(null);
@@ -124,7 +139,16 @@ export function RulesLookupPanel({ initialQuery = "" }: RulesLookupPanelProps) {
           setHits([]);
           return;
         }
-        showCatalogDefinition(res.definition.name, res.definition.bodyMd, res.definition.sourceLabel);
+        showCatalogDefinition(
+          res.definition.name,
+          res.definition.bodyMd,
+          res.definition.sourceLabel,
+          res.alternatives.map((a) => ({
+            name: a.name,
+            sourceLabel: a.sourceLabel,
+            sourceBook: a.sourceBook,
+          }))
+        );
       } finally {
         setLoading(false);
       }
@@ -230,6 +254,26 @@ export function RulesLookupPanel({ initialQuery = "" }: RulesLookupPanelProps) {
       </form>
 
       {error ? <p className="text-[10px] text-red-300">{error}</p> : null}
+
+      {catalogView?.alternatives && catalogView.alternatives.length > 0 ? (
+        <div className="flex shrink-0 flex-wrap gap-0.5">
+          <span className="self-center text-[9px] text-zinc-500">Anche:</span>
+          {catalogView.alternatives.map((alt) => (
+            <button
+              key={`${alt.name}|${alt.sourceLabel ?? ""}`}
+              type="button"
+              className="rounded border border-amber-700/40 px-1 py-px text-[9px] text-amber-100 hover:bg-amber-600/20"
+              onClick={() => {
+                setQuery(alt.name);
+                void runSearch(alt.name, alt.sourceBook ?? undefined);
+              }}
+              title={alt.sourceLabel ? `${alt.name} — ${alt.sourceLabel}` : alt.name}
+            >
+              {alt.sourceLabel ? `${alt.name} (${alt.sourceLabel})` : alt.name}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       {showHitChips ? (
         <div className="flex shrink-0 flex-wrap gap-0.5">

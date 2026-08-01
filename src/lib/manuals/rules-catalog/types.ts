@@ -1,6 +1,6 @@
 import type { Json } from "@/types/database.types";
 
-export const RULES_CATALOG_EXTRACTION_VERSION = "rules-catalog-v1";
+export const RULES_CATALOG_EXTRACTION_VERSION = "rules-catalog-v2";
 
 export const RULES_CATALOG_KINDS = [
   "condition",
@@ -42,6 +42,15 @@ export type RulesCatalogDefinition = {
   facets: RulesCatalogFacets;
   kind: RulesCatalogKind;
   slug: string;
+  sourceBook?: string | null;
+};
+
+export type RulesCatalogAlternative = {
+  name: string;
+  sourceLabel: string | null;
+  slug: string;
+  kind: RulesCatalogKind;
+  sourceBook?: string | null;
 };
 
 /** Slug stabile IT: lower, spazi → `-`, collassa non-alfanumerici. */

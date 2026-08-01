@@ -1,10 +1,19 @@
 "use server";
 
-import fs from "fs";
-import path from "path";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { extractPhbConditionsFromMarkdown } from "@/lib/manuals/rules-catalog/extract-phb-conditions";
+import {
+  extractDmgCuratedRulesFromMarkdown,
+  extractPhbCuratedRulesFromMarkdown,
+} from "@/lib/manuals/rules-catalog/extract-curated-rules";
+import { extractSpellsFromMarkdown } from "@/lib/manuals/rules-catalog/extract-spells-from-markdown";
+import {
+  getSourceById,
+  readManualMarkdown,
+  SPELL_CATALOG_SOURCE_IDS,
+  type RulesCatalogSourceId,
+} from "@/lib/manuals/rules-catalog/sources";
 import type { RulesCatalogRecord } from "@/lib/manuals/rules-catalog/types";
 import type { Database } from "@/types/database.types";
 
@@ -18,18 +27,6 @@ export type IngestRulesCatalogResult =
       names: string[];
     }
   | { success: false; message: string };
-
-function resolvePlayerHandbookPath(): string | null {
-  const cwd = process.cwd();
-  const candidates = [
-    path.join(cwd, "public", "manuals", "manuale_giocatore.md"),
-    path.join(cwd, "dnd-manager", "public", "manuals", "manuale_giocatore.md"),
-  ];
-  for (const p of candidates) {
-    if (fs.existsSync(p)) return p;
-  }
-  return null;
-}
 
 async function assertAdminForRulesCatalog(): Promise<
   { ok: true } | { ok: false; message: string }
@@ -68,30 +65,7 @@ function toDbRow(record: RulesCatalogRecord): Database["public"]["Tables"]["rule
   };
 }
 
-/**
- * Estrae le condizioni PHB Appendice A e le upserta in `rules_catalog`.
- * Non tocca `manuals_knowledge`.
- */
-export async function ingestRulesCatalogConditionsAction(): Promise<IngestRulesCatalogResult> {
-  const gate = await assertAdminForRulesCatalog();
-  if (!gate.ok) return { success: false, message: gate.message };
-
-  const filePath = resolvePlayerHandbookPath();
-  if (!filePath) {
-    return { success: false, message: "File non trovato: public/manuals/manuale_giocatore.md" };
-  }
-
-  let records: RulesCatalogRecord[];
-  try {
-    const markdown = fs.readFileSync(filePath, "utf8");
-    records = extractPhbConditionsFromMarkdown(markdown);
-  } catch (e) {
-    return {
-      success: false,
-      message: e instanceof Error ? e.message : "Estrazione condizioni fallita.",
-    };
-  }
-
+async function upsertRecords(records: RulesCatalogRecord[]): Promise<IngestRulesCatalogResult> {
   let admin: ReturnType<typeof createSupabaseAdminClient>;
   try {
     admin = createSupabaseAdminClient();
@@ -147,4 +121,131 @@ export async function ingestRulesCatalogConditionsAction(): Promise<IngestRulesC
     total: records.length,
     names: records.map((r) => r.name),
   };
+}
+
+function mergeResults(parts: IngestRulesCatalogResult[]): IngestRulesCatalogResult {
+  const ok = parts.filter((p): p is Extract<IngestRulesCatalogResult, { success: true }> => p.success);
+  const fail = parts.find((p) => !p.success);
+  if (fail && !fail.success) return fail;
+  return {
+    success: true,
+    inserted: ok.reduce((s, p) => s + p.inserted, 0),
+    updated: ok.reduce((s, p) => s + p.updated, 0),
+    skipped: ok.reduce((s, p) => s + p.skipped, 0),
+    total: ok.reduce((s, p) => s + p.total, 0),
+    names: ok.flatMap((p) => p.names).slice(0, 80),
+  };
+}
+
+/**
+ * Estrae le condizioni PHB Appendice A e le upserta in `rules_catalog`.
+ * Non tocca `manuals_knowledge`.
+ */
+export async function ingestRulesCatalogConditionsAction(): Promise<IngestRulesCatalogResult> {
+  const gate = await assertAdminForRulesCatalog();
+  if (!gate.ok) return { success: false, message: gate.message };
+
+  let records: RulesCatalogRecord[];
+  try {
+    const markdown = readManualMarkdown(getSourceById("player_handbook").sourceFile);
+    records = extractPhbConditionsFromMarkdown(markdown);
+  } catch (e) {
+    return {
+      success: false,
+      message: e instanceof Error ? e.message : "Estrazione condizioni fallita.",
+    };
+  }
+
+  return upsertRecords(records);
+}
+
+/**
+ * Estrae schede incantesimo da PHB + XGtE + Tasha + Eberron.
+ */
+export async function ingestRulesCatalogSpellsAction(): Promise<IngestRulesCatalogResult> {
+  const gate = await assertAdminForRulesCatalog();
+  if (!gate.ok) return { success: false, message: gate.message };
+
+  const records: RulesCatalogRecord[] = [];
+  try {
+    for (const id of SPELL_CATALOG_SOURCE_IDS) {
+      const source = getSourceById(id);
+      const md = readManualMarkdown(source.sourceFile);
+      records.push(...extractSpellsFromMarkdown(md, source));
+    }
+  } catch (e) {
+    return {
+      success: false,
+      message: e instanceof Error ? e.message : "Estrazione incantesimi fallita.",
+    };
+  }
+
+  if (records.length < 50) {
+    return {
+      success: false,
+      message: `Troppi pochi spell estratti (${records.length}). Controlla i file markdown.`,
+    };
+  }
+
+  return upsertRecords(records);
+}
+
+/** Regole curate PHB (copertura, riposo, azioni…). */
+export async function ingestRulesCatalogPhbRulesAction(): Promise<IngestRulesCatalogResult> {
+  const gate = await assertAdminForRulesCatalog();
+  if (!gate.ok) return { success: false, message: gate.message };
+
+  let records: RulesCatalogRecord[];
+  try {
+    const md = readManualMarkdown(getSourceById("player_handbook").sourceFile);
+    records = extractPhbCuratedRulesFromMarkdown(md);
+  } catch (e) {
+    return {
+      success: false,
+      message: e instanceof Error ? e.message : "Estrazione regole PHB fallita.",
+    };
+  }
+
+  return upsertRecords(records);
+}
+
+/** Regole curate DMG (inseguimenti, follia, trappole…). */
+export async function ingestRulesCatalogDmgRulesAction(): Promise<IngestRulesCatalogResult> {
+  const gate = await assertAdminForRulesCatalog();
+  if (!gate.ok) return { success: false, message: gate.message };
+
+  let records: RulesCatalogRecord[];
+  try {
+    const md = readManualMarkdown(getSourceById("dungeon_masters_guide").sourceFile);
+    records = extractDmgCuratedRulesFromMarkdown(md);
+  } catch (e) {
+    return {
+      success: false,
+      message: e instanceof Error ? e.message : "Estrazione regole DMG fallita.",
+    };
+  }
+
+  return upsertRecords(records);
+}
+
+/** Orchestra condizioni + spell + regole PHB/DMG. */
+export async function ingestRulesCatalogAllAction(): Promise<IngestRulesCatalogResult> {
+  const gate = await assertAdminForRulesCatalog();
+  if (!gate.ok) return { success: false, message: gate.message };
+
+  const parts: IngestRulesCatalogResult[] = [];
+  parts.push(await ingestRulesCatalogConditionsAction());
+  if (!parts[parts.length - 1]!.success) return parts[parts.length - 1]!;
+  parts.push(await ingestRulesCatalogSpellsAction());
+  if (!parts[parts.length - 1]!.success) return parts[parts.length - 1]!;
+  parts.push(await ingestRulesCatalogPhbRulesAction());
+  if (!parts[parts.length - 1]!.success) return parts[parts.length - 1]!;
+  parts.push(await ingestRulesCatalogDmgRulesAction());
+  if (!parts[parts.length - 1]!.success) return parts[parts.length - 1]!;
+  return mergeResults(parts);
+}
+
+/** Helper test / tooling: carica markdown per source id. */
+export function loadRulesCatalogSourceMarkdown(id: RulesCatalogSourceId): string {
+  return readManualMarkdown(getSourceById(id).sourceFile);
 }

@@ -23,6 +23,9 @@ export function SpellsLookupPanel({ initialQuery = "" }: SpellsLookupPanelProps)
   const [title, setTitle] = useState<string | null>(null);
   const [bodyMd, setBodyMd] = useState<string | null>(null);
   const [sourceLabel, setSourceLabel] = useState<string | null>(null);
+  const [alternatives, setAlternatives] = useState<{ name: string; sourceLabel?: string | null }[]>(
+    []
+  );
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -42,11 +45,14 @@ export function SpellsLookupPanel({ initialQuery = "" }: SpellsLookupPanelProps)
         setTitle(null);
         setBodyMd(null);
         setSourceLabel(null);
+        setAlternatives([]);
         return;
       }
       setTitle(res.name);
       setBodyMd(res.bodyMd);
       setSourceLabel(res.sourceLabel);
+      setAlternatives(res.alternatives);
+      // Non sovrascrivere la query con titoli sbagliati da RAG: tieni il nome ufficiale della scheda
       setQuery(res.name);
     } finally {
       setLoading(false);
@@ -148,6 +154,23 @@ export function SpellsLookupPanel({ initialQuery = "" }: SpellsLookupPanelProps)
       </form>
 
       {error ? <p className="text-[10px] text-red-300">{error}</p> : null}
+
+      {alternatives.length > 0 ? (
+        <div className="flex shrink-0 flex-wrap gap-0.5">
+          <span className="self-center text-[9px] text-zinc-500">Anche:</span>
+          {alternatives.map((alt) => (
+            <button
+              key={`${alt.name}|${alt.sourceLabel ?? ""}`}
+              type="button"
+              className="rounded border border-violet-700/40 px-1 py-px text-[9px] text-violet-200 hover:bg-violet-600/20"
+              onClick={() => void runSearch(alt.name)}
+              title={alt.sourceLabel ? `${alt.name} — ${alt.sourceLabel}` : alt.name}
+            >
+              {alt.sourceLabel ? `${alt.name} (${alt.sourceLabel})` : alt.name}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       <div className="min-h-0 flex-1 overflow-auto rounded border border-zinc-800/80 bg-zinc-950/60 px-1.5 py-1">
         {loading && !doc ? (
