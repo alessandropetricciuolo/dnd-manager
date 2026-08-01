@@ -1,31 +1,36 @@
 import type { GmLayoutItem, GmWorkspaceMode } from "./types";
 
-/** Preset Durante sessione ≈ layout Long attuale (initiative+notes | time+missions+XP). */
+/**
+ * Preset densi: pannelli affiancati, poca altezza morta.
+ * Griglia 12 colonne; con rowHeight ~22 e margin 4 ≈ riempie un 1080p.
+ */
+
+/** Durante sessione: initiative | notes+time+missions | PG/XP */
 export function getSessionPreset(): GmLayoutItem[] {
   return [
-    { i: "preset-initiative", type: "initiative", x: 0, y: 0, w: 6, h: 10, minW: 4, minH: 6 },
-    { i: "preset-notes", type: "notes", x: 0, y: 10, w: 6, h: 6, minW: 3, minH: 4 },
-    { i: "preset-time", type: "time", x: 6, y: 0, w: 6, h: 3, minW: 3, minH: 2 },
-    { i: "preset-missions", type: "missions", x: 6, y: 3, w: 6, h: 5, minW: 3, minH: 3 },
-    { i: "preset-playersXp", type: "playersXp", x: 6, y: 8, w: 6, h: 8, minW: 3, minH: 4 },
+    { i: "preset-initiative", type: "initiative", x: 0, y: 0, w: 5, h: 28, minW: 3, minH: 8 },
+    { i: "preset-notes", type: "notes", x: 5, y: 0, w: 4, h: 12, minW: 2, minH: 4 },
+    { i: "preset-time", type: "time", x: 5, y: 12, w: 4, h: 5, minW: 2, minH: 3 },
+    { i: "preset-missions", type: "missions", x: 5, y: 17, w: 4, h: 11, minW: 2, minH: 4 },
+    { i: "preset-playersXp", type: "playersXp", x: 9, y: 0, w: 3, h: 28, minW: 2, minH: 8 },
   ];
 }
 
-/** Preset Chiusura ≈ economy + time + calendar. */
+/** Chiusura: economy | time+calendar affiancati */
 export function getClosurePreset(): GmLayoutItem[] {
   return [
-    { i: "preset-economy", type: "economy", x: 0, y: 0, w: 12, h: 7, minW: 4, minH: 4 },
-    { i: "preset-time", type: "time", x: 0, y: 7, w: 12, h: 3, minW: 4, minH: 2 },
-    { i: "preset-calendar", type: "calendar", x: 0, y: 10, w: 12, h: 6, minW: 4, minH: 4 },
+    { i: "preset-economy", type: "economy", x: 0, y: 0, w: 6, h: 28, minW: 3, minH: 8 },
+    { i: "preset-time", type: "time", x: 6, y: 0, w: 6, h: 6, minW: 3, minH: 3 },
+    { i: "preset-calendar", type: "calendar", x: 6, y: 6, w: 6, h: 22, minW: 3, minH: 6 },
   ];
 }
 
-/** Preset Legacy ≈ initiative + notes + PG tracker. */
+/** Legacy: initiative | notes | PG affiancati a tutta altezza */
 export function getLegacyPreset(): GmLayoutItem[] {
   return [
-    { i: "preset-initiative", type: "initiative", x: 0, y: 0, w: 6, h: 14, minW: 4, minH: 6 },
-    { i: "preset-notes", type: "notes", x: 6, y: 0, w: 4, h: 14, minW: 3, minH: 4 },
-    { i: "preset-playersXp", type: "playersXp", x: 10, y: 0, w: 2, h: 14, minW: 2, minH: 4 },
+    { i: "preset-initiative", type: "initiative", x: 0, y: 0, w: 5, h: 28, minW: 3, minH: 8 },
+    { i: "preset-notes", type: "notes", x: 5, y: 0, w: 4, h: 28, minW: 2, minH: 6 },
+    { i: "preset-playersXp", type: "playersXp", x: 9, y: 0, w: 3, h: 28, minW: 2, minH: 6 },
   ];
 }
 

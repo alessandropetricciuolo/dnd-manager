@@ -1,6 +1,7 @@
 import { isGmPanelType, type GmLayoutItem, type GmStoredLayout, type GmWorkspaceMode } from "./types";
 
-export const GM_SCREEN_LAYOUT_KEY_PREFIX = "gm-screen-layout-v1:";
+export const GM_SCREEN_LAYOUT_KEY_PREFIX = "gm-screen-layout-v2:";
+export const GM_SCREEN_LAYOUT_VERSION = 2 as const;
 
 export function gmScreenLayoutStorageKey(campaignId: string): string {
   return `${GM_SCREEN_LAYOUT_KEY_PREFIX}${campaignId}`;
@@ -36,12 +37,13 @@ function sanitizeItem(raw: unknown): GmLayoutItem | null {
 export function sanitizeStoredLayout(raw: unknown): GmStoredLayout | null {
   if (!raw || typeof raw !== "object") return null;
   const parsed = raw as Record<string, unknown>;
-  if (parsed.version !== 1) return null;
+  // Ignora layout v1 sparsi: i nuovi preset densi partono da zero.
+  if (parsed.version !== GM_SCREEN_LAYOUT_VERSION) return null;
   const mode = parsed.mode === "closure" ? "closure" : parsed.mode === "session" ? "session" : null;
   if (!mode) return null;
   if (!Array.isArray(parsed.items)) return null;
   const items = parsed.items.map(sanitizeItem).filter((item): item is GmLayoutItem => item != null);
-  return { version: 1, mode, items };
+  return { version: GM_SCREEN_LAYOUT_VERSION, mode, items };
 }
 
 export function loadGmScreenLayout(campaignId: string): GmStoredLayout | null {
@@ -74,5 +76,5 @@ export function clearGmScreenLayout(campaignId: string): void {
 }
 
 export function toStoredLayout(mode: GmWorkspaceMode, items: GmLayoutItem[]): GmStoredLayout {
-  return { version: 1, mode, items };
+  return { version: GM_SCREEN_LAYOUT_VERSION, mode, items };
 }

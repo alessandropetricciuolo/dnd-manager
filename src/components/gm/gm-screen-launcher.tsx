@@ -11,7 +11,16 @@ type GmScreenLauncherProps = {
   label?: string;
 };
 
-const WINDOW_OPTIONS = "width=1400,height=900,menubar=no,toolbar=no,location=no,status=no";
+const CLASSIC_WINDOW_OPTIONS = "width=1400,height=900,menubar=no,toolbar=no,location=no,status=no";
+
+function screenFittedWindowOptions(): string {
+  const screen = window.screen as Screen & { availLeft?: number; availTop?: number };
+  const availLeft = typeof screen.availLeft === "number" ? screen.availLeft : 0;
+  const availTop = typeof screen.availTop === "number" ? screen.availTop : 0;
+  const width = Math.max(800, screen.availWidth || window.innerWidth);
+  const height = Math.max(600, screen.availHeight || window.innerHeight);
+  return `left=${availLeft},top=${availTop},width=${width},height=${height},menubar=no,toolbar=no,location=no,status=no`;
+}
 
 export function GmScreenLauncher({
   campaignId,
@@ -28,7 +37,21 @@ export function GmScreenLauncher({
   const Icon = isV2 ? LayoutGrid : Monitor;
 
   function openGmScreen() {
-    window.open(url, windowName, WINDOW_OPTIONS);
+    const opts = isV2 ? screenFittedWindowOptions() : CLASSIC_WINDOW_OPTIONS;
+    const opened = window.open(url, windowName, opts);
+    // Se la finestra era già aperta, riprova a ridimensionarla allo schermo (v2).
+    if (opened && isV2) {
+      try {
+        const screen = window.screen as Screen & { availLeft?: number; availTop?: number };
+        opened.moveTo(screen.availLeft ?? 0, screen.availTop ?? 0);
+        opened.resizeTo(
+          Math.max(800, screen.availWidth || window.innerWidth),
+          Math.max(600, screen.availHeight || window.innerHeight)
+        );
+      } catch {
+        // Browser può bloccare move/resize cross-origin o policy.
+      }
+    }
   }
 
   return (

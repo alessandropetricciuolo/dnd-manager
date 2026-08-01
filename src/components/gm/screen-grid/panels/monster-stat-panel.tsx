@@ -1,8 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkBreaks from "remark-breaks";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2, Search } from "lucide-react";
 import {
   fetchExpandedBestiaryChunkAction,
@@ -10,7 +8,9 @@ import {
   type BestiarySearchHit,
 } from "@/lib/actions/wiki-bestiary-search-actions";
 import { getEntity, getMonstersForInitiative } from "@/app/campaigns/wiki-actions";
-import { getWikiContentBody, preserveMarkdownBlankLines } from "@/lib/wiki/content";
+import { getWikiContentBody } from "@/lib/wiki/content";
+import { parseDenseStatblock, type DenseStatblock } from "@/lib/manuals/dense-statblock-parser";
+import { FiveeStatblockView } from "@/components/gm/screen-grid/renderers/fivee-statblock-view";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -24,17 +24,53 @@ type MonsterStatPanelProps = {
 
 type WikiMonsterHit = { id: string; name: string; hp: number };
 
+function wikiEntityToMarkdown(entity: {
+  name: string;
+  content: unknown;
+  attributes?: Record<string, unknown> | null;
+  xp_value?: number | null;
+}): string {
+  const attrs = (entity.attributes ?? {}) as Record<string, unknown>;
+  const combat = (attrs.combat_stats ?? {}) as Record<string, unknown>;
+  const statblock = typeof attrs.statblock === "string" ? attrs.statblock.trim() : "";
+  const contentBody = getWikiContentBody(entity.content);
+  if (statblock) {
+    const hasHeading = /^#{1,3}\s+/m.test(statblock);
+    return hasHeading ? statblock : `# ${entity.name}\n\n${statblock}`;
+  }
+  const lines: string[] = [`# ${entity.name}`];
+  if (combat.ac) lines.push(`**Classe Armatura** ${combat.ac}`);
+  if (combat.hp) lines.push(`**Punti Ferita** ${combat.hp}`);
+  if (combat.cr) {
+    const xp =
+      typeof entity.xp_value === "number" && entity.xp_value > 0
+        ? ` (${entity.xp_value} PE)`
+        : "";
+    lines.push(`**Sfida** ${combat.cr}${xp}`);
+  }
+  if (contentBody) lines.push("", contentBody);
+  return lines.join("\n");
+}
+
 export function MonsterStatPanel({ entityId, name, bestiaryChunkId }: MonsterStatPanelProps) {
   const { campaignId } = useGmScreenBoard();
   const [query, setQuery] = useState(name ?? "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [title, setTitle] = useState(name ?? "Statblock");
-  const [body, setBody] = useState("");
+  const [rawMarkdown, setRawMarkdown] = useState("");
+  const [sourceLabel, setSourceLabel] = useState<string | null>(null);
   const [wikiHits, setWikiHits] = useState<WikiMonsterHit[]>([]);
   const [manualHits, setManualHits] = useState<BestiarySearchHit[]>([]);
   const [activeEntityId, setActiveEntityId] = useState<string | undefined>(entityId);
   const [activeChunkId, setActiveChunkId] = useState<string | undefined>(bestiaryChunkId);
+
+  const parsed: DenseStatblock | null = useMemo(() => {
+    if (!rawMarkdown.trim()) return null;
+    return parseDenseStatblock(rawMarkdown, {
+      sourceLabel,
+      fallbackName: name ?? null,
+    });
+  }, [rawMarkdown, sourceLabel, name]);
 
   const loadWikiEntity = useCallback(
     async (id: string) => {
@@ -48,29 +84,15 @@ export function MonsterStatPanel({ entityId, name, bestiaryChunkId }: MonsterSta
         }
         setActiveEntityId(id);
         setActiveChunkId(undefined);
-        setTitle(entity.name);
-        const attrs = (entity.attributes ?? {}) as Record<string, unknown>;
-        const combat = (attrs.combat_stats ?? {}) as Record<string, unknown>;
-        const statblock =
-          typeof attrs.statblock === "string" ? attrs.statblock.trim() : "";
-        const contentBody = getWikiContentBody(entity.content);
-        const lines: string[] = [`# ${entity.name}`];
-        if (combat.hp || combat.ac || combat.cr) {
-          lines.push(
-            "",
-            `**PV:** ${combat.hp ?? "—"} · **CA:** ${combat.ac ?? "—"} · **GS:** ${combat.cr ?? "—"}`
-          );
-        }
-        if (typeof entity.xp_value === "number" && entity.xp_value > 0) {
-          lines.push(`**PE:** ${entity.xp_value}`);
-        }
-        if (statblock) {
-          lines.push("", "## Statblock", "", statblock);
-        }
-        if (contentBody) {
-          lines.push("", "## Descrizione", "", contentBody);
-        }
-        setBody(lines.join("\n"));
+        setSourceLabel("Wiki campagna");
+        setRawMarkdown(
+          wikiEntityToMarkdown({
+            name: entity.name,
+            content: entity.content,
+            attributes: entity.attributes as Record<string, unknown> | null,
+            xp_value: entity.xp_value,
+          })
+        );
       } finally {
         setLoading(false);
       }
@@ -90,8 +112,8 @@ export function MonsterStatPanel({ entityId, name, bestiaryChunkId }: MonsterSta
         }
         setActiveChunkId(chunkId);
         setActiveEntityId(undefined);
-        setTitle(label ?? "Statblock manuale");
-        setBody(res.text);
+        setSourceLabel(res.sourceLabel ?? label ?? null);
+        setRawMarkdown(res.text);
       } finally {
         setLoading(false);
       }
@@ -108,6 +130,9 @@ export function MonsterStatPanel({ entityId, name, bestiaryChunkId }: MonsterSta
       }
       setLoading(true);
       setError(null);
+      setRawMarkdown("");
+      setActiveEntityId(undefined);
+      setActiveChunkId(undefined);
       try {
         const [wikiRes, bestiaryRes] = await Promise.all([
           getMonstersForInitiative(campaignId),
@@ -148,9 +173,9 @@ export function MonsterStatPanel({ entityId, name, bestiaryChunkId }: MonsterSta
   }, [entityId, bestiaryChunkId, name, loadWikiEntity, loadBestiaryChunk, runSearch]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-2">
+    <div className="flex h-full min-h-0 flex-col gap-1">
       <form
-        className="flex shrink-0 gap-2"
+        className="flex shrink-0 gap-1"
         onSubmit={(e) => {
           e.preventDefault();
           void runSearch(query);
@@ -159,118 +184,95 @@ export function MonsterStatPanel({ entityId, name, bestiaryChunkId }: MonsterSta
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Cerca mostro (wiki o manuali)…"
-          className="h-8 border-amber-600/30 bg-zinc-900 text-sm text-zinc-100"
+          placeholder="Cerca mostro…"
+          className="h-6 border-amber-600/30 bg-zinc-900 px-2 text-[10px] text-zinc-100"
         />
         <Button
           type="submit"
           size="sm"
-          className="h-8 shrink-0 bg-amber-600 text-zinc-950 hover:bg-amber-500"
+          className="h-6 shrink-0 bg-amber-600 px-2 text-zinc-950 hover:bg-amber-500"
           disabled={loading}
         >
-          {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
+          {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Search className="h-3 w-3" />}
         </Button>
       </form>
 
-      {error ? <p className="text-xs text-red-300">{error}</p> : null}
+      {error ? <p className="text-[10px] text-red-300">{error}</p> : null}
 
-      {(wikiHits.length > 0 || manualHits.length > 0) && !activeEntityId && !body ? (
-        <div className="shrink-0 space-y-2 overflow-auto max-h-40">
-          {wikiHits.length > 0 ? (
-            <div>
-              <p className="mb-1 text-[10px] uppercase tracking-wide text-amber-400/80">Wiki campagna</p>
-              <div className="flex flex-col gap-1">
-                {wikiHits.map((hit) => (
-                  <button
-                    key={hit.id}
-                    type="button"
-                    className="rounded border border-zinc-700 px-2 py-1 text-left text-xs text-zinc-200 hover:border-amber-600/40"
-                    onClick={() => void loadWikiEntity(hit.id)}
-                  >
-                    {hit.name}
-                    <span className="ml-2 text-zinc-500">PV {hit.hp}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
-          {manualHits.length > 0 ? (
-            <div>
-              <p className="mb-1 text-[10px] uppercase tracking-wide text-amber-400/80">Manuali</p>
-              <div className="flex flex-col gap-1">
-                {manualHits.map((hit) => (
-                  <button
-                    key={hit.id}
-                    type="button"
-                    className="rounded border border-zinc-700 px-2 py-1 text-left text-xs text-zinc-200 hover:border-amber-600/40"
-                    onClick={() =>
-                      void loadBestiaryChunk(hit.id, hit.section_heading ?? hit.manual_label)
-                    }
-                  >
-                    {hit.section_heading ?? hit.manual_label}
-                    <span className="ml-2 text-zinc-500">{hit.manual_label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
+      {(wikiHits.length > 0 || manualHits.length > 0) && !parsed ? (
+        <div className="max-h-28 shrink-0 space-y-1 overflow-auto">
+          {wikiHits.map((hit) => (
+            <button
+              key={hit.id}
+              type="button"
+              className="block w-full truncate rounded border border-zinc-700 px-1.5 py-0.5 text-left text-[10px] text-zinc-200 hover:border-amber-600/40"
+              onClick={() => void loadWikiEntity(hit.id)}
+            >
+              {hit.name}
+              <span className="ml-1 text-zinc-500">wiki · PV {hit.hp}</span>
+            </button>
+          ))}
+          {manualHits.map((hit) => (
+            <button
+              key={hit.id}
+              type="button"
+              className="block w-full truncate rounded border border-zinc-700 px-1.5 py-0.5 text-left text-[10px] text-zinc-200 hover:border-amber-600/40"
+              onClick={() =>
+                void loadBestiaryChunk(hit.id, hit.section_heading ?? hit.manual_label)
+              }
+            >
+              {hit.section_heading ?? hit.manual_label}
+              <span className="ml-1 text-zinc-500">{hit.manual_label}</span>
+            </button>
+          ))}
         </div>
       ) : null}
 
-      {(wikiHits.length > 0 || manualHits.length > 0) && body ? (
-        <div className="flex shrink-0 flex-wrap gap-1">
-          {wikiHits.slice(0, 4).map((hit) => (
+      {parsed ? (
+        <div className="flex shrink-0 flex-wrap gap-0.5">
+          {wikiHits.slice(0, 3).map((hit) => (
             <button
               key={hit.id}
               type="button"
               className={cn(
-                "rounded border px-1.5 py-0.5 text-[10px]",
+                "rounded border px-1 py-px text-[9px]",
                 activeEntityId === hit.id
                   ? "border-amber-500/50 bg-amber-600/20 text-amber-100"
-                  : "border-zinc-700 text-zinc-400"
+                  : "border-zinc-700 text-zinc-500"
               )}
               onClick={() => void loadWikiEntity(hit.id)}
             >
-              {hit.name.slice(0, 20)}
+              {hit.name.slice(0, 16)}
             </button>
           ))}
-          {manualHits.slice(0, 4).map((hit) => (
+          {manualHits.slice(0, 3).map((hit) => (
             <button
               key={hit.id}
               type="button"
               className={cn(
-                "rounded border px-1.5 py-0.5 text-[10px]",
+                "rounded border px-1 py-px text-[9px]",
                 activeChunkId === hit.id
                   ? "border-amber-500/50 bg-amber-600/20 text-amber-100"
-                  : "border-zinc-700 text-zinc-400"
+                  : "border-zinc-700 text-zinc-500"
               )}
               onClick={() => void loadBestiaryChunk(hit.id, hit.section_heading ?? undefined)}
             >
-              {(hit.section_heading ?? hit.manual_label).slice(0, 20)}
+              {(hit.section_heading ?? hit.manual_label).slice(0, 16)}
             </button>
           ))}
         </div>
       ) : null}
 
-      <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-zinc-800 bg-zinc-900/40 p-3 text-sm text-zinc-200">
-        {loading && !body ? (
-          <div className="flex items-center gap-2 text-xs text-zinc-400">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+      <div className="min-h-0 flex-1 overflow-auto rounded border border-zinc-800/80 bg-zinc-950/60 px-1.5 py-1">
+        {loading && !parsed ? (
+          <div className="flex items-center gap-1 text-[10px] text-zinc-400">
+            <Loader2 className="h-3 w-3 animate-spin" />
             Caricamento…
           </div>
-        ) : body ? (
-          <div className="space-y-2 [&_h1]:text-base [&_h1]:font-semibold [&_h1]:text-amber-200 [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:text-amber-200">
-            {!body.startsWith("#") ? (
-              <h2 className="text-base font-semibold text-amber-200">{title}</h2>
-            ) : null}
-            <ReactMarkdown remarkPlugins={[remarkBreaks]}>
-              {preserveMarkdownBlankLines(body)}
-            </ReactMarkdown>
-          </div>
+        ) : parsed ? (
+          <FiveeStatblockView data={parsed} />
         ) : (
-          <p className="text-xs text-zinc-500">
-            Cerca un mostro nella wiki campagna o nei manuali bestiario B&D.
-          </p>
+          <p className="text-[10px] text-zinc-500">Cerca un mostro (wiki o manuali bestiario).</p>
         )}
       </div>
     </div>

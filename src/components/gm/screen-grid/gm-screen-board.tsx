@@ -19,7 +19,7 @@ import {
 import type { GmLayoutItem, GmPanelType, GmWorkspaceMode } from "./types";
 
 const COLS = 12;
-const ROW_HEIGHT = 36;
+const ROW_HEIGHT = 22;
 
 type SheetOpeners = {
   openMapsSheet: () => void;
@@ -78,13 +78,18 @@ function applyGridLayout(items: GmLayoutItem[], layout: Layout): GmLayoutItem[] 
 }
 
 function findNextSlot(items: GmLayoutItem[], w: number, h: number): { x: number; y: number } {
+  // Pack left-to-right, top-to-bottom into the first free rect.
+  const occupied = (x: number, y: number) =>
+    items.some((item) => x < item.x + item.w && x + w > item.x && y < item.y + item.h && y + h > item.y);
+
   let maxY = 0;
-  for (const item of items) {
-    maxY = Math.max(maxY, item.y + item.h);
+  for (const item of items) maxY = Math.max(maxY, item.y + item.h);
+
+  for (let y = 0; y <= maxY; y += 1) {
+    for (let x = 0; x <= COLS - w; x += 1) {
+      if (!occupied(x, y)) return { x, y };
+    }
   }
-  // Prefer right column if empty-ish, otherwise stack below.
-  const rightBusy = items.some((item) => item.x >= 6 && item.y < 4);
-  if (!rightBusy && w <= 6) return { x: 6, y: 0 };
   return { x: 0, y: maxY };
 }
 
@@ -289,28 +294,28 @@ export function GmScreenBoard({
   return (
     <GmScreenBoardProvider value={boardActions}>
       <div className={cn("flex h-full min-h-0 flex-col", className)}>
-        <div className="mb-2 flex shrink-0 flex-wrap items-center gap-2">
+        <div className="mb-1 flex shrink-0 flex-wrap items-center gap-1.5">
           <GmAddPanelMenu onAdd={(type) => addPanel(type)} presentTypes={presentTypes} />
           <Button
             type="button"
             size="sm"
             variant="outline"
-            className="h-8 border-zinc-700 px-2.5 text-xs text-zinc-300 hover:bg-zinc-800"
+            className="h-6 border-zinc-700 px-2 text-[10px] text-zinc-300 hover:bg-zinc-800"
             onClick={resetLayout}
             title="Ripristina preset del modo corrente"
           >
-            <RotateCcw className="mr-1 h-3.5 w-3.5" />
-            Reset layout
+            <RotateCcw className="mr-1 h-3 w-3" />
+            Reset
           </Button>
           {toolbarExtra}
         </div>
 
         <div
           ref={containerRef as RefObject<HTMLDivElement>}
-          className="min-h-0 flex-1 overflow-auto rounded-xl border border-amber-600/15 bg-zinc-950/40"
+          className="min-h-0 flex-1 overflow-auto border border-amber-600/15 bg-zinc-950/50"
         >
           {!hydrated || !mounted ? (
-            <div className="flex h-40 items-center justify-center text-xs text-zinc-500">Caricamento griglia…</div>
+            <div className="flex h-24 items-center justify-center text-[10px] text-zinc-500">Caricamento…</div>
           ) : (
             <GridLayout
               width={width}
@@ -318,8 +323,8 @@ export function GmScreenBoard({
               gridConfig={{
                 cols: COLS,
                 rowHeight: ROW_HEIGHT,
-                margin: [10, 10],
-                containerPadding: [10, 10],
+                margin: [4, 4],
+                containerPadding: [4, 4],
               }}
               dragConfig={{
                 handle: ".gm-panel-drag-handle",

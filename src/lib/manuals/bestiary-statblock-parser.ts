@@ -24,6 +24,32 @@ const EXCLUDED_STATBLOCK_HEADINGS = new Set(
   ].map((s) => mmNormalizeHeadingTitle(s))
 );
 
+/** Heading interni allo statblock: non devono chiudere la regione creatura. */
+const INTERNAL_STATBLOCK_SECTION_HEADINGS = new Set(
+  [
+    "azioni",
+    "azioni bonus",
+    "azioni leggendarie",
+    "reazioni",
+    "actions",
+    "bonus actions",
+    "legendary actions",
+    "reactions",
+    "lair actions",
+    "azioni della tana",
+    "regional effects",
+    "effetti regionali",
+  ].map((s) => mmNormalizeHeadingTitle(s))
+);
+
+function isInternalStatblockSectionHeading(title: string): boolean {
+  const norm = mmNormalizeHeadingTitle(title);
+  if (INTERNAL_STATBLOCK_SECTION_HEADINGS.has(norm)) return true;
+  if (norm.startsWith("azioni ")) return true;
+  if (norm.startsWith("actions ")) return true;
+  return false;
+}
+
 type StatblockRegion = {
   name: string;
   startLine: number;
@@ -65,6 +91,8 @@ function findStatblockRegions(content: string): StatblockRegion[] {
     if (!hm) continue;
     const title = hm[2].trim();
     if (!title || isExcludedStatblockHeading(title)) continue;
+    // `## AZIONI` ecc. restano nel corpo dello statblock, non aprono una nuova creatura.
+    if (isInternalStatblockSectionHeading(title)) continue;
     headingIndices.push(i);
   }
 

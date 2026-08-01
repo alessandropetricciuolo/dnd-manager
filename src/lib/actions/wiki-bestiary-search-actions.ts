@@ -497,7 +497,10 @@ export async function searchBestiaryChunksAction(
 export async function fetchExpandedBestiaryChunkAction(
   campaignId: string,
   chunkId: string
-): Promise<{ success: true; text: string } | { success: false; message: string }> {
+): Promise<
+  | { success: true; text: string; sourceLabel: string | null; sectionHeading: string | null }
+  | { success: false; message: string }
+> {
   const safeCampaignId = String(campaignId ?? "").trim();
   const rawId = String(chunkId ?? "").trim();
   if (!rawId) return { success: false, message: "Chunk non valido." };
@@ -609,7 +612,10 @@ export async function fetchExpandedBestiaryChunkAction(
     if (!text) {
       return { success: false, message: "Contenuto chunk vuoto." };
     }
-    return { success: true, text };
+    const sourceLabel = mbk ? wikiManualBookLabel(mbk) : null;
+    const sectionHeading =
+      metaStr(meta, "section_heading") ?? metaStr(meta, "section_title") ?? null;
+    return { success: true, text, sourceLabel, sectionHeading };
   } catch (e) {
     console.error("[fetchExpandedBestiaryChunkAction]", e);
     const message = e instanceof Error ? e.message : "Errore sconosciuto nel caricamento statblock.";

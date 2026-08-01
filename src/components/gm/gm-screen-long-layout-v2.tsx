@@ -172,7 +172,7 @@ function LongWorkspace({
           type="button"
           size="sm"
           variant="outline"
-          className="h-8 border-amber-600/35 px-3 text-xs text-amber-100 hover:bg-amber-600/15"
+          className="h-6 border-amber-600/35 px-2 text-[10px] text-amber-100 hover:bg-amber-600/15"
         >
           Nuova nota
         </Button>
@@ -230,58 +230,58 @@ function LongWorkspace({
   ) : null;
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-zinc-950 text-zinc-100">
-      <div className="flex w-11 shrink-0 flex-col items-center gap-1 border-r border-amber-600/20 bg-zinc-900/80 py-3">
+    <div className="gm-screen-v2-dense flex h-screen w-screen overflow-hidden bg-zinc-950 text-zinc-100">
+      <div className="flex w-8 shrink-0 flex-col items-center gap-0.5 border-r border-amber-600/20 bg-zinc-900/90 py-1.5">
         <GmScreenMapRegia campaignId={campaignId} />
 
         <Button
           variant="ghost"
           size="icon"
-          className="text-amber-400 hover:bg-amber-600/20 hover:text-amber-200"
+          className="h-7 w-7 text-amber-400 hover:bg-amber-600/20 hover:text-amber-200"
           onClick={() => setGalleryOpen(true)}
           title="Regia Immagini"
           aria-label="Apri Regia Immagini"
         >
-          <Images className="h-5 w-5" />
+          <Images className="h-3.5 w-3.5" />
         </Button>
         <Button
           variant="ghost"
           size="icon"
-          className="text-amber-400 hover:bg-amber-600/20 hover:text-amber-200"
+          className="h-7 w-7 text-amber-400 hover:bg-amber-600/20 hover:text-amber-200"
           onClick={() => setWhispersOpen(true)}
           title="Sussurri Segreti"
           aria-label="Apri Sussurri Segreti"
         >
-          <MessageCircle className="h-5 w-5" />
+          <MessageCircle className="h-3.5 w-3.5" />
         </Button>
         <Button
           variant="ghost"
           size="icon"
-          className="text-amber-400 hover:bg-amber-600/20 hover:text-amber-200"
+          className="h-7 w-7 text-amber-400 hover:bg-amber-600/20 hover:text-amber-200"
           onClick={() => setAudioForgeOpen(true)}
           title="Audio"
           aria-label="Apri Audio"
         >
-          <Headphones className="h-5 w-5" />
+          <Headphones className="h-3.5 w-3.5" />
         </Button>
         <GmRemoteIntegration campaignId={campaignId} forge={audioForge} />
         <Button
           variant="ghost"
           size="icon"
-          className="text-amber-400 hover:bg-amber-600/20 hover:text-amber-200"
+          className="h-7 w-7 text-amber-400 hover:bg-amber-600/20 hover:text-amber-200"
           onClick={openMissionProjection}
           title="Proiezione Missioni"
           aria-label="Apri Proiezione Missioni"
         >
-          <ScrollText className="h-5 w-5" />
+          <ScrollText className="h-3.5 w-3.5" />
         </Button>
       </div>
 
       <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-amber-600/20 px-4 py-3 md:px-6">
-          <div className="flex items-center gap-2 text-amber-300">
-            <Calendar className="h-4 w-4" />
-            <span className="text-sm font-medium">GM Screen Long</span>
+        <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-amber-600/20 px-2 py-1">
+          <div className="flex items-center gap-1 text-amber-300">
+            <Calendar className="h-3 w-3" />
+            <span className="text-[10px] font-semibold uppercase tracking-wide">GM 2.0</span>
           </div>
 
           <Select
@@ -289,18 +289,18 @@ function LongWorkspace({
             onValueChange={(value) => setSelectedSessionId(value === "none" ? null : value)}
             disabled={loadingSessions}
           >
-            <SelectTrigger className="max-w-sm border-amber-600/30 bg-zinc-900 text-zinc-100">
-              <SelectValue placeholder="Sessione corrente" />
+            <SelectTrigger className="h-6 max-w-[14rem] border-amber-600/30 bg-zinc-900 px-2 text-[10px] text-zinc-100">
+              <SelectValue placeholder="Sessione" />
             </SelectTrigger>
             <SelectContent className="border-amber-600/20 bg-zinc-900">
-              <SelectItem value="none" className="text-zinc-300 focus:bg-amber-600/20 focus:text-zinc-100">
-                Nessuna sessione selezionata
+              <SelectItem value="none" className="text-[11px] text-zinc-300 focus:bg-amber-600/20 focus:text-zinc-100">
+                Nessuna sessione
               </SelectItem>
               {sessions.map((session) => (
                 <SelectItem
                   key={session.id}
                   value={session.id}
-                  className="text-zinc-300 focus:bg-amber-600/20 focus:text-zinc-100"
+                  className="text-[11px] text-zinc-300 focus:bg-amber-600/20 focus:text-zinc-100"
                 >
                   {session.title?.trim() || new Date(session.scheduled_at).toLocaleDateString("it-IT")}
                 </SelectItem>
@@ -308,36 +308,36 @@ function LongWorkspace({
             </SelectContent>
           </Select>
 
-          <Badge variant="outline" className="border-amber-500/30 bg-transparent text-amber-100">
-            <Users className="mr-1 h-3 w-3" />
-            {sessionCharacters.length} PG in sessione
+          <Badge variant="outline" className="h-5 border-amber-500/30 bg-transparent px-1.5 text-[9px] text-amber-100">
+            <Users className="mr-0.5 h-2.5 w-2.5" />
+            {sessionCharacters.length} PG
           </Badge>
 
-          <Badge variant="outline" className="border-zinc-700 bg-transparent text-zinc-300">
+          <Badge variant="outline" className="h-5 border-zinc-700 bg-transparent px-1.5 text-[9px] text-zinc-300">
             {signups.length} iscritti
           </Badge>
 
-          <div className="inline-flex items-center rounded-md border border-amber-600/30 bg-zinc-900 p-0.5">
+          <div className="inline-flex items-center rounded border border-amber-600/30 bg-zinc-900 p-px">
             <Button
               type="button"
               size="sm"
               variant={workspaceMode === "session" ? "secondary" : "ghost"}
               className={cn(
-                "h-8 px-2.5 text-xs",
+                "h-5 px-1.5 text-[9px]",
                 workspaceMode === "session"
                   ? "bg-amber-600/20 text-amber-100 hover:bg-amber-600/25"
                   : "text-zinc-300 hover:text-zinc-100"
               )}
               onClick={() => setWorkspaceMode("session")}
             >
-              Durante sessione
+              Sessione
             </Button>
             <Button
               type="button"
               size="sm"
               variant={workspaceMode === "closure" ? "secondary" : "ghost"}
               className={cn(
-                "h-8 px-2.5 text-xs",
+                "h-5 px-1.5 text-[9px]",
                 workspaceMode === "closure"
                   ? "bg-amber-600/20 text-amber-100 hover:bg-amber-600/25"
                   : "text-zinc-300 hover:text-zinc-100"
@@ -349,39 +349,39 @@ function LongWorkspace({
           </div>
 
           {hasUnsavedLocalState ? (
-            <Badge variant="outline" className="border-cyan-500/30 bg-transparent text-cyan-100">
-              Stato locale ripristinabile
+            <Badge variant="outline" className="h-5 border-cyan-500/30 bg-transparent px-1.5 text-[9px] text-cyan-100">
+              Locale
             </Badge>
           ) : null}
 
-          <div className="ml-auto flex flex-wrap items-center gap-2">
+          <div className="ml-auto flex flex-wrap items-center gap-1">
             <Button
               type="button"
               variant="outline"
               size="sm"
-              className="h-8 border-amber-600/40 px-2.5 text-xs text-amber-100 hover:bg-amber-600/15"
+              className="h-6 border-amber-600/40 px-1.5 text-[10px] text-amber-100 hover:bg-amber-600/15"
               onClick={clearSelectedSessionState}
               disabled={!selectedSessionId}
               title="Azzera stato locale di questa sessione"
             >
-              Azzera stato
+              Azzera
             </Button>
             <Button
               type="button"
               size="sm"
-              className="h-8 bg-amber-600 px-3 text-xs text-zinc-950 hover:bg-amber-500"
+              className="h-6 bg-amber-600 px-2 text-[10px] text-zinc-950 hover:bg-amber-500"
               onClick={() => setDebriefOpen(true)}
               disabled={!selectedSessionId}
             >
-              <Flag className="mr-1.5 h-3.5 w-3.5" />
-              Chiudi sessione
+              <Flag className="mr-1 h-3 w-3" />
+              Chiudi
             </Button>
           </div>
         </div>
 
         {sessionCharactersMissingSheet.length > 0 && (
-          <div className="border-b border-amber-600/15 bg-amber-600/10 px-4 py-2 text-xs text-amber-100 md:px-6">
-            Alcuni iscritti non hanno un personaggio assegnato e non compariranno nei tracker PG:{" "}
+          <div className="border-b border-amber-600/15 bg-amber-600/10 px-2 py-0.5 text-[10px] text-amber-100">
+            Iscritti senza PG:{" "}
             {sessionCharactersMissingSheet.map((signup) => signup.player_name).join(", ")}.
           </div>
         )}
@@ -409,7 +409,7 @@ function LongWorkspace({
           />
         )}
 
-        <div className="min-h-0 flex-1 overflow-hidden p-3 md:p-4">
+        <div className="min-h-0 flex-1 overflow-hidden p-1">
           <GmScreenBoard
             campaignId={campaignId}
             currentUserId={currentUserId}

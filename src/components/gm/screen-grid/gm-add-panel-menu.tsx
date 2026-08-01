@@ -26,9 +26,9 @@ export function GmAddPanelMenu({ onAdd, presentTypes }: GmAddPanelMenuProps) {
           type="button"
           size="sm"
           variant="outline"
-          className="h-8 border-amber-600/40 px-2.5 text-xs text-amber-100 hover:bg-amber-600/15"
+          className="h-6 border-amber-600/40 px-2 text-[10px] text-amber-100 hover:bg-amber-600/15"
         >
-          <Plus className="mr-1 h-3.5 w-3.5" />
+          <Plus className="mr-1 h-3 w-3" />
           Pannello
         </Button>
       </DropdownMenuTrigger>

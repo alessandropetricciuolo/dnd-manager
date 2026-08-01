@@ -34,7 +34,8 @@ export type GmLayoutItem = {
 };
 
 export type GmStoredLayout = {
-  version: 1;
+  /** v2 = preset densi / layout persistito dopo densificazione UI */
+  version: 2;
   mode: GmWorkspaceMode;
   items: GmLayoutItem[];
 };

@@ -78,63 +78,63 @@ export function GmScreenLegacyLayoutV2({
   );
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-zinc-950 text-zinc-100">
-      <div className="flex w-11 shrink-0 flex-col items-center gap-1 border-r border-amber-600/20 bg-zinc-900/80 py-3">
+    <div className="gm-screen-v2-dense flex h-screen w-screen overflow-hidden bg-zinc-950 text-zinc-100">
+      <div className="flex w-8 shrink-0 flex-col items-center gap-0.5 border-r border-amber-600/20 bg-zinc-900/90 py-1.5">
         <GmScreenMapRegia campaignId={campaignId} />
 
         <Button
           variant="ghost"
           size="icon"
-          className="text-amber-400 hover:bg-amber-600/20 hover:text-amber-200"
+          className="h-7 w-7 text-amber-400 hover:bg-amber-600/20 hover:text-amber-200"
           onClick={() => setGalleryOpen(true)}
           title="Regia Immagini"
           aria-label="Apri Regia Immagini"
         >
-          <Images className="h-5 w-5" />
+          <Images className="h-3.5 w-3.5" />
         </Button>
         <Button
           variant="ghost"
           size="icon"
-          className="text-amber-400 hover:bg-amber-600/20 hover:text-amber-200"
+          className="h-7 w-7 text-amber-400 hover:bg-amber-600/20 hover:text-amber-200"
           onClick={() => setWhispersOpen(true)}
           title="Sussurri Segreti"
           aria-label="Apri Sussurri Segreti"
         >
-          <MessageCircle className="h-5 w-5" />
+          <MessageCircle className="h-3.5 w-3.5" />
         </Button>
         <Button
           variant="ghost"
           size="icon"
-          className="text-amber-400 hover:bg-amber-600/20 hover:text-amber-200"
+          className="h-7 w-7 text-amber-400 hover:bg-amber-600/20 hover:text-amber-200"
           onClick={() => setAudioForgeOpen(true)}
           title="Audio"
           aria-label="Apri Audio"
         >
-          <Headphones className="h-5 w-5" />
+          <Headphones className="h-3.5 w-3.5" />
         </Button>
         <GmRemoteIntegration campaignId={campaignId} forge={audioForge} />
       </div>
 
       <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-amber-600/20 px-4 py-3 md:px-6">
-          <Calendar className="h-4 w-4 text-amber-400/80" />
-          <span className="text-sm font-medium text-amber-300">GM Screen</span>
+        <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-amber-600/20 px-2 py-1">
+          <Calendar className="h-3 w-3 text-amber-400/80" />
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-300">GM 2.0</span>
           <Select
             value={selectedSessionId ?? "none"}
             onValueChange={(value) => setSelectedSessionId(value === "none" ? null : value)}
           >
-            <SelectTrigger className="max-w-xs border-amber-600/30 bg-zinc-900 text-zinc-200">
-              <SelectValue placeholder="Sessione corrente" />
+            <SelectTrigger className="h-6 max-w-[14rem] border-amber-600/30 bg-zinc-900 px-2 text-[10px] text-zinc-200">
+              <SelectValue placeholder="Sessione" />
             </SelectTrigger>
             <SelectContent className="border-amber-600/20 bg-zinc-900">
-              <SelectItem value="none" className="text-zinc-300 focus:bg-amber-600/20 focus:text-zinc-100">
-                Nessuna sessione (solo note globali)
+              <SelectItem value="none" className="text-[11px] text-zinc-300 focus:bg-amber-600/20 focus:text-zinc-100">
+                Nessuna sessione
               </SelectItem>
               {sessions.map((session) => (
                 <SelectItem
                   key={session.id}
                   value={session.id}
-                  className="text-zinc-300 focus:bg-amber-600/20 focus:text-zinc-100"
+                  className="text-[11px] text-zinc-300 focus:bg-amber-600/20 focus:text-zinc-100"
                 >
                   {formatSessionLabel(session)}
                 </SelectItem>
@@ -144,11 +144,12 @@ export function GmScreenLegacyLayoutV2({
           {selectedSessionId && (
             <Button
               type="button"
+              size="sm"
               onClick={() => setDebriefOpen(true)}
-              className="ml-auto bg-amber-600 text-zinc-950 hover:bg-amber-500"
+              className="ml-auto h-6 bg-amber-600 px-2 text-[10px] text-zinc-950 hover:bg-amber-500"
             >
-              <Flag className="mr-2 h-4 w-4" />
-              Chiudi Sessione
+              <Flag className="mr-1 h-3 w-3" />
+              Chiudi
             </Button>
           )}
         </div>
@@ -165,7 +166,7 @@ export function GmScreenLegacyLayoutV2({
           />
         )}
 
-        <div className="min-h-0 flex-1 overflow-hidden p-3 md:p-4">
+        <div className="min-h-0 flex-1 overflow-hidden p-1">
           <GmScreenBoard
             campaignId={campaignId}
             currentUserId={currentUserId}
@@ -185,12 +186,7 @@ export function GmScreenLegacyLayoutV2({
           campaignId={campaignId}
           currentUserId={currentUserId}
         />
-        <GmGallerySheet
-          open={galleryOpen}
-          onOpenChange={setGalleryOpen}
-          campaignId={campaignId}
-          campaignType={campaignType}
-        />
+        <GmGallerySheet open={galleryOpen} onOpenChange={setGalleryOpen} campaignId={campaignId} campaignType={campaignType} />
         <GmAudioForgeSheet
           open={audioForgeOpen}
           onOpenChange={setAudioForgeOpen}
