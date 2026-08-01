@@ -14,6 +14,7 @@ export const GM_PANEL_TYPES = [
   "wikiEntity",
   "monsterStat",
   "rulesLookup",
+  "spellsLookup",
 ] as const;
 
 export type GmPanelType = (typeof GM_PANEL_TYPES)[number];

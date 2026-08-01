@@ -12,6 +12,7 @@ import { MissionsPanel } from "./panels/missions-panel";
 import { MapsPanel, FowPanel } from "./panels/maps-fow-panels";
 import { GalleryPanel, WhispersPanel, AudioPanel } from "./panels/tool-sheet-panels";
 import { RulesLookupPanel } from "./panels/rules-lookup-panel";
+import { SpellsLookupPanel } from "./panels/spells-lookup-panel";
 import { MonsterStatPanel } from "./panels/monster-stat-panel";
 import { WikiEntityPanel } from "./panels/wiki-entity-panel";
 
@@ -126,6 +127,14 @@ const LOOKUP_PANELS: GmPanelDefinition[] = [
     render: (props) => <RulesLookupPanel initialQuery={asString(props.query)} />,
   },
   {
+    type: "spellsLookup",
+    label: "Incantesimi",
+    category: "lookup",
+    defaultSize: { w: 4, h: 14, minW: 2, minH: 5 },
+    allowMultiple: true,
+    render: (props) => <SpellsLookupPanel initialQuery={asString(props.query)} />,
+  },
+  {
     type: "monsterStat",
     label: "Statblock mostro",
     category: "lookup",
@@ -173,7 +182,7 @@ export const GM_ADD_MENU_GROUPS: { label: string; types: GmPanelType[] }[] = [
   },
   {
     label: "Lookup",
-    types: ["rulesLookup", "monsterStat", "wikiEntity"],
+    types: ["rulesLookup", "spellsLookup", "monsterStat", "wikiEntity"],
   },
 ];
 
