@@ -1,6 +1,6 @@
 import type { Json } from "@/types/database.types";
 import { parseCampaignAiContextFromDb } from "@/lib/campaign-ai-context";
-import { buildCampaignVisualContextBlock } from "@/lib/ai/generator";
+import { buildCampaignVisualContextBlock } from "@/lib/campaign-context-prompt";
 import {
   buildEntityReferencesPromptBlock,
   buildEntityReferenceSkipReason,
