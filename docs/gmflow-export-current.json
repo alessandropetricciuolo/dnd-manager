@@ -1,12 +1,12 @@
 {
-  "updatedAt": "2026-07-11T12:49:56.270Z",
+  "updatedAt": "2026-08-01T05:36:44.171Z",
   "sourceProject": "Barber & Dragons",
   "targetProject": "gmflow.app",
   "sourceRepoPath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App",
   "targetRepoPath": "/Users/alessandropetricciuolo/Desktop/masto-platform",
   "branch": "main",
-  "lastCommit": "20e2cfd7adc9285103597cdf4a0579a568874b2e",
-  "commitRange": "f3b1190..20e2cfd",
+  "lastCommit": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+  "commitRange": "e2f072a..9bc3a5f",
   "items": [
     {
       "id": "BD-GMFLOW-PKG-2026-07-06-001",
@@ -25123,6 +25123,1397 @@
       "statusCode": "A",
       "createdAt": "2026-07-11T12:49:56.270Z",
       "updatedAt": "2026-07-11T12:49:56.270Z"
+    },
+    {
+      "id": "BD-GMFLOW-e2f072a-001",
+      "title": "AI: page.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/app/generator/page.tsx` modificato nel commit «Aggiunge esportazione JSON nell'anteprima scheda PDF.». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/app/generator/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/generator/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "e2f072a99c08c018022401b0e9eff878eca1d39d",
+      "commitShort": "e2f072a",
+      "commitSubject": "Aggiunge esportazione JSON nell'anteprima scheda PDF.",
+      "statusCode": "M",
+      "createdAt": "2026-07-14T14:42:23.297Z",
+      "updatedAt": "2026-07-14T14:42:23.297Z"
+    },
+    {
+      "id": "BD-GMFLOW-e2f072a-002",
+      "title": "AI: generated-sheet-view.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/components/sheet-generator/generated-sheet-view.tsx` modificato nel commit «Aggiunge esportazione JSON nell'anteprima scheda PDF.». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/components/sheet-generator/generated-sheet-view.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/sheet-generator/generated-sheet-view.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "e2f072a99c08c018022401b0e9eff878eca1d39d",
+      "commitShort": "e2f072a",
+      "commitSubject": "Aggiunge esportazione JSON nell'anteprima scheda PDF.",
+      "statusCode": "M",
+      "createdAt": "2026-07-14T14:42:23.297Z",
+      "updatedAt": "2026-07-14T14:42:23.297Z"
+    },
+    {
+      "id": "BD-GMFLOW-e2f072a-003",
+      "title": "AI: sheet-export-payload.test.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/lib/sheet-generator/__tests__/sheet-export-payload.test.ts` aggiunto nel commit «Aggiunge esportazione JSON nell'anteprima scheda PDF.». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/lib/sheet-generator/__tests__/sheet-export-payload.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/sheet-generator/__tests__/sheet-export-payload.test.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "e2f072a99c08c018022401b0e9eff878eca1d39d",
+      "commitShort": "e2f072a",
+      "commitSubject": "Aggiunge esportazione JSON nell'anteprima scheda PDF.",
+      "statusCode": "A",
+      "createdAt": "2026-07-14T14:42:23.297Z",
+      "updatedAt": "2026-07-14T14:42:23.297Z"
+    },
+    {
+      "id": "BD-GMFLOW-e2f072a-004",
+      "title": "AI: sheet-pdf-payload.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "AI",
+      "priority": "Alta",
+      "description": "File `src/lib/sheet-generator/sheet-pdf-payload.ts` modificato nel commit «Aggiunge esportazione JSON nell'anteprima scheda PDF.». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.",
+      "bdFiles": [
+        "src/lib/sheet-generator/sheet-pdf-payload.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/sheet-generator/sheet-pdf-payload.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "Storage R2",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Costi API OpenRouter",
+        "Dipendenze modello"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Validare model ID OpenRouter e quota per tenant"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "OPENROUTER_API_KEY configurata in gmflow"
+      ],
+      "commitHash": "e2f072a99c08c018022401b0e9eff878eca1d39d",
+      "commitShort": "e2f072a",
+      "commitSubject": "Aggiunge esportazione JSON nell'anteprima scheda PDF.",
+      "statusCode": "M",
+      "createdAt": "2026-07-14T14:42:23.297Z",
+      "updatedAt": "2026-07-14T14:42:23.297Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-001",
+      "title": "OTHER: package-lock.json (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `package-lock.json` modificato nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "package-lock.json"
+      ],
+      "gmflowLikelyFiles": [
+        "src/package-lock.json"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-002",
+      "title": "OTHER: package.json (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `package.json` modificato nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "package.json"
+      ],
+      "gmflowLikelyFiles": [
+        "src/package.json"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-003",
+      "title": "CAMPAIGNS: page.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "CAMPAIGNS",
+      "priority": "Media",
+      "description": "File `src/app/campaigns/[id]/gm-screen-v2/page.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Logica campagne potenzialmente generalizzabile per multi-tenant.",
+      "bdFiles": [
+        "src/app/campaigns/[id]/gm-screen-v2/page.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/campaigns/[id]/gm-screen-v2/page.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi",
+        "SaaS/billing"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "A",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-004",
+      "title": "OTHER: globals.css (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/app/globals.css` modificato nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/app/globals.css"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/globals.css"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-005",
+      "title": "GM_SCREEN: gm-homepage.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/gm-homepage.tsx` modificato nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/gm-homepage.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/gm-homepage.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-006",
+      "title": "GM_SCREEN: gm-quick-actions.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/gm-quick-actions.tsx` modificato nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/gm-quick-actions.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/gm-quick-actions.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-007",
+      "title": "GM_SCREEN: gm-screen-launcher.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/gm-screen-launcher.tsx` modificato nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/gm-screen-launcher.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/gm-screen-launcher.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-008",
+      "title": "GM_SCREEN: gm-screen-layout-v2.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/gm-screen-layout-v2.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/gm-screen-layout-v2.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/gm-screen-layout-v2.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "A",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-009",
+      "title": "GM_SCREEN: gm-screen-legacy-layout-v2.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/gm-screen-legacy-layout-v2.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/gm-screen-legacy-layout-v2.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/gm-screen-legacy-layout-v2.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "A",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-010",
+      "title": "GM_SCREEN: gm-screen-long-layout-v2.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/gm-screen-long-layout-v2.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/gm-screen-long-layout-v2.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/gm-screen-long-layout-v2.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "A",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-011",
+      "title": "GM_SCREEN: gm-screen-long-state.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/gm-screen-long-state.tsx` modificato nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/gm-screen-long-state.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/gm-screen-long-state.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-012",
+      "title": "GM_SCREEN: gm-screen-map-regia.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/gm-screen-map-regia.tsx` modificato nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/gm-screen-map-regia.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/gm-screen-map-regia.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-013",
+      "title": "GM_SCREEN: initiative-tracker.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/initiative-tracker.tsx` modificato nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/initiative-tracker.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/initiative-tracker.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-014",
+      "title": "GM_SCREEN: gm-add-panel-menu.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/gm-add-panel-menu.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/gm-add-panel-menu.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/gm-add-panel-menu.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "A",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-015",
+      "title": "MEDIA_STORAGE: gm-layout-storage.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "MEDIA_STORAGE",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/gm-layout-storage.ts` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Upload/storage media — adattare a R2 o storage gmflow.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/gm-layout-storage.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/gm-layout-storage.ts"
+      ],
+      "requiredAdaptations": [
+        "Storage R2"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Divergenza storage B&D (Telegram) vs gmflow (R2)"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow",
+        "Quale adapter storage usare in gmflow?"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "A",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-016",
+      "title": "GM_SCREEN: gm-panel-chrome.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/gm-panel-chrome.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/gm-panel-chrome.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/gm-panel-chrome.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "A",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-017",
+      "title": "GM_SCREEN: gm-panel-registry.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/gm-panel-registry.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/gm-panel-registry.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/gm-panel-registry.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "A",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-018",
+      "title": "GM_SCREEN: gm-presets.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/gm-presets.ts` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/gm-presets.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/gm-presets.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "A",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-019",
+      "title": "GM_SCREEN: gm-screen-board-context.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/gm-screen-board-context.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/gm-screen-board-context.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/gm-screen-board-context.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "A",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-020",
+      "title": "GM_SCREEN: gm-screen-board.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/gm-screen-board.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/gm-screen-board.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/gm-screen-board.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "A",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-021",
+      "title": "GM_SCREEN: index.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/index.ts` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/index.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/index.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "A",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-022",
+      "title": "GM_SCREEN: calendar-panel.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/panels/calendar-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/panels/calendar-panel.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/panels/calendar-panel.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "A",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-023",
+      "title": "GM_SCREEN: economy-panel.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/panels/economy-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/panels/economy-panel.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/panels/economy-panel.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "A",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-024",
+      "title": "GM_SCREEN: initiative-panel.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/panels/initiative-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/panels/initiative-panel.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/panels/initiative-panel.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "A",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-025",
+      "title": "MAPS: maps-fow-panels.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "MAPS",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/panels/maps-fow-panels.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Feature mappe — verificare allineamento architettura gmflow.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/panels/maps-fow-panels.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/panels/maps-fow-panels.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "A",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-026",
+      "title": "GM_SCREEN: missions-panel.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/panels/missions-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/panels/missions-panel.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/panels/missions-panel.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "A",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-027",
+      "title": "GM_SCREEN: monster-stat-panel.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/panels/monster-stat-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/panels/monster-stat-panel.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/panels/monster-stat-panel.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "A",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-028",
+      "title": "GM_SCREEN: notes-panel.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/panels/notes-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/panels/notes-panel.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/panels/notes-panel.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "A",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-029",
+      "title": "GM_SCREEN: players-xp-panel.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/panels/players-xp-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/panels/players-xp-panel.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/panels/players-xp-panel.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "A",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-030",
+      "title": "GM_SCREEN: rules-lookup-panel.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/panels/rules-lookup-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/panels/rules-lookup-panel.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/panels/rules-lookup-panel.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "A",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-031",
+      "title": "GM_SCREEN: time-panel.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/panels/time-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/panels/time-panel.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/panels/time-panel.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "A",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-032",
+      "title": "GM_SCREEN: tool-sheet-panels.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/panels/tool-sheet-panels.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/panels/tool-sheet-panels.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/panels/tool-sheet-panels.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "A",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-033",
+      "title": "WIKI: wiki-entity-panel.tsx (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "WIKI",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/panels/wiki-entity-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/panels/wiki-entity-panel.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/panels/wiki-entity-panel.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "A",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
+    },
+    {
+      "id": "BD-GMFLOW-9bc3a5f-034",
+      "title": "GM_SCREEN: types.ts (aggiunto)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/types.ts` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/types.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/types.ts"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9bc3a5f248d7c36980ee3504f12ab3134a0d294a",
+      "commitShort": "9bc3a5f",
+      "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
+      "statusCode": "A",
+      "createdAt": "2026-08-01T05:36:44.171Z",
+      "updatedAt": "2026-08-01T05:36:44.171Z"
     }
   ]
 }
