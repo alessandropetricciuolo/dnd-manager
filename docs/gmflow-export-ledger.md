@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-* Data aggiornamento: 2026-08-01T12:35:20.182Z
+* Data aggiornamento: 2026-08-01T16:59:13.657Z
 * Branch corrente: main
-* Ultimo commit analizzato: 9ebb1ec23ca659efbfd15eb494eb8ec3024056c4
-* Range commit analizzato: 5b3b4d5..9ebb1ec
-* Stato generale: 338 voci NEEDS_REVIEW
-* Voci totali: 733 (NEEDS_REVIEW: 338, TO_IMPORT: 319, IMPORTED: 0)
+* Ultimo commit analizzato: c1f20f428f93b582d61e8053bb1b5b748e8f29e2
+* Range commit analizzato: 9679ca1..c1f20f4
+* Stato generale: 271 voci NEEDS_REVIEW
+* Voci totali: 743 (NEEDS_REVIEW: 271, TO_IMPORT: 395, IMPORTED: 0)
 
 ## Delta automatico non revisionato
 
@@ -1011,51 +1011,6 @@ File B&D coinvolti:
 File gmflow probabili:
 
 * src/lib/map-core/coordinates/index.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-94b0f4e-024] OTHER: object-contain.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/lib/map-core/coordinates/object-contain.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/lib/map-core/coordinates/object-contain.ts
-
-File gmflow probabili:
-
-* src/lib/map-core/coordinates/object-contain.ts
 
 Rischi:
 
@@ -7389,51 +7344,6 @@ Criterio di import completato:
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 * OPENROUTER_API_KEY configurata in gmflow
 
-### [BD-GMFLOW-28fe02c-001] OTHER: update-gmflow-export-ledger.mjs (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `scripts/gmflow-export/update-gmflow-export-ledger.mjs` modificato nel commit «chore(gmflow): add July export packages and ledger-only sync script». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* scripts/gmflow-export/update-gmflow-export-ledger.mjs
-
-File gmflow probabili:
-
-* src/scripts/gmflow-export/update-gmflow-export-ledger.mjs
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
 ### [BD-GMFLOW-18f4840-001] OTHER: update-gmflow-export-ledger.mjs (modificato)
 
 Stato:
@@ -12167,53 +12077,6 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
-### [BD-GMFLOW-9bc3a5f-003] CAMPAIGNS: page.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-CAMPAIGNS
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/app/campaigns/[id]/gm-screen-v2/page.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Logica campagne potenzialmente generalizzabile per multi-tenant.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* SaaS/billing
-
-File B&D coinvolti:
-
-* src/app/campaigns/[id]/gm-screen-v2/page.tsx
-
-File gmflow probabili:
-
-* src/app/campaigns/[id]/gm-screen-v2/page.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
 ### [BD-GMFLOW-9bc3a5f-004] OTHER: globals.css (modificato)
 
 Stato:
@@ -12397,144 +12260,6 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
-### [BD-GMFLOW-9bc3a5f-008] GM_SCREEN: gm-screen-layout-v2.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/gm-screen-layout-v2.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/gm-screen-layout-v2.tsx
-
-File gmflow probabili:
-
-* src/components/gm/gm-screen-layout-v2.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-9bc3a5f-009] GM_SCREEN: gm-screen-legacy-layout-v2.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/gm-screen-legacy-layout-v2.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/gm-screen-legacy-layout-v2.tsx
-
-File gmflow probabili:
-
-* src/components/gm/gm-screen-legacy-layout-v2.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-9bc3a5f-010] GM_SCREEN: gm-screen-long-layout-v2.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/gm-screen-long-layout-v2.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/gm-screen-long-layout-v2.tsx
-
-File gmflow probabili:
-
-* src/components/gm/gm-screen-long-layout-v2.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
 ### [BD-GMFLOW-9bc3a5f-011] GM_SCREEN: gm-screen-long-state.tsx (modificato)
 
 Stato:
@@ -12673,973 +12398,6 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
-### [BD-GMFLOW-9bc3a5f-014] GM_SCREEN: gm-add-panel-menu.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/gm-add-panel-menu.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/gm-add-panel-menu.tsx
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/gm-add-panel-menu.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-9bc3a5f-015] MEDIA_STORAGE: gm-layout-storage.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-MEDIA_STORAGE
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/gm-layout-storage.ts` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Upload/storage media — adattare a R2 o storage gmflow.
-
-Adattamenti necessari:
-
-* Storage R2
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/gm-layout-storage.ts
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/gm-layout-storage.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Divergenza storage B&D (Telegram) vs gmflow (R2)
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Quale adapter storage usare in gmflow?
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-9bc3a5f-016] GM_SCREEN: gm-panel-chrome.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/gm-panel-chrome.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/gm-panel-chrome.tsx
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/gm-panel-chrome.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-9bc3a5f-017] GM_SCREEN: gm-panel-registry.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/gm-panel-registry.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/gm-panel-registry.tsx
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/gm-panel-registry.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-9bc3a5f-018] GM_SCREEN: gm-presets.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/gm-presets.ts` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/gm-presets.ts
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/gm-presets.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-9bc3a5f-019] GM_SCREEN: gm-screen-board-context.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/gm-screen-board-context.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/gm-screen-board-context.tsx
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/gm-screen-board-context.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-9bc3a5f-020] GM_SCREEN: gm-screen-board.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/gm-screen-board.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/gm-screen-board.tsx
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/gm-screen-board.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-9bc3a5f-021] GM_SCREEN: index.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/index.ts` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/index.ts
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/index.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-9bc3a5f-022] GM_SCREEN: calendar-panel.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/panels/calendar-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/panels/calendar-panel.tsx
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/panels/calendar-panel.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-9bc3a5f-023] GM_SCREEN: economy-panel.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/panels/economy-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/panels/economy-panel.tsx
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/panels/economy-panel.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-9bc3a5f-024] GM_SCREEN: initiative-panel.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/panels/initiative-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/panels/initiative-panel.tsx
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/panels/initiative-panel.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-9bc3a5f-025] MAPS: maps-fow-panels.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-MAPS
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/panels/maps-fow-panels.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Feature mappe — verificare allineamento architettura gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/panels/maps-fow-panels.tsx
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/panels/maps-fow-panels.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-9bc3a5f-026] GM_SCREEN: missions-panel.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/panels/missions-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/panels/missions-panel.tsx
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/panels/missions-panel.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-9bc3a5f-027] GM_SCREEN: monster-stat-panel.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/panels/monster-stat-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/panels/monster-stat-panel.tsx
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/panels/monster-stat-panel.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-9bc3a5f-028] GM_SCREEN: notes-panel.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/panels/notes-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/panels/notes-panel.tsx
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/panels/notes-panel.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-9bc3a5f-029] GM_SCREEN: players-xp-panel.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/panels/players-xp-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/panels/players-xp-panel.tsx
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/panels/players-xp-panel.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-9bc3a5f-030] GM_SCREEN: rules-lookup-panel.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/panels/rules-lookup-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/panels/rules-lookup-panel.tsx
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/panels/rules-lookup-panel.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-9bc3a5f-031] GM_SCREEN: time-panel.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/panels/time-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/panels/time-panel.tsx
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/panels/time-panel.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-9bc3a5f-032] GM_SCREEN: tool-sheet-panels.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/panels/tool-sheet-panels.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/panels/tool-sheet-panels.tsx
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/panels/tool-sheet-panels.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-9bc3a5f-033] WIKI: wiki-entity-panel.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-WIKI
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/panels/wiki-entity-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/panels/wiki-entity-panel.tsx
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/panels/wiki-entity-panel.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-9bc3a5f-034] GM_SCREEN: types.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/types.ts` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/types.ts
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/types.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
 ### [BD-GMFLOW-d9bd4d9-001] OTHER: globals.css (modificato)
 
 Stato:
@@ -13716,605 +12474,6 @@ File B&D coinvolti:
 File gmflow probabili:
 
 * src/components/gm/gm-screen-launcher.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d9bd4d9-003] GM_SCREEN: gm-screen-legacy-layout-v2.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/gm-screen-legacy-layout-v2.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/gm-screen-legacy-layout-v2.tsx
-
-File gmflow probabili:
-
-* src/components/gm/gm-screen-legacy-layout-v2.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d9bd4d9-004] GM_SCREEN: gm-screen-long-layout-v2.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/gm-screen-long-layout-v2.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/gm-screen-long-layout-v2.tsx
-
-File gmflow probabili:
-
-* src/components/gm/gm-screen-long-layout-v2.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d9bd4d9-005] GM_SCREEN: gm-add-panel-menu.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/gm-add-panel-menu.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/gm-add-panel-menu.tsx
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/gm-add-panel-menu.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d9bd4d9-006] MEDIA_STORAGE: gm-layout-storage.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-MEDIA_STORAGE
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/gm-layout-storage.ts` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Upload/storage media — adattare a R2 o storage gmflow.
-
-Adattamenti necessari:
-
-* Storage R2
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/gm-layout-storage.ts
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/gm-layout-storage.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Divergenza storage B&D (Telegram) vs gmflow (R2)
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Quale adapter storage usare in gmflow?
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d9bd4d9-007] GM_SCREEN: gm-panel-chrome.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/gm-panel-chrome.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/gm-panel-chrome.tsx
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/gm-panel-chrome.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d9bd4d9-008] GM_SCREEN: gm-panel-registry.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/gm-panel-registry.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/gm-panel-registry.tsx
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/gm-panel-registry.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d9bd4d9-009] GM_SCREEN: gm-presets.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/gm-presets.ts` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/gm-presets.ts
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/gm-presets.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d9bd4d9-010] GM_SCREEN: gm-screen-board.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/gm-screen-board.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/gm-screen-board.tsx
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/gm-screen-board.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d9bd4d9-011] GM_SCREEN: monster-stat-panel.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/panels/monster-stat-panel.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/panels/monster-stat-panel.tsx
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/panels/monster-stat-panel.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d9bd4d9-012] GM_SCREEN: rules-lookup-panel.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/panels/rules-lookup-panel.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/panels/rules-lookup-panel.tsx
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/panels/rules-lookup-panel.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d9bd4d9-013] GM_SCREEN: fivee-rules-view.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/renderers/fivee-rules-view.tsx` aggiunto nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/renderers/fivee-rules-view.tsx
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/renderers/fivee-rules-view.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d9bd4d9-014] GM_SCREEN: fivee-statblock-view.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/renderers/fivee-statblock-view.tsx` aggiunto nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/renderers/fivee-statblock-view.tsx
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/renderers/fivee-statblock-view.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d9bd4d9-015] GM_SCREEN: types.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/types.ts` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/types.ts
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/types.ts
 
 Rischi:
 
@@ -14466,423 +12625,7 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
-### [BD-GMFLOW-d9bd4d9-019] OTHER: dense-rules-parser.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/lib/manuals/dense-rules-parser.ts` aggiunto nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/lib/manuals/dense-rules-parser.ts
-
-File gmflow probabili:
-
-* src/lib/manuals/dense-rules-parser.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d9bd4d9-020] OTHER: dense-statblock-parser.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/lib/manuals/dense-statblock-parser.ts` aggiunto nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/lib/manuals/dense-statblock-parser.ts
-
-File gmflow probabili:
-
-* src/lib/manuals/dense-statblock-parser.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-d9bd4d9-021] OTHER: phb-conditions.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/lib/manuals/phb-conditions.ts` aggiunto nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/lib/manuals/phb-conditions.ts
-
-File gmflow probabili:
-
-* src/lib/manuals/phb-conditions.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-b14782e-001] AI: prompt-debug-client.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/app/admin/ai-image-prompt-debug/prompt-debug-client.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/app/admin/ai-image-prompt-debug/prompt-debug-client.tsx
-
-File gmflow probabili:
-
-* src/app/admin/ai-image-prompt-debug/prompt-debug-client.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-b14782e-002] ADMIN: page.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-ADMIN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/app/admin/knowledge/page.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Tool admin interni — importare solo se gmflow ha pannello equivalente.
-
-Adattamenti necessari:
-
-* SaaS/billing
-
-File B&D coinvolti:
-
-* src/app/admin/knowledge/page.tsx
-
-File gmflow probabili:
-
-* src/app/admin/knowledge/page.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* gmflow ha equivalente admin o è solo tooling B&D?
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-b14782e-003] OTHER: globals.css (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/app/globals.css` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/app/globals.css
-
-File gmflow probabili:
-
-* src/app/globals.css
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-b14782e-004] ADMIN: rules-catalog-ingest-controls.tsx (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-ADMIN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/admin/rules-catalog-ingest-controls.tsx` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Tool admin interni — importare solo se gmflow ha pannello equivalente.
-
-Adattamenti necessari:
-
-* SaaS/billing
-
-File B&D coinvolti:
-
-* src/components/admin/rules-catalog-ingest-controls.tsx
-
-File gmflow probabili:
-
-* src/components/admin/rules-catalog-ingest-controls.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* gmflow ha equivalente admin o è solo tooling B&D?
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-b14782e-005] UI_UX: exploration-map-stage.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-UI_UX
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/exploration/exploration-map-stage.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Miglioramento interfaccia — valutare design system gmflow.
-
-Adattamenti necessari:
-
-* i18n
-
-File B&D coinvolti:
-
-* src/components/exploration/exploration-map-stage.tsx
-
-File gmflow probabili:
-
-* src/components/exploration/exploration-map-stage.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Divergenza design system / CSS tema
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-b14782e-006] UI_UX: vista-dall-alto-client.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-UI_UX
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/exploration/vista-dall-alto-client.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Miglioramento interfaccia — valutare design system gmflow.
-
-Adattamenti necessari:
-
-* i18n
-
-File B&D coinvolti:
-
-* src/components/exploration/vista-dall-alto-client.tsx
-
-File gmflow probabili:
-
-* src/components/exploration/vista-dall-alto-client.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Divergenza design system / CSS tema
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-b14782e-007] GM_SCREEN: gm-screen-board.tsx (modificato)
+### [BD-GMFLOW-c1f20f4-001] GM_SCREEN: rules-lookup-panel.tsx (modificato)
 
 Stato:
 NEEDS_REVIEW
@@ -14895,53 +12638,7 @@ Media
 
 Descrizione:
 
-* File `src/components/gm/screen-grid/gm-screen-board.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Schermo GM / combattimento — alto valore per GM professionisti.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/gm/screen-grid/gm-screen-board.tsx
-
-File gmflow probabili:
-
-* src/components/gm/screen-grid/gm-screen-board.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-b14782e-008] GM_SCREEN: rules-lookup-panel.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-GM_SCREEN
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/gm/screen-grid/panels/rules-lookup-panel.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+* File `src/components/gm/screen-grid/panels/rules-lookup-panel.tsx` modificato nel commit «feat(gm): split spellcasting in dense statblocks and harden PHB condition extract». Classificazione automatica — richiede revisione umana.
 
 Perché potrebbe servire a gmflow:
 
@@ -14974,24 +12671,24 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
-### [BD-GMFLOW-b14782e-009] WIKI: create-entity-dialog.tsx (modificato)
+### [BD-GMFLOW-c1f20f4-002] GM_SCREEN: fivee-statblock-view.tsx (modificato)
 
 Stato:
 NEEDS_REVIEW
 
 Categoria:
-WIKI
+GM_SCREEN
 
 Priorità per gmflow:
 Media
 
 Descrizione:
 
-* File `src/components/wiki/create-entity-dialog.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+* File `src/components/gm/screen-grid/renderers/fivee-statblock-view.tsx` modificato nel commit «feat(gm): split spellcasting in dense statblocks and harden PHB condition extract». Classificazione automatica — richiede revisione umana.
 
 Perché potrebbe servire a gmflow:
 
-* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
+* Schermo GM / combattimento — alto valore per GM professionisti.
 
 Adattamenti necessari:
 
@@ -15000,11 +12697,11 @@ Adattamenti necessari:
 
 File B&D coinvolti:
 
-* src/components/wiki/create-entity-dialog.tsx
+* src/components/gm/screen-grid/renderers/fivee-statblock-view.tsx
 
 File gmflow probabili:
 
-* src/components/wiki/create-entity-dialog.tsx
+* src/components/gm/screen-grid/renderers/fivee-statblock-view.tsx
 
 Rischi:
 
@@ -15020,105 +12717,7 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
-### [BD-GMFLOW-b14782e-010] WIKI: edit-entity-dialog.tsx (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-WIKI
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/components/wiki/edit-entity-dialog.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-
-File B&D coinvolti:
-
-* src/components/wiki/edit-entity-dialog.tsx
-
-File gmflow probabili:
-
-* src/components/wiki/edit-entity-dialog.tsx
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-b14782e-011] AI: ai-wiki-chain.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/lib/actions/ai-wiki-chain.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/lib/actions/ai-wiki-chain.ts
-
-File gmflow probabili:
-
-* src/lib/actions/ai-wiki-chain.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-b14782e-012] OTHER: rules-catalog-ingest-actions.ts (aggiunto)
+### [BD-GMFLOW-c1f20f4-003] OTHER: dense-parsers.test.ts (modificato)
 
 Stato:
 NEEDS_REVIEW
@@ -15131,7 +12730,7 @@ Media
 
 Descrizione:
 
-* File `src/lib/actions/rules-catalog-ingest-actions.ts` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+* File `src/lib/manuals/__tests__/dense-parsers.test.ts` modificato nel commit «feat(gm): split spellcasting in dense statblocks and harden PHB condition extract». Classificazione automatica — richiede revisione umana.
 
 Perché potrebbe servire a gmflow:
 
@@ -15143,11 +12742,11 @@ Adattamenti necessari:
 
 File B&D coinvolti:
 
-* src/lib/actions/rules-catalog-ingest-actions.ts
+* src/lib/manuals/__tests__/dense-parsers.test.ts
 
 File gmflow probabili:
 
-* src/lib/actions/rules-catalog-ingest-actions.ts
+* src/lib/manuals/__tests__/dense-parsers.test.ts
 
 Rischi:
 
@@ -15163,7 +12762,7 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
-### [BD-GMFLOW-b14782e-013] OTHER: rules-catalog-lookup-actions.ts (aggiunto)
+### [BD-GMFLOW-c1f20f4-004] OTHER: dense-statblock-parser.ts (modificato)
 
 Stato:
 NEEDS_REVIEW
@@ -15176,7 +12775,7 @@ Media
 
 Descrizione:
 
-* File `src/lib/actions/rules-catalog-lookup-actions.ts` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+* File `src/lib/manuals/dense-statblock-parser.ts` modificato nel commit «feat(gm): split spellcasting in dense statblocks and harden PHB condition extract». Classificazione automatica — richiede revisione umana.
 
 Perché potrebbe servire a gmflow:
 
@@ -15188,11 +12787,11 @@ Adattamenti necessari:
 
 File B&D coinvolti:
 
-* src/lib/actions/rules-catalog-lookup-actions.ts
+* src/lib/manuals/dense-statblock-parser.ts
 
 File gmflow probabili:
 
-* src/lib/actions/rules-catalog-lookup-actions.ts
+* src/lib/manuals/dense-statblock-parser.ts
 
 Rischi:
 
@@ -15208,319 +12807,7 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
-### [BD-GMFLOW-b14782e-014] AI: image-prompt-item-lore.test.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/lib/ai/__tests__/image-prompt-item-lore.test.ts` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/lib/ai/__tests__/image-prompt-item-lore.test.ts
-
-File gmflow probabili:
-
-* src/lib/ai/__tests__/image-prompt-item-lore.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-b14782e-015] AI: image-prompt-builder.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/lib/ai/image-prompt-builder.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/lib/ai/image-prompt-builder.ts
-
-File gmflow probabili:
-
-* src/lib/ai/image-prompt-builder.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-b14782e-016] AI: image-prompt-item-lore.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/lib/ai/image-prompt-item-lore.ts` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/lib/ai/image-prompt-item-lore.ts
-
-File gmflow probabili:
-
-* src/lib/ai/image-prompt-item-lore.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-b14782e-017] AI: image-refine-prompt.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/lib/ai/image-refine-prompt.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/lib/ai/image-refine-prompt.ts
-
-File gmflow probabili:
-
-* src/lib/ai/image-refine-prompt.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-b14782e-018] AI: wiki-npc-params.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/lib/ai/wiki-npc-params.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/lib/ai/wiki-npc-params.ts
-
-File gmflow probabili:
-
-* src/lib/ai/wiki-npc-params.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-b14782e-019] AI: build-prompt.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/lib/image-benchmark/build-prompt.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/lib/image-benchmark/build-prompt.ts
-
-File gmflow probabili:
-
-* src/lib/image-benchmark/build-prompt.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-b14782e-020] OTHER: extract-phb-conditions.test.ts (aggiunto)
+### [BD-GMFLOW-c1f20f4-005] OTHER: extract-phb-conditions.test.ts (modificato)
 
 Stato:
 NEEDS_REVIEW
@@ -15533,7 +12820,7 @@ Media
 
 Descrizione:
 
-* File `src/lib/manuals/rules-catalog/__tests__/extract-phb-conditions.test.ts` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+* File `src/lib/manuals/rules-catalog/__tests__/extract-phb-conditions.test.ts` modificato nel commit «feat(gm): split spellcasting in dense statblocks and harden PHB condition extract». Classificazione automatica — richiede revisione umana.
 
 Perché potrebbe servire a gmflow:
 
@@ -15565,7 +12852,7 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
-### [BD-GMFLOW-b14782e-021] OTHER: extract-phb-conditions.ts (aggiunto)
+### [BD-GMFLOW-c1f20f4-006] OTHER: extract-phb-conditions.ts (modificato)
 
 Stato:
 NEEDS_REVIEW
@@ -15578,7 +12865,7 @@ Media
 
 Descrizione:
 
-* File `src/lib/manuals/rules-catalog/extract-phb-conditions.ts` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+* File `src/lib/manuals/rules-catalog/extract-phb-conditions.ts` modificato nel commit «feat(gm): split spellcasting in dense statblocks and harden PHB condition extract». Classificazione automatica — richiede revisione umana.
 
 Perché potrebbe servire a gmflow:
 
@@ -15610,388 +12897,7 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
-### [BD-GMFLOW-b14782e-022] OTHER: types.ts (aggiunto)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/lib/manuals/rules-catalog/types.ts` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/lib/manuals/rules-catalog/types.ts
-
-File gmflow probabili:
-
-* src/lib/manuals/rules-catalog/types.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-b14782e-023] OTHER: coordinates.test.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/lib/map-core/__tests__/coordinates.test.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/lib/map-core/__tests__/coordinates.test.ts
-
-File gmflow probabili:
-
-* src/lib/map-core/__tests__/coordinates.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-b14782e-024] OTHER: index.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/lib/map-core/coordinates/index.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/lib/map-core/coordinates/index.ts
-
-File gmflow probabili:
-
-* src/lib/map-core/coordinates/index.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-b14782e-025] OTHER: object-contain.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/lib/map-core/coordinates/object-contain.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/lib/map-core/coordinates/object-contain.ts
-
-File gmflow probabili:
-
-* src/lib/map-core/coordinates/object-contain.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-b14782e-026] AI: wiki-npc-params.test.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/__tests__/wiki-npc-params.test.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/__tests__/wiki-npc-params.test.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/__tests__/wiki-npc-params.test.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-b14782e-027] AI: chat-assistant.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/chat-assistant.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/chat-assistant.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-b14782e-028] AI: wiki-proposal-builder.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-AI
-
-Priorità per gmflow:
-Alta
-
-Descrizione:
-
-* File `src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
-
-Adattamenti necessari:
-
-* Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
-
-File B&D coinvolti:
-
-* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
-
-File gmflow probabili:
-
-* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-### [BD-GMFLOW-b14782e-029] OTHER: database.types.ts (modificato)
-
-Stato:
-NEEDS_REVIEW
-
-Categoria:
-OTHER
-
-Priorità per gmflow:
-Media
-
-Descrizione:
-
-* File `src/types/database.types.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
-
-Perché potrebbe servire a gmflow:
-
-* Modifica generica — valutare manualmente rilevanza gmflow.
-
-Adattamenti necessari:
-
-* altro
-
-File B&D coinvolti:
-
-* src/types/database.types.ts
-
-File gmflow probabili:
-
-* src/types/database.types.ts
-
-Rischi:
-
-* Classificazione automatica non verificata
-
-Decisioni richieste:
-
-* Confermare se la modifica è rilevante per gmflow
-
-Criterio di import completato:
-
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-
-### [BD-GMFLOW-b14782e-030] DATABASE: 20260801140000_rules_catalog.sql (aggiunto)
+### [BD-GMFLOW-c1f20f4-007] DATABASE: 20260801140000_rules_catalog.sql (modificato)
 
 Stato:
 NEEDS_REVIEW
@@ -16004,7 +12910,7 @@ Alta
 
 Descrizione:
 
-* File `supabase/migrations/20260801140000_rules_catalog.sql` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+* File `supabase/migrations/20260801140000_rules_catalog.sql` modificato nel commit «feat(gm): split spellcasting in dense statblocks and harden PHB condition extract». Classificazione automatica — richiede revisione umana.
 
 Perché potrebbe servire a gmflow:
 
@@ -16039,59 +12945,57 @@ Criterio di import completato:
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 * RLS/policy verificate per multi-tenant
 
-### [BD-GMFLOW-9ebb1ec-001] AI: image-prompt-builder.ts (modificato)
+## Modifiche revisionate manualmente
+
+### [BD-GMFLOW-PKG-2026-08-01-001] Package: GM Screen 2.0, Rules Catalog, AI framing, FoW coords
 
 Stato:
-NEEDS_REVIEW
+TO_IMPORT
 
 Categoria:
-AI
+GM_SCREEN
 
 Priorità per gmflow:
 Alta
 
 Descrizione:
 
-* File `src/lib/ai/image-prompt-builder.ts` modificato nel commit «fix(ai): avoid server supabase import via image-prompt-builder». Classificazione automatica — richiede revisione umana.
+* Export 1 ago 2026: GM Screen 2.0 modulare, dense parsers 5e, rules_catalog condizioni PHB, framing AI item/lore, fix image-prompt-builder client, FoW contain coords, resize pannelli.
 
 Perché potrebbe servire a gmflow:
 
-* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+* Screen GM modulare SaaS + catalogo regole tipizzato + fix AI/FoW critici.
 
 Adattamenti necessari:
 
 * Multi-tenant
-* Permessi
-* Storage R2
-* sicurezza
+* RLS gmflow-native
+* Design system
+* react-grid-layout
 
 File B&D coinvolti:
 
-* src/lib/ai/image-prompt-builder.ts
+* docs/gmflow-export-packages/2026-08-01-gm-screen-rules-ai-maps-export.md
 
 File gmflow probabili:
 
-* src/lib/ai/image-prompt-builder.ts
+* docs/imports/gmflow-export-packages/2026-08-01-gm-screen-rules-ai-maps-export.md
 
 Rischi:
 
-* Classificazione automatica non verificata
-* Costi API OpenRouter
-* Dipendenze modello
+* Non importare RLS rules_catalog
+* Bundle react-grid-layout
+* NEEDS_DECISION v2 vs classic screen
 
 Decisioni richieste:
 
-* Confermare se la modifica è rilevante per gmflow
-* Validare model ID OpenRouter e quota per tenant
+* GM Screen 2.0 sostituisce o affianca lo screen classico in gmflow?
 
 Criterio di import completato:
 
-* Codice portato in gmflow con adattamenti documentati
-* Test minimi superati
-* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
-* OPENROUTER_API_KEY configurata in gmflow
-
-## Modifiche revisionate manualmente
+* Package importato
+* test dense-parsers + coordinates + image-prompt-item-lore
+* Zero CREATE POLICY B&D rules_catalog
 
 ### [BD-GMFLOW-PKG-2026-07-06-001] Package: Funzionalità e bugfix luglio 2026
 
@@ -17307,6 +14211,51 @@ File B&D coinvolti:
 File gmflow probabili:
 
 * src/app/campaigns/scene-document-actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-94b0f4e-024] OTHER: object-contain.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/coordinates/object-contain.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/coordinates/object-contain.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/coordinates/object-contain.ts
 
 Rischi:
 
@@ -31905,6 +28854,3473 @@ Criterio di import completato:
 * Test minimi superati
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 
+### [BD-GMFLOW-9bc3a5f-003] CAMPAIGNS: page.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+CAMPAIGNS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/campaigns/[id]/gm-screen-v2/page.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Logica campagne potenzialmente generalizzabile per multi-tenant.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/campaigns/[id]/gm-screen-v2/page.tsx
+
+File gmflow probabili:
+
+* src/app/campaigns/[id]/gm-screen-v2/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-9bc3a5f-008] GM_SCREEN: gm-screen-layout-v2.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/gm-screen-layout-v2.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/gm-screen-layout-v2.tsx
+
+File gmflow probabili:
+
+* src/components/gm/gm-screen-layout-v2.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-9bc3a5f-009] GM_SCREEN: gm-screen-legacy-layout-v2.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/gm-screen-legacy-layout-v2.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/gm-screen-legacy-layout-v2.tsx
+
+File gmflow probabili:
+
+* src/components/gm/gm-screen-legacy-layout-v2.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-9bc3a5f-010] GM_SCREEN: gm-screen-long-layout-v2.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/gm-screen-long-layout-v2.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/gm-screen-long-layout-v2.tsx
+
+File gmflow probabili:
+
+* src/components/gm/gm-screen-long-layout-v2.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-9bc3a5f-014] GM_SCREEN: gm-add-panel-menu.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/gm-add-panel-menu.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/gm-add-panel-menu.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/gm-add-panel-menu.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-9bc3a5f-015] MEDIA_STORAGE: gm-layout-storage.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+MEDIA_STORAGE
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/gm-layout-storage.ts` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Upload/storage media — adattare a R2 o storage gmflow.
+
+Adattamenti necessari:
+
+* Storage R2
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/gm-layout-storage.ts
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/gm-layout-storage.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza storage B&D (Telegram) vs gmflow (R2)
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Quale adapter storage usare in gmflow?
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-9bc3a5f-016] GM_SCREEN: gm-panel-chrome.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/gm-panel-chrome.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/gm-panel-chrome.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/gm-panel-chrome.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-9bc3a5f-017] GM_SCREEN: gm-panel-registry.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/gm-panel-registry.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/gm-panel-registry.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/gm-panel-registry.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-9bc3a5f-018] GM_SCREEN: gm-presets.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/gm-presets.ts` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/gm-presets.ts
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/gm-presets.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-9bc3a5f-019] GM_SCREEN: gm-screen-board-context.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/gm-screen-board-context.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/gm-screen-board-context.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/gm-screen-board-context.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-9bc3a5f-020] GM_SCREEN: gm-screen-board.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/gm-screen-board.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/gm-screen-board.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/gm-screen-board.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-9bc3a5f-021] GM_SCREEN: index.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/index.ts` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/index.ts
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/index.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-9bc3a5f-022] GM_SCREEN: calendar-panel.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/panels/calendar-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/panels/calendar-panel.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/panels/calendar-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-9bc3a5f-023] GM_SCREEN: economy-panel.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/panels/economy-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/panels/economy-panel.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/panels/economy-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-9bc3a5f-024] GM_SCREEN: initiative-panel.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/panels/initiative-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/panels/initiative-panel.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/panels/initiative-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-9bc3a5f-025] MAPS: maps-fow-panels.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+MAPS
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/panels/maps-fow-panels.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Feature mappe — verificare allineamento architettura gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/panels/maps-fow-panels.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/panels/maps-fow-panels.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-9bc3a5f-026] GM_SCREEN: missions-panel.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/panels/missions-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/panels/missions-panel.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/panels/missions-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-9bc3a5f-027] GM_SCREEN: monster-stat-panel.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/panels/monster-stat-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/panels/monster-stat-panel.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/panels/monster-stat-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-9bc3a5f-028] GM_SCREEN: notes-panel.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/panels/notes-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/panels/notes-panel.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/panels/notes-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-9bc3a5f-029] GM_SCREEN: players-xp-panel.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/panels/players-xp-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/panels/players-xp-panel.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/panels/players-xp-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-9bc3a5f-030] GM_SCREEN: rules-lookup-panel.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/panels/rules-lookup-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/panels/rules-lookup-panel.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/panels/rules-lookup-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-9bc3a5f-031] GM_SCREEN: time-panel.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/panels/time-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/panels/time-panel.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/panels/time-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-9bc3a5f-032] GM_SCREEN: tool-sheet-panels.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/panels/tool-sheet-panels.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/panels/tool-sheet-panels.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/panels/tool-sheet-panels.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-9bc3a5f-033] WIKI: wiki-entity-panel.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+WIKI
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/panels/wiki-entity-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/panels/wiki-entity-panel.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/panels/wiki-entity-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-9bc3a5f-034] GM_SCREEN: types.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/types.ts` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/types.ts
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/types.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-003] GM_SCREEN: gm-screen-legacy-layout-v2.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/gm-screen-legacy-layout-v2.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/gm-screen-legacy-layout-v2.tsx
+
+File gmflow probabili:
+
+* src/components/gm/gm-screen-legacy-layout-v2.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-004] GM_SCREEN: gm-screen-long-layout-v2.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/gm-screen-long-layout-v2.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/gm-screen-long-layout-v2.tsx
+
+File gmflow probabili:
+
+* src/components/gm/gm-screen-long-layout-v2.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-005] GM_SCREEN: gm-add-panel-menu.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/gm-add-panel-menu.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/gm-add-panel-menu.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/gm-add-panel-menu.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-006] MEDIA_STORAGE: gm-layout-storage.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+MEDIA_STORAGE
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/gm-layout-storage.ts` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Upload/storage media — adattare a R2 o storage gmflow.
+
+Adattamenti necessari:
+
+* Storage R2
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/gm-layout-storage.ts
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/gm-layout-storage.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza storage B&D (Telegram) vs gmflow (R2)
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Quale adapter storage usare in gmflow?
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-007] GM_SCREEN: gm-panel-chrome.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/gm-panel-chrome.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/gm-panel-chrome.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/gm-panel-chrome.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-008] GM_SCREEN: gm-panel-registry.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/gm-panel-registry.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/gm-panel-registry.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/gm-panel-registry.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-009] GM_SCREEN: gm-presets.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/gm-presets.ts` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/gm-presets.ts
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/gm-presets.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-010] GM_SCREEN: gm-screen-board.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/gm-screen-board.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/gm-screen-board.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/gm-screen-board.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-011] GM_SCREEN: monster-stat-panel.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/panels/monster-stat-panel.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/panels/monster-stat-panel.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/panels/monster-stat-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-012] GM_SCREEN: rules-lookup-panel.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/panels/rules-lookup-panel.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/panels/rules-lookup-panel.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/panels/rules-lookup-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-013] GM_SCREEN: fivee-rules-view.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/renderers/fivee-rules-view.tsx` aggiunto nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/renderers/fivee-rules-view.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/renderers/fivee-rules-view.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-014] GM_SCREEN: fivee-statblock-view.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/renderers/fivee-statblock-view.tsx` aggiunto nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/renderers/fivee-statblock-view.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/renderers/fivee-statblock-view.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-015] GM_SCREEN: types.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/types.ts` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/types.ts
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/types.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-019] OTHER: dense-rules-parser.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/manuals/dense-rules-parser.ts` aggiunto nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/manuals/dense-rules-parser.ts
+
+File gmflow probabili:
+
+* src/lib/manuals/dense-rules-parser.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-020] OTHER: dense-statblock-parser.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/manuals/dense-statblock-parser.ts` aggiunto nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/manuals/dense-statblock-parser.ts
+
+File gmflow probabili:
+
+* src/lib/manuals/dense-statblock-parser.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-d9bd4d9-021] OTHER: phb-conditions.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/manuals/phb-conditions.ts` aggiunto nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/manuals/phb-conditions.ts
+
+File gmflow probabili:
+
+* src/lib/manuals/phb-conditions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-001] AI: prompt-debug-client.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/app/admin/ai-image-prompt-debug/prompt-debug-client.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/app/admin/ai-image-prompt-debug/prompt-debug-client.tsx
+
+File gmflow probabili:
+
+* src/app/admin/ai-image-prompt-debug/prompt-debug-client.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-b14782e-002] ADMIN: page.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+ADMIN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/admin/knowledge/page.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Tool admin interni — importare solo se gmflow ha pannello equivalente.
+
+Adattamenti necessari:
+
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/app/admin/knowledge/page.tsx
+
+File gmflow probabili:
+
+* src/app/admin/knowledge/page.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* gmflow ha equivalente admin o è solo tooling B&D?
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-003] OTHER: globals.css (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/globals.css` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/app/globals.css
+
+File gmflow probabili:
+
+* src/app/globals.css
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-004] ADMIN: rules-catalog-ingest-controls.tsx (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+ADMIN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/admin/rules-catalog-ingest-controls.tsx` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Tool admin interni — importare solo se gmflow ha pannello equivalente.
+
+Adattamenti necessari:
+
+* SaaS/billing
+
+File B&D coinvolti:
+
+* src/components/admin/rules-catalog-ingest-controls.tsx
+
+File gmflow probabili:
+
+* src/components/admin/rules-catalog-ingest-controls.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* gmflow ha equivalente admin o è solo tooling B&D?
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-005] UI_UX: exploration-map-stage.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/exploration/exploration-map-stage.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/exploration/exploration-map-stage.tsx
+
+File gmflow probabili:
+
+* src/components/exploration/exploration-map-stage.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-006] UI_UX: vista-dall-alto-client.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+UI_UX
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/exploration/vista-dall-alto-client.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Miglioramento interfaccia — valutare design system gmflow.
+
+Adattamenti necessari:
+
+* i18n
+
+File B&D coinvolti:
+
+* src/components/exploration/vista-dall-alto-client.tsx
+
+File gmflow probabili:
+
+* src/components/exploration/vista-dall-alto-client.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Divergenza design system / CSS tema
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-007] GM_SCREEN: gm-screen-board.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/gm-screen-board.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/gm-screen-board.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/gm-screen-board.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-008] GM_SCREEN: rules-lookup-panel.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/panels/rules-lookup-panel.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/panels/rules-lookup-panel.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/panels/rules-lookup-panel.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-009] WIKI: create-entity-dialog.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+WIKI
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/wiki/create-entity-dialog.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/wiki/create-entity-dialog.tsx
+
+File gmflow probabili:
+
+* src/components/wiki/create-entity-dialog.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-010] WIKI: edit-entity-dialog.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+WIKI
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/wiki/edit-entity-dialog.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Funzionalità wiki/lore rilevante per il prodotto SaaS multi-campagna.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/wiki/edit-entity-dialog.tsx
+
+File gmflow probabili:
+
+* src/components/wiki/edit-entity-dialog.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-011] AI: ai-wiki-chain.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/actions/ai-wiki-chain.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/actions/ai-wiki-chain.ts
+
+File gmflow probabili:
+
+* src/lib/actions/ai-wiki-chain.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-b14782e-012] OTHER: rules-catalog-ingest-actions.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/actions/rules-catalog-ingest-actions.ts` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/actions/rules-catalog-ingest-actions.ts
+
+File gmflow probabili:
+
+* src/lib/actions/rules-catalog-ingest-actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-013] OTHER: rules-catalog-lookup-actions.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/actions/rules-catalog-lookup-actions.ts` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/actions/rules-catalog-lookup-actions.ts
+
+File gmflow probabili:
+
+* src/lib/actions/rules-catalog-lookup-actions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-014] AI: image-prompt-item-lore.test.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/ai/__tests__/image-prompt-item-lore.test.ts` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/ai/__tests__/image-prompt-item-lore.test.ts
+
+File gmflow probabili:
+
+* src/lib/ai/__tests__/image-prompt-item-lore.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-b14782e-015] AI: image-prompt-builder.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/ai/image-prompt-builder.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/ai/image-prompt-builder.ts
+
+File gmflow probabili:
+
+* src/lib/ai/image-prompt-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-b14782e-016] AI: image-prompt-item-lore.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/ai/image-prompt-item-lore.ts` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/ai/image-prompt-item-lore.ts
+
+File gmflow probabili:
+
+* src/lib/ai/image-prompt-item-lore.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-b14782e-017] AI: image-refine-prompt.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/ai/image-refine-prompt.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/ai/image-refine-prompt.ts
+
+File gmflow probabili:
+
+* src/lib/ai/image-refine-prompt.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-b14782e-018] AI: wiki-npc-params.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/ai/wiki-npc-params.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/ai/wiki-npc-params.ts
+
+File gmflow probabili:
+
+* src/lib/ai/wiki-npc-params.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-b14782e-019] AI: build-prompt.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/image-benchmark/build-prompt.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/image-benchmark/build-prompt.ts
+
+File gmflow probabili:
+
+* src/lib/image-benchmark/build-prompt.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-b14782e-020] OTHER: extract-phb-conditions.test.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/manuals/rules-catalog/__tests__/extract-phb-conditions.test.ts` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/manuals/rules-catalog/__tests__/extract-phb-conditions.test.ts
+
+File gmflow probabili:
+
+* src/lib/manuals/rules-catalog/__tests__/extract-phb-conditions.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-021] OTHER: extract-phb-conditions.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/manuals/rules-catalog/extract-phb-conditions.ts` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/manuals/rules-catalog/extract-phb-conditions.ts
+
+File gmflow probabili:
+
+* src/lib/manuals/rules-catalog/extract-phb-conditions.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-022] OTHER: types.ts (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/manuals/rules-catalog/types.ts` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/manuals/rules-catalog/types.ts
+
+File gmflow probabili:
+
+* src/lib/manuals/rules-catalog/types.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-023] OTHER: coordinates.test.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/__tests__/coordinates.test.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/__tests__/coordinates.test.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/__tests__/coordinates.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-024] OTHER: index.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/coordinates/index.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/coordinates/index.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/coordinates/index.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-025] OTHER: object-contain.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/lib/map-core/coordinates/object-contain.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/lib/map-core/coordinates/object-contain.ts
+
+File gmflow probabili:
+
+* src/lib/map-core/coordinates/object-contain.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-026] AI: wiki-npc-params.test.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/__tests__/wiki-npc-params.test.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/__tests__/wiki-npc-params.test.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/__tests__/wiki-npc-params.test.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-b14782e-027] AI: chat-assistant.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/chat-assistant.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-b14782e-028] AI: wiki-proposal-builder.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
+
+File gmflow probabili:
+
+* src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-b14782e-029] OTHER: database.types.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/types/database.types.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/types/database.types.ts
+
+File gmflow probabili:
+
+* src/types/database.types.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-b14782e-030] DATABASE: 20260801140000_rules_catalog.sql (aggiunto)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+DATABASE
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `supabase/migrations/20260801140000_rules_catalog.sql` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schema o migrazione DB — valutare impatto RLS e tenant isolation.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* sicurezza
+
+File B&D coinvolti:
+
+* supabase/migrations/20260801140000_rules_catalog.sql
+
+File gmflow probabili:
+
+* supabase/migrations/20260801140000_rules_catalog.sql
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Impatto RLS / isolamento tenant
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* RLS/policy verificate per multi-tenant
+
+### [BD-GMFLOW-9ebb1ec-001] AI: image-prompt-builder.ts (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+AI
+
+Priorità per gmflow:
+Alta
+
+Descrizione:
+
+* File `src/lib/ai/image-prompt-builder.ts` modificato nel commit «fix(ai): avoid server supabase import via image-prompt-builder». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Migliora generazione testo/immagini o pipeline OpenRouter condivisa con gmflow.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+* Storage R2
+* sicurezza
+
+File B&D coinvolti:
+
+* src/lib/ai/image-prompt-builder.ts
+
+File gmflow probabili:
+
+* src/lib/ai/image-prompt-builder.ts
+
+Rischi:
+
+* Classificazione automatica non verificata
+* Costi API OpenRouter
+* Dipendenze modello
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+* Validare model ID OpenRouter e quota per tenant
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+* OPENROUTER_API_KEY configurata in gmflow
+
+### [BD-GMFLOW-9679ca1-001] OTHER: globals.css (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/app/globals.css` modificato nel commit «fix(gm): resize GM Screen panels by edges only». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* src/app/globals.css
+
+File gmflow probabili:
+
+* src/app/globals.css
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
+### [BD-GMFLOW-9679ca1-002] GM_SCREEN: gm-screen-board.tsx (modificato)
+
+Stato:
+TO_IMPORT
+
+Categoria:
+GM_SCREEN
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `src/components/gm/screen-grid/gm-screen-board.tsx` modificato nel commit «fix(gm): resize GM Screen panels by edges only». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Schermo GM / combattimento — alto valore per GM professionisti.
+
+Adattamenti necessari:
+
+* Multi-tenant
+* Permessi
+
+File B&D coinvolti:
+
+* src/components/gm/screen-grid/gm-screen-board.tsx
+
+File gmflow probabili:
+
+* src/components/gm/screen-grid/gm-screen-board.tsx
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
 ## Modifiche da NON importare
 
 ### [BD-GMFLOW-365f9c0-001] OTHER: export-feature-to-gmflow.md (aggiunto)
@@ -35402,8 +35818,54 @@ Criterio di import completato:
 * Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
 * RLS/policy verificate per multi-tenant
 
+### [BD-GMFLOW-28fe02c-001] OTHER: update-gmflow-export-ledger.mjs (modificato)
+
+Stato:
+BD_ONLY
+
+Categoria:
+OTHER
+
+Priorità per gmflow:
+Media
+
+Descrizione:
+
+* File `scripts/gmflow-export/update-gmflow-export-ledger.mjs` modificato nel commit «chore(gmflow): add July export packages and ledger-only sync script». Classificazione automatica — richiede revisione umana.
+
+Perché potrebbe servire a gmflow:
+
+* Modifica generica — valutare manualmente rilevanza gmflow.
+
+Adattamenti necessari:
+
+* altro
+
+File B&D coinvolti:
+
+* scripts/gmflow-export/update-gmflow-export-ledger.mjs
+
+File gmflow probabili:
+
+* src/scripts/gmflow-export/update-gmflow-export-ledger.mjs
+
+Rischi:
+
+* Classificazione automatica non verificata
+
+Decisioni richieste:
+
+* Confermare se la modifica è rilevante per gmflow
+
+Criterio di import completato:
+
+* Codice portato in gmflow con adattamenti documentati
+* Test minimi superati
+* Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED
+
 ## Coda import consigliata
 
+- **[BD-GMFLOW-PKG-2026-08-01-001]** Package: GM Screen 2.0, Rules Catalog, AI framing, FoW coords — priorità Alta (GM_SCREEN)
 - **[BD-GMFLOW-PKG-2026-07-06-001]** Package: Funzionalità e bugfix luglio 2026 — priorità Alta (OTHER)
 - **[BD-GMFLOW-PKG-2026-07-06-CC]** Package: Command Center (GM Workspace + AI Control Plane) — priorità Alta (GM_SCREEN)
 - **[BD-GMFLOW-PKG-2026-06-28-001]** Package: Nuove funzioni e bugfix (no RLS, no grafica) — priorità Alta (OTHER)
@@ -35607,6 +36069,19 @@ Criterio di import completato:
 - **[BD-GMFLOW-0d6345e-013]** AI: preview-text-selection.ts (modificato) — priorità Alta (AI)
 - **[BD-GMFLOW-0d6345e-014]** AI: wiki-proposal-builder.ts (modificato) — priorità Alta (AI)
 - **[BD-GMFLOW-0d6345e-015]** AI: wiki-request-detector.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-b14782e-001]** AI: prompt-debug-client.tsx (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-b14782e-011]** AI: ai-wiki-chain.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-b14782e-014]** AI: image-prompt-item-lore.test.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-b14782e-015]** AI: image-prompt-builder.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-b14782e-016]** AI: image-prompt-item-lore.ts (aggiunto) — priorità Alta (AI)
+- **[BD-GMFLOW-b14782e-017]** AI: image-refine-prompt.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-b14782e-018]** AI: wiki-npc-params.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-b14782e-019]** AI: build-prompt.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-b14782e-026]** AI: wiki-npc-params.test.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-b14782e-027]** AI: chat-assistant.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-b14782e-028]** AI: wiki-proposal-builder.ts (modificato) — priorità Alta (AI)
+- **[BD-GMFLOW-b14782e-030]** DATABASE: 20260801140000_rules_catalog.sql (aggiunto) — priorità Alta (DATABASE)
+- **[BD-GMFLOW-9ebb1ec-001]** AI: image-prompt-builder.ts (modificato) — priorità Alta (AI)
 - **[BD-GMFLOW-041d96c-001]** WIKI: create-entity-dialog.tsx (modificato) — priorità Media (WIKI)
 - **[BD-GMFLOW-041d96c-002]** WIKI: edit-entity-dialog.tsx (modificato) — priorità Media (WIKI)
 - **[BD-GMFLOW-041d96c-004]** WIKI: wiki-image-chat.ts (aggiunto) — priorità Media (WIKI)
@@ -35617,6 +36092,7 @@ Criterio di import completato:
 - **[BD-GMFLOW-fef9b75-002]** OTHER: bestiary-statblock-parser.test.ts (aggiunto) — priorità Media (OTHER)
 - **[BD-GMFLOW-fef9b75-003]** OTHER: bestiary-statblock-parser.ts (aggiunto) — priorità Media (OTHER)
 - **[BD-GMFLOW-94b0f4e-007]** CAMPAIGNS: scene-document-actions.ts (aggiunto) — priorità Media (CAMPAIGNS)
+- **[BD-GMFLOW-94b0f4e-024]** OTHER: object-contain.ts (aggiunto) — priorità Media (OTHER)
 - **[BD-GMFLOW-94b0f4e-034]** OTHER: floor-raster.ts (aggiunto) — priorità Media (OTHER)
 - **[BD-GMFLOW-c75aa38-001]** CAMPAIGNS: character-actions.ts (modificato) — priorità Media (CAMPAIGNS)
 - **[BD-GMFLOW-3cf1907-002]** CAMPAIGNS: scene-document-actions.ts (modificato) — priorità Media (CAMPAIGNS)
@@ -35723,6 +36199,67 @@ Criterio di import completato:
 - **[BD-GMFLOW-12b3a10-003]** CAMPAIGNS: entity-graph-actions.ts (modificato) — priorità Media (CAMPAIGNS)
 - **[BD-GMFLOW-12b3a10-004]** GM_SCREEN: gm-gallery-sheet.tsx (modificato) — priorità Media (GM_SCREEN)
 - **[BD-GMFLOW-12b3a10-005]** WIKI: related-entities-section.tsx (aggiunto) — priorità Media (WIKI)
+- **[BD-GMFLOW-9bc3a5f-003]** CAMPAIGNS: page.tsx (aggiunto) — priorità Media (CAMPAIGNS)
+- **[BD-GMFLOW-9bc3a5f-008]** GM_SCREEN: gm-screen-layout-v2.tsx (aggiunto) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-9bc3a5f-009]** GM_SCREEN: gm-screen-legacy-layout-v2.tsx (aggiunto) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-9bc3a5f-010]** GM_SCREEN: gm-screen-long-layout-v2.tsx (aggiunto) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-9bc3a5f-014]** GM_SCREEN: gm-add-panel-menu.tsx (aggiunto) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-9bc3a5f-015]** MEDIA_STORAGE: gm-layout-storage.ts (aggiunto) — priorità Media (MEDIA_STORAGE)
+- **[BD-GMFLOW-9bc3a5f-016]** GM_SCREEN: gm-panel-chrome.tsx (aggiunto) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-9bc3a5f-017]** GM_SCREEN: gm-panel-registry.tsx (aggiunto) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-9bc3a5f-018]** GM_SCREEN: gm-presets.ts (aggiunto) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-9bc3a5f-019]** GM_SCREEN: gm-screen-board-context.tsx (aggiunto) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-9bc3a5f-020]** GM_SCREEN: gm-screen-board.tsx (aggiunto) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-9bc3a5f-021]** GM_SCREEN: index.ts (aggiunto) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-9bc3a5f-022]** GM_SCREEN: calendar-panel.tsx (aggiunto) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-9bc3a5f-023]** GM_SCREEN: economy-panel.tsx (aggiunto) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-9bc3a5f-024]** GM_SCREEN: initiative-panel.tsx (aggiunto) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-9bc3a5f-025]** MAPS: maps-fow-panels.tsx (aggiunto) — priorità Media (MAPS)
+- **[BD-GMFLOW-9bc3a5f-026]** GM_SCREEN: missions-panel.tsx (aggiunto) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-9bc3a5f-027]** GM_SCREEN: monster-stat-panel.tsx (aggiunto) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-9bc3a5f-028]** GM_SCREEN: notes-panel.tsx (aggiunto) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-9bc3a5f-029]** GM_SCREEN: players-xp-panel.tsx (aggiunto) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-9bc3a5f-030]** GM_SCREEN: rules-lookup-panel.tsx (aggiunto) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-9bc3a5f-031]** GM_SCREEN: time-panel.tsx (aggiunto) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-9bc3a5f-032]** GM_SCREEN: tool-sheet-panels.tsx (aggiunto) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-9bc3a5f-033]** WIKI: wiki-entity-panel.tsx (aggiunto) — priorità Media (WIKI)
+- **[BD-GMFLOW-9bc3a5f-034]** GM_SCREEN: types.ts (aggiunto) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-d9bd4d9-003]** GM_SCREEN: gm-screen-legacy-layout-v2.tsx (modificato) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-d9bd4d9-004]** GM_SCREEN: gm-screen-long-layout-v2.tsx (modificato) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-d9bd4d9-005]** GM_SCREEN: gm-add-panel-menu.tsx (modificato) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-d9bd4d9-006]** MEDIA_STORAGE: gm-layout-storage.ts (modificato) — priorità Media (MEDIA_STORAGE)
+- **[BD-GMFLOW-d9bd4d9-007]** GM_SCREEN: gm-panel-chrome.tsx (modificato) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-d9bd4d9-008]** GM_SCREEN: gm-panel-registry.tsx (modificato) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-d9bd4d9-009]** GM_SCREEN: gm-presets.ts (modificato) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-d9bd4d9-010]** GM_SCREEN: gm-screen-board.tsx (modificato) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-d9bd4d9-011]** GM_SCREEN: monster-stat-panel.tsx (modificato) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-d9bd4d9-012]** GM_SCREEN: rules-lookup-panel.tsx (modificato) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-d9bd4d9-013]** GM_SCREEN: fivee-rules-view.tsx (aggiunto) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-d9bd4d9-014]** GM_SCREEN: fivee-statblock-view.tsx (aggiunto) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-d9bd4d9-015]** GM_SCREEN: types.ts (modificato) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-d9bd4d9-019]** OTHER: dense-rules-parser.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-d9bd4d9-020]** OTHER: dense-statblock-parser.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-d9bd4d9-021]** OTHER: phb-conditions.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-b14782e-002]** ADMIN: page.tsx (modificato) — priorità Media (ADMIN)
+- **[BD-GMFLOW-b14782e-003]** OTHER: globals.css (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-b14782e-004]** ADMIN: rules-catalog-ingest-controls.tsx (aggiunto) — priorità Media (ADMIN)
+- **[BD-GMFLOW-b14782e-005]** UI_UX: exploration-map-stage.tsx (modificato) — priorità Media (UI_UX)
+- **[BD-GMFLOW-b14782e-006]** UI_UX: vista-dall-alto-client.tsx (modificato) — priorità Media (UI_UX)
+- **[BD-GMFLOW-b14782e-007]** GM_SCREEN: gm-screen-board.tsx (modificato) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-b14782e-008]** GM_SCREEN: rules-lookup-panel.tsx (modificato) — priorità Media (GM_SCREEN)
+- **[BD-GMFLOW-b14782e-009]** WIKI: create-entity-dialog.tsx (modificato) — priorità Media (WIKI)
+- **[BD-GMFLOW-b14782e-010]** WIKI: edit-entity-dialog.tsx (modificato) — priorità Media (WIKI)
+- **[BD-GMFLOW-b14782e-012]** OTHER: rules-catalog-ingest-actions.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-b14782e-013]** OTHER: rules-catalog-lookup-actions.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-b14782e-020]** OTHER: extract-phb-conditions.test.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-b14782e-021]** OTHER: extract-phb-conditions.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-b14782e-022]** OTHER: types.ts (aggiunto) — priorità Media (OTHER)
+- **[BD-GMFLOW-b14782e-023]** OTHER: coordinates.test.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-b14782e-024]** OTHER: index.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-b14782e-025]** OTHER: object-contain.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-b14782e-029]** OTHER: database.types.ts (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-9679ca1-001]** OTHER: globals.css (modificato) — priorità Media (OTHER)
+- **[BD-GMFLOW-9679ca1-002]** GM_SCREEN: gm-screen-board.tsx (modificato) — priorità Media (GM_SCREEN)
 
 ## Sintesi per ChatGPT
 
@@ -35731,9 +36268,9 @@ Questo ledger traccia modifiche Barber & Dragons da valutare per import in gmflo
 
 - Repository sorgente: `/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App`
 - Repository gmflow locale: `/Users/alessandropetricciuolo/Desktop/masto-platform`
-- Ultimo commit: `9ebb1ec` — fix(ai): avoid server supabase import via image-prompt-builder
-- File analizzati nell'ultimo run: 1
-- Nuove voci aggiunte: 1
+- Ultimo commit: `c1f20f4` — feat(gm): split spellcasting in dense statblocks and harden PHB condition extract
+- File analizzati nell'ultimo run: 7
+- Nuove voci aggiunte: 7
 
 **Azioni consigliate:**
 1. Rivedere voci `NEEDS_REVIEW` nella sezione «Delta automatico».

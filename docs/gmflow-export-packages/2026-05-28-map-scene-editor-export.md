@@ -4,7 +4,7 @@
 
 bnd-map-scene-editor-2026-05-28
 
-**Revisione 4** — FoW sync on create, raster FormData fix — 2026-07-06
+**Revisione 5** — FoW object-contain coordinate mapping — 2026-08-01
 
 ## Origine
 
@@ -27,6 +27,29 @@ Export completo del modulo **mappe tattiche / Scene Editor / Fog of War** (Fasi 
 | `e9c93e5` | **Union auto-walls** (`polygon-clipping`) — solo parte map-core, non shell layout |
 | `3cf1907` | **FoW sync on create** — mappe exploration upsert immediato, heal scene orfane |
 | `f9bcd77` | **Raster FormData** — upload completo PNG, no placeholder 1×1 |
+| `b14782e` | **FoW contain coords** — `getContainedElementSize`, `clientPointToRectNorm` |
+
+---
+
+## Fase 8 — FoW object-contain coords (Rev 5)
+
+| Componente | Comportamento |
+|------------|---------------|
+| `getContainedElementSize` | Dimensioni bitmap in viewport senza deformazione |
+| `clientPointToRectNorm` | Pointer → norm 0–1 sul rettangolo effettivo dell’immagine (include zoom/pan via `getBoundingClientRect`) |
+| `exploration-map-stage` / `vista-dall-alto-client` | Overlay FoW allineato al box bitmap letterboxato |
+
+**File delta Rev 5:**
+
+```
+src/lib/map-core/coordinates/object-contain.ts
+src/lib/map-core/coordinates/index.ts
+src/lib/map-core/__tests__/coordinates.test.ts
+src/components/exploration/exploration-map-stage.tsx
+src/components/exploration/vista-dall-alto-client.tsx
+```
+
+Package aggregato del giorno: `bnd-gm-screen-rules-ai-maps-2026-08-01`.
 
 ---
 
@@ -473,6 +496,7 @@ exportFloorRasterBlob(floor): Promise<Blob>
 - [ ] **Rev 4:** Crea scena → compare in Vista dall'alto senza publish separato
 - [ ] **Rev 4:** Salva scena → raster reale (non placeholder 1×1)
 - [ ] **Rev 4:** Scene orfane riparate al load lista
+- [ ] **Rev 5:** FoW reveal su mappa letterboxata allineato al bitmap
 
 ## Import Contract per gmflow
 
@@ -517,14 +541,14 @@ rg "map-core" src --glob "!**/node_modules/**"
 ## Prompt per gmflow Import Agent
 
 ```
-Import Agent gmflow — Export ID: bnd-map-scene-editor-2026-05-28 (Revisione 4)
+Import Agent gmflow — Export ID: bnd-map-scene-editor-2026-05-28 (Revisione 5)
 
 Package: docs/gmflow-export-packages/2026-05-28-map-scene-editor-export.md
 (sincronizzato in docs/imports/gmflow-export-packages/ se presente)
 
 OBIETTIVO
 Importare il modulo completo Map Core + Scene Editor + FoW da Barber & Dragons,
-inclusa Revisione 3–4 (union auto-walls, corridoi curvi, FoW sync, raster FormData).
+inclusa Revisione 3–5 (union auto-walls, corridoi curvi, FoW sync, raster FormData, contain coords).
 
 COMMIT B&D
 - 94b0f4e feat(maps): scene editor + map-core + FoW
@@ -532,6 +556,7 @@ COMMIT B&D
 - e9c93e5 feat(maps): union-based auto-walls (SOLO map-core, NON shell layout)
 - 3cf1907 fix(maps): sync Scene Editor scenes to Esplorazione e FoW on create
 - f9bcd77 fix(maps): upload full Scene Editor rasters from FormData on save
+- b14782e feat(rules,ai,maps): FoW contain coords (solo parte map-core/exploration)
 
 IMPORTARE
 1. src/lib/map-core/** (intero albero)
@@ -580,14 +605,15 @@ Checklist integrazione nel package. npm run test:map-core deve passare.
 | 2 | 2026-05-28 | Fase 5: layer + preset DS, auto-walls per-area, renderer DS, migrazione legacy |
 | 3 | 2026-06-28 | Fase 6: union auto-walls (`polygon-clipping`), corridoi curvi Catmull-Rom, tool-overlay, server actions complete, note RLS/adapter gmflow, prompt Import Agent |
 | 4 | 2026-07-06 | Fase 7: FoW sync on create, heal orphaned scenes, raster FormData/PNG, no placeholder 1×1 |
+| 5 | 2026-08-01 | Fase 8: FoW object-contain coords (`getContainedElementSize`, `clientPointToRectNorm`) |
 
 ## Riferimenti
 
 - ADR: `docs/adr-map-scene-editor.md`
-- Piano: Strategia C (Map Core refactor), decisioni maggio–luglio 2026
+- Piano: Strategia C (Map Core refactor), decisioni maggio–agosto 2026
 - Ispirazione rendering: [Dungeon Scrawl](https://app.dungeonscrawl.com/)
-- Package correlato: `bnd-features-bugfixes-2026-07-06` (delta mappe se package completo già importato)
+- Package correlato: `bnd-gm-screen-rules-ai-maps-2026-08-01` (FoW coords + GM Screen / rules dello stesso giorno)
 
 ---
 
-**Generato/aggiornato:** 2026-07-06 — Export Agent Barber & Dragons
+**Generato/aggiornato:** 2026-08-01 — Export Agent Barber & Dragons

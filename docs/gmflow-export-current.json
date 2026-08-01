@@ -1,13 +1,53 @@
 {
-  "updatedAt": "2026-08-01T12:35:20.182Z",
+  "updatedAt": "2026-08-01T16:59:13.657Z",
   "sourceProject": "Barber & Dragons",
   "targetProject": "gmflow.app",
   "sourceRepoPath": "/Users/alessandropetricciuolo/Desktop/Barber And Dragons - Web App",
   "targetRepoPath": "/Users/alessandropetricciuolo/Desktop/masto-platform",
   "branch": "main",
-  "lastCommit": "9ebb1ec23ca659efbfd15eb494eb8ec3024056c4",
-  "commitRange": "5b3b4d5..9ebb1ec",
+  "lastCommit": "c1f20f428f93b582d61e8053bb1b5b748e8f29e2",
+  "commitRange": "9679ca1..c1f20f4",
   "items": [
+    {
+      "id": "BD-GMFLOW-PKG-2026-08-01-001",
+      "title": "Package: GM Screen 2.0, Rules Catalog, AI framing, FoW coords",
+      "status": "TO_IMPORT",
+      "category": "GM_SCREEN",
+      "priority": "Alta",
+      "description": "Export 1 ago 2026: GM Screen 2.0 modulare, dense parsers 5e, rules_catalog condizioni PHB, framing AI item/lore, fix image-prompt-builder client, FoW contain coords, resize pannelli.",
+      "valueForGmflow": "Screen GM modulare SaaS + catalogo regole tipizzato + fix AI/FoW critici.",
+      "bdFiles": [
+        "docs/gmflow-export-packages/2026-08-01-gm-screen-rules-ai-maps-export.md"
+      ],
+      "gmflowLikelyFiles": [
+        "docs/imports/gmflow-export-packages/2026-08-01-gm-screen-rules-ai-maps-export.md"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "RLS gmflow-native",
+        "Design system",
+        "react-grid-layout"
+      ],
+      "risks": [
+        "Non importare RLS rules_catalog",
+        "Bundle react-grid-layout",
+        "NEEDS_DECISION v2 vs classic screen"
+      ],
+      "decisionsNeeded": [
+        "GM Screen 2.0 sostituisce o affianca lo screen classico in gmflow?"
+      ],
+      "doneCriteria": [
+        "Package importato",
+        "test dense-parsers + coordinates + image-prompt-item-lore",
+        "Zero CREATE POLICY B&D rules_catalog"
+      ],
+      "commitHash": "9679ca1",
+      "commitShort": "9679ca1",
+      "commitSubject": "Export package bnd-gm-screen-rules-ai-maps-2026-08-01",
+      "createdAt": "2026-08-01T14:57:18.408Z",
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
+    },
     {
       "id": "BD-GMFLOW-PKG-2026-07-06-001",
       "title": "Package: Funzionalità e bugfix luglio 2026",
@@ -2122,7 +2162,7 @@
     {
       "id": "BD-GMFLOW-94b0f4e-024",
       "title": "OTHER: object-contain.ts (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "OTHER",
       "priority": "Media",
       "description": "File `src/lib/map-core/coordinates/object-contain.ts` aggiunto nel commit «feat(maps): add scene editor with portable map-core and FoW integration». Classificazione automatica — richiede revisione umana.",
@@ -2152,7 +2192,8 @@
       "commitSubject": "feat(maps): add scene editor with portable map-core and FoW integration",
       "statusCode": "A",
       "createdAt": "2026-06-26T11:12:18.800Z",
-      "updatedAt": "2026-06-26T11:12:18.800Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-94b0f4e-025",
@@ -21567,7 +21608,7 @@
     {
       "id": "BD-GMFLOW-28fe02c-001",
       "title": "OTHER: update-gmflow-export-ledger.mjs (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "BD_ONLY",
       "category": "OTHER",
       "priority": "Media",
       "description": "File `scripts/gmflow-export/update-gmflow-export-ledger.mjs` modificato nel commit «chore(gmflow): add July export packages and ledger-only sync script». Classificazione automatica — richiede revisione umana.",
@@ -21597,7 +21638,7 @@
       "commitSubject": "chore(gmflow): add July export packages and ledger-only sync script",
       "statusCode": "M",
       "createdAt": "2026-07-07T04:55:52.812Z",
-      "updatedAt": "2026-07-07T04:55:52.812Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z"
     },
     {
       "id": "BD-GMFLOW-18f4840-001",
@@ -25365,7 +25406,7 @@
     {
       "id": "BD-GMFLOW-9bc3a5f-003",
       "title": "CAMPAIGNS: page.tsx (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "CAMPAIGNS",
       "priority": "Media",
       "description": "File `src/app/campaigns/[id]/gm-screen-v2/page.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
@@ -25397,7 +25438,8 @@
       "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
       "statusCode": "A",
       "createdAt": "2026-08-01T05:36:44.171Z",
-      "updatedAt": "2026-08-01T05:36:44.171Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-9bc3a5f-004",
@@ -25545,7 +25587,7 @@
     {
       "id": "BD-GMFLOW-9bc3a5f-008",
       "title": "GM_SCREEN: gm-screen-layout-v2.tsx (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/gm-screen-layout-v2.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
@@ -25576,12 +25618,13 @@
       "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
       "statusCode": "A",
       "createdAt": "2026-08-01T05:36:44.171Z",
-      "updatedAt": "2026-08-01T05:36:44.171Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-9bc3a5f-009",
       "title": "GM_SCREEN: gm-screen-legacy-layout-v2.tsx (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/gm-screen-legacy-layout-v2.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
@@ -25612,12 +25655,13 @@
       "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
       "statusCode": "A",
       "createdAt": "2026-08-01T05:36:44.171Z",
-      "updatedAt": "2026-08-01T05:36:44.171Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-9bc3a5f-010",
       "title": "GM_SCREEN: gm-screen-long-layout-v2.tsx (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/gm-screen-long-layout-v2.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
@@ -25648,7 +25692,8 @@
       "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
       "statusCode": "A",
       "createdAt": "2026-08-01T05:36:44.171Z",
-      "updatedAt": "2026-08-01T05:36:44.171Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-9bc3a5f-011",
@@ -25761,7 +25806,7 @@
     {
       "id": "BD-GMFLOW-9bc3a5f-014",
       "title": "GM_SCREEN: gm-add-panel-menu.tsx (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/gm-add-panel-menu.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
@@ -25792,12 +25837,13 @@
       "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
       "statusCode": "A",
       "createdAt": "2026-08-01T05:36:44.171Z",
-      "updatedAt": "2026-08-01T05:36:44.171Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-9bc3a5f-015",
       "title": "MEDIA_STORAGE: gm-layout-storage.ts (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "MEDIA_STORAGE",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/gm-layout-storage.ts` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
@@ -25829,12 +25875,13 @@
       "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
       "statusCode": "A",
       "createdAt": "2026-08-01T05:36:44.171Z",
-      "updatedAt": "2026-08-01T05:36:44.171Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-9bc3a5f-016",
       "title": "GM_SCREEN: gm-panel-chrome.tsx (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/gm-panel-chrome.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
@@ -25865,12 +25912,13 @@
       "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
       "statusCode": "A",
       "createdAt": "2026-08-01T05:36:44.171Z",
-      "updatedAt": "2026-08-01T05:36:44.171Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-9bc3a5f-017",
       "title": "GM_SCREEN: gm-panel-registry.tsx (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/gm-panel-registry.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
@@ -25901,12 +25949,13 @@
       "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
       "statusCode": "A",
       "createdAt": "2026-08-01T05:36:44.171Z",
-      "updatedAt": "2026-08-01T05:36:44.171Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-9bc3a5f-018",
       "title": "GM_SCREEN: gm-presets.ts (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/gm-presets.ts` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
@@ -25937,12 +25986,13 @@
       "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
       "statusCode": "A",
       "createdAt": "2026-08-01T05:36:44.171Z",
-      "updatedAt": "2026-08-01T05:36:44.171Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-9bc3a5f-019",
       "title": "GM_SCREEN: gm-screen-board-context.tsx (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/gm-screen-board-context.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
@@ -25973,12 +26023,13 @@
       "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
       "statusCode": "A",
       "createdAt": "2026-08-01T05:36:44.171Z",
-      "updatedAt": "2026-08-01T05:36:44.171Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-9bc3a5f-020",
       "title": "GM_SCREEN: gm-screen-board.tsx (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/gm-screen-board.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
@@ -26009,12 +26060,13 @@
       "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
       "statusCode": "A",
       "createdAt": "2026-08-01T05:36:44.171Z",
-      "updatedAt": "2026-08-01T05:36:44.171Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-9bc3a5f-021",
       "title": "GM_SCREEN: index.ts (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/index.ts` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
@@ -26045,12 +26097,13 @@
       "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
       "statusCode": "A",
       "createdAt": "2026-08-01T05:36:44.171Z",
-      "updatedAt": "2026-08-01T05:36:44.171Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-9bc3a5f-022",
       "title": "GM_SCREEN: calendar-panel.tsx (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/panels/calendar-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
@@ -26081,12 +26134,13 @@
       "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
       "statusCode": "A",
       "createdAt": "2026-08-01T05:36:44.171Z",
-      "updatedAt": "2026-08-01T05:36:44.171Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-9bc3a5f-023",
       "title": "GM_SCREEN: economy-panel.tsx (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/panels/economy-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
@@ -26117,12 +26171,13 @@
       "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
       "statusCode": "A",
       "createdAt": "2026-08-01T05:36:44.171Z",
-      "updatedAt": "2026-08-01T05:36:44.171Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-9bc3a5f-024",
       "title": "GM_SCREEN: initiative-panel.tsx (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/panels/initiative-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
@@ -26153,12 +26208,13 @@
       "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
       "statusCode": "A",
       "createdAt": "2026-08-01T05:36:44.171Z",
-      "updatedAt": "2026-08-01T05:36:44.171Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-9bc3a5f-025",
       "title": "MAPS: maps-fow-panels.tsx (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "MAPS",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/panels/maps-fow-panels.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
@@ -26189,12 +26245,13 @@
       "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
       "statusCode": "A",
       "createdAt": "2026-08-01T05:36:44.171Z",
-      "updatedAt": "2026-08-01T05:36:44.171Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-9bc3a5f-026",
       "title": "GM_SCREEN: missions-panel.tsx (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/panels/missions-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
@@ -26225,12 +26282,13 @@
       "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
       "statusCode": "A",
       "createdAt": "2026-08-01T05:36:44.171Z",
-      "updatedAt": "2026-08-01T05:36:44.171Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-9bc3a5f-027",
       "title": "GM_SCREEN: monster-stat-panel.tsx (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/panels/monster-stat-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
@@ -26261,12 +26319,13 @@
       "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
       "statusCode": "A",
       "createdAt": "2026-08-01T05:36:44.171Z",
-      "updatedAt": "2026-08-01T05:36:44.171Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-9bc3a5f-028",
       "title": "GM_SCREEN: notes-panel.tsx (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/panels/notes-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
@@ -26297,12 +26356,13 @@
       "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
       "statusCode": "A",
       "createdAt": "2026-08-01T05:36:44.171Z",
-      "updatedAt": "2026-08-01T05:36:44.171Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-9bc3a5f-029",
       "title": "GM_SCREEN: players-xp-panel.tsx (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/panels/players-xp-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
@@ -26333,12 +26393,13 @@
       "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
       "statusCode": "A",
       "createdAt": "2026-08-01T05:36:44.171Z",
-      "updatedAt": "2026-08-01T05:36:44.171Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-9bc3a5f-030",
       "title": "GM_SCREEN: rules-lookup-panel.tsx (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/panels/rules-lookup-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
@@ -26369,12 +26430,13 @@
       "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
       "statusCode": "A",
       "createdAt": "2026-08-01T05:36:44.171Z",
-      "updatedAt": "2026-08-01T05:36:44.171Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-9bc3a5f-031",
       "title": "GM_SCREEN: time-panel.tsx (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/panels/time-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
@@ -26405,12 +26467,13 @@
       "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
       "statusCode": "A",
       "createdAt": "2026-08-01T05:36:44.171Z",
-      "updatedAt": "2026-08-01T05:36:44.171Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-9bc3a5f-032",
       "title": "GM_SCREEN: tool-sheet-panels.tsx (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/panels/tool-sheet-panels.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
@@ -26441,12 +26504,13 @@
       "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
       "statusCode": "A",
       "createdAt": "2026-08-01T05:36:44.171Z",
-      "updatedAt": "2026-08-01T05:36:44.171Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-9bc3a5f-033",
       "title": "WIKI: wiki-entity-panel.tsx (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "WIKI",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/panels/wiki-entity-panel.tsx` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
@@ -26477,12 +26541,13 @@
       "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
       "statusCode": "A",
       "createdAt": "2026-08-01T05:36:44.171Z",
-      "updatedAt": "2026-08-01T05:36:44.171Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-9bc3a5f-034",
       "title": "GM_SCREEN: types.ts (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/types.ts` aggiunto nel commit «feat(gm): add modular GM Screen 2.0 beside classic screen». Classificazione automatica — richiede revisione umana.",
@@ -26513,7 +26578,8 @@
       "commitSubject": "feat(gm): add modular GM Screen 2.0 beside classic screen",
       "statusCode": "A",
       "createdAt": "2026-08-01T05:36:44.171Z",
-      "updatedAt": "2026-08-01T05:36:44.171Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-d9bd4d9-001",
@@ -26589,7 +26655,7 @@
     {
       "id": "BD-GMFLOW-d9bd4d9-003",
       "title": "GM_SCREEN: gm-screen-legacy-layout-v2.tsx (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/gm-screen-legacy-layout-v2.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
@@ -26620,12 +26686,13 @@
       "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
       "statusCode": "M",
       "createdAt": "2026-08-01T06:42:04.311Z",
-      "updatedAt": "2026-08-01T06:42:04.311Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-d9bd4d9-004",
       "title": "GM_SCREEN: gm-screen-long-layout-v2.tsx (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/gm-screen-long-layout-v2.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
@@ -26656,12 +26723,13 @@
       "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
       "statusCode": "M",
       "createdAt": "2026-08-01T06:42:04.311Z",
-      "updatedAt": "2026-08-01T06:42:04.311Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-d9bd4d9-005",
       "title": "GM_SCREEN: gm-add-panel-menu.tsx (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/gm-add-panel-menu.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
@@ -26692,12 +26760,13 @@
       "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
       "statusCode": "M",
       "createdAt": "2026-08-01T06:42:04.311Z",
-      "updatedAt": "2026-08-01T06:42:04.311Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-d9bd4d9-006",
       "title": "MEDIA_STORAGE: gm-layout-storage.ts (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "MEDIA_STORAGE",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/gm-layout-storage.ts` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
@@ -26729,12 +26798,13 @@
       "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
       "statusCode": "M",
       "createdAt": "2026-08-01T06:42:04.311Z",
-      "updatedAt": "2026-08-01T06:42:04.311Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-d9bd4d9-007",
       "title": "GM_SCREEN: gm-panel-chrome.tsx (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/gm-panel-chrome.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
@@ -26765,12 +26835,13 @@
       "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
       "statusCode": "M",
       "createdAt": "2026-08-01T06:42:04.311Z",
-      "updatedAt": "2026-08-01T06:42:04.311Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-d9bd4d9-008",
       "title": "GM_SCREEN: gm-panel-registry.tsx (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/gm-panel-registry.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
@@ -26801,12 +26872,13 @@
       "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
       "statusCode": "M",
       "createdAt": "2026-08-01T06:42:04.311Z",
-      "updatedAt": "2026-08-01T06:42:04.311Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-d9bd4d9-009",
       "title": "GM_SCREEN: gm-presets.ts (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/gm-presets.ts` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
@@ -26837,12 +26909,13 @@
       "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
       "statusCode": "M",
       "createdAt": "2026-08-01T06:42:04.311Z",
-      "updatedAt": "2026-08-01T06:42:04.311Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-d9bd4d9-010",
       "title": "GM_SCREEN: gm-screen-board.tsx (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/gm-screen-board.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
@@ -26873,12 +26946,13 @@
       "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
       "statusCode": "M",
       "createdAt": "2026-08-01T06:42:04.311Z",
-      "updatedAt": "2026-08-01T06:42:04.311Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-d9bd4d9-011",
       "title": "GM_SCREEN: monster-stat-panel.tsx (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/panels/monster-stat-panel.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
@@ -26909,12 +26983,13 @@
       "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
       "statusCode": "M",
       "createdAt": "2026-08-01T06:42:04.311Z",
-      "updatedAt": "2026-08-01T06:42:04.311Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-d9bd4d9-012",
       "title": "GM_SCREEN: rules-lookup-panel.tsx (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/panels/rules-lookup-panel.tsx` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
@@ -26945,12 +27020,13 @@
       "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
       "statusCode": "M",
       "createdAt": "2026-08-01T06:42:04.311Z",
-      "updatedAt": "2026-08-01T06:42:04.311Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-d9bd4d9-013",
       "title": "GM_SCREEN: fivee-rules-view.tsx (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/renderers/fivee-rules-view.tsx` aggiunto nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
@@ -26981,12 +27057,13 @@
       "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
       "statusCode": "A",
       "createdAt": "2026-08-01T06:42:04.311Z",
-      "updatedAt": "2026-08-01T06:42:04.311Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-d9bd4d9-014",
       "title": "GM_SCREEN: fivee-statblock-view.tsx (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/renderers/fivee-statblock-view.tsx` aggiunto nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
@@ -27017,12 +27094,13 @@
       "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
       "statusCode": "A",
       "createdAt": "2026-08-01T06:42:04.311Z",
-      "updatedAt": "2026-08-01T06:42:04.311Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-d9bd4d9-015",
       "title": "GM_SCREEN: types.ts (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/types.ts` modificato nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
@@ -27053,7 +27131,8 @@
       "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
       "statusCode": "M",
       "createdAt": "2026-08-01T06:42:04.311Z",
-      "updatedAt": "2026-08-01T06:42:04.311Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-d9bd4d9-016",
@@ -27164,7 +27243,7 @@
     {
       "id": "BD-GMFLOW-d9bd4d9-019",
       "title": "OTHER: dense-rules-parser.ts (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "OTHER",
       "priority": "Media",
       "description": "File `src/lib/manuals/dense-rules-parser.ts` aggiunto nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
@@ -27194,12 +27273,13 @@
       "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
       "statusCode": "A",
       "createdAt": "2026-08-01T06:42:04.311Z",
-      "updatedAt": "2026-08-01T06:42:04.311Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-d9bd4d9-020",
       "title": "OTHER: dense-statblock-parser.ts (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "OTHER",
       "priority": "Media",
       "description": "File `src/lib/manuals/dense-statblock-parser.ts` aggiunto nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
@@ -27229,12 +27309,13 @@
       "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
       "statusCode": "A",
       "createdAt": "2026-08-01T06:42:04.311Z",
-      "updatedAt": "2026-08-01T06:42:04.311Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-d9bd4d9-021",
       "title": "OTHER: phb-conditions.ts (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "OTHER",
       "priority": "Media",
       "description": "File `src/lib/manuals/phb-conditions.ts` aggiunto nel commit «feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters». Classificazione automatica — richiede revisione umana.",
@@ -27264,12 +27345,13 @@
       "commitSubject": "feat(gm): densify GM Screen 2.0 and render 5e-style rules/monsters",
       "statusCode": "A",
       "createdAt": "2026-08-01T06:42:04.311Z",
-      "updatedAt": "2026-08-01T06:42:04.311Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-b14782e-001",
       "title": "AI: prompt-debug-client.tsx (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "AI",
       "priority": "Alta",
       "description": "File `src/app/admin/ai-image-prompt-debug/prompt-debug-client.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.",
@@ -27306,12 +27388,13 @@
       "commitSubject": "feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords",
       "statusCode": "M",
       "createdAt": "2026-08-01T12:31:41.837Z",
-      "updatedAt": "2026-08-01T12:31:41.837Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-b14782e-002",
       "title": "ADMIN: page.tsx (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "ADMIN",
       "priority": "Media",
       "description": "File `src/app/admin/knowledge/page.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.",
@@ -27342,12 +27425,13 @@
       "commitSubject": "feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords",
       "statusCode": "M",
       "createdAt": "2026-08-01T12:31:41.837Z",
-      "updatedAt": "2026-08-01T12:31:41.837Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-b14782e-003",
       "title": "OTHER: globals.css (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "OTHER",
       "priority": "Media",
       "description": "File `src/app/globals.css` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.",
@@ -27377,12 +27461,13 @@
       "commitSubject": "feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords",
       "statusCode": "M",
       "createdAt": "2026-08-01T12:31:41.837Z",
-      "updatedAt": "2026-08-01T12:31:41.837Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-b14782e-004",
       "title": "ADMIN: rules-catalog-ingest-controls.tsx (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "ADMIN",
       "priority": "Media",
       "description": "File `src/components/admin/rules-catalog-ingest-controls.tsx` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.",
@@ -27413,12 +27498,13 @@
       "commitSubject": "feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords",
       "statusCode": "A",
       "createdAt": "2026-08-01T12:31:41.837Z",
-      "updatedAt": "2026-08-01T12:31:41.837Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-b14782e-005",
       "title": "UI_UX: exploration-map-stage.tsx (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "UI_UX",
       "priority": "Media",
       "description": "File `src/components/exploration/exploration-map-stage.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.",
@@ -27449,12 +27535,13 @@
       "commitSubject": "feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords",
       "statusCode": "M",
       "createdAt": "2026-08-01T12:31:41.837Z",
-      "updatedAt": "2026-08-01T12:31:41.837Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-b14782e-006",
       "title": "UI_UX: vista-dall-alto-client.tsx (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "UI_UX",
       "priority": "Media",
       "description": "File `src/components/exploration/vista-dall-alto-client.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.",
@@ -27485,12 +27572,13 @@
       "commitSubject": "feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords",
       "statusCode": "M",
       "createdAt": "2026-08-01T12:31:41.837Z",
-      "updatedAt": "2026-08-01T12:31:41.837Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-b14782e-007",
       "title": "GM_SCREEN: gm-screen-board.tsx (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/gm-screen-board.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.",
@@ -27521,12 +27609,13 @@
       "commitSubject": "feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords",
       "statusCode": "M",
       "createdAt": "2026-08-01T12:31:41.837Z",
-      "updatedAt": "2026-08-01T12:31:41.837Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-b14782e-008",
       "title": "GM_SCREEN: rules-lookup-panel.tsx (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "GM_SCREEN",
       "priority": "Media",
       "description": "File `src/components/gm/screen-grid/panels/rules-lookup-panel.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.",
@@ -27557,12 +27646,13 @@
       "commitSubject": "feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords",
       "statusCode": "M",
       "createdAt": "2026-08-01T12:31:41.837Z",
-      "updatedAt": "2026-08-01T12:31:41.837Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-b14782e-009",
       "title": "WIKI: create-entity-dialog.tsx (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "WIKI",
       "priority": "Media",
       "description": "File `src/components/wiki/create-entity-dialog.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.",
@@ -27593,12 +27683,13 @@
       "commitSubject": "feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords",
       "statusCode": "M",
       "createdAt": "2026-08-01T12:31:41.837Z",
-      "updatedAt": "2026-08-01T12:31:41.837Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-b14782e-010",
       "title": "WIKI: edit-entity-dialog.tsx (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "WIKI",
       "priority": "Media",
       "description": "File `src/components/wiki/edit-entity-dialog.tsx` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.",
@@ -27629,12 +27720,13 @@
       "commitSubject": "feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords",
       "statusCode": "M",
       "createdAt": "2026-08-01T12:31:41.837Z",
-      "updatedAt": "2026-08-01T12:31:41.837Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-b14782e-011",
       "title": "AI: ai-wiki-chain.ts (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "AI",
       "priority": "Alta",
       "description": "File `src/lib/actions/ai-wiki-chain.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.",
@@ -27671,12 +27763,13 @@
       "commitSubject": "feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords",
       "statusCode": "M",
       "createdAt": "2026-08-01T12:31:41.837Z",
-      "updatedAt": "2026-08-01T12:31:41.837Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-b14782e-012",
       "title": "OTHER: rules-catalog-ingest-actions.ts (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "OTHER",
       "priority": "Media",
       "description": "File `src/lib/actions/rules-catalog-ingest-actions.ts` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.",
@@ -27706,12 +27799,13 @@
       "commitSubject": "feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords",
       "statusCode": "A",
       "createdAt": "2026-08-01T12:31:41.837Z",
-      "updatedAt": "2026-08-01T12:31:41.837Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-b14782e-013",
       "title": "OTHER: rules-catalog-lookup-actions.ts (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "OTHER",
       "priority": "Media",
       "description": "File `src/lib/actions/rules-catalog-lookup-actions.ts` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.",
@@ -27741,12 +27835,13 @@
       "commitSubject": "feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords",
       "statusCode": "A",
       "createdAt": "2026-08-01T12:31:41.837Z",
-      "updatedAt": "2026-08-01T12:31:41.837Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-b14782e-014",
       "title": "AI: image-prompt-item-lore.test.ts (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "AI",
       "priority": "Alta",
       "description": "File `src/lib/ai/__tests__/image-prompt-item-lore.test.ts` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.",
@@ -27783,12 +27878,13 @@
       "commitSubject": "feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords",
       "statusCode": "A",
       "createdAt": "2026-08-01T12:31:41.837Z",
-      "updatedAt": "2026-08-01T12:31:41.837Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-b14782e-015",
       "title": "AI: image-prompt-builder.ts (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "AI",
       "priority": "Alta",
       "description": "File `src/lib/ai/image-prompt-builder.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.",
@@ -27825,12 +27921,13 @@
       "commitSubject": "feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords",
       "statusCode": "M",
       "createdAt": "2026-08-01T12:31:41.837Z",
-      "updatedAt": "2026-08-01T12:31:41.837Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-b14782e-016",
       "title": "AI: image-prompt-item-lore.ts (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "AI",
       "priority": "Alta",
       "description": "File `src/lib/ai/image-prompt-item-lore.ts` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.",
@@ -27867,12 +27964,13 @@
       "commitSubject": "feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords",
       "statusCode": "A",
       "createdAt": "2026-08-01T12:31:41.837Z",
-      "updatedAt": "2026-08-01T12:31:41.837Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-b14782e-017",
       "title": "AI: image-refine-prompt.ts (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "AI",
       "priority": "Alta",
       "description": "File `src/lib/ai/image-refine-prompt.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.",
@@ -27909,12 +28007,13 @@
       "commitSubject": "feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords",
       "statusCode": "M",
       "createdAt": "2026-08-01T12:31:41.837Z",
-      "updatedAt": "2026-08-01T12:31:41.837Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-b14782e-018",
       "title": "AI: wiki-npc-params.ts (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "AI",
       "priority": "Alta",
       "description": "File `src/lib/ai/wiki-npc-params.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.",
@@ -27951,12 +28050,13 @@
       "commitSubject": "feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords",
       "statusCode": "M",
       "createdAt": "2026-08-01T12:31:41.837Z",
-      "updatedAt": "2026-08-01T12:31:41.837Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-b14782e-019",
       "title": "AI: build-prompt.ts (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "AI",
       "priority": "Alta",
       "description": "File `src/lib/image-benchmark/build-prompt.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.",
@@ -27993,12 +28093,13 @@
       "commitSubject": "feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords",
       "statusCode": "M",
       "createdAt": "2026-08-01T12:31:41.837Z",
-      "updatedAt": "2026-08-01T12:31:41.837Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-b14782e-020",
       "title": "OTHER: extract-phb-conditions.test.ts (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "OTHER",
       "priority": "Media",
       "description": "File `src/lib/manuals/rules-catalog/__tests__/extract-phb-conditions.test.ts` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.",
@@ -28028,12 +28129,13 @@
       "commitSubject": "feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords",
       "statusCode": "A",
       "createdAt": "2026-08-01T12:31:41.837Z",
-      "updatedAt": "2026-08-01T12:31:41.837Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-b14782e-021",
       "title": "OTHER: extract-phb-conditions.ts (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "OTHER",
       "priority": "Media",
       "description": "File `src/lib/manuals/rules-catalog/extract-phb-conditions.ts` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.",
@@ -28063,12 +28165,13 @@
       "commitSubject": "feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords",
       "statusCode": "A",
       "createdAt": "2026-08-01T12:31:41.837Z",
-      "updatedAt": "2026-08-01T12:31:41.837Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-b14782e-022",
       "title": "OTHER: types.ts (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "OTHER",
       "priority": "Media",
       "description": "File `src/lib/manuals/rules-catalog/types.ts` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.",
@@ -28098,12 +28201,13 @@
       "commitSubject": "feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords",
       "statusCode": "A",
       "createdAt": "2026-08-01T12:31:41.837Z",
-      "updatedAt": "2026-08-01T12:31:41.837Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-b14782e-023",
       "title": "OTHER: coordinates.test.ts (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "OTHER",
       "priority": "Media",
       "description": "File `src/lib/map-core/__tests__/coordinates.test.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.",
@@ -28133,12 +28237,13 @@
       "commitSubject": "feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords",
       "statusCode": "M",
       "createdAt": "2026-08-01T12:31:41.837Z",
-      "updatedAt": "2026-08-01T12:31:41.837Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-b14782e-024",
       "title": "OTHER: index.ts (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "OTHER",
       "priority": "Media",
       "description": "File `src/lib/map-core/coordinates/index.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.",
@@ -28168,12 +28273,13 @@
       "commitSubject": "feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords",
       "statusCode": "M",
       "createdAt": "2026-08-01T12:31:41.837Z",
-      "updatedAt": "2026-08-01T12:31:41.837Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-b14782e-025",
       "title": "OTHER: object-contain.ts (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "OTHER",
       "priority": "Media",
       "description": "File `src/lib/map-core/coordinates/object-contain.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.",
@@ -28203,12 +28309,13 @@
       "commitSubject": "feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords",
       "statusCode": "M",
       "createdAt": "2026-08-01T12:31:41.837Z",
-      "updatedAt": "2026-08-01T12:31:41.837Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-b14782e-026",
       "title": "AI: wiki-npc-params.test.ts (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "AI",
       "priority": "Alta",
       "description": "File `src/modules/command-center/ai-control-plane/__tests__/wiki-npc-params.test.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.",
@@ -28245,12 +28352,13 @@
       "commitSubject": "feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords",
       "statusCode": "M",
       "createdAt": "2026-08-01T12:31:41.837Z",
-      "updatedAt": "2026-08-01T12:31:41.837Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-b14782e-027",
       "title": "AI: chat-assistant.ts (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "AI",
       "priority": "Alta",
       "description": "File `src/modules/command-center/ai-control-plane/chat-assistant.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.",
@@ -28287,12 +28395,13 @@
       "commitSubject": "feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords",
       "statusCode": "M",
       "createdAt": "2026-08-01T12:31:41.837Z",
-      "updatedAt": "2026-08-01T12:31:41.837Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-b14782e-028",
       "title": "AI: wiki-proposal-builder.ts (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "AI",
       "priority": "Alta",
       "description": "File `src/modules/command-center/ai-control-plane/wiki-proposal-builder.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.",
@@ -28329,12 +28438,13 @@
       "commitSubject": "feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords",
       "statusCode": "M",
       "createdAt": "2026-08-01T12:31:41.837Z",
-      "updatedAt": "2026-08-01T12:31:41.837Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-b14782e-029",
       "title": "OTHER: database.types.ts (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "OTHER",
       "priority": "Media",
       "description": "File `src/types/database.types.ts` modificato nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.",
@@ -28364,12 +28474,13 @@
       "commitSubject": "feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords",
       "statusCode": "M",
       "createdAt": "2026-08-01T12:31:41.837Z",
-      "updatedAt": "2026-08-01T12:31:41.837Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-b14782e-030",
       "title": "DATABASE: 20260801140000_rules_catalog.sql (aggiunto)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "DATABASE",
       "priority": "Alta",
       "description": "File `supabase/migrations/20260801140000_rules_catalog.sql` aggiunto nel commit «feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords». Classificazione automatica — richiede revisione umana.",
@@ -28402,12 +28513,13 @@
       "commitSubject": "feat(rules,ai,maps): add rules catalog, item/lore image framing, and FoW contain coords",
       "statusCode": "A",
       "createdAt": "2026-08-01T12:31:41.837Z",
-      "updatedAt": "2026-08-01T12:31:41.837Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
     },
     {
       "id": "BD-GMFLOW-9ebb1ec-001",
       "title": "AI: image-prompt-builder.ts (modificato)",
-      "status": "NEEDS_REVIEW",
+      "status": "TO_IMPORT",
       "category": "AI",
       "priority": "Alta",
       "description": "File `src/lib/ai/image-prompt-builder.ts` modificato nel commit «fix(ai): avoid server supabase import via image-prompt-builder». Classificazione automatica — richiede revisione umana.",
@@ -28444,7 +28556,331 @@
       "commitSubject": "fix(ai): avoid server supabase import via image-prompt-builder",
       "statusCode": "M",
       "createdAt": "2026-08-01T12:35:20.182Z",
-      "updatedAt": "2026-08-01T12:35:20.182Z"
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
+    },
+    {
+      "id": "BD-GMFLOW-9679ca1-001",
+      "title": "OTHER: globals.css (modificato)",
+      "status": "TO_IMPORT",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/app/globals.css` modificato nel commit «fix(gm): resize GM Screen panels by edges only». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/app/globals.css"
+      ],
+      "gmflowLikelyFiles": [
+        "src/app/globals.css"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9679ca1071d50061a6b9673da8d8eafd17777978",
+      "commitShort": "9679ca1",
+      "commitSubject": "fix(gm): resize GM Screen panels by edges only",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T12:43:13.289Z",
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
+    },
+    {
+      "id": "BD-GMFLOW-9679ca1-002",
+      "title": "GM_SCREEN: gm-screen-board.tsx (modificato)",
+      "status": "TO_IMPORT",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/gm-screen-board.tsx` modificato nel commit «fix(gm): resize GM Screen panels by edges only». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/gm-screen-board.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/gm-screen-board.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "9679ca1071d50061a6b9673da8d8eafd17777978",
+      "commitShort": "9679ca1",
+      "commitSubject": "fix(gm): resize GM Screen panels by edges only",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T12:43:13.289Z",
+      "updatedAt": "2026-08-01T14:57:18.408Z",
+      "exportPackage": "bnd-gm-screen-rules-ai-maps-2026-08-01"
+    },
+    {
+      "id": "BD-GMFLOW-c1f20f4-001",
+      "title": "GM_SCREEN: rules-lookup-panel.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/panels/rules-lookup-panel.tsx` modificato nel commit «feat(gm): split spellcasting in dense statblocks and harden PHB condition extract». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/panels/rules-lookup-panel.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/panels/rules-lookup-panel.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "c1f20f428f93b582d61e8053bb1b5b748e8f29e2",
+      "commitShort": "c1f20f4",
+      "commitSubject": "feat(gm): split spellcasting in dense statblocks and harden PHB condition extract",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T16:59:13.657Z",
+      "updatedAt": "2026-08-01T16:59:13.657Z"
+    },
+    {
+      "id": "BD-GMFLOW-c1f20f4-002",
+      "title": "GM_SCREEN: fivee-statblock-view.tsx (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "GM_SCREEN",
+      "priority": "Media",
+      "description": "File `src/components/gm/screen-grid/renderers/fivee-statblock-view.tsx` modificato nel commit «feat(gm): split spellcasting in dense statblocks and harden PHB condition extract». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schermo GM / combattimento — alto valore per GM professionisti.",
+      "bdFiles": [
+        "src/components/gm/screen-grid/renderers/fivee-statblock-view.tsx"
+      ],
+      "gmflowLikelyFiles": [
+        "src/components/gm/screen-grid/renderers/fivee-statblock-view.tsx"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "Permessi"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "c1f20f428f93b582d61e8053bb1b5b748e8f29e2",
+      "commitShort": "c1f20f4",
+      "commitSubject": "feat(gm): split spellcasting in dense statblocks and harden PHB condition extract",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T16:59:13.657Z",
+      "updatedAt": "2026-08-01T16:59:13.657Z"
+    },
+    {
+      "id": "BD-GMFLOW-c1f20f4-003",
+      "title": "OTHER: dense-parsers.test.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/manuals/__tests__/dense-parsers.test.ts` modificato nel commit «feat(gm): split spellcasting in dense statblocks and harden PHB condition extract». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/manuals/__tests__/dense-parsers.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/manuals/__tests__/dense-parsers.test.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "c1f20f428f93b582d61e8053bb1b5b748e8f29e2",
+      "commitShort": "c1f20f4",
+      "commitSubject": "feat(gm): split spellcasting in dense statblocks and harden PHB condition extract",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T16:59:13.657Z",
+      "updatedAt": "2026-08-01T16:59:13.657Z"
+    },
+    {
+      "id": "BD-GMFLOW-c1f20f4-004",
+      "title": "OTHER: dense-statblock-parser.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/manuals/dense-statblock-parser.ts` modificato nel commit «feat(gm): split spellcasting in dense statblocks and harden PHB condition extract». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/manuals/dense-statblock-parser.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/manuals/dense-statblock-parser.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "c1f20f428f93b582d61e8053bb1b5b748e8f29e2",
+      "commitShort": "c1f20f4",
+      "commitSubject": "feat(gm): split spellcasting in dense statblocks and harden PHB condition extract",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T16:59:13.657Z",
+      "updatedAt": "2026-08-01T16:59:13.657Z"
+    },
+    {
+      "id": "BD-GMFLOW-c1f20f4-005",
+      "title": "OTHER: extract-phb-conditions.test.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/manuals/rules-catalog/__tests__/extract-phb-conditions.test.ts` modificato nel commit «feat(gm): split spellcasting in dense statblocks and harden PHB condition extract». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/manuals/rules-catalog/__tests__/extract-phb-conditions.test.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/manuals/rules-catalog/__tests__/extract-phb-conditions.test.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "c1f20f428f93b582d61e8053bb1b5b748e8f29e2",
+      "commitShort": "c1f20f4",
+      "commitSubject": "feat(gm): split spellcasting in dense statblocks and harden PHB condition extract",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T16:59:13.657Z",
+      "updatedAt": "2026-08-01T16:59:13.657Z"
+    },
+    {
+      "id": "BD-GMFLOW-c1f20f4-006",
+      "title": "OTHER: extract-phb-conditions.ts (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "OTHER",
+      "priority": "Media",
+      "description": "File `src/lib/manuals/rules-catalog/extract-phb-conditions.ts` modificato nel commit «feat(gm): split spellcasting in dense statblocks and harden PHB condition extract». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Modifica generica — valutare manualmente rilevanza gmflow.",
+      "bdFiles": [
+        "src/lib/manuals/rules-catalog/extract-phb-conditions.ts"
+      ],
+      "gmflowLikelyFiles": [
+        "src/lib/manuals/rules-catalog/extract-phb-conditions.ts"
+      ],
+      "requiredAdaptations": [
+        "altro"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED"
+      ],
+      "commitHash": "c1f20f428f93b582d61e8053bb1b5b748e8f29e2",
+      "commitShort": "c1f20f4",
+      "commitSubject": "feat(gm): split spellcasting in dense statblocks and harden PHB condition extract",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T16:59:13.657Z",
+      "updatedAt": "2026-08-01T16:59:13.657Z"
+    },
+    {
+      "id": "BD-GMFLOW-c1f20f4-007",
+      "title": "DATABASE: 20260801140000_rules_catalog.sql (modificato)",
+      "status": "NEEDS_REVIEW",
+      "category": "DATABASE",
+      "priority": "Alta",
+      "description": "File `supabase/migrations/20260801140000_rules_catalog.sql` modificato nel commit «feat(gm): split spellcasting in dense statblocks and harden PHB condition extract». Classificazione automatica — richiede revisione umana.",
+      "valueForGmflow": "Schema o migrazione DB — valutare impatto RLS e tenant isolation.",
+      "bdFiles": [
+        "supabase/migrations/20260801140000_rules_catalog.sql"
+      ],
+      "gmflowLikelyFiles": [
+        "supabase/migrations/20260801140000_rules_catalog.sql"
+      ],
+      "requiredAdaptations": [
+        "Multi-tenant",
+        "sicurezza"
+      ],
+      "risks": [
+        "Classificazione automatica non verificata",
+        "Impatto RLS / isolamento tenant"
+      ],
+      "decisionsNeeded": [
+        "Confermare se la modifica è rilevante per gmflow"
+      ],
+      "doneCriteria": [
+        "Codice portato in gmflow con adattamenti documentati",
+        "Test minimi superati",
+        "Voce ledger aggiornata a IMPORTED o PARTIALLY_IMPORTED",
+        "RLS/policy verificate per multi-tenant"
+      ],
+      "commitHash": "c1f20f428f93b582d61e8053bb1b5b748e8f29e2",
+      "commitShort": "c1f20f4",
+      "commitSubject": "feat(gm): split spellcasting in dense statblocks and harden PHB condition extract",
+      "statusCode": "M",
+      "createdAt": "2026-08-01T16:59:13.657Z",
+      "updatedAt": "2026-08-01T16:59:13.657Z"
     }
   ]
 }
