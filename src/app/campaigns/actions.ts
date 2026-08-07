@@ -2225,28 +2225,6 @@ export async function closeSessionAction(
 
     const admin = createSupabaseAdminClient();
 
-    const sessionUpdate: {
-      status: string;
-      session_summary: string | null;
-      gm_private_notes?: string | null;
-      is_pre_closed?: boolean;
-    } = {
-      status: "completed",
-      session_summary: payload.summary?.trim() || null,
-      is_pre_closed: false,
-    };
-    if (payload.gm_private_notes !== undefined) {
-      sessionUpdate.gm_private_notes = payload.gm_private_notes?.trim() || null;
-    }
-    const { error: updateSessionErr } = await admin
-      .from("sessions")
-      .update(sessionUpdate as never)
-      .eq("id", sessionId);
-    if (updateSessionErr) {
-      console.error("[closeSessionAction] session", updateSessionErr);
-      return { success: false, message: updateSessionErr.message ?? "Errore durante la chiusura." };
-    }
-
     const { data: signupsData } = await admin
       .from("session_signups")
       .select("id, player_id, status")
@@ -2267,6 +2245,28 @@ export async function closeSessionAction(
     if (!xpApplyResult.success) {
       console.error("[closeSessionAction] xp", xpApplyResult.error);
       return { success: false, message: xpApplyResult.error ?? "Errore durante l'assegnazione XP." };
+    }
+
+    const sessionUpdate: {
+      status: string;
+      session_summary: string | null;
+      gm_private_notes?: string | null;
+      is_pre_closed?: boolean;
+    } = {
+      status: "completed",
+      session_summary: payload.summary?.trim() || null,
+      is_pre_closed: false,
+    };
+    if (payload.gm_private_notes !== undefined) {
+      sessionUpdate.gm_private_notes = payload.gm_private_notes?.trim() || null;
+    }
+    const { error: updateSessionErr } = await admin
+      .from("sessions")
+      .update(sessionUpdate as never)
+      .eq("id", sessionId);
+    if (updateSessionErr) {
+      console.error("[closeSessionAction] session", updateSessionErr);
+      return { success: false, message: updateSessionErr.message ?? "Errore durante la chiusura." };
     }
 
     if (isLongCampaign && Object.keys(payload.entityStatusUpdates).length > 0) {
@@ -2436,18 +2436,6 @@ export async function preCloseSessionAction(
 
     const admin = createSupabaseAdminClient();
 
-    const { error: updateSessionErr } = await admin
-      .from("sessions")
-      .update({ is_pre_closed: true } as never)
-      .eq("id", sessionId);
-    if (updateSessionErr) {
-      console.error("[preCloseSessionAction] session", updateSessionErr);
-      return {
-        success: false,
-        message: updateSessionErr.message ?? "Errore durante il salvataggio in bozza.",
-      };
-    }
-
     const { data: signupsData } = await admin
       .from("session_signups")
       .select("id, player_id, status")
@@ -2470,6 +2458,18 @@ export async function preCloseSessionAction(
       return {
         success: false,
         message: xpApplyResult.error ?? "Errore durante il salvataggio presenze.",
+      };
+    }
+
+    const { error: updateSessionErr } = await admin
+      .from("sessions")
+      .update({ is_pre_closed: true } as never)
+      .eq("id", sessionId);
+    if (updateSessionErr) {
+      console.error("[preCloseSessionAction] session", updateSessionErr);
+      return {
+        success: false,
+        message: updateSessionErr.message ?? "Errore durante il salvataggio in bozza.",
       };
     }
 
