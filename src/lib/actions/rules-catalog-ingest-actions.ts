@@ -12,7 +12,6 @@ import {
   getSourceById,
   readManualMarkdown,
   SPELL_CATALOG_SOURCE_IDS,
-  type RulesCatalogSourceId,
 } from "@/lib/manuals/rules-catalog/sources";
 import type { RulesCatalogRecord } from "@/lib/manuals/rules-catalog/types";
 import type { Database } from "@/types/database.types";
@@ -243,9 +242,4 @@ export async function ingestRulesCatalogAllAction(): Promise<IngestRulesCatalogR
   parts.push(await ingestRulesCatalogDmgRulesAction());
   if (!parts[parts.length - 1]!.success) return parts[parts.length - 1]!;
   return mergeResults(parts);
-}
-
-/** Helper test / tooling: carica markdown per source id. */
-export function loadRulesCatalogSourceMarkdown(id: RulesCatalogSourceId): string {
-  return readManualMarkdown(getSourceById(id).sourceFile);
 }
