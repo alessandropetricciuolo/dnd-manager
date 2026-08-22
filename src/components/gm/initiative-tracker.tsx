@@ -410,13 +410,6 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       }
       if (sig === lastControlledParentSigRef.current) return;
       lastControlledParentSigRef.current = sig;
-      if (entries.length > 0) {
-        try {
-          localStorage.setItem(storageKey, JSON.stringify(state));
-        } catch {
-          // ignore
-        }
-      }
       onChange?.(state);
       return;
     }
