@@ -305,6 +305,7 @@ export function GmScreenLongStateProvider({
   const [calendarConfig, setCalendarConfigState] = useState<FantasyCalendarConfig>(DEFAULT_FANTASY_CALENDAR_CONFIG);
   const [economyDraft, setEconomyDraftState] = useState<LongSessionEconomyDraft>(emptyEconomyDraft);
   const [missionSelection, setMissionSelectionState] = useState<LongSessionMissionSelection>(emptyMissionSelection);
+  const [sessionHydrated, setSessionHydrated] = useState(false);
   const restoreRef = useRef(false);
 
   const refreshSessions = useCallback(async () => {
@@ -379,6 +380,7 @@ export function GmScreenLongStateProvider({
 
   useEffect(() => {
     if (!selectedSessionId) {
+      setSessionHydrated(false);
       setSignups([]);
       setAttendanceState({});
       setInitiativeState(emptyInitiativeState);
@@ -388,6 +390,15 @@ export function GmScreenLongStateProvider({
       setMissionSelectionState(emptyMissionSelection);
       return;
     }
+
+    setSessionHydrated(false);
+    setSignups([]);
+    setAttendanceState({});
+    setInitiativeState(emptyInitiativeState);
+    setXpState(emptyXpState);
+    setElapsedHoursState(0);
+    setEconomyDraftState(emptyEconomyDraft);
+    setMissionSelectionState(emptyMissionSelection);
 
     let cancelled = false;
 
@@ -417,6 +428,7 @@ export function GmScreenLongStateProvider({
       );
       setEconomyDraftState(sanitizeEconomyDraft(stored?.economyDraft, validCharacterIds));
       setMissionSelectionState(sanitizeMissionSelection(stored?.missionSelection));
+      if (!cancelled) setSessionHydrated(true);
     };
 
     void loadSignups();
@@ -457,7 +469,7 @@ export function GmScreenLongStateProvider({
   }, [selectedSessionId, sessionCharacters, signups]);
 
   useEffect(() => {
-    if (!selectedSessionId || typeof window === "undefined") return;
+    if (!selectedSessionId || !sessionHydrated || typeof window === "undefined") return;
     try {
       const payload: StoredLongSessionState = {
         version: 2,
@@ -472,7 +484,17 @@ export function GmScreenLongStateProvider({
     } catch {
       // ignore
     }
-  }, [attendance, campaignId, economyDraft, elapsedHours, initiativeState, missionSelection, selectedSessionId, xpState]);
+  }, [
+    attendance,
+    campaignId,
+    economyDraft,
+    elapsedHours,
+    initiativeState,
+    missionSelection,
+    selectedSessionId,
+    sessionHydrated,
+    xpState,
+  ]);
 
   const setSelectedSessionId = useCallback((sessionId: string | null) => {
     setSelectedSessionIdState(sessionId);
