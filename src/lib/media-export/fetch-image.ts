@@ -1,4 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { lookup } from "dns/promises";
+import { isIP } from "net";
 import { normalizeImageUrl } from "@/lib/image-url";
 import type { Database } from "@/types/database.types";
 import type { ImageExportRecord } from "./types";
@@ -13,6 +15,81 @@ const MIME_BY_EXT: Record<string, string> = {
   gif: "image/gif",
   webp: "image/webp",
 };
+
+const MAX_REDIRECTS = 3;
+
+function stripIpv6Brackets(hostname: string): string {
+  return hostname.replace(/^\[|\]$/g, "").toLowerCase();
+}
+
+function isPrivateIpv4(address: string): boolean {
+  const parts = address.split(".").map((part) => Number(part));
+  if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) {
+    return true;
+  }
+  const [a, b] = parts;
+  return (
+    a === 0 ||
+    a === 10 ||
+    a === 127 ||
+    (a === 100 && b >= 64 && b <= 127) ||
+    (a === 169 && b === 254) ||
+    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && b === 168) ||
+    (a === 198 && (b === 18 || b === 19)) ||
+    a >= 224
+  );
+}
+
+function isPrivateIpv6(address: string): boolean {
+  const lower = stripIpv6Brackets(address);
+  if (lower === "::" || lower === "::1") return true;
+  if (lower.startsWith("fe80:") || lower.startsWith("fe90:") || lower.startsWith("fea0:") || lower.startsWith("feb0:")) {
+    return true;
+  }
+  if (/^f[cd][0-9a-f]{2}:/i.test(lower)) return true;
+  const mapped = lower.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/);
+  if (mapped) return isPrivateIpv4(mapped[1]);
+  return false;
+}
+
+export function isPrivateNetworkAddress(address: string): boolean {
+  const normalized = stripIpv6Brackets(address);
+  const version = isIP(normalized);
+  if (version === 4) return isPrivateIpv4(normalized);
+  if (version === 6) return isPrivateIpv6(normalized);
+  return true;
+}
+
+function isLocalHostname(hostname: string): boolean {
+  const lower = stripIpv6Brackets(hostname);
+  return lower === "localhost" || lower.endsWith(".localhost") || lower.endsWith(".local");
+}
+
+export async function isSafePublicHttpUrl(rawUrl: string): Promise<boolean> {
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    return false;
+  }
+
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
+  if (parsed.username || parsed.password) return false;
+  if (isLocalHostname(parsed.hostname)) return false;
+
+  const hostname = stripIpv6Brackets(parsed.hostname);
+  if (isIP(hostname)) {
+    return !isPrivateNetworkAddress(hostname);
+  }
+
+  try {
+    const records = await lookup(hostname, { all: true, verbatim: true });
+    return records.length > 0 && records.every((record) => !isPrivateNetworkAddress(record.address));
+  } catch {
+    return false;
+  }
+}
 
 function extFromMime(mime: string): string {
   if (mime.includes("png")) return "png";
@@ -55,8 +132,21 @@ async function fetchTelegramByFileId(fileId: string): Promise<{ buffer: Buffer; 
 }
 
 async function fetchHttpUrl(url: string): Promise<{ buffer: Buffer; ext: string } | null> {
-  const normalized = url.includes("drive.google.com") ? normalizeImageUrl(url) : url;
-  const res = await fetch(normalized, { redirect: "follow" });
+  let normalized = url.includes("drive.google.com") ? normalizeImageUrl(url) : url;
+  let res: Response | null = null;
+
+  for (let redirects = 0; redirects <= MAX_REDIRECTS; redirects += 1) {
+    if (!(await isSafePublicHttpUrl(normalized))) return null;
+
+    res = await fetch(normalized, { redirect: "manual" });
+    if (res.status < 300 || res.status >= 400) break;
+
+    const location = res.headers.get("location");
+    if (!location) return null;
+    normalized = new URL(location, normalized).toString();
+  }
+
+  if (!res || (res.status >= 300 && res.status < 400)) return null;
   if (!res.ok) return null;
 
   const contentType = res.headers.get("content-type") ?? "";
