@@ -228,6 +228,16 @@ export function EndSessionWizard({
 
   const loadTrackerEntityIds = useCallback(() => {
     try {
+      const draft = readSessionCloseDraft(campaignId, sessionId);
+      if (draft?.initiativeEntries?.length) {
+        const entries = draft.initiativeEntries;
+        const entityIds = [...new Set(entries.map((e) => e.entityId).filter(Boolean))] as string[];
+        const zeroHpEntityIds = new Set(
+          entries.filter((e) => e.entityId && e.hp === 0).map((e) => e.entityId as string)
+        );
+        return { entityIds, zeroHpEntityIds };
+      }
+
       const raw = localStorage.getItem(`${STORAGE_KEY_PREFIX}${campaignId}`);
       if (!raw) return { entityIds: [] as string[], zeroHpEntityIds: new Set<string>() };
       const parsed = JSON.parse(raw) as { entries?: Array<{ entityId?: string; hp?: number }> };
@@ -240,7 +250,7 @@ export function EndSessionWizard({
     } catch {
       return { entityIds: [] as string[], zeroHpEntityIds: new Set<string>() };
     }
-  }, [campaignId]);
+  }, [campaignId, sessionId]);
 
   useEffect(() => {
     if (!open) return;
