@@ -219,22 +219,6 @@ export async function applyCloseSessionEconomy(
           };
         }
 
-        const { error: updM } = await admin
-          .from("campaign_missions")
-          .update({
-            treasure_gp: tg - sum.gp,
-            treasure_sp: ts - sum.sp,
-            treasure_cp: tc - sum.cp,
-            updated_at: new Date().toISOString(),
-          } as never)
-          .eq("id", payout.missionId)
-          .eq("campaign_id", campaignId);
-
-        if (updM) {
-          console.error("[applyCloseSessionEconomy] mission treasure", updM);
-          return { success: false, message: updM.message ?? "Errore aggiornamento tesoretto." };
-        }
-
         for (const a of payout.allocations) {
           const addGp = nonNegInt(a.coins_gp);
           const addSp = nonNegInt(a.coins_sp);
@@ -265,6 +249,22 @@ export async function applyCloseSessionEconomy(
             console.error("[applyCloseSessionEconomy] character add", uCh);
             return { success: false, message: uCh.message ?? "Errore aggiornamento monete PG." };
           }
+        }
+
+        const { error: updM } = await admin
+          .from("campaign_missions")
+          .update({
+            treasure_gp: tg - sum.gp,
+            treasure_sp: ts - sum.sp,
+            treasure_cp: tc - sum.cp,
+            updated_at: new Date().toISOString(),
+          } as never)
+          .eq("id", payout.missionId)
+          .eq("campaign_id", campaignId);
+
+        if (updM) {
+          console.error("[applyCloseSessionEconomy] mission treasure", updM);
+          return { success: false, message: updM.message ?? "Errore aggiornamento tesoretto." };
         }
       }
     }
