@@ -333,6 +333,7 @@ export async function updateMap(
     if (parentMapId !== undefined) {
       updates.parent_map_id = parentMapId;
     }
+    let unlinkedWikiBindings: Array<{ id: string }> = [];
     if (wikiEntityId !== undefined) {
       if (wikiEntityId) {
         const { data: entityRow, error: entityErr } = await supabase
@@ -347,25 +348,76 @@ export async function updateMap(
         if ((entityRow as { type?: string }).type !== "location") {
           return { success: false, message: "Puoi collegare solo schede di tipo Luogo." };
         }
-        await supabase
+
+        const { data: targetMap, error: targetMapErr } = await supabase
           .from("maps")
-          .update({ wiki_entity_id: null })
+          .select("id")
+          .eq("id", mapId)
+          .eq("campaign_id", campaignId)
+          .maybeSingle();
+        if (targetMapErr || !targetMap) {
+          return { success: false, message: "Mappa non trovata in questa campagna." };
+        }
+
+        const { data: priorBindings, error: priorBindingsErr } = await supabase
+          .from("maps")
+          .select("id")
           .eq("campaign_id", campaignId)
           .eq("wiki_entity_id", wikiEntityId)
           .neq("id", mapId);
+        if (priorBindingsErr) {
+          console.error("[updateMap] prior wiki bindings", priorBindingsErr);
+          return { success: false, message: "Errore durante la verifica dei collegamenti wiki." };
+        }
+        unlinkedWikiBindings = (priorBindings ?? []) as Array<{ id: string }>;
+
+        if (unlinkedWikiBindings.length > 0) {
+          const { error: unlinkErr } = await supabase
+            .from("maps")
+            .update({ wiki_entity_id: null })
+            .eq("campaign_id", campaignId)
+            .eq("wiki_entity_id", wikiEntityId)
+            .neq("id", mapId);
+          if (unlinkErr) {
+            console.error("[updateMap] unlink wiki bindings", unlinkErr);
+            return { success: false, message: "Errore durante lo scollegamento delle mappe precedenti." };
+          }
+        }
       }
       updates.wiki_entity_id = wikiEntityId;
     }
     if (Object.keys(updates).length > 0) {
-      const { error } = await supabase
+      const { data: updatedRows, error } = await supabase
         .from("maps")
         .update(updates)
         .eq("id", mapId)
-        .eq("campaign_id", campaignId);
+        .eq("campaign_id", campaignId)
+        .select("id");
       if (error) {
+        if (unlinkedWikiBindings.length > 0 && wikiEntityId) {
+          for (const row of unlinkedWikiBindings) {
+            await supabase
+              .from("maps")
+              .update({ wiki_entity_id: wikiEntityId })
+              .eq("id", row.id)
+              .eq("campaign_id", campaignId);
+          }
+        }
         console.error("[updateMap]", error);
         const friendly = mapPgMapError(error);
         return { success: false, message: friendly ?? error.message ?? "Errore durante l'aggiornamento." };
+      }
+      if (!updatedRows?.length) {
+        if (unlinkedWikiBindings.length > 0 && wikiEntityId) {
+          for (const row of unlinkedWikiBindings) {
+            await supabase
+              .from("maps")
+              .update({ wiki_entity_id: wikiEntityId })
+              .eq("id", row.id)
+              .eq("campaign_id", campaignId);
+          }
+        }
+        return { success: false, message: "Mappa non trovata in questa campagna." };
       }
     }
     if (visibility !== undefined) {
@@ -663,6 +715,36 @@ export async function createMapFromWikiLocationAction(
     if (insertError || !inserted) {
       console.error("[createMapFromWikiLocationAction]", insertError);
       return { success: false, message: insertError?.message ?? "Errore creazione mappa." };
+    }
+
+    if (vis === "selective") {
+      const { data: wikiPerms, error: wikiPermErr } = await supabase
+        .from("entity_permissions")
+        .select("user_id")
+        .eq("campaign_id", campaignId)
+        .eq("entity_type", "wiki")
+        .eq("entity_id", wikiEntityId);
+      if (wikiPermErr) {
+        console.error("[createMapFromWikiLocationAction] wiki entity_permissions", wikiPermErr);
+      } else {
+        const userIds = [
+          ...new Set(
+            ((wikiPerms ?? []) as Array<{ user_id: string }>)
+              .map((row) => row.user_id)
+              .filter(Boolean)
+          ),
+        ];
+        const { error: permError } = await syncEntityPermissions(
+          supabase,
+          campaignId,
+          "map",
+          inserted.id,
+          userIds
+        );
+        if (permError) {
+          console.error("[createMapFromWikiLocationAction] map entity_permissions", permError);
+        }
+      }
     }
 
     try {
