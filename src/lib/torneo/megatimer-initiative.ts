@@ -62,6 +62,23 @@ export function readLegacyInitiativeFromBrowserStorage(
   return readStorageKey(torneoInitiativeStorageKey(campaignId, matchId));
 }
 
+export function clearMegatimerInitiativeBrowserStorage(campaignId: string, matchId: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(torneoLiveDbInitiativeStorageKey(campaignId, matchId));
+    localStorage.removeItem(torneoInitiativeStorageKey(campaignId, matchId));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function isAuthoritativeMegatimerInitiativeClear(
+  initiativeSnapshot: unknown,
+  matchStatus: string | null | undefined
+): boolean {
+  return initiativeSnapshot == null && matchStatus !== "active";
+}
+
 export function parseInitiativeSnapshotField(raw: unknown): InitiativeTrackerState | null {
   const parsed = parseTorneoInitiativeSnapshot(raw);
   if (!parsed?.entries.length) return null;

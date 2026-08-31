@@ -15,6 +15,8 @@ import {
   planSlotsByKey,
 } from "@/lib/torneo/reset-torneo-state";
 import { endTorneoLiveSessionAction } from "@/app/campaigns/torneo-live-actions";
+import { resolveTorneoCompletionDamageTotals } from "@/lib/torneo/complete-match-damage";
+import { parseTorneoInitiativeSnapshot } from "@/lib/torneo/initiative-snapshot";
 import { isTorneoMatchPlayable, mapTorneoMatchRow } from "@/lib/torneo/map-match-row";
 import type {
   TorneoMatchStatus,
@@ -590,7 +592,7 @@ export async function completeTorneoMatchAction(
 
   const { data: match } = await check.supabase
     .from("torneo_matches")
-    .select("team_a_id, team_b_id, match_kind")
+    .select("team_a_id, team_b_id, match_kind, initiative_snapshot")
     .eq("id", matchId)
     .eq("campaign_id", campaignId)
     .maybeSingle();
@@ -627,14 +629,20 @@ export async function completeTorneoMatchAction(
     }
   }
 
+  const damageTotals = resolveTorneoCompletionDamageTotals(
+    payload,
+    match,
+    parseTorneoInitiativeSnapshot(match.initiative_snapshot)
+  );
+
   const { error } = await check.supabase
     .from("torneo_matches")
     .update({
       status: "completed",
       winner_team_id: isTriello ? match.team_a_id : winnerTeamId,
       winner_character_id: isTriello ? winnerCharacterId : null,
-      team_a_damage_total: Math.max(0, Math.trunc(payload.teamADamageTotal)),
-      team_b_damage_total: Math.max(0, Math.trunc(payload.teamBDamageTotal)),
+      team_a_damage_total: damageTotals.teamA,
+      team_b_damage_total: damageTotals.teamB,
       completed_at: new Date().toISOString(),
       notes: payload.notes?.trim() || null,
     })

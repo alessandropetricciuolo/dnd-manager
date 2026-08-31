@@ -3,6 +3,7 @@ import test from "node:test";
 import { emptyInitiativeTrackerState } from "@/components/gm/initiative-tracker";
 import {
   initiativeMatchesMatchRoster,
+  isAuthoritativeMegatimerInitiativeClear,
   parseEntryCountHintFromTimerLabel,
   parseInitiativeSnapshotField,
   pickInitiativeForMegatimer,
@@ -73,4 +74,11 @@ test("pickInitiativeForMegatimer preferisce snapshot coerente con timer (3 vs 6)
 test("parseInitiativeSnapshotField ignora snapshot vuoto", () => {
   assert.equal(parseInitiativeSnapshotField(null), null);
   assert.equal(parseInitiativeSnapshotField({ entries: [] }), null);
+});
+
+test("isAuthoritativeMegatimerInitiativeClear tratta null inattivo come reset", () => {
+  assert.equal(isAuthoritativeMegatimerInitiativeClear(null, "pending"), true);
+  assert.equal(isAuthoritativeMegatimerInitiativeClear(null, null), true);
+  assert.equal(isAuthoritativeMegatimerInitiativeClear(null, "active"), false);
+  assert.equal(isAuthoritativeMegatimerInitiativeClear({ entries: [] }, "pending"), false);
 });
