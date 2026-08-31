@@ -195,6 +195,25 @@ export async function updateTorneo2StationsAction(
   const check = await ensureTorneo2Gm(campaignId);
   if (!check.ok) return { success: false, error: check.error };
 
+  if (station1MatchId && station2MatchId && station1MatchId === station2MatchId) {
+    return { success: false, error: "Lo stesso incontro non puo' occupare entrambi i tavoli." };
+  }
+
+  const stationMatchIds = [...new Set([station1MatchId, station2MatchId].filter(Boolean) as string[])];
+  if (stationMatchIds.length > 0) {
+    const { data: matches, error: matchesErr } = await check.supabase
+      .from("torneo2_matches")
+      .select("id")
+      .eq("campaign_id", campaignId)
+      .in("id", stationMatchIds);
+    if (matchesErr) return { success: false, error: matchesErr.message };
+
+    const found = new Set((matches ?? []).map((m) => m.id));
+    if (stationMatchIds.some((id) => !found.has(id))) {
+      return { success: false, error: "Uno degli incontri selezionati non appartiene a questa campagna." };
+    }
+  }
+
   const { error } = await check.supabase
     .from("torneo2_live_sessions")
     .update({ station1_match_id: station1MatchId, station2_match_id: station2MatchId })

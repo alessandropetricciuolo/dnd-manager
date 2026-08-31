@@ -32,6 +32,36 @@ export type BracketMatchPlan = {
   feedsTo: { round: number; position: number; slot: "a" | "b" } | null;
 };
 
+export type BracketMatchWithId = BracketMatchPlan & {
+  id: string;
+  feedsMatchId: string | null;
+  feedsSlot: "a" | "b" | null;
+};
+
+export function assignBracketMatchIds(
+  plan: BracketMatchPlan[],
+  makeId: () => string,
+  trielloId: string | null = null
+): BracketMatchWithId[] {
+  const idGrid = new Map<string, string>();
+  for (const match of plan) {
+    idGrid.set(`${match.round}:${match.position}`, makeId());
+  }
+
+  return plan.map((match) => {
+    const feedsMatchId = match.feedsTo
+      ? idGrid.get(`${match.feedsTo.round}:${match.feedsTo.position}`) ?? null
+      : trielloId;
+
+    return {
+      ...match,
+      id: idGrid.get(`${match.round}:${match.position}`) as string,
+      feedsMatchId,
+      feedsSlot: match.feedsTo?.slot ?? null,
+    };
+  });
+}
+
 /**
  * Costruisce il piano di un tabellone a eliminazione diretta.
  * `teamIds` deve avere lunghezza potenza di due (>= 2); l'ordine è il seeding.

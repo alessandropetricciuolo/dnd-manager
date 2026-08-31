@@ -5,6 +5,7 @@ import { gmRemoteRateLimit } from "@/lib/gm-remote/rate-limit";
 import { isRecord } from "@/lib/gm-remote/protocol";
 import { validateGmRemoteSession } from "@/lib/gm-remote/validate-remote-session";
 import { sanitizeTorneo2CombatState } from "@/lib/torneo2/combat-state";
+import { getTorneo2LiveStationMatchIds } from "@/lib/torneo2/live-stations";
 
 type RouteContext = { params: Promise<{ publicId: string }> };
 
@@ -48,19 +49,20 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ ok: true, matches: [] });
   }
 
-  const stationByMatch = new Map<string, number>();
-  if (live.station1_match_id) stationByMatch.set(live.station1_match_id, 1);
-  if (live.station2_match_id) stationByMatch.set(live.station2_match_id, 2);
-  const matchIds = [...stationByMatch.keys()];
+  const matchIds = getTorneo2LiveStationMatchIds(live);
   if (matchIds.length === 0) {
     return NextResponse.json({ ok: true, matches: [] });
   }
+  const stationByMatch = new Map<string, number>(
+    matchIds.map((matchId) => [matchId, live.station1_match_id === matchId ? 1 : 2])
+  );
 
   const { data: rows } = await admin
     .from("torneo2_matches")
     .select(
       "id, label, kind, status, team_a_id, team_b_id, combat_state, combat_seq, timer_mode, turn_seconds, match_seconds, timer_running, timer_started_at, timer_paused_elapsed_ms, timer_label"
     )
+    .eq("campaign_id", v.session.campaign_id)
     .in("id", matchIds);
 
   const { data: teams } = await admin

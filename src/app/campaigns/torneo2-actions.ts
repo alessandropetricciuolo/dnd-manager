@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import {
@@ -11,7 +12,7 @@ import {
   TORNEO2_MATCH_SELECT,
 } from "@/lib/torneo2/map-rows";
 import { finalistCharacterIds } from "@/lib/torneo2/standings";
-import { buildBracketPlan, isPowerOfTwo } from "@/lib/torneo2/bracket";
+import { assignBracketMatchIds, buildBracketPlan, isPowerOfTwo } from "@/lib/torneo2/bracket";
 import type { Torneo2MatchStatus, Torneo2Participant, Torneo2Setup, Torneo2Team } from "@/lib/torneo2/types";
 import type { Torneo2TimerMode } from "@/lib/torneo2/timer";
 
@@ -274,12 +275,34 @@ type TimerConfig = {
   matchSeconds?: number | null;
 };
 
+type Torneo2BracketInsertRow = {
+  id: string;
+  campaign_id: string;
+  kind: "team" | "final_ffa";
+  team_a_id: string | null;
+  team_b_id: string | null;
+  label: string | null;
+  round_label: string;
+  bracket_round: number;
+  bracket_position: number;
+  feeds_match_id: string | null;
+  feeds_slot: "a" | "b" | null;
+  sort_order: number;
+  status: "pending";
+  timer_mode: Torneo2TimerMode;
+  turn_seconds: number;
+  match_seconds: number | null;
+};
+
+const TORNEO2_TIMER_MODES = new Set<Torneo2TimerMode>(["turn", "match", "both", "none"]);
+
 function sanitizeTimerConfig(cfg: TimerConfig | undefined): {
   timer_mode: Torneo2TimerMode;
   turn_seconds: number;
   match_seconds: number | null;
 } {
-  const mode = cfg?.timerMode ?? "turn";
+  const rawMode = cfg?.timerMode;
+  const mode = typeof rawMode === "string" && TORNEO2_TIMER_MODES.has(rawMode) ? rawMode : "turn";
   const turn = Math.max(5, Math.trunc(cfg?.turnSeconds ?? 120));
   const matchSec =
     cfg?.matchSeconds != null && cfg.matchSeconds > 0 ? Math.trunc(cfg.matchSeconds) : null;
@@ -733,12 +756,19 @@ export async function generateTorneo2BracketAction(
   const plan = buildBracketPlan(teamIds);
   if (plan.length === 0) return { success: false, error: "Impossibile costruire il tabellone." };
 
-  if (payload.replaceExisting) {
-    await supabase
-      .from("torneo2_matches")
-      .delete()
-      .eq("campaign_id", campaignId)
-      .not("bracket_round", "is", null);
+  const { data: selectedTeams, error: teamsErr } = await supabase
+    .from("torneo2_teams")
+    .select("id")
+    .eq("campaign_id", campaignId)
+    .in("id", teamIds);
+  if (teamsErr) return { success: false, error: teamsErr.message };
+
+  const selectedTeamIds = new Set((selectedTeams ?? []).map((t) => t.id));
+  if (teamIds.some((id) => !selectedTeamIds.has(id))) {
+    return {
+      success: false,
+      error: "Una o piu' squadre selezionate non esistono piu' in questa campagna. Ricarica e riprova.",
+    };
   }
 
   const { data: maxRow } = await supabase
@@ -753,75 +783,68 @@ export async function generateTorneo2BracketAction(
   const timer = sanitizeTimerConfig(payload.timer);
   const maxRound = plan.reduce((acc, m) => Math.max(acc, m.round), 0);
 
-  // Inserimento in due fasi: prima i match (senza feeds), poi i collegamenti.
-  const idGrid: Record<string, string> = {}; // `${round}:${position}` -> id
-  for (const m of plan) {
-    const { data, error } = await supabase
+  let oldBracketIds: string[] = [];
+  if (payload.replaceExisting) {
+    const { data: oldRows, error: oldErr } = await supabase
       .from("torneo2_matches")
-      .insert({
-        campaign_id: campaignId,
-        kind: "team",
-        team_a_id: m.teamAId,
-        team_b_id: m.teamBId,
-        label: null,
-        round_label: m.label,
-        bracket_round: m.round,
-        bracket_position: m.position,
-        sort_order: nextSort,
-        status: "pending",
-        ...timer,
-      })
       .select("id")
-      .single();
-    if (error || !data) {
-      return { success: false, error: error?.message ?? "Errore creazione incontri." };
-    }
-    idGrid[`${m.round}:${m.position}`] = data.id;
-    nextSort += 1;
+      .eq("campaign_id", campaignId)
+      .not("bracket_round", "is", null);
+    if (oldErr) return { success: false, error: oldErr.message };
+    oldBracketIds = (oldRows ?? []).map((row) => row.id);
   }
 
-  let trielloId: string | null = null;
-  if (payload.withTriello) {
-    const { data: triello, error: triErr } = await supabase
-      .from("torneo2_matches")
-      .insert({
-        campaign_id: campaignId,
-        kind: "final_ffa",
-        label: "Triello",
-        round_label: "Triello",
-        bracket_round: maxRound + 1,
-        bracket_position: 0,
-        sort_order: nextSort,
-        status: "pending",
-        ...timer,
-      })
-      .select("id")
-      .single();
-    if (triErr || !triello) {
-      return { success: false, error: triErr?.message ?? "Errore creazione triello." };
-    }
-    trielloId = triello.id;
-    nextSort += 1;
+  const trielloId = payload.withTriello ? randomUUID() : null;
+  const plannedMatches = assignBracketMatchIds(plan, randomUUID, trielloId);
+  const insertRows: Torneo2BracketInsertRow[] = plannedMatches.map((m, index) => ({
+    id: m.id,
+    campaign_id: campaignId,
+    kind: "team",
+    team_a_id: m.teamAId,
+    team_b_id: m.teamBId,
+    label: null,
+    round_label: m.label,
+    bracket_round: m.round,
+    bracket_position: m.position,
+    feeds_match_id: m.feedsMatchId,
+    feeds_slot: m.feedsSlot,
+    sort_order: nextSort + index,
+    status: "pending",
+    ...timer,
+  }));
+
+  if (trielloId) {
+    insertRows.push({
+      id: trielloId,
+      campaign_id: campaignId,
+      kind: "final_ffa",
+      team_a_id: null,
+      team_b_id: null,
+      label: "Triello",
+      round_label: "Triello",
+      bracket_round: maxRound + 1,
+      bracket_position: 0,
+      feeds_match_id: null,
+      feeds_slot: null,
+      sort_order: nextSort + plannedMatches.length,
+      status: "pending",
+      ...timer,
+    });
   }
 
-  // Collegamenti vincitore.
-  for (const m of plan) {
-    const id = idGrid[`${m.round}:${m.position}`];
-    if (!id) continue;
-    if (m.feedsTo) {
-      const targetId = idGrid[`${m.feedsTo.round}:${m.feedsTo.position}`];
-      if (targetId) {
-        await supabase
-          .from("torneo2_matches")
-          .update({ feeds_match_id: targetId, feeds_slot: m.feedsTo.slot })
-          .eq("id", id);
-      }
-    } else if (trielloId) {
-      // La finale alimenta il triello (espansione membri squadra vincente).
-      await supabase
-        .from("torneo2_matches")
-        .update({ feeds_match_id: trielloId, feeds_slot: null })
-        .eq("id", id);
+  const { error: insertErr } = await supabase.from("torneo2_matches").insert(insertRows);
+  if (insertErr) return { success: false, error: insertErr.message };
+
+  if (oldBracketIds.length > 0) {
+    const { error: deleteErr } = await supabase
+      .from("torneo2_matches")
+      .delete()
+      .eq("campaign_id", campaignId)
+      .in("id", oldBracketIds);
+    if (deleteErr) {
+      const insertedIds = insertRows.map((row) => row.id);
+      await supabase.from("torneo2_matches").delete().eq("campaign_id", campaignId).in("id", insertedIds);
+      return { success: false, error: deleteErr.message };
     }
   }
 
