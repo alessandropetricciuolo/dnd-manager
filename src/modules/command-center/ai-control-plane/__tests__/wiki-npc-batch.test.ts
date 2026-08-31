@@ -12,6 +12,7 @@ import {
   extractStructuredNpcRoleSpecs,
   planNpcBatchRoles,
 } from "../wiki-npc-batch";
+import { mergeWikiExtraParams } from "@/lib/ai/wiki-npc-params";
 
 const BARTOLO_PROMPT = `ho bisogno che mi generi 3 npc collegati alla missione Persona Scomprarsa. Sono collegati a bartolo de curtis. Sono
 il padre di bartolo umano aristocratico livello 1
@@ -91,6 +92,17 @@ test("batchHasCompleteMechanics true when each line has race class level", () =>
   const detected = detectNpcBatchCreateRequest(BARTOLO_PROMPT);
   assert.ok(detected);
   assert.equal(batchHasCompleteMechanics(detected!), true);
+});
+
+test("mergeWikiExtraParams prefers per-line spec over shared batch params", () => {
+  const detected = detectNpcBatchCreateRequest(BARTOLO_PROMPT);
+  assert.ok(detected);
+  const shared = { npcRace: "Umano", npcClass: "Aristocratico", npcLevel: "1" };
+  const butler = detected!.roleSpecs[2];
+  assert.ok(butler);
+  const merged = mergeWikiExtraParams(butler.extraParams, shared);
+  assert.equal(merged.npcRace, "Nano");
+  assert.equal(merged.npcClass, "Aristocratico");
 });
 
 test("detectNpcBatchCreateRequest for count-only city prompt", () => {
