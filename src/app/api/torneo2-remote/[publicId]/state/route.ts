@@ -5,6 +5,7 @@ import { gmRemoteRateLimit } from "@/lib/gm-remote/rate-limit";
 import { isRecord } from "@/lib/gm-remote/protocol";
 import { validateGmRemoteSession } from "@/lib/gm-remote/validate-remote-session";
 import { sanitizeTorneo2CombatState } from "@/lib/torneo2/combat-state";
+import { loadTorneo2RemoteLiveSession, torneo2StationForMatch } from "@/lib/torneo2/remote-session";
 
 type RouteContext = { params: Promise<{ publicId: string }> };
 
@@ -37,20 +38,25 @@ export async function POST(request: Request, context: RouteContext) {
 
   const admin = createSupabaseAdminClient() as unknown as SupabaseClient;
 
-  const { data: live } = await admin
-    .from("torneo2_live_sessions")
-    .select("station1_match_id, station2_match_id")
-    .eq("campaign_id", v.session.campaign_id)
-    .eq("status", "live")
-    .maybeSingle();
+  const { live, error: liveError } = await loadTorneo2RemoteLiveSession(
+    admin,
+    v.session.campaign_id,
+    publicId
+  );
 
+  if (liveError) {
+    return NextResponse.json({ ok: false, error: liveError }, { status: 500 });
+  }
   if (!live) {
     return NextResponse.json({ ok: true, matches: [] });
   }
 
   const stationByMatch = new Map<string, number>();
-  if (live.station1_match_id) stationByMatch.set(live.station1_match_id, 1);
-  if (live.station2_match_id) stationByMatch.set(live.station2_match_id, 2);
+  for (const matchId of [live.station1_match_id, live.station2_match_id]) {
+    if (!matchId) continue;
+    const station = torneo2StationForMatch(live, matchId);
+    if (station) stationByMatch.set(matchId, station);
+  }
   const matchIds = [...stationByMatch.keys()];
   if (matchIds.length === 0) {
     return NextResponse.json({ ok: true, matches: [] });

@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  collectNarrativeTexts,
   extractEntityReferencesFromText,
   mergeManualAndTextRelations,
 } from "@/lib/wiki/entity-reference-parser";
@@ -40,4 +41,14 @@ test("merge manuali hanno priorità etichetta", () => {
   );
   assert.equal(merged.length, 1);
   assert.equal(merged[0]!.label, "Alleato");
+});
+
+test("collectNarrativeTexts ignora attributi riservati al GM", () => {
+  const parts = collectNarrativeTexts("Testo pubblico", {
+    summary: "Sommario pubblico",
+    gm_notes: "Segreto su [[Tharion]]",
+    relationships: "Rapporto segreto con Tharion",
+  });
+
+  assert.deepEqual(parts, ["Testo pubblico", "Sommario pubblico"]);
 });

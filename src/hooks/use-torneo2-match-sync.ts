@@ -142,10 +142,15 @@ export function useTorneo2MatchSync({
             // Combat: guardia origin + seq.
             const seq = Number(row.combat_seq ?? 0) || 0;
             const origin = (row.combat_origin as string | null) ?? null;
-            if (origin && origin === originRef.current) return;
-            if (seq <= appliedSeqRef.current) return;
             if (row.combat_state == null) {
-              appliedSeqRef.current = seq;
+              const next = sanitizeTorneo2CombatState(null);
+              appliedSeqRef.current = Math.max(appliedSeqRef.current, seq);
+              lastSavedSigRef.current = torneo2CombatSignature(next);
+              onRemoteCombatRef.current(next);
+              return;
+            }
+            if (origin && origin === originRef.current) return;
+            if (seq <= appliedSeqRef.current) {
               return;
             }
             const next = sanitizeTorneo2CombatState(row.combat_state);

@@ -16,6 +16,7 @@ import type { Torneo2MatchStatus, Torneo2Participant, Torneo2Setup, Torneo2Team 
 import type { Torneo2TimerMode } from "@/lib/torneo2/timer";
 
 type Result<T = void> = { success: true; data?: T } | { success: false; error: string };
+type Torneo2Supabase = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
 async function ensureTorneo2Gm(campaignId: string): Promise<
   | { ok: true; supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>; userId: string }
@@ -47,6 +48,23 @@ async function ensureTorneo2Gm(campaignId: string): Promise<
 function revalidateTorneo2(campaignId: string) {
   revalidatePath(`/campaigns/${campaignId}/gm-screen`);
   revalidatePath(`/campaigns/${campaignId}`);
+}
+
+async function findActiveBracketMatchId(
+  supabase: Torneo2Supabase,
+  campaignId: string
+): Promise<{ id: string | null; error: string | null }> {
+  const { data, error } = await supabase
+    .from("torneo2_matches")
+    .select("id")
+    .eq("campaign_id", campaignId)
+    .not("bracket_round", "is", null)
+    .eq("status", "active")
+    .limit(1)
+    .maybeSingle();
+
+  if (error) return { id: null, error: error.message };
+  return { id: data?.id ?? null, error: null };
 }
 
 export async function getTorneo2SetupAction(campaignId: string): Promise<Result<Torneo2Setup>> {
@@ -422,7 +440,7 @@ async function withdrawWinnerFromBracket(
 ): Promise<void> {
   const { data: target } = await supabase
     .from("torneo2_matches")
-    .select("id, kind, status")
+    .select("id, kind, status, combat_seq")
     .eq("id", targetMatchId)
     .eq("campaign_id", campaignId)
     .maybeSingle();
@@ -430,7 +448,7 @@ async function withdrawWinnerFromBracket(
 
   const resetCombat = {
     combat_state: null,
-    combat_seq: 0,
+    combat_seq: (Number(target.combat_seq ?? 0) || 0) + 1,
     combat_origin: null,
     combat_updated_at: null,
   };
@@ -533,7 +551,7 @@ async function advanceWinnerInBracket(
 ): Promise<void> {
   const { data: target } = await supabase
     .from("torneo2_matches")
-    .select("id, kind, status")
+    .select("id, kind, status, combat_seq")
     .eq("id", targetMatchId)
     .eq("campaign_id", campaignId)
     .maybeSingle();
@@ -542,7 +560,7 @@ async function advanceWinnerInBracket(
 
   const resetCombat = {
     combat_state: null,
-    combat_seq: 0,
+    combat_seq: (Number(target.combat_seq ?? 0) || 0) + 1,
     combat_origin: null,
     combat_updated_at: null,
   };
@@ -591,6 +609,22 @@ export async function generateTorneo2FinalAction(
   const characterIds = [...new Set([...finalists, ...extra])];
   if (characterIds.length < 2) {
     return { success: false, error: "Servono almeno 2 vincitori per generare la finale." };
+  }
+
+  const { data: activeFinal, error: activeFinalErr } = await check.supabase
+    .from("torneo2_matches")
+    .select("id")
+    .eq("campaign_id", campaignId)
+    .eq("kind", "final_ffa")
+    .eq("status", "active")
+    .limit(1)
+    .maybeSingle();
+  if (activeFinalErr) return { success: false, error: activeFinalErr.message };
+  if (activeFinal) {
+    return {
+      success: false,
+      error: "Una finale e' attiva: terminala prima di rigenerarla.",
+    };
   }
 
   // Rimuove eventuale finale esistente non completata.
@@ -697,6 +731,15 @@ export async function clearTorneo2BracketAction(campaignId: string): Promise<Res
   const check = await ensureTorneo2Gm(campaignId);
   if (!check.ok) return { success: false, error: check.error };
 
+  const active = await findActiveBracketMatchId(check.supabase, campaignId);
+  if (active.error) return { success: false, error: active.error };
+  if (active.id) {
+    return {
+      success: false,
+      error: "Un incontro del tabellone e' attivo: terminalo prima di svuotare il tabellone.",
+    };
+  }
+
   const { data, error } = await check.supabase
     .from("torneo2_matches")
     .delete()
@@ -734,6 +777,15 @@ export async function generateTorneo2BracketAction(
   if (plan.length === 0) return { success: false, error: "Impossibile costruire il tabellone." };
 
   if (payload.replaceExisting) {
+    const active = await findActiveBracketMatchId(supabase, campaignId);
+    if (active.error) return { success: false, error: active.error };
+    if (active.id) {
+      return {
+        success: false,
+        error: "Un incontro del tabellone e' attivo: terminalo prima di rigenerare il tabellone.",
+      };
+    }
+
     await supabase
       .from("torneo2_matches")
       .delete()
@@ -866,7 +918,6 @@ export async function emergencyResetTorneo2Action(
       winner_character_id: null,
       completed_at: null,
       combat_state: null,
-      combat_seq: 0,
       combat_origin: null,
       combat_updated_at: null,
       timer_running: false,
