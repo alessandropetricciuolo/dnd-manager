@@ -43,6 +43,8 @@ export type ImportTrainSceneResult = {
   regions: ImportedFowRegion[];
 };
 
+const MAX_SCENE_GRID_CELLS = 250_000;
+
 function asFinite(value: unknown, fallback = 0): number {
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
@@ -181,6 +183,10 @@ export function importTrainSceneToFow(raw: unknown): ImportTrainSceneResult {
   const scene = parseTrainSceneJson(raw);
   const gridCellsW = Math.max(1, Math.round(scene.width / scene.grid));
   const gridCellsH = Math.max(1, Math.round(scene.height / scene.grid));
+  const totalCells = gridCellsW * gridCellsH;
+  if (!Number.isFinite(totalCells) || totalCells > MAX_SCENE_GRID_CELLS) {
+    throw new Error("Scena troppo grande per importare FoW in modo sicuro.");
+  }
   // Use the full exported scene coordinate system (0..width / 0..height).
   // Using wall bounds as origin causes visible FoW shifts on many maps.
   const blocked = buildBlockedEdges(scene, 0, 0);
@@ -192,8 +198,8 @@ export function importTrainSceneToFow(raw: unknown): ImportTrainSceneResult {
   for (let y = 0; y < gridCellsH; y++) {
     queue.push({ x: 0, y }, { x: gridCellsW - 1, y });
   }
-  while (queue.length > 0) {
-    const cur = queue.shift()!;
+  for (let cursor = 0; cursor < queue.length; cursor++) {
+    const cur = queue[cursor]!;
     if (cur.x < 0 || cur.y < 0 || cur.x >= gridCellsW || cur.y >= gridCellsH) continue;
     const k = key(cur.x, cur.y);
     if (outside.has(k)) continue;
@@ -215,8 +221,8 @@ export function importTrainSceneToFow(raw: unknown): ImportTrainSceneResult {
       const comp: Cell[] = [];
       const q: Cell[] = [{ x, y }];
       visited.add(k);
-      while (q.length > 0) {
-        const cur = q.shift()!;
+      for (let cursor = 0; cursor < q.length; cursor++) {
+        const cur = q[cursor]!;
         comp.push(cur);
         for (const n of neighbors(cur)) {
           if (n.x < 0 || n.y < 0 || n.x >= gridCellsW || n.y >= gridCellsH) continue;
