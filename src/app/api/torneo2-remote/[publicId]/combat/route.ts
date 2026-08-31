@@ -5,6 +5,7 @@ import { gmRemoteRateLimit } from "@/lib/gm-remote/rate-limit";
 import { isRecord } from "@/lib/gm-remote/protocol";
 import { validateGmRemoteSession } from "@/lib/gm-remote/validate-remote-session";
 import { sanitizeTorneo2CombatState } from "@/lib/torneo2/combat-state";
+import { canTorneo2RemoteMutateMatch } from "@/lib/torneo2/remote-access";
 
 type RouteContext = { params: Promise<{ publicId: string }> };
 
@@ -39,22 +40,39 @@ export async function POST(request: Request, context: RouteContext) {
   }
 
   const admin = createSupabaseAdminClient() as unknown as SupabaseClient;
-  const { data: current } = await admin
+  const { data: live, error: liveError } = await admin
+    .from("torneo2_live_sessions")
+    .select("station1_match_id, station2_match_id")
+    .eq("campaign_id", v.session.campaign_id)
+    .eq("status", "live")
+    .maybeSingle();
+
+  if (liveError) {
+    return NextResponse.json({ ok: false, error: liveError.message }, { status: 500 });
+  }
+
+  const { data: current, error: currentError } = await admin
     .from("torneo2_matches")
-    .select("combat_seq")
+    .select("id, status, combat_seq")
     .eq("id", matchId)
     .eq("campaign_id", v.session.campaign_id)
     .maybeSingle();
 
+  if (currentError) {
+    return NextResponse.json({ ok: false, error: currentError.message }, { status: 500 });
+  }
   if (!current) {
     return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
+  }
+  if (!canTorneo2RemoteMutateMatch(live, current)) {
+    return NextResponse.json({ ok: false, error: "match_not_on_station" }, { status: 403 });
   }
 
   const nextSeq = (Number(current.combat_seq ?? 0) || 0) + 1;
   const clean = sanitizeTorneo2CombatState(rawState);
   const updatedAt = new Date().toISOString();
 
-  const { error } = await admin
+  const { data: updated, error } = await admin
     .from("torneo2_matches")
     .update({
       combat_state: clean as unknown as Record<string, unknown>,
@@ -63,10 +81,16 @@ export async function POST(request: Request, context: RouteContext) {
       combat_updated_at: updatedAt,
     })
     .eq("id", matchId)
-    .eq("campaign_id", v.session.campaign_id);
+    .eq("campaign_id", v.session.campaign_id)
+    .eq("status", "active")
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+  }
+  if (!updated) {
+    return NextResponse.json({ ok: false, error: "match_not_active" }, { status: 409 });
   }
 
   return NextResponse.json({ ok: true, seq: nextSeq });
