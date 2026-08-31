@@ -11,6 +11,7 @@ import { CAMPAIGN_TYPE_VALUES, type CampaignType } from "@/lib/campaign-type";
 export type CreateCampaignResult = {
   success: boolean;
   message: string;
+  campaignId?: string;
 };
 
 export async function createCampaign(
@@ -123,7 +124,7 @@ export async function createCampaign(
     }
 
     revalidatePath("/dashboard");
-    return { success: true, message: "Campagna creata!" };
+    return { success: true, message: "Campagna creata!", campaignId: newCampaign?.id };
   } catch (err) {
     console.error("[createCampaign]", err);
     return {
