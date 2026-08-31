@@ -4,6 +4,7 @@ import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { gmRemoteRateLimit } from "@/lib/gm-remote/rate-limit";
 import { isRecord } from "@/lib/gm-remote/protocol";
 import { validateGmRemoteSession } from "@/lib/gm-remote/validate-remote-session";
+import { validateTorneo2RemoteWritableMatch } from "@/lib/torneo2/remote-scope";
 
 type RouteContext = { params: Promise<{ publicId: string }> };
 
@@ -52,6 +53,31 @@ export async function POST(request: Request, context: RouteContext) {
   }
 
   const admin = createSupabaseAdminClient() as unknown as SupabaseClient;
+  const [{ data: live }, { data: current }] = await Promise.all([
+    admin
+      .from("torneo2_live_sessions")
+      .select("remote_session_public_id, station1_match_id, station2_match_id")
+      .eq("campaign_id", v.session.campaign_id)
+      .eq("status", "live")
+      .maybeSingle(),
+    admin
+      .from("torneo2_matches")
+      .select("status")
+      .eq("id", matchId)
+      .eq("campaign_id", v.session.campaign_id)
+      .maybeSingle(),
+  ]);
+
+  const writable = validateTorneo2RemoteWritableMatch({
+    live,
+    remotePublicId: publicId,
+    matchId,
+    matchStatus: current?.status ?? null,
+  });
+  if (!writable.ok) {
+    return NextResponse.json({ ok: false, error: writable.error }, { status: writable.status });
+  }
+
   const { error } = await admin
     .from("torneo2_matches")
     .update(patch)

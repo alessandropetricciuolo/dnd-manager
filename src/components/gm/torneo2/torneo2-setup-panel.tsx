@@ -386,7 +386,7 @@ export function Torneo2SetupPanel({
                   >
                     {m.status === "completed" ? "completato" : m.status === "active" ? "live" : "in attesa"}
                   </span>
-                  {m.status !== "completed" ? (
+                  {m.status === "pending" ? (
                     <button
                       type="button"
                       className="text-zinc-600 hover:text-red-400"
