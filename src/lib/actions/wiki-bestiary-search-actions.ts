@@ -96,26 +96,80 @@ function escapeLikePattern(value: string): string {
   return value.replace(/[\\%_]/g, "\\$&");
 }
 
-function rowsToBestiaryHits(rows: Row[]): BestiarySearchHit[] {
+function statblockMatchesSearchQuery(
+  statblockName: string,
+  query: string,
+  sectionHeading: string
+): boolean {
+  const q = normalizeLoose(query);
+  if (!q) return true;
+  const name = normalizeLoose(statblockName);
+  const section = normalizeLoose(sectionHeading);
+  if (name === q || name.includes(q)) return true;
+  if (section === q || section.includes(q)) return true;
+  return contentHeadingMatchesQuery(statblockName, q);
+}
+
+function contentHeadingMatchesQuery(heading: string, qNorm: string): boolean {
+  const h = normalizeLoose(heading);
+  return h === qNorm || h.includes(qNorm);
+}
+
+function rowToBestiaryHits(row: Row, query: string): BestiarySearchHit[] {
+  const rowId = String(row.id ?? "").trim();
+  const content = typeof row.content === "string" ? row.content.trim() : "";
+  if (!content || !rowId) return [];
+
+  const m = row.metadata;
+  const mbk = metaStr(m, "manual_book_key");
+  const sectionHeading = metaStr(m, "section_heading") ?? metaStr(m, "section_title") ?? "";
+  const baseHit = {
+    similarity: typeof row.similarity === "number" ? row.similarity : null,
+    manual_book_key: mbk,
+    manual_label: mbk ? wikiManualBookLabel(mbk) : "Manuale (non classificato)",
+    chapter: metaStr(m, "chapter"),
+  };
+
+  const statblocks = parseStatblocksFromBestiaryContent(content);
+  if (statblocks.length > 0) {
+    const q = query.trim();
+    const matched = q
+      ? statblocks.filter((sb) => statblockMatchesSearchQuery(sb.name, q, sectionHeading))
+      : statblocks;
+    const entries = matched.length > 0 ? matched : statblocks;
+    return entries.map((entry) => {
+      const monsterName = normalizeMonsterName(entry.name);
+      const slice = extractStatblockSlice(content, monsterName);
+      const excerptSource = slice ?? content;
+      return {
+        ...baseHit,
+        id: bestiaryListItemId(rowId, monsterName),
+        excerpt: excerptFromContent(excerptSource),
+        section_heading: monsterName,
+      };
+    });
+  }
+
+  return [
+    {
+      ...baseHit,
+      id: rowId,
+      excerpt: excerptFromContent(content),
+      section_heading: sectionHeading || null,
+    },
+  ];
+}
+
+function rowsToBestiaryHits(rows: Row[], query = ""): BestiarySearchHit[] {
   const seen = new Set<string>();
   const hits: BestiarySearchHit[] = [];
   for (const r of rows) {
-    const rowId = String(r.id ?? "").trim();
-    const content = typeof r.content === "string" ? r.content.trim() : "";
-    if (!content || !rowId) continue;
-    if (seen.has(rowId)) continue;
-    seen.add(rowId);
-    const m = r.metadata;
-    const mbk = metaStr(m, "manual_book_key");
-    hits.push({
-      id: rowId,
-      similarity: typeof r.similarity === "number" ? r.similarity : null,
-      excerpt: excerptFromContent(content),
-      manual_book_key: mbk,
-      manual_label: mbk ? wikiManualBookLabel(mbk) : "Manuale (non classificato)",
-      chapter: metaStr(m, "chapter"),
-      section_heading: metaStr(m, "section_heading") ?? metaStr(m, "section_title"),
-    });
+    for (const hit of rowToBestiaryHits(r, query)) {
+      if (seen.has(hit.id)) continue;
+      seen.add(hit.id);
+      hits.push(hit);
+      if (hits.length >= 16) break;
+    }
     if (hits.length >= 16) break;
   }
   return hits;
@@ -444,13 +498,13 @@ export async function searchBestiaryChunksAction(
     );
     const ranked = rankBestiaryRows(filtered, q);
     const exact = ranked.filter((r) => isExactMonsterHeadingRow(r, q));
-    return rowsToBestiaryHits(exact.length > 0 ? exact : ranked);
+    return rowsToBestiaryHits(exact.length > 0 ? exact : ranked, q);
   }
 
   try {
     const exactRows = await findExactHeadingRows();
     if (exactRows.length > 0) {
-      return { success: true, hits: rowsToBestiaryHits(rankBestiaryRows(exactRows, q)) };
+      return { success: true, hits: rowsToBestiaryHits(rankBestiaryRows(exactRows, q), q) };
     }
 
     const embedding = await generateRagEmbedding(q);
@@ -475,7 +529,7 @@ export async function searchBestiaryChunksAction(
       return { success: false, message: `Errore ricerca: ${rpcError.message}` };
     }
 
-    const hits = rowsToBestiaryHits(rankBestiaryRows(merged, q));
+    const hits = rowsToBestiaryHits(rankBestiaryRows(merged, q), q);
     return { success: true, hits };
   } catch (e) {
     console.error("[searchBestiaryChunksAction]", e);
