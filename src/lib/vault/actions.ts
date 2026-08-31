@@ -138,45 +138,14 @@ export async function createVaultTransferAction(input: {
   }
 
   const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const { data: accounts } = await supabase
-    .from("vault_accounts")
-    .select("id, name, active")
-    .in("id", [input.from_account_id, input.to_account_id]);
-
-  const fromAccount = accounts?.find((a) => a.id === input.from_account_id);
-  const toAccount = accounts?.find((a) => a.id === input.to_account_id);
-  if (!fromAccount?.active || !toAccount?.active) {
-    return { success: false, error: "Conti non validi o disattivati." };
-  }
-
-  const movementDate = input.movement_date || new Date().toISOString();
-  const note = input.note?.trim() || null;
-
-  const { error: outErr } = await supabase.from("vault_account_movements").insert({
-    account_id: input.from_account_id,
-    type: "uscita",
-    amount: -amount,
-    reason: note ? `Giroconto verso ${toAccount.name} — ${note}` : `Giroconto verso ${toAccount.name}`,
-    category: "giroconto",
-    movement_date: movementDate,
-    created_by: user?.id ?? null,
+  const { error } = await supabase.rpc("vault_create_transfer", {
+    p_from_account_id: input.from_account_id,
+    p_to_account_id: input.to_account_id,
+    p_amount: amount,
+    p_note: input.note?.trim() || null,
+    p_movement_date: input.movement_date || new Date().toISOString(),
   });
-  if (outErr) return { success: false, error: outErr.message };
-
-  const { error: inErr } = await supabase.from("vault_account_movements").insert({
-    account_id: input.to_account_id,
-    type: "entrata",
-    amount,
-    reason: note ? `Giroconto da ${fromAccount.name} — ${note}` : `Giroconto da ${fromAccount.name}`,
-    category: "giroconto",
-    movement_date: movementDate,
-    created_by: user?.id ?? null,
-  });
-  if (inErr) return { success: false, error: inErr.message };
+  if (error) return { success: false, error: error.message };
 
   revalidateVault();
   return { success: true };
