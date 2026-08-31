@@ -377,12 +377,14 @@ export async function importExplorationScene(
     return { success: false, error: e instanceof Error ? e.message : "Errore import scena." };
   }
 
+  let existingRegionIds: string[] = [];
   if (replaceExisting) {
-    const { error: delErr } = await supabase
+    const { data: existingRows, error: fetchErr } = await supabase
       .from("campaign_exploration_fow_regions")
-      .delete()
+      .select("id")
       .eq("map_id", mapId);
-    if (delErr) return { success: false, error: delErr.message };
+    if (fetchErr) return { success: false, error: fetchErr.message };
+    existingRegionIds = (existingRows ?? []).map((r) => r.id);
   }
 
   const rows = imported.regions.map((r) => ({
@@ -406,7 +408,28 @@ export async function importExplorationScene(
     })
     .eq("id", mapId)
     .eq("campaign_id", campaignId);
-  if (mapMetaErr) return { success: false, error: mapMetaErr.message };
+  if (mapMetaErr) {
+    const { data: allRows } = await supabase
+      .from("campaign_exploration_fow_regions")
+      .select("id")
+      .eq("map_id", mapId);
+    const existingSet = new Set(existingRegionIds);
+    const insertedIds = (allRows ?? [])
+      .map((r) => r.id)
+      .filter((id) => !existingSet.has(id));
+    if (insertedIds.length > 0) {
+      await supabase.from("campaign_exploration_fow_regions").delete().in("id", insertedIds);
+    }
+    return { success: false, error: mapMetaErr.message };
+  }
+
+  if (replaceExisting && existingRegionIds.length > 0) {
+    const { error: delErr } = await supabase
+      .from("campaign_exploration_fow_regions")
+      .delete()
+      .in("id", existingRegionIds);
+    if (delErr) return { success: false, error: delErr.message };
+  }
 
   revalidatePath(`/campaigns/${campaignId}`);
   return {
