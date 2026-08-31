@@ -194,6 +194,8 @@ export async function startTorneoLiveSessionAction(
     .eq("id", liveRow.id);
 
   if (linkErr) {
+    await supabase.from("gm_remote_sessions").delete().eq("public_id", remoteRow.public_id);
+    await supabase.from("torneo_live_sessions").delete().eq("id", liveRow.id);
     return { success: false, error: linkErr.message };
   }
 

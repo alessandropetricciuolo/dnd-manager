@@ -49,6 +49,9 @@ function resolveInitiativeHandle(
   if (matchId && station1MatchId && matchId === station1MatchId) {
     return ref1?.current ?? null;
   }
+  if (matchId) {
+    return null;
+  }
   return ref1?.current ?? ref2?.current ?? null;
 }
 
