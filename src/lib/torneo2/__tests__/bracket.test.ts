@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildBracketPlan, isPowerOfTwo, roundLabelForMatchCount } from "@/lib/torneo2/bracket";
+import {
+  buildBracketPlan,
+  canRewriteBracketTarget,
+  isPowerOfTwo,
+  roundLabelForMatchCount,
+} from "@/lib/torneo2/bracket";
 
 test("isPowerOfTwo", () => {
   assert.equal(isPowerOfTwo(1), true);
@@ -17,6 +22,12 @@ test("roundLabelForMatchCount", () => {
   assert.equal(roundLabelForMatchCount(2), "Semifinale");
   assert.equal(roundLabelForMatchCount(4), "Quarti");
   assert.equal(roundLabelForMatchCount(8), "Ottavi");
+});
+
+test("canRewriteBracketTarget permette solo target pending", () => {
+  assert.equal(canRewriteBracketTarget("pending"), true);
+  assert.equal(canRewriteBracketTarget("active"), false);
+  assert.equal(canRewriteBracketTarget("completed"), false);
 });
 
 test("buildBracketPlan rejects non power-of-two", () => {
