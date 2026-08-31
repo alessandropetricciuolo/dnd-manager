@@ -1,4 +1,5 @@
 import type {
+  BuildChoicesPreview,
   BuildChoiceSlot,
   CharacterBuildOverrides,
 } from "@/lib/sheet-generator/build-choices-types";
@@ -71,4 +72,10 @@ export function applySlotChange(
 
 export function slotsToOverrides(slots: BuildChoiceSlot[]): CharacterBuildOverrides {
   return overridesFromSlots(slots);
+}
+
+export function defaultOverridesForPreview(
+  preview: BuildChoicesPreview | null | undefined
+): CharacterBuildOverrides | null {
+  return preview?.slots.length ? preview.overrides : null;
 }
