@@ -29,8 +29,8 @@ function optNumOrStr(v: unknown): number | string | undefined {
 }
 
 const EXAMPLE_JSON = `[
-  { "title": "Re degli Elfi", "category": "npc", "content": "Il sovrano del *Bosco Eterno*.", "is_secret": false, "hp": "45", "ac": 14 },
-  { "title": "Goblin Scout", "category": "monster", "content": "AC 13, PF 7.", "is_secret": true, "hp": 7, "ac": 13, "gs": "1/4", "exp": 50 }
+  { "title": "Re degli Elfi", "category": "npc", "description": "Sovrano del Bosco Eterno.", "content": "Il regno degli elfi fu fondato...", "image_url": "https://drive.google.com/file/d/FILE_ID/view", "is_secret": false, "hp": "45", "ac": 14 },
+  { "title": "Goblin Scout", "category": "monster", "description": "Vedetta goblin.", "content": "AC 13, PF 7.", "image_url": "https://example.com/goblin.png", "is_secret": true, "hp": 7, "ac": 13, "gs": "1/4", "exp": 50 }
 ]`;
 
 function parseAndValidate(raw: string): { ok: true; items: BulkImportWikiItem[] } | { ok: false; error: string } {
@@ -62,6 +62,9 @@ function parseAndValidate(raw: string): { ok: true; items: BulkImportWikiItem[] 
     const content = typeof (row as Record<string, unknown>).content === "string"
       ? (row as Record<string, unknown>).content as string
       : String((row as Record<string, unknown>).content ?? "");
+    const description = typeof (row as Record<string, unknown>).description === "string"
+      ? (row as Record<string, unknown>).description as string
+      : "";
     const isSecret = (row as Record<string, unknown>).is_secret === true;
     const r = row as Record<string, unknown>;
     const hp = optNumOrStr(r.hp);
@@ -82,6 +85,7 @@ function parseAndValidate(raw: string): { ok: true; items: BulkImportWikiItem[] 
     const item: BulkImportWikiItem = {
       title,
       category: categoryRaw as (typeof VALID_CATEGORIES)[number],
+      description,
       content,
       is_secret: isSecret,
     };
@@ -182,14 +186,14 @@ export function BulkImportWikiDialog({ campaignId }: BulkImportWikiDialogProps) 
         <DialogHeader>
           <DialogTitle>Importazione massiva Wiki</DialogTitle>
           <DialogDescription className="text-barber-paper/70">
-            Incolla un array JSON o carica un file .json con le voci da importare nella campagna.
+            Incolla un array JSON o carica un file .json. Le immagini possono usare link Google Drive condivisi.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <p className="text-xs text-barber-gold/90 font-medium">Formato atteso (array di oggetti):</p>
           <pre className="rounded-lg border border-barber-gold/20 bg-barber-dark/80 p-3 text-xs text-barber-paper/80 overflow-x-auto whitespace-pre-wrap">
-            {`[{ "title": "Nome", "category": "npc|monster|location|item|lore", "content": "Testo markdown...", "is_secret": true|false }]`}
+            {`[{ "title": "Nome", "category": "npc|monster|location|item|lore", "description": "Riassunto", "content": "Testo markdown completo", "image_url": "Link Google Drive" }]`}
           </pre>
           <p className="text-xs text-barber-paper/60">
             Per le categorie <strong>monster</strong> e <strong>npc</strong> puoi includere i campi opzionali:{" "}

@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { WikiListClient } from "./wiki-list-client";
-import { getWikiContentBody } from "@/lib/wiki/content";
+import { getWikiContentBody, getWikiContentDescription } from "@/lib/wiki/content";
 import { WIKI_ENTITY_LABELS_IT } from "@/lib/wiki/entity-types";
 type WikiListProps = {
   campaignId: string;
@@ -196,7 +196,7 @@ export async function WikiList({
     visibility: e.visibility ?? (e.is_secret ? "secret" : "public"),
     sortOrder: e.sort_order ?? null,
     tags: e.tags ?? [],
-    description: getWikiContentBody(e.content),
+    description: getWikiContentDescription(e.content) || getWikiContentBody(e.content),
     selectiveAudienceLabel: selectiveAudienceByEntityId[e.id] ?? null,
     linkedMissionId: e.linked_mission_id ?? null,
     missionTitle: e.linked_mission_id ? missionTitleById.get(e.linked_mission_id) ?? null : null,

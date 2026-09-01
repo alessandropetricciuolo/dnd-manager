@@ -11,7 +11,7 @@ import { RelatedEntitiesSection } from "@/components/wiki/related-entities-secti
 import { getRelatedEntityLinks } from "@/app/campaigns/entity-graph-actions";
 import { WikiEntityEditButton } from "@/components/wiki/wiki-entity-edit-button";
 import { WikiEntityDeleteButton } from "@/components/wiki/wiki-entity-delete-button";
-import { getWikiContentBody } from "@/lib/wiki/content";
+import { getWikiContentBody, getWikiContentDescription } from "@/lib/wiki/content";
 import { CAMPAIGN_CONTENT_SHELL } from "@/lib/layout/shell-classes";
 import { ArrowLeft } from "lucide-react";
 
@@ -92,6 +92,7 @@ export default async function WikiEntityPage({ params, searchParams }: PageProps
   }
 
   const contentBody = getWikiContentBody(entity.content);
+  const contentDescription = getWikiContentDescription(entity.content);
 
   const relatedResult = await getRelatedEntityLinks(campaignId, entityId);
   const relatedLinks = relatedResult.success ? relatedResult.data : [];
@@ -168,6 +169,11 @@ export default async function WikiEntityPage({ params, searchParams }: PageProps
             <h1 className="mb-4 md:mb-6 text-2xl font-bold tracking-tight text-barber-paper break-words md:text-3xl lg:text-4xl">
               {entity.name}
             </h1>
+          )}
+          {contentDescription && (
+            <p className="mb-6 max-w-3xl text-base italic text-barber-paper/70 md:text-lg">
+              {contentDescription}
+            </p>
           )}
           {entity.type === "location" && (
             <div className="mb-6">

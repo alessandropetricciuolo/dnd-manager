@@ -7,6 +7,14 @@ export function getWikiContentBody(content: unknown): string {
   return "";
 }
 
+export function getWikiContentDescription(content: unknown): string {
+  if (content && typeof content === "object" && !Array.isArray(content)) {
+    const description = (content as Record<string, unknown>).description;
+    if (typeof description === "string") return description.trim();
+  }
+  return "";
+}
+
 /**
  * CommonMark collassa spesso le righe “vuote” tra paragrafi (e senza @tailwindcss/typography
  * i <p> hanno margin 0 da Preflight, quindi sembrano sparire). Qui:

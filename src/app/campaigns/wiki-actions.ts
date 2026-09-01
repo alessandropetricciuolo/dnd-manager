@@ -23,6 +23,7 @@ import {
   syncWikiEntityToCampaignMemory,
 } from "@/lib/campaign-memory-indexer";
 import { mergeRelationsWithTextReferences } from "@/lib/wiki/wiki-relationship-sync";
+import { normalizeImageUrl } from "@/lib/image-url";
 
 export type { WikiGeneratorEntityType, WikiAiTextGeneration } from "@/lib/ai/generator";
 
@@ -1195,7 +1196,9 @@ export async function getGmGalleryItems(
 export type BulkImportWikiItem = {
   title: string;
   category: WikiEntityType;
+  description?: string;
   content: string;
+  image_url?: string;
   is_secret?: boolean;
   /** Punti vita (mostro/NPC) */
   hp?: number | string;
@@ -1237,6 +1240,7 @@ export async function bulkImportWiki(
     const title = typeof it?.title === "string" ? it.title.trim() : "";
     const category = typeof it?.category === "string" ? it.category.trim().toLowerCase() : "";
     const content = typeof it?.content === "string" ? it.content : String(it?.content ?? "");
+    const description = typeof it?.description === "string" ? it.description.trim() : "";
     const isSecret = Boolean(it?.is_secret);
 
     if (!title) {
@@ -1272,14 +1276,27 @@ export async function bulkImportWiki(
       }
     }
 
+    let imageUrl: string | null = null;
+    if (typeof it?.image_url === "string" && it.image_url.trim()) {
+      const normalized = normalizeImageUrl(it.image_url.trim());
+      if (normalized.startsWith("/api/tg-image/") || normalized.startsWith("/api/tg-file/")) {
+        imageUrl = normalized;
+      } else {
+        imageUrl = parseSafeExternalUrl(normalized);
+        if (!imageUrl) {
+          return { success: false, message: `Voce "${title}": URL immagine non valido o non consentito.` };
+        }
+      }
+    }
+
     const row: Record<string, unknown> = {
       campaign_id: campaignId,
       name: title,
       type: category,
-      content: { body: content },
+      content: { ...(description ? { description } : {}), body: content },
       is_secret: isSecret,
       visibility: isSecret ? "secret" : "public",
-      image_url: null,
+      image_url: imageUrl,
       attributes: Object.keys(attributes).length > 0 ? attributes : {},
       tags: [],
     };
