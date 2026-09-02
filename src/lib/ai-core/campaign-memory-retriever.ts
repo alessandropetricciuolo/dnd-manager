@@ -4,6 +4,8 @@ import type { CampaignMemorySourceType } from "@/lib/campaign-memory-indexer";
 import { generateOpenRouterEmbedding } from "@/lib/ai/openrouter-client";
 import type {
   AiMemoryPreviewRetrievalMode,
+  AiMemoryPreviewSemanticDiagnostic,
+  AiMemoryPreviewSemanticFailureReason,
   AiMemoryPreviewSource,
 } from "./contracts";
 import {
@@ -31,6 +33,7 @@ export type RetrieveResult = {
   chunkCount: number;
   retrievedChunkCount: number;
   contextChunkCount: number;
+  semantic: AiMemoryPreviewSemanticDiagnostic;
   chunks: PreviewChunkRow[];
   sources: AiMemoryPreviewSource[];
 };
@@ -52,6 +55,40 @@ export function tokenizeQuestion(question: string): string[] {
 
 export function significantQuestionTokens(question: string): string[] {
   return tokenizeQuestion(question).filter((t) => t.length >= 4);
+}
+
+function normalizeLexicalText(raw: string): string {
+  return raw
+    .toLocaleLowerCase("it-IT")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s-]/g, " ")
+    .replace(/-/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const LEXICAL_STOPWORDS = new Set([
+  "chi", "che", "cosa", "come", "dove", "quando", "quale", "quali", "qual",
+  "sono", "sei", "era", "essere", "puo", "può", "perche", "perché", "della",
+  "delle", "degli", "dello", "dalla", "dalle", "dagli", "nella", "nelle", "negli",
+  "nel", "nei", "con", "tra", "fra", "per", "sul", "sulla", "sulle", "sui", "sugli",
+  "una", "uno", "gli", "le", "dei", "del", "dal", "di", "da", "in", "a", "e", "il",
+  "la", "lo", "i", "un", "stato", "stata", "questo", "questa", "della", "missione",
+]);
+
+function lexicalQuestionTokens(question: string): string[] {
+  return normalizeLexicalText(question)
+    .split(/\s+/)
+    .filter((token) => token.length >= 3 && !LEXICAL_STOPWORDS.has(token));
+}
+
+function lexicalQuestionFragments(question: string): string[] {
+  const rawTokens = tokenizeQuestion(question).filter((token) => {
+    const normalized = normalizeLexicalText(token);
+    return normalized.length >= 3 && !LEXICAL_STOPWORDS.has(normalized);
+  });
+  return Array.from(new Set(rawTokens.flatMap((token) => [token, normalizeLexicalText(token)])));
 }
 
 function metaString(meta: Record<string, unknown> | null | undefined, key: string): string | null {
@@ -92,15 +129,35 @@ export function questionTermOverlapBoost(question: string, row: PreviewChunkRow)
   return Math.min(0.48, hits * 0.2);
 }
 
+function titleMatchBoost(question: string, row: PreviewChunkRow): number {
+  const normalizedQuestion = normalizeLexicalText(question);
+  const normalizedTitle = normalizeLexicalText(row.title);
+  if (!normalizedTitle || normalizedTitle.length < 4) return 0;
+
+  const titleTokens = normalizedTitle
+    .split(/\s+/)
+    .filter((token) => token.length >= 3 && !LEXICAL_STOPWORDS.has(token));
+  if (titleTokens.length === 0) return 0;
+
+  let boost = normalizedQuestion.includes(normalizedTitle) ? 2.4 : 0;
+  const questionTokens = new Set(lexicalQuestionTokens(question));
+  const matchingTokens = titleTokens.filter((token) => questionTokens.has(token));
+  if (titleTokens.length > 0) {
+    boost += Math.min(1.6, (matchingTokens.length / titleTokens.length) * 1.6);
+  }
+  return boost;
+}
+
 export function rerankMatches(question: string, rows: PreviewChunkRow[]): PreviewChunkRow[] {
   const wantsRecent = questionHasRecentIntent(question);
   const wantsCharacters = questionHasCharacterIntent(question);
   const wantsSecrets = questionHasSecretIntent(question);
   const now = Date.now();
   return [...rows]
-    .map((row) => {
+    .map((row, index) => {
       let score = typeof row.similarity === "number" ? row.similarity : 0;
       score += questionTermOverlapBoost(question, row);
+      score += titleMatchBoost(question, row);
       if (wantsCharacters && row.source_type === "character_background") score += 0.18;
       if (wantsRecent && (row.source_type === "session_summary" || row.source_type === "wiki" || row.source_type === "map_description")) {
         const ageMs = Math.max(0, now - metadataDate(row));
@@ -113,9 +170,9 @@ export function rerankMatches(question: string, rows: PreviewChunkRow[]): Previe
       if (/\b(mappa|mappe|continente|citta|città|regione|dungeon|luogo|dove)\b/i.test(question) && row.source_type === "map_description") score += 0.12;
       if (/\b(missione|missioni|gilda|incarico|quest)\b/i.test(question) && row.source_type === "mission") score += 0.18;
       if (/\b(campagna|ambientazione|tono|magia|paletti)\b/i.test(question) && (row.source_type === "campaign_description" || row.source_type === "campaign_ai_context")) score += 0.14;
-      return { row, score };
+      return { row, score, index };
     })
-    .sort((a, b) => b.score - a.score)
+    .sort((a, b) => b.score - a.score || a.row.title.localeCompare(b.row.title, "it") || a.index - b.index)
     .map((x) => x.row);
 }
 
@@ -195,11 +252,18 @@ export function buildPreviewSources(campaignId: string, chunks: PreviewChunkRow[
 
 const SEMANTIC_THRESHOLDS = [0.34, 0.28, 0.22, 0.16, 0.1] as const;
 const SEMANTIC_MATCH_COUNT = 18;
-const LEXICAL_LIMIT = 24;
+const LEXICAL_SCAN_LIMIT = 1000;
 
 export type RetrieverDeps = {
   generateEmbedding?: (text: string, opts: { dimensions: number }) => Promise<number[]>;
 };
+
+function semanticDiagnostic(
+  status: AiMemoryPreviewSemanticDiagnostic["status"],
+  reason: AiMemoryPreviewSemanticFailureReason | null = null
+): AiMemoryPreviewSemanticDiagnostic {
+  return { provider: "openrouter", status, reason };
+}
 
 export async function retrievePreviewMemory(
   admin: AdminClient,
@@ -208,7 +272,9 @@ export async function retrievePreviewMemory(
   deps: RetrieverDeps = {}
 ): Promise<RetrieveResult> {
   const normalized = question.trim();
+  const hasInjectedEmbedding = Boolean(deps.generateEmbedding);
   const generateEmbedding = deps.generateEmbedding ?? ((t: string, opts: { dimensions: number }) => generateOpenRouterEmbedding(t, opts));
+  let semantic = semanticDiagnostic("no_match");
 
   // chunkCount per metriche (read-only)
   let chunkCount = 0;
@@ -221,31 +287,60 @@ export async function retrievePreviewMemory(
 
   // 1) semantic
   let semanticRows: PreviewChunkRow[] = [];
-  let semanticSucceeded = false;
-  try {
-    const embedding = await generateEmbedding(normalized, { dimensions: 384 });
+  let embedding: number[] | null = null;
+  if (!hasInjectedEmbedding && !process.env.OPENROUTER_API_KEY?.trim()) {
+    semantic = semanticDiagnostic("error", "missing_api_key");
+  } else {
+    try {
+      embedding = await generateEmbedding(normalized, { dimensions: 384 });
+      if (embedding.length !== 384) {
+        semantic = semanticDiagnostic("error", "invalid_embedding");
+        embedding = null;
+      }
+    } catch {
+      semantic = semanticDiagnostic("error", "embedding_error");
+    }
+  }
+
+  if (embedding) {
     const runRpc = admin.rpc as unknown as (
       fn: string,
       args: Record<string, unknown>
     ) => Promise<{ data: unknown; error: { message: string } | null }>;
 
-    for (const threshold of SEMANTIC_THRESHOLDS) {
-      const res = await runRpc("match_campaign_memory", {
-        p_campaign_id: campaignId,
-        query_embedding: embedding,
-        match_threshold: threshold,
-        match_count: SEMANTIC_MATCH_COUNT,
-      });
-      if (res.error) throw new Error(res.error.message);
-      const rows = (res.data ?? []) as PreviewChunkRow[];
-      if (rows.length > 0) {
+    try {
+      for (const threshold of SEMANTIC_THRESHOLDS) {
+        const res = await runRpc("match_campaign_memory", {
+          p_campaign_id: campaignId,
+          query_embedding: embedding,
+          match_threshold: threshold,
+          match_count: SEMANTIC_MATCH_COUNT,
+        });
+        if (res.error) {
+          semantic = semanticDiagnostic("error", "rpc_error");
+          semanticRows = [];
+          break;
+        }
+        if (res.data != null && !Array.isArray(res.data)) {
+          semantic = semanticDiagnostic("error", "invalid_response");
+          semanticRows = [];
+          break;
+        }
+        const rows = (res.data ?? []) as PreviewChunkRow[];
         semanticRows = rows;
-        semanticSucceeded = true;
-        break;
+        if (rows.length > 0) {
+          semantic = semanticDiagnostic("success");
+          break;
+        }
       }
-      semanticRows = rows;
+      if (semantic.status === "no_match" && semanticRows.length === 0) {
+        semantic = semanticDiagnostic("no_match");
+      }
+    } catch {
+      semantic = semanticDiagnostic("error", "rpc_error");
+      semanticRows = [];
     }
-    if (semanticSucceeded && semanticRows.length > 0) {
+    if (semantic.status === "success" && semanticRows.length > 0) {
       const ranked = rerankMatches(normalized, semanticRows);
       const deduped = deduplicateBySource(ranked);
       const budgeted = applyContextBudget(deduped);
@@ -257,15 +352,17 @@ export async function retrievePreviewMemory(
         contextChunkCount: budgeted.length,
         chunks: budgeted,
         sources,
+        semantic,
       };
     }
-  } catch (e) {
-    console.error("[ai-core retriever] semantic match failed", e);
-    // fall through to lexical
   }
 
   // 2) lexical fallback scoped to campaign
-  const tokens = tokenizeQuestion(normalized).slice(0, 5).map(sanitizeIlikeFragment).filter(Boolean);
+  const lexicalFragments = lexicalQuestionFragments(normalized);
+  const boundedFragments = lexicalFragments.length > 48
+    ? [...lexicalFragments.slice(0, 24), ...lexicalFragments.slice(-24)]
+    : lexicalFragments;
+  const tokens = boundedFragments.map(sanitizeIlikeFragment).filter(Boolean);
   const dedup = Array.from(new Set(tokens));
   if (!dedup.length) {
     return {
@@ -275,6 +372,7 @@ export async function retrievePreviewMemory(
       contextChunkCount: 0,
       chunks: [],
       sources: [],
+      semantic,
     };
   }
 
@@ -285,7 +383,7 @@ export async function retrievePreviewMemory(
     .select("id, campaign_id, source_type, source_id, chunk_index, title, content, summary, metadata, updated_at")
     .eq("campaign_id", campaignId)
     .or(orExpr)
-    .limit(LEXICAL_LIMIT);
+    .limit(LEXICAL_SCAN_LIMIT);
 
   if (error || !data || (data as unknown[]).length === 0) {
     return {
@@ -295,6 +393,7 @@ export async function retrievePreviewMemory(
       contextChunkCount: 0,
       chunks: [],
       sources: [],
+      semantic,
     };
   }
 
@@ -321,6 +420,7 @@ export async function retrievePreviewMemory(
       contextChunkCount: 0,
       chunks: [],
       sources: [],
+      semantic,
     };
   }
 
@@ -331,5 +431,6 @@ export async function retrievePreviewMemory(
     contextChunkCount: budgetedLex.length,
     chunks: budgetedLex,
     sources: sourcesLex,
+    semantic,
   };
 }

@@ -38,9 +38,10 @@ export function buildGroundedPrompt(question: string, evidence: Array<{ evidence
     '  "claims": [ { "text": "singolo fatto affermato", "evidenceIds": ["E1"] } ] }',
     "Regole:",
     "- classification = fatto_canonico se le fonti rispondono direttamente;",
-    "- classification = informazione_assente se le fonti non coprono la domanda;",
+    "- classification = informazione_assente se la domanda è solo parzialmente coperta: separa chiaramente i fatti noti (con citazione) dalle lacune;",
     "- classification = conflitto se le fonti si contraddicono (elenca le divergenze, non arbitrare);",
     "- ogni claim in 'claims' deve avere almeno un evidenceId tra quelli elencati;",
+    "- ogni risposta fatto_canonico o conflitto deve contenere nel testo almeno una citazione [E#] realmente presente nelle fonti;",
     "- non citare fonti non presenti nel contesto;",
     "- rispondi sempre in italiano;",
     "- indica lacune esplicitamente.",
@@ -52,6 +53,22 @@ export function buildGroundedPrompt(question: string, evidence: Array<{ evidence
 export type ParseResult =
   | { ok: true; value: AiMemoryPreviewStructuredOutput }
   | { ok: false; reason: string };
+
+export function validateInlineEvidenceCitations(
+  answer: string,
+  validEvidenceIds: Set<string>
+): { ok: true } | { ok: false; reason: string } {
+  const citations = Array.from(answer.matchAll(/\[(E\d+)\]/g), (match) => match[1]);
+  if (citations.length === 0) {
+    return { ok: false, reason: "La risposta non contiene citazioni [E#]." };
+  }
+  for (const evidenceId of citations) {
+    if (!validEvidenceIds.has(evidenceId!)) {
+      return { ok: false, reason: `La risposta cita evidenceId sconosciuto: ${evidenceId}.` };
+    }
+  }
+  return { ok: true };
+}
 
 export function parseGroundedJson(raw: string, validEvidenceIds: Set<string>): ParseResult {
   const parsed = parseJsonObjectFromLlm(raw);
@@ -91,6 +108,11 @@ export function parseGroundedJson(raw: string, validEvidenceIds: Set<string>): P
       if (!validEvidenceIds.has(id)) return { ok: false, reason: `claim ${i + 1} evidenceId sconosciuto: ${id}` };
     }
     claims.push({ text: text.trim(), evidenceIds: eids as string[] });
+  }
+
+  if (classification === "fatto_canonico" || classification === "conflitto") {
+    const citationCheck = validateInlineEvidenceCitations(answer, validEvidenceIds);
+    if (!citationCheck.ok) return citationCheck;
   }
 
   // Guardrail aggiuntivo: se classificazione è fatto_canonico o conflitto deve avere almeno un claim
