@@ -1447,6 +1447,44 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["app_audit_events"]["Insert"]>;
         Relationships: [];
       };
+      ai_memory_preview_runs: {
+        Row: {
+          id: string;
+          campaign_id: string;
+          requested_by: string;
+          mode: string;
+          question: string;
+          status: string;
+          classification: string;
+          answer: string;
+          source_refs: Json;
+          retrieval: Json;
+          timings_ms: Json;
+          feedback_rating: string | null;
+          feedback_note: string | null;
+          created_at: string;
+          feedback_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          campaign_id: string;
+          requested_by: string;
+          mode?: string;
+          question: string;
+          status: string;
+          classification: string;
+          answer: string;
+          source_refs?: Json;
+          retrieval?: Json;
+          timings_ms?: Json;
+          feedback_rating?: string | null;
+          feedback_note?: string | null;
+          created_at?: string;
+          feedback_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["ai_memory_preview_runs"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: {
       forge_product_stock: {

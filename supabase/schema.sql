@@ -363,3 +363,29 @@ CREATE TRIGGER maps_updated_at
   BEFORE UPDATE ON maps
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+-- AI memory preview audit: server-side only, aligned with the migration.
+CREATE TABLE IF NOT EXISTS public.ai_memory_preview_runs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  campaign_id uuid NOT NULL REFERENCES public.campaigns(id) ON DELETE CASCADE,
+  requested_by uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  mode text NOT NULL DEFAULT 'preview' CHECK (mode IN ('preview')),
+  question text NOT NULL CHECK (char_length(question) >= 3 AND char_length(question) <= 2000),
+  status text NOT NULL CHECK (status IN ('answered', 'insufficient_evidence', 'failed')),
+  classification text NOT NULL CHECK (classification IN ('fatto_canonico', 'informazione_assente', 'conflitto')),
+  answer text NOT NULL,
+  source_refs jsonb NOT NULL DEFAULT '[]'::jsonb,
+  retrieval jsonb NOT NULL DEFAULT '{}'::jsonb,
+  timings_ms jsonb NOT NULL DEFAULT '{}'::jsonb,
+  feedback_rating text NULL CHECK (feedback_rating IN ('approved', 'needs_review', 'incorrect')),
+  feedback_note text NULL CHECK (feedback_note IS NULL OR char_length(feedback_note) <= 2000),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  feedback_at timestamptz NULL
+);
+ALTER TABLE public.ai_memory_preview_runs ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.ai_memory_preview_runs FROM PUBLIC, authenticated;
+GRANT ALL ON public.ai_memory_preview_runs TO service_role;
+CREATE INDEX IF NOT EXISTS ai_memory_preview_runs_campaign_idx
+  ON public.ai_memory_preview_runs (campaign_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS ai_memory_preview_runs_requested_by_idx
+  ON public.ai_memory_preview_runs (requested_by, created_at DESC);
+COMMENT ON TABLE public.ai_memory_preview_runs IS 'Audit read-only della preview memoria Admin (nessuna scrittura di dominio, solo riferimenti a chunk).';

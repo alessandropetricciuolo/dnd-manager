@@ -11,6 +11,7 @@ import { GmNotes } from "@/components/gm/gm-notes";
 import { GmFiles } from "@/components/gm/gm-files";
 import { LongCampaignCalendarSettings } from "@/components/gm/long-campaign-calendar-settings";
 import { CampaignMemoryQueryPanel } from "@/components/gm/campaign-memory-query-panel";
+import { AiMemoryPreviewPanel } from "@/components/gm/ai-memory-preview-panel";
 import { CampaignAiArchitectPanel } from "@/components/campaigns/campaign-ai-architect-panel";
 import { CampaignEmailPanel } from "@/components/campaigns/campaign-email-panel";
 import { CampaignPrimerEditor } from "@/components/gm/campaign-primer-editor";
@@ -43,6 +44,8 @@ type GmHomepageProps = {
   bulkEmailTemplates: BulkTemplate[];
   initialPlayerPrimer: string | null;
   initialTypography?: PrimerTypography | null;
+  previewEnabled?: boolean;
+  isAdmin?: boolean;
 };
 
 export function GmHomepage({
@@ -54,6 +57,8 @@ export function GmHomepage({
   bulkEmailTemplates,
   initialPlayerPrimer,
   initialTypography,
+  previewEnabled = false,
+  isAdmin = false,
 }: GmHomepageProps) {
   const isLongCampaign = isLongCampaignType(campaignType);
   const isTorneo = isTorneoCampaignType(campaignType);
@@ -214,8 +219,9 @@ export function GmHomepage({
       </div>
 
       {isLongCampaign ? (
-        <div className="mb-8">
+        <div className="mb-8 space-y-4">
           <CampaignMemoryQueryPanel campaignId={campaignId} />
+          {previewEnabled && isAdmin ? <AiMemoryPreviewPanel campaignId={campaignId} /> : null}
         </div>
       ) : null}
 
