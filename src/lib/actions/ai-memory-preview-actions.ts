@@ -57,8 +57,11 @@ export async function runAiMemoryPreviewAction(
   const retrievalMs = Date.now() - retrievalStart;
   console.info("[ai-memory-preview] semantic retrieval", {
     mode: retrieve.mode,
+    provider: retrieve.semantic.provider,
+    step: retrieve.semantic.step,
     status: retrieve.semantic.status,
     reason: retrieve.semantic.reason,
+    rpcCategory: retrieve.semantic.rpcCategory,
   });
 
   // 4) Generazione grounded (deterministica se nessuna fonte)

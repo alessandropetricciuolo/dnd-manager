@@ -216,11 +216,11 @@ export async function generateGroundedAnswer(
   const parsed = parseGroundedJson(raw, validIds);
 
   if (!parsed.ok) {
-    const fallback = buildProviderFallbackAnswer(sources, trimmed);
+    const fallback = buildProviderFallbackAnswer(sources, trimmed, "invalid_output");
     return {
       status: "failed",
       classification: "informazione_assente",
-      answer: `${fallback}\n\n[Dettaglio validazione: ${parsed.reason}]`,
+      answer: fallback,
       claims: [],
     };
   }

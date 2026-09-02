@@ -6,11 +6,14 @@ import type {
   AiMemoryPreviewRetrievalMode,
   AiMemoryPreviewSemanticDiagnostic,
   AiMemoryPreviewSemanticFailureReason,
+  AiMemoryPreviewRpcFailureCategory,
   AiMemoryPreviewSource,
 } from "./contracts";
 import {
   AI_MEMORY_PREVIEW_CONTEXT_CHAR_BUDGET,
   AI_MEMORY_PREVIEW_CONTEXT_CHUNK_LIMIT,
+  AI_MEMORY_PREVIEW_MAX_CHUNKS_PER_SOURCE,
+  AI_MEMORY_PREVIEW_MAX_SOURCE_CONTEXT_CHARS,
 } from "./policy";
 
 type AdminClient = SupabaseClient<Database>;
@@ -206,18 +209,6 @@ export function sourceHref(campaignId: string, row: PreviewChunkRow): string {
   }
 }
 
-export function deduplicateBySource(rows: PreviewChunkRow[]): PreviewChunkRow[] {
-  const seen = new Set<string>();
-  const out: PreviewChunkRow[] = [];
-  for (const row of rows) {
-    const key = `${row.source_type}:${row.source_id}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(row);
-  }
-  return out;
-}
-
 export function applyContextBudget(rows: PreviewChunkRow[], budget = AI_MEMORY_PREVIEW_CONTEXT_CHAR_BUDGET, limit = AI_MEMORY_PREVIEW_CONTEXT_CHUNK_LIMIT): PreviewChunkRow[] {
   const out: PreviewChunkRow[] = [];
   let total = 0;
@@ -233,6 +224,51 @@ export function applyContextBudget(rows: PreviewChunkRow[], budget = AI_MEMORY_P
     }
     out.push(row);
     total += len;
+  }
+  return out;
+}
+
+function sourceKey(row: PreviewChunkRow): string {
+  return `${row.source_type}:${row.source_id}`;
+}
+
+/**
+ * Mantiene i chunk consecutivi di una stessa fonte senza permettere che una
+ * singola voce consumi tutto il contesto. L'ordine dei gruppi è quello del
+ * rerank; i chunk dentro al gruppo tornano invece nel loro ordine canonico.
+ */
+export function selectContextChunks(
+  rows: PreviewChunkRow[],
+  budget = AI_MEMORY_PREVIEW_CONTEXT_CHAR_BUDGET,
+  limit = AI_MEMORY_PREVIEW_CONTEXT_CHUNK_LIMIT,
+  perSourceLimit = AI_MEMORY_PREVIEW_MAX_CHUNKS_PER_SOURCE,
+  perSourceBudget = AI_MEMORY_PREVIEW_MAX_SOURCE_CONTEXT_CHARS,
+): PreviewChunkRow[] {
+  const groups = new Map<string, PreviewChunkRow[]>();
+  for (const row of rows) {
+    const key = sourceKey(row);
+    const group = groups.get(key) ?? [];
+    if (!group.some((existing) => existing.id === row.id)) group.push(row);
+    groups.set(key, group);
+  }
+
+  const out: PreviewChunkRow[] = [];
+  let total = 0;
+  for (const group of groups.values()) {
+    const ordered = [...group].sort((a, b) => a.chunk_index - b.chunk_index || a.id.localeCompare(b.id));
+    let sourceTotal = 0;
+    let sourceChunks = 0;
+    for (const row of ordered) {
+      if (out.length >= limit) return out;
+      if (sourceChunks >= perSourceLimit) break;
+      const len = row.content.length;
+      if (sourceChunks > 0 && sourceTotal + len > perSourceBudget) continue;
+      if (total + len > budget) continue;
+      out.push(row);
+      sourceChunks += 1;
+      sourceTotal += len;
+      total += len;
+    }
   }
   return out;
 }
@@ -260,9 +296,106 @@ export type RetrieverDeps = {
 
 function semanticDiagnostic(
   status: AiMemoryPreviewSemanticDiagnostic["status"],
-  reason: AiMemoryPreviewSemanticFailureReason | null = null
+  reason: AiMemoryPreviewSemanticFailureReason | null = null,
+  rpcCategory?: AiMemoryPreviewRpcFailureCategory,
 ): AiMemoryPreviewSemanticDiagnostic {
-  return { provider: "openrouter", status, reason };
+  const isRpcStep = reason === "rpc_error" || reason === "invalid_response" || reason === "no_match" || status === "success";
+  return {
+    provider: isRpcStep ? "supabase" : "openrouter",
+    step: isRpcStep ? "rpc" : "embedding",
+    status,
+    reason,
+    ...(rpcCategory ? { rpcCategory } : {}),
+  };
+}
+
+function safeRpcFailureCategory(error: unknown): AiMemoryPreviewRpcFailureCategory {
+  const record = error && typeof error === "object" ? error as Record<string, unknown> : {};
+  const code = typeof record.code === "string" ? record.code.toUpperCase() : "";
+  const status = typeof record.status === "number"
+    ? record.status
+    : typeof record.status === "string" && /^\d+$/.test(record.status)
+      ? Number(record.status)
+      : null;
+  const message = typeof record.message === "string" ? record.message.toLowerCase() : "";
+
+  if (
+    code === "PGRST202" ||
+    /function .*match_campaign_memory.* does not exist|could not find the function|unknown function/.test(message)
+  ) return "function_missing";
+  if (
+    code === "42501" ||
+    /permission denied|not allowed|schema cache|could not find the table/.test(message)
+  ) return "permission_or_schema_cache";
+  if (
+    /dimension|vector.*(384|size)|expected.*384|different dimensions/.test(message) ||
+    code === "22000"
+  ) return "dimension_mismatch";
+  if (
+    (status !== null && [408, 425, 429, 500, 502, 503, 504].includes(status)) ||
+    /timeout|timed out|network|fetch failed|connection|abort/.test(message)
+  ) return "timeout_or_network";
+  return "unknown";
+}
+
+function isPreviewChunkRow(value: unknown): value is PreviewChunkRow {
+  if (!value || typeof value !== "object") return false;
+  const row = value as Record<string, unknown>;
+  return (
+    typeof row.id === "string" &&
+    typeof row.campaign_id === "string" &&
+    typeof row.source_type === "string" &&
+    typeof row.source_id === "string" &&
+    typeof row.chunk_index === "number" &&
+    typeof row.title === "string" &&
+    typeof row.content === "string"
+  );
+}
+
+function normalizeChunkRows(data: unknown): PreviewChunkRow[] | null {
+  if (!Array.isArray(data)) return null;
+  const rows = data.filter(isPreviewChunkRow).map((row) => ({
+    ...row,
+    summary: row.summary ?? null,
+    metadata: row.metadata ?? null,
+    similarity: typeof row.similarity === "number" ? row.similarity : null,
+  }));
+  return rows.length === data.length ? rows : null;
+}
+
+async function expandSourceChunks(
+  admin: AdminClient,
+  campaignId: string,
+  seedRows: PreviewChunkRow[],
+): Promise<PreviewChunkRow[]> {
+  const sourceKeys = Array.from(new Set(seedRows.map(sourceKey))).slice(0, AI_MEMORY_PREVIEW_CONTEXT_CHUNK_LIMIT);
+  const expanded = [...seedRows];
+  for (const key of sourceKeys) {
+    const [sourceType, sourceId] = key.split(":");
+    try {
+      const query = admin
+        .from("campaign_memory_chunks")
+        .select("id, campaign_id, source_type, source_id, chunk_index, title, content, summary, metadata")
+        .eq("campaign_id", campaignId)
+        .eq("source_type", sourceType)
+        .eq("source_id", sourceId)
+        .order("chunk_index", { ascending: true })
+        .limit(AI_MEMORY_PREVIEW_MAX_CHUNKS_PER_SOURCE);
+      const { data, error } = await query;
+      if (error) continue;
+      const rows = normalizeChunkRows(data);
+      if (rows) expanded.push(...rows);
+    } catch {
+      // L'espansione è un miglioramento best-effort: il risultato semantico
+      // iniziale resta valido anche con un client/mock che non supporta la query.
+    }
+  }
+  const seen = new Set<string>();
+  return expanded.filter((row) => {
+    if (seen.has(row.id)) return false;
+    seen.add(row.id);
+    return true;
+  });
 }
 
 export async function retrievePreviewMemory(
@@ -306,7 +439,7 @@ export async function retrievePreviewMemory(
     const runRpc = admin.rpc as unknown as (
       fn: string,
       args: Record<string, unknown>
-    ) => Promise<{ data: unknown; error: { message: string } | null }>;
+    ) => Promise<{ data: unknown; error: unknown | null }>;
 
     try {
       for (const threshold of SEMANTIC_THRESHOLDS) {
@@ -317,7 +450,7 @@ export async function retrievePreviewMemory(
           match_count: SEMANTIC_MATCH_COUNT,
         });
         if (res.error) {
-          semantic = semanticDiagnostic("error", "rpc_error");
+          semantic = semanticDiagnostic("error", "rpc_error", safeRpcFailureCategory(res.error));
           semanticRows = [];
           break;
         }
@@ -326,7 +459,12 @@ export async function retrievePreviewMemory(
           semanticRows = [];
           break;
         }
-        const rows = (res.data ?? []) as PreviewChunkRow[];
+        const rows = normalizeChunkRows(res.data ?? []);
+        if (!rows) {
+          semantic = semanticDiagnostic("error", "invalid_response");
+          semanticRows = [];
+          break;
+        }
         semanticRows = rows;
         if (rows.length > 0) {
           semantic = semanticDiagnostic("success");
@@ -334,16 +472,16 @@ export async function retrievePreviewMemory(
         }
       }
       if (semantic.status === "no_match" && semanticRows.length === 0) {
-        semantic = semanticDiagnostic("no_match");
+        semantic = semanticDiagnostic("no_match", "no_match");
       }
     } catch {
-      semantic = semanticDiagnostic("error", "rpc_error");
+      semantic = semanticDiagnostic("error", "rpc_error", "unknown");
       semanticRows = [];
     }
     if (semantic.status === "success" && semanticRows.length > 0) {
       const ranked = rerankMatches(normalized, semanticRows);
-      const deduped = deduplicateBySource(ranked);
-      const budgeted = applyContextBudget(deduped);
+      const expanded = await expandSourceChunks(admin, campaignId, ranked);
+      const budgeted = selectContextChunks(rerankMatches(normalized, expanded));
       const sources = buildPreviewSources(campaignId, budgeted);
       return {
         mode: "semantic",
@@ -407,8 +545,8 @@ export async function retrievePreviewMemory(
   }));
 
   const rankedLex = rerankMatches(normalized, lexicalRows);
-  const dedupedLex = deduplicateBySource(rankedLex);
-  const budgetedLex = applyContextBudget(dedupedLex);
+  const expandedLex = await expandSourceChunks(admin, campaignId, rankedLex);
+  const budgetedLex = selectContextChunks(rerankMatches(normalized, expandedLex));
   const sourcesLex = buildPreviewSources(campaignId, budgetedLex);
 
   // Se il lexical non ha prodotto chunk dopo budget, consideriamo comunque fallback (non none) ma con 0

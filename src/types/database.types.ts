@@ -1485,6 +1485,48 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["ai_memory_preview_runs"]["Insert"]>;
         Relationships: [];
       };
+      ai_preview_test_runs: {
+        Row: {
+          id: string;
+          campaign_id: string | null;
+          requested_by: string;
+          kind: "narrative_text" | "official_rules" | "grounded_image";
+          mode: string;
+          input_normalized: string;
+          status: "completed" | "insufficient_evidence" | "failed";
+          classification: "grounded_proposal" | "grounding_insufficient" | "official_rule_found" | "official_rule_not_found" | "provider_unavailable";
+          output_text: string | null;
+          output_ref: Json | null;
+          sources: Json;
+          metadata: Json;
+          timings_ms: Json;
+          feedback_rating: "approved" | "needs_review" | "incorrect" | null;
+          feedback_note: string | null;
+          feedback_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          campaign_id?: string | null;
+          requested_by: string;
+          kind: "narrative_text" | "official_rules" | "grounded_image";
+          mode: string;
+          input_normalized: string;
+          status: "completed" | "insufficient_evidence" | "failed";
+          classification: "grounded_proposal" | "grounding_insufficient" | "official_rule_found" | "official_rule_not_found" | "provider_unavailable";
+          output_text?: string | null;
+          output_ref?: Json | null;
+          sources?: Json;
+          metadata?: Json;
+          timings_ms?: Json;
+          feedback_rating?: "approved" | "needs_review" | "incorrect" | null;
+          feedback_note?: string | null;
+          feedback_at?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["ai_preview_test_runs"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: {
       forge_product_stock: {

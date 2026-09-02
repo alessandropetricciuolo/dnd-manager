@@ -47,16 +47,30 @@ export const AI_MEMORY_PREVIEW_SEMANTIC_FAILURE_REASONS = [
   "invalid_embedding",
   "rpc_error",
   "invalid_response",
+  "no_match",
   "unknown",
 ] as const;
 
 export type AiMemoryPreviewSemanticFailureReason =
   (typeof AI_MEMORY_PREVIEW_SEMANTIC_FAILURE_REASONS)[number];
 
+export const AI_MEMORY_PREVIEW_RPC_FAILURE_CATEGORIES = [
+  "function_missing",
+  "permission_or_schema_cache",
+  "dimension_mismatch",
+  "timeout_or_network",
+  "unknown",
+] as const;
+
+export type AiMemoryPreviewRpcFailureCategory =
+  (typeof AI_MEMORY_PREVIEW_RPC_FAILURE_CATEGORIES)[number];
+
 export type AiMemoryPreviewSemanticDiagnostic = {
-  provider: "openrouter";
+  provider: "openrouter" | "supabase";
+  step: "embedding" | "rpc";
   status: AiMemoryPreviewSemanticStatus;
   reason: AiMemoryPreviewSemanticFailureReason | null;
+  rpcCategory?: AiMemoryPreviewRpcFailureCategory;
 };
 
 // ── Feedback ──
@@ -148,4 +162,76 @@ export type AiMemoryPreviewStructuredOutput = {
   classification: AiMemoryPreviewClassification;
   answer: string;
   claims: AiMemoryPreviewClaim[];
+};
+
+// ── Laboratorio Admin: capacità aggiuntive ──
+
+export const AI_PREVIEW_TEST_KINDS = ["narrative_text", "official_rules", "grounded_image"] as const;
+export type AiPreviewTestKind = (typeof AI_PREVIEW_TEST_KINDS)[number];
+
+export const AI_PREVIEW_TEST_STATUSES = ["completed", "insufficient_evidence", "failed"] as const;
+export type AiPreviewTestStatus = (typeof AI_PREVIEW_TEST_STATUSES)[number];
+
+export const AI_PREVIEW_TEST_CLASSIFICATIONS = [
+  "grounded_proposal",
+  "grounding_insufficient",
+  "official_rule_found",
+  "official_rule_not_found",
+  "provider_unavailable",
+] as const;
+export type AiPreviewTestClassification = (typeof AI_PREVIEW_TEST_CLASSIFICATIONS)[number];
+
+export type AiPreviewTestSource = {
+  evidenceId: string;
+  sourceType: "campaign_memory" | "manual" | "rules_catalog";
+  sourceId: string;
+  title: string;
+  href: string | null;
+  sourceBook?: string | null;
+  similarity?: number | null;
+};
+
+export type AiPreviewTestTimings = {
+  retrieval: number;
+  generation: number | null;
+  total: number;
+};
+
+export type AiPreviewTestResult = {
+  runId: string;
+  kind: AiPreviewTestKind;
+  mode: string;
+  status: AiPreviewTestStatus;
+  classification: AiPreviewTestClassification;
+  outputText: string;
+  sources: AiPreviewTestSource[];
+  timingsMs: AiPreviewTestTimings;
+  auditPersisted: boolean;
+  promptSent?: string;
+  provider?: string;
+  model?: string;
+  imageUrl?: string;
+  imageBase64?: string;
+};
+
+export type AiPreviewTestSourceRef = Omit<AiPreviewTestSource, "href">;
+
+export type AiPreviewTestRunRow = {
+  id: string;
+  campaign_id: string | null;
+  requested_by: string;
+  kind: AiPreviewTestKind;
+  mode: string;
+  input_normalized: string;
+  status: AiPreviewTestStatus;
+  classification: AiPreviewTestClassification;
+  output_text: string | null;
+  output_ref: Record<string, unknown> | null;
+  sources: AiPreviewTestSourceRef[];
+  metadata: Record<string, unknown>;
+  timings_ms: AiPreviewTestTimings;
+  feedback_rating: AiMemoryPreviewFeedbackRating | null;
+  feedback_note: string | null;
+  feedback_at: string | null;
+  created_at: string;
 };
