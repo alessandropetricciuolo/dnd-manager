@@ -6,8 +6,8 @@ import {
   significantQuestionTokens,
   questionTermOverlapBoost,
   rerankMatches,
-  deduplicateBySource,
   applyContextBudget,
+  selectContextChunks,
   buildPreviewSources,
   sourceHref,
   sourceLabel,
@@ -74,16 +74,6 @@ test("rerankMatches spinge pg / missione / mappa in base a intento", () => {
   assert.equal(rankedDefault[0]!.source_type, "wiki");
 });
 
-test("deduplicateBySource tiene solo primo per source", () => {
-  const a1 = makeRow({ source_type: "wiki", source_id: "same", title: "A1", content: "c1" });
-  const a2 = makeRow({ source_type: "wiki", source_id: "same", title: "A2", content: "c2" });
-  const b = makeRow({ source_type: "wiki", source_id: "other", title: "B", content: "c3" });
-  const deduped = deduplicateBySource([a1, a2, b]);
-  assert.equal(deduped.length, 2);
-  assert.equal(deduped[0]!.title, "A1");
-  assert.equal(deduped[1]!.title, "B");
-});
-
 test("applyContextBudget rispetta limite chunk e caratteri", () => {
   const rows = Array.from({ length: 20 }, (_, i) =>
     makeRow({ source_type: "wiki", source_id: `id-${i}`, title: `T${i}`, content: "x".repeat(1000) })
@@ -94,6 +84,21 @@ test("applyContextBudget rispetta limite chunk e caratteri", () => {
   // Primo chunk sempre incluso anche se supera budget da solo
   const huge = [makeRow({ source_type: "wiki", source_id: "huge", title: "H", content: "x".repeat(20000) })];
   assert.equal(applyContextBudget(huge, 12000, 14).length, 1);
+});
+
+test("selectContextChunks conserva il seguito pertinente della stessa fonte", () => {
+  const rows = [
+    makeRow({ source_type: "wiki", source_id: "cristallo", chunk_index: 0, title: "Cristallo di passaggio", content: "Il cristallo apre portali persistenti." }),
+    makeRow({ source_type: "wiki", source_id: "cristallo", chunk_index: 1, title: "Cristallo di passaggio", content: "Il costo di ogni uso è 10 MO." }),
+    makeRow({ source_type: "wiki", source_id: "cristallo", chunk_index: 2, title: "Cristallo di passaggio", content: "L'oggetto non richiede sintonia." }),
+    makeRow({ source_type: "wiki", source_id: "altro", chunk_index: 0, title: "Cronaca", content: "Distrattore." }),
+  ];
+
+  const selected = selectContextChunks(rows, 12000, 14, 4, 4800);
+  assert.deepEqual(selected.slice(0, 3).map((row) => row.chunk_index), [0, 1, 2]);
+  assert.match(selected.slice(0, 3).map((row) => row.content).join(" "), /portali persistenti/);
+  assert.match(selected.slice(0, 3).map((row) => row.content).join(" "), /10 MO/);
+  assert.match(selected.slice(0, 3).map((row) => row.content).join(" "), /sintonia/);
 });
 
 test("buildPreviewSources genera E1..En e href coerenti", () => {
@@ -142,7 +147,7 @@ test("retriever non inserisce blocco cronologico completo: budget limita", () =>
   assert.ok(budgeted.reduce((acc, r) => acc + r.content.length, 0) <= 12000);
 });
 
-function makeRetrieverAdmin(rows: PreviewChunkRow[], rpcResult: { data: unknown; error: { message: string } | null }) {
+function makeRetrieverAdmin(rows: PreviewChunkRow[], rpcResult: { data: unknown; error: unknown | null }) {
   return {
     from: (table: string) => {
       if (table !== "campaign_memory_chunks") throw new Error(`Unexpected table: ${table}`);
@@ -203,16 +208,58 @@ test("retrieval semantic no-match usa fallback lessicale con titolo esatto prima
 test("retrieval semantic error registra causa sicura e usa fallback lessicale", async () => {
   const folki = makeRow({ source_type: "wiki", source_id: "folki", title: "Folki", content: "Folki è uno gnomo panettiere." });
   const result = await retrievePreviewMemory(
-    makeRetrieverAdmin([folki], { data: null, error: { message: "provider details must not escape" } }),
+    makeRetrieverAdmin([folki], { data: null, error: { code: "42501", message: "provider details must not escape" } }),
     "camp-1",
     "Chi è Folki?",
     { generateEmbedding: async () => Array.from({ length: 384 }, () => 0.01) }
   );
 
   assert.equal(result.mode, "lexical_fallback");
-  assert.deepEqual(result.semantic, { provider: "openrouter", status: "error", reason: "rpc_error" });
+  assert.deepEqual(result.semantic, {
+    provider: "supabase",
+    step: "rpc",
+    status: "error",
+    reason: "rpc_error",
+    rpcCategory: "permission_or_schema_cache",
+  });
   assert.equal(result.chunks[0]?.title, "Folki");
   assert.doesNotMatch(JSON.stringify(result.semantic), /provider details/);
+});
+
+test("retrieval RPC classifica funzione mancante senza conservare il messaggio raw", async () => {
+  const folki = makeRow({ source_type: "wiki", source_id: "folki", title: "Folki", content: "Folki è uno gnomo panettiere." });
+  const result = await retrievePreviewMemory(
+    makeRetrieverAdmin([folki], { data: null, error: { code: "PGRST202", message: "private provider secret" } }),
+    "camp-1",
+    "Chi è Folki?",
+    { generateEmbedding: async () => Array.from({ length: 384 }, () => 0.01) }
+  );
+
+  assert.equal(result.semantic.provider, "supabase");
+  assert.equal(result.semantic.step, "rpc");
+  assert.equal(result.semantic.reason, "rpc_error");
+  assert.equal(result.semantic.rpcCategory, "function_missing");
+  assert.doesNotMatch(JSON.stringify(result.semantic), /private provider secret/);
+});
+
+test("retrieval mantiene tre chunk della voce Cristallo nel contesto", async () => {
+  const cristallo = [
+    makeRow({ source_type: "wiki", source_id: "cristallo", chunk_index: 0, title: "Cristallo di passaggio", content: "Il Cristallo apre portali persistenti." }),
+    makeRow({ source_type: "wiki", source_id: "cristallo", chunk_index: 1, title: "Cristallo di passaggio", content: "Il costo è 10 MO per uso." }),
+    makeRow({ source_type: "wiki", source_id: "cristallo", chunk_index: 2, title: "Cristallo di passaggio", content: "Non richiede sintonia." }),
+  ];
+  const result = await retrievePreviewMemory(
+    makeRetrieverAdmin([], { data: cristallo, error: null }),
+    "camp-1",
+    "Come funziona il Cristallo di passaggio?",
+    { generateEmbedding: async () => Array.from({ length: 384 }, () => 0.01) }
+  );
+
+  assert.equal(result.mode, "semantic");
+  assert.equal(result.contextChunkCount, 3);
+  assert.deepEqual(result.chunks.map((row) => row.chunk_index), [0, 1, 2]);
+  assert.match(result.chunks.map((row) => row.content).join(" "), /10 MO/);
+  assert.match(result.chunks.map((row) => row.content).join(" "), /sintonia/);
 });
 
 test("retrieval senza configurazione OpenRouter non tenta il provider e registra missing_api_key", async () => {

@@ -179,6 +179,30 @@ test("generateGroundedAnswer JSON invalido -> failed con fonti", async () => {
   assert.equal(res.status, "failed");
   assert.equal(res.classification, "informazione_assente");
   assert.match(res.answer, /Portico/);
+  assert.match(res.answer, /\[E1\]/);
+  assert.match(res.answer, /non ha superato la validazione grounded/);
+});
+
+test("JSON fatto canonico senza citazione inline produce fallback grounded con E#", async () => {
+  const chunks = [makeChunk("c1", "Cristallo di passaggio", "Portali persistenti, costo 10 MO, senza sintonia.")];
+  const sources = [makeSource("E1", "Cristallo di passaggio")];
+  const res = await generateGroundedAnswer(
+    "Come funziona il Cristallo di passaggio?",
+    chunks,
+    sources,
+    {
+      generateText: async () => JSON.stringify({
+        classification: "fatto_canonico",
+        answer: "Portali persistenti, costo 10 MO, senza sintonia.",
+        claims: [{ text: "Regole del cristallo", evidenceIds: ["E1"] }],
+      }),
+    }
+  );
+
+  assert.equal(res.status, "failed");
+  assert.match(res.answer, /\[E1\]/);
+  assert.doesNotMatch(res.answer, /\[1\]/);
+  assert.equal(res.claims.length, 0);
 });
 
 test("generateGroundedAnswer conflitto -> answered con classification conflitto", async () => {

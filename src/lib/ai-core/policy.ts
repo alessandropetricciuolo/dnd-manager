@@ -14,6 +14,8 @@ export const AI_MEMORY_PREVIEW_FEEDBACK_NOTE_MAX_LENGTH = 2000;
 export const AI_MEMORY_PREVIEW_ANSWER_MAX_LENGTH = 8000;
 export const AI_MEMORY_PREVIEW_CONTEXT_CHAR_BUDGET = 12000;
 export const AI_MEMORY_PREVIEW_CONTEXT_CHUNK_LIMIT = 14;
+export const AI_MEMORY_PREVIEW_MAX_CHUNKS_PER_SOURCE = 4;
+export const AI_MEMORY_PREVIEW_MAX_SOURCE_CONTEXT_CHARS = 4800;
 
 // ── Messaggi sicuri (non espongono segreti) ──
 
@@ -140,9 +142,16 @@ export function buildInsufficientEvidenceAnswer(question: string): string {
   return `${AI_MEMORY_PREVIEW_MESSAGES.insufficientEvidence} Domanda: "${question.trim()}"`;
 }
 
-export function buildProviderFallbackAnswer(sources: AiMemoryPreviewSource[], question: string): string {
+export function buildProviderFallbackAnswer(
+  sources: AiMemoryPreviewSource[],
+  question: string,
+  reason: "provider_error" | "invalid_output" = "provider_error"
+): string {
+  const validationNotice = reason === "invalid_output"
+    ? "La risposta generata non ha superato la validazione grounded; non viene presentata come fatto."
+    : null;
   const header = `${AI_MEMORY_PREVIEW_MESSAGES.providerUnavailable} Domanda: "${question.trim()}"`;
   if (!sources.length) return header;
-  const bullets = sources.slice(0, 3).map((s, i) => `- [${i + 1}] ${s.title} (${s.sourceType})`);
-  return [header, "", "Fonti recuperate:", ...bullets].join("\n");
+  const bullets = sources.slice(0, 3).map((s) => `- [${s.evidenceId}] ${s.title} (${s.sourceType})`);
+  return [header, validationNotice, "", "Fonti recuperate:", ...bullets].filter((line): line is string => line !== null).join("\n");
 }

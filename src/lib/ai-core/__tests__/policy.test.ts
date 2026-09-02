@@ -111,6 +111,8 @@ test("buildInsufficientEvidenceAnswer and buildProviderFallbackAnswer", () => {
   const fallback = buildProviderFallbackAnswer(sources, q);
   assert.match(fallback, /temporaneamente non disponibile/);
   assert.match(fallback, /Portico/);
+  assert.match(fallback, /\[E1\]/);
+  assert.doesNotMatch(fallback, /\[1\]/);
   const emptyFallback = buildProviderFallbackAnswer([], q);
   assert.match(emptyFallback, /temporaneamente non disponibile/);
 });

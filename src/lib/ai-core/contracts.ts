@@ -47,16 +47,30 @@ export const AI_MEMORY_PREVIEW_SEMANTIC_FAILURE_REASONS = [
   "invalid_embedding",
   "rpc_error",
   "invalid_response",
+  "no_match",
   "unknown",
 ] as const;
 
 export type AiMemoryPreviewSemanticFailureReason =
   (typeof AI_MEMORY_PREVIEW_SEMANTIC_FAILURE_REASONS)[number];
 
+export const AI_MEMORY_PREVIEW_RPC_FAILURE_CATEGORIES = [
+  "function_missing",
+  "permission_or_schema_cache",
+  "dimension_mismatch",
+  "timeout_or_network",
+  "unknown",
+] as const;
+
+export type AiMemoryPreviewRpcFailureCategory =
+  (typeof AI_MEMORY_PREVIEW_RPC_FAILURE_CATEGORIES)[number];
+
 export type AiMemoryPreviewSemanticDiagnostic = {
-  provider: "openrouter";
+  provider: "openrouter" | "supabase";
+  step: "embedding" | "rpc";
   status: AiMemoryPreviewSemanticStatus;
   reason: AiMemoryPreviewSemanticFailureReason | null;
+  rpcCategory?: AiMemoryPreviewRpcFailureCategory;
 };
 
 // ── Feedback ──

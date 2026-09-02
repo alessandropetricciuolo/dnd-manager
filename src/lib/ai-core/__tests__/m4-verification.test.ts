@@ -12,7 +12,6 @@ import { isAllowedPreviewRole, isLongCampaignTypeValue } from "../access";
 import { parseGroundedJson, generateGroundedAnswer, buildGroundedPrompt } from "../grounded-answer";
 import {
   tokenizeQuestion,
-  deduplicateBySource,
   applyContextBudget,
   buildPreviewSources,
   retrievePreviewMemory,
