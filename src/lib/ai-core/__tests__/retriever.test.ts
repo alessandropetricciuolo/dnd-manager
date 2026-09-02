@@ -11,6 +11,7 @@ import {
   buildPreviewSources,
   sourceHref,
   sourceLabel,
+  retrievePreviewMemory,
 } from "../campaign-memory-retriever";
 import type { PreviewChunkRow } from "../campaign-memory-retriever";
 
@@ -139,4 +140,100 @@ test("retriever non inserisce blocco cronologico completo: budget limita", () =>
   assert.ok(budgeted.length <= 14);
   assert.ok(budgeted.length < 20);
   assert.ok(budgeted.reduce((acc, r) => acc + r.content.length, 0) <= 12000);
+});
+
+function makeRetrieverAdmin(rows: PreviewChunkRow[], rpcResult: { data: unknown; error: { message: string } | null }) {
+  return {
+    from: (table: string) => {
+      if (table !== "campaign_memory_chunks") throw new Error(`Unexpected table: ${table}`);
+      return {
+        select: (_columns: string, options?: { head?: boolean }) => ({
+          eq: (_column: string, _value: string) => {
+            if (options?.head) return Promise.resolve({ count: rows.length, error: null });
+            return {
+              or: (_expression: string) => ({
+                limit: async (_limit: number) => ({ data: rows, error: null }),
+              }),
+            };
+          },
+        }),
+      };
+    },
+    rpc: async () => rpcResult,
+  } as any;
+}
+
+test("retrieval semantic success usa semantic e recupera Folki", async () => {
+  const folki = makeRow({ source_type: "wiki", source_id: "folki", title: "Folki", content: "Folki è uno gnomo panettiere." });
+  const result = await retrievePreviewMemory(
+    makeRetrieverAdmin([], { data: [folki], error: null }),
+    "camp-1",
+    "Chi è Folki?",
+    { generateEmbedding: async () => Array.from({ length: 384 }, () => 0.01) }
+  );
+
+  assert.equal(result.mode, "semantic");
+  assert.equal(result.semantic.status, "success");
+  assert.equal(result.chunks[0]?.title, "Folki");
+});
+
+test("retrieval semantic no-match usa fallback lessicale con titolo esatto prima del budget", async () => {
+  const cases = [
+    ["Chi è Folki?", "Folki"],
+    ["Dove trovo il Cristallo di passaggio?", "Cristallo di passaggio"],
+    ["Qual è lo stato della missione Coccatrice Scomparsa?", "Coccatrice Scomparsa"],
+  ] as const;
+
+  for (const [question, expectedTitle] of cases) {
+    const target = makeRow({ source_type: expectedTitle.startsWith("Coccatrice") ? "mission" : "wiki", source_id: expectedTitle, title: expectedTitle, content: `${expectedTitle}: dettaglio canonico.` });
+    const distractor = makeRow({ source_type: "wiki", source_id: `distractor-${expectedTitle}`, title: "Cronaca generale", content: "Dettaglio generico della campagna." });
+    const result = await retrievePreviewMemory(
+      makeRetrieverAdmin([distractor, target], { data: [], error: null }),
+      "camp-1",
+      question,
+      { generateEmbedding: async () => Array.from({ length: 384 }, () => 0.01) }
+    );
+
+    assert.equal(result.mode, "lexical_fallback");
+    assert.equal(result.semantic.status, "no_match");
+    assert.equal(result.chunks[0]?.title, expectedTitle);
+  }
+});
+
+test("retrieval semantic error registra causa sicura e usa fallback lessicale", async () => {
+  const folki = makeRow({ source_type: "wiki", source_id: "folki", title: "Folki", content: "Folki è uno gnomo panettiere." });
+  const result = await retrievePreviewMemory(
+    makeRetrieverAdmin([folki], { data: null, error: { message: "provider details must not escape" } }),
+    "camp-1",
+    "Chi è Folki?",
+    { generateEmbedding: async () => Array.from({ length: 384 }, () => 0.01) }
+  );
+
+  assert.equal(result.mode, "lexical_fallback");
+  assert.deepEqual(result.semantic, { provider: "openrouter", status: "error", reason: "rpc_error" });
+  assert.equal(result.chunks[0]?.title, "Folki");
+  assert.doesNotMatch(JSON.stringify(result.semantic), /provider details/);
+});
+
+test("retrieval senza configurazione OpenRouter non tenta il provider e registra missing_api_key", async () => {
+  const previousKey = process.env.OPENROUTER_API_KEY;
+  delete process.env.OPENROUTER_API_KEY;
+  let rpcCalled = false;
+  const folki = makeRow({ source_type: "wiki", source_id: "folki", title: "Folki", content: "Folki è uno gnomo panettiere." });
+  const admin = makeRetrieverAdmin([folki], { data: [], error: null });
+  admin.rpc = async () => {
+    rpcCalled = true;
+    return { data: [], error: null };
+  };
+
+  try {
+    const result = await retrievePreviewMemory(admin, "camp-1", "Chi è Folki?");
+    assert.equal(result.semantic.status, "error");
+    assert.equal(result.semantic.reason, "missing_api_key");
+    assert.equal(rpcCalled, false);
+    assert.equal(result.chunks[0]?.title, "Folki");
+  } finally {
+    if (previousKey === undefined) delete process.env.OPENROUTER_API_KEY;
+    else process.env.OPENROUTER_API_KEY = previousKey;
+  }
 });

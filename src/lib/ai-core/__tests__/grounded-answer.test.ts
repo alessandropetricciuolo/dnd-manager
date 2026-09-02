@@ -97,6 +97,22 @@ test("parseGroundedJson richiede claim per fatto_canonico", () => {
   assert.equal(parseGroundedJson(raw, new Set(["E1"])).ok, false);
 });
 
+test("parseGroundedJson richiede una citazione inline valida per fatto_canonico", () => {
+  const missing = JSON.stringify({
+    classification: "fatto_canonico",
+    answer: "Portico è governata dal Concilio.",
+    claims: [{ text: "Portico governata dal Concilio", evidenceIds: ["E1"] }],
+  });
+  assert.equal(parseGroundedJson(missing, new Set(["E1"])).ok, false);
+
+  const unknown = JSON.stringify({
+    classification: "fatto_canonico",
+    answer: "Portico è governata dal Concilio [E99].",
+    claims: [{ text: "Portico governata dal Concilio", evidenceIds: ["E1"] }],
+  });
+  assert.equal(parseGroundedJson(unknown, new Set(["E1"])).ok, false);
+});
+
 test("generateGroundedAnswer deterministica senza fonti non chiama provider", async () => {
   let called = false;
   const res = await generateGroundedAnswer("Chi è Vhalzar?", [], [], {

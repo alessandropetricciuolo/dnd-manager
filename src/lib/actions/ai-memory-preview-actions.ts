@@ -50,19 +50,24 @@ export async function runAiMemoryPreviewAction(
   let retrieve;
   try {
     retrieve = await retrievePreviewMemory(admin, normalizedCampaignId, normalizedQuestion);
-  } catch (e) {
-    console.error("[runAiMemoryPreviewAction] retrieval failed", e);
+  } catch {
+    console.error("[runAiMemoryPreviewAction] retrieval failed", { reason: "retrieval_error" });
     return { success: false, message: "Errore durante il recupero delle fonti. Riprova." };
   }
   const retrievalMs = Date.now() - retrievalStart;
+  console.info("[ai-memory-preview] semantic retrieval", {
+    mode: retrieve.mode,
+    status: retrieve.semantic.status,
+    reason: retrieve.semantic.reason,
+  });
 
   // 4) Generazione grounded (deterministica se nessuna fonte)
   const generationStart = Date.now();
   let grounded;
   try {
     grounded = await generateGroundedAnswer(normalizedQuestion, retrieve.chunks, retrieve.sources);
-  } catch (e) {
-    console.error("[runAiMemoryPreviewAction] grounded generation failed", e);
+  } catch {
+    console.error("[runAiMemoryPreviewAction] grounded generation failed", { reason: "generation_error" });
     return { success: false, message: "Errore durante la generazione della risposta. Riprova." };
   }
   // Deterministico senza fonti -> generation null per contratto
@@ -85,6 +90,7 @@ export async function runAiMemoryPreviewAction(
     chunkCount: retrieve.chunkCount,
     retrievedChunkCount: retrieve.retrievedChunkCount,
     contextChunkCount: retrieve.contextChunkCount,
+    semantic: retrieve.semantic,
   };
 
   const timingsPayload = {
@@ -107,8 +113,8 @@ export async function runAiMemoryPreviewAction(
       timingsMs: timingsPayload,
     });
     runId = inserted.id;
-  } catch (e) {
-    console.error("[runAiMemoryPreviewAction] audit insert failed", e);
+  } catch {
+    console.error("[runAiMemoryPreviewAction] audit insert failed", { reason: "audit_insert_error" });
     // Anche se audit fallisce, restituiamo comunque il risultato con runId temporaneo per non bloccare l'Admin.
     runId = `preview-audit-failed-${Date.now()}`;
   }

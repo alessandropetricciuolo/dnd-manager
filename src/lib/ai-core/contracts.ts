@@ -33,6 +33,32 @@ export const AI_MEMORY_PREVIEW_RETRIEVAL_MODES = [
 
 export type AiMemoryPreviewRetrievalMode = (typeof AI_MEMORY_PREVIEW_RETRIEVAL_MODES)[number];
 
+export const AI_MEMORY_PREVIEW_SEMANTIC_STATUSES = [
+  "success",
+  "no_match",
+  "error",
+] as const;
+
+export type AiMemoryPreviewSemanticStatus = (typeof AI_MEMORY_PREVIEW_SEMANTIC_STATUSES)[number];
+
+export const AI_MEMORY_PREVIEW_SEMANTIC_FAILURE_REASONS = [
+  "missing_api_key",
+  "embedding_error",
+  "invalid_embedding",
+  "rpc_error",
+  "invalid_response",
+  "unknown",
+] as const;
+
+export type AiMemoryPreviewSemanticFailureReason =
+  (typeof AI_MEMORY_PREVIEW_SEMANTIC_FAILURE_REASONS)[number];
+
+export type AiMemoryPreviewSemanticDiagnostic = {
+  provider: "openrouter";
+  status: AiMemoryPreviewSemanticStatus;
+  reason: AiMemoryPreviewSemanticFailureReason | null;
+};
+
 // ── Feedback ──
 
 export const AI_MEMORY_PREVIEW_FEEDBACK_RATINGS = [
@@ -66,6 +92,7 @@ export type AiMemoryPreviewRetrieval = {
   chunkCount: number;
   retrievedChunkCount: number;
   contextChunkCount: number;
+  semantic: AiMemoryPreviewSemanticDiagnostic;
 };
 
 export type AiMemoryPreviewTimings = {
