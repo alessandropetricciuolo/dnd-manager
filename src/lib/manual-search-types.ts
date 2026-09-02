@@ -13,6 +13,7 @@ export type ManualSearchHit = {
 
 export type ManualSearchMode = "phrase-focus" | "semantic" | "text-fallback";
 export type ManualSearchPipeline = "spell-first" | "semantic";
+export type ManualSearchFailureCategory = "no_official_result" | "provider_or_configuration_error";
 
 /** Filtro corpus per test confronto .txt vs Markdown. */
 export type ManualSourceFilter = "all" | "markdown" | "txt";
@@ -36,4 +37,4 @@ export type ManualSearchResult =
         txt: ManualSearchCompareSide | null;
       };
     }
-  | { success: false; message: string };
+  | { success: false; message: string; failureCategory: ManualSearchFailureCategory };

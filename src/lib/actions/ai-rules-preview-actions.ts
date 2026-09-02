@@ -58,8 +58,11 @@ export async function runAiRulesPreviewAction(
       findRulesCatalogRows(admin, validated.input),
       searchManualsSemanticAction(validated.input),
     ]);
+    const manualFailureCategory = manual.success ? null : manual.failureCategory;
     const outputText = catalogRows.length === 0 && !manual.success
-      ? "Le fonti ufficiali non sono disponibili per questa preview. Non è stata inventata alcuna meccanica. House rule: non consultate."
+        ? manualFailureCategory === "no_official_result"
+          ? "Nessun risultato ufficiale trovato nel corpus dei manuali. Non è stata inventata alcuna meccanica. House rule: non consultate."
+          : "Errore di configurazione/provider del corpus ufficiale. Non è stata inventata alcuna meccanica. House rule: non consultate."
       : buildRulesOutput(catalogRows, manual);
     const manualFound = Boolean(getManualPreviewText(manual));
     const catalogConflict = detectRulesCatalogConflict(catalogRows, manual);
@@ -106,6 +109,7 @@ export async function runAiRulesPreviewAction(
         manualIsPrimary: manualFound,
         catalogConflict,
         houseRulesConsulted: false,
+        manualFailureCategory,
       },
       timingsMs,
     });
@@ -138,7 +142,7 @@ export async function runAiRulesPreviewAction(
       outputText,
       outputRef: null,
       sources: [],
-      metadata: { catalogCount: 0, manualLookupSucceeded: false, houseRulesConsulted: false },
+      metadata: { catalogCount: 0, manualLookupSucceeded: false, manualFailureCategory: "provider_or_configuration_error", houseRulesConsulted: false },
       timingsMs,
     });
     return { success: true, data: { runId: persisted.runId, kind: "official_rules", mode: "official_lookup_error", status: "failed", classification: "provider_unavailable", outputText, sources: [], timingsMs, auditPersisted: persisted.auditPersisted } };

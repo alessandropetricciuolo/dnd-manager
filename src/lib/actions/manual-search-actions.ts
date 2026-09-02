@@ -11,6 +11,7 @@ import { PHB_MD_FILE } from "@/lib/character-build-catalog";
 import type {
   ManualSearchCompareSide,
   ManualSearchHit,
+  ManualSearchFailureCategory,
   ManualSearchMode,
   ManualSearchResult,
   ManualSourceFilter,
@@ -1008,7 +1009,7 @@ async function searchManualsSemanticActionInner(
 ): Promise<ManualSearchResult> {
   const q = query.trim();
   if (q.length < 2) {
-    return { success: false, message: "Inserisci almeno 2 caratteri." };
+    return { success: false, message: "Inserisci almeno 2 caratteri.", failureCategory: "no_official_result" };
   }
 
   const sourceFilter: ManualSourceFilter = options?.sourceFilter ?? "all";
@@ -1022,6 +1023,7 @@ async function searchManualsSemanticActionInner(
       success: false,
       message:
         "Sessione Supabase non inizializzata (cookie/env). Verifica NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY per questo ambiente.",
+      failureCategory: "provider_or_configuration_error",
     };
   }
   const {
@@ -1029,12 +1031,12 @@ async function searchManualsSemanticActionInner(
     error: userErr,
   } = await supabase.auth.getUser();
   if (userErr || !user) {
-    return { success: false, message: "Devi essere autenticato." };
+    return { success: false, message: "Devi essere autenticato.", failureCategory: "provider_or_configuration_error" };
   }
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
   const role = profile?.role;
   if (role !== "admin" && role !== "gm") {
-    return { success: false, message: "Solo GM e amministratori possono consultare la knowledge base manuali." };
+    return { success: false, message: "Solo GM e amministratori possono consultare la knowledge base manuali.", failureCategory: "provider_or_configuration_error" };
   }
 
   let admin: ReturnType<typeof createSupabaseAdminClient>;
@@ -1046,6 +1048,7 @@ async function searchManualsSemanticActionInner(
       success: false,
       message:
         "Ricerca manuali non disponibile: errore inizializzazione Supabase admin. Verifica NEXT_PUBLIC_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY in Vercel (stesso Environment del deploy) e ridistribuisci.",
+      failureCategory: "provider_or_configuration_error",
     };
   }
   const runRpc = admin.rpc as unknown as (
@@ -1191,7 +1194,7 @@ async function searchManualsSemanticActionInner(
   function finishTextFallback(list: MatchRow[]): ManualSearchResult {
     const hits = list.map(rowToHit).filter((h) => h.content.trim().length > 0);
     if (hits.length === 0) {
-      return { success: false, message: emptyFilterMessage };
+      return { success: false, message: emptyFilterMessage, failureCategory: "no_official_result" };
     }
     const scored = list
       .map((r) => {
@@ -1273,7 +1276,10 @@ async function searchManualsSemanticActionInner(
         q
       );
     }
-    return finishTextFallback(phraseRowsForHits);
+    return {
+      ...finishTextFallback(phraseRowsForHits),
+      ...(phraseRowsForHits.length === 0 ? { failureCategory: "provider_or_configuration_error" as const } : {}),
+    };
   }
 
   const vectorListPrimary = vectorListFull.filter((r) => rowMatchesSourceFilter(r, sourceFilter));
@@ -1330,6 +1336,7 @@ export async function searchManualsSemanticAction(
       message:
         "La ricerca nei manuali è andata in errore (eccezione non gestita). Controlla i log Vercel; per la parte semantica servono embedding (es. OPENROUTER_API_KEY / OPENROUTER_RAG_EMBEDDING_MODEL) e per il vector search SUPABASE_SERVICE_ROLE_KEY sullo stesso ambiente del deploy. " +
         (msg ? `Dettaglio: ${msg.slice(0, 220)}` : ""),
+      failureCategory: "provider_or_configuration_error",
     };
   }
 }
