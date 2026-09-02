@@ -11,7 +11,6 @@ import {
   validateClaims,
   buildInsufficientEvidenceAnswer,
   buildProviderFallbackAnswer,
-  isPreviewEnabled,
   AI_MEMORY_PREVIEW_QUESTION_MAX_LENGTH,
 } from "../policy";
 import type { AiMemoryPreviewSource, AiMemoryPreviewClaim } from "../contracts";
@@ -114,20 +113,4 @@ test("buildInsufficientEvidenceAnswer and buildProviderFallbackAnswer", () => {
   assert.match(fallback, /Portico/);
   const emptyFallback = buildProviderFallbackAnswer([], q);
   assert.match(emptyFallback, /temporaneamente non disponibile/);
-});
-
-test("isPreviewEnabled respects env", () => {
-  const prev = process.env.AI_MEMORY_PREVIEW_ENABLED;
-  process.env.AI_MEMORY_PREVIEW_ENABLED = "true";
-  assert.equal(isPreviewEnabled(), true);
-  process.env.AI_MEMORY_PREVIEW_ENABLED = "TRUE";
-  assert.equal(isPreviewEnabled(), true);
-  process.env.AI_MEMORY_PREVIEW_ENABLED = "false";
-  assert.equal(isPreviewEnabled(), false);
-  process.env.AI_MEMORY_PREVIEW_ENABLED = "";
-  assert.equal(isPreviewEnabled(), false);
-  delete process.env.AI_MEMORY_PREVIEW_ENABLED;
-  assert.equal(isPreviewEnabled(), false);
-  if (prev === undefined) delete process.env.AI_MEMORY_PREVIEW_ENABLED;
-  else process.env.AI_MEMORY_PREVIEW_ENABLED = prev;
 });

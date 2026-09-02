@@ -62,7 +62,5 @@ declare namespace NodeJS {
      * Timeout client (ms) per la generazione immagine SiliconFlow. Default 300000 (5 min).
      */
     SILICONFLOW_IMAGE_TIMEOUT_MS?: string;
-    /** Feature flag preview memoria Admin: `true` per abilitare il pannello separato. */
-    AI_MEMORY_PREVIEW_ENABLED?: string;
   }
 }

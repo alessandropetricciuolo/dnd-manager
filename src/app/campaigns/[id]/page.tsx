@@ -630,7 +630,6 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
                 bulkEmailTemplates={bulkEmailTemplates}
                 initialPlayerPrimer={campaign.player_primer ?? null}
                 initialTypography={campaign.primer_typography ?? null}
-                previewEnabled={process.env.AI_MEMORY_PREVIEW_ENABLED?.trim().toLowerCase() === "true"}
                 isAdmin={isAdmin}
               />
             ) : undefined

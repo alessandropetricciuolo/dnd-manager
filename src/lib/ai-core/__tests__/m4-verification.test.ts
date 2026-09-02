@@ -6,7 +6,6 @@ import {
   validatePreviewRequest,
   validateFeedbackNote,
   isValidFeedbackRating,
-  isPreviewEnabled,
   AI_MEMORY_PREVIEW_MESSAGES,
 } from "../policy";
 import { isAllowedPreviewRole, isLongCampaignTypeValue } from "../access";
@@ -51,18 +50,25 @@ test("M4.1a — Policy: domanda vuota/troppo lunga/campaignId invalido rifiutati
   assert.equal(validatePreviewRequest("550e8400-e29b-41d4-a716-446655440000", long).ok, false);
 });
 
-test("M4.1b — Access control: flag disattivato blocca prima di embedding", () => {
-  const prev = process.env.AI_MEMORY_PREVIEW_ENABLED;
-  delete process.env.AI_MEMORY_PREVIEW_ENABLED;
-  assert.equal(isPreviewEnabled(), false);
+test("M4.1b — Access control: preview sempre attiva ma solo Admin e campagne long", () => {
   // isAllowedPreviewRole / isLongCampaignTypeValue sono i guard puri usati da checkAiMemoryPreviewAccess
   assert.equal(isAllowedPreviewRole("player"), false);
   assert.equal(isAllowedPreviewRole("gm"), false);
   assert.equal(isAllowedPreviewRole("admin"), true);
   assert.equal(isLongCampaignTypeValue("long"), true);
   assert.equal(isLongCampaignTypeValue("oneshot"), false);
-  if (prev === undefined) delete process.env.AI_MEMORY_PREVIEW_ENABLED;
-  else process.env.AI_MEMORY_PREVIEW_ENABLED = prev;
+});
+
+test("M4.1b — UI e route: preview isolata e link visibile solo agli Admin", async () => {
+  const route = await fs.readFile("src/app/campaigns/[id]/gm-only/ai-memory-preview/page.tsx", "utf8");
+  const homepage = await fs.readFile("src/components/gm/gm-homepage.tsx", "utf8");
+
+  assert.match(route, /profile\?\.role !== ["']admin["']/);
+  assert.match(route, /campaign\.type !== ["']long["']/);
+  assert.doesNotMatch(route, /AI_MEMORY_PREVIEW_ENABLED/);
+  assert.match(homepage, /isLongCampaign && isAdmin/);
+  assert.match(homepage, /gm-only\/ai-memory-preview/);
+  assert.doesNotMatch(homepage, /<AiMemoryPreviewPanel/);
 });
 
 test("M4.1c — Parser: citazioni con evidenceId invalido → failed, mai risposta libera", async () => {

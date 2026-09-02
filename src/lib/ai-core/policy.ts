@@ -22,7 +22,6 @@ export const AI_MEMORY_PREVIEW_MESSAGES = {
   forbiddenRole: "Solo gli Admin possono usare la preview della memoria.",
   campaignNotFound: "Campagna non trovata.",
   notLongCampaign: "La preview è disponibile solo per campagne lunghe.",
-  featureDisabled: "La preview memoria è disattivata su questo ambiente.",
   emptyQuestion: "Inserisci una domanda.",
   questionTooShort: `La domanda deve avere almeno ${AI_MEMORY_PREVIEW_QUESTION_MIN_LENGTH} caratteri.`,
   questionTooLong: `La domanda è troppo lunga (max ${AI_MEMORY_PREVIEW_QUESTION_MAX_LENGTH} caratteri).`,
@@ -146,10 +145,4 @@ export function buildProviderFallbackAnswer(sources: AiMemoryPreviewSource[], qu
   if (!sources.length) return header;
   const bullets = sources.slice(0, 3).map((s, i) => `- [${i + 1}] ${s.title} (${s.sourceType})`);
   return [header, "", "Fonti recuperate:", ...bullets].join("\n");
-}
-
-// ── Feature flag ──
-
-export function isPreviewEnabled(): boolean {
-  return process.env.AI_MEMORY_PREVIEW_ENABLED?.trim().toLowerCase() === "true";
 }

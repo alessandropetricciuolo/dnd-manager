@@ -37,7 +37,7 @@ export async function runAiMemoryPreviewAction(
   }
   const { normalizedCampaignId, normalizedQuestion } = validated;
 
-  // 2) Guard Admin + long + flag — blocca prima di embedding/provider/audit
+  // 2) Guard Admin + long — blocca prima di embedding/provider/audit
   const access = await checkAiMemoryPreviewAccess(normalizedCampaignId);
   if (!access.ok) {
     return { success: false, message: access.message };
@@ -144,9 +144,8 @@ export async function submitAiMemoryPreviewFeedbackAction(
     return { success: false, message: noteValidated.message };
   }
 
-  // Guard: solo Admin e flag attivo; inoltre il feedback non riesegue la domanda.
-  // Riutilizziamo check access richiedendo campaignId dal run — prima verifichiamo auth/ruolo/flag
-  // per evitare di leakare info su run esistente a utenti non autorizzati
+  // Guard: solo Admin; il feedback non riesegue la domanda.
+  // Verifichiamo auth/ruolo prima di interrogare l'audit per evitare leak su run esistenti.
   const actor = await checkAiMemoryPreviewActorAccess();
   if (!actor.ok) return { success: false, message: actor.message };
 

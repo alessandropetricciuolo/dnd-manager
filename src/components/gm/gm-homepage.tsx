@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { BookOpen, Layers, Mail, Map, Palette, Sparkles, Swords, Terminal } from "lucide-react";
+import { BookOpen, FlaskConical, Layers, Mail, Map, Palette, Sparkles, Swords, Terminal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -11,7 +11,6 @@ import { GmNotes } from "@/components/gm/gm-notes";
 import { GmFiles } from "@/components/gm/gm-files";
 import { LongCampaignCalendarSettings } from "@/components/gm/long-campaign-calendar-settings";
 import { CampaignMemoryQueryPanel } from "@/components/gm/campaign-memory-query-panel";
-import { AiMemoryPreviewPanel } from "@/components/gm/ai-memory-preview-panel";
 import { CampaignAiArchitectPanel } from "@/components/campaigns/campaign-ai-architect-panel";
 import { CampaignEmailPanel } from "@/components/campaigns/campaign-email-panel";
 import { CampaignPrimerEditor } from "@/components/gm/campaign-primer-editor";
@@ -44,7 +43,6 @@ type GmHomepageProps = {
   bulkEmailTemplates: BulkTemplate[];
   initialPlayerPrimer: string | null;
   initialTypography?: PrimerTypography | null;
-  previewEnabled?: boolean;
   isAdmin?: boolean;
 };
 
@@ -57,7 +55,6 @@ export function GmHomepage({
   bulkEmailTemplates,
   initialPlayerPrimer,
   initialTypography,
-  previewEnabled = false,
   isAdmin = false,
 }: GmHomepageProps) {
   const isLongCampaign = isLongCampaignType(campaignType);
@@ -185,6 +182,21 @@ export function GmHomepage({
               </Button>
             ) : null}
 
+            {isLongCampaign && isAdmin ? (
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className="border-amber-500/50 text-amber-200 hover:bg-amber-500/20"
+                title="Apri l'ambiente di test AI Memory Preview"
+              >
+                <Link href={`/campaigns/${campaignId}/gm-only/ai-memory-preview`}>
+                  <FlaskConical className="mr-2 h-4 w-4" />
+                  AI Memory Preview
+                </Link>
+              </Button>
+            ) : null}
+
             {isLongCampaign ? (
               <Button
                 type="button"
@@ -221,7 +233,6 @@ export function GmHomepage({
       {isLongCampaign ? (
         <div className="mb-8 space-y-4">
           <CampaignMemoryQueryPanel campaignId={campaignId} />
-          {previewEnabled && isAdmin ? <AiMemoryPreviewPanel campaignId={campaignId} /> : null}
         </div>
       ) : null}
 

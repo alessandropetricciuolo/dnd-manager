@@ -54,7 +54,8 @@ type AiMemoryPreviewRequest = {
 ```
 
 Precondizioni: utente autenticato con ruolo `admin`, campagna esistente e di
-tipo `long`, feature flag attivo. Domanda vuota o oltre il limite deciso dal modulo
+tipo `long`. La preview è attiva direttamente dal codice; non richiede feature flag.
+Domanda vuota o oltre il limite deciso dal modulo
 di validazione viene rifiutata prima del retrieval.
 
 ### Fonti e visibilità
@@ -144,9 +145,8 @@ UI preview (Admin only)
 
 | File | Modifica minima |
 | --- | --- |
-| `src/components/gm/campaign-memory-query-panel.tsx` oppure il parent GM che lo monta | Aggiungere il nuovo pannello solo quando il flag è attivo. Non cambiare handler o testo del pannello attuale. |
-| `src/global-env.d.ts` | Dichiarare `AI_MEMORY_PREVIEW_ENABLED?: string`. |
-| `src/app/api/check-env/route.ts` | Esporre soltanto lo stato booleano del flag, mai segreti. |
+| `src/app/campaigns/[id]/gm-only/ai-memory-preview/page.tsx` | Pagina dedicata Admin-only; verifica ruolo e campagna prima di montare il pannello. |
+| `src/components/gm/gm-homepage.tsx` | Link alla pagina dedicata esclusivamente per Admin di campagne long; legacy invariato. |
 | `package.json` | Aggiungere uno script dedicato ai test preview solo se necessario. |
 
 Non modificare `campaign-memory-indexer.ts`, `campaign-memory-query-actions.ts`,
@@ -211,13 +211,13 @@ che crea il run. Nessuna API pubblica. Il feedback consentito in v1: `approved`,
 La scrittura nella tabella audit è l'unica persistenza ammessa dalla preview. Non è
 una scrittura di dominio né un aggiornamento della memoria della campagna.
 
-## UI e feature flag
+## UI Admin-only
 
-Flag server-side: `AI_MEMORY_PREVIEW_ENABLED=true`. Default assente/falso in tutti
-gli ambienti, inclusa produzione.
-
-Quando attivo, solo l'Admin vede il pannello **Memoria Campagna — Preview** separato dal
-pannello corrente. Deve mostrare:
+La preview è attiva direttamente dal codice e vive nella pagina dedicata
+`/campaigns/[id]/gm-only/ai-memory-preview`. Solo l'Admin vede il link in **Strumenti GM**
+e solo l'Admin può raggiungere la pagina o invocare le Server Actions; GM e player ricevono
+un accesso indistinguibile da risorsa inesistente. Il pannello **Memoria Campagna — Preview**
+resta separato dal pannello corrente e deve mostrare:
 
 - badge `Preview — nessuna modifica al canone`;
 - domanda e pulsante separato;
@@ -253,12 +253,12 @@ fonte valida; risposta senza fonti non usa il modello.
 
 ### M3 — Pannello preview e feedback
 
-1. Aggiungere flag e pannello Admin separato.
+1. Montare il pannello nella pagina Admin-only dedicata, con link dalla sezione Strumenti GM.
 2. Visualizzare metriche/fonti/ID run.
 3. Salvare feedback senza rieseguire la domanda.
 
-**Accettazione:** con flag spento non cambia la UI corrente; con flag acceso il
-pannello esiste solo per Admin e il pannello legacy resta operativo.
+**Accettazione:** la preview è disponibile senza configurazione ambiente, esiste solo
+nella pagina dedicata per Admin e il pannello legacy resta operativo e invariato.
 
 ### M4 — Verifica
 
@@ -288,5 +288,5 @@ Il percorso non sostituisce il legacy finché non risultano tutti veri:
 
 Implementare M1–M4 in ordine. Fermarsi dopo ogni milestone con diff, test eseguiti e
 evidenza delle acceptance criteria. Non rinominare o rimuovere codice AI esistente,
-non modificare il comportamento della query memoria corrente e non abilitare il
-feature flag in produzione senza approvazione esplicita del CEO.
+non modificare il comportamento della query memoria corrente e non modificare la preview
+né abilitarla in percorsi diversi dalla pagina Admin-only senza approvazione esplicita del CEO.

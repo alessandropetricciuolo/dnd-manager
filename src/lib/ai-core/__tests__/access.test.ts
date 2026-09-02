@@ -32,5 +32,5 @@ test("policy messages are non-empty and safe", () => {
   // Verifichiamo che i messaggi di accesso esistano e siano distinti
   assert.notEqual(AI_MEMORY_PREVIEW_MESSAGES.unauthenticated, AI_MEMORY_PREVIEW_MESSAGES.forbiddenRole);
   assert.notEqual(AI_MEMORY_PREVIEW_MESSAGES.forbiddenRole, AI_MEMORY_PREVIEW_MESSAGES.notLongCampaign);
-  assert.notEqual(AI_MEMORY_PREVIEW_MESSAGES.campaignNotFound, AI_MEMORY_PREVIEW_MESSAGES.featureDisabled);
+  assert.notEqual(AI_MEMORY_PREVIEW_MESSAGES.campaignNotFound, AI_MEMORY_PREVIEW_MESSAGES.notLongCampaign);
 });

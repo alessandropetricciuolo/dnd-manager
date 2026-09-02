@@ -1,6 +1,6 @@
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
-import { isPreviewEnabled, AI_MEMORY_PREVIEW_MESSAGES } from "./policy";
+import { AI_MEMORY_PREVIEW_MESSAGES } from "./policy";
 
 export type PreviewAccessSuccess = {
   ok: true;
@@ -25,7 +25,6 @@ export function isAllowedPreviewRole(role: string | null | undefined): boolean {
 export async function checkAiMemoryPreviewActorAccess(): Promise<
   { ok: true; userId: string } | PreviewAccessFailure
 > {
-  if (!isPreviewEnabled()) return { ok: false, message: AI_MEMORY_PREVIEW_MESSAGES.featureDisabled };
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, message: AI_MEMORY_PREVIEW_MESSAGES.unauthenticated };
@@ -42,7 +41,7 @@ export function isLongCampaignTypeValue(type: string | null | undefined): boolea
 
 /**
  * Guard centralizzato M1: blocca richieste non autorizzate PRIMA di embedding/provider/audit.
- * Ordine volutamente fail-fast: flag -> auth -> role -> campaign type.
+ * Ordine volutamente fail-fast: input -> auth -> role -> campaign type.
  */
 export async function checkAiMemoryPreviewAccess(
   campaignId: string
@@ -50,10 +49,6 @@ export async function checkAiMemoryPreviewAccess(
   const normalizedId = campaignId.trim();
   if (!normalizedId) {
     return { ok: false, message: AI_MEMORY_PREVIEW_MESSAGES.invalidCampaignId };
-  }
-
-  if (!isPreviewEnabled()) {
-    return { ok: false, message: AI_MEMORY_PREVIEW_MESSAGES.featureDisabled };
   }
 
   const actor = await checkAiMemoryPreviewActorAccess();
