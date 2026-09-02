@@ -6,16 +6,9 @@ import { searchManualsSemanticAction } from "@/lib/actions/manual-search-actions
 import type { AiPreviewTestResult, AiPreviewTestSource } from "@/lib/ai-core/contracts";
 import { toPreviewTestSourceRefs } from "@/lib/ai-core/preview-test-audit";
 import { persistPreviewTestRun } from "@/lib/ai-core/preview-test-action-helpers";
-import { AI_PREVIEW_TEST_MESSAGES, clampPreviewOutput, validatePreviewTestRequest } from "@/lib/ai-core/preview-test-policy";
-
-type RulesCatalogRow = {
-  id: string;
-  kind: string;
-  name: string;
-  source_book: string;
-  source_label: string | null;
-  body_md: string;
-};
+import { AI_PREVIEW_TEST_MESSAGES, validatePreviewTestRequest } from "@/lib/ai-core/preview-test-policy";
+import { buildRulesOutput, detectRulesCatalogConflict, getManualPreviewText } from "@/lib/ai-core/rules-preview-output";
+import type { RulesCatalogPreviewRow } from "@/lib/ai-core/rules-preview-output";
 
 export type RunAiRulesPreviewActionResult =
   | { success: true; data: AiPreviewTestResult }
@@ -29,8 +22,8 @@ function ruleTerms(input: string): string[] {
 async function findRulesCatalogRows(
   admin: ReturnType<typeof createSupabaseAdminClient>,
   input: string
-): Promise<RulesCatalogRow[]> {
-  const rows: RulesCatalogRow[] = [];
+): Promise<RulesCatalogPreviewRow[]> {
+  const rows: RulesCatalogPreviewRow[] = [];
   const seen = new Set<string>();
   for (const term of ruleTerms(input)) {
     const { data, error } = await admin
@@ -39,26 +32,13 @@ async function findRulesCatalogRows(
       .ilike("name", `%${term.replace(/[%_\\]/g, " ")}%`)
       .limit(8);
     if (error) throw new Error(error.message);
-    for (const row of (data ?? []) as RulesCatalogRow[]) {
+    for (const row of (data ?? []) as RulesCatalogPreviewRow[]) {
       if (seen.has(row.id)) continue;
       seen.add(row.id);
       rows.push(row);
     }
   }
   return rows.slice(0, 8);
-}
-
-function buildRulesOutput(rows: RulesCatalogRow[], manual: Awaited<ReturnType<typeof searchManualsSemanticAction>>): string {
-  const sections: string[] = [];
-  if (rows.length) {
-    sections.push("## Regole ufficiali codificate\n\n" + rows.map((row) => `### ${row.name} — ${row.source_label ?? row.source_book}\n${row.body_md}`).join("\n\n"));
-  }
-  if (manual.success && (manual.primaryText.trim() || manual.hits.length)) {
-    const manualText = manual.primaryText.trim() || manual.hits.slice(0, 5).map((hit) => hit.content).join("\n\n");
-    sections.push("## Manuali ufficiali indicizzati\n\n" + manualText);
-  }
-  if (!sections.length) return `${AI_PREVIEW_TEST_MESSAGES.officialRuleNotFound}\nHouse rule: non consultate in questa preview.`;
-  return clampPreviewOutput(`${sections.join("\n\n") }\n\nHouse rule: non consultate in questa preview; se esistono, vanno verificate separatamente dal GM.`);
 }
 
 export async function runAiRulesPreviewAction(
@@ -81,13 +61,10 @@ export async function runAiRulesPreviewAction(
     const outputText = catalogRows.length === 0 && !manual.success
       ? "Le fonti ufficiali non sono disponibili per questa preview. Non è stata inventata alcuna meccanica. House rule: non consultate."
       : buildRulesOutput(catalogRows, manual);
-    const manualFound = manual.success && (manual.primaryText.trim().length > 0 || manual.hits.length > 0);
-    const found = catalogRows.length > 0 || manualFound;
+    const manualFound = Boolean(getManualPreviewText(manual));
+    const catalogConflict = detectRulesCatalogConflict(catalogRows, manual);
     const sources: AiPreviewTestSource[] = [];
     let sourceIndex = 1;
-    for (const row of catalogRows) {
-      sources.push({ evidenceId: `E${sourceIndex++}`, sourceType: "rules_catalog", sourceId: row.id, title: row.name, href: "/admin/knowledge", sourceBook: row.source_label ?? row.source_book });
-    }
     if (manual.success) {
       for (const hit of manual.hits.slice(0, 8)) {
         sources.push({ evidenceId: `E${sourceIndex++}`, sourceType: "manual", sourceId: hit.fileName ?? `manual-${sourceIndex}`, title: hit.sectionTitle ?? hit.fileName ?? "Manuale ufficiale", href: "/admin/knowledge", sourceBook: hit.sourceLabel });
@@ -96,10 +73,21 @@ export async function runAiRulesPreviewAction(
         sources.push({ evidenceId: `E${sourceIndex++}`, sourceType: "manual", sourceId: "primary-result", title: "Risultato manuali ufficiali", href: "/admin/knowledge" });
       }
     }
+    for (const row of catalogRows) {
+      sources.push({ evidenceId: `E${sourceIndex++}`, sourceType: "rules_catalog", sourceId: row.id, title: row.name, href: "/admin/knowledge", sourceBook: row.source_label ?? row.source_book });
+    }
     const lookupMs = Date.now() - lookupStartedAt;
     const timingsMs = { retrieval: lookupMs, generation: null, total: Date.now() - startedAt } as const;
-    const status = found ? "completed" : manual.success ? "insufficient_evidence" : "failed";
-    const classification = found ? "official_rule_found" : manual.success ? "official_rule_not_found" : "provider_unavailable";
+    const status: AiPreviewTestResult["status"] = manualFound
+      ? "completed"
+      : manual.success || catalogRows.length
+        ? "insufficient_evidence"
+        : "failed";
+    const classification = manualFound
+      ? "official_rule_found"
+      : manual.success || catalogRows.length
+        ? "official_rule_not_found"
+        : "provider_unavailable";
     const persisted = await persistPreviewTestRun(admin, {
       campaignId: validated.campaignId,
       requestedBy: access.userId,
@@ -115,6 +103,8 @@ export async function runAiRulesPreviewAction(
         catalogCount: catalogRows.length,
         manualHitCount: manual.success ? manual.hits.length : 0,
         manualLookupSucceeded: manual.success,
+        manualIsPrimary: manualFound,
+        catalogConflict,
         houseRulesConsulted: false,
       },
       timingsMs,

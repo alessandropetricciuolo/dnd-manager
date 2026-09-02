@@ -6,6 +6,8 @@ import { isAllowedPreviewRole } from "../access";
 import { buildImagePreviewPrompt, buildInsufficientMemoryPreviewOutput, safeImageOutputReference, validateNarrativePreviewOutput } from "../preview-test-grounding";
 import { toPreviewTestSourceRefs } from "../preview-test-audit";
 import { validatePreviewTestFeedback, validatePreviewTestRequest } from "../preview-test-policy";
+import { buildRulesOutput } from "../rules-preview-output";
+import type { ManualSearchResult } from "../../manual-search-types";
 
 const ACTION_FILES = [
   "src/lib/actions/ai-narrative-preview-actions.ts",
@@ -54,6 +56,55 @@ test("regole: il laboratorio dichiara il corpus ufficiale e non consulta house r
   assert.match(action, /rules_catalog/);
   assert.match(action, /searchManualsSemanticAction/);
   assert.match(action, /houseRulesConsulted: false/);
+});
+
+function manualResult(primaryText: string): ManualSearchResult {
+  return { success: true, mode: "text-fallback", pipeline: "semantic", primaryText, hits: [], sourceFilter: "all" };
+}
+
+function catalogRule(body: string) {
+  return {
+    id: "rule-1",
+    kind: "rule",
+    name: "Mezza copertura",
+    source_book: "PHB",
+    source_label: "PHB",
+    body_md: body,
+  };
+}
+
+test("regole: manuale e catalogo coerenti, il manuale è esplicitamente primario", () => {
+  const output = buildRulesOutput(
+    [catalogRule("La mezza copertura concede bonus +2 alla CA.")],
+    manualResult("Il manuale ufficiale stabilisce che la mezza copertura concede bonus +2 alla CA.")
+  );
+  assert.ok(output.indexOf("## Manuali ufficiali — fonte primaria") < output.indexOf("## Catalogo codificato — supporto coerente"));
+  assert.doesNotMatch(output, /divergen|conflitto/i);
+});
+
+test("regole: il conflitto dichiara la divergenza e mantiene prevalente il manuale", () => {
+  const output = buildRulesOutput(
+    [catalogRule("La mezza copertura concede bonus +5 alla CA.")],
+    manualResult("Il manuale ufficiale stabilisce che la mezza copertura concede bonus +2 alla CA.")
+  );
+  assert.match(output, /divergen|conflitto/i);
+  assert.match(output, /manuale ufficiale prevale/i);
+  assert.match(output, /verifica o aggiornamento/i);
+  assert.match(output, /non è un'alternativa equivalente/i);
+});
+
+test("regole: il solo catalogo è supporto non verificato e non una regola ufficiale", () => {
+  const output = buildRulesOutput([catalogRule("La mezza copertura concede bonus +2 alla CA.")], manualResult(""));
+  assert.match(output, /fonte di supporto non verificata/i);
+  assert.match(output, /non sono presentate come regole ufficiali verificate/i);
+  assert.doesNotMatch(output, /regole ufficiali codificate/i);
+});
+
+test("regole: senza fonti dichiara l'assenza e non inventa meccaniche", () => {
+  const output = buildRulesOutput([], manualResult(""));
+  assert.match(output, /Nessuna regola ufficiale indicizzata trovata/i);
+  assert.match(output, /Non è stata inventata alcuna meccanica/i);
+  assert.match(output, /House rule: non consultate/i);
 });
 
 test("audit: source refs senza chunk, ownership e singola valutazione", async () => {
