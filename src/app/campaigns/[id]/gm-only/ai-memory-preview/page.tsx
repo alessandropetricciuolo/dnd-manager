@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { ChevronLeft, FlaskConical, ShieldCheck } from "lucide-react";
 
 import { AiMemoryPreviewPanel } from "@/components/gm/ai-memory-preview-panel";
+import { AiCapabilityPreviewLab } from "@/components/gm/ai-capability-preview-lab";
 import { Button } from "@/components/ui/button";
 import { CAMPAIGN_CONTENT_SHELL } from "@/lib/layout/shell-classes";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
@@ -66,6 +67,7 @@ export default async function AiMemoryPreviewPage({ params }: PageProps) {
         </header>
 
         <AiMemoryPreviewPanel campaignId={campaignId} />
+        <AiCapabilityPreviewLab campaignId={campaignId} />
       </div>
     </main>
   );
