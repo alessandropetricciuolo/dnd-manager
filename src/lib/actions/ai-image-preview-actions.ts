@@ -5,7 +5,7 @@ import { checkAiMemoryPreviewAccess } from "@/lib/ai-core/access";
 import { retrievePreviewMemory } from "@/lib/ai-core/campaign-memory-retriever";
 import { getSiteImageModel } from "@/lib/ai/openrouter-image-preview";
 import { generateImageWithOpenRouter } from "@/lib/image-benchmark/providers/openrouter-provider";
-import type { AiPreviewTestResult } from "@/lib/ai-core/contracts";
+import type { AiMemoryPreviewSemanticDiagnostic, AiPreviewTestResult } from "@/lib/ai-core/contracts";
 import { toPreviewTestSourceRefs } from "@/lib/ai-core/preview-test-audit";
 import { persistPreviewTestRun } from "@/lib/ai-core/preview-test-action-helpers";
 import { buildImagePreviewPrompt, buildInsufficientMemoryPreviewOutput, safeImageOutputReference, campaignMemorySources } from "@/lib/ai-core/preview-test-grounding";
@@ -27,9 +27,17 @@ export async function runAiImagePreviewAction(
   const admin = createSupabaseAdminClient();
   const model = getSiteImageModel();
   const retrievalStartedAt = Date.now();
+  let retrievalSemantic: AiMemoryPreviewSemanticDiagnostic = {
+    provider: "supabase",
+    step: "rpc",
+    status: "error",
+    reason: "unknown",
+    rpcCategory: "unknown",
+  };
 
   try {
     const retrieval = await retrievePreviewMemory(admin, validated.campaignId, validated.input);
+    retrievalSemantic = retrieval.semantic;
     const retrievalMs = Date.now() - retrievalStartedAt;
     const sources = campaignMemorySources(validated.campaignId, retrieval.chunks, retrieval.sources);
     const sourceRefs = toPreviewTestSourceRefs(sources);
@@ -84,7 +92,7 @@ export async function runAiImagePreviewAction(
         outputText,
         outputRef: safeImageOutputReference({ provider: "openrouter", model }),
         sources: sourceRefs,
-        metadata: { sourceCount: sources.length, providerCalled: true, providerDurationMs: generated.durationMs },
+        metadata: { sourceCount: sources.length, providerCalled: true, providerDurationMs: generated.durationMs, semantic: retrieval.semantic },
         timingsMs,
       });
       return { success: true, data: { runId: persisted.runId, kind: "grounded_image", mode: retrieval.mode, status: "failed", classification: "provider_unavailable", outputText, sources, timingsMs, auditPersisted: persisted.auditPersisted, promptSent, provider: "openrouter", model } };
@@ -102,7 +110,7 @@ export async function runAiImagePreviewAction(
       outputText,
       outputRef: safeImageOutputReference({ provider: "openrouter", model, outputUrl: imageUrl, outputBase64: imageBase64 }),
       sources: sourceRefs,
-      metadata: { sourceCount: sources.length, providerCalled: true, providerDurationMs: generated.durationMs, estimatedCostUsd: generated.estimatedCostUsd ?? null },
+      metadata: { sourceCount: sources.length, providerCalled: true, providerDurationMs: generated.durationMs, estimatedCostUsd: generated.estimatedCostUsd ?? null, semantic: retrieval.semantic },
       timingsMs,
     });
     return { success: true, data: { runId: persisted.runId, kind: "grounded_image", mode: retrieval.mode, status: "completed", classification: "grounded_proposal", outputText, sources, timingsMs, auditPersisted: persisted.auditPersisted, promptSent, provider: "openrouter", model, ...(imageUrl ? { imageUrl } : {}), ...(imageBase64 ? { imageBase64 } : {}) } };
@@ -121,7 +129,7 @@ export async function runAiImagePreviewAction(
       outputText,
       outputRef: safeImageOutputReference({ provider: "openrouter", model }),
       sources: [],
-      metadata: { sourceCount: 0, providerCalled: false },
+      metadata: { sourceCount: 0, providerCalled: false, semantic: retrievalSemantic },
       timingsMs,
     });
     return { success: true, data: { runId: persisted.runId, kind: "grounded_image", mode: "retrieval_error", status: "failed", classification: "provider_unavailable", outputText, sources: [], timingsMs, auditPersisted: persisted.auditPersisted, provider: "openrouter", model } };

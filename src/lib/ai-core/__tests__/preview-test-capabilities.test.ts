@@ -51,6 +51,12 @@ test("immagine: il prompt è grounded e l'errore non serializza payload o binari
   assert.equal(ref.outputKind, "data_url");
 });
 
+test("immagine: ogni persistenza conserva la diagnostica semantic", async () => {
+  const action = await fs.readFile("src/lib/actions/ai-image-preview-actions.ts", "utf8");
+  assert.ok((action.match(/semantic:/g) ?? []).length >= 4);
+  assert.match(action, /retrievalSemantic/);
+});
+
 test("regole: il laboratorio dichiara il corpus ufficiale e non consulta house rule", async () => {
   const action = await fs.readFile("src/lib/actions/ai-rules-preview-actions.ts", "utf8");
   assert.match(action, /rules_catalog/);

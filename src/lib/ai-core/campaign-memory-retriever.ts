@@ -474,8 +474,10 @@ export async function retrievePreviewMemory(
       if (semantic.status === "no_match" && semanticRows.length === 0) {
         semantic = semanticDiagnostic("no_match", "no_match");
       }
-    } catch {
-      semantic = semanticDiagnostic("error", "rpc_error", "unknown");
+    } catch (error) {
+      // Anche le eccezioni non conformi al tipo Supabase devono produrre una
+      // diagnosi classificabile; il dettaglio resta solo nei log server.
+      semantic = semanticDiagnostic("error", "rpc_error", safeRpcFailureCategory(error));
       semanticRows = [];
     }
     if (semantic.status === "success" && semanticRows.length > 0) {
