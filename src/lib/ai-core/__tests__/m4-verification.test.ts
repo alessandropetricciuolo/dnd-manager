@@ -124,6 +124,15 @@ test("M4.1f — Nessuna scrittura su campaign_memory_chunks da retriever/grounde
   assert.ok(!auditContent.includes('from("campaign_memory_chunks")'));
 });
 
+test("M4.1f-bis — preview usa RPC esatta dedicata e non modifica la RPC legacy", async () => {
+  const retrieverContent = await fs.readFile("src/lib/ai-core/campaign-memory-retriever.ts", "utf8");
+  const migration = await fs.readFile("supabase/migrations/20260902190000_match_campaign_memory_preview_exact.sql", "utf8");
+  assert.match(retrieverContent, /match_campaign_memory_preview/);
+  assert.match(migration, /enable_indexscan/);
+  assert.match(migration, /REVOKE ALL ON FUNCTION public\.match_campaign_memory_preview/);
+  assert.match(migration, /GRANT EXECUTE ON FUNCTION public\.match_campaign_memory_preview[\s\S]*TO service_role/);
+});
+
 test("M4.1g — Audit DB: client autenticato non può alterare o cancellare run", async () => {
   const migration = await fs.readFile("supabase/migrations/20260901120000_ai_memory_preview_runs.sql", "utf8");
   assert.match(migration, /REVOKE ALL ON public\.ai_memory_preview_runs FROM authenticated/);

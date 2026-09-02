@@ -443,7 +443,10 @@ export async function retrievePreviewMemory(
 
     try {
       for (const threshold of SEMANTIC_THRESHOLDS) {
-        const res = await runRpc("match_campaign_memory", {
+        // La preview opera su una sola campagna. Usa l'RPC dedicata con scan
+        // esatto: l'indice IVFFlat globale può perdere tutti i candidati dopo
+        // il filtro campaign_id e degradare indebitamente al fallback lessicale.
+        const res = await runRpc("match_campaign_memory_preview", {
           p_campaign_id: campaignId,
           query_embedding: embedding,
           match_threshold: threshold,

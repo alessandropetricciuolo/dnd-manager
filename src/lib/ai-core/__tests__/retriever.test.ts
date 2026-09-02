@@ -147,7 +147,11 @@ test("retriever non inserisce blocco cronologico completo: budget limita", () =>
   assert.ok(budgeted.reduce((acc, r) => acc + r.content.length, 0) <= 12000);
 });
 
-function makeRetrieverAdmin(rows: PreviewChunkRow[], rpcResult: { data: unknown; error: unknown | null }) {
+function makeRetrieverAdmin(
+  rows: PreviewChunkRow[],
+  rpcResult: { data: unknown; error: unknown | null },
+  rpcCalls: string[] = []
+) {
   return {
     from: (table: string) => {
       if (table !== "campaign_memory_chunks") throw new Error(`Unexpected table: ${table}`);
@@ -164,14 +168,18 @@ function makeRetrieverAdmin(rows: PreviewChunkRow[], rpcResult: { data: unknown;
         }),
       };
     },
-    rpc: async () => rpcResult,
+    rpc: async (functionName: string) => {
+      rpcCalls.push(functionName);
+      return rpcResult;
+    },
   } as any;
 }
 
 test("retrieval semantic success usa semantic e recupera Folki", async () => {
   const folki = makeRow({ source_type: "wiki", source_id: "folki", title: "Folki", content: "Folki è uno gnomo panettiere." });
+  const rpcCalls: string[] = [];
   const result = await retrievePreviewMemory(
-    makeRetrieverAdmin([], { data: [folki], error: null }),
+    makeRetrieverAdmin([], { data: [folki], error: null }, rpcCalls),
     "camp-1",
     "Chi è Folki?",
     { generateEmbedding: async () => Array.from({ length: 384 }, () => 0.01) }
@@ -180,6 +188,7 @@ test("retrieval semantic success usa semantic e recupera Folki", async () => {
   assert.equal(result.mode, "semantic");
   assert.equal(result.semantic.status, "success");
   assert.equal(result.chunks[0]?.title, "Folki");
+  assert.deepEqual(rpcCalls, ["match_campaign_memory_preview"]);
 });
 
 test("retrieval semantic no-match usa fallback lessicale con titolo esatto prima del budget", async () => {
