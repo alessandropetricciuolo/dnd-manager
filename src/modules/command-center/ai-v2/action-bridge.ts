@@ -1,6 +1,7 @@
 import { executeAction } from "@/modules/command-center/actions";
 import { isAiDraftAllowedAction } from "@/modules/command-center/actions/action-catalog";
 import type { AiAssistantArtifact } from "./contracts";
+import { normalizeWikiArtifactActionInput } from "./wiki-artifact";
 
 const CANONICAL_SAVE_ACTIONS = new Set([
   "campaign.create", "campaign.update", "gm.note.create", "gm.note.update",
@@ -28,8 +29,27 @@ export function buildArtifactActionInput(artifact: AiAssistantArtifact, actionNa
     case "gm.note.create": return { campaignId, title, content, sessionId: supplied.sessionId };
     case "gm.note.update": return { noteId: supplied.noteId, title, content, sessionId: supplied.sessionId };
     case "workspace.task.create": return { campaignId, title, description: String(supplied.description ?? content), priority: supplied.priority, dueDate: supplied.dueDate, sessionId: supplied.sessionId };
-    case "wiki.entity.create": return { campaignId, title, type: supplied.type ?? "lore", content, visibility: supplied.visibility ?? "secret", attributes: supplied.attributes, imageUrl: supplied.imageUrl ?? payload.imageUrl, relations: supplied.relations };
-    case "wiki.entity.update": return { entityId: supplied.entityId, campaignId, title, type: supplied.type ?? "lore", content, visibility: supplied.visibility ?? "secret" };
+    case "wiki.entity.create": case "wiki.entity.update": {
+      const wiki = normalizeWikiArtifactActionInput(supplied);
+      return {
+        campaignId,
+        ...(actionName === "wiki.entity.update" ? { entityId: wiki.entityId } : {}),
+        title: wiki.title ?? title,
+        type: wiki.type ?? "lore",
+        content: wiki.content ?? content,
+        visibility: wiki.visibility ?? "secret",
+        ...(wiki.attributes !== undefined ? { attributes: wiki.attributes } : {}),
+        ...(wiki.imageUrl !== undefined ? { imageUrl: wiki.imageUrl } : typeof payload.imageUrl === "string" ? { imageUrl: payload.imageUrl } : {}),
+        ...(wiki.tags !== undefined ? { tags: wiki.tags } : {}),
+        ...(wiki.audiences !== undefined ? { audiences: wiki.audiences } : {}),
+        ...(wiki.relations !== undefined ? { relations: wiki.relations } : {}),
+        ...(wiki.sortOrder !== undefined ? { sortOrder: wiki.sortOrder } : {}),
+        ...(wiki.isCore !== undefined ? { isCore: wiki.isCore } : {}),
+        ...(wiki.includeInCampaignAiMemory !== undefined ? { includeInCampaignAiMemory: wiki.includeInCampaignAiMemory } : {}),
+        ...(wiki.linkedMissionId !== undefined ? { linkedMissionId: wiki.linkedMissionId } : {}),
+        ...(wiki.xpValue !== undefined ? { xpValue: wiki.xpValue } : {}),
+      };
+    }
     case "mission.create": return { campaignId, grade: supplied.grade, title, committente: supplied.committente, ubicazione: supplied.ubicazione, paga: supplied.paga, urgenza: supplied.urgenza, description: String(supplied.description ?? content), pointsReward: supplied.pointsReward };
     case "mission.update": return { campaignId, missionId: supplied.missionId, grade: supplied.grade, title, committente: supplied.committente, ubicazione: supplied.ubicazione, paga: supplied.paga, urgenza: supplied.urgenza, description: String(supplied.description ?? content), pointsReward: supplied.pointsReward };
     case "session.create": return { campaignId, date: supplied.date, time: supplied.time, location: supplied.location, maxPlayers: supplied.maxPlayers, dmId: supplied.dmId, partyId: supplied.partyId, chapterTitle: supplied.chapterTitle };

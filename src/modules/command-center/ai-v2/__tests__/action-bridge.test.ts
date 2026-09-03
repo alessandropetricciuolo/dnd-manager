@@ -28,3 +28,18 @@ test("uses explicit wrapper payloads for every supported canonical destination",
 test("refuses a user supplied action different from the artifact contract", () => {
   assert.notEqual(actionForArtifact(artifact("wiki.entity.create", { type: "lore" })), "gm.note.create");
 });
+
+test("carries the complete Wiki payload to both create and update wrappers", () => {
+  const actionInput = {
+    entityId: "wiki-1", type: "monster", attributes: { combat_stats: { hp: "45", ac: "15", cr: "2", attacks: "Morso" }, statblock: "Fonte ufficiale", loot: "Chiave", gm_notes: "Non mostrare" },
+    visibility: "selective", tags: ["fogne", "boss"], audiences: { userIds: ["player-1"], partyIds: ["party-1"] }, relations: [{ targetType: "map", targetId: "map-1", label: "Dimora" }], imageUrl: "https://example.test/monster.png", sortOrder: 3, isCore: true, includeInCampaignAiMemory: true, linkedMissionId: "mission-1", xpValue: 450,
+  };
+  for (const actionName of ["wiki.entity.create", "wiki.entity.update"]) {
+    const input = buildArtifactActionInput(artifact(actionName, actionInput), actionName);
+    assert.deepEqual(input.tags, ["fogne", "boss"]);
+    assert.deepEqual(input.audiences, { userIds: ["player-1"], partyIds: ["party-1"] });
+    assert.deepEqual(input.relations, [{ targetType: "map", targetId: "map-1", label: "Dimora" }]);
+    assert.equal(input.linkedMissionId, "mission-1"); assert.equal(input.includeInCampaignAiMemory, true); assert.equal(input.xpValue, 450);
+    assert.deepEqual((input.attributes as { combat_stats: unknown }).combat_stats, { hp: "45", ac: "15", cr: "2", attacks: "Morso" });
+  }
+});
