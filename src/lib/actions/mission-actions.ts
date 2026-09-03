@@ -12,7 +12,7 @@ import type { BulkMissionImportItem } from "@/lib/missions/mission-bulk-import";
 import type { Json } from "@/types/database.types";
 
 export type MissionBoardResult =
-  | { success: true }
+  | { success: true; id?: string }
   | { success: false; message: string };
 
 async function isGmOrAdminByRole(
@@ -290,7 +290,7 @@ export async function createMissionAction(
     }
 
     revalidatePath(`/campaigns/${campaignId}`);
-    return { success: true };
+    return { success: true, id: missionId };
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Errore sconosciuto.";
     return { success: false, message: msg };

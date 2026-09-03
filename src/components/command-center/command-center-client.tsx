@@ -53,6 +53,7 @@ import {
 import { COMMAND_LINK_ENTITY_LABELS_IT } from "@/modules/command-center/types/entities";
 import { AuditTimeline } from "@/components/command-center/audit-timeline";
 import { AiAssistantPanel } from "@/components/command-center/ai-assistant-panel";
+import { AiAssistantV2Panel } from "@/components/command-center/ai-assistant-v2-panel";
 import {
   VoiceInterimHint,
   VoiceMicButton,
@@ -664,13 +665,8 @@ export function CommandCenterClient({
 
         <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {centerView === "assistant" ? (
-            <AiAssistantPanel
+            <AiAssistantV2Panel
               campaignId={campaignFilter === "all" ? null : campaignFilter}
-              campaigns={campaigns}
-              noteId={selectedNote?.id ?? null}
-              onCampaignChange={handleAssistantCampaignChange}
-              fullBleed
-              hideCampaignSelector
             />
           ) : (
             <div className="scrollbar-barber-y flex h-full min-h-0 flex-col overflow-y-auto rounded-2xl bg-gradient-to-br from-barber-dark/45 via-barber-dark/60 to-barber-dark/80 p-4 ring-1 ring-barber-gold/10 sm:p-5">

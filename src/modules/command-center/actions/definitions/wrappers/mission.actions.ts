@@ -69,7 +69,7 @@ export function registerMissionWrapperActions(): void {
         input.pointsReward
       );
       if (!result.success) throw new Error(result.message);
-      return { campaignId: input.campaignId, title: input.title };
+      return { id: result.id, campaignId: input.campaignId, title: input.title };
     },
     auditEntity: (input) => ({
       entityType: "campaign",

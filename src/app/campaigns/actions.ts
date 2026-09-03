@@ -37,6 +37,7 @@ import {
 export type CreateSessionResult = {
   success: boolean;
   message: string;
+  id?: string;
 };
 
 export async function createSession(
@@ -178,6 +179,7 @@ export async function createSession(
     revalidatePath(`/campaigns/${campaignId}`);
     return {
       success: true,
+      id: createdSession.id,
       message:
         participantsAutoAdded > 0
           ? `Sessione creata! Partecipanti del gruppo aggiunti automaticamente (${participantsAutoAdded}).`

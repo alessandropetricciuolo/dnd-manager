@@ -35,6 +35,7 @@ const CAMPAIGNS_PUBLIC_SEGMENT = "/storage/v1/object/public/campaigns/";
 export type CreateEntityResult = {
   success: boolean;
   message: string;
+  id?: string;
 };
 
 function extractCampaignsPathFromPublicUrl(imageUrl: string): string | null {
@@ -370,7 +371,7 @@ export async function createEntity(
           ? ` Indicizzata nella memoria campagna (${memoryChunkCount} chunk).`
           : " Memoria campagna: nessun contenuto indicizzabile (testo vuoto?).";
     }
-    return { success: true, message };
+    return { success: true, message, id: inserted.id };
   } catch (err) {
     console.error("[createEntity]", err);
     return {

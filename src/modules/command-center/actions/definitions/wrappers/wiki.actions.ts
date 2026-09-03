@@ -83,10 +83,7 @@ export function registerWikiWrapperActions(): void {
 
       const result = await createEntity(input.campaignId, fd);
       if (!result.success) throw new Error(result.message);
-      return {
-        campaignId: input.campaignId,
-        message: result.message,
-      };
+      return { id: result.id, campaignId: input.campaignId, message: result.message };
     },
     auditEntity: (input) => ({
       entityType: "campaign",
