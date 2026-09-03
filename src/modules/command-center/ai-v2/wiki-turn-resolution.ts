@@ -1,0 +1,123 @@
+import type { AiAssistantArtifact } from "./contracts";
+import type { OrchestratorOutput } from "./assistant-model-router";
+
+type MissionRow = { id: string; title: string };
+export type MissionResolution =
+  | { requested: false }
+  | { requested: true; status: "resolved"; mission: MissionRow }
+  | { requested: true; status: "missing"; name: string }
+  | { requested: true; status: "ambiguous"; name: string; matches: MissionRow[] };
+
+const record = (value: unknown): Record<string, unknown> =>
+  value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+
+export function requestsStatblock(message: string): boolean {
+  return /\bstat\s*block\b|\bstatblock\b/i.test(message);
+}
+
+function requestedStatblockSubject(message: string): string | null {
+  const explicit = message.match(/\bstat\s*block\s+(?:di|del|della|per)\s+([^,.\n]+)/i)?.[1]?.trim();
+  if (explicit) return explicit;
+  return message.match(/\b(?:è|e)\s+(?:un|uno|una)\s+([^,.\n]+)/i)?.[1]?.trim() ?? null;
+}
+
+/** Returns only a directly matched Manuale dei Mostri section; no fuzzy data is treated as a statblock source. */
+export async function findOfficialStatblockContext(
+  db: { from(table: "manuals_knowledge"): { select(columns: string): { ilike(column: string, pattern: string): { limit(count: number): PromiseLike<{ data: Array<{ content: string; metadata: Record<string, unknown> | null }> | null; error: { message: string } | null }> } } } },
+  message: string
+): Promise<string | null> {
+  if (!requestsStatblock(message)) return null;
+  const subject = requestedStatblockSubject(message);
+  if (!subject || subject.length < 2) return null;
+  const { data, error } = await db.from("manuals_knowledge").select("content, metadata").ilike("content", `%## ${subject.replace(/[%_]/g, "\\$&")}%`).limit(8);
+  if (error) throw new Error(`Ricerca manuale non riuscita: ${error.message}`);
+  const row = (data ?? []).find((candidate) => {
+    const metadata = candidate.metadata ?? {};
+    const book = String(metadata.manual_book_key ?? metadata.book_key ?? metadata.source_book ?? "").toLowerCase();
+    return /mostri|monster/.test(book) && new RegExp(`^#{1,2}\\s+${subject.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`, "im").test(candidate.content);
+  });
+  if (!row) return null;
+  return `FONTE REGOLISTICA UFFICIALE — Manuale dei Mostri\n${row.content.slice(0, 12000)}`;
+}
+
+/** Handles the natural language used by the GM UI without accepting an ID from the model. */
+export function requestedMissionName(message: string): string | null {
+  const match = message.match(/\bcollega(?:re|lo|la)?\s+(?:alla?|con)\s+missione\s*[:,]?\s*["“']?([^"”'\n.]+?)["”']?(?:\s*$|[.])/i);
+  return match?.[1]?.trim().replace(/[,:;]+$/, "") || null;
+}
+
+export async function resolveMissionReference(
+  db: { from(table: "campaign_missions"): { select(columns: string): { eq(column: string, value: string): PromiseLike<{ data: MissionRow[] | null; error: { message: string } | null }> } } },
+  campaignId: string,
+  message: string
+): Promise<MissionResolution> {
+  const name = requestedMissionName(message);
+  if (!name) return { requested: false };
+  const { data, error } = await db.from("campaign_missions").select("id, title").eq("campaign_id", campaignId);
+  if (error) throw new Error(`Ricerca missioni non riuscita: ${error.message}`);
+  const exact = (data ?? []).filter((mission) => mission.title.trim().localeCompare(name, "it", { sensitivity: "base" }) === 0);
+  if (exact.length === 1) return { requested: true, status: "resolved", mission: exact[0]! };
+  if (exact.length > 1) return { requested: true, status: "ambiguous", name, matches: exact };
+  return { requested: true, status: "missing", name };
+}
+
+function hasOfficialStatblockContext(context: string | undefined): boolean {
+  return Boolean(context && /(?:manuale dei mostri|monster manual|fonte regolistica ufficiale|manuale ufficiale)/i.test(context));
+}
+
+function describeWikiChanges(before: Record<string, unknown>, after: Record<string, unknown>, contentChanged: boolean): string[] {
+  const labels: Array<[string, string]> = [["visibility", "visibilità"], ["tags", "tag"], ["linkedMissionId", "missione"], ["isCore", "elemento core"], ["includeInCampaignAiMemory", "memoria IA"], ["relations", "relazioni"], ["audiences", "pubblico selettivo"]];
+  const changed = labels.filter(([key]) => JSON.stringify(before[key]) !== JSON.stringify(after[key])).map(([, label]) => label);
+  if (contentChanged) changed.unshift("testo della bozza");
+  const beforeAttributes = record(before.attributes); const afterAttributes = record(after.attributes);
+  if (JSON.stringify(beforeAttributes) !== JSON.stringify(afterAttributes)) changed.push("dettagli specifici");
+  return changed;
+}
+
+/**
+ * Applies server-resolved references and produces an intentionally short chat
+ * response. The full narrative belongs in the artifact card, never in every
+ * conversational reply.
+ */
+export function finalizeWikiRevision(input: {
+  message: string;
+  context?: string;
+  previous: AiAssistantArtifact | null;
+  output: OrchestratorOutput;
+  mission: MissionResolution;
+}): OrchestratorOutput {
+  const previousInput = record(input.previous?.payload.actionInput);
+  const actionInput = { ...record(input.output.actionInput) };
+  const notices: string[] = [];
+  if (input.mission.requested) {
+    if (input.mission.status === "resolved") {
+      actionInput.linkedMissionId = input.mission.mission.id;
+      notices.push(`collegamento alla missione “${input.mission.mission.title}” accettato`);
+    } else if (input.mission.status === "missing") {
+      // Omit a speculative link so the deep merge preserves the existing one.
+      delete actionInput.linkedMissionId;
+      notices.push(`collegamento rifiutato: la missione “${input.mission.name}” non esiste in questa campagna`);
+    } else {
+      delete actionInput.linkedMissionId;
+      notices.push(`collegamento rifiutato: “${input.mission.name}” corrisponde a più missioni`);
+    }
+  }
+  if (requestsStatblock(input.message) && !hasOfficialStatblockContext(input.context)) {
+    const attributes = { ...record(actionInput.attributes) };
+    delete attributes.statblock;
+    const combat = { ...record(attributes.combat_stats) };
+    for (const field of ["hp", "ac", "cr", "attacks"]) delete combat[field];
+    if (Object.keys(combat).length) attributes.combat_stats = combat; else delete attributes.combat_stats;
+    actionInput.attributes = attributes;
+    delete actionInput.xpValue;
+    notices.push("statblock non applicato: non ho una fonte regolistica ufficiale verificabile per questi dati");
+  } else if (requestsStatblock(input.message)) {
+    notices.push("statblock proposto dai dati della fonte regolistica ufficiale disponibile");
+  }
+  const content = typeof actionInput.content === "string" ? actionInput.content : input.output.content;
+  const contentChanged = Boolean(content && content !== input.previous?.payload.content);
+  const changes = describeWikiChanges(previousInput, actionInput, contentChanged);
+  const accepted = changes.length ? `Ho applicato: ${changes.join(", ")}.` : "La bozza è invariata.";
+  const feedback = [accepted, ...notices].join(" ");
+  return { ...input.output, message: feedback, ...(Object.keys(actionInput).length ? { actionInput } : {}) };
+}
