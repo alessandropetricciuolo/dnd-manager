@@ -20,6 +20,12 @@ function WikiPreview({ payload }: { payload: Record<string, unknown> }) {
 
 export function AiAssistantV2ArtifactCard({ artifact, prepared, onRegenerate, onDiscard, onPrepare, onConfirm }: { artifact: AiAssistantArtifact; prepared: boolean; onEdit: (content: string) => void; onRegenerate: () => void; onDiscard: () => void; onPrepare: () => void; onConfirm: () => void }) {
   const wiki = artifact.payload.actionName === "wiki.entity.create" || artifact.payload.actionName === "wiki.entity.update";
-  const imageUrl = typeof artifact.payload.imageUrl === "string" ? artifact.payload.imageUrl : typeof asRecord(artifact.payload.actionInput).imageUrl === "string" ? asRecord(artifact.payload.actionInput).imageUrl : null;
+  const actionInput = asRecord(artifact.payload.actionInput);
+  const actionImageUrl = actionInput.imageUrl;
+  const imageUrl: string | null = typeof artifact.payload.imageUrl === "string"
+    ? artifact.payload.imageUrl
+    : typeof actionImageUrl === "string"
+      ? actionImageUrl
+      : null;
   return <article className="rounded-2xl border border-barber-gold/25 bg-barber-dark/70 p-4 shadow-[0_12px_35px_rgba(0,0,0,.18)]"><div className="mb-3 flex flex-wrap items-center justify-between gap-2"><div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-barber-gold">Bozza · revisione {artifact.revision}</p><h3 className="mt-1 font-serif text-lg text-barber-paper">{String(artifact.payload.title ?? "Artefatto narrativo")}</h3><p className="mt-1 text-xs text-barber-paper/45">{wiki ? "Anteprima completa: modifica anche un solo campo scrivendolo in chat." : "Per cambiarla, scrivi la modifica in chat."}</p></div><span className="rounded-full border border-amber-400/20 bg-amber-400/10 px-2 py-1 text-[10px] uppercase tracking-wide text-amber-200">{artifact.status === "saved" ? "Salvato" : prepared ? "Pronta per conferma" : "Non salvato"}</span></div>{imageUrl ? <img src={imageUrl} alt={String(artifact.payload.title ?? "Immagine generata")} className="mb-3 aspect-square w-full rounded-xl object-cover" /> : null}{wiki ? <WikiPreview payload={artifact.payload} /> : null}<div className="mt-4 flex flex-wrap gap-2"><Button size="sm" variant="outline" onClick={onRegenerate}><RotateCcw className="mr-1.5 h-3.5 w-3.5" />Rigenera</Button><Button size="sm" variant="outline" onClick={onDiscard}><Trash2 className="mr-1.5 h-3.5 w-3.5" />Scarta</Button><Button size="sm" variant="outline" onClick={onPrepare} disabled={artifact.status === "saved"}><Save className="mr-1.5 h-3.5 w-3.5" />Prepara salvataggio</Button><Button size="sm" onClick={onConfirm} disabled={!prepared || artifact.status === "saved"}><Check className="mr-1.5 h-3.5 w-3.5" />Conferma e salva</Button></div></article>;
 }
