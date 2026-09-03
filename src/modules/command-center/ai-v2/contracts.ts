@@ -1,5 +1,5 @@
 export type AiAssistantIntent = "answer" | "create" | "revise" | "generate_image" | "save" | "discard" | "ask_clarification";
-export type AiAssistantArtifactStatus = "draft" | "ready_for_review" | "approved" | "saved" | "discarded" | "failed";
+export type AiAssistantArtifactStatus = "draft" | "ready_for_review" | "approved" | "saving" | "saved" | "discarded" | "failed";
 export type AiAssistantArtifactKind = "narrative" | "wiki" | "image" | "rules" | "sheet" | "action";
 
 export type AiAssistantSourceRef = { evidenceId: string; sourceType: string; sourceId: string; title: string; href: string; similarity: number | null };
