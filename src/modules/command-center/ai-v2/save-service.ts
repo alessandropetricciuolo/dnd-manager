@@ -3,6 +3,24 @@ import type { Database } from "@/types/database.types";
 import type { AiAssistantArtifact } from "./contracts";
 import { actionForArtifact, buildArtifactActionInput, executeAssistantArtifactAction } from "./action-bridge";
 import { previewAction } from "@/modules/command-center/actions";
+
+type PersistError = { code?: unknown; message?: unknown };
+
+export function assistantSaveErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) return error.message;
+  if (error && typeof error === "object") {
+    const message = (error as PersistError).message;
+    if (typeof message === "string" && message.trim()) return message;
+  }
+  return "Salvataggio non riuscito.";
+}
+
+function isMissingSaveReservationColumns(error: unknown): boolean {
+  const candidate = error as PersistError | null;
+  return candidate?.code === "PGRST204" &&
+    typeof candidate.message === "string" &&
+    /save_action_name|save_started_at/i.test(candidate.message);
+}
 export async function previewAssistantArtifactSave(artifact: AiAssistantArtifact, actionName?: string) {
   if (!artifact.campaignId) throw new Error("Seleziona una campagna prima di salvare.");
   const resolvedAction = actionName ?? actionForArtifact(artifact);
@@ -18,14 +36,27 @@ export async function saveAssistantArtifact(supabase: SupabaseClient<Database>, 
 
   // Reserve the specific immutable revision before invoking the Action Registry.
   // This condition is the idempotency boundary for a double-click or retry.
-  const reservation = await (supabase as any)
+  let reservation = await (supabase as any)
     .from("ai_assistant_artifacts")
     .update({ status: "saving", save_action_name: actionName, save_started_at: new Date().toISOString() })
     .eq("id", artifact.id)
     .eq("revision", revision)
-    .in("status", ["draft", "ready_for_review", "approved"])
+    .in("status", ["draft", "ready_for_review", "approved", "failed"])
     .select("id")
     .maybeSingle();
+  // Production can temporarily be one migration behind the application. The
+  // reservation metadata is diagnostic only; preserve the idempotency state
+  // transition until the additive columns reach the database.
+  if (reservation.error && isMissingSaveReservationColumns(reservation.error)) {
+    reservation = await (supabase as any)
+      .from("ai_assistant_artifacts")
+      .update({ status: "saving" })
+      .eq("id", artifact.id)
+      .eq("revision", revision)
+      .in("status", ["draft", "ready_for_review", "approved", "failed"])
+      .select("id")
+      .maybeSingle();
+  }
   if (reservation.error) throw reservation.error;
   if (!reservation.data) {
     const current = await (supabase as any)
