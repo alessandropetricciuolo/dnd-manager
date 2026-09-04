@@ -2,6 +2,7 @@ import type { AiAssistantArtifact } from "./contracts";
 import type { OrchestratorOutput } from "./assistant-model-router";
 import { extractNpcBuildParams } from "@/lib/ai/wiki-npc-params";
 import { WIKI_NPC_CLASS_GROUPS, WIKI_NPC_CLASS_OPTIONS } from "@/lib/wiki-npc-ai-options";
+import { detectWikiCreateRequest, resolveWikiVisibilityForAssistant } from "@/modules/command-center/ai-control-plane/wiki-request-detector";
 import type { CanonicalReference } from "./canonical-references";
 
 type MissionRow = { id: string; title: string };
@@ -143,7 +144,7 @@ function applyCanonicalReferences(
   for (const relation of [...relationList(previousInput.relations), ...relationList(actionInput.relations)]) relations.set(`${relation.targetType}:${relation.targetId}`, relation);
   for (const reference of safeReferences) {
     const key = `${reference.targetType}:${reference.targetId}`;
-    if (!relations.has(key)) relations.set(key, { targetType: reference.targetType, targetId: reference.targetId, label: "Riferimento canonico" });
+    if (!relations.has(key)) relations.set(key, { targetType: reference.targetType, targetId: reference.targetId, label: `Riferimento canonico: ${reference.name}` });
   }
   actionInput.relations = [...relations.values()];
 }
@@ -165,6 +166,10 @@ export function finalizeWikiRevision(input: {
   const previousInput = record(input.previous?.payload.actionInput);
   const actionInput = { ...record(input.output.actionInput) };
   const notices: string[] = [];
+  const inferred = detectWikiCreateRequest(input.message);
+  if (!actionInput.type) actionInput.type = previousInput.type ?? inferred?.entityType ?? "npc";
+  // Every new or revised draft stays GM-only unless the current prompt says otherwise.
+  actionInput.visibility = resolveWikiVisibilityForAssistant(input.message, input.message);
   const classResolution = input.npcClass ?? resolveNpcStatblockClass(input.message, input.previous);
   const isNpc = actionInput.type === "npc" || previousInput.type === "npc";
   if (isNpc && requestsStatblock(input.message) && classResolution.status !== "recognized") {

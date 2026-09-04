@@ -76,7 +76,13 @@ test("verified canonical references add durable tags and relations without repla
   assert.deepEqual(result.actionInput?.tags, ["Portico", "Locandiere", "Locanda della Sirena"]);
   assert.deepEqual(result.actionInput?.relations, [
     { targetType: "wiki", targetId: "existing-1", label: "Famiglia" },
-    { targetType: "wiki", targetId: "inn-1", label: "Riferimento canonico" },
-    { targetType: "map", targetId: "map-1", label: "Riferimento canonico" },
+    { targetType: "wiki", targetId: "inn-1", label: "Riferimento canonico: Locanda della Sirena" },
+    { targetType: "map", targetId: "map-1", label: "Riferimento canonico: Portico" },
   ]);
+});
+
+test("a Wiki draft always has a type and defaults to secret visibility", () => {
+  const result = finalizeWikiRevision({ message: "Generami Dan, il locandiere", previous: null, context: "FONTI", mission: { requested: false }, output: { intent: "create", message: "Fatto", content: "Dan", kind: "wiki", actionName: "wiki.entity.create", actionInput: { title: "Dan" } } });
+  assert.equal(result.actionInput?.type, "npc");
+  assert.equal(result.actionInput?.visibility, "secret");
 });
