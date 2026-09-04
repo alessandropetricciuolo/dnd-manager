@@ -86,3 +86,9 @@ test("a Wiki draft always has a type and defaults to secret visibility", () => {
   assert.equal(result.actionInput?.type, "npc");
   assert.equal(result.actionInput?.visibility, "secret");
 });
+
+test("a Wiki output without a model action name still receives the create contract", () => {
+  const result = finalizeWikiRevision({ message: "Generami Dan, il locandiere", previous: null, context: "FONTI", mission: { requested: false }, output: { intent: "create", message: "Fatto", content: "Dan", kind: "wiki" } });
+  assert.equal(result.actionName, "wiki.entity.create");
+  assert.equal(result.actionInput?.type, "npc");
+});

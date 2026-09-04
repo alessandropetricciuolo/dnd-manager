@@ -19,7 +19,7 @@ function WikiPreview({ payload }: { payload: Record<string, unknown> }) {
 }
 
 export function AiAssistantV2ArtifactCard({ artifact, prepared, onRegenerate, onDiscard, onPrepare, onConfirm }: { artifact: AiAssistantArtifact; prepared: boolean; onEdit: (content: string) => void; onRegenerate: () => void; onDiscard: () => void; onPrepare: () => void; onConfirm: () => void }) {
-  const wiki = artifact.payload.actionName === "wiki.entity.create" || artifact.payload.actionName === "wiki.entity.update";
+  const wiki = artifact.kind === "wiki" || artifact.payload.actionName === "wiki.entity.create" || artifact.payload.actionName === "wiki.entity.update";
   const actionInput = asRecord(artifact.payload.actionInput);
   const actionImageUrl = actionInput.imageUrl;
   const imageUrl: string | null = typeof artifact.payload.imageUrl === "string"
