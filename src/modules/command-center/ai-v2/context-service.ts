@@ -15,13 +15,18 @@ async function loadCanonicalReferences(
   const mapIds = [...new Set(sources.filter((source) => source.sourceType === "map_description").map((source) => source.sourceId).filter(Boolean))];
   if (!wikiIds.length && !mapIds.length) return [];
   try {
-    const [wikiRes, mapRes] = await Promise.all([
-      wikiIds.length ? supabase.from("wiki_entities").select("id, name").eq("campaign_id", campaignId).in("id", wikiIds) : Promise.resolve({ data: [] }),
-      mapIds.length ? supabase.from("maps").select("id, name").eq("campaign_id", campaignId).in("id", mapIds) : Promise.resolve({ data: [] }),
+    type CatalogRow = { id: string; name: string };
+    const [wikiRows, mapRows]: [CatalogRow[], CatalogRow[]] = await Promise.all([
+      wikiIds.length
+        ? supabase.from("wiki_entities").select("id, name").eq("campaign_id", campaignId).in("id", wikiIds).then(({ data }) => data ?? [])
+        : Promise.resolve([]),
+      mapIds.length
+        ? supabase.from("maps").select("id, name").eq("campaign_id", campaignId).in("id", mapIds).then(({ data }) => data ?? [])
+        : Promise.resolve([]),
     ]);
     const catalog = [
-      ...(wikiRes.data ?? []).flatMap((entry) => entry.id && entry.name ? [{ targetType: "wiki" as const, targetId: entry.id, name: entry.name }] : []),
-      ...(mapRes.data ?? []).flatMap((entry) => entry.id && entry.name ? [{ targetType: "map" as const, targetId: entry.id, name: entry.name }] : []),
+      ...wikiRows.map((entry) => ({ targetType: "wiki" as const, targetId: entry.id, name: entry.name })),
+      ...mapRows.map((entry) => ({ targetType: "map" as const, targetId: entry.id, name: entry.name })),
     ];
     return resolveCanonicalReferences(question, sources, catalog);
   } catch {
