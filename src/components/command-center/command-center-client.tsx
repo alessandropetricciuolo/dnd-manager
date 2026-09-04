@@ -392,20 +392,20 @@ export function CommandCenterClient({
 
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden bg-[#0b0a10]">
-      <header className="shrink-0 border-b border-white/[0.06] bg-barber-dark/50 px-4 py-3 backdrop-blur-sm md:px-6">
+      <header className="shrink-0 border-b border-white/[0.06] bg-barber-dark/50 px-4 py-2.5 backdrop-blur-sm md:px-6 md:py-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="font-serif text-lg font-bold text-barber-paper md:text-xl">
               {centerView === "assistant" ? "Assistente GM" : "Workspace"}
             </h1>
-            <p className="mt-0.5 text-xs text-barber-paper/50">
+            <p className={cn("mt-0.5 text-xs text-barber-paper/50", centerView === "assistant" && "hidden md:block")}>
               {centerView === "assistant"
                 ? "Chat e anteprima live per wiki, missioni e schede"
                 : "Inbox, task, pagine e collegamenti alla campagna"}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex rounded-xl bg-white/[0.04] p-0.5 ring-1 ring-white/[0.06]">
+            <div className={cn("flex rounded-xl bg-white/[0.04] p-0.5 ring-1 ring-white/[0.06]", centerView === "assistant" && "hidden md:flex")}>
               <button
                 type="button"
                 onClick={() => handleCenterViewChange("workspace")}
@@ -439,7 +439,7 @@ export function CommandCenterClient({
                 setCampaignInUrl(v as string | "all");
               }}
             >
-              <SelectTrigger className="w-[200px] border-white/10 bg-barber-dark ring-1 ring-white/5">
+              <SelectTrigger className="w-[172px] border-white/10 bg-barber-dark ring-1 ring-white/5 sm:w-[200px]">
                 <SelectValue placeholder="Tutte le campagne" />
               </SelectTrigger>
               <SelectContent>
