@@ -57,3 +57,26 @@ test("mission link uses the server-resolved ID and feedback never duplicates the
   assert.match(result.message, /accettato/i);
   assert.doesNotMatch(result.message, /La storia completa di Paolo/);
 });
+
+test("verified canonical references add durable tags and relations without replacing existing ones", () => {
+  const result = finalizeWikiRevision({
+    message: "Crea Dan della Locanda della Sirena a Portico.",
+    previous,
+    context: "FONTI",
+    mission: { requested: false },
+    canonicalReferences: [
+      { targetType: "wiki", targetId: "inn-1", name: "Locanda della Sirena" },
+      { targetType: "map", targetId: "map-1", name: "Portico" },
+    ],
+    output: {
+      intent: "revise", message: "Fatto", content: "Dan lavora alla locanda.", patch: { path: "/content", value: "Dan lavora alla locanda." }, actionName: "wiki.entity.create",
+      actionInput: { tags: ["Locandiere"], relations: [{ targetType: "wiki", targetId: "existing-1", label: "Famiglia" }] },
+    },
+  });
+  assert.deepEqual(result.actionInput?.tags, ["Portico", "Locandiere", "Locanda della Sirena"]);
+  assert.deepEqual(result.actionInput?.relations, [
+    { targetType: "wiki", targetId: "existing-1", label: "Famiglia" },
+    { targetType: "wiki", targetId: "inn-1", label: "Riferimento canonico" },
+    { targetType: "map", targetId: "map-1", label: "Riferimento canonico" },
+  ]);
+});

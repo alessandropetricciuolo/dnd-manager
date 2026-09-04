@@ -43,3 +43,23 @@ test("carries the complete Wiki payload to both create and update wrappers", () 
     assert.deepEqual((input.attributes as { combat_stats: unknown }).combat_stats, { hp: "45", ac: "15", cr: "2", attacks: "Morso" });
   }
 });
+
+test("saves a Wiki revision with its generated image without dropping the Wiki fields", () => {
+  const input = buildArtifactActionInput({
+    ...artifact("wiki.entity.create", {
+      type: "npc", title: "Dan", content: "Figlio del locandiere", attributes: { race: "Umano", class: "Popolano", statblock: "Popolano" }, tags: ["Locanda della Sirena"], relations: [{ targetType: "wiki", targetId: "locanda-1", label: "Lavora nella" }],
+    }),
+    kind: "wiki",
+    payload: {
+      ...artifact("wiki.entity.create", {
+        type: "npc", title: "Dan", content: "Figlio del locandiere", attributes: { race: "Umano", class: "Popolano", statblock: "Popolano" }, tags: ["Locanda della Sirena"], relations: [{ targetType: "wiki", targetId: "locanda-1", label: "Lavora nella" }],
+      }).payload,
+      imageUrl: "https://example.test/dan.png",
+    },
+  }, "wiki.entity.create");
+  assert.equal(input.imageUrl, "https://example.test/dan.png");
+  assert.equal(input.content, "Figlio del locandiere");
+  assert.deepEqual(input.attributes, { race: "Umano", class: "Popolano", statblock: "Popolano" });
+  assert.deepEqual(input.tags, ["Locanda della Sirena"]);
+  assert.deepEqual(input.relations, [{ targetType: "wiki", targetId: "locanda-1", label: "Lavora nella" }]);
+});

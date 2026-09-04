@@ -2,6 +2,7 @@ import type { AiAssistantArtifact } from "./contracts";
 import type { OrchestratorOutput } from "./assistant-model-router";
 import { extractNpcBuildParams } from "@/lib/ai/wiki-npc-params";
 import { WIKI_NPC_CLASS_GROUPS, WIKI_NPC_CLASS_OPTIONS } from "@/lib/wiki-npc-ai-options";
+import type { CanonicalReference } from "./canonical-references";
 
 type MissionRow = { id: string; title: string };
 export type MissionResolution =
@@ -113,6 +114,40 @@ function describeWikiChanges(before: Record<string, unknown>, after: Record<stri
   return changed;
 }
 
+function stringList(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string").map((item) => item.trim()).filter(Boolean) : [];
+}
+
+function relationList(value: unknown): Array<{ targetType: "wiki" | "map"; targetId: string; label: string }> {
+  return Array.isArray(value) ? value.flatMap((item) => {
+    const relation = record(item);
+    const targetType = relation.targetType;
+    const targetId = typeof relation.targetId === "string" ? relation.targetId.trim() : "";
+    return (targetType === "wiki" || targetType === "map") && targetId
+      ? [{ targetType, targetId, label: typeof relation.label === "string" && relation.label.trim() ? relation.label.trim() : "—" }]
+      : [];
+  }) : [];
+}
+
+function applyCanonicalReferences(
+  actionInput: Record<string, unknown>,
+  previousInput: Record<string, unknown>,
+  references: CanonicalReference[],
+): void {
+  if (!references.length) return;
+  const entityId = typeof actionInput.entityId === "string" ? actionInput.entityId : typeof previousInput.entityId === "string" ? previousInput.entityId : null;
+  const safeReferences = references.filter((reference) => !(reference.targetType === "wiki" && reference.targetId === entityId));
+  if (!safeReferences.length) return;
+  actionInput.tags = [...new Set([...stringList(previousInput.tags), ...stringList(actionInput.tags), ...safeReferences.map((reference) => reference.name)])];
+  const relations = new Map<string, { targetType: "wiki" | "map"; targetId: string; label: string }>();
+  for (const relation of [...relationList(previousInput.relations), ...relationList(actionInput.relations)]) relations.set(`${relation.targetType}:${relation.targetId}`, relation);
+  for (const reference of safeReferences) {
+    const key = `${reference.targetType}:${reference.targetId}`;
+    if (!relations.has(key)) relations.set(key, { targetType: reference.targetType, targetId: reference.targetId, label: "Riferimento canonico" });
+  }
+  actionInput.relations = [...relations.values()];
+}
+
 /**
  * Applies server-resolved references and produces an intentionally short chat
  * response. The full narrative belongs in the artifact card, never in every
@@ -125,6 +160,7 @@ export function finalizeWikiRevision(input: {
   output: OrchestratorOutput;
   mission: MissionResolution;
   npcClass?: NpcClassResolution;
+  canonicalReferences?: CanonicalReference[];
 }): OrchestratorOutput {
   const previousInput = record(input.previous?.payload.actionInput);
   const actionInput = { ...record(input.output.actionInput) };
@@ -150,6 +186,7 @@ export function finalizeWikiRevision(input: {
       notices.push(`collegamento rifiutato: “${input.mission.name}” corrisponde a più missioni`);
     }
   }
+  applyCanonicalReferences(actionInput, previousInput, input.canonicalReferences ?? []);
   if (requestsStatblock(input.message) && !hasOfficialStatblockContext(input.context)) {
     const attributes = { ...record(actionInput.attributes) };
     delete attributes.statblock;

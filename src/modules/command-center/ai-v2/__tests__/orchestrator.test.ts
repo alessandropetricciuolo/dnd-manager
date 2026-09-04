@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { runAssistantTurn } from "../orchestrator";
 import { deterministicRouter } from "../assistant-model-router";
 import { InMemoryThreadRepository } from "../thread-repository";
+import type { AssistantModelRouter } from "../assistant-model-router";
 
 test("creates and naturally revises the same draft three times", async () => {
   const repo = new InMemoryThreadRepository();
@@ -37,4 +38,27 @@ test("save proposes confirmation and never invokes a domain action", async () =>
 
 test("stale thread is rejected", async () => {
   await assert.rejects(() => runAssistantTurn({ repo: new InMemoryThreadRepository(), router: deterministicRouter, ownerUserId: "gm-1", campaignId: "camp-1", threadId: "wrong", message: "Crea" }), /non autorizzato/);
+});
+
+test("generating an image from a Wiki revision keeps the complete Wiki artifact", async () => {
+  const repo = new InMemoryThreadRepository();
+  const router: AssistantModelRouter = {
+    async orchestrate({ artifact }) {
+      if (!artifact) return {
+        message: "Wiki pronta.", intent: "create", kind: "wiki", title: "Dan", content: "Testo della scheda", actionName: "wiki.entity.create",
+        actionInput: { type: "npc", title: "Dan", content: "Testo della scheda", attributes: { race: "Umano", class: "Popolano" }, tags: ["Portico"], relations: [] },
+      };
+      return { message: "Genero l'immagine.", intent: "generate_image", content: "Descrizione visiva" };
+    },
+  };
+  const base = { repo, router, ownerUserId: "gm-1", campaignId: "camp-1" };
+  const first = await runAssistantTurn({ ...base, message: "Crea Dan" });
+  const image = await runAssistantTurn({ ...base, message: "Genera l'immagine" });
+  assert.equal(image.intent, "generate_image");
+  assert.equal(image.artifact?.kind, "wiki");
+  assert.equal(image.artifact?.revision, 2);
+  assert.equal(image.artifact?.payload.actionName, "wiki.entity.create");
+  assert.deepEqual((image.artifact?.payload.actionInput as { attributes: unknown; tags: unknown }).attributes, { race: "Umano", class: "Popolano" });
+  assert.deepEqual((image.artifact?.payload.actionInput as { attributes: unknown; tags: unknown }).tags, ["Portico"]);
+  assert.equal(image.artifact?.parentArtifactId, first.artifact?.id);
 });
