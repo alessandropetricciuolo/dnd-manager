@@ -1,5 +1,7 @@
 import type { AiAssistantArtifact } from "./contracts";
 import type { OrchestratorOutput } from "./assistant-model-router";
+import { extractNpcBuildParams } from "@/lib/ai/wiki-npc-params";
+import { WIKI_NPC_CLASS_GROUPS, WIKI_NPC_CLASS_OPTIONS } from "@/lib/wiki-npc-ai-options";
 
 type MissionRow = { id: string; title: string };
 export type MissionResolution =
@@ -21,23 +23,60 @@ function requestedStatblockSubject(message: string): string | null {
   return message.match(/\b(?:è|e)\s+(?:un|uno|una)\s+([^,.\n]+)/i)?.[1]?.trim() ?? null;
 }
 
+type NpcClassResolution =
+  | { status: "recognized"; npcClass: string }
+  | { status: "unsupported"; value: string }
+  | { status: "missing" };
+
+function unsupportedClassFromMessage(message: string): string | null {
+  const match = message.match(/\b(?:classe\s+)?([a-zà-ÿ][a-zà-ÿ' -]{1,40}?)\s+(?:di\s+)?livello\s+\d{1,2}\b/i);
+  const value = match?.[1]?.trim();
+  if (!value || /^(?:un|uno|una|il|lo|la)\s+/i.test(value)) return null;
+  return value;
+}
+
+/** Resolves a requested NPC class without treating a profession (for example, Artigiano) as a class. */
+export function resolveNpcStatblockClass(message: string, previous: AiAssistantArtifact | null): NpcClassResolution {
+  const requested = extractNpcBuildParams(message).npcClass;
+  if (requested && WIKI_NPC_CLASS_OPTIONS.includes(requested)) return { status: "recognized", npcClass: requested };
+  const mentioned = unsupportedClassFromMessage(message);
+  if (mentioned) return { status: "unsupported", value: mentioned };
+  const currentClass = record(record(previous?.payload.actionInput).attributes).class;
+  if (typeof currentClass === "string" && currentClass.trim()) {
+    if (WIKI_NPC_CLASS_OPTIONS.includes(currentClass.trim())) return { status: "recognized", npcClass: currentClass.trim() };
+    return { status: "unsupported", value: currentClass.trim() };
+  }
+  return { status: "missing" };
+}
+
+function npcClassQuestion(resolution: Exclude<NpcClassResolution, { status: "recognized" }>): string {
+  const available = WIKI_NPC_CLASS_GROUPS.map(({ label, options }) => `${label}: ${options.join(", ")}`).join(". ");
+  const prefix = resolution.status === "unsupported"
+    ? `“${resolution.value}” è un mestiere o una classe non disponibile per lo statblock.`
+    : "Non ho riconosciuto una classe per lo statblock.";
+  return `${prefix} Scegli una classe disponibile: ${available}.`;
+}
+
 /** Returns only a directly matched Manuale dei Mostri section; no fuzzy data is treated as a statblock source. */
 export async function findOfficialStatblockContext(
   db: { from(table: "manuals_knowledge"): { select(columns: string): { ilike(column: string, pattern: string): { limit(count: number): PromiseLike<{ data: Array<{ content: string; metadata: Record<string, unknown> | null }> | null; error: { message: string } | null }> } } } },
-  message: string
+  message: string,
+  npcClass?: string | null
 ): Promise<string | null> {
   if (!requestsStatblock(message)) return null;
-  const subject = requestedStatblockSubject(message);
+  // A request such as "statblock di Paolo, è un popolano" must search for
+  // the official Popolano entry, not for the NPC's proper name.
+  const subject = npcClass ?? requestedStatblockSubject(message);
   if (!subject || subject.length < 2) return null;
   const { data, error } = await db.from("manuals_knowledge").select("content, metadata").ilike("content", `%## ${subject.replace(/[%_]/g, "\\$&")}%`).limit(8);
   if (error) throw new Error(`Ricerca manuale non riuscita: ${error.message}`);
   const row = (data ?? []).find((candidate) => {
     const metadata = candidate.metadata ?? {};
     const book = String(metadata.manual_book_key ?? metadata.book_key ?? metadata.source_book ?? "").toLowerCase();
-    return /mostri|monster/.test(book) && new RegExp(`^#{1,2}\\s+${subject.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`, "im").test(candidate.content);
+    return /mostri|monster|guida.*master|dungeon.*master|\bdm\b/.test(book) && new RegExp(`^#{1,2}\\s+${subject.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`, "im").test(candidate.content);
   });
   if (!row) return null;
-  return `FONTE REGOLISTICA UFFICIALE — Manuale dei Mostri\n${row.content.slice(0, 12000)}`;
+  return `FONTE REGOLISTICA UFFICIALE — ${String((row.metadata ?? {}).title ?? (row.metadata ?? {}).manual_book_key ?? "Manuale ufficiale")}\n${row.content.slice(0, 12000)}`;
 }
 
 /** Handles the natural language used by the GM UI without accepting an ID from the model. */
@@ -85,10 +124,19 @@ export function finalizeWikiRevision(input: {
   previous: AiAssistantArtifact | null;
   output: OrchestratorOutput;
   mission: MissionResolution;
+  npcClass?: NpcClassResolution;
 }): OrchestratorOutput {
   const previousInput = record(input.previous?.payload.actionInput);
   const actionInput = { ...record(input.output.actionInput) };
   const notices: string[] = [];
+  const classResolution = input.npcClass ?? resolveNpcStatblockClass(input.message, input.previous);
+  const isNpc = actionInput.type === "npc" || previousInput.type === "npc";
+  if (isNpc && requestsStatblock(input.message) && classResolution.status !== "recognized") {
+    return { ...input.output, intent: "ask_clarification", message: npcClassQuestion(classResolution) };
+  }
+  if (isNpc && requestsStatblock(input.message) && classResolution.status === "recognized") {
+    actionInput.attributes = { ...record(actionInput.attributes), class: classResolution.npcClass };
+  }
   if (input.mission.requested) {
     if (input.mission.status === "resolved") {
       actionInput.linkedMissionId = input.mission.mission.id;

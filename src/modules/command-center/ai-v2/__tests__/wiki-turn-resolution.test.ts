@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { finalizeWikiRevision, resolveMissionReference } from "../wiki-turn-resolution";
+import { finalizeWikiRevision, findOfficialStatblockContext, resolveMissionReference, resolveNpcStatblockClass } from "../wiki-turn-resolution";
 import type { AiAssistantArtifact } from "../contracts";
 
 const previous: AiAssistantArtifact = {
@@ -21,8 +21,34 @@ test("statblock without an official source is refused while other wiki changes s
   assert.match(result.message, /statblock non applicato/i);
   assert.doesNotMatch(result.message, /La storia completa di Paolo/);
   assert.deepEqual(result.actionInput?.tags, ["Portico", "Prova"]);
-  assert.deepEqual(result.actionInput?.attributes, {});
+  assert.deepEqual(result.actionInput?.attributes, { class: "Popolano" });
   assert.equal(result.actionInput?.xpValue, undefined);
+});
+
+test("uses the recognized Popolano class rather than the NPC name for official statblock lookup", async () => {
+  const resolution = resolveNpcStatblockClass("generami lo statblock di Paolo, è un popolano di livello 1", previous);
+  assert.deepEqual(resolution, { status: "recognized", npcClass: "Popolano" });
+  let pattern = "";
+  const db = { from: () => ({ select: () => ({ ilike: (_column: string, value: string) => ({ limit: async () => { pattern = value; return { data: [{ content: "## Popolano\nStatistiche ufficiali", metadata: { manual_book_key: "dungeon_masters_guide" } }], error: null }; } }) }) }) };
+  const context = await findOfficialStatblockContext(db as never, "generami lo statblock di Paolo, è un popolano di livello 1", resolution.npcClass);
+  assert.equal(pattern, "%## Popolano%");
+  assert.match(context ?? "", /Popolano/);
+});
+
+test("asks the GM to select a supported class when the stored profession is not a class", () => {
+  const withProfession = { ...previous, payload: { ...previous.payload, actionInput: { ...previous.payload.actionInput, attributes: { class: "Artigiano" } } } };
+  const result = finalizeWikiRevision({ message: "genera lo statblock di Paolo", previous: withProfession, context: "FONTI", mission: { requested: false }, output: { intent: "revise", message: "Fatto", content: "Contenuto", patch: { path: "/content", value: "Contenuto" }, actionName: "wiki.entity.create", actionInput: {} } });
+  assert.equal(result.intent, "ask_clarification");
+  assert.match(result.message, /Artigiano/i);
+  assert.match(result.message, /Popolano/);
+  assert.match(result.message, /Classi degli avventurieri/);
+});
+
+test("a recognized class replaces an obsolete profession in the wiki attributes", () => {
+  const withProfession = { ...previous, payload: { ...previous.payload, actionInput: { ...previous.payload.actionInput, attributes: { class: "Artigiano" } } } };
+  const result = finalizeWikiRevision({ message: "genera lo statblock di Paolo, è un popolano di livello 1", previous: withProfession, context: "FONTE REGOLISTICA UFFICIALE — Guida del DM", mission: { requested: false }, output: { intent: "revise", message: "Fatto", content: "Contenuto", patch: { path: "/content", value: "Contenuto" }, actionName: "wiki.entity.create", actionInput: { attributes: { statblock: "Statblock ufficiale" } } } });
+  assert.equal(result.actionInput?.attributes?.class, "Popolano");
+  assert.equal(result.actionInput?.attributes?.statblock, "Statblock ufficiale");
 });
 
 test("mission link uses the server-resolved ID and feedback never duplicates the narrative", () => {
