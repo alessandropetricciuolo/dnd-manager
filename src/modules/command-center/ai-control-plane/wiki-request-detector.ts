@@ -16,7 +16,7 @@ export { extractNpcBuildParams, hasNpcMechanicsParams, mergeWikiExtraParams, for
 const NPC_VERBS =
   /\b(crea(?:mi)?|genera(?:mi)?|voglio|vorrei|ho\s+bisogno|fammi|scrivi)\b/i;
 const NPC_ROLES =
-  /\b(npc|png|personaggio|pgn|locandier|pescivendol|mercante|guard|capo|sacerdot|strega|mago|ladro|barbaro|guerriero|halfling|elfo|nano|umano|mezzelfo|tiefling|drow|dragonide)\b/i;
+  /\b(npc|png|personaggio|pgn|locandier\w*|pescivendol\w*|mercante|guard\w*|capo|sacerdot\w*|strega|mago|ladro|barbaro|guerriero|popolan\w*|halfling|elfo|nano|umano|mezzelfo|tiefling|drow|dragonide)\b/i;
 const LOCATION_HINTS =
   /\b(luogo|location|taverna|locanda|porto|città|citta|villaggio|dungeon|fortezza|tempio|mercato|piazza)\b/i;
 const LORE_HINTS = /\b(lore|storia|leggenda|mito|cronaca|background)\b/i;
@@ -66,8 +66,12 @@ function extractTitle(message: string): string | null {
 function inferEntityType(message: string): WikiMarkdownEntityType {
   if (MONSTER_HINTS.test(message)) return "monster";
   if (ITEM_HINTS.test(message)) return "item";
+  // "Storia" and "descrizione" describe the requested output, not its
+  // destination. A named profession, ancestry, or NPC label is instead an
+  // unambiguous signal that the subject is a person.
+  if (NPC_ROLES.test(message)) return "npc";
+  if (LOCATION_HINTS.test(message)) return "location";
   if (LORE_HINTS.test(message)) return "lore";
-  if (LOCATION_HINTS.test(message) && !NPC_ROLES.test(message)) return "location";
   return "npc";
 }
 

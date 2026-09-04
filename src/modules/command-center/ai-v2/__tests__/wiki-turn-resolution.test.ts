@@ -87,6 +87,17 @@ test("a Wiki draft always has a type and defaults to secret visibility", () => {
   assert.equal(result.actionInput?.visibility, "secret");
 });
 
+test("a new NPC request overrides a model-proposed lore destination", () => {
+  const result = finalizeWikiRevision({
+    message: "Generami storia e descrizione di Dan, figlio di Patrizio il locandiere. Dan è un popolano di livello 1.",
+    previous: null,
+    context: "FONTI",
+    mission: { requested: false },
+    output: { intent: "create", message: "Fatto", content: "Dan", kind: "wiki", actionName: "wiki.entity.create", actionInput: { type: "lore" } },
+  });
+  assert.equal(result.actionInput?.type, "npc");
+});
+
 test("a Wiki output without a model action name still receives the create contract", () => {
   const result = finalizeWikiRevision({ message: "Generami Dan, il locandiere", previous: null, context: "FONTI", mission: { requested: false }, output: { intent: "create", message: "Fatto", content: "Dan", kind: "wiki" } });
   assert.equal(result.kind, "wiki");

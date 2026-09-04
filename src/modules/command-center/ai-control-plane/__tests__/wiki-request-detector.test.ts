@@ -20,6 +20,14 @@ test("detectWikiCreateRequest from generami gambly prompt", () => {
   assert.equal(detected!.extraParams.npcClass, "Barbaro");
 });
 
+test("treats a narrated innkeeper's child as an NPC, not lore", () => {
+  const detected = detectWikiCreateRequest(
+    "Generami storia, descrizione e statblock di Dan, figlio di Patrizio il locandiere. Dan è un popolano di livello 1.",
+  );
+  assert.ok(detected);
+  assert.equal(detected!.entityType, "npc");
+});
+
 test("extractNpcBuildParams from trait-only message", () => {
   const params = extractNpcBuildParams("halfling piedelesto barbaro");
   assert.equal(params.npcRace, "Halfling");

@@ -167,7 +167,12 @@ export function finalizeWikiRevision(input: {
   const actionInput = { ...record(input.output.actionInput) };
   const notices: string[] = [];
   const inferred = detectWikiCreateRequest(input.message);
-  if (!actionInput.type) actionInput.type = previousInput.type ?? inferred?.entityType ?? "npc";
+  // On a new draft, the deterministic classifier owns the destination type:
+  // a model must not turn an NPC request into lore merely because it includes
+  // words such as "storia" or "background". Existing drafts retain their
+  // type unless a later dedicated type-edit flow is introduced.
+  if (!input.previous && inferred) actionInput.type = inferred.entityType;
+  else if (!actionInput.type) actionInput.type = previousInput.type ?? inferred?.entityType ?? "npc";
   // Every new or revised draft stays GM-only unless the current prompt says otherwise.
   actionInput.visibility = resolveWikiVisibilityForAssistant(input.message, input.message);
   const classResolution = input.npcClass ?? resolveNpcStatblockClass(input.message, input.previous);
