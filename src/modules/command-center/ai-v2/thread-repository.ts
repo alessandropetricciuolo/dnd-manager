@@ -1,11 +1,11 @@
 import type { AiAssistantArtifact, AiAssistantThread, AiAssistantTurn } from "./contracts";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export type ThreadRepository = { getOrCreateThread(ownerUserId: string, campaignId: string | null): Promise<AiAssistantThread>; listTurns(threadId: string, limit?: number): Promise<AiAssistantTurn[]>; appendTurn(turn: Omit<AiAssistantTurn, "id" | "sequence" | "createdAt">): Promise<AiAssistantTurn>; getArtifact(id: string): Promise<AiAssistantArtifact | null>; saveArtifact(artifact: AiAssistantArtifact): Promise<AiAssistantArtifact>; createRevision(previous: AiAssistantArtifact, patch: Partial<Pick<AiAssistantArtifact, "kind" | "status" | "payload" | "sourceRefs" | "policyVersion">>): Promise<AiAssistantArtifact>; };
+export type ThreadRepository = { getOrCreateThread(ownerUserId: string, campaignId: string | null, threadId?: string): Promise<AiAssistantThread>; listTurns(threadId: string, limit?: number): Promise<AiAssistantTurn[]>; appendTurn(turn: Omit<AiAssistantTurn, "id" | "sequence" | "createdAt">): Promise<AiAssistantTurn>; getArtifact(id: string): Promise<AiAssistantArtifact | null>; saveArtifact(artifact: AiAssistantArtifact): Promise<AiAssistantArtifact>; createRevision(previous: AiAssistantArtifact, patch: Partial<Pick<AiAssistantArtifact, "kind" | "status" | "payload" | "sourceRefs" | "policyVersion">>): Promise<AiAssistantArtifact>; };
 
 export class InMemoryThreadRepository implements ThreadRepository {
   threads: AiAssistantThread[] = []; turns: AiAssistantTurn[] = []; artifacts: AiAssistantArtifact[] = [];
-  async getOrCreateThread(ownerUserId: string, campaignId: string | null) { let t = this.threads.find(x => x.ownerUserId === ownerUserId && x.campaignId === campaignId && x.status === "active"); if (!t) { t = { id: crypto.randomUUID(), ownerUserId, campaignId, mode: "v2_pilot", status: "active", stateVersion: 1, summary: null }; this.threads.push(t); } return t; }
+  async getOrCreateThread(ownerUserId: string, campaignId: string | null, threadId?: string) { if (threadId) { const existing = this.threads.find(x => x.id === threadId && x.ownerUserId === ownerUserId && x.campaignId === campaignId && x.status === "active"); if (!existing) throw new Error("Thread non autorizzato"); return existing; } const t = { id: crypto.randomUUID(), ownerUserId, campaignId, mode: "v2_pilot" as const, status: "active" as const, stateVersion: 1, summary: null }; this.threads.push(t); return t; }
   async listTurns(threadId: string, limit = 12) { return this.turns.filter(x => x.threadId === threadId).slice(-limit); }
   async appendTurn(input: Omit<AiAssistantTurn, "id" | "sequence" | "createdAt">) { const turn = { ...input, id: crypto.randomUUID(), sequence: this.turns.filter(x => x.threadId === input.threadId).length + 1, createdAt: new Date().toISOString() }; this.turns.push(turn); return turn; }
   async getArtifact(id: string) { return this.artifacts.find(x => x.id === id) ?? null; }
@@ -16,10 +16,13 @@ export class InMemoryThreadRepository implements ThreadRepository {
 /** Persistent repository. Authorization is still enforced by the caller and RLS. */
 export class SupabaseThreadRepository implements ThreadRepository {
   constructor(private readonly supabase: SupabaseClient) {}
-  async getOrCreateThread(ownerUserId: string, campaignId: string | null) {
-    const existing = await this.supabase.from("ai_assistant_threads").select("*").eq("owner_user_id", ownerUserId).eq("campaign_id", campaignId).eq("status", "active").order("updated_at", { ascending: false }).limit(1).maybeSingle();
-    if (existing.error) throw existing.error;
-    if (existing.data) return this.fromThread(existing.data);
+  async getOrCreateThread(ownerUserId: string, campaignId: string | null, threadId?: string) {
+    if (threadId) {
+      const existing = await this.supabase.from("ai_assistant_threads").select("*").eq("id", threadId).eq("owner_user_id", ownerUserId).eq("campaign_id", campaignId).eq("status", "active").maybeSingle();
+      if (existing.error) throw existing.error;
+      if (!existing.data) throw new Error("Thread non autorizzato");
+      return this.fromThread(existing.data);
+    }
     const inserted = await this.supabase.from("ai_assistant_threads").insert({ owner_user_id: ownerUserId, campaign_id: campaignId, mode: "v2_pilot", status: "active", state_version: 1 }).select("*").single();
     if (inserted.error) throw inserted.error;
     return this.fromThread(inserted.data);

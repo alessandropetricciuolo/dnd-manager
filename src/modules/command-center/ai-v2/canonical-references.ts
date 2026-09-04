@@ -16,6 +16,11 @@ function explicitlyMentions(message: string, name: string): boolean {
   return normalizedName.length >= 3 && normalizedMessage.includes(normalizedName);
 }
 
+/** Exact, campaign-scoped names mentioned by the GM take precedence over RAG ranking. */
+export function resolveExplicitCanonicalReferences(message: string, catalog: CanonicalCatalogEntry[]): CanonicalReference[] {
+  return catalog.filter((entry) => explicitlyMentions(message, entry.name)).slice(0, 3);
+}
+
 /**
  * A canonical reference is safe only when all three facts agree: retrieval
  * returned a Wiki/map source, that exact source still exists in this campaign,

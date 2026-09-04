@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { resolveCanonicalReferences } from "../canonical-references";
+import { resolveCanonicalReferences, resolveExplicitCanonicalReferences } from "../canonical-references";
 
 test("creates canonical references only for a retrieved source explicitly named by the GM", () => {
   const references = resolveCanonicalReferences(
@@ -26,4 +26,17 @@ test("never creates a canonical relation when the retrieved source no longer exi
     [],
   );
   assert.deepEqual(references, []);
+});
+
+test("prioritizes up to three campaign entities explicitly named by the GM", () => {
+  const references = resolveExplicitCanonicalReferences(
+    "Crea Dan, figlio di Patrizio della Locanda della Sirena, nel Portico.",
+    [
+      { targetType: "wiki", targetId: "inn", name: "Locanda della Sirena" },
+      { targetType: "wiki", targetId: "patrizio", name: "Patrizio" },
+      { targetType: "map", targetId: "portico", name: "Portico" },
+      { targetType: "wiki", targetId: "other", name: "Gilda" },
+    ],
+  );
+  assert.deepEqual(references.map((reference) => reference.name), ["Locanda della Sirena", "Patrizio", "Portico"]);
 });

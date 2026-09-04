@@ -30,8 +30,8 @@ test("ambiguous empty input asks one targeted clarification", async () => {
 test("save proposes confirmation and never invokes a domain action", async () => {
   const repo = new InMemoryThreadRepository();
   const base = { repo, router: deterministicRouter, ownerUserId: "gm-1", campaignId: "camp-1" };
-  await runAssistantTurn({ ...base, message: "Crea un luogo" });
-  const result = await runAssistantTurn({ ...base, message: "Salva" });
+  const first = await runAssistantTurn({ ...base, message: "Crea un luogo" });
+  const result = await runAssistantTurn({ ...base, threadId: first.threadId, message: "Salva" });
   assert.equal(result.intent, "save");
   assert.deepEqual(result.artifactOperations[0], { op: "request_confirmation", artifactId: repo.artifacts[0].id, actionName: "assistant.artifact.save" });
 });
@@ -53,7 +53,7 @@ test("generating an image from a Wiki revision keeps the complete Wiki artifact"
   };
   const base = { repo, router, ownerUserId: "gm-1", campaignId: "camp-1" };
   const first = await runAssistantTurn({ ...base, message: "Crea Dan" });
-  const image = await runAssistantTurn({ ...base, message: "Genera l'immagine" });
+  const image = await runAssistantTurn({ ...base, threadId: first.threadId, message: "Genera l'immagine" });
   assert.equal(image.intent, "generate_image");
   assert.equal(image.artifact?.kind, "wiki");
   assert.equal(image.artifact?.revision, 2);
