@@ -210,5 +210,5 @@ export function finalizeWikiRevision(input: {
   const accepted = changes.length ? `Ho applicato: ${changes.join(", ")}.` : "La bozza è invariata.";
   const feedback = [accepted, ...notices].join(" ");
   const actionName = input.output.actionName === "wiki.entity.update" || previousInput.entityId ? "wiki.entity.update" : "wiki.entity.create";
-  return { ...input.output, actionName, message: feedback, actionInput };
+  return { ...input.output, kind: "wiki", actionName, message: feedback, actionInput };
 }
