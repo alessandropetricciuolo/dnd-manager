@@ -217,6 +217,10 @@ export function ExplorationMapStage({
   const fogRef = useRef<HTMLCanvasElement>(null);
   const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
   const [viewportSize, setViewportSize] = useState<{ w: number; h: number } | null>(null);
+  const fittedViewportSize = useMemo(() => {
+    if (!fillViewport || !viewportSize || !natural) return null;
+    return getContainedElementSize(viewportSize.w, viewportSize.h, natural.w, natural.h);
+  }, [fillViewport, natural, viewportSize]);
   /** Dimensioni del box condiviso da immagine, canvas e SVG. */
   const [layoutSize, setLayoutSize] = useState<{ w: number; h: number } | null>(null);
   const [imageLoadError, setImageLoadError] = useState<string | null>(null);
@@ -574,13 +578,14 @@ export function ExplorationMapStage({
 
   const normFromEvent = useCallback((clientX: number, clientY: number): NormPoint | null => {
     const surface = mapSurfaceRef.current;
-    if (!surface) return null;
+    if (!surface || !natural || natural.w <= 0 || natural.h <= 0) return null;
+    if (fillViewport && (!fittedViewportSize || fittedViewportSize.width <= 0)) return null;
     return clientPointToRectNorm({
       clientX,
       clientY,
       boundingRect: surface.getBoundingClientRect(),
     });
-  }, []);
+  }, [natural, fillViewport, fittedViewportSize]);
 
   useEffect(() => {
     if (mode !== "prepare") {
@@ -1295,10 +1300,6 @@ export function ExplorationMapStage({
   }, [drag, normFromEvent, onVertexDragEnd]);
 
   const aspect = natural ? natural.w / natural.h : 16 / 9;
-  const fittedViewportSize = useMemo(() => {
-    if (!fillViewport || !viewportSize || !natural) return null;
-    return getContainedElementSize(viewportSize.w, viewportSize.h, natural.w, natural.h);
-  }, [fillViewport, natural, viewportSize]);
 
   const vertexPreview = (r: FowRegionVm) => {
     let out = r.polygon;
