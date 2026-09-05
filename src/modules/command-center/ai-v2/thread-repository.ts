@@ -5,7 +5,7 @@ export type ThreadRepository = { getOrCreateThread(ownerUserId: string, campaign
 
 export class InMemoryThreadRepository implements ThreadRepository {
   threads: AiAssistantThread[] = []; turns: AiAssistantTurn[] = []; artifacts: AiAssistantArtifact[] = [];
-  async getOrCreateThread(ownerUserId: string, campaignId: string | null, threadId?: string) { if (threadId) { const existing = this.threads.find(x => x.id === threadId && x.ownerUserId === ownerUserId && x.campaignId === campaignId && x.status === "active"); if (!existing) throw new Error("Thread non autorizzato"); return existing; } const t = { id: crypto.randomUUID(), ownerUserId, campaignId, mode: "v2_pilot" as const, status: "active" as const, stateVersion: 1, summary: null }; this.threads.push(t); return t; }
+  async getOrCreateThread(ownerUserId: string, campaignId: string | null, threadId?: string) { if (threadId) { const existing = this.threads.find(x => x.id === threadId && x.ownerUserId === ownerUserId && x.campaignId === campaignId && x.status === "active"); if (!existing) throw new Error("Thread non autorizzato"); return existing; } const t = { id: crypto.randomUUID(), ownerUserId, campaignId, mode: "v2_pilot" as const, status: "active" as const, stateVersion: 1, title: null, summary: null }; this.threads.push(t); return t; }
   async listTurns(threadId: string, limit = 12) { return this.turns.filter(x => x.threadId === threadId).slice(-limit); }
   async appendTurn(input: Omit<AiAssistantTurn, "id" | "sequence" | "createdAt">) { const turn = { ...input, id: crypto.randomUUID(), sequence: this.turns.filter(x => x.threadId === input.threadId).length + 1, createdAt: new Date().toISOString() }; this.turns.push(turn); return turn; }
   async getArtifact(id: string) { return this.artifacts.find(x => x.id === id) ?? null; }
@@ -21,14 +21,14 @@ export class SupabaseThreadRepository implements ThreadRepository {
       const existing = await this.supabase.from("ai_assistant_threads").select("*").eq("id", threadId).eq("owner_user_id", ownerUserId).eq("campaign_id", campaignId).eq("status", "active").maybeSingle();
       if (existing.error) throw existing.error;
       if (!existing.data) throw new Error("Thread non autorizzato");
-      return this.fromThread(existing.data);
+    return this.fromThread(existing.data);
     }
-    const inserted = await this.supabase.from("ai_assistant_threads").insert({ owner_user_id: ownerUserId, campaign_id: campaignId, mode: "v2_pilot", status: "active", state_version: 1 }).select("*").single();
+    const inserted = await this.supabase.from("ai_assistant_threads").insert({ owner_user_id: ownerUserId, campaign_id: campaignId, mode: "v2_pilot", status: "active", state_version: 1, title: null }).select("*").single();
     if (inserted.error) throw inserted.error;
     return this.fromThread(inserted.data);
   }
   async listTurns(threadId: string, limit = 12) { const r = await this.supabase.from("ai_assistant_turns").select("*").eq("thread_id", threadId).order("sequence", { ascending: false }).limit(limit); if (r.error) throw r.error; return (r.data ?? []).reverse().map(this.fromTurn); }
-  async appendTurn(input: Omit<AiAssistantTurn, "id" | "sequence" | "createdAt">) { const count = await this.supabase.from("ai_assistant_turns").select("sequence", { count: "exact", head: true }).eq("thread_id", input.threadId); if (count.error) throw count.error; const r = await this.supabase.from("ai_assistant_turns").insert({ thread_id: input.threadId, sequence: (count.count ?? 0) + 1, role: input.role, content: input.content, intent: input.intent, artifact_ids: input.artifactIds }).select("*").single(); if (r.error) throw r.error; return this.fromTurn(r.data); }
+  async appendTurn(input: Omit<AiAssistantTurn, "id" | "sequence" | "createdAt">) { const r = await this.supabase.rpc("ai_assistant_append_turn", { p_thread_id: input.threadId, p_role: input.role, p_content: input.content, p_intent: input.intent, p_artifact_ids: input.artifactIds }); if (r.error || !r.data) throw r.error ?? new Error("Turn non salvato"); return this.fromTurn(r.data); }
   async getArtifact(id: string) { const r = await this.supabase.from("ai_assistant_artifacts").select("*").eq("id", id).maybeSingle(); if (r.error) throw r.error; return r.data ? this.fromArtifact(r.data) : null; }
   async saveArtifact(a: AiAssistantArtifact) { const r = await this.supabase.from("ai_assistant_artifacts").upsert({ id: a.id, thread_id: a.threadId, campaign_id: a.campaignId, kind: a.kind, status: a.status, revision: a.revision, parent_artifact_id: a.parentArtifactId, payload: a.payload, source_refs: a.sourceRefs, policy_version: a.policyVersion, saved_entity: a.savedEntity }).select("*").single(); if (r.error) throw r.error; return this.fromArtifact(r.data); }
   async createRevision(previous: AiAssistantArtifact, patch: Partial<Pick<AiAssistantArtifact, "kind" | "status" | "payload" | "sourceRefs" | "policyVersion">>) {
@@ -41,7 +41,7 @@ export class SupabaseThreadRepository implements ThreadRepository {
     if (r.error) throw r.error;
     return this.fromArtifact(r.data);
   }
-  private fromThread = (r: any): AiAssistantThread => ({ id: r.id, ownerUserId: r.owner_user_id, campaignId: r.campaign_id, mode: r.mode, status: r.status, stateVersion: r.state_version, summary: r.summary });
+  private fromThread = (r: Record<string, unknown>): AiAssistantThread => ({ id: String(r.id), ownerUserId: String(r.owner_user_id), campaignId: typeof r.campaign_id === "string" ? r.campaign_id : null, mode: r.mode as AiAssistantThread["mode"], status: r.status as AiAssistantThread["status"], stateVersion: Number(r.state_version), title: typeof r.title === "string" ? r.title : null, summary: typeof r.summary === "string" ? r.summary : null });
   private fromTurn = (r: any): AiAssistantTurn => ({ id: r.id, threadId: r.thread_id, sequence: r.sequence, role: r.role, content: r.content, intent: r.intent, artifactIds: r.artifact_ids ?? [], createdAt: r.created_at });
   private fromArtifact = (r: any): AiAssistantArtifact => ({ id: r.id, threadId: r.thread_id, campaignId: r.campaign_id, kind: r.kind, status: r.status, revision: r.revision, parentArtifactId: r.parent_artifact_id, payload: r.payload, sourceRefs: r.source_refs ?? [], policyVersion: r.policy_version, savedEntity: r.saved_entity });
 }

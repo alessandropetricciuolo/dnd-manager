@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { LoaderCircle, MapPin, ScrollText, Send, UserRound } from "lucide-react";
+import { Archive, LoaderCircle, MapPin, MessageSquarePlus, Pencil, ScrollText, Send, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,9 +9,11 @@ import { confirmAiAssistantV2Save, generateAiAssistantV2Image, prepareAiAssistan
 import type { AiAssistantArtifact, AiAssistantSourceRef } from "@/modules/command-center/ai-v2/contracts";
 import { AiAssistantV2ArtifactCard } from "./ai-assistant-v2-artifact-card";
 import { AiAssistantV2Sources } from "./ai-assistant-v2-sources";
+import { archiveAiAssistantV2Thread, createAiAssistantV2Thread, feedbackAiAssistantV2, getAiAssistantV2Thread, listAiAssistantV2Threads, renameAiAssistantV2Thread } from "@/modules/command-center/server/ai-v2-thread-actions";
 
 type Message = { role: "user" | "assistant"; content: string };
 type MobileView = "chat" | "draft";
+type ThreadSummary = { id: string; title?: string | null; campaign_id?: string | null; status?: string; updated_at?: string };
 
 const welcomeMessage: Message = { role: "assistant", content: "Cosa prepariamo per la campagna?" };
 const quickPrompts = [
@@ -29,11 +31,55 @@ export function AiAssistantV2Panel({ campaignId }: { campaignId: string | null }
   const [preparedAction, setPreparedAction] = useState<string | null>(null);
   const [mobileView, setMobileView] = useState<MobileView>("chat");
   const [isPending, startTransition] = useTransition();
+  const [threads, setThreads] = useState<ThreadSummary[]>([]);
+  const [showArchived, setShowArchived] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     setThreadId(null); setArtifact(null); setSources([]); setPreparedAction(null); setMobileView("chat"); setMessages([welcomeMessage]);
   }, [campaignId]);
+
+  useEffect(() => {
+    if (campaignId) {
+      void listAiAssistantV2Threads({ campaignId, includeArchived: showArchived }).then((res) => { if (res.success) setThreads(res.data as ThreadSummary[]); });
+    } else setThreads([]);
+  }, [campaignId, showArchived]);
+
+  function newChat() {
+    setThreadId(null); setArtifact(null); setSources([]); setPreparedAction(null); setMessages([welcomeMessage]); setMobileView("chat");
+  }
+
+  function resumeThread(id: string) {
+    startTransition(async () => {
+      const res = await getAiAssistantV2Thread({ threadId: id });
+      if (!res.success) { toast.error(res.error); return; }
+      setThreadId(id);
+      setMessages(res.data.turns.map((turn) => ({ role: turn.role === "user" ? "user" : "assistant", content: String(turn.content ?? "") })));
+      const latest = [...res.data.artifacts].reverse().find((item) => !["discarded"].includes(String(item.status)));
+      setArtifact((latest as unknown as AiAssistantArtifact) ?? null);
+      setMobileView(latest ? "draft" : "chat");
+    });
+  }
+
+  function renameThread() {
+    if (!threadId) return;
+    const title = window.prompt("Nome della conversazione", threads.find((item) => item.id === threadId)?.title ?? "");
+    if (!title) return;
+    startTransition(async () => {
+      const res = await renameAiAssistantV2Thread({ threadId, title });
+      if (!res.success) toast.error(res.error); else setThreads((current) => current.map((item) => item.id === threadId ? { ...item, title } : item));
+    });
+  }
+
+  function archiveThread() {
+    if (!threadId) return;
+    startTransition(async () => {
+      const selected = threads.find((item) => item.id === threadId);
+      const archived = selected?.status === "archived";
+      const res = await archiveAiAssistantV2Thread({ threadId, archived: !archived });
+      if (!res.success) toast.error(res.error); else { setThreads((current) => archived ? current.map((item) => item.id === threadId ? { ...item, status: "active" } : item) : current.filter((item) => item.id !== threadId)); if (!archived) newChat(); }
+    });
+  }
 
   function send(message = input) {
     const value = message.trim();
@@ -43,6 +89,7 @@ export function AiAssistantV2Panel({ campaignId }: { campaignId: string | null }
       const res = await runAiAssistantV2Turn({ campaignId, message: value, threadId: threadId ?? undefined });
       if (!res.success) { toast.error(res.error); return; }
       setThreadId(res.data.threadId);
+      setThreads((current) => current.some((item) => item.id === res.data.threadId) ? current : [{ id: res.data.threadId, title: value, campaign_id: campaignId, status: "active" }, ...current]);
       let next = res.data.artifact;
       if (res.data.intent === "generate_image" && next && campaignId) {
         const image = await generateAiAssistantV2Image({ campaignId, artifactId: next.id });
@@ -83,9 +130,10 @@ export function AiAssistantV2Panel({ campaignId }: { campaignId: string | null }
   }
 
   const hasDraft = Boolean(artifact);
-  const draftPanel = artifact ? <div className="min-h-0 flex-1 overflow-y-auto pr-1"><AiAssistantV2ArtifactCard artifact={artifact} prepared={Boolean(preparedAction)} onEdit={(content) => { setPreparedAction(null); setArtifact({ ...artifact, payload: { ...artifact.payload, content } }); }} onRegenerate={() => send("Rigenera questa bozza mantenendo il contesto")} onDiscard={() => { setPreparedAction(null); setArtifact(null); setMobileView("chat"); toast.message("Bozza scartata"); }} onPrepare={prepareSave} onConfirm={confirmSave} />{sources.length ? <div className="mt-3"><AiAssistantV2Sources sources={sources} /></div> : null}</div> : null;
+  const draftPanel = artifact ? <div className="min-h-0 flex-1 overflow-y-auto pr-1"><AiAssistantV2ArtifactCard artifact={artifact} prepared={Boolean(preparedAction)} onEdit={(content) => { setPreparedAction(null); setArtifact({ ...artifact, payload: { ...artifact.payload, content } }); }} onRegenerate={() => send("Rigenera questa bozza mantenendo il contesto")} onDiscard={() => { setPreparedAction(null); setArtifact(null); setMobileView("chat"); toast.message("Bozza scartata"); }} onPrepare={prepareSave} onConfirm={confirmSave} />{sources.length ? <div className="mt-3"><AiAssistantV2Sources sources={sources} /></div> : null}<div className="mt-3 flex items-center gap-2 text-xs text-barber-paper/50"><span>Questa risposta è utile?</span><Button size="sm" variant="ghost" onClick={() => void feedbackAiAssistantV2({ artifactId: artifact.id, rating: "approved" }).then((res) => res.success ? toast.success("Feedback registrato") : toast.error(res.error))}>Sì</Button><Button size="sm" variant="ghost" onClick={() => void feedbackAiAssistantV2({ artifactId: artifact.id, rating: "needs_review" }).then((res) => res.success ? toast.success("Feedback registrato") : toast.error(res.error))}>Da rivedere</Button></div></div> : null;
 
   return <div className="flex h-full min-h-0 flex-col bg-gradient-to-br from-[#17131a] via-[#100e14] to-[#0b0a10]">
+    {campaignId ? <div className="flex shrink-0 items-center gap-2 border-b border-white/[0.07] px-3 py-2"><select value={threadId ?? ""} onChange={(event) => event.target.value ? resumeThread(event.target.value) : newChat()} className="min-w-0 flex-1 rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-xs text-barber-paper" aria-label="Conversazioni della campagna"><option value="">Nuova conversazione</option>{threads.map((thread) => <option key={thread.id} value={thread.id}>{thread.title || "Conversazione senza titolo"}{thread.status === "archived" ? " · archiviata" : ""}</option>)}</select><Button type="button" size="sm" variant={showArchived ? "secondary" : "outline"} onClick={() => setShowArchived((current) => !current)} aria-pressed={showArchived} aria-label={showArchived ? "Nascondi archiviate" : "Mostra archiviate"}>Archiviate</Button><Button type="button" size="sm" variant="outline" onClick={newChat} aria-label="Nuova conversazione"><MessageSquarePlus className="h-4 w-4" /></Button>{threadId ? <><Button type="button" size="sm" variant="ghost" onClick={renameThread} aria-label="Rinomina conversazione"><Pencil className="h-4 w-4" /></Button><Button type="button" size="sm" variant="ghost" onClick={archiveThread} aria-label={threads.find((item) => item.id === threadId)?.status === "archived" ? "Ripristina conversazione" : "Archivia conversazione"}><Archive className="h-4 w-4" /></Button></> : null}</div> : null}
     {hasDraft ? <div className="flex shrink-0 border-b border-white/[0.07] p-2 lg:hidden" role="tablist" aria-label="Vista assistente"><button type="button" role="tab" aria-selected={mobileView === "chat"} aria-controls="assistant-chat-panel" onClick={() => setMobileView("chat")} className={`min-h-10 flex-1 rounded-lg px-3 text-sm font-medium transition-colors ${mobileView === "chat" ? "bg-white/[0.08] text-barber-paper" : "text-barber-paper/50"}`}>Chat</button><button type="button" role="tab" aria-selected={mobileView === "draft"} aria-controls="assistant-draft-panel" onClick={() => setMobileView("draft")} className={`relative min-h-10 flex-1 rounded-lg px-3 text-sm font-medium transition-colors ${mobileView === "draft" ? "bg-barber-gold/15 text-barber-gold" : "text-barber-paper/50"}`}>Bozza<span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-barber-gold align-middle" aria-label="Bozza pronta" /></button></div> : null}
     <div className={`flex min-h-0 flex-1 p-3 sm:p-4 lg:p-5 ${hasDraft ? "lg:grid lg:grid-cols-2 lg:gap-5 lg:overflow-hidden" : ""}`}>
       <section id="assistant-chat-panel" role="tabpanel" className={`${hasDraft && mobileView !== "chat" ? "hidden lg:flex" : "flex"} min-h-0 flex-1 flex-col rounded-2xl border border-white/[0.07] bg-black/10 p-3 sm:p-4`} aria-label="Conversazione con l'assistente">
