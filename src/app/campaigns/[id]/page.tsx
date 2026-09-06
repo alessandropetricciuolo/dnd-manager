@@ -7,6 +7,7 @@ import { CompletedSessionsListForPlayer } from "@/components/sessions/completed-
 import { PlayerFeedbackSection } from "@/components/feedback/player-feedback-section";
 import { CreateSessionDialog } from "@/components/create-session-dialog";
 import { MapGallery } from "@/components/maps/map-gallery";
+import { BulkImportMapsDialog } from "@/components/maps/bulk-import-maps-dialog";
 import { UploadMapDialog } from "@/components/maps/upload-map-dialog";
 import { WikiList } from "@/components/wiki/wiki-list";
 import { CreateEntityDialog } from "@/components/wiki/create-entity-dialog";
@@ -543,7 +544,8 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
             renderMappeTab && hasPlayedCampaign ? (
               <>
                 {isGmOrAdmin ? (
-                  <div className="mb-3 flex justify-end">
+                  <div className="mb-3 flex flex-wrap justify-end gap-2">
+                    <BulkImportMapsDialog campaignId={campaign.id} campaignType={campaign.type} />
                     <UploadMapDialog
                       campaignId={campaign.id}
                       campaignType={campaign.type ?? null}
