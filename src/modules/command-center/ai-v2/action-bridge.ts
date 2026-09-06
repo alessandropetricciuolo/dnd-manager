@@ -2,6 +2,7 @@ import { executeAction } from "@/modules/command-center/actions";
 import { isAiDraftAllowedAction } from "@/modules/command-center/actions/action-catalog";
 import type { AiAssistantArtifact } from "./contracts";
 import { normalizeWikiArtifactActionInput } from "./wiki-artifact";
+import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 
 const CANONICAL_SAVE_ACTIONS = new Set([
   "campaign.create", "campaign.update", "gm.note.create", "gm.note.update",
@@ -61,6 +62,7 @@ export function buildArtifactActionInput(artifact: AiAssistantArtifact, actionNa
 }
 
 export function actionForArtifact(artifact: AiAssistantArtifact): string {
+  if (artifact.kind === "mission_plan" || artifact.payload.planOnly === true) throw new Error("Un piano missioni deve essere prima approvato dal GM; non è direttamente salvabile.");
   const explicit = typeof artifact.payload.actionName === "string" ? artifact.payload.actionName : "";
   if (explicit && CANONICAL_SAVE_ACTIONS.has(explicit)) return explicit;
   switch (artifact.kind) {
@@ -72,6 +74,11 @@ export function actionForArtifact(artifact: AiAssistantArtifact): string {
 
 export async function executeAssistantArtifactAction(artifact: AiAssistantArtifact, actionName: string) {
   if (artifact.status === "saved" && artifact.savedEntity) return artifact.savedEntity;
+  if (actionName === "mission.create" || actionName === "mission.update") {
+    if (!artifact.campaignId) throw new Error("Seleziona una campagna Long prima di salvare la missione.");
+    const { data } = await createSupabaseAdminClient().from("campaigns").select("type").eq("id", artifact.campaignId).maybeSingle();
+    if ((data as { type?: string } | null)?.type !== "long") throw new Error("Le missioni generate dall'Assistente sono disponibili solo per campagne Long.");
+  }
   const result = await executeAction<Record<string, unknown>>(actionName, buildArtifactActionInput(artifact, actionName), { actorType: "ai", auditMetadata: { source: "ai_assistant_v2", artifactId: artifact.id, revision: artifact.revision } });
   if (!result.success) throw new Error(result.error);
   const id = typeof result.data?.id === "string" ? result.data.id : typeof result.data?.entityId === "string" ? result.data.entityId : typeof result.data?.campaignId === "string" ? result.data.campaignId : typeof result.data?.sessionId === "string" ? result.data.sessionId : typeof result.data?.missionId === "string" ? result.data.missionId : null;

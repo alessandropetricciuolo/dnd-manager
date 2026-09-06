@@ -5,10 +5,11 @@ import { Archive, LoaderCircle, MapPin, MessageSquarePlus, Pencil, ScrollText, S
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { confirmAiAssistantV2Save, generateAiAssistantV2Image, prepareAiAssistantV2Save, reviseAiAssistantV2Artifact, runAiAssistantV2Turn } from "@/modules/command-center/server/ai-v2-actions";
+import { confirmAiAssistantV2MissionBatch, confirmAiAssistantV2Save, generateAiAssistantV2Image, prepareAiAssistantV2MissionBatch, prepareAiAssistantV2Save, reviseAiAssistantV2Artifact, runAiAssistantV2Turn } from "@/modules/command-center/server/ai-v2-actions";
 import type { AiAssistantArtifact, AiAssistantSourceRef } from "@/modules/command-center/ai-v2/contracts";
 import { AiAssistantV2ArtifactCard } from "./ai-assistant-v2-artifact-card";
 import { AiAssistantV2Sources } from "./ai-assistant-v2-sources";
+import { missionBatchResults, restoreMissionDrafts, type MissionBatchResult } from "@/modules/command-center/ai-v2/mission-batch";
 import { archiveAiAssistantV2Thread, createAiAssistantV2Thread, feedbackAiAssistantV2, getAiAssistantV2Thread, listAiAssistantV2Threads, renameAiAssistantV2Thread } from "@/modules/command-center/server/ai-v2-thread-actions";
 
 type Message = { role: "user" | "assistant"; content: string };
@@ -26,6 +27,10 @@ export function AiAssistantV2Panel({ campaignId }: { campaignId: string | null }
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([welcomeMessage]);
   const [artifact, setArtifact] = useState<AiAssistantArtifact | null>(null);
+  const [missionArtifacts, setMissionArtifacts] = useState<AiAssistantArtifact[]>([]);
+  const [selectedMissionIds, setSelectedMissionIds] = useState<string[]>([]);
+  const [batchReady, setBatchReady] = useState(false);
+  const [batchResults, setBatchResults] = useState<MissionBatchResult[]>([]);
   const [sources, setSources] = useState<AiAssistantSourceRef[]>([]);
   const [threadId, setThreadId] = useState<string | null>(null);
   const [preparedAction, setPreparedAction] = useState<string | null>(null);
@@ -36,7 +41,7 @@ export function AiAssistantV2Panel({ campaignId }: { campaignId: string | null }
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    setThreadId(null); setArtifact(null); setSources([]); setPreparedAction(null); setMobileView("chat"); setMessages([welcomeMessage]);
+    setThreadId(null); setArtifact(null); setMissionArtifacts([]); setSelectedMissionIds([]); setBatchReady(false); setBatchResults([]); setSources([]); setPreparedAction(null); setMobileView("chat"); setMessages([welcomeMessage]);
   }, [campaignId]);
 
   useEffect(() => {
@@ -46,7 +51,7 @@ export function AiAssistantV2Panel({ campaignId }: { campaignId: string | null }
   }, [campaignId, showArchived]);
 
   function newChat() {
-    setThreadId(null); setArtifact(null); setSources([]); setPreparedAction(null); setMessages([welcomeMessage]); setMobileView("chat");
+    setThreadId(null); setArtifact(null); setMissionArtifacts([]); setSelectedMissionIds([]); setBatchReady(false); setBatchResults([]); setSources([]); setPreparedAction(null); setMessages([welcomeMessage]); setMobileView("chat");
   }
 
   function resumeThread(id: string) {
@@ -57,6 +62,10 @@ export function AiAssistantV2Panel({ campaignId }: { campaignId: string | null }
       setMessages(res.data.turns.map((turn) => ({ role: turn.role === "user" ? "user" : "assistant", content: String(turn.content ?? "") })));
       const latest = [...res.data.artifacts].reverse().find((item) => !["discarded"].includes(String(item.status)));
       setArtifact((latest as unknown as AiAssistantArtifact) ?? null);
+      const restored = restoreMissionDrafts(res.data.artifacts as unknown as AiAssistantArtifact[]);
+      setMissionArtifacts(restored);
+      setSelectedMissionIds(restored.filter((item) => item.status !== "saved").map((item) => item.id));
+      setBatchResults(restored.map((item) => ({ artifactId: item.id, title: String(item.payload.title ?? "Missione"), status: item.status === "saved" ? "saved" : "ready" })));
       setMobileView(latest ? "draft" : "chat");
     });
   }
@@ -98,6 +107,8 @@ export function AiAssistantV2Panel({ campaignId }: { campaignId: string | null }
       const reply = res.data.assistantMessage;
       setMessages((current) => [...current, { role: "assistant", content: reply }]);
       if (next) { setArtifact(next); setMobileView("draft"); }
+      const generatedMissions = res.data.artifactOperations.filter((operation): operation is Extract<typeof operation, { op: "create" }> => operation.op === "create").filter((operation) => operation.artifact.payload.actionName === "mission.create").map((operation) => operation.artifact);
+      if (generatedMissions.length) { setMissionArtifacts((current) => [...current, ...generatedMissions.filter((item) => !current.some((existing) => existing.id === item.id))]); setSelectedMissionIds((current) => [...new Set([...current, ...generatedMissions.map((item) => item.id)])]); setBatchResults((current) => [...current, ...generatedMissions.map((item) => ({ artifactId: item.id, title: String(item.payload.title ?? "Missione"), status: "ready" as const }))]); setBatchReady(false); }
       setSources(res.data.evidence.filter((source) => reply.includes(`[${source.evidenceId}]`)));
     });
   }
@@ -129,8 +140,20 @@ export function AiAssistantV2Panel({ campaignId }: { campaignId: string | null }
     });
   }
 
+  function prepareMissionBatch() {
+    const ids = selectedMissionIds.length ? selectedMissionIds : missionArtifacts.map((item) => item.id);
+    if (!ids.length) return;
+    startTransition(async () => { const res = await prepareAiAssistantV2MissionBatch({ artifactIds: ids }); if (!res.success) toast.error(res.error); else { setBatchReady(res.data.items.some((item) => item.ok)); setBatchResults((current) => missionBatchResults(missionArtifacts, res.data.items, new Set(current.filter((item) => item.status === "saved").map((item) => item.artifactId)))); toast.success("Esito preparazione aggiornato per ogni missione."); } });
+  }
+
+  function confirmMissionBatch() {
+    const ids = selectedMissionIds.length ? selectedMissionIds : missionArtifacts.map((item) => item.id);
+    if (!ids.length || !batchReady) return;
+    startTransition(async () => { const res = await confirmAiAssistantV2MissionBatch({ artifactIds: ids }); if (!res.success) toast.error(res.error); else { const saved = new Set(res.data.items.filter((item) => item.ok).map((item) => item.artifactId)); setBatchResults((current) => missionBatchResults(missionArtifacts, res.data.items, new Set([...current.filter((item) => item.status === "saved").map((item) => item.artifactId), ...saved]))); setMissionArtifacts((items) => items.map((item) => saved.has(item.id) ? { ...item, status: "saved" } : item)); toast.success("Esito salvataggio aggiornato per ogni missione."); } });
+  }
+
   const hasDraft = Boolean(artifact);
-  const draftPanel = artifact ? <div className="min-h-0 flex-1 overflow-y-auto pr-1"><AiAssistantV2ArtifactCard artifact={artifact} prepared={Boolean(preparedAction)} onEdit={(content) => { setPreparedAction(null); setArtifact({ ...artifact, payload: { ...artifact.payload, content } }); }} onRegenerate={() => send("Rigenera questa bozza mantenendo il contesto")} onDiscard={() => { setPreparedAction(null); setArtifact(null); setMobileView("chat"); toast.message("Bozza scartata"); }} onPrepare={prepareSave} onConfirm={confirmSave} />{sources.length ? <div className="mt-3"><AiAssistantV2Sources sources={sources} /></div> : null}<div className="mt-3 flex items-center gap-2 text-xs text-barber-paper/50"><span>Questa risposta è utile?</span><Button size="sm" variant="ghost" onClick={() => void feedbackAiAssistantV2({ artifactId: artifact.id, rating: "approved" }).then((res) => res.success ? toast.success("Feedback registrato") : toast.error(res.error))}>Sì</Button><Button size="sm" variant="ghost" onClick={() => void feedbackAiAssistantV2({ artifactId: artifact.id, rating: "needs_review" }).then((res) => res.success ? toast.success("Feedback registrato") : toast.error(res.error))}>Da rivedere</Button></div></div> : null;
+  const draftPanel = artifact ? <div className="min-h-0 flex-1 overflow-y-auto pr-1">{missionArtifacts.length > 0 ? <div className="mb-3 rounded-xl border border-barber-gold/20 bg-barber-gold/5 p-3"><p className="text-xs text-barber-paper/70">Seleziona le missioni da salvare insieme.</p><div className="mt-2 space-y-1">{missionArtifacts.map((item) => <label key={item.id} className="flex items-center gap-2 text-xs text-barber-paper/80"><input type="checkbox" checked={selectedMissionIds.includes(item.id)} disabled={item.status === "saved"} onChange={(event) => setSelectedMissionIds((ids) => event.target.checked ? [...ids, item.id] : ids.filter((id) => id !== item.id))} />{String(item.payload.title ?? "Missione")} {item.status === "saved" ? "· salvata" : "· bozza"}</label>)}</div><div className="mt-3 flex gap-2"><Button size="sm" variant="outline" onClick={prepareMissionBatch} disabled={!selectedMissionIds.length}>Prepara gruppo</Button><Button size="sm" onClick={confirmMissionBatch} disabled={!batchReady || !selectedMissionIds.length}>Conferma gruppo</Button></div>{batchResults.length ? <div className="mt-3 space-y-1" aria-live="polite">{batchResults.map((result) => <p key={result.artifactId} className={`text-xs ${result.status === "error" ? "text-red-300" : result.status === "saved" ? "text-emerald-300" : "text-barber-paper/70"}`}>{result.title}: {result.status === "error" ? `errore — ${result.message}` : result.status === "saved" ? "salvata" : "pronta"}</p>)}</div> : null}</div> : null}<AiAssistantV2ArtifactCard artifact={artifact} prepared={Boolean(preparedAction)} onEdit={(content) => { setPreparedAction(null); setArtifact({ ...artifact, payload: { ...artifact.payload, content } }); }} onRegenerate={() => send("Rigenera questa bozza mantenendo il contesto")} onDiscard={() => { setPreparedAction(null); setArtifact(null); setMobileView("chat"); toast.message("Bozza scartata"); }} onPrepare={prepareSave} onConfirm={confirmSave} />{sources.length ? <div className="mt-3"><AiAssistantV2Sources sources={sources} /></div> : null}<div className="mt-3 flex items-center gap-2 text-xs text-barber-paper/50"><span>Questa risposta è utile?</span><Button size="sm" variant="ghost" onClick={() => void feedbackAiAssistantV2({ artifactId: artifact.id, rating: "approved" }).then((res) => res.success ? toast.success("Feedback registrato") : toast.error(res.error))}>Sì</Button><Button size="sm" variant="ghost" onClick={() => void feedbackAiAssistantV2({ artifactId: artifact.id, rating: "needs_review" }).then((res) => res.success ? toast.success("Feedback registrato") : toast.error(res.error))}>Da rivedere</Button></div></div> : null;
 
   return <div className="flex h-full min-h-0 flex-col bg-gradient-to-br from-[#17131a] via-[#100e14] to-[#0b0a10]">
     {campaignId ? <div className="flex shrink-0 items-center gap-2 border-b border-white/[0.07] px-3 py-2"><select value={threadId ?? ""} onChange={(event) => event.target.value ? resumeThread(event.target.value) : newChat()} className="min-w-0 flex-1 rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-xs text-barber-paper" aria-label="Conversazioni della campagna"><option value="">Nuova conversazione</option>{threads.map((thread) => <option key={thread.id} value={thread.id}>{thread.title || "Conversazione senza titolo"}{thread.status === "archived" ? " · archiviata" : ""}</option>)}</select><Button type="button" size="sm" variant={showArchived ? "secondary" : "outline"} onClick={() => setShowArchived((current) => !current)} aria-pressed={showArchived} aria-label={showArchived ? "Nascondi archiviate" : "Mostra archiviate"}>Archiviate</Button><Button type="button" size="sm" variant="outline" onClick={newChat} aria-label="Nuova conversazione"><MessageSquarePlus className="h-4 w-4" /></Button>{threadId ? <><Button type="button" size="sm" variant="ghost" onClick={renameThread} aria-label="Rinomina conversazione"><Pencil className="h-4 w-4" /></Button><Button type="button" size="sm" variant="ghost" onClick={archiveThread} aria-label={threads.find((item) => item.id === threadId)?.status === "archived" ? "Ripristina conversazione" : "Archivia conversazione"}><Archive className="h-4 w-4" /></Button></> : null}</div> : null}

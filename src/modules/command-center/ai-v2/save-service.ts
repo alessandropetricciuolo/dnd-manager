@@ -3,6 +3,7 @@ import type { Database } from "@/types/database.types";
 import type { AiAssistantArtifact } from "./contracts";
 import { actionForArtifact, buildArtifactActionInput, executeAssistantArtifactAction } from "./action-bridge";
 import { previewAction } from "@/modules/command-center/actions";
+import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 
 type PersistError = { code?: unknown; message?: unknown };
 
@@ -24,6 +25,10 @@ function isMissingSaveReservationColumns(error: unknown): boolean {
 export async function previewAssistantArtifactSave(artifact: AiAssistantArtifact, actionName?: string) {
   if (!artifact.campaignId) throw new Error("Seleziona una campagna prima di salvare.");
   const resolvedAction = actionName ?? actionForArtifact(artifact);
+  if (resolvedAction === "mission.create" || resolvedAction === "mission.update") {
+    const { data } = await createSupabaseAdminClient().from("campaigns").select("type").eq("id", artifact.campaignId).maybeSingle();
+    if ((data as { type?: string } | null)?.type !== "long") throw new Error("Le missioni generate sono disponibili solo per campagne Long.");
+  }
   const preview = await previewAction(resolvedAction, buildArtifactActionInput(artifact, resolvedAction), { actorType: "ai" });
   if (!preview.success) throw new Error(preview.error);
   return { actionName: resolvedAction, preview: preview.data };

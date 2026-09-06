@@ -3,7 +3,7 @@ import { retrievePreviewMemory, buildPreviewSources, type PreviewChunkRow, type 
 import type { Database } from "@/types/database.types";
 import { resolveCanonicalReferences, resolveExplicitCanonicalReferences, type CanonicalCatalogEntry, type CanonicalReference } from "./canonical-references";
 
-export type AssistantContext = { campaignId: string; result: RetrieveResult; evidence: string; canonicalReferences: CanonicalReference[]; citationLimit: 2 | 3 };
+export type AssistantContext = { campaignId: string; result: RetrieveResult; evidence: string; canonicalReferences: CanonicalReference[]; citationLimit: 2 | 3; campaignType: string | null };
 
 type CatalogRow = { id: string; name: string };
 
@@ -72,7 +72,7 @@ async function loadCanonicalReferences(
 
 export async function loadAssistantContext(supabase: SupabaseClient<Database>, campaignId: string | null, question: string): Promise<AssistantContext | null> {
   if (!campaignId) return null;
-  const [result, catalog] = await Promise.all([retrievePreviewMemory(supabase, campaignId, question), loadCampaignCatalog(supabase, campaignId)]);
+  const [result, catalog, campaign] = await Promise.all([retrievePreviewMemory(supabase, campaignId, question), loadCampaignCatalog(supabase, campaignId), supabase.from("campaigns").select("type").eq("id", campaignId).maybeSingle()]);
   const explicitReferences = resolveExplicitCanonicalReferences(question, catalog);
   const namedChunks = await loadNamedSourceChunks(supabase, campaignId, explicitReferences);
   const mergedChunks = [...namedChunks, ...result.chunks].filter((chunk, index, all) => all.findIndex((other) => other.source_type === chunk.source_type && other.source_id === chunk.source_id) === index).slice(0, 3);
@@ -84,5 +84,6 @@ export async function loadAssistantContext(supabase: SupabaseClient<Database>, c
   const compactResult = { ...result, chunks, sources };
   const retrievedReferences = await loadCanonicalReferences(supabase, campaignId, question, sources);
   const canonicalReferences = [...explicitReferences, ...retrievedReferences].filter((entry, index, all) => all.findIndex((other) => other.targetType === entry.targetType && other.targetId === entry.targetId) === index).slice(0, 3);
-  return { campaignId, result: compactResult, evidence: chunks.map((c, i) => `[${sources[i]?.evidenceId}] ${c.title}: ${c.content}`).join("\n\n"), canonicalReferences, citationLimit: namedChunks.length === 3 ? 3 : 2 };
+  const campaignRow = (campaign as unknown as { data: { type?: string } | null }).data;
+  return { campaignId, result: compactResult, evidence: `TIPO CAMPAGNA: ${campaignRow?.type ?? "sconosciuto"}\n${chunks.map((c, i) => `[${sources[i]?.evidenceId}] ${c.title}: ${c.content}`).join("\n\n")}`, canonicalReferences, citationLimit: namedChunks.length === 3 ? 3 : 2, campaignType: campaignRow?.type ?? null };
 }
