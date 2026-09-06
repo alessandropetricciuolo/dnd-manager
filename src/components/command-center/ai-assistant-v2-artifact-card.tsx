@@ -27,6 +27,7 @@ export function AiAssistantV2ArtifactCard({ artifact, prepared, onRegenerate, on
   const wiki = artifact.kind === "wiki" || artifact.payload.actionName === "wiki.entity.create" || artifact.payload.actionName === "wiki.entity.update";
   const actionInput = asRecord(artifact.payload.actionInput);
   const isCharacter = artifact.payload.actionName === "character.create";
+  const isCampaign = artifact.payload.actionName === "campaign.create" || artifact.kind === "campaign";
   const characterSheetReady = typeof actionInput.generatedSheetPdfBase64 === "string" && actionInput.generatedSheetPdfBase64.length > 0;
   const actionImageUrl = actionInput.imageUrl;
   const imageUrl: string | null = typeof artifact.payload.imageUrl === "string"

@@ -25,7 +25,7 @@ export function buildArtifactActionInput(artifact: AiAssistantArtifact, actionNa
   const campaignId = artifact.campaignId;
   if (!isAiDraftAllowedAction(actionName) || !CANONICAL_SAVE_ACTIONS.has(actionName)) throw new Error("Action di salvataggio non consentita per l'Assistente v2.");
   switch (actionName) {
-    case "campaign.create": return { title, description: String(supplied.description ?? content), type: supplied.type, isPublic: supplied.isPublic, playerPrimer: supplied.playerPrimer, imageUrl: supplied.imageUrl };
+    case "campaign.create": return { title, description: String(supplied.description ?? content), type: supplied.type, isPublic: false, playerPrimer: supplied.playerPrimer, imageUrl: supplied.imageUrl, tone: supplied.tone, gmNotes: supplied.gmNotes };
     case "campaign.update": return { campaignId, title, description: String(supplied.description ?? content), type: supplied.type };
     case "gm.note.create": return { campaignId, title, content, sessionId: supplied.sessionId };
     case "gm.note.update": return { noteId: supplied.noteId, title, content, sessionId: supplied.sessionId };
@@ -93,6 +93,11 @@ export function actionForArtifact(artifact: AiAssistantArtifact): string {
 
 export async function executeAssistantArtifactAction(artifact: AiAssistantArtifact, actionName: string) {
   if (artifact.status === "saved" && artifact.savedEntity) return artifact.savedEntity;
+  if (actionName === "campaign.create") {
+    if (artifact.campaignId) throw new Error("Una nuova campagna deve partire da una chat senza campagna selezionata.");
+    const input = record(artifact.payload.actionInput);
+    if (typeof input.imageUrl !== "string" || !input.imageUrl.trim()) throw new Error("La copertina è obbligatoria prima di creare la campagna.");
+  }
   if (actionName === "mission.create" || actionName === "mission.update") {
     if (!artifact.campaignId) throw new Error("Seleziona una campagna Long prima di salvare la missione.");
     const { data } = await createSupabaseAdminClient().from("campaigns").select("type").eq("id", artifact.campaignId).maybeSingle();

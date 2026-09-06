@@ -14,7 +14,6 @@ async function guard(campaignId: string | null) {
   if (!access.ok) return { ok: false as const, error: access.error };
   const role = access.ctx.role === "admin" ? "admin" : access.ctx.role === "gm" ? "gm" : null;
   if (!role) return { ok: false as const, error: "Solo GM e Admin possono usare l'Assistente GM v2." };
-  if (role === "gm" && !campaignId) return { ok: false as const, error: "Seleziona una campagna." };
   if (role === "gm" && campaignId) {
     const { data, error } = await supabase.rpc("can_manage_campaign_as_gm", { p_campaign_id: campaignId });
     if (error || data !== true) return { ok: false as const, error: "Non sei autorizzato a gestire questa campagna." };

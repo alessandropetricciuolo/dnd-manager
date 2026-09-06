@@ -46,6 +46,30 @@ test("R4 keeps character creation complete and blocks AI edits of existing PG", 
   assert.throws(() => actionForArtifact(artifact("character.update", { characterId: "existing" })), /solo nuovi PG/i);
 });
 
+test("R5 keeps onboarding campaigns unscoped, private, typed, and cover-backed", () => {
+  const input = buildArtifactActionInput(
+    {
+      ...artifact("campaign.create", {
+        type: "long",
+        description: "Una frontiera contesa.",
+        tone: "dark fantasy",
+        gmNotes: "Rivelare il culto nel secondo arco.",
+        imageUrl: "https://example.test/cover.png",
+        isPublic: true,
+      }),
+      campaignId: null,
+      kind: "campaign",
+    },
+    "campaign.create",
+  );
+  assert.equal(input.campaignId, undefined);
+  assert.equal(input.type, "long");
+  assert.equal(input.isPublic, false);
+  assert.equal(input.imageUrl, "https://example.test/cover.png");
+  assert.equal(input.tone, "dark fantasy");
+  assert.equal(input.gmNotes, "Rivelare il culto nel secondo arco.");
+});
+
 test("carries the complete Wiki payload to both create and update wrappers", () => {
   const actionInput = {
     entityId: "wiki-1", type: "monster", attributes: { combat_stats: { hp: "45", ac: "15", cr: "2", attacks: "Morso" }, statblock: "Fonte ufficiale", loot: "Chiave", gm_notes: "Non mostrare" },

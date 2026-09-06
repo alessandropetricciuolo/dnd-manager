@@ -55,17 +55,14 @@ export function registerCampaignWrapperActions(): void {
 
       const result = await createCampaign(fd);
       if (!result.success) throw new Error(result.message);
-
-      const { data: row } = await ctx.supabase
+      if (!result.campaignId) throw new Error("Campagna creata ma ID non recuperato.");
+      const { data: row, error } = await ctx.supabase
         .from("campaigns")
         .select("id, name, type")
+        .eq("id", result.campaignId)
         .eq("gm_id", ctx.userId)
-        .eq("name", input.title)
-        .order("created_at", { ascending: false })
-        .limit(1)
         .maybeSingle();
-
-      if (!row) throw new Error("Campagna creata ma ID non recuperato.");
+      if (error || !row) throw new Error("Campagna creata ma non verificabile.");
       return row as { id: string; name: string; type: string };
     },
     auditEntity: (_input, result) => ({

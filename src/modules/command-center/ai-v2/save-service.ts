@@ -23,10 +23,11 @@ function isMissingSaveReservationColumns(error: unknown): boolean {
     /save_action_name|save_started_at/i.test(candidate.message);
 }
 export async function previewAssistantArtifactSave(artifact: AiAssistantArtifact, actionName?: string) {
-  if (!artifact.campaignId) throw new Error("Seleziona una campagna prima di salvare.");
   const resolvedAction = actionName ?? actionForArtifact(artifact);
+  if (!artifact.campaignId && resolvedAction !== "campaign.create") throw new Error("Seleziona una campagna prima di salvare.");
+  if (resolvedAction === "campaign.create" && !(typeof (artifact.payload.actionInput as Record<string, unknown> | undefined)?.imageUrl === "string" && String((artifact.payload.actionInput as Record<string, unknown>).imageUrl).trim())) throw new Error("Genera una copertina prima di preparare il salvataggio.");
   if (resolvedAction === "mission.create" || resolvedAction === "mission.update") {
-    const { data } = await createSupabaseAdminClient().from("campaigns").select("type").eq("id", artifact.campaignId).maybeSingle();
+    const { data } = await createSupabaseAdminClient().from("campaigns").select("type").eq("id", artifact.campaignId as string).maybeSingle();
     if ((data as { type?: string } | null)?.type !== "long") throw new Error("Le missioni generate sono disponibili solo per campagne Long.");
   }
   const preview = await previewAction(resolvedAction, buildArtifactActionInput(artifact, resolvedAction), { actorType: "ai" });
@@ -35,7 +36,8 @@ export async function previewAssistantArtifactSave(artifact: AiAssistantArtifact
 }
 export async function saveAssistantArtifact(supabase: SupabaseClient<Database>, artifact: AiAssistantArtifact, revision: number, actionName: string) {
   if (artifact.revision !== revision) throw new Error("La bozza è cambiata: ricarica la revisione corrente prima di salvare.");
-  if (!artifact.campaignId) throw new Error("Seleziona una campagna prima di salvare.");
+  if (!artifact.campaignId && actionName !== "campaign.create") throw new Error("Seleziona una campagna prima di salvare.");
+  if (actionName === "campaign.create" && !(typeof (artifact.payload.actionInput as Record<string, unknown> | undefined)?.imageUrl === "string" && String((artifact.payload.actionInput as Record<string, unknown>).imageUrl).trim())) throw new Error("La copertina è obbligatoria prima di salvare.");
   if (actionName !== actionForArtifact(artifact)) throw new Error("L'action da confermare non corrisponde alla bozza preparata.");
   if (artifact.status === "saved" && artifact.savedEntity) return artifact.savedEntity;
 
