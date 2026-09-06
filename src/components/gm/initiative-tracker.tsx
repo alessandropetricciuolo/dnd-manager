@@ -55,6 +55,8 @@ import {
   spendCombatSpellSlot,
   spellSlotsForCharacter,
 } from "@/lib/combat-spell-slots";
+import { ConditionsCell } from "@/components/gm/conditions-cell";
+import { normalizeCombatConditions, type CombatConditionId } from "@/lib/combat-conditions";
 import { SpellSlotsCell } from "@/components/gm/spell-slots-cell";
 import type { Json } from "@/types/database.types";
 import { formatTimerMmSs } from "@/lib/torneo/match-timer";
@@ -101,6 +103,7 @@ export type InitiativeEntry = {
   teamColor?: string;
   /** Slot incantesimo in combattimento (caster). */
   spellSlots?: CombatSpellSlots;
+  conditions?: CombatConditionId[];
 };
 
 export type InitiativeTrackerState = {
@@ -127,6 +130,7 @@ function normalizeInitiativeEntry(entry: InitiativeEntry): InitiativeEntry {
   const spellSlots = normalizeCombatSpellSlots(entry.spellSlots);
   return {
     ...entry,
+    conditions: normalizeCombatConditions(entry.conditions),
     damageDealt: Math.max(0, Math.trunc(entry.damageDealt ?? 0)),
     damageTaken: Math.max(0, Math.trunc(entry.damageTaken ?? 0)),
     ...(spellSlots ? { spellSlots } : { spellSlots: undefined }),
@@ -171,6 +175,7 @@ export function initiativeStateSyncSignature(state: InitiativeTrackerState): str
       damageTaken: e.damageTaken ?? 0,
       isDead: e.isDead,
       spellSlots: e.spellSlots?.remaining,
+      conditions: normalizeCombatConditions(e.conditions),
     })),
     currentTurnIndex: state.currentTurnIndex,
     roundNumber: state.roundNumber,
@@ -210,6 +215,7 @@ function areInitiativeEntriesEqual(a: InitiativeEntry[], b: InitiativeEntry[]) {
       left.teamId !== right.teamId ||
       left.teamName !== right.teamName ||
       left.teamColor !== right.teamColor ||
+      JSON.stringify(normalizeCombatConditions(left.conditions)) !== JSON.stringify(normalizeCombatConditions(right.conditions)) ||
       !combatSpellSlotsEqual(left.spellSlots, right.spellSlots)
     ) {
       return false;
@@ -976,7 +982,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
 
   const showSpellSlotsColumn = entries.some((e) => (e.spellSlots?.max.length ?? 0) > 0);
   const tableColSpan =
-    7 + (showTeamColumn ? 1 : 0) + (showSpellSlotsColumn ? 1 : 0);
+    8 + (showTeamColumn ? 1 : 0) + (showSpellSlotsColumn ? 1 : 0);
 
   return (
     <div className="flex h-full w-full flex-col p-3 text-zinc-100">
@@ -1213,6 +1219,9 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
               </TableHead>
               <TableHead className="h-8 px-2 text-xs font-semibold text-amber-400">
                 Init
+              </TableHead>
+              <TableHead className="h-8 px-2 text-xs font-semibold text-amber-400">
+                Stati
               </TableHead>
               <TableHead className="h-8 px-2 text-xs font-semibold text-amber-400">
                 Danni
@@ -1458,6 +1467,9 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
                         {entry.initiative}
                       </button>
                     )}
+                  </TableCell>
+                  <TableCell className="px-2 py-1.5">
+                    <ConditionsCell name={entry.name} value={entry.conditions} onChange={(conditions) => updateEntry(entry.id, { conditions })} />
                   </TableCell>
                   <TableCell className="px-2 py-1.5">
                     <div className="flex flex-col items-start gap-1">
