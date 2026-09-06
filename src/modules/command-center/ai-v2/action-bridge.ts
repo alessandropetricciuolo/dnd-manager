@@ -55,7 +55,25 @@ export function buildArtifactActionInput(artifact: AiAssistantArtifact, actionNa
     case "mission.update": return { campaignId, missionId: supplied.missionId, grade: supplied.grade, title, committente: supplied.committente, ubicazione: supplied.ubicazione, paga: supplied.paga, urgenza: supplied.urgenza, description: String(supplied.description ?? content), pointsReward: supplied.pointsReward };
     case "session.create": return { campaignId, date: supplied.date, time: supplied.time, location: supplied.location, maxPlayers: supplied.maxPlayers, dmId: supplied.dmId, partyId: supplied.partyId, chapterTitle: supplied.chapterTitle };
     case "session.update": return { sessionId: supplied.sessionId, title, sessionSummary: supplied.sessionSummary ?? content, gmPrivateNotes: supplied.gmPrivateNotes };
-    case "character.create": return { campaignId, name: supplied.name ?? title, characterClass: supplied.characterClass, classSubclass: supplied.classSubclass, level: supplied.level, background: supplied.background, raceSlug: supplied.raceSlug, armorClass: supplied.armorClass, hitPoints: supplied.hitPoints, generatedSheetPdfBase64: supplied.generatedSheetPdfBase64 };
+    case "character.create": return {
+      campaignId,
+      name: supplied.name ?? title,
+      characterClass: supplied.characterClass,
+      classSubclass: supplied.classSubclass,
+      level: supplied.level,
+      background: supplied.background,
+      raceSlug: supplied.raceSlug,
+      subclass_slug: supplied.subclassSlug ?? supplied.subclass_slug,
+      background_slug: supplied.backgroundSlug ?? supplied.background_slug,
+      armorClass: supplied.armorClass,
+      hitPoints: supplied.hitPoints,
+      imageUrl: supplied.imageUrl,
+      avatarImageBase64: supplied.avatarImageBase64,
+      avatarImageMimeType: supplied.avatarImageMimeType,
+      generatedSheetPdfBase64: supplied.generatedSheetPdfBase64,
+      generatedSheetFileName: supplied.generatedSheetFileName,
+      generatedSheetSpellcasting: supplied.generatedSheetSpellcasting,
+    };
     case "character.update": return { characterId: supplied.characterId, campaignId, name: supplied.name ?? title, characterClass: supplied.characterClass, classSubclass: supplied.classSubclass, level: supplied.level, background: supplied.background };
     default: throw new Error("Action non mappata.");
   }
@@ -64,6 +82,7 @@ export function buildArtifactActionInput(artifact: AiAssistantArtifact, actionNa
 export function actionForArtifact(artifact: AiAssistantArtifact): string {
   if (artifact.kind === "mission_plan" || artifact.payload.planOnly === true) throw new Error("Un piano missioni deve essere prima approvato dal GM; non è direttamente salvabile.");
   const explicit = typeof artifact.payload.actionName === "string" ? artifact.payload.actionName : "";
+  if (explicit === "character.update") throw new Error("L'Assistente può creare solo nuovi PG; modifica i PG esistenti dal percorso dedicato.");
   if (explicit && CANONICAL_SAVE_ACTIONS.has(explicit)) return explicit;
   switch (artifact.kind) {
     case "wiki": case "image": return "wiki.entity.create";

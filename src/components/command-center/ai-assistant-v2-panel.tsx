@@ -5,12 +5,14 @@ import { Archive, LoaderCircle, MapPin, MessageSquarePlus, Pencil, ScrollText, S
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { confirmAiAssistantV2MissionBatch, confirmAiAssistantV2Save, generateAiAssistantV2Image, prepareAiAssistantV2MissionBatch, prepareAiAssistantV2Save, reviseAiAssistantV2Artifact, runAiAssistantV2Turn } from "@/modules/command-center/server/ai-v2-actions";
+import { attachAiAssistantV2CharacterSheet, confirmAiAssistantV2MissionBatch, confirmAiAssistantV2Save, generateAiAssistantV2Image, prepareAiAssistantV2MissionBatch, prepareAiAssistantV2Save, reviseAiAssistantV2Artifact, runAiAssistantV2Turn } from "@/modules/command-center/server/ai-v2-actions";
 import type { AiAssistantArtifact, AiAssistantSourceRef } from "@/modules/command-center/ai-v2/contracts";
 import { AiAssistantV2ArtifactCard } from "./ai-assistant-v2-artifact-card";
 import { AiAssistantV2Sources } from "./ai-assistant-v2-sources";
 import { missionBatchResults, restoreMissionDrafts, type MissionBatchResult } from "@/modules/command-center/ai-v2/mission-batch";
 import { archiveAiAssistantV2Thread, createAiAssistantV2Thread, feedbackAiAssistantV2, getAiAssistantV2Thread, listAiAssistantV2Threads, renameAiAssistantV2Thread } from "@/modules/command-center/server/ai-v2-thread-actions";
+import { SheetGeneratorEmbed } from "@/components/sheet-generator/sheet-generator-embed";
+import type { CharacterGeneratedSheetPayload } from "@/modules/command-center/ai-control-plane/draft-assistant.types";
 
 type Message = { role: "user" | "assistant"; content: string };
 type MobileView = "chat" | "draft";
@@ -22,6 +24,18 @@ const quickPrompts = [
   { label: "Luogo", prompt: "Crea un luogo", icon: MapPin },
   { label: "Statblock", prompt: "Genera uno statblock", icon: ScrollText },
 ] as const;
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
+function firstValue(...values: unknown[]): string | undefined {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+    if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  }
+  return undefined;
+}
 
 export function AiAssistantV2Panel({ campaignId }: { campaignId: string | null }) {
   const [input, setInput] = useState("");
@@ -140,6 +154,14 @@ export function AiAssistantV2Panel({ campaignId }: { campaignId: string | null }
     });
   }
 
+  function attachCharacterSheet(sheet: CharacterGeneratedSheetPayload) {
+    if (!artifact || artifact.payload.actionName !== "character.create") return;
+    startTransition(async () => {
+      const res = await attachAiAssistantV2CharacterSheet({ artifactId: artifact.id, revision: artifact.revision, sheet });
+      if (!res.success) toast.error(res.error); else { setArtifact(res.data); toast.success("Scheda PDF collegata alla bozza del PG."); }
+    });
+  }
+
   function prepareMissionBatch() {
     const ids = selectedMissionIds.length ? selectedMissionIds : missionArtifacts.map((item) => item.id);
     if (!ids.length) return;
@@ -153,7 +175,20 @@ export function AiAssistantV2Panel({ campaignId }: { campaignId: string | null }
   }
 
   const hasDraft = Boolean(artifact);
-  const draftPanel = artifact ? <div className="min-h-0 flex-1 overflow-y-auto pr-1">{missionArtifacts.length > 0 ? <div className="mb-3 rounded-xl border border-barber-gold/20 bg-barber-gold/5 p-3"><p className="text-xs text-barber-paper/70">Seleziona le missioni da salvare insieme.</p><div className="mt-2 space-y-1">{missionArtifacts.map((item) => <label key={item.id} className="flex items-center gap-2 text-xs text-barber-paper/80"><input type="checkbox" checked={selectedMissionIds.includes(item.id)} disabled={item.status === "saved"} onChange={(event) => setSelectedMissionIds((ids) => event.target.checked ? [...ids, item.id] : ids.filter((id) => id !== item.id))} />{String(item.payload.title ?? "Missione")} {item.status === "saved" ? "· salvata" : "· bozza"}</label>)}</div><div className="mt-3 flex gap-2"><Button size="sm" variant="outline" onClick={prepareMissionBatch} disabled={!selectedMissionIds.length}>Prepara gruppo</Button><Button size="sm" onClick={confirmMissionBatch} disabled={!batchReady || !selectedMissionIds.length}>Conferma gruppo</Button></div>{batchResults.length ? <div className="mt-3 space-y-1" aria-live="polite">{batchResults.map((result) => <p key={result.artifactId} className={`text-xs ${result.status === "error" ? "text-red-300" : result.status === "saved" ? "text-emerald-300" : "text-barber-paper/70"}`}>{result.title}: {result.status === "error" ? `errore — ${result.message}` : result.status === "saved" ? "salvata" : "pronta"}</p>)}</div> : null}</div> : null}<AiAssistantV2ArtifactCard artifact={artifact} prepared={Boolean(preparedAction)} onEdit={(content) => { setPreparedAction(null); setArtifact({ ...artifact, payload: { ...artifact.payload, content } }); }} onRegenerate={() => send("Rigenera questa bozza mantenendo il contesto")} onDiscard={() => { setPreparedAction(null); setArtifact(null); setMobileView("chat"); toast.message("Bozza scartata"); }} onPrepare={prepareSave} onConfirm={confirmSave} />{sources.length ? <div className="mt-3"><AiAssistantV2Sources sources={sources} /></div> : null}<div className="mt-3 flex items-center gap-2 text-xs text-barber-paper/50"><span>Questa risposta è utile?</span><Button size="sm" variant="ghost" onClick={() => void feedbackAiAssistantV2({ artifactId: artifact.id, rating: "approved" }).then((res) => res.success ? toast.success("Feedback registrato") : toast.error(res.error))}>Sì</Button><Button size="sm" variant="ghost" onClick={() => void feedbackAiAssistantV2({ artifactId: artifact.id, rating: "needs_review" }).then((res) => res.success ? toast.success("Feedback registrato") : toast.error(res.error))}>Da rivedere</Button></div></div> : null;
+  const isCharacterArtifact = artifact?.payload.actionName === "character.create";
+  const characterActionInput = asRecord(artifact?.payload.actionInput);
+  const characterSheetInitial = {
+    characterName: firstValue(characterActionInput.name, artifact?.payload.title) ?? "Nuovo PG",
+    characterStory: firstValue(characterActionInput.background, artifact?.payload.content) ?? "",
+    raceSlug: firstValue(characterActionInput.raceSlug, characterActionInput.race_slug),
+    subraceSlug: firstValue(characterActionInput.subraceSlug, characterActionInput.subrace_slug),
+    classLabel: firstValue(characterActionInput.characterClass, characterActionInput.character_class, characterActionInput.classLabel),
+    classSubclass: firstValue(characterActionInput.classSubclass, characterActionInput.class_subclass),
+    backgroundSlug: firstValue(characterActionInput.backgroundSlug, characterActionInput.background_slug),
+    level: firstValue(characterActionInput.level) ?? 1,
+  };
+  const hasCharacterPdf = typeof artifact?.payload.actionInput === "object" && artifact?.payload.actionInput !== null && typeof (artifact.payload.actionInput as Record<string, unknown>).generatedSheetPdfBase64 === "string";
+  const draftPanel = artifact ? <div className="min-h-0 flex-1 overflow-y-auto pr-1">{missionArtifacts.length > 0 ? <div className="mb-3 rounded-xl border border-barber-gold/20 bg-barber-gold/5 p-3"><p className="text-xs text-barber-paper/70">Seleziona le missioni da salvare insieme.</p><div className="mt-2 space-y-1">{missionArtifacts.map((item) => <label key={item.id} className="flex items-center gap-2 text-xs text-barber-paper/80"><input type="checkbox" checked={selectedMissionIds.includes(item.id)} disabled={item.status === "saved"} onChange={(event) => setSelectedMissionIds((ids) => event.target.checked ? [...ids, item.id] : ids.filter((id) => id !== item.id))} />{String(item.payload.title ?? "Missione")} {item.status === "saved" ? "· salvata" : "· bozza"}</label>)}</div><div className="mt-3 flex gap-2"><Button size="sm" variant="outline" onClick={prepareMissionBatch} disabled={!selectedMissionIds.length}>Prepara gruppo</Button><Button size="sm" onClick={confirmMissionBatch} disabled={!batchReady || !selectedMissionIds.length}>Conferma gruppo</Button></div>{batchResults.length ? <div className="mt-3 space-y-1" aria-live="polite">{batchResults.map((result) => <p key={result.artifactId} className={`text-xs ${result.status === "error" ? "text-red-300" : result.status === "saved" ? "text-emerald-300" : "text-barber-paper/70"}`}>{result.title}: {result.status === "error" ? `errore — ${result.message}` : result.status === "saved" ? "salvata" : "pronta"}</p>)}</div> : null}</div> : null}<AiAssistantV2ArtifactCard artifact={artifact} prepared={Boolean(preparedAction)} onEdit={(content) => { setPreparedAction(null); setArtifact({ ...artifact, payload: { ...artifact.payload, content } }); }} onRegenerate={() => send("Rigenera questa bozza mantenendo il contesto")} onDiscard={() => { setPreparedAction(null); setArtifact(null); setMobileView("chat"); toast.message("Bozza scartata"); }} onPrepare={prepareSave} onConfirm={confirmSave} />{isCharacterArtifact && campaignId ? <div className="mt-3 rounded-xl border border-sky-500/20 bg-sky-500/5 p-3"><SheetGeneratorEmbed initial={characterSheetInitial} sheetReady={hasCharacterPdf} onSheetReady={attachCharacterSheet} /></div> : null}{sources.length ? <div className="mt-3"><AiAssistantV2Sources sources={sources} /></div> : null}<div className="mt-3 flex items-center gap-2 text-xs text-barber-paper/50"><span>Questa risposta è utile?</span><Button size="sm" variant="ghost" onClick={() => void feedbackAiAssistantV2({ artifactId: artifact.id, rating: "approved" }).then((res) => res.success ? toast.success("Feedback registrato") : toast.error(res.error))}>Sì</Button><Button size="sm" variant="ghost" onClick={() => void feedbackAiAssistantV2({ artifactId: artifact.id, rating: "needs_review" }).then((res) => res.success ? toast.success("Feedback registrato") : toast.error(res.error))}>Da rivedere</Button></div></div> : null;
 
   return <div className="flex h-full min-h-0 flex-col bg-gradient-to-br from-[#17131a] via-[#100e14] to-[#0b0a10]">
     {campaignId ? <div className="flex shrink-0 items-center gap-2 border-b border-white/[0.07] px-3 py-2"><select value={threadId ?? ""} onChange={(event) => event.target.value ? resumeThread(event.target.value) : newChat()} className="min-w-0 flex-1 rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-xs text-barber-paper" aria-label="Conversazioni della campagna"><option value="">Nuova conversazione</option>{threads.map((thread) => <option key={thread.id} value={thread.id}>{thread.title || "Conversazione senza titolo"}{thread.status === "archived" ? " · archiviata" : ""}</option>)}</select><Button type="button" size="sm" variant={showArchived ? "secondary" : "outline"} onClick={() => setShowArchived((current) => !current)} aria-pressed={showArchived} aria-label={showArchived ? "Nascondi archiviate" : "Mostra archiviate"}>Archiviate</Button><Button type="button" size="sm" variant="outline" onClick={newChat} aria-label="Nuova conversazione"><MessageSquarePlus className="h-4 w-4" /></Button>{threadId ? <><Button type="button" size="sm" variant="ghost" onClick={renameThread} aria-label="Rinomina conversazione"><Pencil className="h-4 w-4" /></Button><Button type="button" size="sm" variant="ghost" onClick={archiveThread} aria-label={threads.find((item) => item.id === threadId)?.status === "archived" ? "Ripristina conversazione" : "Archivia conversazione"}><Archive className="h-4 w-4" /></Button></> : null}</div> : null}

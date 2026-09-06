@@ -12,6 +12,7 @@ import {
   type QuickManualSection,
 } from "@/lib/sheet-generator/quick-manual-builder";
 import { mapGeneratedSheetToPdfFields } from "@/lib/sheet-generator/sheet-mapper";
+import { buildFeatureSummaryV2, type FeatureSummaryV2 } from "@/lib/sheet-generator/features-v2";
 import type { CharacterGeneratorInput, GeneratedCharacterSheet } from "@/lib/sheet-generator/types";
 import { headers } from "next/headers";
 
@@ -31,6 +32,12 @@ export type PreviewBuildChoicesResult = {
   success: boolean;
   message: string;
   preview?: BuildChoicesPreview;
+};
+
+export type FeatureSummaryV2Result = {
+  success: boolean;
+  message: string;
+  summary?: FeatureSummaryV2;
 };
 
 function parseBuildOverrides(raw: string | null): CharacterBuildOverrides | undefined {
@@ -151,6 +158,31 @@ export async function generateSheetAction(formData: FormData): Promise<GenerateS
     return {
       success: false,
       message: error instanceof Error ? `Errore generazione scheda: ${error.message}` : "Errore generazione scheda.",
+    };
+  }
+}
+
+/**
+ * Pipeline sperimentale V2 per i due campi dei privilegi. Non modifica il
+ * mapper V1 e lavora sulla scheda già risolta dal generatore corrente.
+ */
+export async function generateFeatureSummaryV2Action(
+  sheet: GeneratedCharacterSheet,
+  overrides?: CharacterBuildOverrides | null
+): Promise<FeatureSummaryV2Result> {
+  try {
+    const summary = buildFeatureSummaryV2(sheet, overrides);
+    return {
+      success: true,
+      message: summary.diagnostics.verifiedByManual
+        ? "Privilegi V2 estratti dal manuale e pronti per la compilazione PDF."
+        : "Privilegi V2 parziali: alcuni dati non sono stati risolti dal manuale e non sono stati inventati.",
+      summary,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? `Errore generazione privilegi V2: ${error.message}` : "Errore generazione privilegi V2.",
     };
   }
 }

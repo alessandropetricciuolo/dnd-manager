@@ -3,7 +3,11 @@
 import { Suspense, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { generateSheetAction, previewBuildChoicesAction } from "@/lib/actions/generator-actions";
+import {
+  generateFeatureSummaryV2Action,
+  generateSheetAction,
+  previewBuildChoicesAction,
+} from "@/lib/actions/generator-actions";
 import { BACKGROUND_OPTIONS, CLASS_OPTIONS, RACE_OPTIONS } from "@/lib/character-build-catalog";
 import { subclassCatalogSourceSuffix, supplementSubclassesForClass } from "@/lib/character-subclass-catalog";
 import { GeneratedSheetView } from "@/components/sheet-generator/generated-sheet-view";
@@ -11,6 +15,7 @@ import { SheetBuildChoicesPanel } from "@/components/sheet-generator/sheet-build
 import { Textarea } from "@/components/ui/textarea";
 import type { BuildChoicesPreview, CharacterBuildOverrides } from "@/lib/sheet-generator/build-choices-types";
 import type { GeneratedCharacterSheet } from "@/lib/sheet-generator/types";
+import type { FeatureSummaryV2 } from "@/lib/sheet-generator/features-v2";
 import type { QuickManualSection } from "@/lib/sheet-generator/quick-manual-builder";
 import { useSearchParams } from "next/navigation";
 import { saveGeneratedSheetToCharacter } from "@/app/campaigns/character-actions";
@@ -69,6 +74,9 @@ function GeneratorPageContent() {
     initial.includeBackgroundStoryInPdf
   );
   const [sheet, setSheet] = useState<GeneratedCharacterSheet | null>(null);
+  const [featureSummaryV2, setFeatureSummaryV2] = useState<FeatureSummaryV2 | null>(null);
+  const [isGeneratingV2, setIsGeneratingV2] = useState(false);
+  const [isCompilingV2, setIsCompilingV2] = useState(false);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [isSavingSheet, setIsSavingSheet] = useState(false);
   const [characterStory, setCharacterStory] = useState(initial.characterStory);
@@ -229,6 +237,69 @@ function GeneratorPageContent() {
     }
   }
 
+  async function handleGenerateFeaturesV2() {
+    if (!sheet || isGeneratingV2) return;
+    setIsGeneratingV2(true);
+    try {
+      const result = await generateFeatureSummaryV2Action(sheet, buildOverrides);
+      if (!result.success || !result.summary) {
+        toast.error(result.message);
+        setResultMessage(result.message);
+        return;
+      }
+      setFeatureSummaryV2(result.summary);
+      setResultMessage(result.message);
+      if (result.summary.diagnostics.verifiedByManual) toast.success(result.message);
+      else toast.warning(result.message);
+    } finally {
+      setIsGeneratingV2(false);
+    }
+  }
+
+  async function handleCompileFeaturesV2() {
+    if (!sheet || !sheetDataObj || !featureSummaryV2 || isCompilingV2) return;
+    setIsCompilingV2(true);
+    try {
+      const fields = {
+        ...sheetDataObj,
+        ...featureSummaryV2.fields,
+      };
+      const pdfRes = await fetch("/api/sheet-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          buildCompiledSheetPdfRequestBody({
+            sheetData: fields,
+            sheet,
+            quickManualSections,
+            backgroundPdfSections,
+            includeBackgroundStoryInPdf,
+            characterStory,
+            fileName: `${sheet.characterName || "scheda"}-compilata-v2.pdf`,
+          })
+        ),
+      });
+      if (!pdfRes.ok) {
+        const err = await pdfRes.json().catch(() => ({}));
+        throw new Error(err?.error ?? "Errore generazione PDF V2.");
+      }
+      const blob = await pdfRes.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${sheet.characterName || "scheda"}-compilata-v2.pdf`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      toast.success("PDF V2 compilato con i privilegi verificati dal manuale.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Errore generazione PDF V2.";
+      setResultMessage(message);
+      toast.error(message);
+    } finally {
+      setIsCompilingV2(false);
+    }
+  }
+
   async function runGenerateSheet(formData: FormData, overrides?: CharacterBuildOverrides | null) {
     if (overrides && Object.keys(overrides).length > 0) {
       formData.set("buildOverridesJson", JSON.stringify(overrides));
@@ -239,6 +310,7 @@ function GeneratorPageContent() {
     setResultMessage(null);
     setResultJson(null);
     setSheetDataObj(null);
+    setFeatureSummaryV2(null);
     setQuickManualSections([]);
     setBackgroundPdfSections([]);
     setSheet(null);
@@ -415,6 +487,26 @@ function GeneratorPageContent() {
             >
               {isSavingSheet ? "Salvataggio PDF..." : "Salva scheda PDF"}
             </button>
+            {sheet && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleGenerateFeaturesV2}
+                  disabled={isGeneratingV2}
+                  className="rounded border border-emerald-400/50 px-3 py-1.5 text-xs text-emerald-200 hover:bg-emerald-400/10 disabled:opacity-60"
+                >
+                  {isGeneratingV2 ? "Generazione V2..." : "Genera privilegi V2"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCompileFeaturesV2}
+                  disabled={isCompilingV2 || !featureSummaryV2}
+                  className="rounded bg-emerald-700/80 px-3 py-1.5 text-xs text-white hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isCompilingV2 ? "Compilazione PDF V2..." : "Compila PDF V2"}
+                </button>
+              </>
+            )}
           </div>
           <h1 className="flex items-center gap-2 text-2xl font-semibold text-barber-gold">
             <Sparkles className="h-5 w-5" />
@@ -734,6 +826,34 @@ function GeneratorPageContent() {
             quickManualSections={quickManualSections}
             backgroundPdfSections={backgroundPdfSections}
           />
+        )}
+        {featureSummaryV2 && (
+          <section className="mt-5 rounded-xl border border-emerald-400/35 bg-emerald-950/20 p-4" aria-live="polite">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-emerald-200">Anteprima privilegi V2</h2>
+              <span className="rounded-full border border-emerald-400/40 px-2 py-1 text-[11px] text-emerald-200">
+                {featureSummaryV2.diagnostics.verifiedByManual ? "Verificato da manuale" : "Fallback estrattivo / dati incompleti"}
+              </span>
+            </div>
+            <p className="mt-2 text-xs text-barber-paper/65">
+              Il testo è composto solo da evidenze risolte dal manuale; nessuna riscrittura libera dell&apos;IA.
+            </p>
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              <div className="rounded border border-emerald-400/20 bg-black/20 p-3">
+                <h3 className="mb-2 text-xs font-semibold uppercase text-emerald-200">Privilegi razziali · Feat_Racial</h3>
+                <pre className="whitespace-pre-wrap text-xs text-barber-paper/90">{featureSummaryV2.racialText || "Nessuna evidenza risolta."}</pre>
+              </div>
+              <div className="rounded border border-emerald-400/20 bg-black/20 p-3">
+                <h3 className="mb-2 text-xs font-semibold uppercase text-emerald-200">Privilegi di classe · Features_Main</h3>
+                <pre className="whitespace-pre-wrap text-xs text-barber-paper/90">{featureSummaryV2.classText || "Nessuna evidenza risolta."}</pre>
+              </div>
+            </div>
+            {featureSummaryV2.diagnostics.unresolved.length > 0 && (
+              <div className="mt-3 text-xs text-amber-200">
+                {featureSummaryV2.diagnostics.unresolved.map((item) => <div key={item}>- {item}</div>)}
+              </div>
+            )}
+          </section>
         )}
         {resultJson && (
           <div className="mt-5 rounded-md border border-barber-gold/25 bg-black/30 p-4">

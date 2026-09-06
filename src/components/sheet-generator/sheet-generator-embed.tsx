@@ -4,7 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
-import { generateSheetAction, previewBuildChoicesAction } from "@/lib/actions/generator-actions";
+import { generateFeatureSummaryV2Action, generateSheetAction, previewBuildChoicesAction } from "@/lib/actions/generator-actions";
 import { BACKGROUND_OPTIONS, CLASS_OPTIONS, RACE_OPTIONS } from "@/lib/character-build-catalog";
 import { subclassCatalogSourceSuffix, supplementSubclassesForClass } from "@/lib/character-subclass-catalog";
 import { GeneratedSheetView } from "@/components/sheet-generator/generated-sheet-view";
@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import type { BuildChoicesPreview, CharacterBuildOverrides } from "@/lib/sheet-generator/build-choices-types";
 import type { GeneratedCharacterSheet } from "@/lib/sheet-generator/types";
+import type { FeatureSummaryV2 } from "@/lib/sheet-generator/features-v2";
 import type { QuickManualSection } from "@/lib/sheet-generator/quick-manual-builder";
 import { mapGeneratorFormToCharacterBuildDraft } from "@/lib/character-sheet-build-meta";
 import { spellcastingMetaFromGeneratedSheet } from "@/lib/sheet-generator/spell-slots";
@@ -23,6 +24,12 @@ import type { CharacterGeneratedSheetPayload } from "@/modules/command-center/ai
 export type SheetGeneratorEmbedInitial = {
   characterName?: string;
   characterStory?: string;
+  raceSlug?: string;
+  subraceSlug?: string;
+  classLabel?: string;
+  classSubclass?: string;
+  backgroundSlug?: string;
+  level?: number | string;
   includeBackgroundStoryInPdf?: boolean;
   torneoMode?: boolean;
 };
@@ -36,13 +43,13 @@ type SheetGeneratorEmbedProps = {
 export function SheetGeneratorEmbed({ initial, sheetReady = false, onSheetReady }: SheetGeneratorEmbedProps) {
   const [isPending, startTransition] = useTransition();
   const [isSavingSheet, setIsSavingSheet] = useState(false);
-  const [selectedClass, setSelectedClass] = useState("");
-  const [selectedRaceSlug, setSelectedRaceSlug] = useState("");
+  const [selectedClass, setSelectedClass] = useState(initial.classLabel ?? "");
+  const [selectedRaceSlug, setSelectedRaceSlug] = useState(initial.raceSlug ?? "");
   const [characterStory, setCharacterStory] = useState(initial.characterStory ?? "");
   const [includeBackgroundStoryInPdf, setIncludeBackgroundStoryInPdf] = useState(
     initial.includeBackgroundStoryInPdf ?? true
   );
-  const [formLevel, setFormLevel] = useState(1);
+  const [formLevel, setFormLevel] = useState(Number.parseInt(String(initial.level ?? 1), 10) || 1);
   const [phase, setPhase] = useState<"form" | "choices" | "done">("form");
   const [choicesPreview, setChoicesPreview] = useState<BuildChoicesPreview | null>(null);
   const [buildOverrides, setBuildOverrides] = useState<CharacterBuildOverrides | null>(null);
@@ -52,6 +59,9 @@ export function SheetGeneratorEmbed({ initial, sheetReady = false, onSheetReady 
   const [sheetDataObj, setSheetDataObj] = useState<Record<string, unknown> | null>(null);
   const [quickManualSections, setQuickManualSections] = useState<QuickManualSection[]>([]);
   const [backgroundPdfSections, setBackgroundPdfSections] = useState<QuickManualSection[]>([]);
+  const [featureSummaryV2, setFeatureSummaryV2] = useState<FeatureSummaryV2 | null>(null);
+  const [isGeneratingV2, setIsGeneratingV2] = useState(false);
+  const [isCompilingV2, setIsCompilingV2] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
   const race = RACE_OPTIONS.find((r) => r.slug === selectedRaceSlug) ?? null;
@@ -68,6 +78,7 @@ export function SheetGeneratorEmbed({ initial, sheetReady = false, onSheetReady 
     setWarnings([]);
     setSheet(null);
     setSheetDataObj(null);
+    setFeatureSummaryV2(null);
 
     const result = await generateSheetAction(formData);
     setResultMessage(result.message);
@@ -140,6 +151,82 @@ export function SheetGeneratorEmbed({ initial, sheetReady = false, onSheetReady 
       toast.error("Errore durante il salvataggio della scheda.");
     } finally {
       setIsSavingSheet(false);
+    }
+  }
+
+  async function handleGenerateFeaturesV2() {
+    if (!sheet || isGeneratingV2) return;
+    setIsGeneratingV2(true);
+    try {
+      const result = await generateFeatureSummaryV2Action(sheet, buildOverrides);
+      if (!result.success || !result.summary) {
+        toast.error(result.message);
+        setResultMessage(result.message);
+        return;
+      }
+      setFeatureSummaryV2(result.summary);
+      setResultMessage(result.message);
+      if (result.summary.diagnostics.verifiedByManual) toast.success(result.message);
+      else toast.warning(result.message);
+    } finally {
+      setIsGeneratingV2(false);
+    }
+  }
+
+  async function handleCompileFeaturesV2() {
+    if (!sheet || !sheetDataObj || !featureSummaryV2 || isCompilingV2) return;
+    setIsCompilingV2(true);
+    try {
+      const fields = { ...sheetDataObj, ...featureSummaryV2.fields };
+      const pdfRes = await fetch("/api/sheet-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          buildCompiledSheetPdfRequestBody({
+            sheetData: fields,
+            sheet,
+            quickManualSections,
+            backgroundPdfSections,
+            includeBackgroundStoryInPdf,
+            characterStory,
+            fileName: `${sheet.characterName || "scheda"}-compilata-v2.pdf`,
+          })
+        ),
+      });
+      if (!pdfRes.ok) {
+        const err = await pdfRes.json().catch(() => ({}));
+        throw new Error(err?.error ?? "Errore generazione PDF V2.");
+      }
+      const base64 = arrayBufferToBase64(await pdfRes.arrayBuffer());
+      const buildDraft = mapGeneratorFormToCharacterBuildDraft(formRef.current, sheet);
+      onSheetReady({
+        pdfBase64: base64,
+        fileName: `${sheet.characterName || "scheda"}-compilata-v2.pdf`,
+        armorClass: sheet.armorClass,
+        hitPoints: sheet.hpMax,
+        sheetData: fields,
+        quickManualSections,
+        backgroundPdfSections,
+        includeBackgroundStoryInPdf,
+        characterStory,
+        spellcasting: spellcastingMetaFromGeneratedSheet(sheet),
+        build: {
+          race_slug: buildDraft.race_slug ?? "",
+          subclass_slug: buildDraft.subclass_slug ?? "",
+          character_class: buildDraft.character_class ?? "",
+          class_subclass: buildDraft.class_subclass ?? "",
+          background_slug: buildDraft.background_slug ?? "",
+          level: buildDraft.level ?? "1",
+        },
+        characterName: sheet.characterName,
+      });
+      toast.success("PDF V2 compilato e collegato alla proposta.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Errore generazione PDF V2.";
+      setResultMessage(message);
+      toast.error(message);
+    } finally {
+      setIsCompilingV2(false);
     }
   }
 
@@ -220,6 +307,7 @@ export function SheetGeneratorEmbed({ initial, sheetReady = false, onSheetReady 
               required
               disabled={isPending}
               onChange={(e) => setSelectedRaceSlug(e.target.value)}
+              defaultValue={initial.raceSlug ?? ""}
               className="h-9 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-2 text-sm text-barber-paper"
             >
               <option value="" disabled>
@@ -240,6 +328,7 @@ export function SheetGeneratorEmbed({ initial, sheetReady = false, onSheetReady 
             <select
               id="embed-subraceSlug"
               name="subraceSlug"
+              defaultValue={initial.subraceSlug ?? ""}
               disabled={isPending || !race?.subraces?.length}
               className="h-9 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-2 text-sm text-barber-paper"
             >
@@ -262,6 +351,7 @@ export function SheetGeneratorEmbed({ initial, sheetReady = false, onSheetReady 
               required
               disabled={isPending}
               onChange={(e) => setSelectedClass(e.target.value)}
+              defaultValue={initial.classLabel ?? ""}
               className="h-9 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-2 text-sm text-barber-paper"
             >
               <option value="" disabled>
@@ -282,6 +372,7 @@ export function SheetGeneratorEmbed({ initial, sheetReady = false, onSheetReady 
             <select
               id="embed-classSubclass"
               name="classSubclass"
+              defaultValue={initial.classSubclass ?? ""}
               disabled={isPending || classSubclasses.length === 0}
               className="h-9 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-2 text-sm text-barber-paper"
             >
@@ -303,6 +394,7 @@ export function SheetGeneratorEmbed({ initial, sheetReady = false, onSheetReady 
               name="backgroundSlug"
               required
               disabled={isPending}
+              defaultValue={initial.backgroundSlug ?? ""}
               className="h-9 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-2 text-sm text-barber-paper"
             >
               <option value="" disabled>
@@ -326,7 +418,7 @@ export function SheetGeneratorEmbed({ initial, sheetReady = false, onSheetReady 
               type="number"
               min={1}
               max={20}
-              defaultValue={1}
+              defaultValue={initial.level ?? 1}
               required
               disabled={isPending}
               className="h-9 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-2 text-sm text-barber-paper"
@@ -426,6 +518,33 @@ export function SheetGeneratorEmbed({ initial, sheetReady = false, onSheetReady 
             quickManualSections={quickManualSections}
             backgroundPdfSections={backgroundPdfSections}
           />
+        </div>
+      ) : null}
+
+      {sheet && sheetDataObj ? (
+        <div className="space-y-2 rounded-lg border border-barber-gold/20 bg-barber-dark/30 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-barber-gold/80">Privilegi PDF V2</p>
+            <span className="text-[11px] text-barber-paper/55">V1 resta disponibile sopra</span>
+          </div>
+          <p className="text-xs text-barber-paper/65">
+            Estrae solo evidenze dai manuali e non sostituisce il compilatore attuale.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" size="sm" variant="outline" disabled={isGeneratingV2} onClick={handleGenerateFeaturesV2}>
+              {isGeneratingV2 ? "Verifica manuali…" : "Genera privilegi V2"}
+            </Button>
+            <Button type="button" size="sm" disabled={!featureSummaryV2 || isCompilingV2} onClick={handleCompileFeaturesV2} className="bg-barber-gold/20 text-barber-gold hover:bg-barber-gold/30">
+              {isCompilingV2 ? "Compilazione V2…" : "Compila PDF V2"}
+            </Button>
+          </div>
+          {featureSummaryV2 ? (
+            <div className="space-y-1 text-xs text-barber-paper/75">
+              <p className="text-emerald-300/90">{featureSummaryV2.diagnostics.verifiedByManual ? "Fonti manuale verificate" : "Risultato parziale: dati non risolti esclusi"}</p>
+              {featureSummaryV2.diagnostics.unresolved.map((item) => <p key={item} className="text-amber-200/80">{item}</p>)}
+              <p>Tratti: {featureSummaryV2.evidence.filter((item) => item.kind === "racial").length} · Privilegi: {featureSummaryV2.evidence.filter((item) => item.kind === "class").length}</p>
+            </div>
+          ) : null}
         </div>
       ) : null}
 

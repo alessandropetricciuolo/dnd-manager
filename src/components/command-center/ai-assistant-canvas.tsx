@@ -349,6 +349,12 @@ export function AiAssistantCanvas({
               initial={{
                 characterName: pendingProposal.characterMeta?.characterName ?? title,
                 characterStory: characterStory ?? "",
+                raceSlug: pickText(input.raceSlug, input.race_slug, preview.raceSlug, preview.race_slug),
+                subraceSlug: pickText(input.subraceSlug, input.subrace_slug, preview.subraceSlug, preview.subrace_slug),
+                classLabel: pickText(input.characterClass, input.character_class, preview.characterClass, preview.character_class),
+                classSubclass: pickText(input.classSubclass, input.class_subclass, preview.classSubclass, preview.class_subclass),
+                backgroundSlug: pickText(input.backgroundSlug, input.background_slug, preview.backgroundSlug, preview.background_slug),
+                level: pickText(input.level, preview.level) || 1,
                 includeBackgroundStoryInPdf: true,
               }}
               sheetReady={sheetReady}

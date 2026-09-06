@@ -14,7 +14,7 @@ test("uses explicit wrapper payloads for every supported canonical destination",
     ["mission.create", { grade: "C", committente: "Gilda", ubicazione: "Porto", paga: "10 mo", urgenza: "media" }],
     ["mission.update", { missionId: "mission-1", grade: "C", committente: "Gilda", ubicazione: "Porto", paga: "10 mo", urgenza: "media" }],
     ["session.create", { date: "2026-09-04" }], ["session.update", { sessionId: "session-1" }],
-    ["character.create", { name: "Ari", generatedSheetPdfBase64: "pdf" }], ["character.update", { characterId: "character-1", name: "Ari" }],
+    ["character.create", { name: "Ari", generatedSheetPdfBase64: "pdf" }],
   ];
   for (const [actionName, actionInput] of cases) {
     const input = buildArtifactActionInput(artifact(actionName, actionInput), actionName);
@@ -27,6 +27,23 @@ test("uses explicit wrapper payloads for every supported canonical destination",
 
 test("refuses a user supplied action different from the artifact contract", () => {
   assert.notEqual(actionForArtifact(artifact("wiki.entity.create", { type: "lore" })), "gm.note.create");
+});
+
+test("R4 keeps character creation complete and blocks AI edits of existing PG", () => {
+  const input = buildArtifactActionInput(artifact("character.create", {
+    name: "Ari", raceSlug: "elf", subclassSlug: "evocation", backgroundSlug: "sage", characterClass: "Mago", classSubclass: "Invocazione", level: 3,
+    generatedSheetPdfBase64: "pdf", generatedSheetFileName: "Ari.pdf", armorClass: 14,
+    hitPoints: 9, generatedSheetSpellcasting: "{\"spellSlots\":[]}",
+  }), "character.create");
+  assert.equal(input.generatedSheetPdfBase64, "pdf");
+  assert.equal(input.generatedSheetFileName, "Ari.pdf");
+  assert.equal(input.raceSlug, "elf");
+  assert.equal(input.subclass_slug, "evocation");
+  assert.equal(input.background_slug, "sage");
+  assert.equal(input.characterClass, "Mago");
+  assert.equal(input.classSubclass, "Invocazione");
+  assert.equal(input.level, 3);
+  assert.throws(() => actionForArtifact(artifact("character.update", { characterId: "existing" })), /solo nuovi PG/i);
 });
 
 test("carries the complete Wiki payload to both create and update wrappers", () => {
