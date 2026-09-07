@@ -132,6 +132,17 @@ export function GmHomepage({
                 asChild
                 variant="outline"
                 size="sm"
+                className="border-cyan-500/50 text-cyan-100 hover:bg-cyan-500/15"
+              >
+                <Link href={`/campaigns/${campaignId}/gm-only/scene-workspace`}>
+                  <Layers className="mr-2 h-4 w-4" />
+                  Scene tattiche V2
+                </Link>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
                 className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
               >
                 <Link href={`/campaigns/${campaignId}/gm-only/concept-map`}>
