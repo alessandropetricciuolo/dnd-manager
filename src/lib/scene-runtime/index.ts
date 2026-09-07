@@ -5,9 +5,14 @@ export * from "./types";
 export * from "./validate";
 export * from "./legacy-read-adapter";
 export * from "./access";
+export * from "./r6-5";
+export * from "./r6-6";
+export * from "./r6-7";
+export * from "./r6-8";
+export * from "./r6-9";
 
 export function createTacticalScene(input: Pick<TacticalScene, "id" | "campaignId" | "name" | "floors"> & Partial<Pick<TacticalScene, "linkedMissionId">>): TacticalScene {
-  const scene: TacticalScene = { schemaVersion: TACTICAL_SCENE_SCHEMA_VERSION, id: input.id, campaignId: input.campaignId, name: input.name.trim(), linkedMissionId: input.linkedMissionId ?? null, lifecycle: "draft", revisionId: `${input.id}:r1`, revisionNo: 1, parentRevisionId: null, floors: input.floors, fow: { regions: [], patches: [] }, overlay: { draft: [], published: null } };
+  const scene: TacticalScene = { schemaVersion: TACTICAL_SCENE_SCHEMA_VERSION, id: input.id, campaignId: input.campaignId, name: input.name.trim(), linkedMissionId: input.linkedMissionId ?? null, lifecycle: "draft", revisionId: `${input.id}:r1`, revisionNo: 1, parentRevisionId: null, floors: input.floors, fow: { regions: [], patches: [] }, overlay: { draft: [], published: null }, assets: [], effects: { draft: [], published: null, dayNight: "day" } };
   const result = validateTacticalScene(scene); if (!result.ok) throw new Error(result.errors.join("; ")); return scene;
 }
 export function serializeTacticalScene(scene: TacticalScene): string { const result = validateTacticalScene(scene); if (!result.ok) throw new Error(result.errors.join("; ")); return JSON.stringify(scene); }

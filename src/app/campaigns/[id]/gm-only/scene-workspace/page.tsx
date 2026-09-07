@@ -6,7 +6,7 @@ import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { adaptLegacyToTacticalScene, canManageTacticalScene, parseTacticalScene, type LegacyExplorationMapRow, type LegacyFowRegionRow, type LegacySceneDocumentRow } from "@/lib/scene-runtime";
 import { SceneWorkspaceClient } from "@/components/scene-runtime/scene-workspace-client";
 
-type Props = { params: Promise<{ id: string }> };
+type Props = { params: Promise<{ id: string }>; searchParams?: Promise<{ sceneId?: string }> };
 
 /**
  * R6.3 boundary: authorization is checked before the campaign/scene queries.
@@ -14,8 +14,9 @@ type Props = { params: Promise<{ id: string }> };
  * client-side privileged queries and no service-role fallback. Legacy data is
  * adapted read-only and all editing remains in browser memory until R6.4.
  */
-export default async function SceneWorkspacePage({ params }: Props) {
+export default async function SceneWorkspacePage({ params, searchParams }: Props) {
   const { id: campaignId } = await params;
+  const requestedSceneId = (await searchParams)?.sceneId;
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/dashboard");
@@ -31,7 +32,7 @@ export default async function SceneWorkspacePage({ params }: Props) {
   let persistedSceneId: string | undefined;
   let persistedRevisionId: string | undefined;
   let report: { severity: string; code: string; message: string }[] = [];
-  const { data: persisted } = await supabase.from("tactical_scenes").select("id, current_revision_no").eq("campaign_id", campaignId).order("updated_at", { ascending: false }).limit(1).maybeSingle();
+  const { data: persisted } = await supabase.from("tactical_scenes").select("id, current_revision_no").eq("campaign_id", campaignId).eq(requestedSceneId ? "id" : "campaign_id", requestedSceneId ?? campaignId).order("updated_at", { ascending: false }).limit(1).maybeSingle();
   if (persisted) {
     const { data: revision } = await supabase.from("tactical_scene_revisions").select("id, document").eq("scene_id", persisted.id).eq("revision_no", persisted.current_revision_no).maybeSingle();
     const parsed = revision ? parseTacticalScene(revision.document) : null;
@@ -49,5 +50,6 @@ export default async function SceneWorkspacePage({ params }: Props) {
     report = [{ severity: "converted", code: "no_legacy_scene", message: "Nessuna scena legacy caricata: il workspace parte da una scena locale vuota." }];
   }
 
-  return <div className="flex min-h-screen flex-col bg-[#110f0f] text-barber-paper"><header className="flex shrink-0 items-center gap-3 border-b border-barber-gold/20 bg-[#191514] px-4 py-3 sm:px-6"><Button variant="ghost" size="sm" asChild className="text-barber-gold hover:bg-barber-gold/10"><Link href={`/campaigns/${campaignId}/gm-screen`}><ArrowLeft className="mr-1.5 h-4 w-4" />GM screen</Link></Button><Map className="h-5 w-5 text-barber-gold" /><span className="font-serif text-lg">Scene Workspace</span><span className="hidden text-sm text-barber-paper/45 sm:inline">· ambiente tattico separato dalle mappe Wiki</span></header><SceneWorkspaceClient campaignId={campaignId} campaignName={campaign.name} initialScene={initialScene} report={report} persistedSceneId={persistedSceneId} persistedRevisionId={persistedRevisionId} /></div>;
+  const { data: sceneList } = await supabase.from("tactical_scenes").select("id,name,lifecycle,current_revision_no,updated_at").eq("campaign_id", campaignId).order("updated_at", { ascending: false });
+  return <div className="flex min-h-screen flex-col bg-[#110f0f] text-barber-paper"><header className="flex shrink-0 items-center gap-3 border-b border-barber-gold/20 bg-[#191514] px-4 py-3 sm:px-6"><Button variant="ghost" size="sm" asChild className="text-barber-gold hover:bg-barber-gold/10"><Link href={`/campaigns/${campaignId}/gm-screen`}><ArrowLeft className="mr-1.5 h-4 w-4" />GM screen</Link></Button><Map className="h-5 w-5 text-barber-gold" /><span className="font-serif text-lg">Scene Workspace</span><nav className="ml-auto flex gap-2 overflow-auto">{(sceneList ?? []).map((item) => <Link key={item.id} href={`/campaigns/${campaignId}/gm-only/scene-workspace?sceneId=${item.id}`} className={`rounded px-2 py-1 text-xs ${item.id === requestedSceneId ? "bg-barber-gold/25 text-barber-gold" : "text-barber-paper/60"}`}>{item.name}</Link>)}</nav></header><SceneWorkspaceClient campaignId={campaignId} campaignName={campaign.name} initialScene={initialScene} report={report} persistedSceneId={persistedSceneId} persistedRevisionId={persistedRevisionId} /></div>;
 }

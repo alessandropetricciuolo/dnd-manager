@@ -1,4 +1,5 @@
 import type { FowPatch, FowRegion, NormPoint, NormPolygon, SceneOverlayItem, SceneValidationResult, TacticalScene } from "./types";
+import type { ProjectionEffect } from "./r6-8";
 import { TACTICAL_SCENE_SCHEMA_VERSION } from "./types";
 
 const finite = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
@@ -38,18 +39,26 @@ export function validateTacticalScene(scene: TacticalScene): SceneValidationResu
     if (!id(floor.id) || !id(floor.asset.id) || !id(floor.asset.storageKey) || !id(floor.asset.mimeType) || !["upload", "generated", "rendered"].includes(floor.asset.origin)) errors.push(`floor ${floor.id}: identità/asset incompleto`);
     if (!finite(floor.width) || !finite(floor.height) || floor.width <= 0 || floor.height <= 0 || !finite(floor.asset.width) || !finite(floor.asset.height) || floor.asset.width <= 0 || floor.asset.height <= 0) errors.push(`floor ${floor.id}: dimensioni non valide`);
     if (floor.grid && (!finite(floor.grid.cellSize) || floor.grid.cellSize <= 0 || !finite(floor.grid.offsetX) || !finite(floor.grid.offsetY))) errors.push(`floor ${floor.id}: griglia non valida`);
-    floor.layers.forEach((layer) => { layerIds.push(layer.id); if (!id(layer.label) || !Number.isFinite(layer.sortOrder) || !Number.isFinite(layer.opacity) || layer.opacity < 0 || layer.opacity > 1) errors.push(`layer ${layer.id}: ordine/opacità non validi`); layer.features.forEach((feature) => { featureIds.push(feature.id); if (!id(feature.id) || !polygon(feature.geometry)) errors.push(`feature ${feature.id}: geometria non valida`); if (feature.layerId && feature.layerId !== layer.id) errors.push(`feature ${feature.id}: layer incompatibile`); }); });
+    floor.layers.forEach((layer) => { layerIds.push(layer.id); if (!id(layer.label) || !Number.isFinite(layer.sortOrder) || !Number.isFinite(layer.opacity) || layer.opacity < 0 || layer.opacity > 1 || (layer.style !== undefined && !id(layer.style))) errors.push(`layer ${layer.id}: ordine/stile/opacità non validi`); layer.features.forEach((feature) => { featureIds.push(feature.id); if (!id(feature.id) || !polygon(feature.geometry)) errors.push(`feature ${feature.id}: geometria non valida`); if (feature.layerId && feature.layerId !== layer.id) errors.push(`feature ${feature.id}: layer incompatibile`); }); });
+    (floor.props ?? []).forEach((prop) => { if (!id(prop.id) || !id(prop.kind) || !finite(prop.x) || !finite(prop.y) || prop.x < 0 || prop.x > 1 || prop.y < 0 || prop.y > 1) errors.push(`prop ${prop.id}: posizione o identità non valida`); });
+    (floor.gmNotes ?? []).forEach((note) => { if (!id(note.id) || !finite(note.x) || !finite(note.y) || note.x < 0 || note.x > 1 || note.y < 0 || note.y > 1 || typeof note.text !== "string") errors.push(`nota GM ${note.id}: dati non validi`); });
   });
   unique(errors, layerIds, "layer"); unique(errors, featureIds, "feature");
   const regionIds: string[] = []; scene.fow.regions.forEach((region: FowRegion) => { regionIds.push(region.id); const sourceFloor = scene.floors.find((floor) => floor.id === region.floorId); const sourceFeature = sourceFloor?.layers.flatMap((layer) => layer.features).find((feature) => feature.id === region.sourceFeatureId); if (!id(region.floorId) || !sourceFloor || !polygon(region.polygon)) errors.push(`FoW ${region.id}: regione o piano inesistente`); if (region.sourceFeatureId !== undefined && (!sourceFeature || !polygon(sourceFeature.geometry))) errors.push(`FoW ${region.id}: feature sorgente inesistente sul piano`); if (region.sourceRevisionNo !== undefined && (!Number.isInteger(region.sourceRevisionNo) || region.sourceRevisionNo < 1 || region.sourceRevisionNo > scene.revisionNo)) errors.push(`FoW ${region.id}: revisione sorgente non coerente`); }); unique(errors, regionIds, "FoW");
   const patchIds: string[] = []; scene.fow.patches.forEach((patch: FowPatch) => { patchIds.push(patch.id); const region = scene.fow.regions.find((candidate) => candidate.id === patch.regionId); if (!id(patch.regionId) || !region) errors.push(`patch ${patch.id}: regione inesistente`); if (patch.polygon && (!polygon(patch.polygon) || !samePolygon(patch.polygon, region?.polygon ?? []))) errors.push(`patch ${patch.id}: il poligono deve coincidere con la regione (il core applica patch a regione intera)`); }); unique(errors, patchIds, "patch");
-  const availableAssetIds = new Set(scene.floors.map((floor) => floor.asset.id));
+  const availableAssetIds = new Set([...scene.floors.map((floor) => floor.asset.id), ...(scene.assets ?? []).map((asset) => asset.id)]);
+  (scene.assets ?? []).forEach((asset) => { if (!id(asset.id) || !id(asset.storageKey) || !id(asset.mimeType) || !["upload", "generated", "rendered"].includes(asset.origin) || !finite(asset.width) || !finite(asset.height) || asset.width <= 0 || asset.height <= 0) errors.push(`asset ${asset.id}: contratto non valido`); });
   // Draft and published overlays are separate snapshots. The same stable id
   // may intentionally exist in both while a draft is being edited against a
   // published projection; duplicates inside one snapshot remain invalid.
   unique(errors, scene.overlay.draft.map((item) => item.id), "overlay draft");
   unique(errors, (scene.overlay.published ?? []).map((item) => item.id), "overlay published");
   [...scene.overlay.draft, ...(scene.overlay.published ?? [])].forEach((item) => { checkOverlay(item, errors); if ((item.type === "image" || item.type === "gif") && !availableAssetIds.has(item.assetId)) errors.push(`overlay ${item.id}: asset inesistente`); });
+  const allEffects = [...(scene.effects?.draft ?? []), ...(scene.effects?.published ?? [])];
+  allEffects.forEach((effect: ProjectionEffect) => { if (!id(effect.floorId) || !scene.floors.some((floor) => floor.id === effect.floorId)) errors.push(`effetto ${effect.id}: piano inesistente`); if (!polygon(effect.polygon)) errors.push(`effetto ${effect.id}: geometria non valida`); if (!Number.isFinite(effect.opacity) || effect.opacity < 0 || effect.opacity > 1 || !Number.isFinite(effect.scale) || effect.scale <= 0) errors.push(`effetto ${effect.id}: opacità/scala non valida`); if (!["fire", "poison", "smoke", "mist", "ice", "lightning", "darkness"].includes(effect.kind)) errors.push(`effetto ${effect.id}: tipo non valido`); });
+  unique(errors, (scene.effects?.draft ?? []).map((effect) => effect.id), "effetto draft");
+  unique(errors, (scene.effects?.published ?? []).map((effect) => effect.id), "effetto published");
+  if (scene.effects && !["day", "night"].includes(scene.effects.dayNight)) errors.push("giorno/notte non valido");
   return errors.length ? { ok: false, errors } : { ok: true, scene };
 }
 export function parseTacticalScene(raw: unknown): SceneValidationResult {

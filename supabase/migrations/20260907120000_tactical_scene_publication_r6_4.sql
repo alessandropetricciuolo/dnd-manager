@@ -123,6 +123,7 @@ BEGIN
   IF NOT FOUND THEN RAISE EXCEPTION 'tactical_scene_revision_conflict'; END IF;
   SELECT * INTO revision FROM public.tactical_scene_revisions WHERE id = p_revision_id AND scene_id = p_scene_id AND revision_no = p_revision_no;
   IF NOT FOUND THEN RAISE EXCEPTION 'tactical_scene_revision_not_found'; END IF;
+  IF EXISTS (SELECT 1 FROM jsonb_array_elements(COALESCE(revision.document->'floors', '[]'::jsonb)) floor WHERE (floor->'asset'->>'storageKey') LIKE 'local://%' OR floor->'asset'->>'mimeType' = 'image/svg+xml') THEN RAISE EXCEPTION 'tactical_scene_placeholder_map'; END IF;
   fow := COALESCE(revision.document->'fow', '{}'::jsonb);
   -- Region-wide patches are materialized in stable id order. The publication
   -- and runtime therefore never depend on a later client-side interpretation.

@@ -6,6 +6,7 @@ import {
   transitionTacticalScene,
 } from "./index";
 import type { SceneLifecycle, SceneOverlayItem, TacticalScene } from "./types";
+import { assertPublishableScene } from "./r6-5";
 
 /** State held by the R6.3 GM workspace. It is intentionally not persisted. */
 export type TacticalWorkspaceState = {
@@ -30,7 +31,7 @@ export function createLocalWorkspaceScene(campaignId: string, name = "Scena rapi
       sortOrder: 0,
       width: 1600,
       height: 900,
-      asset: { id: "local-placeholder", origin: "generated", storageKey: "local://placeholder", mimeType: "image/svg+xml", width: 1600, height: 900 },
+      asset: { id: "local-demo", origin: "generated", storageKey: "data:image/png;base64,AA==", mimeType: "image/png", width: 1600, height: 900 },
       grid: { visible: false, kind: "square", cellSize: 80, offsetX: 0, offsetY: 0 },
       layers: [{ id: "layer-1", label: "Ambiente", sortOrder: 0, visible: true, opacity: 1, features: [] }],
     }],
@@ -87,9 +88,12 @@ export function updatePublishedFow(state: TacticalWorkspaceState, regionId: stri
 
 /** Publishes a local snapshot only; no server/database write is performed. */
 export function publishWorkspace(state: TacticalWorkspaceState): TacticalWorkspaceState {
+  assertPublishableScene(state.draft);
   if (state.draft.lifecycle !== "ready" && state.draft.lifecycle !== "live") throw new Error("La scena deve essere pronta prima della proiezione");
-  const published = { ...applyFowPatches(state.draft), lifecycle: "live" as const, overlay: { ...state.draft.overlay, published: structuredClone(state.draft.overlay.draft) } };
-  return { ...state, draft: published, published: structuredClone(published) };
+  // GM notes are editing aids and must never cross the publication boundary.
+  const effects = state.draft.effects ?? { draft: [], published: null, dayNight: "day" as const };
+  const published = { ...applyFowPatches(state.draft), lifecycle: "live" as const, floors: state.draft.floors.map((floor) => ({ ...floor, gmNotes: [] })), overlay: { ...state.draft.overlay, published: structuredClone(state.draft.overlay.draft) }, effects: { ...effects, published: structuredClone(effects.draft) } };
+  return { ...state, draft: { ...published, floors: state.draft.floors }, published: structuredClone(published) };
 }
 
 export function discardWorkspaceRevision(state: TacticalWorkspaceState): TacticalWorkspaceState {

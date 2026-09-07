@@ -138,13 +138,15 @@ function convertFloor(floor: SceneDocumentV1["floors"][number], report: LegacyRe
     layers.push({ id: `${floor.id}:legacy-layer`, label: "Legacy non attribuito", sortOrder: Number.MAX_SAFE_INTEGER, visible: true, opacity: 1, features: convertItems(`${floor.id}:legacy-layer`, true, fallbackAreas, fallbackWalls) });
   }
   if (!layers.length) { entry(report, "warning", "missing_scene_layers", "Il piano non contiene layer; nessuna feature attribuibile.", `floors.${floor.id}`); }
-  if (floor.props.length) entry(report, "ignored", "props_not_projectable", `${floor.props.length} prop puntuali esclusi: il contratto V2 richiede geometria.`, `floors.${floor.id}.props`);
-  if (floor.gmNotes.length) entry(report, "ignored", "gm_notes_private", `${floor.gmNotes.length} note GM private non convertite in feature tattiche.`, `floors.${floor.id}.gmNotes`);
+  if (floor.props.length) entry(report, "converted", "props_gm_workspace", `${floor.props.length} prop puntuali mantenuti nel workspace GM.`, `floors.${floor.id}.props`);
+  if (floor.gmNotes.length) entry(report, "converted", "gm_notes_private", `${floor.gmNotes.length} note GM mantenute private nel workspace.`, `floors.${floor.id}.gmNotes`);
   return {
     id: floor.id, label: floor.label, sortOrder: floor.sortOrder, width: floor.width, height: floor.height,
     asset: { id: `${floor.id}:asset`, origin: "rendered", storageKey: "", mimeType: "image/webp", width: floor.width, height: floor.height },
     grid: floor.grid ? { visible: true, kind: "square", cellSize: floor.grid.cellPx, offsetX: floor.grid.offsetX / floor.width, offsetY: floor.grid.offsetY / floor.height } : undefined,
     layers,
+    props: floor.props.map((prop) => ({ id: prop.id, kind: prop.kind, x: prop.x / floor.width, y: prop.y / floor.height, rotation: prop.rotation, scale: prop.scale })),
+    gmNotes: floor.gmNotes.map((note) => ({ id: note.id, x: note.x / floor.width, y: note.y / floor.height, text: note.text, width: note.width ? note.width / floor.width : undefined })),
   };
 }
 

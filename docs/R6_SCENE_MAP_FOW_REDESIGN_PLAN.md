@@ -1,8 +1,8 @@
 # R6 — Riprogettazione scene, mappe, overlay e Fog of War
 
-Stato: R6.0 approvata; R6.1 core puro implementata; R6.2 adapter read-only implementata. R6.3+ non completate.
+Stato: audit di parità completato il 2026-09-07. R6.1–R6.4 costituiscono una fondazione tecnica parziale, non un MVP funzionalmente equivalente al legacy. L'AI è rinviata a R6.10 finché non passano la parità manuale R6.5–R6.8 e la validazione live R6.9.
 
-Questo documento descrive il sistema rilevato nel repository e propone un modello target per la futura generazione dall'Assistente GM. Non esegue migrazioni, non modifica i percorsi legacy e non dimostra il comportamento del Supabase remoto o di una sessione live.
+Questo documento descrive il sistema rilevato nel repository e propone un modello target per la futura generazione dall'Assistente GM. L'audit live è osservativo: non esegue migrazioni, non modifica i percorsi legacy e non dimostra scritture, reconnect o comportamento del Supabase remoto.
 
 ## R6.0 — Decisioni di prodotto già approvate
 
@@ -52,6 +52,32 @@ I pin di `map_pins` sono link a `maps` o `wiki_entities` e sono letti dalla pagi
 Gli overlay sono JSON liberi validati in applicazione (`MapOverlayItem`): testo o simbolo, posizione, rotazione e scala. `overlay_draft` è sulla stessa riga della pubblicazione; `map_overlay_snapshots` conserva stati precedenti. Il player vede `overlay_items` pubblicati, non la bozza. Non esiste un canale realtime per gli overlay.
 
 La proiezione FoW è separata: `vista-dall-alto/proiezione` legge la mappa FoW e le regioni; i componenti si sottoscrivono a Realtime per regioni e aggiornamenti della mappa. Le policy più recenti (`20260413193000`) consentono lettura e modifica delle mappe FoW a qualunque GM/Admin, mentre le scene hanno policy più larga ancora: controllano soltanto il ruolo e non la campagna.
+
+### 1.4 Audit live di parità del 2026-09-07
+
+L'audit autenticato sulle tre route indicate dal CEO conferma che il prodotto legacy è composto da un unico flusso operativo distribuito su tre superfici:
+
+1. **Scene Editor**: nome, missione, più piani ordinabili, dimensioni e griglia per piano, layer visibili con stile/opacità, strumenti stanza/corridoio/porta/prop/nota GM, eliminazione e generatore dungeon configurabile per numero/dimensione stanze, tema prop, seed, append, porte e prop.
+2. **Vista dall'alto**: selezione mappa/piano, preparazione e modifica dei poligoni FoW, reveal/hide per zona, upload immagine o URL Drive, missione e scala, import file/testo JSON Foundry o Dungeon Alchemist, calibrazione griglia e apertura della proiezione.
+3. **Proiezione**: mappa e FoW sincronizzati, fullscreen ed effetti applicati direttamente sulla superficie (forme, fuoco, veleno, fumo, fumini, ghiaccio, fulmine, oscurità, giorno/notte, mostra/nascondi e pulizia).
+
+La verifica live non ha eseguito scritture o cancellazioni. Ha osservato i controlli disponibili e lo stato già salvato della campagna indicata: una mappa collegata a missione, cinque zone FoW importate e griglia attiva.
+
+### 1.5 Gap tra legacy e R6.4
+
+| Capacità richiesta | Legacy verificato | R6.4 attuale | Esito |
+| --- | --- | --- | --- |
+| Upload mappa | File JPG/PNG/WebP/GIF, URL Drive, compressione e verifica | Solo `storageKey`; scena nuova con placeholder | Mancante |
+| Import Foundry | File o testo JSON; walls/grid → regioni FoW | Solo tipo `importedInput`; nessun parser/action/UI | Mancante |
+| FoW manuale | Disegno, forme rapide, modifica vertici, sposta/ridimensiona, elimina, reveal/hide/reset/undo | Solo reveal/hide di regioni già esistenti | Gravemente incompleto |
+| Effetti proiezione | Effetti animati/visuali e giorno/notte direttamente sulla mappa | Testo/marker/area/cerchio/misura/timer statici | Non equivalente |
+| Overlay immagine/GIF | Effetto visuale sulla superficie | Tipo dichiarato ma non creabile né renderizzato dal workspace | Mancante |
+| Missioni | Collegamento da mappa e scena | Campo nel contratto, nessun controllo nel workspace | Mancante |
+| Multi-piano | Crea, seleziona, riordina, elimina e proietta piani | Il workspace renderizza solo `floors[0]` | Mancante |
+| Modellazione | Stanze, corridoi, muri, porte, layer, prop, note e dungeon casuale | Nessuno strumento; le feature adattate non vengono rese sulla superficie | Mancante |
+| Proiezione live | Seconda scheda, FoW Realtime ed effetti locali | Publication/FoW boundary locale; remoto e reconnect non validati | Parziale |
+
+R6.3 non può quindi essere considerata un MVP di prodotto: dimostra lifecycle e snapshot, ma non consente al GM di preparare una mappa tattica completa. R6.4 aggiunge il confine persistente senza colmare il divario operativo.
 
 ## 2. Incongruenze e sovrapposizioni
 
@@ -144,47 +170,144 @@ Non migrare dati finché il modello e il contratto player non sono approvati. Pr
 
 Durante la coesistenza, i legacy restano source-of-truth per i loro percorsi. Un flag per campagna/utente abilita solo lettura del nuovo workspace. Ogni backfill deve essere idempotente, con report orfani/ambigui, checksum e rollback per record; mai cancellare o sovrascrivere le tabelle legacy. La migrazione write va fatta solo dopo prove di RLS, storage e recupero da backup.
 
-## 8. Milestone proposte
+## 8. Piano unico di sviluppo
 
-### R6.0 — Decisione di dominio (APPROVATA)
+### R6.0 — Decisione di dominio (COMPLETATA)
 
 Owner: architettura + prodotto. Approvare entità, player contract, ownership GM/Admin, semantica `live/publication`, e se `maps` può restare separato dalla scena.
 
 Accettazione: schema di stati e diagramma delle relazioni approvati dal CEO il 2026-09-07; nessun codice runtime richiesto.
 
-### R6.1 — Contract e core puro (IMPLEMENTATA)
+### R6.1 — Contract e core puro (COMPLETATA LOCALMENTE)
 
 File: `src/lib/scene-runtime/types.ts`, `src/lib/scene-runtime/validate.ts`, `src/lib/scene-runtime/index.ts`, `src/lib/scene-runtime/__tests__/scene-runtime.test.ts`. Il modulo è isolato, non importa Supabase, SDK, route, UI, AI o mappe Wiki.
 
 Accettazione: fixture valide/invalide, round-trip JSON, ID stabili e univoci, geometrie normalizzate 0–1 e validate, conflitto `expectedRevisionNo`, lifecycle, FoW manuale/imported/derived rappresentato, patch deterministiche, overlay tipizzati e griglia opzionale/nascondibile. Test mirati eseguiti; browser, DB, Realtime e live non validati.
 
-### R6.2 — Read adapter legacy (IMPLEMENTATA)
+### R6.2 — Read adapter legacy (COMPLETATA LOCALMENTE)
 
 File indicativi: nuovo adapter server e test contract. Leggere scene/mappe esistenti senza scriverle e produrre report di conversione.
 
 Accettazione: `src/lib/scene-runtime/legacy-read-adapter.ts` converte in modo puro scene multi-piano, raster upload/generated, FoW con provenienza esplicita, overlay tipizzati e produce report stabili per orfani, ambiguità e mappe Wiki escluse. Fixture read-only e immutabilità input in `src/lib/scene-runtime/__tests__/legacy-read-adapter.test.ts`. Nessun database/browser/live validato; nessuna migration o write eseguita.
 
-### R6.3 — Workspace GM e preview (IMPLEMENTATA — MVP LOCALE)
+### R6.3 — Shell del workspace GM (COMPLETATA LOCALMENTE, NON È MVP DI PRODOTTO)
 
 File: `src/app/campaigns/[id]/gm-only/scene-workspace/page.tsx`, `src/components/scene-runtime/scene-workspace-client.tsx`, `src/lib/scene-runtime/workspace.ts`, `src/lib/scene-runtime/access.ts`. Il workspace usa l’adapter R6.2 in sola lettura e mantiene draft/pubblicazione nel solo stato del browser.
 
 Accettazione: guardia server GM/Admin prima delle query; scena locale con piano/placeholder; griglia opzionale nascosta di default; FoW manuale/importato/derivato visualizzato con reveal/hide di regione; overlay draft per testo, marker, area, cerchio, misura e timer; lifecycle, revisioni, conflitto, scarto e rollback locali; preview di proiezione interna che mostra soltanto lo snapshot pubblicato. Non sono state aggiunte migration, tabelle, write Supabase, route player, link pubblico, upload, Realtime o persistenza cross-tab. La proiezione su una seconda scheda/dispositivo resta bloccata fino a R6.4 perché richiederebbe uno stato condiviso durevole.
 
-### R6.4 — Publication/live boundary (IMPLEMENTAZIONE LOCALE COMPLETATA — REMOTE DA APPLICARE/VALIDARE)
+### R6.4 — Publication/live boundary (FONDAZIONE LOCALE COMPLETATA — REMOTE DA VALIDARE)
 
 File: `supabase/migrations/20260907120000_tactical_scene_publication_r6_4.sql`, `src/app/campaigns/tactical-scene-actions.ts` e la route GM-only `scene-workspace/[sceneId]/proiezione`. La migration è additiva: introduce scene tattiche, revisioni immutabili, publication e stato FoW runtime; non modifica i modelli legacy. Le server actions verificano ruolo dal profilo prima delle query di dominio, validano il documento R6.1, controllano `expectedRevisionNo`, gestiscono pubblicazione esplicita e rollback con errori DB espliciti. Il workspace legge una revisione tattica persistita quando disponibile e offre salvataggio/pubblicazione espliciti; il client non usa credenziali privilegiate.
 
 Verificato localmente: contratto/payload e guardia ruoli tramite test R6.3/R6.1, typecheck dei nuovi file, lint e diff-check. Da validare sul Supabase remoto: applicazione migration, grants/Data API, RLS per GM/Admin/player/anonimo, inserimento/conflitto concorrente, rollback reale, Realtime publication/FoW e reconnect della seconda scheda. Nessun backfill, upload asset, AI, route player o URL pubblico è incluso. La proiezione cross-tab con stato aggiornato in tempo reale resta subordinata alla verifica remota.
 
-### R6.5 — Assistente GM
+### R6.5 — Flusso mappa e missione (IMPLEMENTATO LOCALMENTE — REMOTE DA VALIDARE)
 
-Solo dopo la stabilizzazione manuale: tool che genera `scene_ai_proposal`, visualizza fonti/assunzioni e richiede conferma. Nessun write autonomo.
+Obiettivo: rendere il workspace capace di creare e riaprire una scena utile senza passare dalle route legacy.
+
+Scope:
+
+- elenco e selezione esplicita delle scene della campagna, senza scegliere implicitamente la più recente;
+- creazione/rinomina/archiviazione scena;
+- collegamento e rimozione della missione;
+- upload file JPG/PNG/WebP/GIF e import da URL supportato con anteprima, validazione, compressione e asset durevole;
+- scelta, aggiunta, riordino ed eliminazione dei piani;
+- griglia opzionale con calibrazione e visibilità per piano;
+- riuso dell'upload legacy dietro un adapter, evitando una seconda pipeline media.
+
+Accettazione end-to-end: un GM crea una scena, carica una mappa, la collega a una missione, aggiunge un secondo piano, salva, ricarica la pagina e ritrova scena, asset, missione, ordine e griglia. Nessun placeholder viene pubblicato come mappa valida.
+
+Implementato nel worktree: selezione deterministica scene, nuova bozza, rename/archive, missione, upload file/URL tramite pipeline legacy, anteprima, gestione completa dei piani e griglia, cleanup compensativo degli upload sostituiti/non ancora salvati e blocco anti-placeholder client/server/RPC. Verifica locale: 24/24 test `scene-runtime`, lint focalizzato e `git diff --check`. L'accettazione end-to-end resta aperta finché migration R6.4/R6.5, upload e riapertura non vengono provati sul Supabase remoto autenticato.
+
+### R6.6 — FoW manuale e import Foundry (IMPLEMENTATO LOCALMENTE — REMOTE DA VALIDARE)
+
+Obiettivo: portare nel workspace un solo editor FoW, indipendentemente dall'origine.
+
+Scope:
+
+- strumenti vertici manuali, rettangolo, cerchio, spray e poligono libero;
+- selezione, modifica vertici, spostamento, ridimensionamento ed eliminazione;
+- reveal/hide singolo, reveal/hide globale, reset e undo operativo;
+- import file o testo JSON Foundry/Dungeon Alchemist riusando `train-scene-import`;
+- preview dell'import prima della sostituzione/merge;
+- origine `manual`, `imported` o `derived` visibile per regione;
+- modifica manuale successiva all'import senza perdere la provenienza;
+- persistenza strutturale separata dallo stato reveal live.
+
+Accettazione end-to-end: sulla stessa immagine il GM può importare cinque regioni, correggerne una, aggiungerne una manuale, pubblicare, rivelare/nascondere dalla regia e vedere la seconda scheda aggiornarsi; reload e reconnect ricostruiscono lo stesso stato.
+
+Implementato nel worktree: la Stage usa il piano attivo e offre hit-test, selezione evidenziata, trascinamento regione, modifica dei vertici, ridimensionamento ed eliminazione; rettangolo, cerchio, spray e poligono libero producono regioni manuali. Reveal/hide singolo e globale, reset e undo coprono operazioni strutturali e stato runtime pubblicato. L'import accetta file o testo JSON, genera una preview non mutante e applica Merge o Sostituisci sul solo piano attivo; le regioni restano editabili con provenienza `imported`. Cambio piano filtra rendering e controlli; eliminare un piano rimuove anche regioni e patch collegate. Le geometrie sono salvate nella bozza/revisione, mentre dopo la pubblicazione il reveal aggiorna esclusivamente lo snapshot runtime. Verifica locale: 28/28 test `scene-runtime`, 52/52 test `map-core`, lint focalizzato, typecheck focalizzato e `git diff --check`. L'accettazione end-to-end resta aperta finché persistenza, seconda scheda, Realtime, reload e reconnect non vengono provati sul Supabase remoto autenticato.
+
+### R6.7 — Editor scena multi-piano e prop (IMPLEMENTATO LOCALMENTE — REMOTE DA VALIDARE)
+
+Obiettivo: incorporare nel workspace le capacità utili dello Scene Editor senza mantenere un secondo formato di output.
+
+Scope:
+
+- porting incrementale dei componenti `scene-editor` e `map-core`, non riscrittura da zero;
+- layer con ordine, visibilità, nome, stile e opacità;
+- stanze, corridoi, muri, porte, prop e note GM;
+- zoom, pan, snap e selezione/eliminazione;
+- generatore dungeon con stanze, dimensione, tema prop, seed, append/sostituzione, porte e prop;
+- raster/anteprima per ogni piano derivati dalla stessa revisione tattica;
+- note GM sempre escluse dalla publication.
+
+Accettazione end-to-end: il GM costruisce o modifica due piani, aggiunge prop e una nota privata, salva una nuova revisione, pubblica un piano e verifica che nota e strumenti GM non compaiano nella proiezione.
+
+Implementato nel worktree: il contratto tattico conserva feature geometriche per layer, prop puntuali e note GM private per piano; `r6-7.ts` fornisce gestione layer (nome, stile, ordine, visibilità, opacità), snap, strumenti geometrici, selezione/spostamento/eliminazione, CRUD note e generatore configurabile che riusa `map-core` per stanze, porte e prop. Il workspace espone interazione reale sulla stage, zoom, strumenti stanza/corridoio/muro/porta, editor layer, generator settings, modifica testo/posizione/eliminazione note e anteprima SVG deterministica per ciascun piano derivata dalla revisione. La publication rimuove le note GM e i test coprono il ciclo locale multi-piano con prop, preview, revisione e publication. Verifica locale corrente: 33/33 test `scene-runtime`, 52/52 test `map-core`, lint, typecheck filtrato e `git diff --check`. Resta da validare sul servizio remoto autenticato il salvataggio/reload della preview e la pubblicazione reale; la preview locale non sostituisce il raster upload originale.
+
+### R6.8 — Overlay ed effetti sulla proiezione (IMPLEMENTATO LOCALMENTE — REMOTE DA VALIDARE)
+
+
+Obiettivo: ricostruire l'esperienza visuale mostrata nello screenshot, direttamente sulla mappa proiettata.
+
+Scope:
+
+- selezione geometrica tramite quadrato, cerchio, spray e poligono libero;
+- fuoco, veleno, fumo, fumini, ghiaccio, fulmine e oscurità;
+- giorno/notte, mostra/nascondi, pulisci, sposta, ridimensiona ed elimina;
+- testo, marker, aree colorate, cerchi, misure e timer;
+- asset immagine/GIF realmente caricabili, posizionabili e renderizzati;
+- separazione esplicita tra overlay persistenti della scena ed effetti effimeri della sessione;
+- rendering identico nel controllo GM e nella proiezione, senza pannelli operativi sullo schermo proiettato.
+
+Decisione tecnica raccomandata: gli effetti atmosferici restano effimeri ma sincronizzati per la sessione; testo, marker, aree, misure e timer possono essere salvati nella bozza e inclusi nella publication.
+
+Accettazione end-to-end: il GM disegna fuoco, fumo e ghiaccio sulla mappa pubblicata, li sposta/ridimensiona/nasconde/pulisce e osserva lo stesso risultato nella seconda scheda. Gli effetti non vengono confusi con regioni FoW.
+
+Implementato localmente: il workspace renderizza sulla stessa stage GM/proiezione gli overlay persistenti (testo, marker, aree, cerchi, misure, timer e immagini/GIF da asset durevoli) e gli effetti effimeri (fuoco, veleno, fumo, fumini, ghiaccio, fulmine e oscurità), con geometrie quadrato/cerchio/spray/poligono, giorno/notte e controlli mostra/nascondi, pulisci, sposta, ridimensiona ed elimina. Verifica locale: 36/36 test `scene-runtime`, 52/52 test `map-core`, lint mirato con un solo warning su `<img>`, TypeScript scoped senza errori nei moduli toccati e `git diff --check` superato. La seconda scheda, Realtime, reconnect e validazione live remota restano nel perimetro R6.9.
+
+### R6.9 — Consolidamento, migrazione e validazione live (IMPLEMENTATA LOCALMENTE — REMOTE DA VALIDARE)
+
+Obiettivo: rendere il workspace nuovo il percorso manuale affidabile prima dell'AI.
+
+Scope:
+
+- applicazione e verifica della migration R6.4 sul Supabase remoto;
+- RLS e azioni per Admin, GM, player e anonimo secondo la regola approvata che abilita GM/Admin e nega player/anonimo;
+- Realtime, reconnect, conflitto di revisione, rollback e recupero errore;
+- adapter/backfill idempotente per scene, piani, mappe, missioni e FoW legacy;
+- report di record orfani/ambigui e rollback per record;
+- test browser autenticato dell'intero flusso su desktop e proiettore;
+- confronto visuale e funzionale con le tre route legacy;
+- feature flag per campagna e mantenimento del legacy finché la checklist non passa.
+
+Accettazione: upload → missione → più piani → editor/prop → FoW importato e manuale → publication → effetti → proiezione → reconnect deve passare sul servizio reale. Solo dopo uso live positivo il CEO decide quale route legacy dismettere.
+
+Implementato localmente: migration additiva `20260907130000_tactical_scene_rollout_r6_9.sql` con flag opt-in per campagna (`tactical_scene_rollouts`) e ledger di backfill idempotente con checksum, report e stato/rollback per record (`tactical_scene_backfill_records`); nessuna tabella legacy viene modificata. `r6-9.ts` aggiunge il planner read-only per scene/piani/mappe/FoW con orfani e ambiguità, classificazione degli errori di conflitto/autorizzazione/rete e contratto di riconnessione che impone il reload dello snapshot. La proiezione autentica ora imposta il token Realtime, rilegge la publication a ogni evento/reconnect e ricrea il canale dopo errore o timeout, mostrando lo stato live. Test locali R6.9: 4/4; suite scene-runtime: 40/40; map-core: 52/52; lint mirato e diff-check superati. Il typecheck completo continua a riportare errori preesistenti nei test `sheet-generator` e `ai-v2`, non nei file R6.9.
+
+Blocco remoto dichiarato: in questo worktree non sono presenti credenziali/configurazione Supabase e il CLI Supabase non è installato; non è quindi stata inventata una prova di applicazione migration, RLS, backfill reale, upload/reload, conflitto concorrente o browser autenticato desktop/proiezione. Prima di chiudere R6.9 servono applicazione della migration sul progetto remoto, test con ruoli GM/Admin/player/anonimo, backfill dry-run/apply/rollback, prova su due schede e confronto live con le tre route legacy. Il legacy resta intatto e nessuna route R6.10 è stata avviata.
+
+### R6.10 — Assistente GM
+
+Solo dopo R6.9: tool che genera `scene_ai_proposal`, visualizza fonti/assunzioni e richiede conferma. Nessun write autonomo.
 
 Accettazione: richiesta chiara, ambigua, fonte assente, provider fallito, JSON invalido e retry; accettazione produce una revisione draft, mai una pubblicazione automatica.
 
-### R6.6 — Backfill e dismissione selettiva
+### R6.11 — Dismissione selettiva
 
-Solo con decisione CEO dopo test live: adapter write idempotente, report, rollback e piano per ogni legacy. La rimozione del legacy non è automatica e richiede uso live positivo.
+Solo con decisione CEO dopo test live: rimozione dei soli percorsi diventati ridondanti, telemetria minima sull'adozione e piano di rollback. La rimozione del legacy non è automatica.
 
 ## 9. Rischi e decisioni richieste
 
@@ -201,7 +324,7 @@ Decisioni già fissate: le scene sono mappe tattiche separate dalle mappe Wiki n
 
 ## 10. Raccomandazione netta
 
-Non aggiungere ora generazione AI alle scene esistenti. Il sistema ha già tre modelli che rappresentano superfici correlate con permessi, lifecycle e coordinate differenti. Approvare prima un aggregate scena versionato con publication separata e FoW derivato, introdurre un adapter read-only e verificare il workspace umano. Solo dopo portare l'Assistente GM a generare specifiche strutturate; la prima scrittura automatica accettabile è una bozza non pubblicata e confermabile.
+Non aggiungere ora generazione AI. Conservare R6.1–R6.4 come fondazione e colmare prima la parità manuale riusando i componenti legacy: mappa/missione/piani, FoW, editor e prop, effetti sulla proiezione. Il nuovo workspace diventa MVP soltanto quando il flusso completo R6.9 passa sul servizio reale. Solo allora l'Assistente GM può generare specifiche strutturate; la prima scrittura automatica accettabile resta una bozza non pubblicata e confermabile.
 
 ## Evidenze repository consultate
 
