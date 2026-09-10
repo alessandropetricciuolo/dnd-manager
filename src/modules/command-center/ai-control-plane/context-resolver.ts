@@ -3,6 +3,7 @@ import { generateOpenRouterEmbedding } from "@/lib/ai/openrouter-client";
 import { parseCampaignAiContextFromDb } from "@/lib/campaign-ai-context";
 import type { ActionSupabase } from "../types/actions";
 import type { CommandNoteRow } from "../types";
+import { isGlobalAdmin, resolveAdminContentAccess } from "@/lib/admin-content";
 
 export type ResolvedCommandContext = {
   campaignId: string | null;
@@ -26,6 +27,8 @@ async function fetchMemorySnippets(
 ): Promise<{ title: string; excerpt: string }[]> {
   try {
     const admin = createSupabaseAdminClient();
+    const resolved = await resolveAdminContentAccess();
+    const includeAdminOnly = resolved.ok && isGlobalAdmin(resolved.access);
     const { data: campaign } = await admin.from("campaigns").select("type").eq("id", campaignId).maybeSingle();
     if ((campaign as { type?: string } | null)?.type !== "long") return [];
 
@@ -40,6 +43,7 @@ async function fetchMemorySnippets(
       query_embedding: embedding,
       match_threshold: 0.2,
       match_count: limit,
+      include_admin_only: includeAdminOnly,
     });
     if (res.error) return [];
 

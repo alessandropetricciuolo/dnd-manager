@@ -10,6 +10,7 @@ import {
   type CampaignMemorySourceType,
 } from "@/lib/campaign-memory-indexer";
 import { formatCampaignMemoryActionError, memorySchemaMissingMessage } from "@/lib/campaign-memory-errors";
+import { isGlobalAdmin, resolveAdminContentAccess } from "@/lib/admin-content";
 
 type CampaignMemoryChunkRow = {
   id: string;
@@ -277,6 +278,7 @@ async function semanticMatches(
   admin: ReturnType<typeof createSupabaseAdminClient>,
   campaignId: string,
   question: string
+  , includeAdminOnly = false
 ): Promise<{ rows: CampaignMemoryChunkRow[]; usedFallback: boolean }> {
   const runRpc = admin.rpc as unknown as (
     fn: string,
@@ -292,6 +294,7 @@ async function semanticMatches(
         query_embedding: embedding,
         match_threshold: threshold,
         match_count: 18,
+        include_admin_only: includeAdminOnly,
       });
       if (res.error) throw new Error(res.error.message);
       const rows = (res.data ?? []) as CampaignMemoryChunkRow[];
@@ -314,12 +317,12 @@ async function semanticMatches(
     .flatMap((token) => [`content.ilike.%${token}%`, `title.ilike.%${token}%`])
     .join(",");
 
-  const { data, error } = await admin
+  let lexicalQuery = admin
     .from("campaign_memory_chunks")
     .select("id, campaign_id, source_type, source_id, chunk_index, title, content, summary, metadata, updated_at")
-    .eq("campaign_id", campaignId)
-    .or(orExpr)
-    .limit(24);
+    .eq("campaign_id", campaignId);
+  if (!includeAdminOnly) lexicalQuery = lexicalQuery.eq("admin_only", false);
+  const { data, error } = await lexicalQuery.or(orExpr).limit(24);
 
   if (error) {
     console.error("[queryCampaignMemoryAction] text fallback failed", error);
@@ -384,6 +387,9 @@ export async function queryCampaignMemoryAction(
   const access = await ensureGmOrAdminForCampaign(campaignId);
   if (!access.ok) return { success: false, message: access.message };
   const admin = access.admin;
+  const resolved = await resolveAdminContentAccess();
+  if (!resolved.ok) return { success: false, message: "Autorizzazione non verificabile." };
+  const includeAdminOnly = isGlobalAdmin(resolved.access);
 
   let chunkCount = 0;
   try {
@@ -406,7 +412,7 @@ export async function queryCampaignMemoryAction(
     };
   }
 
-  const { rows, usedFallback } = await semanticMatches(admin, campaignId, trimmed);
+  const { rows, usedFallback } = await semanticMatches(admin, campaignId, trimmed, includeAdminOnly);
   if (!rows.length) {
     return {
       success: false,
