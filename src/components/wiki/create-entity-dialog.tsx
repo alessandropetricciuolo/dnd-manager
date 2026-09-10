@@ -424,6 +424,7 @@ export function CreateEntityDialog({
     }
     formData.set("attributes", JSON.stringify(normalizedAttributes));
     formData.set("visibility", visibility);
+    formData.set("saveAccess", JSON.stringify({ choice: adminOnly ? "admin_only" : "secret" }));
     if (isAdmin && adminDraftsEnabled && adminOnly) formData.set("admin_only", "true");
     if (isAdmin && adminDraftsEnabled && adminOnly) formData.set("admin_only", "true");
     formData.set("allowed_user_ids", JSON.stringify(visibility === "selective" ? selectedPlayerIds : []));

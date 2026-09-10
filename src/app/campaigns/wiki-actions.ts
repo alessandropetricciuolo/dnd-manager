@@ -166,6 +166,14 @@ export async function createEntity(
   const tags = parseTags(formData);
   const relations = parseRelations(formData);
   const adminOnlyRequested = formData.get("admin_only") === "on" || formData.get("admin_only") === "true";
+  const saveAccessRaw = formData.get("saveAccess");
+  if (saveAccessRaw) {
+    try {
+      const saveAccess = JSON.parse(String(saveAccessRaw)) as { choice?: string };
+      if (saveAccess.choice !== "secret" && saveAccess.choice !== "admin_only") return { success: false, message: "Scegli Secret o Solo Admin prima di salvare." };
+      if (saveAccess.choice === "admin_only" && !adminOnlyRequested) return { success: false, message: "La scelta Solo Admin deve essere confermata nel controllo server." };
+    } catch { return { success: false, message: "Scelta accesso IA non valida." }; }
+  }
 
   if (!title) {
     return { success: false, message: "Il titolo è obbligatorio." };
