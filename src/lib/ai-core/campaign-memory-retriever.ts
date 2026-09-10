@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import type { CampaignMemorySourceType } from "@/lib/campaign-memory-indexer";
 import { generateOpenRouterEmbedding } from "@/lib/ai/openrouter-client";
+import { isGlobalAdmin, type AdminContentAccess } from "@/lib/admin-content";
 import type {
   AiMemoryPreviewRetrievalMode,
   AiMemoryPreviewSemanticDiagnostic,
@@ -29,6 +30,7 @@ export type PreviewChunkRow = {
   summary: string | null;
   metadata: Record<string, unknown> | null;
   similarity?: number | null;
+  admin_only?: boolean;
 };
 
 export type RetrieveResult = {
@@ -292,6 +294,7 @@ const LEXICAL_SCAN_LIMIT = 1000;
 
 export type RetrieverDeps = {
   generateEmbedding?: (text: string, opts: { dimensions: number }) => Promise<number[]>;
+  adminAccess?: AdminContentAccess;
 };
 
 function semanticDiagnostic(
@@ -373,7 +376,7 @@ async function expandSourceChunks(
   for (const key of sourceKeys) {
     const [sourceType, sourceId] = key.split(":");
     try {
-      const query = admin
+      let query = admin
         .from("campaign_memory_chunks")
         .select("id, campaign_id, source_type, source_id, chunk_index, title, content, summary, metadata")
         .eq("campaign_id", campaignId)
@@ -381,6 +384,7 @@ async function expandSourceChunks(
         .eq("source_id", sourceId)
         .order("chunk_index", { ascending: true })
         .limit(AI_MEMORY_PREVIEW_MAX_CHUNKS_PER_SOURCE);
+      if (!includeAdminOnly) query = query.eq("admin_only", false);
       const { data, error } = await query;
       if (error) continue;
       const rows = normalizeChunkRows(data);
@@ -404,6 +408,7 @@ export async function retrievePreviewMemory(
   question: string,
   deps: RetrieverDeps = {}
 ): Promise<RetrieveResult> {
+  const includeAdminOnly = Boolean(deps.adminAccess && isGlobalAdmin(deps.adminAccess));
   const normalized = question.trim();
   const hasInjectedEmbedding = Boolean(deps.generateEmbedding);
   const generateEmbedding = deps.generateEmbedding ?? ((t: string, opts: { dimensions: number }) => generateOpenRouterEmbedding(t, opts));
@@ -412,7 +417,9 @@ export async function retrievePreviewMemory(
   // chunkCount per metriche (read-only)
   let chunkCount = 0;
   try {
-    const { count } = await admin.from("campaign_memory_chunks").select("id", { count: "exact", head: true }).eq("campaign_id", campaignId);
+    let countQuery = admin.from("campaign_memory_chunks").select("id", { count: "exact", head: true }).eq("campaign_id", campaignId);
+    if (!includeAdminOnly) countQuery = countQuery.eq("admin_only", false);
+    const { count } = await countQuery;
     chunkCount = count ?? 0;
   } catch {
     chunkCount = 0;
@@ -451,6 +458,7 @@ export async function retrievePreviewMemory(
           query_embedding: embedding,
           match_threshold: threshold,
           match_count: SEMANTIC_MATCH_COUNT,
+          include_admin_only: includeAdminOnly,
         });
         if (res.error) {
           semantic = semanticDiagnostic("error", "rpc_error", safeRpcFailureCategory(res.error));
@@ -521,12 +529,12 @@ export async function retrievePreviewMemory(
 
   const orExpr = dedup.flatMap((token) => [`content.ilike.%${token}%`, `title.ilike.%${token}%`]).join(",");
 
-  const { data, error } = await admin
+  let lexicalQuery = admin
     .from("campaign_memory_chunks")
     .select("id, campaign_id, source_type, source_id, chunk_index, title, content, summary, metadata, updated_at")
-    .eq("campaign_id", campaignId)
-    .or(orExpr)
-    .limit(LEXICAL_SCAN_LIMIT);
+    .eq("campaign_id", campaignId);
+  if (!includeAdminOnly && typeof (lexicalQuery as { eq?: unknown }).eq === "function") lexicalQuery = lexicalQuery.eq("admin_only", false);
+  const { data, error } = await lexicalQuery.or(orExpr).limit(LEXICAL_SCAN_LIMIT);
 
   if (error || !data || (data as unknown[]).length === 0) {
     return {

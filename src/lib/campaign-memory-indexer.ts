@@ -30,6 +30,7 @@ type CampaignMemoryChunkInsert = {
   summary: string | null;
   metadata: Record<string, unknown>;
   embedding?: number[];
+  admin_only?: boolean;
 };
 
 type WikiMemoryRow = {
@@ -44,6 +45,7 @@ type WikiMemoryRow = {
   include_in_campaign_ai_memory?: boolean;
   is_core?: boolean | null;
   global_status?: string | null;
+  admin_only?: boolean | null;
 };
 
 type CharacterMemoryRow = {
@@ -100,6 +102,7 @@ type MapMemoryRow = {
   visibility: string;
   parent_map_id: string | null;
   updated_at: string;
+  admin_only?: boolean | null;
 };
 
 type CampaignMetaMemoryRow = {
@@ -634,7 +637,7 @@ export async function syncWikiEntityToCampaignMemory(
 ): Promise<number> {
   const { data } = await admin
     .from("wiki_entities")
-    .select("id, campaign_id, name, type, content, attributes, updated_at, tags, include_in_campaign_ai_memory, is_core, global_status")
+    .select("id, campaign_id, name, type, content, attributes, updated_at, tags, include_in_campaign_ai_memory, is_core, global_status, admin_only")
     .eq("id", entityId)
     .maybeSingle();
 
@@ -649,7 +652,7 @@ export async function syncWikiEntityToCampaignMemory(
     return 0;
   }
 
-  const chunks = buildWikiChunks(row);
+  const chunks = buildWikiChunks(row).map((chunk) => ({ ...chunk, admin_only: row.admin_only === true }));
   await upsertCampaignMemoryChunks(admin, row.campaign_id, "wiki", row.id, chunks);
   return chunks.length;
 }
@@ -811,7 +814,7 @@ export async function syncMapDescriptionToCampaignMemory(
 ): Promise<void> {
   const { data } = await admin
     .from("maps")
-    .select("id, campaign_id, name, description, map_type, visibility, parent_map_id, updated_at")
+    .select("id, campaign_id, name, description, map_type, visibility, parent_map_id, updated_at, admin_only")
     .eq("id", mapId)
     .maybeSingle();
 
@@ -828,7 +831,7 @@ export async function syncMapDescriptionToCampaignMemory(
     return;
   }
 
-  await upsertCampaignMemoryChunks(admin, row.campaign_id, "map_description", row.id, buildMapChunks(row));
+  await upsertCampaignMemoryChunks(admin, row.campaign_id, "map_description", row.id, buildMapChunks(row).map((chunk) => ({ ...chunk, admin_only: (row as MapMemoryRow & { admin_only?: boolean }).admin_only === true })));
 }
 
 export async function syncCampaignMetaToCampaignMemory(

@@ -7,6 +7,7 @@ export type GalleryMap = {
   visibility: string;
   parent_map_id: string | null;
   wiki_entity_id?: string | null;
+  admin_only?: boolean;
 };
 
 export type MapTreeNode = {
