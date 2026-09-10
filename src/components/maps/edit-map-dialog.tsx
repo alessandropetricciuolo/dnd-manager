@@ -23,12 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  listMapsForParentPickerAction,
-  listWikiLocationsForMapAction,
-  updateMap,
-  type MapParentOption,
-} from "@/app/campaigns/map-actions";
+import { listMapsForParentPickerAction, listWikiLocationsForMapAction, updateMap, type MapParentOption } from "@/app/campaigns/map-actions";
 
 const MAP_TYPE_OPTIONS: { label: string; value: string }[] = [
   { label: "Mondo", value: "world" },
@@ -113,37 +108,25 @@ export function EditMapDialog({
     const opts = isLongCampaign ? LONG_MAP_TYPE_OPTIONS : MAP_TYPE_OPTIONS;
     return opts.some((o) => o.value === n) ? n : "city";
   });
-  const [parentMapId, setParentMapId] = useState<string>(
-    initialParentMapId ?? "",
-  );
-  const [wikiEntityId, setWikiEntityId] = useState<string>(
-    initialWikiEntityId ?? "",
-  );
-  const [wikiLocations, setWikiLocations] = useState<
-    Array<{ id: string; name: string; boundMapId: string | null }>
-  >([]);
+  const [parentMapId, setParentMapId] = useState<string>(initialParentMapId ?? "");
+  const [wikiEntityId, setWikiEntityId] = useState<string>(initialWikiEntityId ?? "");
+  const [wikiLocations, setWikiLocations] = useState<Array<{ id: string; name: string; boundMapId: string | null }>>([]);
   const [loadingWikiLocations, setLoadingWikiLocations] = useState(false);
   const [parentOptions, setParentOptions] = useState<MapParentOption[]>([]);
   const [loadingParents, setLoadingParents] = useState(false);
   const [visibility, setVisibility] = useState(
-    VISIBILITY_OPTIONS.some((o) => o.value === initialVisibility)
-      ? initialVisibility
-      : "public",
+    VISIBILITY_OPTIONS.some((o) => o.value === initialVisibility) ? initialVisibility : "public"
   );
   const [adminOnly, setAdminOnly] = useState(initialAdminOnly);
   const [releaseAdminOnly, setReleaseAdminOnly] = useState(false);
-  const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>(
-    initialAllowedUserIds,
-  );
-  const [selectedPartyIds, setSelectedPartyIds] = useState<string[]>(
-    initialAllowedPartyIds,
-  );
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>(initialAllowedUserIds);
+  const [selectedPartyIds, setSelectedPartyIds] = useState<string[]>(initialAllowedPartyIds);
 
   const typeOptions = isLongCampaign ? LONG_MAP_TYPE_OPTIONS : MAP_TYPE_OPTIONS;
 
   const hasWorldMapOther = useMemo(
     () => parentOptions.some((m) => m.map_type === "world" && m.id !== mapId),
-    [parentOptions, mapId],
+    [parentOptions, mapId]
   );
 
   const parentCandidates = useMemo(() => {
@@ -153,10 +136,8 @@ export function EditMapDialog({
 
   const filteredParents = useMemo(() => {
     if (mapType === "world") return [];
-    if (mapType === "continent")
-      return parentCandidates.filter((m) => m.map_type === "world");
-    if (mapType === "city")
-      return parentCandidates.filter((m) => m.map_type === "continent");
+    if (mapType === "continent") return parentCandidates.filter((m) => m.map_type === "world");
+    if (mapType === "city") return parentCandidates.filter((m) => m.map_type === "continent");
     return parentCandidates;
   }, [mapType, parentCandidates]);
 
@@ -207,11 +188,7 @@ export function EditMapDialog({
       });
       setParentMapId(initialParentMapId ?? "");
       setWikiEntityId(initialWikiEntityId ?? "");
-      setVisibility(
-        VISIBILITY_OPTIONS.some((o) => o.value === initialVisibility)
-          ? initialVisibility
-          : "public",
-      );
+      setVisibility(VISIBILITY_OPTIONS.some((o) => o.value === initialVisibility) ? initialVisibility : "public");
       setSelectedPlayerIds(initialAllowedUserIds);
       setSelectedPartyIds(initialAllowedPartyIds);
     }
@@ -221,13 +198,13 @@ export function EditMapDialog({
 
   function togglePlayer(id: string) {
     setSelectedPlayerIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   }
 
   function toggleParty(id: string) {
     setSelectedPartyIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   }
 
@@ -245,9 +222,7 @@ export function EditMapDialog({
         return;
       }
       if (["continent", "city"].includes(mapType) && !parentMapId) {
-        toast.error(
-          "Seleziona la mappa genitore nella gerarchia (mondo → continente → città).",
-        );
+        toast.error("Seleziona la mappa genitore nella gerarchia (mondo → continente → città).");
         return;
       }
     }
@@ -264,12 +239,8 @@ export function EditMapDialog({
             }
           : {}),
         wiki_entity_id: wikiEntityId || null,
-        ...(isAdmin && adminDraftsEnabled && adminOnly && !initialAdminOnly
-          ? { admin_only: true }
-          : {}),
-        ...(isAdmin && adminDraftsEnabled && releaseAdminOnly
-          ? { release_admin_only: true }
-          : {}),
+        ...(isAdmin && adminDraftsEnabled && adminOnly && !initialAdminOnly ? { admin_only: true } : {}),
+        ...(isAdmin && adminDraftsEnabled && releaseAdminOnly ? { release_admin_only: true } : {}),
         allowed_user_ids: visibility === "selective" ? selectedPlayerIds : [],
         allowed_party_ids: visibility === "selective" ? selectedPartyIds : [],
       });
@@ -335,11 +306,7 @@ export function EditMapDialog({
           </div>
           <div className="space-y-2">
             <Label>Categoria geografica</Label>
-            <Select
-              value={mapType}
-              onValueChange={setMapType}
-              disabled={isLoading}
-            >
+            <Select value={mapType} onValueChange={setMapType} disabled={isLoading}>
               <SelectTrigger className="bg-slate-900/70 border-slate-700 text-slate-50">
                 <SelectValue placeholder="Seleziona categoria" />
               </SelectTrigger>
@@ -348,19 +315,11 @@ export function EditMapDialog({
                   <SelectItem
                     key={opt.value}
                     value={opt.value}
-                    disabled={
-                      isLongCampaign &&
-                      opt.value === "world" &&
-                      hasWorldMapOther &&
-                      mapType !== "world"
-                    }
+                    disabled={isLongCampaign && opt.value === "world" && hasWorldMapOther && mapType !== "world"}
                     className="focus:bg-slate-800 focus:text-slate-50"
                   >
                     {opt.label}
-                    {isLongCampaign &&
-                    opt.value === "world" &&
-                    hasWorldMapOther &&
-                    mapType !== "world"
+                    {isLongCampaign && opt.value === "world" && hasWorldMapOther && mapType !== "world"
                       ? " (già presente)"
                       : ""}
                   </SelectItem>
@@ -406,9 +365,7 @@ export function EditMapDialog({
             </div>
           )}
           <div className="space-y-2">
-            <Label htmlFor="edit-map-wiki-location">
-              Scheda wiki luogo (opzionale)
-            </Label>
+            <Label htmlFor="edit-map-wiki-location">Scheda wiki luogo (opzionale)</Label>
             <select
               id="edit-map-wiki-location"
               className="h-10 w-full rounded-md border border-slate-700 bg-slate-900/70 px-3 text-sm text-slate-50"
@@ -417,14 +374,10 @@ export function EditMapDialog({
               disabled={isLoading || loadingWikiLocations}
             >
               <option value="">
-                {loadingWikiLocations
-                  ? "Caricamento luoghi…"
-                  : "Nessun collegamento"}
+                {loadingWikiLocations ? "Caricamento luoghi…" : "Nessun collegamento"}
               </option>
               {wikiLocations.map((loc) => {
-                const taken = Boolean(
-                  loc.boundMapId && loc.boundMapId !== mapId,
-                );
+                const taken = Boolean(loc.boundMapId && loc.boundMapId !== mapId);
                 return (
                   <option key={loc.id} value={loc.id} disabled={taken}>
                     {loc.name}
@@ -434,47 +387,13 @@ export function EditMapDialog({
               })}
             </select>
             <p className="text-xs text-slate-500">
-              Collega questa mappa alla scheda wiki del luogo: lore e
-              navigazione restano unificati.
+              Collega questa mappa alla scheda wiki del luogo: lore e navigazione restano unificati.
             </p>
           </div>
           <div className="space-y-2">
             <Label>Visibilità</Label>
-            {isAdmin && adminDraftsEnabled ? (
-              <div className="space-y-2 rounded-md border border-violet-500/30 bg-violet-500/10 p-3 text-sm">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={adminOnly}
-                    onChange={(e) => {
-                      setAdminOnly(e.target.checked);
-                      if (e.target.checked) setReleaseAdminOnly(false);
-                    }}
-                    disabled={isLoading}
-                  />{" "}
-                  Solo Admin
-                </label>
-                {adminOnly ? (
-                  <label className="flex items-center gap-2 text-amber-100">
-                    <input
-                      type="checkbox"
-                      checked={releaseAdminOnly}
-                      onChange={(e) => {
-                        setReleaseAdminOnly(e.target.checked);
-                        if (e.target.checked) setAdminOnly(false);
-                      }}
-                      disabled={isLoading}
-                    />{" "}
-                    Rilascia (accessi passati non revocabili)
-                  </label>
-                ) : null}
-              </div>
-            ) : null}
-            <Select
-              value={visibility}
-              onValueChange={setVisibility}
-              disabled={isLoading}
-            >
+            {isAdmin && adminDraftsEnabled ? <div className="rounded-md border border-violet-500/30 bg-violet-500/10 p-3 text-sm"><label className="flex items-center gap-2"><input type="checkbox" checked={adminOnly} onChange={(e) => { setAdminOnly(e.target.checked); if (e.target.checked) setReleaseAdminOnly(false); }} disabled={isLoading} /> Solo Admin</label>{adminOnly ? <label className="mt-2 flex items-center gap-2"><input type="checkbox" checked={releaseAdminOnly} onChange={(e) => { setReleaseAdminOnly(e.target.checked); if (e.target.checked) setAdminOnly(false); }} disabled={isLoading} /> Rilascia (accessi passati non revocabili)</label> : null}</div> : null}
+            <Select value={visibility} onValueChange={setVisibility} disabled={isLoading}>
               <SelectTrigger className="bg-slate-900/70 border-slate-700 text-slate-50">
                 <SelectValue />
               </SelectTrigger>
@@ -494,15 +413,10 @@ export function EditMapDialog({
               <div className="mt-2 max-h-40 overflow-y-auto rounded-md border border-slate-700 bg-slate-900/60 p-2">
                 {eligibleParties.length > 0 && (
                   <>
-                    <p className="mb-2 text-xs font-medium text-slate-300">
-                      Gruppi che possono vedere questa mappa
-                    </p>
+                    <p className="mb-2 text-xs font-medium text-slate-300">Gruppi che possono vedere questa mappa</p>
                     <div className="mb-3 flex flex-col gap-1">
                       {eligibleParties.map((party) => (
-                        <label
-                          key={party.id}
-                          className="flex cursor-pointer items-center gap-2 text-sm text-slate-200"
-                        >
+                        <label key={party.id} className="flex cursor-pointer items-center gap-2 text-sm text-slate-200">
                           <input
                             type="checkbox"
                             checked={selectedPartyIds.includes(party.id)}
@@ -515,20 +429,13 @@ export function EditMapDialog({
                     </div>
                   </>
                 )}
-                <p className="mb-2 text-xs font-medium text-slate-300">
-                  Giocatori che possono vedere questa mappa
-                </p>
+                <p className="mb-2 text-xs font-medium text-slate-300">Giocatori che possono vedere questa mappa</p>
                 {eligiblePlayers.length === 0 ? (
-                  <p className="text-xs text-slate-500">
-                    Nessun giocatore iscritto.
-                  </p>
+                  <p className="text-xs text-slate-500">Nessun giocatore iscritto.</p>
                 ) : (
                   <div className="flex flex-col gap-1">
                     {eligiblePlayers.map((p) => (
-                      <label
-                        key={p.id}
-                        className="flex cursor-pointer items-center gap-2 text-sm text-slate-200"
-                      >
+                      <label key={p.id} className="flex cursor-pointer items-center gap-2 text-sm text-slate-200">
                         <input
                           type="checkbox"
                           checked={selectedPlayerIds.includes(p.id)}
