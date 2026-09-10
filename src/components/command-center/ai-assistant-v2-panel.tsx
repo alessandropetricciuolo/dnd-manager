@@ -342,13 +342,14 @@ export function AiAssistantV2Panel({ campaignId }: { campaignId: string | null }
     });
   }
 
-  function confirmSave() {
+  function confirmSave(saveAccess?: "secret" | "admin_only") {
     if (!artifact || !preparedAction) return;
     startTransition(async () => {
       const res = await confirmAiAssistantV2Save({
         artifactId: artifact.id,
         revision: artifact.revision,
         actionName: preparedAction,
+        saveAccess,
       });
       if (!res.success) {
         toast.error(res.error);

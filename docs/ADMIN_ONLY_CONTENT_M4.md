@@ -9,4 +9,4 @@ Stato: implementazione locale verificata; nessuna migration applicata a remoto.
 | Default fail-closed | `retrievePreviewMemory` include Admin-only solo con `AdminContentAccess` verificato; client privilegiato senza scope filtra `admin_only=false` | test contratto | browser/MCP reale è M6/M7 |
 | Idempotenza | upsert esistente cancella per fonte e reinserisce chiavi uniche, propagando il flag | test unitari e unique index M1 | nessun filtro IA completo su tutte le superfici M5 |
 
-M4 non applica migration né dati remoti. I percorsi di salvataggio Wiki IA devono ancora adottare il contratto `saveAccess` strutturato prima della conferma; la prova autenticata reale resta M7.
+M4 non applica migration né dati remoti. Il salvataggio Wiki IA richiede ora scelta strutturata Secret/Solo Admin prima della conferma, con riconvalida server-side; la prova autenticata reale resta M7.

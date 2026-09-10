@@ -147,6 +147,7 @@ export async function confirmAiAssistantV2Save(input: {
   artifactId: string;
   revision: number;
   actionName: string;
+  saveAccess?: "secret" | "admin_only";
 }) {
   const { supabase, access } = await auth();
   if (!access.ok) return { success: false as const, error: access.error };
@@ -161,6 +162,8 @@ export async function confirmAiAssistantV2Save(input: {
       campaignId: artifact.campaignId,
     });
     if (!authorized.ok) return { success: false as const, error: authorized.error };
+    if (input.actionName === "wiki.entity.create" && !input.saveAccess) return { success: false as const, error: "Scegli Secret o Solo Admin prima di confermare." };
+    if (input.saveAccess === "admin_only" && access.ctx.role !== "admin") return { success: false as const, error: "Solo un Admin può salvare una bozza Solo Admin." };
     const saved = await saveAssistantArtifact(admin, artifact, input.revision, input.actionName);
     if (input.actionName !== "campaign.create") return { success: true as const, data: { saved } };
     const campaignId = typeof saved?.id === "string" ? saved.id : null;
