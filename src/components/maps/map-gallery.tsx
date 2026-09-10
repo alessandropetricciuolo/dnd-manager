@@ -52,7 +52,7 @@ export async function MapGallery({
   campaignType = null,
   eligiblePlayers = [],
   eligibleParties = [],
-  isAdmin = false,
+  isAdmin: _isAdmin = false,
   adminDraftsEnabled = false,
 }: MapGalleryProps) {
   const supabase = await createSupabaseServerClient();
@@ -60,46 +60,59 @@ export async function MapGallery({
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const { data: profile } = user
+    ? await supabase.from("profiles").select("role").eq("id", user.id).single()
+    : { data: null };
+  // The server-resolved profile is authoritative; UI props cannot widen scope.
+  const isAdminViewer = profile?.role === "admin";
 
   let maps: MapRow[] | null = null;
   let hasMapType = false;
   let hasParentMapId = false;
 
-  const resFull = await supabase
+  let mapQuery = supabase
     .from("maps")
     .select("id, name, image_url, description, created_at, map_type, visibility, parent_map_id, wiki_entity_id, admin_only")
     .eq("campaign_id", campaignId)
     .order("created_at", { ascending: false });
+  if (!isAdminViewer) mapQuery = mapQuery.eq("admin_only", false);
+  const resFull = await mapQuery;
 
   if (resFull.error) {
     const msg = resFull.error.message ?? "";
     if (msg.includes("wiki_entity_id")) {
-      const resNoWiki = await supabase
+      let resNoWikiQuery = supabase
         .from("maps")
-        .select("id, name, image_url, description, created_at, map_type, visibility, parent_map_id")
+        .select("id, name, image_url, description, created_at, map_type, visibility, parent_map_id, admin_only")
         .eq("campaign_id", campaignId)
         .order("created_at", { ascending: false });
+      if (!isAdminViewer) resNoWikiQuery = resNoWikiQuery.eq("admin_only", false);
+      const resNoWiki = await resNoWikiQuery;
       if (!resNoWiki.error) {
         maps = (resNoWiki.data ?? []) as MapRow[];
         hasMapType = true;
         hasParentMapId = true;
       }
     } else if (msg.includes("parent_map_id")) {
-      const resNoParent = await supabase
+      let resNoParentQuery = supabase
         .from("maps")
-        .select("id, name, image_url, description, created_at, map_type, visibility")
+        .select("id, name, image_url, description, created_at, map_type, visibility, admin_only")
         .eq("campaign_id", campaignId)
         .order("created_at", { ascending: false });
+      if (!isAdminViewer) resNoParentQuery = resNoParentQuery.eq("admin_only", false);
+      const resNoParent = await resNoParentQuery;
       if (!resNoParent.error) {
         maps = (resNoParent.data ?? []) as MapRow[];
         hasMapType = true;
       }
     } else if (msg.includes("map_type")) {
-      const resFallback = await supabase
+      let resFallbackQuery = supabase
         .from("maps")
-        .select("id, name, image_url, description, created_at, visibility")
+        .select("id, name, image_url, description, created_at, visibility, admin_only")
         .eq("campaign_id", campaignId)
         .order("created_at", { ascending: false });
+      if (!isAdminViewer) resFallbackQuery = resFallbackQuery.eq("admin_only", false);
+      const resFallback = await resFallbackQuery;
       if (!resFallback.error) {
         maps = resFallback.data as MapRow[];
       }
@@ -123,9 +136,6 @@ export async function MapGallery({
   }
 
   let visibleMaps = maps ?? [];
-  const { data: profile } = user
-    ? await supabase.from("profiles").select("role").eq("id", user.id).single()
-    : { data: null };
   const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
 
   if (user && maps?.length && !isGmOrAdmin) {
@@ -227,7 +237,7 @@ export async function MapGallery({
       campaignId={campaignId}
       campaignType={campaignType}
       isGmOrAdmin={isGmOrAdmin}
-      isAdmin={isAdmin}
+      isAdmin={isAdminViewer}
       adminDraftsEnabled={adminDraftsEnabled}
       eligiblePlayers={eligiblePlayers}
       eligibleParties={eligibleParties}

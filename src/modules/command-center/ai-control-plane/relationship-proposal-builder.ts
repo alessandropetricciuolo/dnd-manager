@@ -26,8 +26,8 @@ export function formatRelationshipForChat(
 async function loadCampaignCatalog(campaignId: string): Promise<WikiCatalogEntry[]> {
   const admin = createSupabaseAdminClient();
   const [entitiesRes, mapsRes] = await Promise.all([
-    admin.from("wiki_entities").select("id, name").eq("campaign_id", campaignId).order("name"),
-    admin.from("maps").select("id, name").eq("campaign_id", campaignId).order("name"),
+    admin.from("wiki_entities").select("id, name").eq("campaign_id", campaignId).eq("admin_only", false).order("name"),
+    admin.from("maps").select("id, name").eq("campaign_id", campaignId).eq("admin_only", false).order("name"),
   ]);
 
   const catalog: WikiCatalogEntry[] = [];

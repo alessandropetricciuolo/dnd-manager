@@ -20,7 +20,7 @@ async function requireGmOrAdmin() {
   if (profile?.role !== "gm" && profile?.role !== "admin") {
     return { ok: false as const, status: 403, message: "Solo GM e Admin possono esportare le immagini." };
   }
-  return { ok: true as const, userId: user.id };
+  return { ok: true as const, userId: user.id, includeAdminOnly: profile?.role === "admin" };
 }
 
 function siteOriginFromRequest(req: NextRequest): string {
@@ -45,6 +45,7 @@ export async function GET(req: NextRequest) {
     const siteOrigin = siteOriginFromRequest(req);
     const { stream, filename } = await buildImagesZipStream(admin, siteOrigin, {
       campaignId,
+      includeAdminOnly: auth.includeAdminOnly,
     });
 
     const webStream = Readable.toWeb(stream) as ReadableStream<Uint8Array>;

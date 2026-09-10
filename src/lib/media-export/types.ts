@@ -10,4 +10,6 @@ export type ImageExportRecord = {
 
 export type CollectImagesOptions = {
   campaignId?: string | null;
+  /** Service-role exports are non-Admin by default; routes must opt in only after verified Admin auth. */
+  includeAdminOnly?: boolean;
 };

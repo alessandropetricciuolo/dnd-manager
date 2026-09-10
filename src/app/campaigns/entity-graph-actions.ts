@@ -46,19 +46,26 @@ export async function getEntityGraphData(campaignId: string): Promise<GetGraphDa
       .eq("id", user.id)
       .single();
     const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
+    const isAdmin = profile?.role === "admin";
     if (!isGmOrAdmin) return { success: false, error: "Solo GM e Admin possono vedere il grafo." };
 
-    const [entitiesRes, mapsRes, relsRes] = await Promise.all([
-      supabase
+    let entitiesQuery = supabase
         .from("wiki_entities")
-        .select("id, name, type")
+        .select("id, name, type, admin_only")
         .eq("campaign_id", campaignId)
-        .order("name"),
-      supabase
+        .order("name");
+    let mapsQuery = supabase
         .from("maps")
-        .select("id, name")
+        .select("id, name, admin_only")
         .eq("campaign_id", campaignId)
-        .order("name"),
+        .order("name");
+    if (!isAdmin) {
+      entitiesQuery = entitiesQuery.eq("admin_only", false);
+      mapsQuery = mapsQuery.eq("admin_only", false);
+    }
+    const [entitiesRes, mapsRes, relsRes] = await Promise.all([
+      entitiesQuery,
+      mapsQuery,
       supabase
         .from("wiki_relationships")
         .select("id, source_id, target_id, target_map_id, label")
@@ -69,11 +76,17 @@ export async function getEntityGraphData(campaignId: string): Promise<GetGraphDa
     if (mapsRes.error) return { success: false, error: mapsRes.error.message };
     if (relsRes.error) return { success: false, error: relsRes.error.message };
 
+    const allowedEntityIds = new Set((entitiesRes.data ?? []).map((row) => row.id));
+    const allowedMapIds = new Set((mapsRes.data ?? []).map((row) => row.id));
+    const safeRelationships = (relsRes.data ?? []).filter((row) =>
+      allowedEntityIds.has(row.source_id) &&
+      (row.target_id ? allowedEntityIds.has(row.target_id) : row.target_map_id ? allowedMapIds.has(row.target_map_id) : false)
+    );
     return {
       success: true,
       entities: (entitiesRes.data ?? []) as WikiEntityForGraph[],
       maps: (mapsRes.data ?? []) as MapForGraph[],
-      relationships: (relsRes.data ?? []) as WikiRelationshipRow[],
+      relationships: safeRelationships as WikiRelationshipRow[],
     };
   } catch (err) {
     console.error("[getEntityGraphData]", err);
@@ -122,6 +135,24 @@ export async function createWikiRelationship(
       .eq("id", user.id)
       .single();
     if (profile?.role !== "gm" && profile?.role !== "admin") return { success: false, error: "Non autorizzato." };
+    const isAdmin = profile.role === "admin";
+    // A GM may only create edges entirely inside the non-Admin view. The
+    // canonical rows are checked server-side; IDs/names supplied by the UI
+    // are never trusted to establish the scope.
+    if (!isAdmin) {
+      const [{ data: source }, { data: targetWiki }, { data: targetMap }] = await Promise.all([
+        supabase.from("wiki_entities").select("id, admin_only").eq("id", sourceUuid).eq("campaign_id", campaignId).maybeSingle(),
+        hasWiki
+          ? supabase.from("wiki_entities").select("id, admin_only").eq("id", targetWikiUuid).eq("campaign_id", campaignId).maybeSingle()
+          : Promise.resolve({ data: null }),
+        hasMap
+          ? supabase.from("maps").select("id, admin_only").eq("id", targetMapUuid).eq("campaign_id", campaignId).maybeSingle()
+          : Promise.resolve({ data: null }),
+      ]);
+      if (!source || source.admin_only || (targetWiki && targetWiki.admin_only) || (targetMap && targetMap.admin_only)) {
+        return { success: false, error: "Non puoi collegare contenuti Solo Admin." };
+      }
+    }
 
     const insertPayload: {
       campaign_id: string;
@@ -170,11 +201,14 @@ export async function getWikiEntitiesForCampaign(
     if (userError || !user) return { success: false, error: "Non autenticato." };
     const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
     if (profile?.role !== "gm" && profile?.role !== "admin") return { success: false, error: "Non autorizzato." };
-    const { data, error } = await supabase
+    const isAdmin = profile.role === "admin";
+    let entitiesQuery = supabase
       .from("wiki_entities")
-      .select("id, name")
+      .select("id, name, admin_only")
       .eq("campaign_id", campaignId)
       .order("name");
+    if (!isAdmin) entitiesQuery = entitiesQuery.eq("admin_only", false);
+    const { data, error } = await entitiesQuery;
     if (error) return { success: false, error: error.message };
     return { success: true, data: (data ?? []) as { id: string; name: string }[] };
   } catch (err) {
@@ -197,11 +231,14 @@ export async function getMapsForCampaign(
     if (userError || !user) return { success: false, error: "Non autenticato." };
     const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
     if (profile?.role !== "gm" && profile?.role !== "admin") return { success: false, error: "Non autorizzato." };
-    const { data, error } = await supabase
+    const isAdmin = profile.role === "admin";
+    let mapsQuery = supabase
       .from("maps")
-      .select("id, name")
+      .select("id, name, admin_only")
       .eq("campaign_id", campaignId)
       .order("name");
+    if (!isAdmin) mapsQuery = mapsQuery.eq("admin_only", false);
+    const { data, error } = await mapsQuery;
     if (error) return { success: false, error: error.message };
     return { success: true, data: (data ?? []) as MapForGraph[] };
   } catch (err) {
@@ -299,6 +336,7 @@ export async function getRelatedEntityLinks(
     if (userError || !user) return { success: false, error: "Non autenticato." };
     const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
     const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
+    const isAdmin = profile?.role === "admin";
 
     const { data: relsRaw, error: relsError } = await supabase
       .from("wiki_relationships")
@@ -321,21 +359,23 @@ export async function getRelatedEntityLinks(
       }
     }
 
+    let wikiQuery = supabase
+      .from("wiki_entities")
+      .select("id, name, type, image_url, telegram_fallback_id, visibility, is_secret, admin_only")
+      .eq("campaign_id", campaignId)
+      .in("id", Array.from(wikiIds));
+    let mapQuery = supabase
+      .from("maps")
+      .select("id, name, visibility, admin_only")
+      .eq("campaign_id", campaignId)
+      .in("id", Array.from(mapIds));
+    if (!isAdmin) {
+      wikiQuery = wikiQuery.eq("admin_only", false);
+      mapQuery = mapQuery.eq("admin_only", false);
+    }
     const [wikiRes, mapsRes] = await Promise.all([
-      wikiIds.size > 0
-        ? supabase
-            .from("wiki_entities")
-            .select("id, name, type, image_url, telegram_fallback_id, visibility, is_secret")
-            .eq("campaign_id", campaignId)
-            .in("id", Array.from(wikiIds))
-        : Promise.resolve({ data: [], error: null }),
-      mapIds.size > 0
-        ? supabase
-            .from("maps")
-            .select("id, name, visibility")
-            .eq("campaign_id", campaignId)
-            .in("id", Array.from(mapIds))
-        : Promise.resolve({ data: [], error: null }),
+      wikiIds.size > 0 ? wikiQuery : Promise.resolve({ data: [], error: null }),
+      mapIds.size > 0 ? mapQuery : Promise.resolve({ data: [], error: null }),
     ]);
     if (wikiRes.error) return { success: false, error: wikiRes.error.message };
     if (mapsRes.error) return { success: false, error: mapsRes.error.message };

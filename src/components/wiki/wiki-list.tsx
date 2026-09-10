@@ -41,6 +41,7 @@ export async function WikiList({
     .single();
 
   const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
+  const isAdmin = profile?.role === "admin";
 
   type EntityRow = {
     id: string;
@@ -52,44 +53,55 @@ export async function WikiList({
     tags?: string[] | null;
     content?: { body?: string } | null;
     linked_mission_id?: string | null;
+    admin_only?: boolean;
   };
   let entities: EntityRow[] | null = null;
   let error: { message?: string } | null = null;
-  const res = await supabase
+  let entityQuery = supabase
     .from("wiki_entities")
-    .select("id, name, type, is_secret, visibility, sort_order, tags, content, linked_mission_id")
+    .select("id, name, type, is_secret, visibility, sort_order, tags, content, linked_mission_id, admin_only")
     .eq("campaign_id", campaignId)
     .order("name");
+  if (!isAdmin) entityQuery = entityQuery.eq("admin_only", false);
+  const res = await entityQuery;
   if (res.error?.message?.includes("linked_mission_id")) {
-    const fallback = await supabase
+    let fallbackQuery = supabase
       .from("wiki_entities")
-      .select("id, name, type, is_secret, visibility, sort_order, tags, content")
+      .select("id, name, type, is_secret, visibility, sort_order, tags, content, admin_only")
       .eq("campaign_id", campaignId)
       .order("name");
+    if (!isAdmin) fallbackQuery = fallbackQuery.eq("admin_only", false);
+    const fallback = await fallbackQuery;
     entities = (fallback.data ?? []).map((e) => ({ ...e, linked_mission_id: null }));
     error = fallback.error;
   } else if (res.error?.message?.includes("sort_order")) {
-    const fallback = await supabase
+    let fallbackQuery = supabase
       .from("wiki_entities")
-      .select("id, name, type, is_secret, visibility, tags, content")
+      .select("id, name, type, is_secret, visibility, tags, content, admin_only")
       .eq("campaign_id", campaignId)
       .order("name");
+    if (!isAdmin) fallbackQuery = fallbackQuery.eq("admin_only", false);
+    const fallback = await fallbackQuery;
     entities = (fallback.data ?? []).map((e) => ({ ...e, sort_order: null }));
     error = fallback.error;
   } else if (res.error?.message?.includes("visibility")) {
-    const fallback = await supabase
+    let fallbackQuery = supabase
       .from("wiki_entities")
-      .select("id, name, type, is_secret, sort_order, tags, content")
+      .select("id, name, type, is_secret, sort_order, tags, content, admin_only")
       .eq("campaign_id", campaignId)
       .order("name");
+    if (!isAdmin) fallbackQuery = fallbackQuery.eq("admin_only", false);
+    const fallback = await fallbackQuery;
     entities = (fallback.data ?? []).map((e) => ({ ...e, visibility: (e as { is_secret?: boolean }).is_secret ? "secret" : "public" }));
     error = fallback.error;
   } else if (res.error?.message?.includes("tags")) {
-    const fallback = await supabase
+    let fallbackQuery = supabase
       .from("wiki_entities")
-      .select("id, name, type, is_secret, visibility, sort_order, content")
+      .select("id, name, type, is_secret, visibility, sort_order, content, admin_only")
       .eq("campaign_id", campaignId)
       .order("name");
+    if (!isAdmin) fallbackQuery = fallbackQuery.eq("admin_only", false);
+    const fallback = await fallbackQuery;
     entities = (fallback.data ?? []).map((e) => ({ ...e, tags: [] }));
     error = fallback.error;
   } else {

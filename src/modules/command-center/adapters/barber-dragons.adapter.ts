@@ -60,11 +60,12 @@ export const barberDragonsAdapter: TenantAdapter = {
       entityType === "item" ||
       entityType === "monster"
     ) {
-      const { data } = await supabase
+      let entityQuery = supabase
         .from("wiki_entities")
         .select("id, campaign_id")
-        .eq("id", entityId)
-        .maybeSingle();
+        .eq("id", entityId);
+      if (access.ctx.role !== "admin") entityQuery = entityQuery.eq("admin_only", false);
+      const { data } = await entityQuery.maybeSingle();
       const row = data as { id: string; campaign_id: string } | null;
       if (!row) return { ok: false, error: "Entità wiki non trovata." };
       if (campaignId && row.campaign_id !== campaignId) {

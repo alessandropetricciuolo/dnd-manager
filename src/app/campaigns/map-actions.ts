@@ -57,18 +57,22 @@ export async function listMapsForParentPickerAction(
     if (profile?.role !== "gm" && profile?.role !== "admin") {
       return { success: false, message: "Non autorizzato." };
     }
-    const { data, error } = await supabase
+    let parentMapsQuery = supabase
       .from("maps")
-      .select("id, name, map_type, parent_map_id")
+      .select("id, name, map_type, parent_map_id, admin_only")
       .eq("campaign_id", campaignId)
       .order("name", { ascending: true });
+    if (profile.role !== "admin") parentMapsQuery = parentMapsQuery.eq("admin_only", false);
+    const { data, error } = await parentMapsQuery;
     if (error) {
       if (error.message?.includes("parent_map_id")) {
-        const { data: fallback, error: err2 } = await supabase
+        let fallbackQuery = supabase
           .from("maps")
-          .select("id, name, map_type")
+          .select("id, name, map_type, admin_only")
           .eq("campaign_id", campaignId)
           .order("name", { ascending: true });
+        if (profile.role !== "admin") fallbackQuery = fallbackQuery.eq("admin_only", false);
+        const { data: fallback, error: err2 } = await fallbackQuery;
         if (err2) return { success: false, message: err2.message };
         return {
           success: true,
@@ -546,6 +550,15 @@ export async function addPin(
     if (profile?.role !== "gm" && profile?.role !== "admin") {
       return { success: false, message: "Non autorizzato. Solo GM e Admin possono aggiungere pin." };
     }
+    const isAdmin = profile.role === "admin";
+    const [{ data: sourceMap }, { data: targetMap }, { data: targetWiki }] = await Promise.all([
+      supabase.from("maps").select("admin_only").eq("id", mapId).eq("campaign_id", campaignId).maybeSingle(),
+      linkedMapId ? supabase.from("maps").select("admin_only").eq("id", linkedMapId).eq("campaign_id", campaignId).maybeSingle() : Promise.resolve({ data: null }),
+      linkedEntityId ? supabase.from("wiki_entities").select("admin_only").eq("id", linkedEntityId).eq("campaign_id", campaignId).maybeSingle() : Promise.resolve({ data: null }),
+    ]);
+    if (!sourceMap || !isAdmin && (sourceMap.admin_only || (targetMap && targetMap.admin_only) || (targetWiki && targetWiki.admin_only))) {
+      return { success: false, message: "Non puoi creare un pin che attraversa contenuti Solo Admin." };
+    }
 
     const { error } = await supabase.from("map_pins").insert({
       map_id: mapId,
@@ -598,19 +611,27 @@ export async function listWikiLocationsForMapAction(
       error: userError,
     } = await supabase.auth.getUser();
     if (userError || !user) return { success: false, message: "Non autenticato." };
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    const isAdmin = profile?.role === "admin";
 
-    const [{ data: entities, error: entErr }, { data: boundMaps, error: mapErr }] = await Promise.all([
-      supabase
+    let entitiesQuery = supabase
         .from("wiki_entities")
-        .select("id, name")
+        .select("id, name, admin_only")
         .eq("campaign_id", campaignId)
         .eq("type", "location")
-        .order("name", { ascending: true }),
-      supabase
+        .order("name", { ascending: true });
+    let boundMapsQuery = supabase
         .from("maps")
-        .select("id, wiki_entity_id")
+        .select("id, wiki_entity_id, admin_only")
         .eq("campaign_id", campaignId)
-        .not("wiki_entity_id", "is", null),
+        .not("wiki_entity_id", "is", null);
+    if (!isAdmin) {
+      entitiesQuery = entitiesQuery.eq("admin_only", false);
+      boundMapsQuery = boundMapsQuery.eq("admin_only", false);
+    }
+    const [{ data: entities, error: entErr }, { data: boundMaps, error: mapErr }] = await Promise.all([
+      entitiesQuery,
+      boundMapsQuery,
     ]);
     if (entErr) return { success: false, message: entErr.message };
     if (mapErr && !mapErr.message?.includes("wiki_entity_id")) {
@@ -660,13 +681,15 @@ export async function createMapFromWikiLocationAction(
     if (profile?.role !== "gm" && profile?.role !== "admin") {
       return { success: false, message: "Non autorizzato." };
     }
+    const isAdmin = profile.role === "admin";
 
-    const { data: entity, error: entErr } = await supabase
+    let linkedEntityQuery = supabase
       .from("wiki_entities")
-      .select("id, name, type, image_url, campaign_id, visibility")
+      .select("id, name, type, image_url, campaign_id, visibility, admin_only")
       .eq("id", wikiEntityId)
-      .eq("campaign_id", campaignId)
-      .maybeSingle();
+      .eq("campaign_id", campaignId);
+    if (!isAdmin) linkedEntityQuery = linkedEntityQuery.eq("admin_only", false);
+    const { data: entity, error: entErr } = await linkedEntityQuery.maybeSingle();
     if (entErr || !entity) return { success: false, message: "Luogo wiki non trovato." };
     if ((entity as { type?: string }).type !== "location") {
       return { success: false, message: "Solo le schede Luogo possono avere una mappa collegata." };
@@ -697,6 +720,12 @@ export async function createMapFromWikiLocationAction(
     const parentMapId = options?.parentMapId?.trim() || null;
     const visibility = (entity as { visibility?: Visibility }).visibility ?? "public";
     const vis = VISIBILITY_VALUES.includes(visibility as Visibility) ? (visibility as Visibility) : "public";
+    if (parentMapId) {
+      const { data: parent } = await supabase.from("maps").select("admin_only").eq("id", parentMapId).eq("campaign_id", campaignId).maybeSingle();
+      if (!parent || Boolean((parent as { admin_only?: boolean }).admin_only) !== Boolean((entity as { admin_only?: boolean }).admin_only)) {
+        return { success: false, message: "La gerarchia non può attraversare il confine Solo Admin." };
+      }
+    }
 
     const insertPayload: Record<string, unknown> = {
       campaign_id: campaignId,
@@ -706,6 +735,7 @@ export async function createMapFromWikiLocationAction(
       image_url: imageUrl,
       visibility: vis,
       wiki_entity_id: wikiEntityId,
+      admin_only: Boolean((entity as { admin_only?: boolean }).admin_only),
     };
     if (parentMapId) insertPayload.parent_map_id = parentMapId;
 

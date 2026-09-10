@@ -26,6 +26,7 @@ type WikiExportRow = {
   xp_value: number | null;
   linked_mission_id: string | null;
   include_in_campaign_ai_memory: boolean | null;
+  admin_only: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -102,21 +103,23 @@ function uniqueZipPath(folder: string, base: string, ext: string, used: Set<stri
 
 async function fetchWikiEntities(
   admin: SupabaseClient<Database>,
-  campaignId: string
+  campaignId: string,
+  includeAdminOnly: boolean
 ): Promise<WikiExportRow[]> {
   const rows: WikiExportRow[] = [];
   let from = 0;
   const select =
-    "id, name, type, content, image_url, telegram_fallback_id, visibility, is_secret, attributes, tags, sort_order, is_core, global_status, xp_value, linked_mission_id, include_in_campaign_ai_memory, created_at, updated_at";
+    "id, name, type, content, image_url, telegram_fallback_id, visibility, is_secret, attributes, tags, sort_order, is_core, global_status, xp_value, linked_mission_id, include_in_campaign_ai_memory, admin_only, created_at, updated_at";
 
   while (true) {
-    const { data, error } = await admin
+    let query = admin
       .from("wiki_entities")
       .select(select)
       .eq("campaign_id", campaignId)
       .order("type", { ascending: true })
-      .order("name", { ascending: true })
-      .range(from, from + PAGE_SIZE - 1);
+      .order("name", { ascending: true });
+    if (!includeAdminOnly) query = query.eq("admin_only", false);
+    const { data, error } = await query.range(from, from + PAGE_SIZE - 1);
     if (error) throw new Error(error.message);
     const batch = (data ?? []) as WikiExportRow[];
     rows.push(...batch);
@@ -128,7 +131,9 @@ async function fetchWikiEntities(
 
 async function fetchRelationships(
   admin: SupabaseClient<Database>,
-  campaignId: string
+  campaignId: string,
+  entities: WikiExportRow[],
+  includeAdminOnly: boolean
 ): Promise<RelationshipRow[]> {
   const { data, error } = await admin
     .from("wiki_relationships")
@@ -138,7 +143,18 @@ async function fetchRelationships(
     if (error.message?.includes("wiki_relationships")) return [];
     throw new Error(error.message);
   }
-  return (data ?? []) as RelationshipRow[];
+  const rows = (data ?? []) as RelationshipRow[];
+  const wikiIds = new Set(entities.map((entity) => entity.id));
+  const mapIds = [...new Set(rows.map((row) => row.target_map_id).filter(Boolean) as string[])];
+  let allowedMapIds = new Set(mapIds);
+  if (!includeAdminOnly && mapIds.length > 0) {
+    const { data: maps } = await admin.from("maps").select("id").in("id", mapIds).eq("admin_only", false);
+    allowedMapIds = new Set(((maps ?? []) as Array<{ id: string }>).map((map) => map.id));
+  }
+  return rows.filter((row) =>
+    wikiIds.has(row.source_id) &&
+    (row.target_id ? wikiIds.has(row.target_id) : row.target_map_id ? allowedMapIds.has(row.target_map_id) : false)
+  );
 }
 
 function formatEntityMarkdown(row: WikiExportRow, body: string): string {
@@ -244,14 +260,15 @@ async function fetchWikiEntityImage(
 export async function buildCampaignWikiArchiveZip(
   admin: SupabaseClient<Database>,
   campaignId: string,
-  options: { campaignName?: string; siteOrigin: string }
+  options: { campaignName?: string; siteOrigin: string; includeAdminOnly?: boolean }
 ): Promise<BuildZipResult> {
-  const entities = await fetchWikiEntities(admin, campaignId);
+  const includeAdminOnly = options.includeAdminOnly === true;
+  const entities = await fetchWikiEntities(admin, campaignId, includeAdminOnly);
   if (entities.length === 0) {
     throw new Error("Nessuna voce wiki in questa campagna.");
   }
 
-  const relationships = await fetchRelationships(admin, campaignId);
+  const relationships = await fetchRelationships(admin, campaignId, entities, includeAdminOnly);
   const stamp = new Date().toISOString().slice(0, 10);
   const label =
     options.campaignName?.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 40) || "campagna";

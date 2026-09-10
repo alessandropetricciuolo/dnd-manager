@@ -906,13 +906,15 @@ export async function getEntity(
       .single();
 
     const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
+    const isAdmin = profile?.role === "admin";
 
-    const { data: entity, error } = await supabase
+    let entityQuery = supabase
       .from("wiki_entities")
       .select("*")
       .eq("id", entityId)
-      .eq("campaign_id", campaignId)
-      .single();
+      .eq("campaign_id", campaignId);
+    if (!isAdmin) entityQuery = entityQuery.eq("admin_only", false);
+    const { data: entity, error } = await entityQuery.single();
 
     if (error || !entity) return null;
 
@@ -969,13 +971,16 @@ export async function getMonstersForInitiative(
       .single();
     const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
     if (!isGmOrAdmin) return { success: false, error: "Solo il Master può usare questa funzione." };
+    const isAdmin = profile?.role === "admin";
 
-    const { data: rows, error } = await supabase
+    let monsterQuery = supabase
       .from("wiki_entities")
       .select("id, name, attributes, is_core, global_status")
       .eq("campaign_id", campaignId)
       .eq("type", "monster")
       .order("name");
+    if (!isAdmin) monsterQuery = monsterQuery.eq("admin_only", false);
+    const { data: rows, error } = await monsterQuery;
 
     if (error) {
       console.error("[getMonstersForInitiative]", error);
@@ -1028,13 +1033,16 @@ export async function getMonstersXpForIds(
       .single();
     const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
     if (!isGmOrAdmin) return { success: false, error: "Solo il Master può usare questa funzione." };
+    const isAdmin = profile?.role === "admin";
 
-    const { data: rows, error } = await supabase
+    let monsterXpQuery = supabase
       .from("wiki_entities")
       .select("id, xp_value")
       .eq("campaign_id", campaignId)
       .eq("type", "monster")
       .in("id", entityIds);
+    if (!isAdmin) monsterXpQuery = monsterXpQuery.eq("admin_only", false);
+    const { data: rows, error } = await monsterXpQuery;
 
     if (error) {
       console.error("[getMonstersXpForIds]", error);
@@ -1131,6 +1139,7 @@ export async function getGmGalleryItems(
     if (!isGmOrAdmin) {
       return { success: false, error: "Solo il Master può usare la galleria." };
     }
+    const isAdmin = profile?.role === "admin";
 
     const { data: missionsRows } = await supabase
       .from("campaign_missions")
@@ -1143,20 +1152,24 @@ export async function getGmGalleryItems(
       ])
     );
 
-    let wikiSelect = "id, name, type, image_url, telegram_fallback_id, linked_mission_id";
-    let { data: wikiRows, error: wikiErr } = await supabase
+    let wikiSelect = "id, name, type, image_url, telegram_fallback_id, linked_mission_id, admin_only";
+    let wikiQuery = supabase
       .from("wiki_entities")
       .select(wikiSelect)
       .eq("campaign_id", campaignId)
       .not("image_url", "is", null);
+    if (!isAdmin) wikiQuery = wikiQuery.eq("admin_only", false);
+    let { data: wikiRows, error: wikiErr } = await wikiQuery;
 
     if (wikiErr && isMissingWikiLinkedMissionColumnError(wikiErr)) {
-      wikiSelect = "id, name, type, image_url, telegram_fallback_id";
-      const retry = await supabase
+      wikiSelect = "id, name, type, image_url, telegram_fallback_id, admin_only";
+      let retryQuery = supabase
         .from("wiki_entities")
         .select(wikiSelect)
         .eq("campaign_id", campaignId)
         .not("image_url", "is", null);
+      if (!isAdmin) retryQuery = retryQuery.eq("admin_only", false);
+      const retry = await retryQuery;
       wikiRows = retry.data;
       wikiErr = retry.error;
     }

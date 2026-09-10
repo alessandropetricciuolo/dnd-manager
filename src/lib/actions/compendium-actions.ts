@@ -131,10 +131,11 @@ export async function getCompendiumDataAction(
     }, {});
     const campaignIds = campaignId === ALL_CAMPAIGNS_KEY ? campaigns.map((c) => c.id) : [campaignId];
 
-    const baseQuery = supabase
+    let baseQuery = supabase
       .from("wiki_entities")
       .select("id, campaign_id, name, type, tags, content, image_url, attributes")
       .order("name", { ascending: true });
+    if (!isAdmin) baseQuery = baseQuery.eq("admin_only", false);
 
     const { data: wikiRows, error: wikiError } = campaignId === ALL_CAMPAIGNS_KEY
       ? await baseQuery.in("campaign_id", campaignIds)

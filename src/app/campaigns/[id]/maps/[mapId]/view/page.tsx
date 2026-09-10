@@ -23,12 +23,20 @@ export default async function MapViewPage({ params }: PageProps) {
     notFound();
   }
 
-  const { data: map, error: mapError } = await supabase
-    .from("maps")
-    .select("id, name, image_url, campaign_id, overlay_items")
-    .eq("id", mapId)
-    .eq("campaign_id", campaignId)
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
     .single();
+  const isAdmin = profile?.role === "admin";
+
+  let mapQuery = supabase
+    .from("maps")
+    .select("id, name, image_url, campaign_id, overlay_items, admin_only")
+    .eq("id", mapId)
+    .eq("campaign_id", campaignId);
+  if (!isAdmin) mapQuery = mapQuery.eq("admin_only", false);
+  const { data: map, error: mapError } = await mapQuery.single();
 
   if (mapError || !map) {
     notFound();
@@ -40,11 +48,6 @@ export default async function MapViewPage({ params }: PageProps) {
     .eq("id", mapId)
     .single();
   const visibility = (mapMeta as { visibility?: string } | null)?.visibility ?? "public";
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
   const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
 
   if (!isGmOrAdmin && visibility !== "public") {
@@ -76,13 +79,34 @@ export default async function MapViewPage({ params }: PageProps) {
     .select("id, x, y, label, link_map_id, link_entity_id")
     .eq("map_id", mapId)
     .order("created_at", { ascending: true });
+  let visiblePins = pins ?? [];
+  if (!isAdmin && visiblePins.length > 0) {
+    const linkedMapIds = [...new Set(visiblePins.map((pin) => pin.link_map_id).filter(Boolean) as string[])];
+    const linkedWikiIds = [...new Set(visiblePins.map((pin) => pin.link_entity_id).filter(Boolean) as string[])];
+    const [{ data: visibleMaps }, { data: visibleWiki }] = await Promise.all([
+      linkedMapIds.length
+        ? supabase.from("maps").select("id").in("id", linkedMapIds).eq("admin_only", false)
+        : Promise.resolve({ data: [] as { id: string }[] }),
+      linkedWikiIds.length
+        ? supabase.from("wiki_entities").select("id").in("id", linkedWikiIds).eq("admin_only", false)
+        : Promise.resolve({ data: [] as { id: string }[] }),
+    ]);
+    const allowedMapIds = new Set((visibleMaps ?? []).map((row) => row.id));
+    const allowedWikiIds = new Set((visibleWiki ?? []).map((row) => row.id));
+    visiblePins = visiblePins.filter((pin) =>
+      (!pin.link_map_id || allowedMapIds.has(pin.link_map_id)) &&
+      (!pin.link_entity_id || allowedWikiIds.has(pin.link_entity_id))
+    );
+  }
 
   let boundMapRows: Array<{ id: string; wiki_entity_id: string | null }> = [];
-  const boundMapsRes = await supabase
+  let boundMapsQuery = supabase
     .from("maps")
-    .select("id, wiki_entity_id")
+    .select("id, wiki_entity_id, admin_only")
     .eq("campaign_id", campaignId)
     .not("wiki_entity_id", "is", null);
+  if (!isAdmin) boundMapsQuery = boundMapsQuery.eq("admin_only", false);
+  const boundMapsRes = await boundMapsQuery;
   if (!boundMapsRes.error) {
     boundMapRows = (boundMapsRes.data ?? []) as Array<{ id: string; wiki_entity_id: string | null }>;
   }
@@ -90,12 +114,14 @@ export default async function MapViewPage({ params }: PageProps) {
     boundMapRows
   );
 
-  const { data: campaignMaps } = await supabase
+  let campaignMapsQuery = supabase
     .from("maps")
-    .select("id, name")
+    .select("id, name, admin_only")
     .eq("campaign_id", campaignId)
     .neq("id", mapId)
     .order("name");
+  if (!isAdmin) campaignMapsQuery = campaignMapsQuery.eq("admin_only", false);
+  const { data: campaignMaps } = await campaignMapsQuery;
 
   const overlayItems = parseMapOverlayItems(
     (map as { overlay_items?: unknown }).overlay_items
@@ -109,7 +135,7 @@ export default async function MapViewPage({ params }: PageProps) {
           mapId={mapId}
           imageUrl={map.image_url}
           mapName={map.name}
-          pins={(pins ?? []).map((p) => ({
+          pins={visiblePins.map((p) => ({
             id: p.id,
             x: Number(p.x),
             y: Number(p.y),

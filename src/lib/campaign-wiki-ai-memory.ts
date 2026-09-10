@@ -102,6 +102,7 @@ export async function fetchLongCampaignWikiMemoryPromptBlock(
       .from("wiki_entities")
       .select("*")
       .eq("campaign_id", campaignId)
+      .eq("admin_only", false)
       .order("updated_at", { ascending: true }),
     admin
       .from("campaign_characters")

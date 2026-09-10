@@ -279,6 +279,7 @@ async function buildForcedWikiReference(
     .select("id, name, type, content, attributes, include_in_campaign_ai_memory")
     .eq("campaign_id", campaignId)
     .eq("id", entityId)
+    .eq("admin_only", false)
     .maybeSingle();
 
   const row = data as WikiMemRow | null;
@@ -341,9 +342,10 @@ export async function resolveImagePromptEntityReferences(
     admin
       .from("wiki_entities")
       .select("id, name, type, content, attributes, include_in_campaign_ai_memory")
-      .eq("campaign_id", campaignId),
+      .eq("campaign_id", campaignId)
+      .eq("admin_only", false),
     admin.from("campaign_characters").select("id, name, background").eq("campaign_id", campaignId),
-    admin.from("maps").select("id, name, description, map_type").eq("campaign_id", campaignId),
+    admin.from("maps").select("id, name, description, map_type").eq("campaign_id", campaignId).eq("admin_only", false),
     admin.from("gm_notes").select("id, title, content").eq("campaign_id", campaignId),
   ]);
 

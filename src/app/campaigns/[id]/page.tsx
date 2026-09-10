@@ -251,15 +251,16 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
   let operationalPortals: Portal[] = [];
   let operationalMapCharacters: MapCharacterPin[] = [];
   if (isGmOrAdmin && wantsMappeTab) {
-    const [wmRes, prRes, chRes] = await Promise.all([
-      supabase
+    let worldMapQuery = supabase
         .from("maps")
-        .select("image_url")
+        .select("image_url, admin_only")
         .eq("campaign_id", id)
         .eq("map_type", "world")
         .order("created_at", { ascending: true })
-        .limit(1)
-        .maybeSingle(),
+        .limit(1);
+    if (!isAdmin) worldMapQuery = worldMapQuery.eq("admin_only", false);
+    const [wmRes, prRes, chRes] = await Promise.all([
+      worldMapQuery.maybeSingle(),
       supabase.from("portals").select("*").eq("campaign_id", id),
       supabase
         .from("campaign_characters")

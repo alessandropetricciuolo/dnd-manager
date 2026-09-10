@@ -34,6 +34,7 @@ async function ensureGmOrAdminForCampaign(campaignId: string): Promise<
       ok: true;
       admin: ReturnType<typeof createSupabaseAdminClient>;
       campaignName: string;
+      includeAdminOnly: boolean;
     }
   | { ok: false; message: string }
 > {
@@ -68,6 +69,7 @@ async function ensureGmOrAdminForCampaign(campaignId: string): Promise<
     ok: true,
     admin,
     campaignName: row.name?.trim() || "Campagna lunga",
+    includeAdminOnly: profile?.role === "admin",
   };
 }
 
@@ -79,7 +81,7 @@ export async function exportCampaignMemoryMarkdownAction(
   if (!access.ok) return { success: false, message: access.message };
 
   try {
-    const { data, error, count } = await access.admin
+    let memoryQuery = access.admin
       .from("campaign_memory_chunks")
       .select("id, campaign_id, source_type, source_id, chunk_index, title, content, summary, metadata", {
         count: "exact",
@@ -88,6 +90,8 @@ export async function exportCampaignMemoryMarkdownAction(
       .order("source_type", { ascending: true })
       .order("updated_at", { ascending: false })
       .order("chunk_index", { ascending: true });
+    if (!access.includeAdminOnly) memoryQuery = memoryQuery.eq("admin_only", false);
+    const { data, error, count } = await memoryQuery;
 
     if (error) {
       throw new Error(error.message);

@@ -38,12 +38,13 @@ export default async function MapOverlayEditPage({ params }: PageProps) {
   const canEdit = c.type === "long" && (isAdmin || isOwnerGm);
   if (!canEdit) notFound();
 
-  const { data: map, error: mapError } = await supabase
+  let mapQuery = supabase
     .from("maps")
-    .select("id, name, image_url, campaign_id, overlay_items, overlay_draft")
+    .select("id, name, image_url, campaign_id, overlay_items, overlay_draft, admin_only")
     .eq("id", mapId)
-    .eq("campaign_id", campaignId)
-    .single();
+    .eq("campaign_id", campaignId);
+  if (!isAdmin) mapQuery = mapQuery.eq("admin_only", false);
+  const { data: map, error: mapError } = await mapQuery.single();
 
   if (mapError || !map) notFound();
 
@@ -66,12 +67,14 @@ export default async function MapOverlayEditPage({ params }: PageProps) {
     }
   })();
 
-  const { data: campaignMaps } = await supabase
+  let campaignMapsQuery = supabase
     .from("maps")
-    .select("id, name")
+    .select("id, name, admin_only")
     .eq("campaign_id", campaignId)
     .neq("id", mapId)
     .order("name");
+  if (!isAdmin) campaignMapsQuery = campaignMapsQuery.eq("admin_only", false);
+  const { data: campaignMaps } = await campaignMapsQuery;
 
   return (
     <div className="min-h-0 flex-1">

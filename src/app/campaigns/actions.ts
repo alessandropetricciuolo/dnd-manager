@@ -2862,6 +2862,11 @@ export async function getUnlockableContent(
     if (!allowed) {
       return { success: false, items: [], message: "Solo il GM o un Admin possono vedere i contenuti sbloccabili." };
     }
+    const { data: unlockUser } = await supabase.auth.getUser();
+    const { data: unlockProfile } = unlockUser.user
+      ? await supabase.from("profiles").select("role").eq("id", unlockUser.user.id).maybeSingle()
+      : { data: null };
+    const isAdmin = unlockProfile?.role === "admin";
     const { data: campaign } = await supabase
       .from("campaigns")
       .select("type")
@@ -2871,28 +2876,36 @@ export async function getUnlockableContent(
       return { success: true, items: [], message: "Lo sblocco contenuti è disponibile solo per campagne Long." };
     }
 
-    const [wikiRes, mapsRes] = await Promise.all([
-      supabase
+    let wikiUnlockQuery = supabase
         .from("wiki_entities")
-        .select("id, name, type, visibility, is_secret")
+        .select("id, name, type, visibility, is_secret, admin_only")
         .eq("campaign_id", campaignId)
-        .order("name"),
-      supabase
+        .order("name");
+    let mapUnlockQuery = supabase
         .from("maps")
-        .select("id, name")
+        .select("id, name, admin_only")
         .eq("campaign_id", campaignId)
         .eq("visibility", "secret")
-        .order("name"),
+        .order("name");
+    if (!isAdmin) {
+      wikiUnlockQuery = wikiUnlockQuery.eq("admin_only", false);
+      mapUnlockQuery = mapUnlockQuery.eq("admin_only", false);
+    }
+    const [wikiRes, mapsRes] = await Promise.all([
+      wikiUnlockQuery,
+      mapUnlockQuery,
     ]);
 
     let wikiRows = (wikiRes.data ??
       []) as Array<{ id: string; name: string; type: string; visibility?: string | null; is_secret?: boolean | null }>;
     if (wikiRes.error?.message?.toLowerCase().includes("visibility")) {
-      const fallback = await supabase
+      let fallbackQuery = supabase
         .from("wiki_entities")
-        .select("id, name, type, is_secret")
+        .select("id, name, type, is_secret, admin_only")
         .eq("campaign_id", campaignId)
         .order("name");
+      if (!isAdmin) fallbackQuery = fallbackQuery.eq("admin_only", false);
+      const fallback = await fallbackQuery;
       wikiRows = ((fallback.data ?? []) as Array<{ id: string; name: string; type: string; is_secret?: boolean | null }>)
         .map((row) => ({
           ...row,
@@ -3054,6 +3067,11 @@ export async function getPlayerContentAccess(
     if (!allowed) {
       return { success: false, items: [], message: "Solo il GM o un Admin possono gestire gli sblocchi." };
     }
+    const { data: accessUser } = await supabase.auth.getUser();
+    const { data: accessProfile } = accessUser.user
+      ? await supabase.from("profiles").select("role").eq("id", accessUser.user.id).maybeSingle()
+      : { data: null };
+    const isAdmin = accessProfile?.role === "admin";
 
     const { data: member } = await supabase
       .from("campaign_members")
@@ -3065,13 +3083,19 @@ export async function getPlayerContentAccess(
       return { success: false, items: [], message: "Il giocatore non appartiene a questa campagna." };
     }
 
-    const [wikiRes, mapsRes, explorationsRes, permissionsRes] = await Promise.all([
-      supabase
+    let wikiAccessQuery = supabase
         .from("wiki_entities")
-        .select("id, name, type, visibility, is_secret")
+        .select("id, name, type, visibility, is_secret, admin_only")
         .eq("campaign_id", campaignId)
-        .order("name"),
-      supabase.from("maps").select("id, name, visibility").eq("campaign_id", campaignId).order("name"),
+        .order("name");
+    let mapAccessQuery = supabase.from("maps").select("id, name, visibility, admin_only").eq("campaign_id", campaignId).order("name");
+    if (!isAdmin) {
+      wikiAccessQuery = wikiAccessQuery.eq("admin_only", false);
+      mapAccessQuery = mapAccessQuery.eq("admin_only", false);
+    }
+    const [wikiRes, mapsRes, explorationsRes, permissionsRes] = await Promise.all([
+      wikiAccessQuery,
+      mapAccessQuery,
       supabase.from("explorations").select("entity_id, map_id").eq("player_id", playerId),
       supabase
         .from("entity_permissions")
@@ -3083,11 +3107,13 @@ export async function getPlayerContentAccess(
     let wikiRows = (wikiRes.data ??
       []) as Array<{ id: string; name: string; type: string; visibility?: string | null; is_secret?: boolean | null }>;
     if (wikiRes.error?.message?.toLowerCase().includes("visibility")) {
-      const fallback = await supabase
+      let fallbackQuery = supabase
         .from("wiki_entities")
-        .select("id, name, type, is_secret")
+        .select("id, name, type, is_secret, admin_only")
         .eq("campaign_id", campaignId)
         .order("name");
+      if (!isAdmin) fallbackQuery = fallbackQuery.eq("admin_only", false);
+      const fallback = await fallbackQuery;
       wikiRows = ((fallback.data ?? []) as Array<{ id: string; name: string; type: string; is_secret?: boolean | null }>).map(
         (row) => ({
           ...row,

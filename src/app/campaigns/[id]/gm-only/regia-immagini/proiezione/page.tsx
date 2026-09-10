@@ -44,14 +44,16 @@ export default async function MultiImageProjectionPage({ params, searchParams }:
   const wikiIds = orderedIds.filter((s) => !s.startsWith("pg-"));
   const characterIds = orderedIds.filter((s) => s.startsWith("pg-")).map((s) => s.slice(3));
 
+  let wikiQuery = wikiIds.length > 0
+    ? supabase
+        .from("wiki_entities")
+        .select("id, name, image_url, telegram_fallback_id")
+        .eq("campaign_id", campaignId)
+        .in("id", wikiIds)
+    : null;
+  if (wikiQuery && profile?.role !== "admin") wikiQuery = wikiQuery.eq("admin_only", false);
   const [wikiRes, charRes] = await Promise.all([
-    wikiIds.length > 0
-      ? supabase
-          .from("wiki_entities")
-          .select("id, name, image_url, telegram_fallback_id")
-          .eq("campaign_id", campaignId)
-          .in("id", wikiIds)
-      : Promise.resolve({ data: [] }),
+    wikiQuery ?? Promise.resolve({ data: [] }),
     characterIds.length > 0
       ? supabase
           .from("campaign_characters")

@@ -110,6 +110,7 @@ async function loadCoreEntities(campaignId: string): Promise<
     .from("wiki_entities")
     .select("id, name, type, global_status")
     .eq("campaign_id", campaignId)
+    .eq("admin_only", false)
     .eq("is_core", true)
     .order("name");
 

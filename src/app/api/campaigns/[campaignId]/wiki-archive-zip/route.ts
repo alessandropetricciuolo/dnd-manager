@@ -3,6 +3,8 @@ import { Readable } from "stream";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { ensureCampaignSheetExportAccess } from "@/lib/character-sheets/campaign-sheet-export-auth";
 import { buildCampaignWikiArchiveZip } from "@/lib/wiki-export/build-wiki-archive-zip";
+import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { resolveAdminContentAccess, canReadAdminContent } from "@/lib/admin-content";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -27,9 +29,12 @@ export async function GET(
 
   try {
     const admin = createSupabaseAdminClient();
+    const accessResult = await resolveAdminContentAccess(await createSupabaseServerClient() as never);
+    const includeAdminOnly = accessResult.ok && canReadAdminContent(accessResult.access);
     const { stream, filename } = await buildCampaignWikiArchiveZip(admin, cid, {
       campaignName: auth.title,
       siteOrigin,
+      includeAdminOnly,
     });
     const webStream = Readable.toWeb(stream) as ReadableStream<Uint8Array>;
 

@@ -38,8 +38,8 @@ type LocationContext = {
 async function loadCampaignCatalog(campaignId: string): Promise<WikiCatalogEntry[]> {
   const admin = createSupabaseAdminClient();
   const [entitiesRes, mapsRes] = await Promise.all([
-    admin.from("wiki_entities").select("id, name").eq("campaign_id", campaignId).order("name"),
-    admin.from("maps").select("id, name").eq("campaign_id", campaignId).order("name"),
+    admin.from("wiki_entities").select("id, name").eq("campaign_id", campaignId).eq("admin_only", false).order("name"),
+    admin.from("maps").select("id, name").eq("campaign_id", campaignId).eq("admin_only", false).order("name"),
   ]);
 
   const catalog: WikiCatalogEntry[] = [];
@@ -85,6 +85,7 @@ async function resolveBatchLocationContext(
       .from("wiki_entities")
       .select("content, attributes")
       .eq("id", entry.id)
+      .eq("admin_only", false)
       .maybeSingle();
     if (data) {
       locationExcerpt = extractWikiEntityMemoryText(

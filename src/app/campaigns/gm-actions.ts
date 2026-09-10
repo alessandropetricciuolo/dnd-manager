@@ -811,17 +811,24 @@ export async function getCoreEntitiesForDebrief(
   const check = await ensureGmOrAdmin();
   if (!check.success) return check;
   const supabase = check.data!;
+  const { data: currentUser } = await supabase.auth.getUser();
+  const { data: currentProfile } = currentUser.user
+    ? await supabase.from("profiles").select("role").eq("id", currentUser.user.id).maybeSingle()
+    : { data: null };
+  const isAdmin = currentProfile?.role === "admin";
 
   if (!entityIds.length) {
     return { success: true, data: [] };
   }
 
-  const { data, error } = await supabase
+  let entitiesQuery = supabase
     .from("wiki_entities")
     .select("id, name, type, global_status")
     .eq("campaign_id", campaignId)
     .eq("is_core", true)
     .in("id", entityIds);
+  if (!isAdmin) entitiesQuery = entitiesQuery.eq("admin_only", false);
+  const { data, error } = await entitiesQuery;
 
   if (error) {
     console.error("[getCoreEntitiesForDebrief]", error);
@@ -851,12 +858,19 @@ export async function getGmRegiaWikiMapsAction(
   const auth = await ensureGmOrAdmin();
   if (!auth.success) return auth;
   const supabase = auth.data!;
+  const { data: currentUser } = await supabase.auth.getUser();
+  const { data: currentProfile } = currentUser.user
+    ? await supabase.from("profiles").select("role").eq("id", currentUser.user.id).maybeSingle()
+    : { data: null };
+  const isAdmin = currentProfile?.role === "admin";
 
-  const { data, error } = await supabase
+  let mapsQuery = supabase
     .from("maps")
     .select("id, name, image_url, map_type")
     .eq("campaign_id", campaignId)
     .order("name", { ascending: true });
+  if (!isAdmin) mapsQuery = mapsQuery.eq("admin_only", false);
+  const { data, error } = await mapsQuery;
 
   if (error) return { success: false, error: error.message };
 
@@ -870,4 +884,3 @@ export async function getGmRegiaWikiMapsAction(
     })),
   };
 }
-

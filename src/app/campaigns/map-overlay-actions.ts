@@ -52,12 +52,13 @@ export async function saveMapOverlayDraftAction(
     const gate = await assertLongCampaignGm(supabase, user.id, campaignId, role);
     if (!gate.ok) return { success: false, message: gate.message };
 
-    const { error: mapErr } = await supabase
+    let mapCheckQuery = supabase
       .from("maps")
       .select("id")
       .eq("id", mapId)
-      .eq("campaign_id", campaignId)
-      .single();
+      .eq("campaign_id", campaignId);
+    if (role !== "admin") mapCheckQuery = mapCheckQuery.eq("admin_only", false);
+    const { error: mapErr } = await mapCheckQuery.single();
     if (mapErr) return { success: false, message: "Mappa non trovata." };
 
     const { error } = await supabase
@@ -100,12 +101,13 @@ export async function publishMapOverlayAction(
     const gate = await assertLongCampaignGm(supabase, user.id, campaignId, role);
     if (!gate.ok) return { success: false, message: gate.message };
 
-    const { data: mapRow, error: mapErr } = await supabase
+    let mapRowQuery = supabase
       .from("maps")
-      .select("overlay_items, overlay_draft")
+      .select("overlay_items, overlay_draft, admin_only")
       .eq("id", mapId)
-      .eq("campaign_id", campaignId)
-      .single();
+      .eq("campaign_id", campaignId);
+    if (role !== "admin") mapRowQuery = mapRowQuery.eq("admin_only", false);
+    const { data: mapRow, error: mapErr } = await mapRowQuery.single();
     if (mapErr || !mapRow) return { success: false, message: "Mappa non trovata." };
 
     const current = mapRow as { overlay_items?: unknown; overlay_draft?: unknown };
@@ -169,6 +171,11 @@ export async function discardMapOverlayDraftAction(
 
     const gate = await assertLongCampaignGm(supabase, user.id, campaignId, role);
     if (!gate.ok) return { success: false, message: gate.message };
+
+    let discardMapQuery = supabase.from("maps").select("id").eq("id", mapId).eq("campaign_id", campaignId);
+    if (role !== "admin") discardMapQuery = discardMapQuery.eq("admin_only", false);
+    const { data: discardMap } = await discardMapQuery.maybeSingle();
+    if (!discardMap) return { success: false, message: "Mappa non trovata." };
 
     const { error } = await supabase
       .from("maps")
@@ -241,6 +248,11 @@ export async function restoreMapOverlaySnapshotToDraftAction(
 
     const gate = await assertLongCampaignGm(supabase, user.id, campaignId, role);
     if (!gate.ok) return { success: false, message: gate.message };
+
+    let restoreMapQuery = supabase.from("maps").select("id").eq("id", mapId).eq("campaign_id", campaignId);
+    if (role !== "admin") restoreMapQuery = restoreMapQuery.eq("admin_only", false);
+    const { data: restoreMap } = await restoreMapQuery.maybeSingle();
+    if (!restoreMap) return { success: false, message: "Mappa non trovata." };
 
     const { data: snap, error: snapErr } = await supabase
       .from("map_overlay_snapshots")

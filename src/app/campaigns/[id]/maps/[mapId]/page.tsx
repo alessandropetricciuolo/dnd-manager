@@ -24,6 +24,14 @@ export default async function CampaignMapPage({ params }: PageProps) {
     notFound();
   }
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  const role = (profile as { role?: string } | null)?.role;
+  const isAdmin = role === "admin";
+
   type MapPageRow = {
     id: string;
     name: string;
@@ -34,23 +42,26 @@ export default async function CampaignMapPage({ params }: PageProps) {
     overlay_items?: unknown;
     map_type?: string;
     wiki_entity_id?: string | null;
+    admin_only?: boolean;
   };
   let map: MapPageRow | null = null;
   let mapError: { message?: string } | null = null;
 
-  const mapFull = await supabase
+  let mapFullQuery = supabase
     .from("maps")
-    .select("id, name, image_url, campaign_id, parent_map_id, description, overlay_items, map_type, wiki_entity_id")
+    .select("id, name, image_url, campaign_id, parent_map_id, description, overlay_items, map_type, wiki_entity_id, admin_only")
     .eq("id", mapId)
-    .eq("campaign_id", campaignId)
-    .single();
+    .eq("campaign_id", campaignId);
+  if (!isAdmin) mapFullQuery = mapFullQuery.eq("admin_only", false);
+  const mapFull = await mapFullQuery.single();
   if (mapFull.error?.message?.includes("wiki_entity_id")) {
-    const mapLegacy = await supabase
+    let mapLegacyQuery = supabase
       .from("maps")
-      .select("id, name, image_url, campaign_id, parent_map_id, description, overlay_items, map_type")
+      .select("id, name, image_url, campaign_id, parent_map_id, description, overlay_items, map_type, admin_only")
       .eq("id", mapId)
-      .eq("campaign_id", campaignId)
-      .single();
+      .eq("campaign_id", campaignId);
+    if (!isAdmin) mapLegacyQuery = mapLegacyQuery.eq("admin_only", false);
+    const mapLegacy = await mapLegacyQuery.single();
     map = (mapLegacy.data as MapPageRow | null) ?? null;
     mapError = mapLegacy.error ? { message: mapLegacy.error.message } : null;
   } else {
@@ -62,12 +73,6 @@ export default async function CampaignMapPage({ params }: PageProps) {
     notFound();
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-  const role = (profile as { role?: string } | null)?.role;
   const isGmOrAdmin = role === "gm" || role === "admin";
 
   const { data: campaignRow } = await supabase
@@ -82,7 +87,7 @@ export default async function CampaignMapPage({ params }: PageProps) {
 
   const { data: mapMeta } = await supabase
     .from("maps")
-    .select("visibility")
+    .select("visibility, admin_only")
     .eq("id", mapId)
     .single();
   const visibility = (mapMeta as { visibility?: string } | null)?.visibility ?? "public";
@@ -116,13 +121,34 @@ export default async function CampaignMapPage({ params }: PageProps) {
     .select("id, x, y, label, link_map_id, link_entity_id")
     .eq("map_id", mapId)
     .order("created_at", { ascending: true });
+  let visiblePins = pins ?? [];
+  if (!isAdmin && visiblePins.length > 0) {
+    const linkedMapIds = [...new Set(visiblePins.map((pin) => pin.link_map_id).filter(Boolean) as string[])];
+    const linkedWikiIds = [...new Set(visiblePins.map((pin) => pin.link_entity_id).filter(Boolean) as string[])];
+    const [{ data: visibleMaps }, { data: visibleWiki }] = await Promise.all([
+      linkedMapIds.length
+        ? supabase.from("maps").select("id").in("id", linkedMapIds).eq("admin_only", false)
+        : Promise.resolve({ data: [] as { id: string }[] }),
+      linkedWikiIds.length
+        ? supabase.from("wiki_entities").select("id").in("id", linkedWikiIds).eq("admin_only", false)
+        : Promise.resolve({ data: [] as { id: string }[] }),
+    ]);
+    const allowedMapIds = new Set((visibleMaps ?? []).map((row) => row.id));
+    const allowedWikiIds = new Set((visibleWiki ?? []).map((row) => row.id));
+    visiblePins = visiblePins.filter((pin) =>
+      (!pin.link_map_id || allowedMapIds.has(pin.link_map_id)) &&
+      (!pin.link_entity_id || allowedWikiIds.has(pin.link_entity_id))
+    );
+  }
 
   let boundMapRows: Array<{ id: string; wiki_entity_id: string | null }> = [];
-  const boundMapsRes = await supabase
+  let boundMapsQuery = supabase
     .from("maps")
-    .select("id, wiki_entity_id")
+    .select("id, wiki_entity_id, admin_only")
     .eq("campaign_id", campaignId)
     .not("wiki_entity_id", "is", null);
+  if (!isAdmin) boundMapsQuery = boundMapsQuery.eq("admin_only", false);
+  const boundMapsRes = await boundMapsQuery;
   if (!boundMapsRes.error) {
     boundMapRows = (boundMapsRes.data ?? []) as Array<{ id: string; wiki_entity_id: string | null }>;
   }
@@ -133,21 +159,24 @@ export default async function CampaignMapPage({ params }: PageProps) {
   const wikiEntityId = (map as { wiki_entity_id?: string | null }).wiki_entity_id ?? null;
   let linkedWikiName: string | null = null;
   if (wikiEntityId) {
-    const { data: wikiRow } = await supabase
+    let wikiRowQuery = supabase
       .from("wiki_entities")
-      .select("name")
+      .select("name, admin_only")
       .eq("id", wikiEntityId)
-      .eq("campaign_id", campaignId)
-      .maybeSingle();
+      .eq("campaign_id", campaignId);
+    if (!isAdmin) wikiRowQuery = wikiRowQuery.eq("admin_only", false);
+    const { data: wikiRow } = await wikiRowQuery.maybeSingle();
     linkedWikiName = (wikiRow as { name?: string } | null)?.name ?? null;
   }
 
-  const { data: campaignMaps } = await supabase
+  let campaignMapsQuery = supabase
     .from("maps")
-    .select("id, name")
+    .select("id, name, admin_only")
     .eq("campaign_id", campaignId)
     .neq("id", mapId)
     .order("name");
+  if (!isAdmin) campaignMapsQuery = campaignMapsQuery.eq("admin_only", false);
+  const { data: campaignMaps } = await campaignMapsQuery;
 
   const parentMapId = (map as { parent_map_id?: string | null }).parent_map_id ?? null;
   let parentMapName: string | null = null;
@@ -156,12 +185,13 @@ export default async function CampaignMapPage({ params }: PageProps) {
   );
 
   if (parentMapId) {
-    const { data: parentMap } = await supabase
+    let parentMapQuery = supabase
       .from("maps")
-      .select("name")
+      .select("name, admin_only")
       .eq("id", parentMapId)
-      .eq("campaign_id", campaignId)
-      .maybeSingle();
+      .eq("campaign_id", campaignId);
+    if (!isAdmin) parentMapQuery = parentMapQuery.eq("admin_only", false);
+    const { data: parentMap } = await parentMapQuery.maybeSingle();
     parentMapName = parentMap?.name ?? null;
   }
 
@@ -274,7 +304,7 @@ export default async function CampaignMapPage({ params }: PageProps) {
               mapId={mapId}
               imageUrl={map.image_url}
               mapName={map.name}
-              pins={(pins ?? []).map((p) => ({
+          pins={visiblePins.map((p) => ({
                 id: p.id,
                 x: Number(p.x),
                 y: Number(p.y),

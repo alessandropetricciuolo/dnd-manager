@@ -335,12 +335,14 @@ export async function listWikiEntitiesForCommandCenterAction(
   const auth = await getAuthSupabase();
   if (!auth.ok) return { success: false, error: auth.error };
 
-  const { data, error } = await auth.supabase
+  let wikiQuery = auth.supabase
     .from("wiki_entities")
     .select("id, name, type")
     .eq("campaign_id", campaignId)
     .order("name", { ascending: true })
     .limit(200);
+  if (auth.ctx.role !== "admin") wikiQuery = wikiQuery.eq("admin_only", false);
+  const { data, error } = await wikiQuery;
 
   if (error) {
     console.error("[listWikiEntitiesForCommandCenterAction]", error);
@@ -370,7 +372,9 @@ export async function resolveCommandLinkLabelsAction(
       const { data } = await auth.supabase.from("campaign_missions").select("title").eq("id", link.entity_id).maybeSingle();
       labels[key] = (data as { title?: string } | null)?.title ?? "Missione";
     } else {
-      const { data } = await auth.supabase.from("wiki_entities").select("name, type").eq("id", link.entity_id).maybeSingle();
+      let labelQuery = auth.supabase.from("wiki_entities").select("name, type").eq("id", link.entity_id);
+      if (auth.ctx.role !== "admin") labelQuery = labelQuery.eq("admin_only", false);
+      const { data } = await labelQuery.maybeSingle();
       const row = data as { name?: string; type?: string } | null;
       labels[key] = row ? `${row.name} (${row.type})` : "Wiki";
     }

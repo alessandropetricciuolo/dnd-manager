@@ -12,8 +12,8 @@ async function loadWikiCatalog(
   campaignId: string
 ): Promise<WikiCatalogEntry[]> {
   const [entitiesRes, mapsRes] = await Promise.all([
-    supabase.from("wiki_entities").select("id, name").eq("campaign_id", campaignId),
-    supabase.from("maps").select("id, name").eq("campaign_id", campaignId),
+    supabase.from("wiki_entities").select("id, name").eq("campaign_id", campaignId).eq("admin_only", false),
+    supabase.from("maps").select("id, name").eq("campaign_id", campaignId).eq("admin_only", false),
   ]);
 
   const out: WikiCatalogEntry[] = [];

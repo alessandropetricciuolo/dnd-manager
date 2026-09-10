@@ -10,8 +10,8 @@ type CatalogRow = { id: string; name: string };
 async function loadCampaignCatalog(supabase: SupabaseClient<Database>, campaignId: string): Promise<CanonicalCatalogEntry[]> {
   try {
     const [wikiRows, mapRows]: [CatalogRow[], CatalogRow[]] = await Promise.all([
-      supabase.from("wiki_entities").select("id, name").eq("campaign_id", campaignId).limit(1000).then(({ data }) => data ?? []),
-      supabase.from("maps").select("id, name").eq("campaign_id", campaignId).limit(1000).then(({ data }) => data ?? []),
+      supabase.from("wiki_entities").select("id, name").eq("campaign_id", campaignId).eq("admin_only", false).limit(1000).then(({ data }) => data ?? []),
+      supabase.from("maps").select("id, name").eq("campaign_id", campaignId).eq("admin_only", false).limit(1000).then(({ data }) => data ?? []),
     ]);
     return [
       ...wikiRows.map((entry) => ({ targetType: "wiki" as const, targetId: entry.id, name: entry.name })),
@@ -28,7 +28,7 @@ async function loadNamedSourceChunks(supabase: SupabaseClient<Database>, campaig
     try {
       const { data, error } = await supabase.from("campaign_memory_chunks")
         .select("id, campaign_id, source_type, source_id, chunk_index, title, content, summary, metadata")
-        .eq("campaign_id", campaignId).eq("source_type", sourceType).eq("source_id", reference.targetId)
+        .eq("campaign_id", campaignId).eq("source_type", sourceType).eq("source_id", reference.targetId).eq("admin_only", false)
         .order("chunk_index", { ascending: true }).limit(1);
       if (error || !data?.[0]) return null;
       const row = data[0] as unknown as PreviewChunkRow;
@@ -53,10 +53,10 @@ async function loadCanonicalReferences(
     type CatalogRow = { id: string; name: string };
     const [wikiRows, mapRows]: [CatalogRow[], CatalogRow[]] = await Promise.all([
       wikiIds.length
-        ? supabase.from("wiki_entities").select("id, name").eq("campaign_id", campaignId).in("id", wikiIds).then(({ data }) => data ?? [])
+        ? supabase.from("wiki_entities").select("id, name").eq("campaign_id", campaignId).in("id", wikiIds).eq("admin_only", false).then(({ data }) => data ?? [])
         : Promise.resolve([]),
       mapIds.length
-        ? supabase.from("maps").select("id, name").eq("campaign_id", campaignId).in("id", mapIds).then(({ data }) => data ?? [])
+        ? supabase.from("maps").select("id, name").eq("campaign_id", campaignId).in("id", mapIds).eq("admin_only", false).then(({ data }) => data ?? [])
         : Promise.resolve([]),
     ]);
     const catalog = [

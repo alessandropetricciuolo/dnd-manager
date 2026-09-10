@@ -69,7 +69,7 @@ export async function collectSiteImages(
   admin: SupabaseClient<Database>,
   options: CollectImagesOptions = {}
 ): Promise<ImageExportRecord[]> {
-  const { campaignId } = options;
+  const { campaignId, includeAdminOnly = false } = options;
   const out: ImageExportRecord[] = [];
   const seen = new Set<string>();
 
@@ -99,6 +99,7 @@ export async function collectSiteImages(
     select: string;
     source: string;
     getName: (row: Record<string, unknown>) => string | null;
+    adminScoped?: boolean;
   }> = [
     {
       table: "campaign_characters",
@@ -111,12 +112,14 @@ export async function collectSiteImages(
       select: "id, name, image_url, telegram_fallback_id, campaign_id",
       source: "wiki",
       getName: (r) => (r.name as string) ?? null,
+      adminScoped: true,
     },
     {
       table: "maps",
       select: "id, name, image_url, telegram_fallback_id, campaign_id",
       source: "mappe",
       getName: (r) => (r.name as string) ?? null,
+      adminScoped: true,
     },
     {
       table: "gm_notes",
@@ -137,7 +140,12 @@ export async function collectSiteImages(
       admin,
       spec.table,
       spec.select,
-      campaignFilter
+      (spec.adminScoped && !includeAdminOnly
+        ? (q) => {
+            let scoped = campaignFilter ? campaignFilter(q) : q;
+            return scoped.eq("admin_only", false);
+          }
+        : campaignFilter)
     );
     for (const row of rows) {
       pushRow(out, seen, {
