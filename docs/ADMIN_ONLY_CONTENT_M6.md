@@ -29,7 +29,7 @@ Le richieste non Admin e quelle fuori scope ricevono `404 Not found`, senza enum
 
 - `npx tsx --test src/lib/mcp-api/__tests__/m6-admin-mcp.test.ts`: **5/5**.
 - `npx tsx --test supabase/tests/m6_mcp_migration.test.ts`: **1/1**; migration, audit, revision bump e rollback transazionale verificati con PGlite.
-- `npm test` in `integrations/mcp`: **3/3**.
+- `npm ci --prefix integrations/mcp && npm test --prefix integrations/mcp`: **3/3** (il pacchetto standalone include ora `package-lock.json`; `npm test` da solo presuppone che il precedente `npm ci` abbia materializzato `integrations/mcp/node_modules`).
 - ESLint focalizzato su API, contratti, test e migration harness: passato.
 - `node --check integrations/mcp/server.mjs` e `tools.mjs`: passati.
 - `npx tsc --noEmit`: nessun errore nei file M6; restano gli errori preesistenti già documentati da M5 (17 errori in `campaigns/actions.ts`, test sheet-generator e wiki-turn-resolution).
