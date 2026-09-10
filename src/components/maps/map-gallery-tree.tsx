@@ -42,6 +42,8 @@ type MapGalleryTreeProps = {
   campaignId: string;
   campaignType?: "oneshot" | "quest" | "long" | null;
   isGmOrAdmin: boolean;
+  isAdmin?: boolean;
+  adminDraftsEnabled?: boolean;
   eligiblePlayers: { id: string; label: string }[];
   eligibleParties: { id: string; label: string; memberIds: string[] }[];
   permittedUserIdsByMapId: Record<string, string[]>;
@@ -138,6 +140,8 @@ export function MapGalleryTree({
   campaignId,
   campaignType = null,
   isGmOrAdmin,
+  isAdmin = false,
+  adminDraftsEnabled = false,
   eligiblePlayers,
   eligibleParties,
   permittedUserIdsByMapId,
@@ -217,6 +221,8 @@ export function MapGalleryTree({
           parent_map_id: selectedMap.parent_map_id,
         },
         isGmOrAdmin,
+        isAdmin,
+        adminDraftsEnabled,
         eligiblePlayers,
         eligibleParties,
         permittedUserIds: permittedUserIdsByMapId[selectedMap.id] ?? [],

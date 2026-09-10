@@ -12,6 +12,8 @@ type MapGalleryProps = {
   /** Per modale modifica mappa (visibilità selettiva). */
   eligiblePlayers?: { id: string; label: string }[];
   eligibleParties?: { id: string; label: string; memberIds: string[] }[];
+  isAdmin?: boolean;
+  adminDraftsEnabled?: boolean;
 };
 
 type MapRow = {
@@ -24,6 +26,7 @@ type MapRow = {
   visibility?: string;
   parent_map_id?: string | null;
   wiki_entity_id?: string | null;
+  admin_only?: boolean;
 };
 
 function toGalleryMap(m: MapRow, hasMapType: boolean, hasParentMapId: boolean): GalleryMap {
@@ -40,6 +43,7 @@ function toGalleryMap(m: MapRow, hasMapType: boolean, hasParentMapId: boolean): 
     visibility: m.visibility ?? "public",
     parent_map_id: hasParentMapId ? m.parent_map_id ?? null : null,
     wiki_entity_id: m.wiki_entity_id ?? null,
+    admin_only: m.admin_only ?? false,
   };
 }
 
@@ -48,6 +52,8 @@ export async function MapGallery({
   campaignType = null,
   eligiblePlayers = [],
   eligibleParties = [],
+  isAdmin = false,
+  adminDraftsEnabled = false,
 }: MapGalleryProps) {
   const supabase = await createSupabaseServerClient();
 
@@ -61,7 +67,7 @@ export async function MapGallery({
 
   const resFull = await supabase
     .from("maps")
-    .select("id, name, image_url, description, created_at, map_type, visibility, parent_map_id, wiki_entity_id")
+    .select("id, name, image_url, description, created_at, map_type, visibility, parent_map_id, wiki_entity_id, admin_only")
     .eq("campaign_id", campaignId)
     .order("created_at", { ascending: false });
 
@@ -221,6 +227,8 @@ export async function MapGallery({
       campaignId={campaignId}
       campaignType={campaignType}
       isGmOrAdmin={isGmOrAdmin}
+      isAdmin={isAdmin}
+      adminDraftsEnabled={adminDraftsEnabled}
       eligiblePlayers={eligiblePlayers}
       eligibleParties={eligibleParties}
       permittedUserIdsByMapId={permittedUserIdsByMapId}

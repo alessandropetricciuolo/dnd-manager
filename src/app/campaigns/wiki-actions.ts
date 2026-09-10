@@ -24,7 +24,7 @@ import {
 } from "@/lib/campaign-memory-indexer";
 import { mergeRelationsWithTextReferences } from "@/lib/wiki/wiki-relationship-sync";
 import { normalizeImageUrl } from "@/lib/image-url";
-import { assertCanManageAdminContent, logAdminContentTransition, resolveAdminContentAccess } from "@/lib/admin-content";
+import { assertCanManageAdminContent, isGlobalAdmin, logAdminContentTransition, resolveAdminContentAccess } from "@/lib/admin-content";
 
 export type { WikiGeneratorEntityType, WikiAiTextGeneration } from "@/lib/ai/generator";
 
@@ -423,6 +423,7 @@ export async function updateEntity(
   const relations = parseRelations(formData);
   const adminOnlyRequested = formData.get("admin_only") === "on" || formData.get("admin_only") === "true";
   const releaseAdminOnly = formData.get("release_admin_only") === "on" || formData.get("release_admin_only") === "true";
+  if (adminOnlyRequested && releaseAdminOnly) return { success: false, message: "Intenti Solo Admin conflittuali." };
 
   if (!title) {
     return { success: false, message: "Il titolo è obbligatorio." };
@@ -438,10 +439,13 @@ export async function updateEntity(
     const supabase = await createSupabaseServerClient();
     const accessResult = await resolveAdminContentAccess(supabase as never);
     if (!accessResult.ok) return { success: false, message: "Autorizzazione non verificabile." };
-    if (adminOnlyRequested || releaseAdminOnly) {
+    if (adminOnlyRequested) {
       try { await assertCanManageAdminContent(accessResult.access, campaignId, supabase as never); }
       catch { return { success: false, message: "Solo un Admin può cambiare lo stato Solo Admin in una campagna abilitata." }; }
     }
+    if (releaseAdminOnly && !isGlobalAdmin(accessResult.access)) return { success: false, message: "Solo un Admin può rilasciare questo contenuto." };
+    const { data: currentEntity } = await supabase.from("wiki_entities").select("admin_only").eq("id", entityId).eq("campaign_id", campaignId).maybeSingle();
+    if (releaseAdminOnly && !(currentEntity as { admin_only?: boolean } | null)?.admin_only) return { success: false, message: "Il contenuto non è Solo Admin: nessun rilascio eseguito." };
     const {
       data: { user },
       error: userError,

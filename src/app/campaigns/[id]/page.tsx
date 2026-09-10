@@ -596,6 +596,8 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
                   campaignType={campaign.type ?? null}
                   eligiblePlayers={eligiblePlayers}
                   eligibleParties={eligibleParties}
+                  isAdmin={isAdmin}
+                  adminDraftsEnabled={Boolean((campaign as { admin_drafts_enabled?: boolean }).admin_drafts_enabled)}
                 />
               </>
             ) : null

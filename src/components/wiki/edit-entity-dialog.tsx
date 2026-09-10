@@ -235,7 +235,7 @@ export function EditEntityDialog({
     const formData = new FormData(form);
     formData.set("attributes", JSON.stringify(attributes));
     formData.set("visibility", visibility);
-    if (isAdmin && adminDraftsEnabled && adminOnly) formData.set("admin_only", "true");
+    if (isAdmin && adminDraftsEnabled && adminOnly && !Boolean((entity as WikiEntity & { admin_only?: boolean }).admin_only)) formData.set("admin_only", "true");
     if (isAdmin && adminDraftsEnabled && releaseAdminOnly) formData.set("release_admin_only", "true");
     formData.set("allowed_user_ids", JSON.stringify(visibility === "selective" ? selectedPlayerIds : []));
     formData.set("allowed_party_ids", JSON.stringify(visibility === "selective" ? selectedPartyIds : []));

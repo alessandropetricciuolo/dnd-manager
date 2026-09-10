@@ -15,7 +15,7 @@ import {
   deleteCampaignMemorySource,
   syncMapDescriptionToCampaignMemory,
 } from "@/lib/campaign-memory-indexer";
-import { assertCanManageAdminContent, logAdminContentTransition, resolveAdminContentAccess } from "@/lib/admin-content";
+import { assertCanManageAdminContent, isGlobalAdmin, logAdminContentTransition, resolveAdminContentAccess } from "@/lib/admin-content";
 
 const VISIBILITY_VALUES = ["public", "secret", "selective"] as const;
 type Visibility = (typeof VISIBILITY_VALUES)[number];
@@ -300,6 +300,7 @@ export async function updateMap(
   const allowedPartyIds = payload.allowed_party_ids ?? [];
   const adminOnlyRequested = payload.admin_only === true;
   const releaseAdminOnly = payload.release_admin_only === true;
+  if (adminOnlyRequested && releaseAdminOnly) return { success: false, message: "Intenti Solo Admin conflittuali." };
 
   if (
     !name &&
@@ -315,10 +316,13 @@ export async function updateMap(
     const supabase = await createSupabaseServerClient();
     const accessResult = await resolveAdminContentAccess(supabase as never);
     if (!accessResult.ok) return { success: false, message: "Autorizzazione non verificabile." };
-    if (adminOnlyRequested || releaseAdminOnly) {
+    if (adminOnlyRequested) {
       try { await assertCanManageAdminContent(accessResult.access, campaignId, supabase as never); }
       catch { return { success: false, message: "Solo un Admin può cambiare lo stato Solo Admin in una campagna abilitata." }; }
     }
+    if (releaseAdminOnly && !isGlobalAdmin(accessResult.access)) return { success: false, message: "Solo un Admin può rilasciare questo contenuto." };
+    const { data: currentMapState } = await supabase.from("maps").select("admin_only").eq("id", mapId).eq("campaign_id", campaignId).maybeSingle();
+    if (releaseAdminOnly && !(currentMapState as { admin_only?: boolean } | null)?.admin_only) return { success: false, message: "La mappa non è Solo Admin: nessun rilascio eseguito." };
     const {
       data: { user },
       error: userError,

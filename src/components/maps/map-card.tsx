@@ -38,8 +38,11 @@ type MapCardProps = {
     visibility?: string;
     parent_map_id?: string | null;
     wiki_entity_id?: string | null;
+    admin_only?: boolean;
   };
   isGmOrAdmin: boolean;
+  isAdmin?: boolean;
+  adminDraftsEnabled?: boolean;
   eligiblePlayers?: { id: string; label: string }[];
   eligibleParties?: { id: string; label: string; memberIds: string[] }[];
   permittedUserIds?: string[];
@@ -51,6 +54,8 @@ export function MapCard({
   campaignType = null,
   map,
   isGmOrAdmin,
+  isAdmin = false,
+  adminDraftsEnabled = false,
   eligiblePlayers = [],
   eligibleParties = [],
   permittedUserIds = [],
@@ -99,6 +104,9 @@ export function MapCard({
               initialParentMapId={map.parent_map_id ?? null}
               initialWikiEntityId={map.wiki_entity_id ?? null}
               initialVisibility={map.visibility ?? "public"}
+              initialAdminOnly={Boolean(map.admin_only)}
+              isAdmin={isAdmin}
+              adminDraftsEnabled={adminDraftsEnabled}
               initialAllowedUserIds={permittedUserIds}
               initialAllowedPartyIds={inferredPartyIds}
               eligiblePlayers={eligiblePlayers}
