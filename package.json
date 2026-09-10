@@ -10,6 +10,7 @@
     "test:sheet-generator": "tsx --test src/lib/sheet-generator/__tests__/*.test.ts",
     "test:manual-search": "tsx --test src/lib/actions/__tests__/*.test.ts",
     "test:security": "tsx --test --test-concurrency=1 src/lib/security/__tests__/*.test.ts",
+    "test:admin-content": "tsx --test src/lib/admin-content/__tests__/*.test.ts",
     "test:torneo2": "tsx --test src/lib/torneo2/__tests__/*.test.ts",
     "test:map-core": "tsx --test src/lib/map-core/__tests__/*.test.ts",
     "test:scene-runtime": "tsx --test src/lib/scene-runtime/__tests__/*.test.ts",
