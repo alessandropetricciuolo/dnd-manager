@@ -328,18 +328,20 @@ export interface Database {
           long_calendar_config: Json | null;
           /** Data base usata per derivare la data dei PG (campagne long). */
           long_calendar_base_date: Json | null;
+          admin_drafts_enabled: boolean;
           created_at: string;
           updated_at: string;
         };
         Insert: Omit<
           Database["public"]["Tables"]["campaigns"]["Row"],
-          "created_at" | "updated_at" | "ai_context" | "image_style_prompt" | "ai_image_style_key" | "long_calendar_config" | "long_calendar_base_date"
+          "created_at" | "updated_at" | "ai_context" | "image_style_prompt" | "ai_image_style_key" | "long_calendar_config" | "long_calendar_base_date" | "admin_drafts_enabled"
         > & {
           ai_context?: Json | null;
           image_style_prompt?: string | null;
           ai_image_style_key?: string | null;
           long_calendar_config?: Json | null;
           long_calendar_base_date?: Json | null;
+          admin_drafts_enabled?: boolean;
         };
         Update: Partial<Database["public"]["Tables"]["campaigns"]["Insert"]>;
       };
@@ -370,13 +372,14 @@ export interface Database {
           image_url: string | null;
           tags: string[];
           include_in_campaign_ai_memory: boolean;
+          admin_only: boolean;
           created_at: string;
           updated_at: string;
         };
         Insert: Omit<
           Database["public"]["Tables"]["wiki_entities"]["Row"],
-          "created_at" | "updated_at" | "include_in_campaign_ai_memory"
-        > & { include_in_campaign_ai_memory?: boolean };
+          "created_at" | "updated_at" | "include_in_campaign_ai_memory" | "admin_only"
+        > & { include_in_campaign_ai_memory?: boolean; admin_only?: boolean };
         Update: Partial<Database["public"]["Tables"]["wiki_entities"]["Insert"]>;
       };
       wiki_relationships: {
@@ -403,10 +406,13 @@ export interface Database {
           parent_map_id: string | null;
           telegram_fallback_id: string | null;
           wiki_entity_id: string | null;
+          admin_only: boolean;
           created_at: string;
           updated_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["maps"]["Row"], "created_at" | "updated_at">;
+        Insert: Omit<Database["public"]["Tables"]["maps"]["Row"], "created_at" | "updated_at" | "admin_only"> & {
+          admin_only?: boolean;
+        };
         Update: Partial<Database["public"]["Tables"]["maps"]["Insert"]>;
       };
       portals: {
@@ -543,13 +549,15 @@ export interface Database {
           summary: string | null;
           metadata: Json;
           embedding: string | null;
+          admin_only: boolean;
           created_at: string;
           updated_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["campaign_memory_chunks"]["Row"], "id" | "created_at" | "updated_at"> & {
+        Insert: Omit<Database["public"]["Tables"]["campaign_memory_chunks"]["Row"], "id" | "created_at" | "updated_at" | "admin_only"> & {
           id?: string;
           created_at?: string;
           updated_at?: string;
+          admin_only?: boolean;
         };
         Update: Partial<Database["public"]["Tables"]["campaign_memory_chunks"]["Insert"]>;
       };
