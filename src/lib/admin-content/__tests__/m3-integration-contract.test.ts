@@ -10,7 +10,7 @@ test("M3 production actions use the tested transition resolver", () => {
   const maps = source("src/app/campaigns/map-actions.ts");
   assert.match(wiki, /resolveAdminOnlyTransition/);
   assert.match(maps, /resolveAdminOnlyTransition/);
-  assert.match(wiki, /adminOnlyRequested.*visibility|visibility.*adminOnlyRequested/s);
+  assert.match(wiki, /adminOnlyRequested.*visibility|visibility.*adminOnlyRequested/);
   assert.match(maps, /transition\.nextAdminOnly/);
 });
 
