@@ -16,6 +16,7 @@ import {
   syncMapDescriptionToCampaignMemory,
 } from "@/lib/campaign-memory-indexer";
 import { assertCanManageAdminContent, isGlobalAdmin, logAdminContentTransition, resolveAdminContentAccess } from "@/lib/admin-content";
+import { resolveAdminOnlyTransition } from "@/lib/admin-content/transitions";
 
 const VISIBILITY_VALUES = ["public", "secret", "selective"] as const;
 type Visibility = (typeof VISIBILITY_VALUES)[number];
@@ -322,7 +323,14 @@ export async function updateMap(
     }
     if (releaseAdminOnly && !isGlobalAdmin(accessResult.access)) return { success: false, message: "Solo un Admin può rilasciare questo contenuto." };
     const { data: currentMapState } = await supabase.from("maps").select("admin_only").eq("id", mapId).eq("campaign_id", campaignId).maybeSingle();
-    if (releaseAdminOnly && !(currentMapState as { admin_only?: boolean } | null)?.admin_only) return { success: false, message: "La mappa non è Solo Admin: nessun rilascio eseguito." };
+    const transition = resolveAdminOnlyTransition({ currentAdminOnly: Boolean((currentMapState as { admin_only?: boolean } | null)?.admin_only), protect: adminOnlyRequested, release: releaseAdminOnly });
+    if (!transition.ok) return { success: false, message: transition.reason === "release_requires_protected" ? "La mappa non è Solo Admin: nessun rilascio eseguito." : "Intenti Solo Admin conflittuali." };
+    const { data: linkedState } = await supabase.from("maps").select("wiki_entity_id").eq("id", mapId).eq("campaign_id", campaignId).maybeSingle();
+    const nextWikiId = wikiEntityId === undefined ? (linkedState as { wiki_entity_id?: string | null } | null)?.wiki_entity_id : wikiEntityId;
+    if (nextWikiId && transition.intent !== "none") {
+      const { data: linkedWiki } = await supabase.from("wiki_entities").select("admin_only").eq("id", nextWikiId).eq("campaign_id", campaignId).maybeSingle();
+      if (!linkedWiki || Boolean((linkedWiki as { admin_only?: boolean }).admin_only) !== transition.nextAdminOnly) return { success: false, message: "La transizione lascerebbe il collegamento Wiki-mappa attraverso il confine Solo Admin." };
+    }
     const {
       data: { user },
       error: userError,
@@ -355,14 +363,14 @@ export async function updateMap(
     if (visibility !== undefined) {
       updates.visibility = visibility;
     }
-    if (adminOnlyRequested || releaseAdminOnly) {
+    if (transition.intent !== "none") {
       if (adminOnlyRequested) {
         const { data: children } = await supabase.from("maps").select("id, name, admin_only").eq("parent_map_id", mapId).eq("admin_only", false);
         if ((children ?? []).length > 0) {
           return { success: false, message: `Impossibile ritirare questa mappa: contiene ${(children ?? []).length} figli non Solo Admin. Proteggili prima, senza cascata automatica.` };
         }
       }
-      updates.admin_only = !releaseAdminOnly;
+      updates.admin_only = transition.nextAdminOnly;
       if (adminOnlyRequested) updates.visibility = "secret";
     }
     if (parentMapId !== undefined) {
@@ -382,7 +390,7 @@ export async function updateMap(
         if ((entityRow as { type?: string }).type !== "location") {
           return { success: false, message: "Puoi collegare solo schede di tipo Luogo." };
         }
-        if (!adminOnlyRequested && !releaseAdminOnly) {
+      if (transition.intent === "none") {
           const { data: currentMap } = await supabase.from("maps").select("admin_only").eq("id", mapId).single();
           if (Boolean((currentMap as { admin_only?: boolean } | null)?.admin_only) !== Boolean((entityRow as { admin_only?: boolean }).admin_only)) {
             return { success: false, message: "Il collegamento Wiki-mappa attraverserebbe il confine Solo Admin." };
@@ -408,7 +416,7 @@ export async function updateMap(
         const friendly = mapPgMapError(error);
         return { success: false, message: friendly ?? error.message ?? "Errore durante l'aggiornamento." };
       }
-      if (adminOnlyRequested || releaseAdminOnly) logAdminContentTransition({ action: releaseAdminOnly ? "release" : "protect", access: accessResult.access, campaignId, entityType: "map", entityId: mapId });
+      if (transition.intent !== "none") logAdminContentTransition({ action: transition.intent, access: accessResult.access, campaignId, entityType: "map", entityId: mapId });
     }
     if (visibility !== undefined) {
       const partyUserIds =

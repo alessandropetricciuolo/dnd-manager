@@ -964,7 +964,7 @@ export function EditEntityDialog({
 
           <div className="space-y-2">
             <Label>Visibilità</Label>
-            {isAdmin && adminDraftsEnabled ? (
+            {isAdmin && (adminDraftsEnabled || Boolean((entity as WikiEntity & { admin_only?: boolean }).admin_only)) ? (
               <div className="space-y-2 rounded-md border border-violet-500/30 bg-violet-500/10 p-3 text-sm text-violet-100">
                 <label className="flex items-center gap-2"><input type="checkbox" checked={adminOnly} onChange={(e) => { setAdminOnly(e.target.checked); if (e.target.checked) setReleaseAdminOnly(false); }} disabled={isLoading} /> Solo Admin</label>
                 {adminOnly ? <label className="flex items-center gap-2 text-amber-100"><input type="checkbox" checked={releaseAdminOnly} onChange={(e) => { setReleaseAdminOnly(e.target.checked); if (e.target.checked) setAdminOnly(false); }} disabled={isLoading} /> Rilascia contenuto (mantieni la visibilità scelta)</label> : null}

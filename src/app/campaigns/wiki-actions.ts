@@ -25,6 +25,7 @@ import {
 import { mergeRelationsWithTextReferences } from "@/lib/wiki/wiki-relationship-sync";
 import { normalizeImageUrl } from "@/lib/image-url";
 import { assertCanManageAdminContent, isGlobalAdmin, logAdminContentTransition, resolveAdminContentAccess } from "@/lib/admin-content";
+import { resolveAdminOnlyTransition } from "@/lib/admin-content/transitions";
 
 export type { WikiGeneratorEntityType, WikiAiTextGeneration } from "@/lib/ai/generator";
 
@@ -321,7 +322,7 @@ export async function createEntity(
     }
     if (adminOnlyRequested) logAdminContentTransition({ action: "create", access: accessResult.access, campaignId, entityType: "wiki", entityId: inserted.id });
 
-    if (visibility === "selective") {
+    if (!adminOnlyRequested && visibility === "selective") {
       const partyUserIds = await resolveAllowedUserIdsFromParties(supabase, campaignId, allowedPartyIds);
       const mergedUserIds = [...new Set([...allowedUserIds, ...partyUserIds])];
       const { error: permError } = await syncEntityPermissions(
@@ -445,7 +446,8 @@ export async function updateEntity(
     }
     if (releaseAdminOnly && !isGlobalAdmin(accessResult.access)) return { success: false, message: "Solo un Admin può rilasciare questo contenuto." };
     const { data: currentEntity } = await supabase.from("wiki_entities").select("admin_only").eq("id", entityId).eq("campaign_id", campaignId).maybeSingle();
-    if (releaseAdminOnly && !(currentEntity as { admin_only?: boolean } | null)?.admin_only) return { success: false, message: "Il contenuto non è Solo Admin: nessun rilascio eseguito." };
+    const transition = resolveAdminOnlyTransition({ currentAdminOnly: Boolean((currentEntity as { admin_only?: boolean } | null)?.admin_only), protect: adminOnlyRequested, release: releaseAdminOnly });
+    if (!transition.ok) return { success: false, message: transition.reason === "release_requires_protected" ? "Il contenuto non è Solo Admin: nessun rilascio eseguito." : "Intenti Solo Admin conflittuali." };
     const {
       data: { user },
       error: userError,
@@ -521,8 +523,8 @@ export async function updateEntity(
       attributes: Object.keys(attributes).length ? attributes : {},
       tags: tags,
     };
-    if (adminOnlyRequested || releaseAdminOnly) {
-      updatePayload.admin_only = !releaseAdminOnly;
+    if (transition.intent !== "none") {
+      updatePayload.admin_only = transition.nextAdminOnly;
       if (adminOnlyRequested) updatePayload.visibility = "secret";
     }
     if (visibility !== null) {
@@ -609,7 +611,7 @@ export async function updateEntity(
         message: error.message ?? "Errore durante l'aggiornamento.",
       };
     }
-    if (adminOnlyRequested || releaseAdminOnly) logAdminContentTransition({ action: releaseAdminOnly ? "release" : "protect", access: accessResult.access, campaignId, entityType: "wiki", entityId });
+    if (transition.intent !== "none") logAdminContentTransition({ action: transition.intent, access: accessResult.access, campaignId, entityType: "wiki", entityId });
 
     if (visibility !== null) {
       const partyUserIds =

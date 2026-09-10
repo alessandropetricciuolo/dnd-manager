@@ -392,7 +392,7 @@ export function EditMapDialog({
           </div>
           <div className="space-y-2">
             <Label>Visibilità</Label>
-            {isAdmin && adminDraftsEnabled ? <div className="rounded-md border border-violet-500/30 bg-violet-500/10 p-3 text-sm"><label className="flex items-center gap-2"><input type="checkbox" checked={adminOnly} onChange={(e) => { setAdminOnly(e.target.checked); if (e.target.checked) setReleaseAdminOnly(false); }} disabled={isLoading} /> Solo Admin</label>{adminOnly ? <label className="mt-2 flex items-center gap-2"><input type="checkbox" checked={releaseAdminOnly} onChange={(e) => { setReleaseAdminOnly(e.target.checked); if (e.target.checked) setAdminOnly(false); }} disabled={isLoading} /> Rilascia (accessi passati non revocabili)</label> : null}</div> : null}
+            {isAdmin && (adminDraftsEnabled || initialAdminOnly) ? <div className="rounded-md border border-violet-500/30 bg-violet-500/10 p-3 text-sm"><label className="flex items-center gap-2"><input type="checkbox" checked={adminOnly} onChange={(e) => { setAdminOnly(e.target.checked); if (e.target.checked) setReleaseAdminOnly(false); }} disabled={isLoading} /> Solo Admin</label>{adminOnly ? <label className="mt-2 flex items-center gap-2"><input type="checkbox" checked={releaseAdminOnly} onChange={(e) => { setReleaseAdminOnly(e.target.checked); if (e.target.checked) setAdminOnly(false); }} disabled={isLoading} /> Rilascia (accessi passati non revocabili)</label> : null}</div> : null}
             <Select value={visibility} onValueChange={setVisibility} disabled={isLoading}>
               <SelectTrigger className="bg-slate-900/70 border-slate-700 text-slate-50">
                 <SelectValue />
