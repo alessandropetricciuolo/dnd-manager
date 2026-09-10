@@ -19,6 +19,8 @@ test("M3 create paths suppress latent selective permissions", () => {
   const maps = source("src/app/campaigns/map-actions.ts");
   assert.match(wiki, /!adminOnlyRequested && visibility === "selective"/);
   assert.match(maps, /admin_only: adminOnlyRequested/);
+  assert.match(maps, /!adminOnlyRequested && visibility === "selective"/);
+  assert.match(source("src/components/maps/bulk-import-maps-dialog.tsx"), /isAdmin && adminDraftsEnabled/);
   assert.match(source("src/components/wiki/edit-entity-dialog.tsx"), /adminDraftsEnabled \|\| Boolean/);
   assert.match(source("src/components/maps/edit-map-dialog.tsx"), /adminDraftsEnabled \|\| initialAdminOnly/);
 });

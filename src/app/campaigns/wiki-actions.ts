@@ -445,7 +445,8 @@ export async function updateEntity(
       catch { return { success: false, message: "Solo un Admin può cambiare lo stato Solo Admin in una campagna abilitata." }; }
     }
     if (releaseAdminOnly && !isGlobalAdmin(accessResult.access)) return { success: false, message: "Solo un Admin può rilasciare questo contenuto." };
-    const { data: currentEntity } = await supabase.from("wiki_entities").select("admin_only").eq("id", entityId).eq("campaign_id", campaignId).maybeSingle();
+    const { data: currentEntity, error: currentEntityError } = await supabase.from("wiki_entities").select("admin_only").eq("id", entityId).eq("campaign_id", campaignId).maybeSingle();
+    if (currentEntityError || !currentEntity) return { success: false, message: "Impossibile verificare lo stato della voce Wiki." };
     const transition = resolveAdminOnlyTransition({ currentAdminOnly: Boolean((currentEntity as { admin_only?: boolean } | null)?.admin_only), protect: adminOnlyRequested, release: releaseAdminOnly });
     if (!transition.ok) return { success: false, message: transition.reason === "release_requires_protected" ? "Il contenuto non è Solo Admin: nessun rilascio eseguito." : "Intenti Solo Admin conflittuali." };
     const {

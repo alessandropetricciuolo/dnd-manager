@@ -547,7 +547,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
               <>
                 {isGmOrAdmin ? (
                   <div className="mb-3 flex flex-wrap justify-end gap-2">
-                    <BulkImportMapsDialog campaignId={campaign.id} campaignType={campaign.type} />
+                    <BulkImportMapsDialog campaignId={campaign.id} campaignType={campaign.type} isAdmin={isAdmin} adminDraftsEnabled={Boolean((campaign as { admin_drafts_enabled?: boolean }).admin_drafts_enabled)} />
                     <UploadMapDialog
                       campaignId={campaign.id}
                       campaignType={campaign.type ?? null}

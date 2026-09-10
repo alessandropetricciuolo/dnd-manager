@@ -15,7 +15,7 @@ const example = JSON.stringify([
   { key: "continente", name: "Continente del nord", map_type: "continent", parent_key: "mondo", image_url: "https://example.com/continente.jpg", description: "Terre del nord" },
 ], null, 2);
 
-export function BulkImportMapsDialog({ campaignId, campaignType }: { campaignId: string; campaignType?: string | null }) {
+export function BulkImportMapsDialog({ campaignId, campaignType, isAdmin = false, adminDraftsEnabled = false }: { campaignId: string; campaignType?: string | null; isAdmin?: boolean; adminDraftsEnabled?: boolean }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [source, setSource] = useState("");
@@ -49,7 +49,7 @@ export function BulkImportMapsDialog({ campaignId, campaignType }: { campaignId:
     if (busy || done || !existing || !preview.rows.length || preview.error) return;
     setBusy(true); setMessage("");
     try {
-      const result = await bulkImportMaps(campaignId, preview.rows, adminOnly);
+      const result = await bulkImportMaps(campaignId, preview.rows, isAdmin && adminDraftsEnabled && adminOnly);
       setMessage(result.message);
       if (result.success) { setDone(true); router.refresh(); }
     } catch { setMessage("Risposta non ricevuta. Controlla l’Atlante prima di riprovare, per evitare duplicati."); setDone(true); }
@@ -73,7 +73,7 @@ export function BulkImportMapsDialog({ campaignId, campaignType }: { campaignId:
       }} />
       <label className="text-sm" htmlFor="maps-import-json">Elenco mappe</label>
       <Textarea id="maps-import-json" className="min-h-48 font-mono text-xs" placeholder="Incolla qui il JSON…" value={source} disabled={busy || done} onChange={e => changeSource(e.target.value)} />
-      <label className="flex items-center gap-2 rounded-md border border-violet-500/30 bg-violet-500/10 p-3 text-sm"><input type="checkbox" checked={adminOnly} onChange={e => setAdminOnly(e.target.checked)} disabled={busy || done} /> Importa Solo Admin (tutte le mappe saranno segrete)</label>
+      {isAdmin && adminDraftsEnabled ? <label className="flex items-center gap-2 rounded-md border border-violet-500/30 bg-violet-500/10 p-3 text-sm"><input type="checkbox" checked={adminOnly} onChange={e => setAdminOnly(e.target.checked)} disabled={busy || done} /> Importa Solo Admin (tutte le mappe saranno segrete)</label> : null}
       {preview.error && <p role="alert" className="text-sm text-red-400">{preview.error}</p>}
       {!!preview.rows.length && <div className="max-h-48 overflow-auto rounded border border-barber-gold/20"><table className="w-full text-left text-sm"><caption className="p-2 text-left">Anteprima · {preview.rows.length} mappe</caption><thead><tr><th className="p-2">Nome</th><th className="p-2">Tipo</th><th className="p-2">Visibilità</th></tr></thead><tbody>{preview.rows.map(r => <tr key={r.key} className="border-t border-barber-gold/10"><td className="break-words p-2">{r.name}</td><td className="p-2">{MAP_IMPORT_TYPES[r.map_type]}</td><td className="p-2">{r.visibility === "secret" ? "Segreta" : "Pubblica"}</td></tr>)}</tbody></table></div>}
       {message && <p role="status" className="text-sm">{message}</p>}

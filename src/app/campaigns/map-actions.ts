@@ -224,7 +224,7 @@ export async function uploadMap(
     }
     if (adminOnlyRequested) logAdminContentTransition({ action: "create", access: accessResult.access, campaignId, entityType: "map", entityId: inserted.id });
 
-    if (visibility === "selective") {
+    if (!adminOnlyRequested && visibility === "selective") {
       const partyUserIds = await resolveAllowedUserIdsFromParties(supabase, campaignId, allowedPartyIds);
       const mergedUserIds = [...new Set([...allowedUserIds, ...partyUserIds])];
       const { error: permError } = await syncEntityPermissions(
@@ -322,13 +322,16 @@ export async function updateMap(
       catch { return { success: false, message: "Solo un Admin può cambiare lo stato Solo Admin in una campagna abilitata." }; }
     }
     if (releaseAdminOnly && !isGlobalAdmin(accessResult.access)) return { success: false, message: "Solo un Admin può rilasciare questo contenuto." };
-    const { data: currentMapState } = await supabase.from("maps").select("admin_only").eq("id", mapId).eq("campaign_id", campaignId).maybeSingle();
+    const { data: currentMapState, error: currentMapError } = await supabase.from("maps").select("admin_only").eq("id", mapId).eq("campaign_id", campaignId).maybeSingle();
+    if (currentMapError || !currentMapState) return { success: false, message: "Impossibile verificare lo stato della mappa." };
     const transition = resolveAdminOnlyTransition({ currentAdminOnly: Boolean((currentMapState as { admin_only?: boolean } | null)?.admin_only), protect: adminOnlyRequested, release: releaseAdminOnly });
     if (!transition.ok) return { success: false, message: transition.reason === "release_requires_protected" ? "La mappa non è Solo Admin: nessun rilascio eseguito." : "Intenti Solo Admin conflittuali." };
-    const { data: linkedState } = await supabase.from("maps").select("wiki_entity_id").eq("id", mapId).eq("campaign_id", campaignId).maybeSingle();
+    const { data: linkedState, error: linkedStateError } = await supabase.from("maps").select("wiki_entity_id").eq("id", mapId).eq("campaign_id", campaignId).maybeSingle();
+    if (linkedStateError || !linkedState) return { success: false, message: "Impossibile verificare il collegamento Wiki-mappa." };
     const nextWikiId = wikiEntityId === undefined ? (linkedState as { wiki_entity_id?: string | null } | null)?.wiki_entity_id : wikiEntityId;
     if (nextWikiId && transition.intent !== "none") {
-      const { data: linkedWiki } = await supabase.from("wiki_entities").select("admin_only").eq("id", nextWikiId).eq("campaign_id", campaignId).maybeSingle();
+      const { data: linkedWiki, error: linkedWikiError } = await supabase.from("wiki_entities").select("admin_only").eq("id", nextWikiId).eq("campaign_id", campaignId).maybeSingle();
+      if (linkedWikiError) return { success: false, message: "Impossibile verificare il confine del collegamento Wiki-mappa." };
       if (!linkedWiki || Boolean((linkedWiki as { admin_only?: boolean }).admin_only) !== transition.nextAdminOnly) return { success: false, message: "La transizione lascerebbe il collegamento Wiki-mappa attraverso il confine Solo Admin." };
     }
     const {
@@ -365,7 +368,8 @@ export async function updateMap(
     }
     if (transition.intent !== "none") {
       if (adminOnlyRequested) {
-        const { data: children } = await supabase.from("maps").select("id, name, admin_only").eq("parent_map_id", mapId).eq("admin_only", false);
+        const { data: children, error: childrenError } = await supabase.from("maps").select("id, name, admin_only").eq("parent_map_id", mapId).eq("admin_only", false);
+        if (childrenError) return { success: false, message: "Impossibile verificare i figli della mappa: ritiro negato." };
         if ((children ?? []).length > 0) {
           return { success: false, message: `Impossibile ritirare questa mappa: contiene ${(children ?? []).length} figli non Solo Admin. Proteggili prima, senza cascata automatica.` };
         }
