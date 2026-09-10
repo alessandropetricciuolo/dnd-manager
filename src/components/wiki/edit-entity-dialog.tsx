@@ -61,6 +61,8 @@ type EditEntityDialogProps = {
   initialVisibility?: string;
   initialAllowedUserIds?: string[];
   initialAllowedPartyIds?: string[];
+  isAdmin?: boolean;
+  adminDraftsEnabled?: boolean;
 };
 
 const defaultAttributes = (type: EntityType) =>
@@ -97,6 +99,8 @@ export function EditEntityDialog({
   initialVisibility = "public",
   initialAllowedUserIds = [],
   initialAllowedPartyIds = [],
+  isAdmin = false,
+  adminDraftsEnabled = false,
 }: EditEntityDialogProps) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -112,6 +116,8 @@ export function EditEntityDialog({
   );
   const [removeImage, setRemoveImage] = useState(false);
   const [visibility, setVisibility] = useState<string>(initialVisibility);
+  const [adminOnly, setAdminOnly] = useState(Boolean((entity as WikiEntity & { admin_only?: boolean }).admin_only));
+  const [releaseAdminOnly, setReleaseAdminOnly] = useState(false);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>(initialAllowedUserIds);
   const [selectedPartyIds, setSelectedPartyIds] = useState<string[]>(initialAllowedPartyIds);
   const [isCore, setIsCore] = useState<boolean>(entity.is_core ?? false);
@@ -150,6 +156,8 @@ export function EditEntityDialog({
       setAttributes(mergeAttributes((entity.type as EntityType) || "npc", entity.attributes));
       setSortOrder(entity.sort_order != null ? String(entity.sort_order) : "");
       setVisibility(initialVisibility);
+      setAdminOnly(Boolean((entity as WikiEntity & { admin_only?: boolean }).admin_only));
+      setReleaseAdminOnly(false);
       setSelectedPlayerIds(initialAllowedUserIds);
       setSelectedPartyIds(initialAllowedPartyIds);
       setIsCore(entity.is_core ?? false);
@@ -227,6 +235,8 @@ export function EditEntityDialog({
     const formData = new FormData(form);
     formData.set("attributes", JSON.stringify(attributes));
     formData.set("visibility", visibility);
+    if (isAdmin && adminDraftsEnabled && adminOnly) formData.set("admin_only", "true");
+    if (isAdmin && adminDraftsEnabled && releaseAdminOnly) formData.set("release_admin_only", "true");
     formData.set("allowed_user_ids", JSON.stringify(visibility === "selective" ? selectedPlayerIds : []));
     formData.set("allowed_party_ids", JSON.stringify(visibility === "selective" ? selectedPartyIds : []));
     if (sortOrder.trim() !== "") formData.set("sort_order", sortOrder.trim());
@@ -954,6 +964,12 @@ export function EditEntityDialog({
 
           <div className="space-y-2">
             <Label>Visibilità</Label>
+            {isAdmin && adminDraftsEnabled ? (
+              <div className="space-y-2 rounded-md border border-violet-500/30 bg-violet-500/10 p-3 text-sm text-violet-100">
+                <label className="flex items-center gap-2"><input type="checkbox" checked={adminOnly} onChange={(e) => { setAdminOnly(e.target.checked); if (e.target.checked) setReleaseAdminOnly(false); }} disabled={isLoading} /> Solo Admin</label>
+                {adminOnly ? <label className="flex items-center gap-2 text-amber-100"><input type="checkbox" checked={releaseAdminOnly} onChange={(e) => { setReleaseAdminOnly(e.target.checked); if (e.target.checked) setAdminOnly(false); }} disabled={isLoading} /> Rilascia contenuto (mantieni la visibilità scelta)</label> : null}
+              </div>
+            ) : null}
             <select
               value={visibility}
               onChange={(e) => setVisibility(e.target.value)}

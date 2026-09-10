@@ -105,6 +105,8 @@ type CreateEntityDialogProps = {
   campaignType?: "oneshot" | "quest" | "long" | null;
   eligiblePlayers?: { id: string; label: string }[];
   eligibleParties?: { id: string; label: string; memberIds: string[] }[];
+  isAdmin?: boolean;
+  adminDraftsEnabled?: boolean;
 };
 
 const defaultAttributes = (type: EntityType) =>
@@ -215,6 +217,8 @@ export function CreateEntityDialog({
   campaignType,
   eligiblePlayers = [],
   eligibleParties = [],
+  isAdmin = false,
+  adminDraftsEnabled = false,
 }: CreateEntityDialogProps) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -224,6 +228,7 @@ export function CreateEntityDialog({
   const [attributes, setAttributes] = useState<Record<string, unknown>>(defaultAttributes("npc"));
   const [sortOrder, setSortOrder] = useState<string>("");
   const [visibility, setVisibility] = useState<string>("public");
+  const [adminOnly, setAdminOnly] = useState(false);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [selectedPartyIds, setSelectedPartyIds] = useState<string[]>([]);
   const [isCore, setIsCore] = useState(false);
@@ -419,6 +424,7 @@ export function CreateEntityDialog({
     }
     formData.set("attributes", JSON.stringify(normalizedAttributes));
     formData.set("visibility", visibility);
+    if (isAdmin && adminDraftsEnabled && adminOnly) formData.set("admin_only", "true");
     formData.set("allowed_user_ids", JSON.stringify(visibility === "selective" ? selectedPlayerIds : []));
     formData.set("allowed_party_ids", JSON.stringify(visibility === "selective" ? selectedPartyIds : []));
     if (sortOrder.trim() !== "") formData.set("sort_order", sortOrder.trim());
@@ -859,7 +865,7 @@ export function CreateEntityDialog({
                 hint="Base obbligatoria"
               >
                 <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
-                  <div className="space-y-2">
+        <div className="space-y-2">
                     <NameGeneratorField
                       id="entity-title"
                       name="title"
@@ -1767,6 +1773,12 @@ export function CreateEntityDialog({
                 defaultOpen={visibility !== "public"}
               >
                 <div className="space-y-2">
+                  {isAdmin && adminDraftsEnabled ? (
+                    <label className="flex items-center gap-2 rounded-md border border-violet-500/30 bg-violet-500/10 p-3 text-sm text-violet-100">
+                      <input type="checkbox" checked={adminOnly} onChange={(e) => setAdminOnly(e.target.checked)} disabled={isLoading} />
+                      <span><strong>Solo Admin</strong><br /><span className="text-xs text-violet-200/70">Crea come bozza segreta; potrai rilasciarla in seguito.</span></span>
+                    </label>
+                  ) : null}
                   <select
                     name="visibility"
                     value={visibility}

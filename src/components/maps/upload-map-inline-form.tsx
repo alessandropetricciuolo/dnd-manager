@@ -83,6 +83,8 @@ export type UploadMapInlineFormProps = {
   campaignType?: "oneshot" | "quest" | "long" | null;
   eligiblePlayers?: { id: string; label: string }[];
   eligibleParties?: { id: string; label: string; memberIds: string[] }[];
+  isAdmin?: boolean;
+  adminDraftsEnabled?: boolean;
   /**
    * Da dialog pin: la nuova mappa è sempre figlia della mappa su cui stai piazzando il pin.
    * Campagna long: tipi ammessi dipendono dal tipo della mappa genitore.
@@ -99,6 +101,8 @@ export function UploadMapInlineForm({
   campaignType = null,
   eligiblePlayers = [],
   eligibleParties = [],
+  isAdmin = false,
+  adminDraftsEnabled = false,
   pinParentContext = null,
   appearance = "gallery",
   onUploaded,
@@ -117,6 +121,7 @@ export function UploadMapInlineForm({
         : "city"
   );
   const [visibility, setVisibility] = useState<string>("public");
+  const [adminOnly, setAdminOnly] = useState(false);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [selectedPartyIds, setSelectedPartyIds] = useState<string[]>([]);
   const [parentMapId, setParentMapId] = useState<string>(
@@ -217,6 +222,7 @@ export function UploadMapInlineForm({
     formData.set("campaign_id", campaignId);
     formData.set("map_type", mapType);
     formData.set("visibility", visibility);
+    if (isAdmin && adminDraftsEnabled && adminOnly) formData.set("admin_only", "true");
     formData.set("allowed_user_ids", JSON.stringify(visibility === "selective" ? selectedPlayerIds : []));
     formData.set("allowed_party_ids", JSON.stringify(visibility === "selective" ? selectedPartyIds : []));
     if (isLongCampaign) {
@@ -380,6 +386,12 @@ export function UploadMapInlineForm({
 
         <div className="space-y-2">
           <Label>Visibilità</Label>
+          {isAdmin && adminDraftsEnabled ? (
+            <label className="flex items-center gap-2 rounded-md border border-violet-500/30 bg-violet-500/10 p-3 text-sm text-violet-100">
+              <input type="checkbox" checked={adminOnly} onChange={(e) => setAdminOnly(e.target.checked)} disabled={isLoading} />
+              <span><strong>Solo Admin</strong><br /><span className="text-xs text-violet-200/70">Crea la mappa come bozza non visibile ai GM.</span></span>
+            </label>
+          ) : null}
           <Select value={visibility} onValueChange={setVisibility} disabled={isLoading}>
             <SelectTrigger className={selectTriggerClass}>
               <SelectValue />

@@ -21,6 +21,8 @@ type UploadMapDialogProps = {
   eligiblePlayers?: { id: string; label: string }[];
   /** Gruppi campagna disponibili per visibilità selettiva. */
   eligibleParties?: { id: string; label: string; memberIds: string[] }[];
+  isAdmin?: boolean;
+  adminDraftsEnabled?: boolean;
 };
 
 export function UploadMapDialog({
@@ -28,6 +30,8 @@ export function UploadMapDialog({
   campaignType = null,
   eligiblePlayers = [],
   eligibleParties = [],
+  isAdmin = false,
+  adminDraftsEnabled = false,
 }: UploadMapDialogProps) {
   const [open, setOpen] = useState(false);
   const [formKey, setFormKey] = useState(0);
@@ -60,6 +64,8 @@ export function UploadMapDialog({
           campaignType={campaignType}
           eligiblePlayers={eligiblePlayers}
           eligibleParties={eligibleParties}
+          isAdmin={isAdmin}
+          adminDraftsEnabled={adminDraftsEnabled}
           appearance="gallery"
           onCancel={() => setOpen(false)}
           onUploaded={() => setOpen(false)}

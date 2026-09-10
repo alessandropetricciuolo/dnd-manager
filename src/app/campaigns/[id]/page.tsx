@@ -93,7 +93,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
   const { data: campaign, error } = await supabase
     .from("campaigns")
     .select(
-      "id, name, description, gm_id, is_public, type, image_url, is_long_campaign, player_primer, primer_typography, long_registrations_open"
+      "id, name, description, gm_id, is_public, type, image_url, is_long_campaign, player_primer, primer_typography, long_registrations_open, admin_drafts_enabled"
     )
     .eq("id", id)
     .single();
@@ -526,6 +526,8 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
                       campaignType={campaign.type ?? null}
                       eligiblePlayers={eligiblePlayers}
                       eligibleParties={eligibleParties}
+                      isAdmin={isAdmin}
+                      adminDraftsEnabled={Boolean((campaign as { admin_drafts_enabled?: boolean }).admin_drafts_enabled)}
                     />
                     <DownloadWikiArchiveButton campaignId={campaign.id} />
                     <BulkImportWikiDialog campaignId={campaign.id} />
@@ -551,6 +553,8 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
                       campaignType={campaign.type ?? null}
                       eligiblePlayers={eligiblePlayers}
                       eligibleParties={eligibleParties}
+                      isAdmin={isAdmin}
+                      adminDraftsEnabled={Boolean((campaign as { admin_drafts_enabled?: boolean }).admin_drafts_enabled)}
                     />
                   </div>
                 ) : null}

@@ -38,7 +38,7 @@ export default async function WikiEntityPage({ params, searchParams }: PageProps
   const entity = await getEntity(entityId, campaignId);
   const { data: campaign } = await supabase
     .from("campaigns")
-    .select("type")
+    .select("type, admin_drafts_enabled")
     .eq("id", campaignId)
     .single();
 
@@ -144,6 +144,8 @@ export default async function WikiEntityPage({ params, searchParams }: PageProps
                 eligiblePlayers={eligiblePlayers}
                 eligibleParties={eligibleParties}
                 initialVisibility={(entity as { visibility?: string }).visibility ?? (entity.is_secret ? "secret" : "public")}
+                isAdmin={profile?.role === "admin"}
+                adminDraftsEnabled={Boolean((campaign as { admin_drafts_enabled?: boolean } | null)?.admin_drafts_enabled)}
                 initialAllowedUserIds={permittedUserIds}
                 initialAllowedPartyIds={permittedPartyIds}
                 autoOpenEditDialog={autoOpenEditDialog}

@@ -15,6 +15,7 @@ import {
   deleteCampaignMemorySource,
   syncMapDescriptionToCampaignMemory,
 } from "@/lib/campaign-memory-indexer";
+import { assertCanManageAdminContent, logAdminContentTransition, resolveAdminContentAccess } from "@/lib/admin-content";
 
 const VISIBILITY_VALUES = ["public", "secret", "selective"] as const;
 type Visibility = (typeof VISIBILITY_VALUES)[number];
@@ -127,6 +128,7 @@ export async function uploadMap(
   const visibility: Visibility = VISIBILITY_VALUES.includes(visibilityRaw as Visibility) ? visibilityRaw as Visibility : "public";
   const allowedUserIds = parseAllowedUserIds(formData, "allowed_user_ids");
   const allowedPartyIds = parseAllowedPartyIds(formData, "allowed_party_ids");
+  const adminOnlyRequested = formData.get("admin_only") === "on" || formData.get("admin_only") === "true";
 
   if (!campaignId) {
     return { success: false, message: "Campagna non valida." };
@@ -168,6 +170,12 @@ export async function uploadMap(
 
   try {
     const supabase = await createSupabaseServerClient();
+    const accessResult = await resolveAdminContentAccess(supabase as never);
+    if (!accessResult.ok) return { success: false, message: "Autorizzazione non verificabile." };
+    if (adminOnlyRequested) {
+      try { await assertCanManageAdminContent(accessResult.access, campaignId, supabase as never); }
+      catch { return { success: false, message: "Solo un Admin può creare mappe Solo Admin in una campagna abilitata." }; }
+    }
     const {
       data: { user },
       error: userError,
@@ -192,7 +200,8 @@ export async function uploadMap(
       description,
       map_type: mapType,
       image_url: finalImageUrl,
-      visibility,
+      visibility: adminOnlyRequested ? "secret" : visibility,
+      admin_only: adminOnlyRequested,
     };
     if (parentMapId) {
       insertPayload.parent_map_id = parentMapId;
@@ -212,6 +221,7 @@ export async function uploadMap(
         message: friendly ?? insertError?.message ?? "Errore nel salvataggio della mappa.",
       };
     }
+    if (adminOnlyRequested) logAdminContentTransition({ action: "create", access: accessResult.access, campaignId, entityType: "map", entityId: inserted.id });
 
     if (visibility === "selective") {
       const partyUserIds = await resolveAllowedUserIdsFromParties(supabase, campaignId, allowedPartyIds);
@@ -262,6 +272,8 @@ export async function updateMap(
     wiki_entity_id?: string | null;
     allowed_user_ids?: string[];
     allowed_party_ids?: string[];
+    admin_only?: boolean;
+    release_admin_only?: boolean;
   }
 ): Promise<UpdateMapResult> {
   if (!mapId || !campaignId) {
@@ -286,6 +298,8 @@ export async function updateMap(
         : payload.wiki_entity_id.trim();
   const allowedUserIds = payload.allowed_user_ids ?? [];
   const allowedPartyIds = payload.allowed_party_ids ?? [];
+  const adminOnlyRequested = payload.admin_only === true;
+  const releaseAdminOnly = payload.release_admin_only === true;
 
   if (
     !name &&
@@ -299,6 +313,12 @@ export async function updateMap(
   }
   try {
     const supabase = await createSupabaseServerClient();
+    const accessResult = await resolveAdminContentAccess(supabase as never);
+    if (!accessResult.ok) return { success: false, message: "Autorizzazione non verificabile." };
+    if (adminOnlyRequested || releaseAdminOnly) {
+      try { await assertCanManageAdminContent(accessResult.access, campaignId, supabase as never); }
+      catch { return { success: false, message: "Solo un Admin può cambiare lo stato Solo Admin in una campagna abilitata." }; }
+    }
     const {
       data: { user },
       error: userError,
@@ -321,6 +341,7 @@ export async function updateMap(
       visibility?: Visibility;
       parent_map_id?: string | null;
       wiki_entity_id?: string | null;
+      admin_only?: boolean;
     } = {};
     if (name) updates.name = name;
     if (description !== undefined) updates.description = description;
@@ -330,6 +351,16 @@ export async function updateMap(
     if (visibility !== undefined) {
       updates.visibility = visibility;
     }
+    if (adminOnlyRequested || releaseAdminOnly) {
+      if (adminOnlyRequested) {
+        const { data: children } = await supabase.from("maps").select("id, name, admin_only").eq("parent_map_id", mapId).eq("admin_only", false);
+        if ((children ?? []).length > 0) {
+          return { success: false, message: `Impossibile ritirare questa mappa: contiene ${(children ?? []).length} figli non Solo Admin. Proteggili prima, senza cascata automatica.` };
+        }
+      }
+      updates.admin_only = !releaseAdminOnly;
+      if (adminOnlyRequested) updates.visibility = "secret";
+    }
     if (parentMapId !== undefined) {
       updates.parent_map_id = parentMapId;
     }
@@ -337,7 +368,7 @@ export async function updateMap(
       if (wikiEntityId) {
         const { data: entityRow, error: entityErr } = await supabase
           .from("wiki_entities")
-          .select("id, type, campaign_id")
+          .select("id, type, campaign_id, admin_only")
           .eq("id", wikiEntityId)
           .eq("campaign_id", campaignId)
           .maybeSingle();
@@ -346,6 +377,12 @@ export async function updateMap(
         }
         if ((entityRow as { type?: string }).type !== "location") {
           return { success: false, message: "Puoi collegare solo schede di tipo Luogo." };
+        }
+        if (!adminOnlyRequested && !releaseAdminOnly) {
+          const { data: currentMap } = await supabase.from("maps").select("admin_only").eq("id", mapId).single();
+          if (Boolean((currentMap as { admin_only?: boolean } | null)?.admin_only) !== Boolean((entityRow as { admin_only?: boolean }).admin_only)) {
+            return { success: false, message: "Il collegamento Wiki-mappa attraverserebbe il confine Solo Admin." };
+          }
         }
         await supabase
           .from("maps")
@@ -367,6 +404,7 @@ export async function updateMap(
         const friendly = mapPgMapError(error);
         return { success: false, message: friendly ?? error.message ?? "Errore durante l'aggiornamento." };
       }
+      if (adminOnlyRequested || releaseAdminOnly) logAdminContentTransition({ action: releaseAdminOnly ? "release" : "protect", access: accessResult.access, campaignId, entityType: "map", entityId: mapId });
     }
     if (visibility !== undefined) {
       const partyUserIds =

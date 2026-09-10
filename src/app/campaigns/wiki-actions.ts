@@ -24,6 +24,7 @@ import {
 } from "@/lib/campaign-memory-indexer";
 import { mergeRelationsWithTextReferences } from "@/lib/wiki/wiki-relationship-sync";
 import { normalizeImageUrl } from "@/lib/image-url";
+import { assertCanManageAdminContent, logAdminContentTransition, resolveAdminContentAccess } from "@/lib/admin-content";
 
 export type { WikiGeneratorEntityType, WikiAiTextGeneration } from "@/lib/ai/generator";
 
@@ -163,6 +164,7 @@ export async function createEntity(
   const xpValue = xpRaw ? Math.max(0, parseInt(xpRaw, 10) || 0) : 0;
   const tags = parseTags(formData);
   const relations = parseRelations(formData);
+  const adminOnlyRequested = formData.get("admin_only") === "on" || formData.get("admin_only") === "true";
 
   if (!title) {
     return { success: false, message: "Il titolo è obbligatorio." };
@@ -176,6 +178,12 @@ export async function createEntity(
 
   try {
     const supabase = await createSupabaseServerClient();
+    const accessResult = await resolveAdminContentAccess(supabase as never);
+    if (!accessResult.ok) return { success: false, message: "Autorizzazione non verificabile." };
+    if (adminOnlyRequested) {
+      try { await assertCanManageAdminContent(accessResult.access, campaignId, supabase as never); }
+      catch { return { success: false, message: "Solo un Admin può creare contenuti Solo Admin in una campagna abilitata." }; }
+    }
     const {
       data: { user },
       error: userError,
@@ -248,8 +256,9 @@ export async function createEntity(
       name: title,
       type: type as WikiEntityType,
       content: { body: content },
-      is_secret: isSecret,
-      visibility,
+      is_secret: isSecret || adminOnlyRequested,
+      visibility: adminOnlyRequested ? "secret" : visibility,
+      admin_only: adminOnlyRequested,
       image_url: imageUrl,
       attributes: Object.keys(attributes).length ? attributes : {},
       tags: tags.length ? tags : [],
@@ -310,6 +319,7 @@ export async function createEntity(
         message: error?.message ?? "Errore durante la creazione.",
       };
     }
+    if (adminOnlyRequested) logAdminContentTransition({ action: "create", access: accessResult.access, campaignId, entityType: "wiki", entityId: inserted.id });
 
     if (visibility === "selective") {
       const partyUserIds = await resolveAllowedUserIdsFromParties(supabase, campaignId, allowedPartyIds);
@@ -411,6 +421,8 @@ export async function updateEntity(
   const xpValue = xpRaw ? Math.max(0, parseInt(xpRaw, 10) || 0) : 0;
   const tags = parseTags(formData);
   const relations = parseRelations(formData);
+  const adminOnlyRequested = formData.get("admin_only") === "on" || formData.get("admin_only") === "true";
+  const releaseAdminOnly = formData.get("release_admin_only") === "on" || formData.get("release_admin_only") === "true";
 
   if (!title) {
     return { success: false, message: "Il titolo è obbligatorio." };
@@ -424,6 +436,12 @@ export async function updateEntity(
 
   try {
     const supabase = await createSupabaseServerClient();
+    const accessResult = await resolveAdminContentAccess(supabase as never);
+    if (!accessResult.ok) return { success: false, message: "Autorizzazione non verificabile." };
+    if (adminOnlyRequested || releaseAdminOnly) {
+      try { await assertCanManageAdminContent(accessResult.access, campaignId, supabase as never); }
+      catch { return { success: false, message: "Solo un Admin può cambiare lo stato Solo Admin in una campagna abilitata." }; }
+    }
     const {
       data: { user },
       error: userError,
@@ -499,8 +517,16 @@ export async function updateEntity(
       attributes: Object.keys(attributes).length ? attributes : {},
       tags: tags,
     };
+    if (adminOnlyRequested || releaseAdminOnly) {
+      updatePayload.admin_only = !releaseAdminOnly;
+      if (adminOnlyRequested) updatePayload.visibility = "secret";
+    }
     if (visibility !== null) {
       updatePayload.visibility = visibility;
+    }
+    if (adminOnlyRequested) {
+      updatePayload.admin_only = true;
+      updatePayload.visibility = "secret";
     }
     if (imageUrl !== undefined) updatePayload.image_url = imageUrl;
     if (sortOrder != null && !Number.isNaN(sortOrder)) {
@@ -579,6 +605,7 @@ export async function updateEntity(
         message: error.message ?? "Errore durante l'aggiornamento.",
       };
     }
+    if (adminOnlyRequested || releaseAdminOnly) logAdminContentTransition({ action: releaseAdminOnly ? "release" : "protect", access: accessResult.access, campaignId, entityType: "wiki", entityId });
 
     if (visibility !== null) {
       const partyUserIds =
@@ -811,6 +838,7 @@ export type WikiEntity = {
   telegram_fallback_id?: string | null;
   is_secret: boolean;
   visibility?: string;
+  admin_only?: boolean;
   attributes: Record<string, unknown> | null;
   sort_order: number | null;
   is_core?: boolean;

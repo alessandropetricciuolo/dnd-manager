@@ -17,6 +17,8 @@ type WikiEntityEditButtonProps = {
   initialVisibility?: string;
   initialAllowedUserIds?: string[];
   initialAllowedPartyIds?: string[];
+  isAdmin?: boolean;
+  adminDraftsEnabled?: boolean;
   /** Da lista wiki con `?edit=1`: apre il dialog al caricamento e ripulisce l'URL alla chiusura. */
   autoOpenEditDialog?: boolean;
 };
@@ -31,6 +33,8 @@ export function WikiEntityEditButton({
   initialVisibility = "public",
   initialAllowedUserIds = [],
   initialAllowedPartyIds = [],
+  isAdmin = false,
+  adminDraftsEnabled = false,
   autoOpenEditDialog = false,
 }: WikiEntityEditButtonProps) {
   const router = useRouter();
@@ -69,6 +73,8 @@ export function WikiEntityEditButton({
         initialVisibility={initialVisibility}
         initialAllowedUserIds={initialAllowedUserIds}
         initialAllowedPartyIds={initialAllowedPartyIds}
+        isAdmin={isAdmin}
+        adminDraftsEnabled={adminDraftsEnabled}
       />
     </>
   );
