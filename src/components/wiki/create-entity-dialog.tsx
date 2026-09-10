@@ -107,8 +107,6 @@ type CreateEntityDialogProps = {
   eligibleParties?: { id: string; label: string; memberIds: string[] }[];
   isAdmin?: boolean;
   adminDraftsEnabled?: boolean;
-  isAdmin?: boolean;
-  adminDraftsEnabled?: boolean;
 };
 
 const defaultAttributes = (type: EntityType) =>
