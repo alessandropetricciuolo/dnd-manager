@@ -370,6 +370,7 @@ async function expandSourceChunks(
   admin: AdminClient,
   campaignId: string,
   seedRows: PreviewChunkRow[],
+  includeAdminOnly: boolean,
 ): Promise<PreviewChunkRow[]> {
   const sourceKeys = Array.from(new Set(seedRows.map(sourceKey))).slice(0, AI_MEMORY_PREVIEW_CONTEXT_CHUNK_LIMIT);
   const expanded = [...seedRows];
@@ -493,7 +494,7 @@ export async function retrievePreviewMemory(
     }
     if (semantic.status === "success" && semanticRows.length > 0) {
       const ranked = rerankMatches(normalized, semanticRows);
-      const expanded = await expandSourceChunks(admin, campaignId, ranked);
+      const expanded = await expandSourceChunks(admin, campaignId, ranked, includeAdminOnly);
       const budgeted = selectContextChunks(rerankMatches(normalized, expanded));
       const sources = buildPreviewSources(campaignId, budgeted);
       return {
@@ -558,7 +559,7 @@ export async function retrievePreviewMemory(
   }));
 
   const rankedLex = rerankMatches(normalized, lexicalRows);
-  const expandedLex = await expandSourceChunks(admin, campaignId, rankedLex);
+  const expandedLex = await expandSourceChunks(admin, campaignId, rankedLex, includeAdminOnly);
   const budgetedLex = selectContextChunks(rerankMatches(normalized, expandedLex));
   const sourcesLex = buildPreviewSources(campaignId, budgetedLex);
 

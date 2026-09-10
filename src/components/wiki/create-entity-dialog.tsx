@@ -219,8 +219,6 @@ export function CreateEntityDialog({
   eligibleParties = [],
   isAdmin = false,
   adminDraftsEnabled = false,
-  isAdmin = false,
-  adminDraftsEnabled = false,
 }: CreateEntityDialogProps) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -230,7 +228,6 @@ export function CreateEntityDialog({
   const [attributes, setAttributes] = useState<Record<string, unknown>>(defaultAttributes("npc"));
   const [sortOrder, setSortOrder] = useState<string>("");
   const [visibility, setVisibility] = useState<string>("public");
-  const [adminOnly, setAdminOnly] = useState(false);
   const [adminOnly, setAdminOnly] = useState(false);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [selectedPartyIds, setSelectedPartyIds] = useState<string[]>([]);

@@ -49,7 +49,7 @@ export async function runAiMemoryPreviewAction(
   const retrievalStart = Date.now();
   let retrieve;
   try {
-    retrieve = await retrievePreviewMemory(admin, normalizedCampaignId, normalizedQuestion);
+    retrieve = await retrievePreviewMemory(admin, normalizedCampaignId, normalizedQuestion, { adminAccess: access.access });
   } catch {
     console.error("[runAiMemoryPreviewAction] retrieval failed", { reason: "retrieval_error" });
     return { success: false, message: "Errore durante il recupero delle fonti. Riprova." };

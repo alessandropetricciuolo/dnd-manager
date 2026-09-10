@@ -1,5 +1,5 @@
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
-import { resolveAdminContentAccess } from "@/lib/admin-content";
+import { resolveAdminContentAccess, type AdminContentAccess } from "@/lib/admin-content";
 import { AI_MEMORY_PREVIEW_MESSAGES } from "./policy";
 
 export type PreviewAccessSuccess = {
@@ -7,6 +7,7 @@ export type PreviewAccessSuccess = {
   userId: string;
   campaignId: string;
   role: "admin";
+  access: AdminContentAccess;
 };
 
 export type PreviewAccessFailure = {
@@ -23,7 +24,7 @@ export function isAllowedPreviewRole(role: string | null | undefined): boolean {
 }
 
 export async function checkAiMemoryPreviewActorAccess(): Promise<
-  { ok: true; userId: string } | PreviewAccessFailure
+  { ok: true; userId: string; access: AdminContentAccess } | PreviewAccessFailure
 > {
   const resolved = await resolveAdminContentAccess();
   if (!resolved.ok) {
@@ -38,7 +39,7 @@ export async function checkAiMemoryPreviewActorAccess(): Promise<
   ) {
     return { ok: false, message: AI_MEMORY_PREVIEW_MESSAGES.forbiddenRole };
   }
-  return { ok: true, userId: resolved.access.actor.userId };
+  return { ok: true, userId: resolved.access.actor.userId, access: resolved.access };
 }
 
 export function isLongCampaignTypeValue(type: string | null | undefined): boolean {
@@ -80,5 +81,6 @@ export async function checkAiMemoryPreviewAccess(
     userId: actor.userId,
     campaignId: normalizedId,
     role: "admin",
+    access: actor.access,
   };
 }
