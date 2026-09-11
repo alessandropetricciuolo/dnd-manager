@@ -253,7 +253,7 @@ export function GmGallerySheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="left-[4vw] right-[4vw] top-[4vh] bottom-[4vh] h-auto w-auto max-w-none gap-0 overflow-hidden rounded-lg border-amber-600/30 bg-zinc-950 p-0 text-zinc-100 shadow-2xl"
+        className="left-[4vw] right-[4vw] top-[4vh] bottom-[4vh] flex h-auto w-auto max-w-none flex-col gap-0 overflow-hidden rounded-lg border-amber-600/30 bg-zinc-950 p-0 text-zinc-100 shadow-2xl"
       >
         <SheetHeader className="flex shrink-0 flex-row items-center justify-between gap-4 border-b border-amber-600/20 bg-zinc-950 px-5 py-3 pr-14">
           <SheetTitle className="flex items-center gap-2 text-left text-lg text-amber-200">
