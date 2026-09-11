@@ -119,7 +119,8 @@ function LoginPageContent() {
           return;
         }
         toast.success("Accesso effettuato. Ben tornato, avventuriero!");
-        router.push("/dashboard");
+        const redirectTo = searchParams.get("redirect") ?? "/dashboard";
+        router.push(redirectTo.startsWith("/") && !redirectTo.startsWith("//") ? redirectTo : "/dashboard");
         return;
       }
       const firstName = (formData.get("first_name") as string | null)?.trim() ?? "";
@@ -418,4 +419,3 @@ export default function LoginPage() {
     </Suspense>
   );
 }
-

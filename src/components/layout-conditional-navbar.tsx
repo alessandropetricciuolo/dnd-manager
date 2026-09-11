@@ -13,8 +13,9 @@ export function LayoutConditionalNavbar({ navbar, children }: Props) {
   const isGmScreen = pathname?.includes("/gm-screen");
   const isVistaProiezione = pathname?.includes("/vista-dall-alto/proiezione");
   const isAdmin = pathname?.startsWith("/admin");
+  const isOAuthConsent = pathname?.startsWith("/oauth/");
 
-  if (isGmScreen || isVistaProiezione || isAdmin) {
+  if (isGmScreen || isVistaProiezione || isAdmin || isOAuthConsent) {
     return <>{children}</>;
   }
   return (
