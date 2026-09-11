@@ -427,7 +427,7 @@ export function WikiListClient({
             {items.length}
           </span>
         </header>
-        <ul className="space-y-0.5 p-1.5">
+        <ul className="scrollbar-barber-y max-h-[24.625rem] space-y-0.5 overflow-y-auto p-1.5">
           {items.map((entity) => renderGmColumnEntity(entity))}
         </ul>
       </article>
