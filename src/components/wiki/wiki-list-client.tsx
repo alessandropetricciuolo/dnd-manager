@@ -24,7 +24,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WikiEntityDeleteButton } from "./wiki-entity-delete-button";
-import { WIKI_ENTITY_TYPES, WIKI_FILTER_LABELS_IT } from "@/lib/wiki/entity-types";
+import {
+  WIKI_ENTITY_TYPES,
+  WIKI_FILTER_LABELS_IT,
+} from "@/lib/wiki/entity-types";
 
 export type WikiEntityListItem = {
   id: string;
@@ -109,12 +112,14 @@ function isWikiFilterValue(value: string): value is WikiFilterValue {
 }
 
 function isUuidLike(value: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
 }
 
 function sortEntitiesForDisplay(
   items: WikiEntityListItem[],
-  typeFilter: WikiFilterValue
+  typeFilter: WikiFilterValue,
 ): WikiEntityListItem[] {
   if (typeFilter === "lore" || items.every((e) => e.type === "lore")) {
     return [...items].sort((a, b) => {
@@ -141,7 +146,11 @@ function groupEntitiesByType(items: WikiEntityListItem[]) {
 }
 
 function entityDisplayName(entity: WikiEntityListItem) {
-  if (entity.type === "lore" && entity.sortOrder != null && entity.sortOrder > 0) {
+  if (
+    entity.type === "lore" &&
+    entity.sortOrder != null &&
+    entity.sortOrder > 0
+  ) {
     return `Cap. ${entity.sortOrder}: ${entity.name}`;
   }
   return entity.name;
@@ -165,15 +174,22 @@ export function WikiListClient({
 
   const wikiFilterParam = searchParams.get("wiki_filter");
   const typeFilter: WikiFilterValue =
-    wikiFilterParam && isWikiFilterValue(wikiFilterParam) ? wikiFilterParam : ALL_TYPES;
+    wikiFilterParam && isWikiFilterValue(wikiFilterParam)
+      ? wikiFilterParam
+      : ALL_TYPES;
 
   const wikiMissionParam = searchParams.get("wiki_mission");
-  const missionIds = useMemo(() => new Set(missions.map((m) => m.id)), [missions]);
+  const missionIds = useMemo(
+    () => new Set(missions.map((m) => m.id)),
+    [missions],
+  );
   const missionFilter: string = useMemo(() => {
     if (campaignType !== "long") return MISSION_FILTER_ALL;
-    if (!wikiMissionParam || wikiMissionParam === MISSION_FILTER_ALL) return MISSION_FILTER_ALL;
+    if (!wikiMissionParam || wikiMissionParam === MISSION_FILTER_ALL)
+      return MISSION_FILTER_ALL;
     if (wikiMissionParam === MISSION_FILTER_NONE) return MISSION_FILTER_NONE;
-    if (isUuidLike(wikiMissionParam) && missionIds.has(wikiMissionParam)) return wikiMissionParam;
+    if (isUuidLike(wikiMissionParam) && missionIds.has(wikiMissionParam))
+      return wikiMissionParam;
     return MISSION_FILTER_ALL;
   }, [campaignType, wikiMissionParam, missionIds]);
 
@@ -209,7 +225,8 @@ export function WikiListClient({
   const byMission = useMemo(() => {
     if (campaignType !== "long") return byType;
     if (missionFilter === MISSION_FILTER_ALL) return byType;
-    if (missionFilter === MISSION_FILTER_NONE) return byType.filter((e) => !e.linkedMissionId);
+    if (missionFilter === MISSION_FILTER_NONE)
+      return byType.filter((e) => !e.linkedMissionId);
     return byType.filter((e) => e.linkedMissionId === missionFilter);
   }, [campaignType, missionFilter, byType]);
 
@@ -220,18 +237,23 @@ export function WikiListClient({
       if (e.name.toLowerCase().includes(q)) return true;
       if (e.description && e.description.toLowerCase().includes(q)) return true;
       if (e.tags?.some((t) => t.toLowerCase().includes(q))) return true;
-      if (e.missionTitle && e.missionTitle.toLowerCase().includes(q)) return true;
+      if (e.missionTitle && e.missionTitle.toLowerCase().includes(q))
+        return true;
       return false;
     });
   }, [byMission, searchQuery]);
 
   const sorted = sortEntitiesForDisplay(
     filtered,
-    isGmOrAdmin ? ALL_TYPES : typeFilter
+    isGmOrAdmin ? ALL_TYPES : typeFilter,
   );
 
   const groupedSections = useMemo(() => {
-    if (campaignType !== "long" || missionFilter !== MISSION_FILTER_ALL || sorted.length === 0) {
+    if (
+      campaignType !== "long" ||
+      missionFilter !== MISSION_FILTER_ALL ||
+      sorted.length === 0
+    ) {
       return null;
     }
     const general: WikiEntityListItem[] = [];
@@ -250,7 +272,12 @@ export function WikiListClient({
       const tb = missions.find((m) => m.id === b)?.title ?? "";
       return ta.localeCompare(tb, "it");
     });
-    const sections: { key: string; label: string; count: number; items: WikiEntityListItem[] }[] = [];
+    const sections: {
+      key: string;
+      label: string;
+      count: number;
+      items: WikiEntityListItem[];
+    }[] = [];
     if (general.length > 0) {
       sections.push({
         key: "__general",
@@ -281,64 +308,79 @@ export function WikiListClient({
   }, [isGmOrAdmin, filtered]);
 
   const badgeVariant = (
-    type: string
+    type: string,
   ): "npc" | "location" | "monster" | "item" | "lore" | "secondary" =>
-    type in typeLabels ? (type as "npc" | "location" | "monster" | "item" | "lore") : "secondary";
+    type in typeLabels
+      ? (type as "npc" | "location" | "monster" | "item" | "lore")
+      : "secondary";
 
   const showLock = (entity: WikiEntityListItem) =>
-    isGmOrAdmin && (entity.visibility === "secret" || entity.visibility === "selective");
+    isGmOrAdmin &&
+    (entity.visibility === "secret" || entity.visibility === "selective");
 
   function renderGmColumnEntity(entity: WikiEntityListItem) {
     const entityUrl = `/campaigns/${campaignId}/wiki/${entity.id}`;
     const editUrl = `${entityUrl}?edit=1`;
-    const tagList = (entity.tags ?? []).map((t) => t.trim()).filter(Boolean);
+    const MetaIcon = TYPE_META[entity.type]?.icon ?? BookOpen;
+    const metaText = TYPE_META[entity.type]?.text ?? "text-barber-gold";
 
     return (
       <li
         key={entity.id}
-        className="group rounded-md border border-transparent px-1.5 py-1 transition-colors hover:border-barber-gold/20 hover:bg-barber-gold/[0.06]"
+        className="group relative flex min-h-[30px] items-center gap-1.5 rounded-md border border-transparent px-1.5 py-0.5 transition-colors hover:border-barber-gold/20 hover:bg-barber-gold/[0.06] focus-within:border-barber-gold/20 focus-within:bg-barber-gold/[0.06]"
       >
-        <div className="flex items-start gap-1">
-          <div className="min-w-0 flex-1">
+        <MetaIcon
+          className={cn("h-3.5 w-3.5 shrink-0", metaText)}
+          aria-hidden="true"
+        />
+        <Link
+          href={entityUrl}
+          className="min-w-0 flex-1 truncate pr-1 text-xs font-medium leading-tight text-barber-paper hover:text-barber-gold hover:underline"
+          title={entityDisplayName(entity)}
+        >
+          {entityDisplayName(entity)}
+        </Link>
+        {showLock(entity) ? (
+          <Lock
+            className="h-3 w-3 shrink-0 text-barber-gold/80"
+            aria-label="Visibilità limitata"
+          />
+        ) : null}
+        <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-0.5 rounded bg-barber-dark/95 px-0.5 opacity-100 shadow-sm transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-barber-paper/70 hover:text-barber-gold"
+            asChild
+          >
             <Link
               href={entityUrl}
-              className="block truncate text-sm font-medium leading-snug text-barber-paper hover:text-barber-gold hover:underline"
-              title={entityDisplayName(entity)}
+              title="Apri"
+              aria-label={`Apri ${entityDisplayName(entity)}`}
             >
-              {entityDisplayName(entity)}
-            </Link>
-            {tagList.length > 0 ? (
-              <div className="mt-0.5 flex flex-wrap gap-0.5">
-                {tagList.slice(0, 3).map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded border border-barber-gold/20 px-1 py-px text-[9px] leading-none text-barber-paper/55"
-                  >
-                    {tag}
-                  </span>
-                ))}
-                {tagList.length > 3 ? (
-                  <span className="text-[9px] text-barber-paper/40">+{tagList.length - 3}</span>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-          {showLock(entity) ? (
-            <Lock className="mt-0.5 h-3 w-3 shrink-0 text-barber-gold/80" aria-label="Visibilità limitata" />
-          ) : null}
-        </div>
-        <div className="mt-1 flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
-          <Button variant="ghost" size="icon" className="h-6 w-6 text-barber-paper/70 hover:text-barber-gold" asChild>
-            <Link href={entityUrl} title="Apri">
               <Eye className="h-3.5 w-3.5" />
             </Link>
           </Button>
-          <Button variant="ghost" size="icon" className="h-6 w-6 text-barber-paper/70 hover:text-barber-gold" asChild>
-            <Link href={editUrl} title="Modifica">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-barber-paper/70 hover:text-barber-gold"
+            asChild
+          >
+            <Link
+              href={editUrl}
+              title="Modifica"
+              aria-label={`Modifica ${entityDisplayName(entity)}`}
+            >
               <Pencil className="h-3.5 w-3.5" />
             </Link>
           </Button>
-          <WikiEntityDeleteButton compact campaignId={campaignId} entityId={entity.id} entityName={entity.name} />
+          <WikiEntityDeleteButton
+            compact
+            campaignId={campaignId}
+            entityId={entity.id}
+            entityName={entity.name}
+          />
         </div>
       </li>
     );
@@ -361,24 +403,31 @@ export function WikiListClient({
         className={cn(
           "flex min-h-[8rem] min-w-0 flex-col overflow-hidden rounded-lg border",
           meta.border,
-          meta.bg
+          meta.bg,
         )}
       >
         <header
           className={cn(
             "flex items-center justify-between gap-2 border-b px-2.5 py-2",
-            meta.header
+            meta.header,
           )}
         >
           <div className="flex min-w-0 items-center gap-1.5">
             <Icon className={cn("h-3.5 w-3.5 shrink-0", meta.text)} />
-            <h4 className={cn("truncate text-xs font-semibold uppercase tracking-wide", meta.text)}>
+            <h4
+              className={cn(
+                "truncate text-xs font-semibold uppercase tracking-wide",
+                meta.text,
+              )}
+            >
               {label}
             </h4>
           </div>
-          <span className="shrink-0 text-[10px] font-medium text-barber-paper/50">{items.length}</span>
+          <span className="shrink-0 text-[10px] font-medium text-barber-paper/50">
+            {items.length}
+          </span>
         </header>
-        <ul className="scrollbar-barber-y min-h-0 flex-1 space-y-0.5 overflow-y-auto p-1.5 max-h-[min(22rem,42vh)]">
+        <ul className="space-y-0.5 p-1.5">
           {items.map((entity) => renderGmColumnEntity(entity))}
         </ul>
       </article>
@@ -389,7 +438,7 @@ export function WikiListClient({
     sectionKey: string,
     label: string,
     count: number,
-    items: WikiEntityListItem[]
+    items: WikiEntityListItem[],
   ) {
     const typeGroups = groupEntitiesByType(items);
     if (typeGroups.length === 0) return null;
@@ -400,11 +449,15 @@ export function WikiListClient({
         className="overflow-hidden rounded-xl border border-barber-gold/30 bg-barber-dark/80 shadow-[inset_0_1px_0_0_rgba(212,175,55,0.06)]"
       >
         <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-barber-gold/20 bg-barber-dark/90 px-3 py-2.5 sm:px-4">
-          <h3 className="font-serif text-sm font-semibold text-barber-gold sm:text-base">{label}</h3>
+          <h3 className="font-serif text-sm font-semibold text-barber-gold sm:text-base">
+            {label}
+          </h3>
           <span className="text-[11px] text-barber-paper/50">{count} voci</span>
         </div>
         <div className="grid gap-2 p-2 sm:grid-cols-2 sm:gap-3 sm:p-3 lg:grid-cols-3 xl:grid-cols-5">
-          {typeGroups.map(({ type, items: typeItems }) => renderGmTypeColumn(type, typeItems))}
+          {typeGroups.map(({ type, items: typeItems }) =>
+            renderGmTypeColumn(type, typeItems),
+          )}
         </div>
       </section>
     );
@@ -415,7 +468,10 @@ export function WikiListClient({
     const entityUrl = `/campaigns/${campaignId}/wiki/${entity.id}`;
     const editUrl = `${entityUrl}?edit=1`;
     const showMissionBadge =
-      campaignType === "long" && !!entity.linkedMissionId && !!entity.missionTitle && missionFilter !== MISSION_FILTER_ALL;
+      campaignType === "long" &&
+      !!entity.linkedMissionId &&
+      !!entity.missionTitle &&
+      missionFilter !== MISSION_FILTER_ALL;
     const tagList = (entity.tags ?? []).map((t) => t.trim()).filter(Boolean);
 
     if (isGmOrAdmin) {
@@ -446,9 +502,13 @@ export function WikiListClient({
                 </span>
               ) : null}
             </div>
-            {campaignType === "long" && entity.missionTitle && missionFilter === MISSION_FILTER_ALL && (
-              <p className="truncate text-[11px] leading-tight text-barber-paper/45">Missione: {entity.missionTitle}</p>
-            )}
+            {campaignType === "long" &&
+              entity.missionTitle &&
+              missionFilter === MISSION_FILTER_ALL && (
+                <p className="truncate text-[11px] leading-tight text-barber-paper/45">
+                  Missione: {entity.missionTitle}
+                </p>
+              )}
           </div>
           <div className="flex flex-wrap items-center justify-end gap-1 sm:gap-1.5 shrink-0">
             {showMissionBadge && (
@@ -456,17 +516,24 @@ export function WikiListClient({
                 {entity.missionTitle}
               </span>
             )}
-            <Badge variant={badgeVariant(entity.type)} className="h-5 shrink-0 px-1.5 text-[10px] font-medium leading-none">
+            <Badge
+              variant={badgeVariant(entity.type)}
+              className="h-5 shrink-0 px-1.5 text-[10px] font-medium leading-none"
+            >
               {typeLabels[entity.type] ?? entity.type}
             </Badge>
             {showLock(entity) && (
-              <Lock className="h-3.5 w-3.5 shrink-0 text-barber-gold/90" aria-label="Solo GM / visibilità limitata" />
+              <Lock
+                className="h-3.5 w-3.5 shrink-0 text-barber-gold/90"
+                aria-label="Solo GM / visibilità limitata"
+              />
             )}
-            {entity.visibility === "selective" && entity.selectiveAudienceLabel && (
-              <span className="max-w-[8rem] truncate rounded border border-barber-gold/30 bg-barber-gold/10 px-1.5 py-0.5 text-[10px] leading-tight text-barber-gold/90">
-                {entity.selectiveAudienceLabel}
-              </span>
-            )}
+            {entity.visibility === "selective" &&
+              entity.selectiveAudienceLabel && (
+                <span className="max-w-[8rem] truncate rounded border border-barber-gold/30 bg-barber-gold/10 px-1.5 py-0.5 text-[10px] leading-tight text-barber-gold/90">
+                  {entity.selectiveAudienceLabel}
+                </span>
+              )}
             <span className="flex items-center gap-1 shrink-0">
               <Button
                 variant="outline"
@@ -490,7 +557,12 @@ export function WikiListClient({
                   Modifica
                 </Link>
               </Button>
-              <WikiEntityDeleteButton compact campaignId={campaignId} entityId={entity.id} entityName={entity.name} />
+              <WikiEntityDeleteButton
+                compact
+                campaignId={campaignId}
+                entityId={entity.id}
+                entityName={entity.name}
+              />
             </span>
           </div>
         </li>
@@ -509,9 +581,13 @@ export function WikiListClient({
           >
             {displayName}
           </Link>
-          {campaignType === "long" && entity.missionTitle && missionFilter === MISSION_FILTER_ALL && (
-            <p className="truncate text-xs text-barber-paper/55">Missione: {entity.missionTitle}</p>
-          )}
+          {campaignType === "long" &&
+            entity.missionTitle &&
+            missionFilter === MISSION_FILTER_ALL && (
+              <p className="truncate text-xs text-barber-paper/55">
+                Missione: {entity.missionTitle}
+              </p>
+            )}
         </div>
         <div className="flex flex-wrap items-center gap-2 shrink-0">
           {showMissionBadge && (
@@ -523,7 +599,10 @@ export function WikiListClient({
             {typeLabels[entity.type] ?? entity.type}
           </Badge>
           {showLock(entity) && (
-            <Lock className="h-4 w-4 shrink-0 text-barber-gold/90" aria-label="Solo GM / visibilità limitata" />
+            <Lock
+              className="h-4 w-4 shrink-0 text-barber-gold/90"
+              aria-label="Solo GM / visibilità limitata"
+            />
           )}
           <Button
             variant="outline"
@@ -546,7 +625,8 @@ export function WikiListClient({
       <div className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 px-6 py-10 text-center">
         <BookOpen className="mx-auto h-12 w-12 text-barber-paper/50" />
         <p className="mt-3 text-barber-paper/70">
-          {emptyMessage ?? "Nessuna voce nel wiki. Crea la prima entità per iniziare."}
+          {emptyMessage ??
+            "Nessuna voce nel wiki. Crea la prima entità per iniziare."}
         </p>
       </div>
     );
@@ -582,7 +662,10 @@ export function WikiListClient({
         </div>
         {showMissionUi && (
           <div className="flex shrink-0 flex-col gap-1 lg:w-64">
-            <label htmlFor="wiki-mission-filter" className="text-xs font-medium text-barber-paper/55">
+            <label
+              htmlFor="wiki-mission-filter"
+              className="text-xs font-medium text-barber-paper/55"
+            >
               Missione (Long)
             </label>
             <select
@@ -617,7 +700,7 @@ export function WikiListClient({
                 className={cn(
                   "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium",
                   meta?.header ?? "border-barber-gold/25 bg-barber-gold/10",
-                  meta?.text ?? "text-barber-gold"
+                  meta?.text ?? "text-barber-gold",
                 )}
               >
                 <Icon className="h-3 w-3" />
@@ -642,7 +725,9 @@ export function WikiListClient({
                   <span className="font-medium">
                     Filtro tipo: {currentFilterLabel}
                     {showMissionUi && missionFilter !== MISSION_FILTER_ALL ? (
-                      <span className="mt-1 block text-xs font-normal text-barber-paper/60">{missionFilterLabel}</span>
+                      <span className="mt-1 block text-xs font-normal text-barber-paper/60">
+                        {missionFilterLabel}
+                      </span>
                     ) : null}
                   </span>
                   <ChevronDown className="h-5 w-5 shrink-0 opacity-70" />
@@ -652,7 +737,9 @@ export function WikiListClient({
                 side="bottom"
                 className="rounded-t-2xl border-t border-barber-gold/20 bg-barber-dark pb-8 pt-4 max-h-[min(70vh,480px)] overflow-y-auto"
               >
-                <p className="mb-4 px-1 text-sm font-medium text-barber-paper/70">Tipologia voce wiki</p>
+                <p className="mb-4 px-1 text-sm font-medium text-barber-paper/70">
+                  Tipologia voce wiki
+                </p>
                 <nav className="flex flex-col gap-1">
                   {filterOptions.map(({ value, label }) => {
                     const isActive = typeFilter === value;
@@ -666,7 +753,7 @@ export function WikiListClient({
                         }}
                         className={cn(
                           "flex items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-medium transition-colors text-barber-paper hover:bg-barber-gold/10 hover:text-barber-gold",
-                          isActive && "bg-barber-gold/20 text-barber-gold"
+                          isActive && "bg-barber-gold/20 text-barber-gold",
                         )}
                       >
                         {label}
@@ -676,10 +763,15 @@ export function WikiListClient({
                 </nav>
                 {showMissionUi && missions.length > 0 && (
                   <>
-                    <p className="mb-2 mt-6 px-1 text-sm font-medium text-barber-paper/70">Missione</p>
+                    <p className="mb-2 mt-6 px-1 text-sm font-medium text-barber-paper/70">
+                      Missione
+                    </p>
                     <div className="flex flex-col gap-1">
                       {[
-                        { id: MISSION_FILTER_ALL, title: "Tutte (raggruppate)" },
+                        {
+                          id: MISSION_FILTER_ALL,
+                          title: "Tutte (raggruppate)",
+                        },
                         { id: MISSION_FILTER_NONE, title: "Senza missione" },
                         ...missions,
                       ].map((m) => (
@@ -692,7 +784,8 @@ export function WikiListClient({
                           }}
                           className={cn(
                             "rounded-xl px-4 py-3 text-left text-sm font-medium transition-colors text-barber-paper hover:bg-barber-gold/10 hover:text-barber-gold",
-                            missionFilter === m.id && "bg-barber-gold/20 text-barber-gold"
+                            missionFilter === m.id &&
+                              "bg-barber-gold/20 text-barber-gold",
                           )}
                         >
                           {m.title}
@@ -731,7 +824,9 @@ export function WikiListClient({
                 variant="outline"
                 className="w-full justify-between rounded-xl border-barber-gold/40 bg-barber-dark/90 py-3 text-left text-barber-paper hover:bg-barber-gold/10 hover:text-barber-gold"
               >
-                <span className="font-medium">Missione: {missionFilterLabel}</span>
+                <span className="font-medium">
+                  Missione: {missionFilterLabel}
+                </span>
                 <ChevronDown className="h-5 w-5 shrink-0 opacity-70" />
               </Button>
             </SheetTrigger>
@@ -739,7 +834,9 @@ export function WikiListClient({
               side="bottom"
               className="rounded-t-2xl border-t border-barber-gold/20 bg-barber-dark pb-8 pt-4 max-h-[min(70vh,480px)] overflow-y-auto"
             >
-              <p className="mb-4 px-1 text-sm font-medium text-barber-paper/70">Filtra per missione</p>
+              <p className="mb-4 px-1 text-sm font-medium text-barber-paper/70">
+                Filtra per missione
+              </p>
               <div className="flex flex-col gap-1">
                 {[
                   { id: MISSION_FILTER_ALL, title: "Tutte (raggruppate)" },
@@ -755,7 +852,8 @@ export function WikiListClient({
                     }}
                     className={cn(
                       "rounded-xl px-4 py-3 text-left text-sm font-medium transition-colors text-barber-paper hover:bg-barber-gold/10 hover:text-barber-gold",
-                      missionFilter === m.id && "bg-barber-gold/20 text-barber-gold"
+                      missionFilter === m.id &&
+                        "bg-barber-gold/20 text-barber-gold",
                     )}
                   >
                     {m.title}
@@ -769,16 +867,27 @@ export function WikiListClient({
 
       {sorted.length === 0 ? (
         <div className="rounded-xl border border-dashed border-barber-gold/35 bg-barber-dark/50 px-6 py-10 text-center text-sm text-barber-paper/65">
-          Nessuna voce con questi filtri. Prova a cambiare missione{!useGmColumnBoard ? " o tipo" : ""}.
+          Nessuna voce con questi filtri. Prova a cambiare missione
+          {!useGmColumnBoard ? " o tipo" : ""}.
         </div>
       ) : useGmColumnBoard && groupedSections ? (
         <div className="space-y-5">
           {groupedSections.map((section) =>
-            renderGmMissionBoard(section.key, section.label, section.count, section.items)
+            renderGmMissionBoard(
+              section.key,
+              section.label,
+              section.count,
+              section.items,
+            ),
           )}
         </div>
       ) : useGmColumnBoard ? (
-        renderGmMissionBoard("__single", gmSingleSectionLabel, sorted.length, sorted)
+        renderGmMissionBoard(
+          "__single",
+          gmSingleSectionLabel,
+          sorted.length,
+          sorted,
+        )
       ) : groupedSections ? (
         <div className="space-y-6">
           {groupedSections.map((section) => (
@@ -787,10 +896,16 @@ export function WikiListClient({
               className="overflow-hidden rounded-xl border border-barber-gold/35 bg-barber-dark/85 shadow-[inset_0_1px_0_0_rgba(212,175,55,0.08)]"
             >
               <div className="sticky top-0 z-[1] flex flex-wrap items-baseline justify-between gap-2 border-b border-barber-gold/25 bg-barber-dark/95 px-4 py-3 backdrop-blur-sm">
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-barber-gold">{section.label}</h3>
-                <span className="text-xs text-barber-paper/50">{section.count} voci</span>
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-barber-gold">
+                  {section.label}
+                </h3>
+                <span className="text-xs text-barber-paper/50">
+                  {section.count} voci
+                </span>
               </div>
-              <ul className="divide-y divide-barber-gold/10">{section.items.map((e) => renderEntityRow(e))}</ul>
+              <ul className="divide-y divide-barber-gold/10">
+                {section.items.map((e) => renderEntityRow(e))}
+              </ul>
             </section>
           ))}
         </div>
