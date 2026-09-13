@@ -15,7 +15,7 @@ test("MCP exposes one personal Admin surface with admin_only contracts", async (
   await server.connect(serverTransport); await client.connect(clientTransport);
   try {
     const listed = await client.listTools();
-    assert.equal(listed.tools.length, 10);
+    assert.equal(listed.tools.length, 12);
     assert.equal(listed.tools.find((tool) => tool.name === "search_lore").inputSchema.properties.admin_only.type, "boolean");
     await client.callTool({ name: "search_lore", arguments: { campaign_id: campaign, query: "secret", admin_only: true } });
     assert.equal(calls[0][1].admin_only, true);
@@ -38,5 +38,5 @@ test("MCP transport contains no database or service-role path", async () => {
   assert.doesNotMatch(source, /supabase|service_role|postgres|database/i);
   assert.match(source, /api\/integrations\/content\/auth/);
   assert.match(source, /sessionIdGenerator:\s*undefined/);
-  assert.deepEqual(Object.keys(definitions).sort(), ["attach_asset", "create_location", "create_lore", "create_npc", "get_entity", "search_lore", "set_status", "update_entity", "upload_asset", "upload_map"]);
+  assert.deepEqual(Object.keys(definitions).sort(), ["attach_asset", "create_location", "create_lore", "create_npc", "get_entity", "get_map", "search_lore", "search_maps", "set_status", "update_entity", "upload_asset", "upload_map"]);
 });

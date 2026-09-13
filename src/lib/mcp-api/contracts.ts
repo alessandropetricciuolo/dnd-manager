@@ -1,6 +1,6 @@
 export const entityKinds = ["campaign", "npc", "location", "faction", "quest", "item", "event", "session", "lore", "player_character", "monster"] as const;
 export const statuses = ["draft", "proposed", "canonical", "deprecated"] as const;
-export const operations = ["search_lore", "get_entity", "create_lore", "create_npc", "create_location", "update_entity", "upload_asset", "attach_asset", "upload_map", "set_status"] as const;
+export const operations = ["search_lore", "get_entity", "search_maps", "get_map", "create_lore", "create_npc", "create_location", "update_entity", "upload_asset", "attach_asset", "upload_map", "set_status"] as const;
 export type Operation = typeof operations[number];
 
 export interface EntityEnvelope {
@@ -25,6 +25,8 @@ const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 const fields: Record<Operation, string[]> = {
   search_lore: ["query", "limit", "offset", "admin_only"],
   get_entity: ["entity_id", "admin_only"],
+  search_maps: ["query", "map_type", "limit", "offset", "admin_only"],
+  get_map: ["map_id", "admin_only"],
   create_lore: ["name", "body", "attributes", "admin_only"],
   create_npc: ["name", "body", "attributes", "admin_only"],
   create_location: ["name", "body", "attributes", "admin_only"],
@@ -44,7 +46,7 @@ export function validate(raw: unknown): { operation: Operation; args: Record<str
   if (!args || typeof args !== "object" || Array.isArray(args) || typeof args.campaign_id !== "string" || !uuid.test(args.campaign_id)) return fail();
   const operation = r.operation as Operation;
   if (Object.keys(args).some((key) => key !== "campaign_id" && !fields[operation].includes(key))) return fail();
-  for (const key of ["entity_id", "asset_id"]) if (fields[operation].includes(key) && (typeof args[key] !== "string" || !uuid.test(args[key]))) return fail();
+  for (const key of ["entity_id", "asset_id", "map_id"]) if (fields[operation].includes(key) && (typeof args[key] !== "string" || !uuid.test(args[key]))) return fail();
   if (["update_entity", "set_status"].includes(operation) && (!Number.isSafeInteger(args.revision) || args.revision < 1)) return fail();
   if (operation.startsWith("create_") && (args.name === undefined || args.body === undefined)) return fail();
   for (const [key, max] of [["name", 200], ["body", 100000], ["query", 200]] as const) {
@@ -57,6 +59,12 @@ export function validate(raw: unknown): { operation: Operation; args: Record<str
   if (operation === "search_lore") {
     if (args.query === undefined) return fail();
     if (args.limit !== undefined && (!Number.isInteger(args.limit) || args.limit < 1 || args.limit > 50)) return fail();
+    if (args.offset !== undefined && (!Number.isInteger(args.offset) || args.offset < 0 || args.offset > 10000)) return fail();
+  }
+  if (operation === "search_maps") {
+    if (args.query !== undefined && (typeof args.query !== "string" || !args.query.trim() || args.query.length > 200)) return fail();
+    if (args.map_type !== undefined && !["world", "continent", "city", "dungeon", "district", "building"].includes(args.map_type)) return fail();
+    if (args.limit !== undefined && (!Number.isInteger(args.limit) || args.limit < 1 || args.limit > 100)) return fail();
     if (args.offset !== undefined && (!Number.isInteger(args.offset) || args.offset < 0 || args.offset > 10000)) return fail();
   }
   if (operation === "upload_asset") {

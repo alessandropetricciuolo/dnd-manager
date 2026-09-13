@@ -62,6 +62,19 @@ export function createBdMcpServer(auth: McpAuthContext) {
     entity_id: entityId,
     admin_only: adminOnly,
   }, true);
+  register("search_maps", "List or search scoped Atlas maps before creating one. Use this to resolve parent IDs and prevent duplicates.", {
+    campaign_id: campaignId,
+    query: z.string().trim().min(1).max(200).optional(),
+    map_type: z.enum(["world", "continent", "city", "dungeon", "district", "building"]).optional(),
+    limit: z.number().int().min(1).max(100).optional(),
+    offset: z.number().int().min(0).max(10_000).optional(),
+    admin_only: adminOnly,
+  }, true);
+  register("get_map", "Read a scoped Atlas map by ID after search or creation, including its parent and image reference.", {
+    campaign_id: campaignId,
+    map_id: entityId,
+    admin_only: adminOnly,
+  }, true);
   register("create_lore", "Create private draft lore; use admin_only for protected Admin content.", create, false);
   register("create_npc", "Create a private draft NPC.", create, false);
   register("create_location", "Create a private draft location.", create, false);

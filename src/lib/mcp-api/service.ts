@@ -4,6 +4,7 @@ import type { McpAuthContext } from "./auth";
 import { uploadImageToTelegram } from "@/lib/telegram-storage";
 
 const columns = "id,campaign_id,type,name,content,attributes,admin_only,mcp_status,mcp_revision,updated_at";
+const mapColumns = "id,campaign_id,name,description,map_type,image_url,visibility,parent_map_id,wiki_entity_id,admin_only,created_at,updated_at";
 const notFound = () => new ApiError(404, "Entity not found");
 
 function envelope(row: Record<string, any> | null): EntityEnvelope {
@@ -49,6 +50,28 @@ export async function executeContent(auth: McpAuthContext, raw: unknown) {
     return { entities: rows.map(envelope), offset, limit, admin_only: auth.isAdmin && adminOnlyRequested };
   }
 
+  if (operation === "search_maps") {
+    const offset = a.offset ?? 0, limit = a.limit ?? 50;
+    let request = auth.db.from("maps").select(mapColumns).eq("campaign_id", a.campaign_id);
+    if (a.query) {
+      const query = a.query.replace(new RegExp("[^\\p{L}\\p{N}\\s-]", "gu"), " ").trim();
+      if (!query) throw new ApiError(400, "Search requires letters or numbers");
+      request = request.or(`name.ilike.%${query}%,description.ilike.%${query}%`);
+    }
+    if (a.map_type) request = request.eq("map_type", a.map_type);
+    if (!auth.isAdmin || !adminOnlyRequested) request = request.eq("admin_only", false);
+    const maps = checked(await request.order("name").range(offset, offset + limit - 1)) ?? [];
+    return { maps, offset, limit, admin_only: auth.isAdmin && adminOnlyRequested };
+  }
+
+  if (operation === "get_map") {
+    let request = auth.db.from("maps").select(mapColumns).eq("id", a.map_id).eq("campaign_id", a.campaign_id);
+    if (!auth.isAdmin || !adminOnlyRequested) request = request.eq("admin_only", false);
+    const map = checked(await request.maybeSingle());
+    if (!map) throw new ApiError(404, "Map not found");
+    return { map };
+  }
+
   if (operation.startsWith("create_")) {
     const row = checked(await auth.db.from("wiki_entities").insert({
       campaign_id: a.campaign_id, type: operation.slice(7), name: a.name.trim(), content: { body: a.body },
@@ -63,6 +86,8 @@ export async function executeContent(auth: McpAuthContext, raw: unknown) {
   }
 
   if (operation === "upload_map") {
+    const duplicate = checked(await auth.db.from("maps").select("id,name").eq("campaign_id", a.campaign_id).ilike("name", a.name.trim()).limit(1).maybeSingle());
+    if (duplicate) throw new ApiError(409, `Map already exists: ${duplicate.name} (${duplicate.id})`);
     let parent: { id: string; map_type: string } | null = null;
     if (a.parent_map_id) {
       parent = checked(await auth.db.from("maps").select("id,map_type").eq("id", a.parent_map_id).eq("campaign_id", a.campaign_id).maybeSingle());
@@ -84,7 +109,7 @@ export async function executeContent(auth: McpAuthContext, raw: unknown) {
       map_type: mapType, image_url: imageUrl, visibility: a.visibility ?? "secret", admin_only: a.admin_only === true,
     };
     if (a.parent_map_id) payload.parent_map_id = a.parent_map_id;
-    const result = await auth.db.from("maps").insert(payload).select("id,campaign_id,name,description,map_type,image_url,visibility,parent_map_id,admin_only,created_at").single();
+    const result = await auth.db.from("maps").insert(payload).select(mapColumns).single();
     if ((result.error as { code?: string } | null)?.code === "23505") throw new ApiError(409, "This campaign already has a world map");
     return { map: checked(result) };
   }

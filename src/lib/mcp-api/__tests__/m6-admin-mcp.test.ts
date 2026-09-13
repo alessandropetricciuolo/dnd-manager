@@ -14,7 +14,7 @@ function fakeDb(results: unknown[]) {
     from(table: string) {
       calls.push(["from", table]);
       const query: any = {};
-      for (const method of ["select", "eq", "or", "order", "range", "insert", "update"]) query[method] = (...args: unknown[]) => { calls.push([method, ...args]); return query; };
+      for (const method of ["select", "eq", "or", "order", "range", "insert", "update", "ilike", "limit"]) query[method] = (...args: unknown[]) => { calls.push([method, ...args]); return query; };
       const next = () => ({ data: results.shift(), error: null });
       query.maybeSingle = async () => next(); query.single = async () => next();
       query.then = (resolve: (value: unknown) => unknown) => Promise.resolve(next()).then(resolve);
@@ -37,12 +37,27 @@ test("upload_map validates HTTPS input and creates a secret scoped Atlas map", a
   process.env.MCP_CAMPAIGN_ID = campaign;
   assert.equal(validate({ operation: "upload_map", args: { campaign_id: campaign, name: "Bosco", image_url: "https://cdn.example.com/map.png" } }).operation, "upload_map");
   assert.throws(() => validate({ operation: "upload_map", args: { campaign_id: campaign, name: "Bosco", image_url: "http://example.com/map.png" } }), ApiError);
-  const map = fakeDb([{ id: campaign, type: "long", admin_drafts_enabled: true }, { id: entityId, campaign_id: campaign, name: "Bosco", visibility: "secret" }]);
+  const map = fakeDb([{ id: campaign, type: "long", admin_drafts_enabled: true }, null, { id: entityId, campaign_id: campaign, name: "Bosco", visibility: "secret" }]);
   const result: any = await executeContent(admin(map.db), { operation: "upload_map", args: { campaign_id: campaign, name: "Bosco", image_url: "https://cdn.example.com/map.png" } });
   const inserted = map.calls.find((call) => call[0] === "insert")?.[1] as Record<string, unknown>;
   assert.equal(inserted.visibility, "secret");
   assert.equal(inserted.map_type, "city");
   assert.equal(result.map.name, "Bosco");
+});
+
+test("search_maps resolves parent IDs, get_map verifies writes, and upload blocks duplicate names", async () => {
+  process.env.MCP_CAMPAIGN_ID = campaign;
+  const almaria = { id: entityId, campaign_id: campaign, name: "Almaria", map_type: "world", admin_only: false };
+  const search = fakeDb([{ id: campaign, type: "long", admin_drafts_enabled: true }, [almaria]]);
+  const found: any = await executeContent(admin(search.db), { operation: "search_maps", args: { campaign_id: campaign, query: "Almaria" } });
+  assert.equal(found.maps[0].id, entityId);
+  assert(search.calls.some((call) => call[0] === "eq" && call[1] === "admin_only" && call[2] === false));
+  const read = fakeDb([{ id: campaign, type: "long", admin_drafts_enabled: true }, almaria]);
+  const verified: any = await executeContent(admin(read.db), { operation: "get_map", args: { campaign_id: campaign, map_id: entityId } });
+  assert.equal(verified.map.name, "Almaria");
+  const duplicate = fakeDb([{ id: campaign, type: "long", admin_drafts_enabled: true }, almaria]);
+  await assert.rejects(executeContent(admin(duplicate.db), { operation: "upload_map", args: { campaign_id: campaign, name: "Almaria", image_url: "https://cdn.example.com/map.png" } }), (error: any) => error.status === 409);
+  assert(!duplicate.calls.some((call) => call[0] === "insert"));
 });
 
 test("verified Admin can opt into protected search and creates protected rows", async () => {

@@ -10,6 +10,8 @@ const create = { campaign_id, name: z.string().trim().min(1).max(200), body: z.s
 export const definitions = {
   search_lore: { description: "Search the scoped campaign Wiki. Admin-only rows require the verified personal Admin scope.", schema: { campaign_id, query: z.string().min(1).max(200), limit: z.number().int().min(1).max(50).optional(), offset: z.number().int().min(0).max(10000).optional(), admin_only }, read: true },
   get_entity: { description: "Read a scoped Wiki entity and its revision. Admin-only rows require the verified personal Admin scope.", schema: { campaign_id, entity_id, admin_only }, read: true },
+  search_maps: { description: "List or search scoped Atlas maps before creation to resolve parent IDs and prevent duplicates.", schema: { campaign_id, query: z.string().trim().min(1).max(200).optional(), map_type: z.enum(["world", "continent", "city", "dungeon", "district", "building"]).optional(), limit: z.number().int().min(1).max(100).optional(), offset: z.number().int().min(0).max(10000).optional(), admin_only }, read: true },
+  get_map: { description: "Read a scoped Atlas map by ID after search or creation.", schema: { campaign_id, map_id: entity_id, admin_only }, read: true },
   create_lore: { description: "Create scoped private draft lore; set admin_only only for protected Admin content.", schema: create },
   create_npc: { description: "Create a scoped private draft NPC.", schema: create },
   create_location: { description: "Create a scoped private draft location.", schema: create },
