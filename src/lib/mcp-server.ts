@@ -85,6 +85,19 @@ export function createBdMcpServer(auth: McpAuthContext) {
     entity_id: entityId,
     asset_id: entityId,
   }, false);
+  register("upload_map", "Create a scoped Atlas map from an HTTPS image URL or upload a PNG, JPEG, or WebP up to 3 MiB. Maps default to secret.", {
+    campaign_id: campaignId,
+    name: z.string().trim().min(1).max(200),
+    description: z.string().max(10_000).optional(),
+    map_type: z.enum(["world", "continent", "city", "dungeon", "district", "building"]).optional(),
+    visibility: z.enum(["secret", "public"]).optional(),
+    parent_map_id: entityId.optional(),
+    admin_only: adminOnly,
+    image_url: z.string().url().optional(),
+    filename: z.string().min(1).max(120).optional(),
+    mime_type: z.enum(["image/png", "image/jpeg", "image/webp"]).optional(),
+    data_base64: z.string().max(4_194_304).optional(),
+  }, false);
   register("set_status", "Set editorial status using the entity's current revision.", {
     campaign_id: campaignId,
     entity_id: entityId,

@@ -14,7 +14,7 @@ export async function handleContent(request: Request) {
     let size = 0; const chunks: Uint8Array[] = [];
     while (true) {
       const { done, value } = await reader.read(); if (done) break;
-      size += value.length; if (size > 750000) { await reader.cancel(); throw new ApiError(413, "Body too large"); }
+      size += value.length; if (size > 4300000) { await reader.cancel(); throw new ApiError(413, "Body too large"); }
       chunks.push(value);
     }
     let raw: any; try { raw = JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch { throw new ApiError(400, "Invalid JSON"); }

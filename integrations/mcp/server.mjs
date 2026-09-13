@@ -22,7 +22,7 @@ if (process.env.MCP_TRANSPORT !== "http") {
     if (!issuer) return res.status(404).end();
     res.json({ resource: origin.href, authorization_servers: [issuer] });
   });
-  app.post("/mcp", express.json({ limit: "750kb" }), async (req, res) => {
+  app.post("/mcp", express.json({ limit: "4300kb" }), async (req, res) => {
     const auth = req.headers.authorization ?? "";
     if (!/^Bearer [^\s]+$/.test(auth)) {
       res.setHeader("WWW-Authenticate", issuer ? `Bearer resource_metadata="${origin.origin}/.well-known/oauth-protected-resource"` : "Bearer");

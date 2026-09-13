@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ApiError, validate, type EntityEnvelope } from "./contracts";
 import type { McpAuthContext } from "./auth";
+import { uploadImageToTelegram } from "@/lib/telegram-storage";
 
 const columns = "id,campaign_id,type,name,content,attributes,admin_only,mcp_status,mcp_revision,updated_at";
 const notFound = () => new ApiError(404, "Entity not found");
@@ -25,15 +26,16 @@ function assertMcpScope(auth: McpAuthContext, campaignId: string): void {
   if (!auth.isAdmin || !process.env.MCP_CAMPAIGN_ID || process.env.MCP_CAMPAIGN_ID !== campaignId) throw notFound();
 }
 
-async function assertCampaignEnabled(db: SupabaseClient, campaignId: string): Promise<void> {
-  const campaign = checked(await db.from("campaigns").select("id,admin_drafts_enabled").eq("id", campaignId).maybeSingle());
+async function getEnabledCampaign(db: SupabaseClient, campaignId: string): Promise<{ id: string; type: string }> {
+  const campaign = checked(await db.from("campaigns").select("id,type,admin_drafts_enabled").eq("id", campaignId).maybeSingle());
   if (!campaign || campaign.admin_drafts_enabled !== true) throw notFound();
+  return campaign;
 }
 
 export async function executeContent(auth: McpAuthContext, raw: unknown) {
   const { operation, args: a } = validate(raw);
   assertMcpScope(auth, a.campaign_id);
-  await assertCampaignEnabled(auth.db, a.campaign_id);
+  const campaign = await getEnabledCampaign(auth.db, a.campaign_id);
   const adminOnlyRequested = a.admin_only === true;
 
   if (operation === "search_lore") {
@@ -58,6 +60,33 @@ export async function executeContent(auth: McpAuthContext, raw: unknown) {
   if (operation === "upload_asset") {
     const asset = checked(await auth.db.from("mcp_assets").insert({ campaign_id: a.campaign_id, filename: a.filename, mime_type: a.mime_type, data_base64: a.data_base64 }).select("id,campaign_id,filename,mime_type,created_at").single());
     return { asset };
+  }
+
+  if (operation === "upload_map") {
+    let parent: { id: string; map_type: string } | null = null;
+    if (a.parent_map_id) {
+      parent = checked(await auth.db.from("maps").select("id,map_type").eq("id", a.parent_map_id).eq("campaign_id", a.campaign_id).maybeSingle());
+      if (!parent) throw new ApiError(400, "Parent map not found in this campaign");
+      if (campaign.type !== "long") throw new ApiError(400, "Map hierarchy requires a long campaign");
+    }
+    const mapType = a.map_type ?? "city";
+    const requiredParent = mapType === "continent" ? "world" : mapType === "city" ? "continent" : null;
+    if (parent && mapType === "world") throw new ApiError(400, "A world map cannot have a parent");
+    if (parent && requiredParent && parent.map_type !== requiredParent) throw new ApiError(400, `${mapType} requires a ${requiredParent} parent`);
+    let imageUrl = a.image_url;
+    if (a.data_base64) {
+      const file = new File([Buffer.from(a.data_base64, "base64")], a.filename, { type: a.mime_type });
+      try { imageUrl = `/api/tg-image/${await uploadImageToTelegram(file, `Mappa: ${a.name.trim()}`)}`; }
+      catch { throw new ApiError(503, "Map image upload failed"); }
+    }
+    const payload: Record<string, unknown> = {
+      campaign_id: a.campaign_id, name: a.name.trim(), description: a.description?.trim() || null,
+      map_type: mapType, image_url: imageUrl, visibility: a.visibility ?? "secret", admin_only: a.admin_only === true,
+    };
+    if (a.parent_map_id) payload.parent_map_id = a.parent_map_id;
+    const result = await auth.db.from("maps").insert(payload).select("id,campaign_id,name,description,map_type,image_url,visibility,parent_map_id,admin_only,created_at").single();
+    if ((result.error as { code?: string } | null)?.code === "23505") throw new ApiError(409, "This campaign already has a world map");
+    return { map: checked(result) };
   }
 
   let entityQuery = auth.db.from("wiki_entities").select(columns).eq("id", a.entity_id).eq("campaign_id", a.campaign_id);

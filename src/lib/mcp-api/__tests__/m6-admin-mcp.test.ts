@@ -33,6 +33,18 @@ test("M6 contract carries admin_only only on scoped Wiki operations", () => {
   assert.throws(() => validate({ operation: "set_status", args: { campaign_id: campaign, entity_id: entityId, revision: 1, status: "draft", admin_only: true } }), ApiError);
 });
 
+test("upload_map validates HTTPS input and creates a secret scoped Atlas map", async () => {
+  process.env.MCP_CAMPAIGN_ID = campaign;
+  assert.equal(validate({ operation: "upload_map", args: { campaign_id: campaign, name: "Bosco", image_url: "https://cdn.example.com/map.png" } }).operation, "upload_map");
+  assert.throws(() => validate({ operation: "upload_map", args: { campaign_id: campaign, name: "Bosco", image_url: "http://example.com/map.png" } }), ApiError);
+  const map = fakeDb([{ id: campaign, type: "long", admin_drafts_enabled: true }, { id: entityId, campaign_id: campaign, name: "Bosco", visibility: "secret" }]);
+  const result: any = await executeContent(admin(map.db), { operation: "upload_map", args: { campaign_id: campaign, name: "Bosco", image_url: "https://cdn.example.com/map.png" } });
+  const inserted = map.calls.find((call) => call[0] === "insert")?.[1] as Record<string, unknown>;
+  assert.equal(inserted.visibility, "secret");
+  assert.equal(inserted.map_type, "city");
+  assert.equal(result.map.name, "Bosco");
+});
+
 test("verified Admin can opt into protected search and creates protected rows", async () => {
   process.env.MCP_CAMPAIGN_ID = campaign;
   const search = fakeDb([{ id: campaign, admin_drafts_enabled: true }, [row]]);
