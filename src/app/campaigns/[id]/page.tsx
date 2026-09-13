@@ -22,7 +22,7 @@ import { LongRegistrationsToggle } from "@/components/campaigns/long-registratio
 import { CampaignPartyMembersPanel } from "@/components/campaigns/campaign-party-members-panel";
 import { GmHomepage } from "@/components/gm/gm-homepage";
 import Link from "next/link";
-import { Map as MapIcon } from "lucide-react";
+import { ChevronDown, Map as MapIcon } from "lucide-react";
 import { InteractiveMap, type MapCharacterPin } from "@/components/map/InteractiveMap";
 import type { Portal } from "@/lib/nav/navigation-math";
 import { MissionBoardSection } from "@/components/missions/mission-board-section";
@@ -560,37 +560,43 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
                   </div>
                 ) : null}
                 {isGmOrAdmin && (
-                  <section className="mb-10 rounded-xl border border-barber-gold/30 bg-barber-dark/90 p-4 shadow-inner md:p-6">
-                    <div className="mb-4 flex flex-wrap items-center gap-2 border-b border-barber-gold/20 pb-3">
+                  <details className="group mb-10 overflow-hidden rounded-xl border border-barber-gold/30 bg-barber-dark/90 shadow-inner">
+                    <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-4 hover:bg-barber-gold/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-barber-gold md:px-6 [&::-webkit-details-marker]:hidden">
                       <MapIcon className="h-5 w-5 shrink-0 text-barber-gold" aria-hidden />
-                      <h3 className="text-base font-semibold text-barber-paper md:text-lg">
+                      <span className="text-base font-semibold text-barber-paper md:text-lg">
                         Mappa operativa
-                      </h3>
-                      <span className="text-xs text-barber-paper/55">
+                      </span>
+                      <span className="hidden text-xs text-barber-paper/55 sm:inline">
                         Griglia mondo · portali · posizioni PG · solo GM / Admin
                       </span>
-                    </div>
-                    {worldOperationalMapUrl ? (
-                      <InteractiveMap
-                        campaignId={campaign.id}
-                        imageUrl={worldOperationalMapUrl}
-                        portals={operationalPortals}
-                        characters={operationalMapCharacters}
-                        parties={eligibleParties}
+                      <ChevronDown
+                        className="ml-auto h-5 w-5 shrink-0 text-barber-gold/70 transition-transform group-open:rotate-180"
+                        aria-hidden
                       />
-                    ) : (
-                      <div className="rounded-lg border border-dashed border-barber-gold/35 bg-barber-dark/50 px-5 py-8 text-center text-sm text-barber-paper/70">
-                        <p>
-                          Carica una mappa con tipo{" "}
-                          <strong className="text-barber-gold">Mondo</strong> per usare la griglia,
-                          registrare i portali e spostare i personaggi.
-                        </p>
-                        <p className="mt-2 text-xs text-barber-paper/50">
-                          Usa il pulsante &quot;Carica mappa&quot; qui sopra e scegli categoria Mondo.
-                        </p>
-                      </div>
-                    )}
-                  </section>
+                    </summary>
+                    <div className="border-t border-barber-gold/20 px-4 pb-4 pt-4 md:px-6 md:pb-6">
+                      {worldOperationalMapUrl ? (
+                        <InteractiveMap
+                          campaignId={campaign.id}
+                          imageUrl={worldOperationalMapUrl}
+                          portals={operationalPortals}
+                          characters={operationalMapCharacters}
+                          parties={eligibleParties}
+                        />
+                      ) : (
+                        <div className="rounded-lg border border-dashed border-barber-gold/35 bg-barber-dark/50 px-5 py-8 text-center text-sm text-barber-paper/70">
+                          <p>
+                            Carica una mappa con tipo{" "}
+                            <strong className="text-barber-gold">Mondo</strong> per usare la griglia,
+                            registrare i portali e spostare i personaggi.
+                          </p>
+                          <p className="mt-2 text-xs text-barber-paper/50">
+                            Usa il pulsante &quot;Carica mappa&quot; qui sopra e scegli categoria Mondo.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </details>
                 )}
                 <MapGallery
                   campaignId={campaign.id}
