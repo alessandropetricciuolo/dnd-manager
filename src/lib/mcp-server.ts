@@ -98,6 +98,14 @@ export function createBdMcpServer(auth: McpAuthContext) {
     entity_id: entityId,
     asset_id: entityId,
   }, false);
+  register("upload_entity_image", "Upload and set the primary image of a scoped Wiki entity using its current revision. Supports PNG, JPEG, or WebP up to 3 MiB.", {
+    campaign_id: campaignId,
+    entity_id: entityId,
+    revision,
+    filename: z.string().min(1).max(120),
+    mime_type: z.enum(["image/png", "image/jpeg", "image/webp"]),
+    data_base64: z.string().max(4_194_304),
+  }, false);
   register("upload_map", "Create a scoped Atlas map from an HTTPS image URL or upload a PNG, JPEG, or WebP up to 3 MiB. Maps default to secret.", {
     campaign_id: campaignId,
     name: z.string().trim().min(1).max(200),

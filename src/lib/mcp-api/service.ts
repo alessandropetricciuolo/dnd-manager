@@ -3,7 +3,7 @@ import { ApiError, validate, type EntityEnvelope } from "./contracts";
 import type { McpAuthContext } from "./auth";
 import { uploadImageToTelegram } from "@/lib/telegram-storage";
 
-const columns = "id,campaign_id,type,name,content,attributes,admin_only,mcp_status,mcp_revision,updated_at";
+const columns = "id,campaign_id,type,name,content,attributes,image_url,admin_only,mcp_status,mcp_revision,updated_at";
 const mapColumns = "id,campaign_id,name,description,map_type,image_url,visibility,parent_map_id,wiki_entity_id,admin_only,created_at,updated_at";
 const notFound = () => new ApiError(404, "Entity not found");
 
@@ -12,7 +12,7 @@ function envelope(row: Record<string, any> | null): EntityEnvelope {
   return {
     schema_version: 1, id: row.id, campaign_id: row.campaign_id, kind: row.type,
     name: row.name, body: row.content?.body ?? "", attributes: row.attributes ?? {},
-    admin_only: row.admin_only === true, status: row.mcp_status, revision: row.mcp_revision,
+    image_url: row.image_url ?? null, admin_only: row.admin_only === true, status: row.mcp_status, revision: row.mcp_revision,
     source: { domain: "wiki", id: row.id },
   };
 }
@@ -33,7 +33,7 @@ async function getEnabledCampaign(db: SupabaseClient, campaignId: string): Promi
   return campaign;
 }
 
-export async function executeContent(auth: McpAuthContext, raw: unknown) {
+export async function executeContent(auth: McpAuthContext, raw: unknown, deps = { uploadImage: uploadImageToTelegram }) {
   const { operation, args: a } = validate(raw);
   assertMcpScope(auth, a.campaign_id);
   const campaign = await getEnabledCampaign(auth.db, a.campaign_id);
@@ -101,7 +101,7 @@ export async function executeContent(auth: McpAuthContext, raw: unknown) {
     let imageUrl = a.image_url;
     if (a.data_base64) {
       const file = new File([Buffer.from(a.data_base64, "base64")], a.filename, { type: a.mime_type });
-      try { imageUrl = `/api/tg-image/${await uploadImageToTelegram(file, `Mappa: ${a.name.trim()}`)}`; }
+      try { imageUrl = `/api/tg-image/${await deps.uploadImage(file, `Mappa: ${a.name.trim()}`)}`; }
       catch { throw new ApiError(503, "Map image upload failed"); }
     }
     const payload: Record<string, unknown> = {
@@ -117,7 +117,7 @@ export async function executeContent(auth: McpAuthContext, raw: unknown) {
   let entityQuery = auth.db.from("wiki_entities").select(columns).eq("id", a.entity_id).eq("campaign_id", a.campaign_id);
   // Status/asset writes are already restricted to the verified personal Admin;
   // read-like get/search calls require an explicit opt-in for protected rows.
-  const protectedWrite = operation === "set_status" || operation === "attach_asset";
+  const protectedWrite = operation === "set_status" || operation === "attach_asset" || operation === "upload_entity_image";
   if (!auth.isAdmin || (!adminOnlyRequested && !protectedWrite)) entityQuery = entityQuery.eq("admin_only", false);
   const entity = checked(await entityQuery.maybeSingle());
   if (!entity) throw notFound();
@@ -132,6 +132,17 @@ export async function executeContent(auth: McpAuthContext, raw: unknown) {
     const result = await auth.db.from("mcp_entity_assets").insert({ campaign_id: a.campaign_id, entity_id: a.entity_id, asset_id: a.asset_id }).select("id,entity_id,asset_id").single();
     if ((result.error as { code?: string } | null)?.code === "23505") throw new ApiError(409, "Asset already attached");
     return { attachment: checked(result) };
+  }
+  if (operation === "upload_entity_image") {
+    if (entity.mcp_revision !== a.revision) throw new ApiError(409, "Revision conflict: read entity again");
+    const file = new File([Buffer.from(a.data_base64, "base64")], a.filename, { type: a.mime_type });
+    let imageUrl: string;
+    try { imageUrl = `/api/tg-image/${encodeURIComponent(await deps.uploadImage(file, `Wiki: ${entity.name}`))}`; }
+    catch { throw new ApiError(503, "Wiki image upload failed"); }
+    const result = await auth.db.from("wiki_entities").update({ image_url: imageUrl }).eq("id", a.entity_id).eq("campaign_id", a.campaign_id).eq("mcp_revision", a.revision).select(columns).maybeSingle();
+    if (result.error) throw new ApiError(503, "Wiki image update failed");
+    if (!result.data) throw new ApiError(409, "Revision conflict: read entity again");
+    return { entity: envelope(result.data) };
   }
   if (operation === "set_status") {
     if (entity.mcp_revision !== a.revision) throw new ApiError(409, "Revision conflict: read entity again");

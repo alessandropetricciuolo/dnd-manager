@@ -6,7 +6,7 @@ import { handleContent } from "../handler";
 
 const campaign = "11111111-1111-4111-8111-111111111111";
 const entityId = "22222222-2222-4222-8222-222222222222";
-const row = { id: entityId, campaign_id: campaign, type: "lore", name: "Sentinel", content: { body: "private" }, attributes: {}, admin_only: true, mcp_status: "draft", mcp_revision: 2 };
+const row = { id: entityId, campaign_id: campaign, type: "lore", name: "Sentinel", content: { body: "private" }, attributes: {}, image_url: null, admin_only: true, mcp_status: "draft", mcp_revision: 2 };
 
 function fakeDb(results: unknown[]) {
   const calls: unknown[][] = [];
@@ -89,6 +89,22 @@ test("stale revision returns 409 and does not issue a partial update", async () 
   const concurrent = fakeDb([{ id: campaign, admin_drafts_enabled: true }, { ...row, mcp_revision: 1 }, null]);
   await assert.rejects(executeContent(admin(concurrent.db), { operation: "update_entity", args: { campaign_id: campaign, entity_id: entityId, revision: 1, body: "attempt" } }), (error: any) => error.status === 409);
   assert(concurrent.calls.some((call) => call[0] === "update"));
+});
+
+test("upload_entity_image uploads only after revision check and returns a verifiable image URL", async () => {
+  process.env.MCP_CAMPAIGN_ID = campaign;
+  const png = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]).toString("base64");
+  const stale = fakeDb([{ id: campaign, admin_drafts_enabled: true }, row]);
+  let uploads = 0;
+  await assert.rejects(executeContent(admin(stale.db), { operation: "upload_entity_image", args: { campaign_id: campaign, entity_id: entityId, revision: 1, filename: "place.png", mime_type: "image/png", data_base64: png } }, { uploadImage: async () => { uploads++; return "unused"; } }), (error: any) => error.status === 409);
+  assert.equal(uploads, 0);
+
+  const updatedRow = { ...row, image_url: "/api/tg-image/file%2Fid", mcp_revision: 3 };
+  const success = fakeDb([{ id: campaign, admin_drafts_enabled: true }, row, updatedRow]);
+  const result: any = await executeContent(admin(success.db), { operation: "upload_entity_image", args: { campaign_id: campaign, entity_id: entityId, revision: 2, filename: "place.png", mime_type: "image/png", data_base64: png } }, { uploadImage: async () => "file/id" });
+  assert.equal(result.entity.image_url, "/api/tg-image/file%2Fid");
+  const patch = success.calls.find((call) => call[0] === "update")?.[1] as Record<string, unknown>;
+  assert.equal(patch.image_url, "/api/tg-image/file%2Fid");
 });
 
 test("API rejects absent bearer before any content operation", async () => {
