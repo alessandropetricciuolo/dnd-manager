@@ -135,7 +135,12 @@ export async function CampaignList({ variant = "all" }: CampaignListProps) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 min-w-0">
       {campaigns.map((campaign, index) => (
-        <Link key={campaign.id} href={`/campaigns/${campaign.id}`} className="min-w-0">
+        <Link
+          key={campaign.id}
+          href={`/campaigns/${campaign.id}`}
+          prefetch={false}
+          className="min-w-0"
+        >
           <Card className="overflow-hidden border-barber-gold/40 bg-barber-dark/90 transition-colors hover:border-barber-gold/50 hover:bg-barber-dark min-w-0">
             <div className="relative aspect-[3/2] w-full min-w-0 bg-barber-dark">
               <Image

@@ -30,6 +30,15 @@ export function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.includes(normalized);
 }
 
+/**
+ * Un errore del servizio Auth non equivale a una sessione assente.
+ * Le rotte protette ripetono comunque il controllo sul server: il middleware
+ * deve mandare al login soltanto quando Supabase ha risposto senza errori.
+ */
+export function shouldRedirectUnauthenticated(userPresent: boolean, authErrorPresent: boolean): boolean {
+  return !userPresent && !authErrorPresent;
+}
+
 function redirectWithSupabaseCookies(redirectUrl: URL, supabaseResponse: NextResponse) {
   const res = NextResponse.redirect(redirectUrl);
   const setCookie = supabaseResponse.headers.get("set-cookie");
@@ -76,7 +85,15 @@ export async function updateSession(request: NextRequest) {
 
   const {
     data: { user },
+    error: authError,
   } = await supabase.auth.getUser();
+
+  if (authError) {
+    console.error("[middleware] verifica sessione Supabase non disponibile", {
+      status: authError.status,
+      code: authError.code,
+    });
+  }
 
   // Caso A: Utente loggato che accede a pagine di auth → redirect a /dashboard
   if (user && isAuthRoute(pathname)) {
@@ -85,7 +102,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Caso B: Utente ospite che accede a rotte protette → redirect a /login
-  if (!user && isProtectedRoute(pathname)) {
+  if (shouldRedirectUnauthenticated(Boolean(user), Boolean(authError)) && isProtectedRoute(pathname)) {
     const redirectUrl = new URL("/login", request.url);
     redirectUrl.searchParams.set("next", pathname);
     return redirectWithSupabaseCookies(redirectUrl, supabaseResponse);

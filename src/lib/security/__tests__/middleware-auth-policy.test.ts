@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { isAuthRoute, isProtectedRoute, isPublicPath } from "@/lib/supabase/middleware";
+import {
+  isAuthRoute,
+  isProtectedRoute,
+  isPublicPath,
+  shouldRedirectUnauthenticated,
+} from "@/lib/supabase/middleware";
 
 test("path pubblici: home e privacy", () => {
   assert.equal(isPublicPath("/"), true);
@@ -21,4 +26,10 @@ test("rotte auth: login, signup, forgot-password", () => {
   assert.equal(isAuthRoute("/login"), true);
   assert.equal(isAuthRoute("/signup"), true);
   assert.equal(isAuthRoute("/forgot-password"), true);
+});
+
+test("redirect al login solo quando Supabase conferma che la sessione è assente", () => {
+  assert.equal(shouldRedirectUnauthenticated(false, false), true);
+  assert.equal(shouldRedirectUnauthenticated(true, false), false);
+  assert.equal(shouldRedirectUnauthenticated(false, true), false);
 });
