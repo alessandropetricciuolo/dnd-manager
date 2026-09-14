@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -87,6 +87,7 @@ type MissionBoardProps = {
   guilds: MissionBoardGuild[];
   isGmOrAdmin: boolean;
   isAdmin: boolean;
+  hideHeaderActions?: boolean;
 };
 
 const EMPTY_MISSION_DRAFT = {
@@ -253,8 +254,10 @@ export function MissionBoard({
   guilds,
   isGmOrAdmin,
   isAdmin,
+  hideHeaderActions = false,
 }: MissionBoardProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
   const sortedGuilds = useMemo(() => {
@@ -308,6 +311,14 @@ export function MissionBoard({
     setMissionDraft(EMPTY_MISSION_DRAFT);
     setEditOpen(true);
   };
+
+  useEffect(() => {
+    if (searchParams.get("openCreateMission") !== "1") return;
+    openAddMission();
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("openCreateMission");
+    router.replace(`?${params.toString()}`, { scroll: false });
+  }, [router, searchParams]);
 
   const openEditMission = (m: MissionBoardMission) => {
     setEditMode("edit");
@@ -645,7 +656,7 @@ export function MissionBoard({
               impostare rango e punti a mano nella gilda.
             </p>
           </div>
-          {isGmOrAdmin && (
+          {isGmOrAdmin && !hideHeaderActions && (
             <div className="flex flex-wrap gap-2">
               <Button
                 type="button"

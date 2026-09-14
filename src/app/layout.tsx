@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { Navbar } from "@/components/navbar";
 import { LayoutConditionalNavbar } from "@/components/layout-conditional-navbar";
 import { AuthHashErrorRedirect } from "@/components/auth/auth-hash-error-redirect";
+import { CampaignNavigationProvider } from "@/components/campaigns/campaign-navigation-context";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -61,10 +62,12 @@ export default function RootLayout({
 })();`}
         </Script>
         <NextTopLoader color="#D4AF37" showSpinner={false} />
-        <LayoutConditionalNavbar navbar={<Navbar />}>
-          <AuthHashErrorRedirect />
-          {children}
-        </LayoutConditionalNavbar>
+        <CampaignNavigationProvider>
+          <LayoutConditionalNavbar navbar={<Navbar />}>
+            <AuthHashErrorRedirect />
+            {children}
+          </LayoutConditionalNavbar>
+        </CampaignNavigationProvider>
         <Toaster richColors closeButton />
         <Script src="https://cdn.iubenda.com/iubenda.js" strategy="lazyOnload" />
       </body>

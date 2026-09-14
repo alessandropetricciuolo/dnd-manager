@@ -33,12 +33,14 @@ type MissionBoardSectionProps = {
   campaignId: string;
   isGmOrAdmin: boolean;
   isAdmin: boolean;
+  hideHeaderActions?: boolean;
 };
 
 export async function MissionBoardSection({
   campaignId,
   isGmOrAdmin,
   isAdmin,
+  hideHeaderActions = false,
 }: MissionBoardSectionProps) {
   const supabase = await createSupabaseServerClient();
 
@@ -93,6 +95,7 @@ export async function MissionBoardSection({
       guilds={guilds}
       isGmOrAdmin={isGmOrAdmin}
       isAdmin={isAdmin}
+      hideHeaderActions={hideHeaderActions}
     />
   );
 }

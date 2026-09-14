@@ -21,12 +21,17 @@ import { JoinLongCampaignButton } from "@/components/campaigns/join-long-campaig
 import { LongRegistrationsToggle } from "@/components/campaigns/long-registrations-toggle";
 import { CampaignPartyMembersPanel } from "@/components/campaigns/campaign-party-members-panel";
 import { GmHomepage } from "@/components/gm/gm-homepage";
+import { GmScreenLauncher } from "@/components/gm/gm-screen-launcher";
 import Link from "next/link";
 import { ChevronDown, Map as MapIcon } from "lucide-react";
 import { InteractiveMap, type MapCharacterPin } from "@/components/map/InteractiveMap";
 import type { Portal } from "@/lib/nav/navigation-math";
 import { MissionBoardSection } from "@/components/missions/mission-board-section";
+import { BulkImportMissionsDialog } from "@/components/missions/bulk-import-missions-dialog";
 import { CharactersSection } from "@/components/characters/characters-section";
+import { ImportCharactersFromCatalogDialog } from "@/components/characters/import-characters-from-catalog-dialog";
+import { DownloadCampaignSheetsButton } from "@/components/characters/download-campaign-sheets-button";
+import { CreateCharacterDialog } from "@/components/characters/create-character-dialog";
 import { getCampaignCharacters, getCampaignEligiblePlayers } from "@/app/campaigns/character-actions";
 import { getPreClosedSessionForCampaign, type PreClosedSessionRow } from "@/app/campaigns/gm-actions";
 import { Button } from "@/components/ui/button";
@@ -380,7 +385,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
     </>
   );
 
-  const campaignHeaderActions = isGmOrAdmin ? (
+  const campaignManagementActions = isGmOrAdmin ? (
     <div className="flex max-w-[min(100%,20rem)] flex-wrap justify-end gap-1.5 sm:max-w-none">
       <EditCampaignDialog
         campaign={{
@@ -400,8 +405,121 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
           registrationsOpen={longRegistrationsOpen}
         />
       ) : null}
-      <DeleteCampaignButton campaignId={campaign.id} campaignName={campaign.name} />
     </div>
+  ) : undefined;
+  const campaignDangerousAction = isGmOrAdmin ? (
+    <DeleteCampaignButton campaignId={campaign.id} campaignName={campaign.name} />
+  ) : undefined;
+  const wikiCreateAction = isGmOrAdmin ? (
+    <CreateEntityDialog
+      campaignId={campaign.id}
+      campaignType={campaign.type ?? null}
+      eligiblePlayers={eligiblePlayers}
+      eligibleParties={eligibleParties}
+      isAdmin={isAdmin}
+      adminDraftsEnabled={Boolean((campaign as { admin_drafts_enabled?: boolean }).admin_drafts_enabled)}
+    />
+  ) : undefined;
+  const mapUploadAction = isGmOrAdmin ? (
+    <UploadMapDialog
+      campaignId={campaign.id}
+      campaignType={campaign.type ?? null}
+      eligiblePlayers={eligiblePlayers}
+      eligibleParties={eligibleParties}
+      isAdmin={isAdmin}
+      adminDraftsEnabled={Boolean((campaign as { admin_drafts_enabled?: boolean }).admin_drafts_enabled)}
+    />
+  ) : undefined;
+  const sessionCreateAction = isGmOrAdmin ? (
+    <CreateSessionDialog
+      campaignId={campaign.id}
+      campaignType={campaign.type ?? null}
+      gmAdminUsers={gmAdminUsers}
+      defaultDmId={profile?.role === "gm" || profile?.role === "admin" ? user.id : null}
+    />
+  ) : undefined;
+  const characterCreateAction = isGmOrAdmin ? (
+    <CreateCharacterDialog campaignId={campaign.id} initialOpen={openCreateDialogOnLoad} />
+  ) : undefined;
+  const gmPrimaryAction = isGmOrAdmin ? (
+    <GmScreenLauncher
+      campaignId={campaign.id}
+      label="Apri Schermo GM"
+      className="h-9 border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
+    />
+  ) : undefined;
+  const campaignSectionActions = isGmOrAdmin ? {
+    wiki: (
+      <div className="flex flex-wrap gap-1.5 px-1 py-1">
+        <DownloadWikiArchiveButton campaignId={campaign.id} />
+        <BulkImportWikiDialog campaignId={campaign.id} />
+      </div>
+    ),
+    mappe: (
+      <div className="flex flex-wrap gap-1.5 px-1 py-1">
+        <BulkImportMapsDialog campaignId={campaign.id} campaignType={campaign.type} isAdmin={isAdmin} adminDraftsEnabled={Boolean((campaign as { admin_drafts_enabled?: boolean }).admin_drafts_enabled)} />
+      </div>
+    ),
+    pg: (
+      <div className="flex flex-wrap gap-1.5 px-1 py-1">
+        <DownloadCampaignSheetsButton campaignId={campaign.id} characters={characters} />
+        <ImportCharactersFromCatalogDialog campaignId={campaign.id} />
+      </div>
+    ),
+    missioni: (
+      <div className="flex flex-wrap gap-1.5 px-1 py-1">
+        <Button asChild size="sm" variant="ghost" className="h-9 text-barber-paper/85 hover:bg-barber-gold/10 hover:text-barber-gold">
+          <Link href={`/campaigns/${campaign.id}/gm-only/missioni/proiezione`}>Apri proiezione</Link>
+        </Button>
+        {isAdmin ? <BulkImportMissionsDialog campaignId={campaign.id} /> : null}
+      </div>
+    ),
+    gm: (
+      <div className="flex flex-wrap gap-1.5 px-1 py-1">
+        <Button asChild size="sm" variant="ghost" className="h-9 text-barber-paper/85 hover:bg-barber-gold/10 hover:text-barber-gold">
+          <Link href={`/command-center?campaignId=${campaign.id}`}>Command Center</Link>
+        </Button>
+        {!isTorneo ? (
+          <Button asChild size="sm" variant="ghost" className="h-9 text-barber-paper/85 hover:bg-barber-gold/10 hover:text-barber-gold">
+            <Link href={`/campaigns/${campaign.id}/gm-only/vista-dall-alto`}>Esplorazione e FOW</Link>
+          </Button>
+        ) : null}
+        {!isTorneo ? (
+          <>
+            <Button asChild size="sm" variant="ghost" className="h-9 text-barber-paper/85 hover:bg-barber-gold/10 hover:text-barber-gold">
+              <Link href={`/campaigns/${campaign.id}?tab=mappe`}>Mappe</Link>
+            </Button>
+            <Button asChild size="sm" variant="ghost" className="h-9 text-barber-paper/85 hover:bg-barber-gold/10 hover:text-barber-gold">
+              <Link href={`/campaigns/${campaign.id}/gm-only/scene-workspace`}>Scene tattiche V2</Link>
+            </Button>
+            <Button asChild size="sm" variant="ghost" className="h-9 text-barber-paper/85 hover:bg-barber-gold/10 hover:text-barber-gold">
+              <Link href={`/campaigns/${campaign.id}/gm-only/concept-map`}>Mappa concettuale</Link>
+            </Button>
+            <Button asChild size="sm" variant="ghost" className="h-9 text-barber-paper/85 hover:bg-barber-gold/10 hover:text-barber-gold">
+              <Link href={`/compendium?campaignId=${campaign.id}`}>Compendio</Link>
+            </Button>
+          </>
+        ) : (
+          <Button asChild size="sm" variant="ghost" className="h-9 text-barber-paper/85 hover:bg-barber-gold/10 hover:text-barber-gold">
+            <Link href={`/campaigns/${campaign.id}/torneo2`}>Torneo 2.0</Link>
+          </Button>
+        )}
+      </div>
+    ),
+  } : undefined;
+  const missionCreateAction = isGmOrAdmin ? (
+    <Button
+      asChild
+      size="sm"
+      className="h-9 bg-amber-600 text-zinc-950 hover:bg-amber-500"
+    >
+      <Link
+        href={`/campaigns/${campaign.id}?tab=missioni&openCreateMission=1`}
+        role="button"
+      >
+        Nuova Missione
+      </Link>
+    </Button>
   ) : undefined;
 
   return (
@@ -423,7 +541,17 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
         defaultTab={defaultTab}
         lockedOut={isViewerLockedOut}
         infoFooter={campaignInfoFooter}
-        headerActions={campaignHeaderActions}
+        managementActions={campaignManagementActions}
+        dangerousAction={campaignDangerousAction}
+        primaryActions={{
+          sessioni: sessionCreateAction,
+          wiki: wikiCreateAction,
+          mappe: mapUploadAction,
+          missioni: missionCreateAction,
+          pg: characterCreateAction,
+          gm: gmPrimaryAction,
+        }}
+        sectionActions={campaignSectionActions}
         sessioniContent={
             renderSessioniTab ? (
               <>
@@ -490,18 +618,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
                 }
                 level={3}
                 icon={<CalendarDays className="h-5 w-5" />}
-                action={
-                  isGmOrAdmin ? (
-                    <CreateSessionDialog
-                      campaignId={campaign.id}
-                      campaignType={campaign.type ?? null}
-                      gmAdminUsers={gmAdminUsers}
-                      defaultDmId={
-                        profile?.role === "gm" || profile?.role === "admin" ? user.id : null
-                      }
-                    />
-                  ) : undefined
-                }
+                action={undefined}
               />
               <SessionList campaignId={campaign.id} campaignType={campaign.type ?? null} />
               {isGmOrAdmin ? (
@@ -520,20 +637,6 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
           wikiContent={
             renderWikiTab && hasPlayedCampaign ? (
               <>
-                {isGmOrAdmin ? (
-                  <div className="mb-3 flex flex-wrap items-center justify-end gap-2">
-                    <CreateEntityDialog
-                      campaignId={campaign.id}
-                      campaignType={campaign.type ?? null}
-                      eligiblePlayers={eligiblePlayers}
-                      eligibleParties={eligibleParties}
-                      isAdmin={isAdmin}
-                      adminDraftsEnabled={Boolean((campaign as { admin_drafts_enabled?: boolean }).admin_drafts_enabled)}
-                    />
-                    <DownloadWikiArchiveButton campaignId={campaign.id} />
-                    <BulkImportWikiDialog campaignId={campaign.id} />
-                  </div>
-                ) : null}
                 <WikiList
                   campaignId={campaign.id}
                   campaignType={campaign.type ?? null}
@@ -546,19 +649,6 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
           mappeContent={
             renderMappeTab && hasPlayedCampaign ? (
               <>
-                {isGmOrAdmin ? (
-                  <div className="mb-3 flex flex-wrap justify-end gap-2">
-                    <BulkImportMapsDialog campaignId={campaign.id} campaignType={campaign.type} isAdmin={isAdmin} adminDraftsEnabled={Boolean((campaign as { admin_drafts_enabled?: boolean }).admin_drafts_enabled)} />
-                    <UploadMapDialog
-                      campaignId={campaign.id}
-                      campaignType={campaign.type ?? null}
-                      eligiblePlayers={eligiblePlayers}
-                      eligibleParties={eligibleParties}
-                      isAdmin={isAdmin}
-                      adminDraftsEnabled={Boolean((campaign as { admin_drafts_enabled?: boolean }).admin_drafts_enabled)}
-                    />
-                  </div>
-                ) : null}
                 {isGmOrAdmin && (
                   <details className="group mb-10 overflow-hidden rounded-xl border border-barber-gold/30 bg-barber-dark/90 shadow-inner">
                     <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-4 hover:bg-barber-gold/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-barber-gold md:px-6 [&::-webkit-details-marker]:hidden">
@@ -615,6 +705,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
                 campaignId={campaign.id}
                 isGmOrAdmin={isGmOrAdmin}
                 isAdmin={isAdmin}
+                hideHeaderActions
               />
             ) : null
           }
@@ -631,6 +722,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
               openEditCharacterId={openEditCharacterId}
               currentUserId={user.id}
               gmId={campaign.gm_id ?? undefined}
+              hideActions
             />
             ) : null
           }
@@ -646,6 +738,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
                 initialPlayerPrimer={campaign.player_primer ?? null}
                 initialTypography={campaign.primer_typography ?? null}
                 isAdmin={isAdmin}
+                hideQuickActions
               />
             ) : undefined
           }

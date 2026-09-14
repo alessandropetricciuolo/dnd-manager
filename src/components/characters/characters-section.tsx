@@ -20,6 +20,7 @@ type CharactersSectionProps = {
   /** Per il giocatore: id utente loggato e id del GM (per Sussurri del Master). */
   currentUserId?: string;
   gmId?: string;
+  hideActions?: boolean;
 };
 
 export function CharactersSection({
@@ -33,6 +34,7 @@ export function CharactersSection({
   openEditCharacterId = null,
   currentUserId,
   gmId,
+  hideActions = false,
 }: CharactersSectionProps) {
   const isLongCampaign = campaignType === "long";
   const isTorneoCampaign = campaignType === "torneo";
@@ -82,14 +84,16 @@ export function CharactersSection({
   if (isGm) {
     return (
       <div className="space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <h2 className="text-lg font-semibold text-barber-paper">Personaggi</h2>
-          <div className="flex flex-wrap items-center gap-2">
-            <DownloadCampaignSheetsButton campaignId={campaignId} characters={characters} />
-            <ImportCharactersFromCatalogDialog campaignId={campaignId} />
-            <CreateCharacterDialog campaignId={campaignId} initialOpen={openCreateDialogOnLoad} />
+        {!hideActions ? (
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <h2 className="text-lg font-semibold text-barber-paper">Personaggi</h2>
+            <div className="flex flex-wrap items-center gap-2">
+              <DownloadCampaignSheetsButton campaignId={campaignId} characters={characters} />
+              <ImportCharactersFromCatalogDialog campaignId={campaignId} />
+              <CreateCharacterDialog campaignId={campaignId} initialOpen={openCreateDialogOnLoad} />
+            </div>
           </div>
-        </div>
+        ) : null}
         {characters.length === 0 ? (
           <p className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 px-6 py-8 text-center text-barber-paper/70">
             Nessun personaggio creato. Clicca &quot;Nuovo personaggio&quot; per aggiungerne uno.

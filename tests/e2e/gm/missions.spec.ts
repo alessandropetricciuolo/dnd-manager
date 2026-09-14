@@ -23,6 +23,6 @@ test.describe("GM — missioni Long", () => {
     await expect(page.locator("[data-sonner-toast]")).toContainText(/missione|aggiunt|creat/i, {
       timeout: 15_000,
     });
-    await expect(page.getByText(missionTitle)).toBeVisible();
+    await expect(page.getByRole("cell", { name: missionTitle })).toBeVisible();
   });
 });

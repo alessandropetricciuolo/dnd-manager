@@ -44,6 +44,7 @@ type GmHomepageProps = {
   initialPlayerPrimer: string | null;
   initialTypography?: PrimerTypography | null;
   isAdmin?: boolean;
+  hideQuickActions?: boolean;
 };
 
 export function GmHomepage({
@@ -56,6 +57,7 @@ export function GmHomepage({
   initialPlayerPrimer,
   initialTypography,
   isAdmin = false,
+  hideQuickActions = false,
 }: GmHomepageProps) {
   const isLongCampaign = isLongCampaignType(campaignType);
   const isTorneo = isTorneoCampaignType(campaignType);
@@ -68,7 +70,7 @@ export function GmHomepage({
   return (
     <div className="rounded-xl border-2 border-violet-800/60 bg-slate-950/80 p-6 shadow-inner">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
+        {!hideQuickActions ? <div className="flex flex-wrap items-center gap-2">
           <Button
             asChild
             variant="outline"
@@ -163,7 +165,7 @@ export function GmHomepage({
               </Button>
             </>
           ) : null}
-        </div>
+        </div> : null}
 
         {!isTorneo ? (
           <div className="flex flex-wrap items-center gap-2">

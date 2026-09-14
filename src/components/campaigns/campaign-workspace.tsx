@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useRouter } from "nextjs-toploader/app";
@@ -23,12 +22,11 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { IMAGE_BLUR_PLACEHOLDER, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { CAMPAIGN_CONTENT_SHELL } from "@/lib/layout/shell-classes";
 import { CampaignPlayerSessionsHero } from "@/components/campaigns/campaign-player-sessions-hero";
-
-const PLACEHOLDER_IMAGE =
-  "https://placehold.co/1200x400/1c1917/fbbf24/png?text=Campagna";
+import { CampaignCommandBar } from "@/components/campaigns/campaign-command-bar";
+import { useCampaignNavigation } from "@/components/campaigns/campaign-navigation-context";
 
 const VALID_TABS = ["sessioni", "wiki", "mappe", "missioni", "pg", "gm"] as const;
 export type CampaignTabValue = (typeof VALID_TABS)[number];
@@ -59,7 +57,12 @@ export type CampaignWorkspaceProps = {
   isLongCampaign?: boolean;
   defaultTab?: CampaignTabValue;
   lockedOut?: boolean;
-  headerActions?: React.ReactNode;
+  /** Azioni della sezione mostrate nella toolbar/menu condivisi. */
+  sectionActions?: Partial<Record<CampaignTabValue, React.ReactNode>>;
+  /** Azione primaria della sezione, mantenuta sempre visibile su desktop. */
+  primaryActions?: Partial<Record<CampaignTabValue, React.ReactNode>>;
+  managementActions?: React.ReactNode;
+  dangerousAction?: React.ReactNode;
   infoFooter?: React.ReactNode;
   sessioniContent: React.ReactNode;
   wikiContent: React.ReactNode;
@@ -216,7 +219,8 @@ function CampaignInfoSheet({
   gmDisplayName,
   playerPrimerHref,
   infoFooter,
-  headerActions,
+  managementActions,
+  dangerousAction,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -226,7 +230,8 @@ function CampaignInfoSheet({
   gmDisplayName: string | null;
   playerPrimerHref: string | null;
   infoFooter?: React.ReactNode;
-  headerActions?: React.ReactNode;
+  managementActions?: React.ReactNode;
+  dangerousAction?: React.ReactNode;
 }) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -273,12 +278,20 @@ function CampaignInfoSheet({
             {infoFooter ? (
               <div className="space-y-3 border-t border-barber-gold/15 pt-4">{infoFooter}</div>
             ) : null}
-            {headerActions ? (
+            {managementActions ? (
               <div className="space-y-2 border-t border-barber-gold/15 pt-4 lg:hidden">
                 <p className="text-xs font-medium uppercase tracking-wide text-barber-paper/45">
                   Gestione campagna
                 </p>
-                <div className="flex flex-wrap gap-2">{headerActions}</div>
+                <div className="flex flex-wrap gap-2">{managementActions}</div>
+              </div>
+            ) : null}
+            {dangerousAction ? (
+              <div className="space-y-2 border-t border-red-500/25 pt-4 lg:hidden">
+                <p className="text-xs font-medium uppercase tracking-wide text-red-300/70">
+                  Area pericolosa
+                </p>
+                <div className="flex flex-wrap gap-2">{dangerousAction}</div>
               </div>
             ) : null}
           </div>
@@ -300,7 +313,10 @@ export function CampaignWorkspace({
   isLongCampaign = false,
   defaultTab = "sessioni",
   lockedOut = false,
-  headerActions,
+  sectionActions,
+  primaryActions,
+  managementActions,
+  dangerousAction,
   infoFooter,
   sessioniContent,
   wikiContent,
@@ -315,6 +331,7 @@ export function CampaignWorkspace({
   isGmOrAdmin = false,
 }: CampaignWorkspaceProps) {
   const [infoOpen, setInfoOpen] = useState(false);
+  const { setNavigation } = useCampaignNavigation();
   const { effectiveTab, setTab } = useCampaignTab(
     defaultTab,
     hasPlayedCampaign,
@@ -322,6 +339,10 @@ export function CampaignWorkspace({
     showMissionsTab,
     showMappeTab
   );
+
+  useEffect(() => {
+    setNavigation({ campaignName, sectionLabel: TAB_META[effectiveTab].label });
+  }, [campaignName, effectiveTab, setNavigation]);
 
   const visiblePlayerTabs = PLAYER_TABS.filter((t) => {
     if (t === "missioni" && !showMissionsTab) return false;
@@ -363,55 +384,19 @@ export function CampaignWorkspace({
     <div className="flex h-full min-h-0 flex-col">
       {/* Mobile: barra compatta + tab (niente hero immagine) */}
       <div className="z-40 shrink-0 border-b border-barber-gold/15 bg-barber-dark/95 backdrop-blur-md supports-[backdrop-filter]:bg-barber-dark/90 lg:hidden">
-        <div className="flex items-center gap-1.5 px-2 py-1 sm:px-3">
+        <div className="flex gap-1.5 overflow-x-auto px-2 pb-2 pt-0.5">
           <MobileNavMenu isAdmin={isAdmin} isGmOrAdmin={isGmOrAdmin} iconOnly />
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className="h-9 w-9 shrink-0 text-barber-paper/80 hover:bg-barber-gold/10 hover:text-barber-gold"
+            className="h-11 w-11 shrink-0 text-barber-paper/80 hover:bg-barber-gold/10 hover:text-barber-gold"
             asChild
           >
             <Link href="/dashboard" aria-label="Torna alla dashboard">
               <ArrowLeft className="h-5 w-5" />
             </Link>
           </Button>
-          <button
-            type="button"
-            onClick={() => setInfoOpen(true)}
-            className="min-w-0 flex-1 text-left"
-          >
-            <p className="truncate font-serif text-sm font-semibold leading-tight text-barber-paper sm:text-base">
-              {campaignName}
-            </p>
-            {campaignTypeLabel ? (
-              <p className="truncate text-[10px] text-barber-gold/80">{campaignTypeLabel}</p>
-            ) : null}
-          </button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 shrink-0 text-barber-paper/70 hover:bg-barber-gold/10 hover:text-barber-gold"
-            onClick={() => setInfoOpen(true)}
-            aria-label="Sinossi e dettagli campagna"
-          >
-            <Info className="h-4 w-4" />
-          </Button>
-          {isLongCampaign && playerPrimerHref ? (
-            <Button
-              asChild
-              size="sm"
-              className="h-9 shrink-0 bg-barber-gold px-2.5 text-xs font-semibold text-barber-dark hover:bg-barber-gold/90 sm:px-3"
-            >
-              <Link href={playerPrimerHref}>
-                <BookOpen className="mr-1 h-3.5 w-3.5" />
-                Guida
-              </Link>
-            </Button>
-          ) : null}
-        </div>
-        <div className="flex gap-1.5 overflow-x-auto px-2 pb-2 pt-0.5">
           {renderNav("pill-icon")}
         </div>
         {!hasPlayedCampaign ? (
@@ -424,73 +409,26 @@ export function CampaignWorkspace({
         ) : null}
       </div>
 
-      {/* Desktop: hero con immagine */}
-      <div className="relative hidden shrink-0 overflow-hidden border-b border-barber-gold/15 lg:block">
-        <div className="relative h-44">
-          <Image
-            src={imageUrl ?? PLACEHOLDER_IMAGE}
-            alt=""
-            fill
-            className="object-cover"
-            priority
-            sizes="100vw"
-            placeholder="blur"
-            blurDataURL={IMAGE_BLUR_PLACEHOLDER}
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-barber-dark via-barber-dark/90 to-barber-dark/55 lg:via-barber-dark/80 lg:to-barber-dark/30" />
-          <div className="absolute inset-0 bg-gradient-to-t from-barber-dark/90 via-transparent to-transparent" />
-        </div>
-
-        <div className="absolute inset-0 flex flex-col justify-end px-4 pb-4 pt-8 sm:px-6 lg:px-8">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-medium uppercase tracking-[0.28em] text-barber-gold/70 sm:text-xs">
-                Campagna
-              </p>
-              <h1 className="mt-0.5 font-serif text-2xl font-bold leading-tight text-barber-paper sm:text-3xl lg:text-4xl">
-                {campaignName}
-              </h1>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                {campaignTypeLabel ? (
-                  <span className="inline-flex rounded-full border border-barber-gold/40 bg-barber-gold/10 px-2.5 py-0.5 text-[11px] font-medium text-barber-gold sm:text-xs">
-                    {campaignTypeLabel}
-                  </span>
-                ) : null}
-                {gmDisplayName ? (
-                  <span className="text-xs text-barber-paper/60 sm:text-sm">
-                    Master · <span className="text-barber-gold/90">{gmDisplayName}</span>
-                  </span>
-                ) : null}
-              </div>
-            </div>
-              <div className="hidden shrink-0 flex-wrap items-center gap-2 sm:flex">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="border-barber-gold/35 bg-barber-dark/60 text-barber-paper hover:bg-barber-gold/10 hover:text-barber-gold"
-                onClick={() => setInfoOpen(true)}
-              >
-                <Info className="mr-1.5 h-4 w-4" />
-                Sinossi
-              </Button>
-              {playerPrimerHref ? (
-                <Button
-                  asChild
-                  variant="outline"
-                  size="sm"
-                  className="hidden border-barber-gold/35 text-barber-gold hover:bg-barber-gold/10 sm:inline-flex"
-                >
-                  <Link href={playerPrimerHref}>
-                    <BookOpen className="mr-1.5 h-4 w-4" />
-                    Guida
-                  </Link>
-                </Button>
-              ) : null}
-              {headerActions}
-            </div>
-          </div>
-        </div>
+      {/* Desktop: workspace compatto, senza hero. Tutti i comandi stanno in una sola riga. */}
+      <div>
+        {(() => {
+          const meta = TAB_META[effectiveTab];
+          return (
+            <CampaignCommandBar
+              campaignName={campaignName}
+              campaignTypeLabel={campaignTypeLabel}
+              gmDisplayName={gmDisplayName}
+              sectionLabel={meta.label}
+              sectionIcon={meta.icon}
+              playerPrimerHref={playerPrimerHref}
+              onOpenInfo={() => setInfoOpen(true)}
+              primaryAction={primaryActions?.[effectiveTab]}
+              sectionActions={sectionActions?.[effectiveTab]}
+              managementActions={managementActions}
+              dangerousAction={dangerousAction}
+            />
+          );
+        })()}
       </div>
 
       <CampaignInfoSheet
@@ -502,7 +440,8 @@ export function CampaignWorkspace({
         gmDisplayName={gmDisplayName}
         playerPrimerHref={playerPrimerHref}
         infoFooter={infoFooter}
-        headerActions={headerActions}
+        managementActions={managementActions}
+        dangerousAction={dangerousAction}
       />
 
       {lockedOut ? (

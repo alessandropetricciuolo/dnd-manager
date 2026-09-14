@@ -15,6 +15,7 @@ import {
 import { NavbarAuthSlot } from "@/components/navbar-auth-slot";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { cn } from "@/lib/utils";
+import { useCampaignNavigation } from "@/components/campaigns/campaign-navigation-context";
 
 const PUBLIC_NAV_LINKS = [
   { href: "/scopri", label: "Scopri" },
@@ -50,6 +51,7 @@ function sheetLinkClass(pathname: string | null, href: string) {
 export function NavbarNavLinks() {
   const pathname = usePathname();
   const { user, ready } = useSupabaseUser();
+  const { navigation } = useCampaignNavigation();
   const [menuOpen, setMenuOpen] = useState(false);
   const onCampaignDetail = isCampaignDetailPath(pathname);
   const isLoggedIn = ready && Boolean(user);
@@ -64,7 +66,22 @@ export function NavbarNavLinks() {
 
   return (
     <div className="flex min-w-0 shrink items-center gap-2 sm:gap-3 md:gap-4">
-      {!onCampaignDetail ? (
+      {onCampaignDetail ? (
+        <div
+          className="hidden min-w-0 items-center gap-2 text-xs sm:flex sm:max-w-[min(52vw,34rem)]"
+          aria-label="Posizione nella campagna"
+        >
+          <span className="shrink-0 text-barber-paper/45">Campagna</span>
+          <span className="text-barber-paper/30">/</span>
+          <span className="truncate font-serif text-sm font-semibold text-barber-paper">
+            {navigation?.campaignName ?? "Campagna"}
+          </span>
+          <span className="text-barber-paper/30">/</span>
+          <span className="truncate font-medium text-barber-gold">
+            {navigation?.sectionLabel ?? "Workspace"}
+          </span>
+        </div>
+      ) : (
         <>
           <div className="hidden items-center gap-4 md:gap-6 sm:flex">
             {desktopLinks.map((link) => (
@@ -144,7 +161,7 @@ export function NavbarNavLinks() {
             </SheetContent>
           </Sheet>
         </>
-      ) : null}
+      )}
 
       <NavbarAuthSlot />
     </div>
