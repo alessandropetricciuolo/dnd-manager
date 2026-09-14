@@ -15,6 +15,11 @@ const create = {
   attributes: z.record(z.unknown()).optional(),
   admin_only: adminOnly,
 };
+const createMonster = {
+  ...create,
+  xp_value: z.number().int().min(0).optional(),
+  is_core: z.boolean().optional(),
+};
 
 const oauthSecurity = [{ type: "oauth2", scopes: ["openid", "email", "profile", "offline_access"] }];
 type ContentOperation = Parameters<typeof executeContent>[1] & { operation: string };
@@ -78,6 +83,8 @@ export function createBdMcpServer(auth: McpAuthContext) {
   register("create_lore", "Create private draft lore; use admin_only for protected Admin content.", create, false);
   register("create_npc", "Create a private draft NPC.", create, false);
   register("create_location", "Create a private draft location.", create, false);
+  register("create_item", "Create a private draft item.", create, false);
+  register("create_monster", "Create a private draft monster, including combat attributes and XP.", createMonster, false);
   register("update_entity", "Patch an entity using its current revision; protected content cannot be downgraded.", {
     campaign_id: campaignId,
     entity_id: entityId,

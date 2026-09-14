@@ -1,6 +1,6 @@
 export const entityKinds = ["campaign", "npc", "location", "faction", "quest", "item", "event", "session", "lore", "player_character", "monster"] as const;
 export const statuses = ["draft", "proposed", "canonical", "deprecated"] as const;
-export const operations = ["search_lore", "get_entity", "search_maps", "get_map", "create_lore", "create_npc", "create_location", "update_entity", "upload_asset", "attach_asset", "upload_entity_image", "upload_map", "set_status",
+export const operations = ["search_lore", "get_entity", "search_maps", "get_map", "create_lore", "create_npc", "create_location", "create_item", "create_monster", "update_entity", "upload_asset", "attach_asset", "upload_entity_image", "upload_map", "set_status",
   "search_missions", "get_mission", "create_mission", "update_mission", "set_mission_status", "complete_mission", "reopen_mission", "delete_mission",
   "list_mission_encounters", "create_mission_encounter", "update_mission_encounter", "delete_mission_encounter", "replace_encounter_monsters", "link_mission_resource"] as const;
 export type Operation = typeof operations[number];
@@ -17,6 +17,9 @@ export interface EntityEnvelope {
   status: typeof statuses[number];
   revision: number;
   image_url: string | null;
+  xp_value?: number;
+  is_core?: boolean;
+  global_status?: string | null;
   source: { domain: "wiki"; id: string };
 }
 
@@ -33,6 +36,8 @@ const fields: Record<Operation, string[]> = {
   create_lore: ["name", "body", "attributes", "admin_only"],
   create_npc: ["name", "body", "attributes", "admin_only"],
   create_location: ["name", "body", "attributes", "admin_only"],
+  create_item: ["name", "body", "attributes", "admin_only"],
+  create_monster: ["name", "body", "attributes", "admin_only", "xp_value", "is_core"],
   update_entity: ["entity_id", "revision", "name", "body", "attributes", "admin_only"],
   upload_asset: ["filename", "mime_type", "data_base64"],
   attach_asset: ["entity_id", "asset_id"],
@@ -60,11 +65,13 @@ export function validate(raw: unknown): { operation: Operation; args: Record<str
   if (Object.keys(args).some((key) => key !== "campaign_id" && !fields[operation].includes(key))) return fail();
   for (const key of ["entity_id", "asset_id", "map_id", "mission_id", "guild_id", "encounter_id", "resource_id"]) if (args[key] !== undefined && (typeof args[key] !== "string" || !uuid.test(args[key]))) return fail();
   if (["update_entity", "upload_entity_image", "set_status"].includes(operation) && (!Number.isSafeInteger(args.revision) || args.revision < 1)) return fail();
-  if (["create_lore", "create_npc", "create_location"].includes(operation) && (args.name === undefined || args.body === undefined)) return fail();
+  if (["create_lore", "create_npc", "create_location", "create_item", "create_monster"].includes(operation) && (args.name === undefined || args.body === undefined)) return fail();
   for (const [key, max] of [["name", 200], ["body", 100000], ["query", 200]] as const) {
     if (args[key] !== undefined && (typeof args[key] !== "string" || args[key].length > max || (key !== "body" && !args[key].trim()))) return fail();
   }
   for (const key of ["admin_only"]) if (args[key] !== undefined && typeof args[key] !== "boolean") return fail();
+  if (args.is_core !== undefined && typeof args.is_core !== "boolean") return fail();
+  if (args.xp_value !== undefined && (!Number.isInteger(args.xp_value) || args.xp_value < 0)) return fail();
   if (args.attributes !== undefined && (!args.attributes || typeof args.attributes !== "object" || Array.isArray(args.attributes) || JSON.stringify(args.attributes).length > 20000)) return fail();
   if (operation === "update_entity" && !["name", "body", "attributes", "admin_only"].some((key) => args[key] !== undefined)) return fail();
   if (operation === "set_status" && !statuses.includes(args.status)) return fail();

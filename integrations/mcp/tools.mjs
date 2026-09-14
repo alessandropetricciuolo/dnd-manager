@@ -6,6 +6,7 @@ const entity_id = z.string().uuid();
 const revision = z.number().int().positive();
 const admin_only = z.boolean().optional();
 const create = { campaign_id, name: z.string().trim().min(1).max(200), body: z.string().max(100000), attributes: z.record(z.unknown()).optional(), admin_only };
+const createMonster = { ...create, xp_value: z.number().int().min(0).optional(), is_core: z.boolean().optional() };
 
 export const definitions = {
   search_lore: { description: "Search the scoped campaign Wiki. Admin-only rows require the verified personal Admin scope.", schema: { campaign_id, query: z.string().min(1).max(200), limit: z.number().int().min(1).max(50).optional(), offset: z.number().int().min(0).max(10000).optional(), admin_only }, read: true },
@@ -15,6 +16,8 @@ export const definitions = {
   create_lore: { description: "Create scoped private draft lore; set admin_only only for protected Admin content.", schema: create },
   create_npc: { description: "Create a scoped private draft NPC.", schema: create },
   create_location: { description: "Create a scoped private draft location.", schema: create },
+  create_item: { description: "Create a scoped private draft item.", schema: create },
+  create_monster: { description: "Create a scoped private draft monster, including combat attributes and XP.", schema: createMonster },
   update_entity: { description: "Patch a scoped entity using its current revision. Revision conflicts must be reread.", schema: { campaign_id, entity_id, revision, name: create.name.optional(), body: create.body.optional(), attributes: create.attributes, admin_only } },
   upload_asset: { description: "Store a scoped private PNG/JPEG/WebP/PDF supplied as base64; no remote URL fetching.", schema: { campaign_id, filename: z.string().min(1).max(120), mime_type: z.enum(["image/png", "image/jpeg", "image/webp", "application/pdf"]), data_base64: z.string().max(699052) } },
   attach_asset: { description: "Attach a scoped uploaded asset to a Wiki entity.", schema: { campaign_id, entity_id, asset_id: z.string().uuid() } },

@@ -4,7 +4,7 @@ import type { McpAuthContext } from "./auth";
 import { uploadImageToTelegram } from "@/lib/telegram-storage";
 import { executeMissionOperation, isMissionOperation } from "./missions";
 
-const columns = "id,campaign_id,type,name,content,attributes,image_url,admin_only,mcp_status,mcp_revision,updated_at";
+const columns = "id,campaign_id,type,name,content,attributes,image_url,admin_only,mcp_status,mcp_revision,xp_value,is_core,global_status,updated_at";
 const mapColumns = "id,campaign_id,name,description,map_type,image_url,visibility,parent_map_id,wiki_entity_id,admin_only,created_at,updated_at";
 const notFound = () => new ApiError(404, "Entity not found");
 
@@ -14,6 +14,7 @@ function envelope(row: Record<string, any> | null): EntityEnvelope {
     schema_version: 1, id: row.id, campaign_id: row.campaign_id, kind: row.type,
     name: row.name, body: row.content?.body ?? "", attributes: row.attributes ?? {},
     image_url: row.image_url ?? null, admin_only: row.admin_only === true, status: row.mcp_status, revision: row.mcp_revision,
+    xp_value: row.xp_value ?? 0, is_core: row.is_core === true, global_status: row.global_status ?? null,
     source: { domain: "wiki", id: row.id },
   };
 }
@@ -76,10 +77,18 @@ export async function executeContent(auth: McpAuthContext, raw: unknown, deps = 
   }
 
   if (operation.startsWith("create_")) {
-    const row = checked(await auth.db.from("wiki_entities").insert({
+    const payload: Record<string, unknown> = {
       campaign_id: a.campaign_id, type: operation.slice(7), name: a.name.trim(), content: { body: a.body },
       attributes: a.attributes ?? {}, admin_only: adminOnlyRequested, is_secret: true, visibility: "secret", mcp_status: "draft",
-    }).select(columns).single());
+    };
+    if (operation === "create_monster") {
+      payload.xp_value = a.xp_value ?? 0;
+      if (campaign.type === "long") {
+        payload.is_core = a.is_core ?? false;
+        payload.global_status = "alive";
+      }
+    }
+    const row = checked(await auth.db.from("wiki_entities").insert(payload).select(columns).single());
     return { entity: envelope(row) };
   }
 

@@ -33,6 +33,24 @@ test("M6 contract carries admin_only only on scoped Wiki operations", () => {
   assert.throws(() => validate({ operation: "set_status", args: { campaign_id: campaign, entity_id: entityId, revision: 1, status: "draft", admin_only: true } }), ApiError);
 });
 
+test("item and monster creation contracts mirror the manual Wiki persistence fields", async () => {
+  process.env.MCP_CAMPAIGN_ID = campaign;
+  assert.equal(validate({ operation: "create_item", args: { campaign_id: campaign, name: "Lama", body: "Antica" } }).operation, "create_item");
+  assert.equal(validate({ operation: "create_monster", args: { campaign_id: campaign, name: "Drago", body: "Feroce", xp_value: 5900, is_core: true } }).args.xp_value, 5900);
+  assert.throws(() => validate({ operation: "create_monster", args: { campaign_id: campaign, name: "Drago", body: "Feroce", xp_value: -1 } }), ApiError);
+
+  const monsterRow = { ...row, type: "monster", name: "Drago", xp_value: 5900, is_core: true, global_status: "alive" };
+  const create = fakeDb([{ id: campaign, type: "long", admin_drafts_enabled: true }, monsterRow]);
+  const result: any = await executeContent(admin(create.db), { operation: "create_monster", args: { campaign_id: campaign, name: "Drago", body: "Feroce", attributes: { combat_stats: { hp: "200", ac: "19", cr: "10", attacks: "Morso" } }, xp_value: 5900, is_core: true } });
+  const inserted = create.calls.find((call) => call[0] === "insert")?.[1] as Record<string, unknown>;
+  assert.equal(inserted.type, "monster");
+  assert.equal(inserted.xp_value, 5900);
+  assert.equal(inserted.is_core, true);
+  assert.equal(inserted.global_status, "alive");
+  assert.equal(result.entity.xp_value, 5900);
+  assert.equal(result.entity.global_status, "alive");
+});
+
 test("upload_map validates HTTPS input and creates a secret scoped Atlas map", async () => {
   process.env.MCP_CAMPAIGN_ID = campaign;
   assert.equal(validate({ operation: "upload_map", args: { campaign_id: campaign, name: "Bosco", image_url: "https://cdn.example.com/map.png" } }).operation, "upload_map");
