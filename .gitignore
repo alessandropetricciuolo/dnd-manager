@@ -39,8 +39,10 @@ yarn-error.log*
 .env*.local
 .env
 
-# gmflow sync locale (path repo gmflow)
-.gmflow-sync.local.json
+# Local campaign-content staging. These files are uploaded directly to the site
+# and must never enter the application repository.
+/docs/*-cities/
+/docs/portico-locations/
 
 # Vercel
 .vercel
