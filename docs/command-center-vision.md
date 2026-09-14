@@ -4,14 +4,14 @@
 
 Il **Command Center** è la cabina di regia del GM: cattura idee, organizza note, task e pagine workspace, e (in fasi future) coordina l'AI senza mai scrivere direttamente sul database applicativo.
 
-Barber & Dragons è il **laboratorio reale**. gmflow.app è la **destinazione prodotto**.
+Barber & Dragons è il prodotto e il riferimento operativo del modulo.
 
 ## Principi non negoziabili
 
 1. **Modalità manuale** e **modalità assistita AI** convivono; la manuale non è secondaria.
 2. L'AI **non modifica mai direttamente il database** — solo tramite Action Registry (Fase 2+).
 3. Ogni mutazione ufficiale deve essere validata, autorizzata e tracciata.
-4. Il core del modulo è **esportabile** verso gmflow via adapter.
+4. Il core del modulo resta separato dall'infrastruttura applicativa tramite adapter.
 
 ## Quattro blocchi logici
 
@@ -75,7 +75,3 @@ Bridge previsto in Fase 2 (`gm.note.*` wrapper + eventuale conversione).
 ### Fase 5
 - Input vocale (Web Speech API) → `command_inputs` con `source: voice`
 - Microfono su cattura rapida e assistente GM
-
-## TODO
-
-- [ ] Fase 6: Porting gmflow (`gmflow.adapter.ts`)

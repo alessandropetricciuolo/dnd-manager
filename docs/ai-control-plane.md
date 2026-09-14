@@ -44,7 +44,3 @@ Componente UI: `src/components/command-center/voice-capture-button.tsx`
 - Chrome / Edge / Safari (Web Speech API)
 - Permesso microfono
 - Se non supportato, il pulsante microfono non viene mostrato
-
-## Fase 6 (prossima)
-
-- Porting gmflow (`gmflow.adapter.ts`)

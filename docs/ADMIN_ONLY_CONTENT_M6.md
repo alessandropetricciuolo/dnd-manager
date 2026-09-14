@@ -37,4 +37,4 @@ Le richieste non Admin e quelle fuori scope ricevono `404 Not found`, senza enum
 
 ## Fuori scope e preservazione
 
-La verifica MCP autenticata reale, Supabase locale Docker, deployment/browser e configurazione dell’UUID Eldaria sono demandati a M7. Non sono stati modificati il checkout principale, remoto, push/deploy o i due file GMFlow già sporchi (`docs/gmflow-export-current.json`, `docs/gmflow-export-ledger.md`).
+La verifica MCP autenticata reale, Supabase locale Docker, deployment/browser e configurazione dell’UUID Eldaria sono demandati a M7. Non sono stati modificati il checkout principale, remoto o il deployment.

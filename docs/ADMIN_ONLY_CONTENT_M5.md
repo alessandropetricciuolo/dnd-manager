@@ -48,7 +48,6 @@ La barriera database M1 resta la difesa primaria per il client Supabase autentic
 
 - Le query di indicizzazione (`campaign-memory-indexer.ts`) sono scritture server interne: propagano `admin_only` dalla fonte ai chunk e non restituiscono output utente. Restano coperte da M4 e non sono un lettore da filtrare per attore.
 - Le tabelle dei manuali del bestiario non contengono Wiki/mappe/chunk di campagna e non hanno la colonna `admin_only`; la ricerca dei manuali è quindi fuori dal confine M5, mentre ogni catalogo Wiki/mappe circostante è filtrato.
-- `gmflow-export-current.json` e `gmflow-export-ledger.md` erano modifiche preesistenti e non sono stati toccati né inclusi.
 - MCP personale è M6: nessun contratto o trasporto MCP è stato modificato in M5.
 - Nessun tipo TypeScript, import statico o fixture di test è contato come superficie runtime.
 
@@ -62,4 +61,3 @@ La barriera database M1 resta la difesa primaria per il client Supabase autentic
 ## Limitazioni note
 
 Il filtro media copre le righe Wiki/mappe nel collector; URL Telegram già noti restano il limite residuo già documentato dal piano. Le policy RLS e la verifica browser autenticata su Supabase remoto richiedono M7.
-

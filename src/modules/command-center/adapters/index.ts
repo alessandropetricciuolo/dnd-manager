@@ -1,6 +1,6 @@
 import { barberDragonsAdapter } from "./barber-dragons.adapter";
 
-/** Punto di swap per gmflow (futuro: gmflowAdapter). */
+/** Punto di accesso all'adapter applicativo di Barber & Dragons. */
 export function getTenantAdapter() {
   return barberDragonsAdapter;
 }

@@ -9,7 +9,7 @@ export type CommandCenterAuthContext = {
 };
 
 export type TenantAdapter = {
-  /** B&D: null (single-tenant). gmflow: workspace UUID obbligatorio. */
+  /** B&D è single-tenant: il workspace può essere null. */
   resolveWorkspaceId(): string | null;
 
   assertCanAccessCommandCenter(

@@ -2,7 +2,7 @@
 
 ## Stato
 
-**Accettato** — Fase 0–5 completate (Map Core, Scene Editor, griglia, props, note GM, duplicazione, export gmflow, stile DS).
+**Accettato** — Fase 0–5 completate (Map Core, Scene Editor, griglia, props, note GM, duplicazione, stile DS).
 
 ## Fase 5 — Stile Dungeon Scrawl, layer, muri automatici
 
@@ -13,7 +13,7 @@
 - Editor: pannello layer (preset, opacità, visibilità); rimosso strumento Muro manuale
 - Raster export usa lo stesso renderer DS
 
-## Fase 4 — Props, note GM, duplicazione, export gmflow
+## Fase 4 — Props, note GM e duplicazione
 
 - Schema: `props[]`, `gmNotes[]` per piano in `SceneDocumentV1`
 - Catalogo preset: `scene-schema/props-catalog.ts`, manifest `public/scene-assets/manifest.json`
@@ -21,7 +21,6 @@
 - Note GM: overlay in Vista dall&apos;alto e GM sheet; **nascoste in proiezione**
 - `duplicateSceneDocumentAction` + pulsante Duplica in lista scene
 - `cloneSceneDocument` — nuovi id, FoW reset al salvataggio
-- Package gmflow: `docs/gmflow-export-packages/2026-05-28-map-scene-editor-export.md`
 
 ## Fase 3 — Griglia runtime e calibrazione
 
@@ -79,7 +78,6 @@ Introdurre `src/lib/map-core/` come layer **senza dipendenze** da Supabase, Tele
 ## Conseguenze
 
 - Fasi 1–4 del Scene Editor costruiscono su map-core senza duplicare coordinate/FoW.
-- Package gmflow (Fase 4) esporterà `map-core/**` integralmente.
 - Wiki maps (`public.maps`) restano fuori scope.
 
 ## File chiave

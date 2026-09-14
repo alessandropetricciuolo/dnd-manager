@@ -1,5 +1,5 @@
 -- Command Center / GM Workspace (Fase 1)
--- workspace_id nullable in B&D; obbligatorio in gmflow (futuro).
+-- workspace_id nullable perché B&D è single-tenant.
 
 CREATE TABLE public.command_inputs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
