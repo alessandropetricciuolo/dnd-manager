@@ -1,6 +1,8 @@
 export const entityKinds = ["campaign", "npc", "location", "faction", "quest", "item", "event", "session", "lore", "player_character", "monster"] as const;
 export const statuses = ["draft", "proposed", "canonical", "deprecated"] as const;
-export const operations = ["search_lore", "get_entity", "search_maps", "get_map", "create_lore", "create_npc", "create_location", "update_entity", "upload_asset", "attach_asset", "upload_entity_image", "upload_map", "set_status"] as const;
+export const operations = ["search_lore", "get_entity", "search_maps", "get_map", "create_lore", "create_npc", "create_location", "update_entity", "upload_asset", "attach_asset", "upload_entity_image", "upload_map", "set_status",
+  "search_missions", "get_mission", "create_mission", "update_mission", "set_mission_status", "complete_mission", "reopen_mission", "delete_mission",
+  "list_mission_encounters", "create_mission_encounter", "update_mission_encounter", "delete_mission_encounter", "replace_encounter_monsters", "link_mission_resource"] as const;
 export type Operation = typeof operations[number];
 
 export interface EntityEnvelope {
@@ -37,6 +39,14 @@ const fields: Record<Operation, string[]> = {
   upload_entity_image: ["entity_id", "revision", "filename", "mime_type", "data_base64"],
   upload_map: ["name", "description", "map_type", "visibility", "parent_map_id", "admin_only", "image_url", "filename", "mime_type", "data_base64"],
   set_status: ["entity_id", "revision", "status"],
+  search_missions: ["query", "status", "limit", "offset"], get_mission: ["mission_id"],
+  create_mission: ["grade", "title", "committente", "ubicazione", "paga", "urgenza", "description", "points_reward"],
+  update_mission: ["mission_id", "expected_updated_at", "grade", "title", "committente", "ubicazione", "paga", "urgenza", "description", "points_reward"],
+  set_mission_status: ["mission_id", "expected_updated_at", "status"], complete_mission: ["mission_id", "expected_updated_at", "guild_id", "treasure_gp", "treasure_sp", "treasure_cp"],
+  reopen_mission: ["mission_id", "expected_updated_at"], delete_mission: ["mission_id", "expected_updated_at"],
+  list_mission_encounters: ["mission_id"], create_mission_encounter: ["mission_id", "name", "notes"],
+  update_mission_encounter: ["encounter_id", "name", "notes"], delete_mission_encounter: ["encounter_id"],
+  replace_encounter_monsters: ["encounter_id", "monsters"], link_mission_resource: ["mission_id", "resource_type", "resource_id"],
 };
 
 export function validate(raw: unknown): { operation: Operation; args: Record<string, any> } {
@@ -48,9 +58,9 @@ export function validate(raw: unknown): { operation: Operation; args: Record<str
   if (!args || typeof args !== "object" || Array.isArray(args) || typeof args.campaign_id !== "string" || !uuid.test(args.campaign_id)) return fail();
   const operation = r.operation as Operation;
   if (Object.keys(args).some((key) => key !== "campaign_id" && !fields[operation].includes(key))) return fail();
-  for (const key of ["entity_id", "asset_id", "map_id"]) if (fields[operation].includes(key) && (typeof args[key] !== "string" || !uuid.test(args[key]))) return fail();
+  for (const key of ["entity_id", "asset_id", "map_id", "mission_id", "guild_id", "encounter_id", "resource_id"]) if (args[key] !== undefined && (typeof args[key] !== "string" || !uuid.test(args[key]))) return fail();
   if (["update_entity", "upload_entity_image", "set_status"].includes(operation) && (!Number.isSafeInteger(args.revision) || args.revision < 1)) return fail();
-  if (operation.startsWith("create_") && (args.name === undefined || args.body === undefined)) return fail();
+  if (["create_lore", "create_npc", "create_location"].includes(operation) && (args.name === undefined || args.body === undefined)) return fail();
   for (const [key, max] of [["name", 200], ["body", 100000], ["query", 200]] as const) {
     if (args[key] !== undefined && (typeof args[key] !== "string" || args[key].length > max || (key !== "body" && !args[key].trim()))) return fail();
   }
@@ -69,6 +79,23 @@ export function validate(raw: unknown): { operation: Operation; args: Record<str
     if (args.limit !== undefined && (!Number.isInteger(args.limit) || args.limit < 1 || args.limit > 100)) return fail();
     if (args.offset !== undefined && (!Number.isInteger(args.offset) || args.offset < 0 || args.offset > 10000)) return fail();
   }
+  if (operation === "search_missions") {
+    if (args.query !== undefined && (typeof args.query !== "string" || args.query.length > 200)) return fail();
+    if (args.status !== undefined && !["open", "in_progress", "completed"].includes(args.status)) return fail();
+    if (args.limit !== undefined && (!Number.isInteger(args.limit) || args.limit < 1 || args.limit > 50)) return fail();
+    if (args.offset !== undefined && (!Number.isInteger(args.offset) || args.offset < 0 || args.offset > 10000)) return fail();
+  }
+  const missionText = ["grade", "title", "committente", "ubicazione", "paga", "urgenza", "description"];
+  if (operation === "create_mission" && missionText.some((key) => typeof args[key] !== "string" || !args[key].trim())) return fail();
+  if (["create_mission", "update_mission"].includes(operation) && args.points_reward !== undefined && (!Number.isInteger(args.points_reward) || args.points_reward < 0)) return fail();
+  if (operation === "update_mission" && ![...missionText, "points_reward"].some((key) => args[key] !== undefined)) return fail();
+  if (["update_mission", "set_mission_status", "complete_mission", "reopen_mission", "delete_mission"].includes(operation) && (typeof args.expected_updated_at !== "string" || !args.expected_updated_at.trim())) return fail();
+  if (operation === "set_mission_status" && !["open", "in_progress"].includes(args.status)) return fail();
+  for (const key of ["treasure_gp", "treasure_sp", "treasure_cp"]) if (args[key] !== undefined && (!Number.isInteger(args[key]) || args[key] < 0)) return fail();
+  if (["create_mission_encounter", "update_mission_encounter"].includes(operation) && (typeof args.name !== "string" || !args.name.trim() || args.name.length > 200)) return fail();
+  if (args.notes !== undefined && args.notes !== null && (typeof args.notes !== "string" || args.notes.length > 10000)) return fail();
+  if (operation === "replace_encounter_monsters" && (!Array.isArray(args.monsters) || args.monsters.length > 100 || args.monsters.some((monster: any) => !monster || typeof monster !== "object" || !uuid.test(monster.wiki_entity_id) || !Number.isInteger(monster.quantity) || monster.quantity < 1))) return fail();
+  if (operation === "link_mission_resource" && !["wiki", "exploration_map", "scene"].includes(args.resource_type)) return fail();
   if (operation === "upload_asset") {
     if (typeof args.filename !== "string" || !/^[\w .-]+$/.test(args.filename) || args.filename.includes("..")) return fail();
     if (!(["image/png", "image/jpeg", "image/webp", "application/pdf"] as string[]).includes(args.mime_type)) return fail();

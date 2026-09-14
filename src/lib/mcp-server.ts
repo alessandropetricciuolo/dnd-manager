@@ -126,5 +126,21 @@ export function createBdMcpServer(auth: McpAuthContext) {
     status: z.enum(["draft", "proposed", "canonical", "deprecated"]),
   }, false);
 
+  const missionFields = { grade: z.string().trim().min(1).max(20), title: z.string().trim().min(1).max(200), committente: z.string().trim().min(1).max(500), ubicazione: z.string().trim().min(1).max(500), paga: z.string().trim().min(1).max(500), urgenza: z.string().trim().min(1).max(500), description: z.string().trim().min(1).max(100_000), points_reward: z.number().int().min(0).optional() };
+  register("search_missions", "List or search the real campaign mission board before creating or editing.", { campaign_id: campaignId, query: z.string().max(200).optional(), status: z.enum(["open", "in_progress", "completed"]).optional(), limit: z.number().int().min(1).max(50).optional(), offset: z.number().int().min(0).max(10_000).optional() }, true);
+  register("get_mission", "Read one mission and its updated_at concurrency token.", { campaign_id: campaignId, mission_id: entityId }, true);
+  register("create_mission", "Create a real open mission after duplicate-title validation.", { campaign_id: campaignId, ...missionFields }, false);
+  register("update_mission", "Patch a mission using expected_updated_at from get_mission.", { campaign_id: campaignId, mission_id: entityId, expected_updated_at: z.string().min(1), ...Object.fromEntries(Object.entries(missionFields).map(([key, value]) => [key, value.optional()])) }, false);
+  register("set_mission_status", "Set an unfinished mission to open or in progress.", { campaign_id: campaignId, mission_id: entityId, expected_updated_at: z.string().min(1), status: z.enum(["open", "in_progress"]) }, false);
+  register("complete_mission", "Complete a mission and optionally assign guild, points, and treasure.", { campaign_id: campaignId, mission_id: entityId, expected_updated_at: z.string().min(1), guild_id: entityId.optional(), treasure_gp: z.number().int().min(0).optional(), treasure_sp: z.number().int().min(0).optional(), treasure_cp: z.number().int().min(0).optional() }, false);
+  register("reopen_mission", "Reopen a completed mission and reverse awarded guild points.", { campaign_id: campaignId, mission_id: entityId, expected_updated_at: z.string().min(1) }, false);
+  register("delete_mission", "Permanently delete a mission using its concurrency token.", { campaign_id: campaignId, mission_id: entityId, expected_updated_at: z.string().min(1) }, false);
+  register("list_mission_encounters", "List encounters for the campaign or one mission.", { campaign_id: campaignId, mission_id: entityId.optional() }, true);
+  register("create_mission_encounter", "Create an encounter for a mission.", { campaign_id: campaignId, mission_id: entityId, name: z.string().trim().min(1).max(200), notes: z.string().max(10_000).nullable().optional() }, false);
+  register("update_mission_encounter", "Update an encounter.", { campaign_id: campaignId, encounter_id: entityId, name: z.string().trim().min(1).max(200), notes: z.string().max(10_000).nullable().optional() }, false);
+  register("delete_mission_encounter", "Permanently delete an encounter.", { campaign_id: campaignId, encounter_id: entityId }, false);
+  register("replace_encounter_monsters", "Replace an encounter monster lineup with campaign monster entities.", { campaign_id: campaignId, encounter_id: entityId, monsters: z.array(z.object({ wiki_entity_id: entityId, quantity: z.number().int().min(1) }).strict()).max(100) }, false);
+  register("link_mission_resource", "Link a Wiki entity, exploration map, or scene document to a mission.", { campaign_id: campaignId, mission_id: entityId, resource_type: z.enum(["wiki", "exploration_map", "scene"]), resource_id: entityId }, false);
+
   return server;
 }

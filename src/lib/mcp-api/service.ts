@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { ApiError, validate, type EntityEnvelope } from "./contracts";
 import type { McpAuthContext } from "./auth";
 import { uploadImageToTelegram } from "@/lib/telegram-storage";
+import { executeMissionOperation, isMissionOperation } from "./missions";
 
 const columns = "id,campaign_id,type,name,content,attributes,image_url,admin_only,mcp_status,mcp_revision,updated_at";
 const mapColumns = "id,campaign_id,name,description,map_type,image_url,visibility,parent_map_id,wiki_entity_id,admin_only,created_at,updated_at";
@@ -38,6 +39,8 @@ export async function executeContent(auth: McpAuthContext, raw: unknown, deps = 
   assertMcpScope(auth, a.campaign_id);
   const campaign = await getEnabledCampaign(auth.db, a.campaign_id);
   const adminOnlyRequested = a.admin_only === true;
+
+  if (isMissionOperation(operation)) return executeMissionOperation(auth.db, operation, a);
 
   if (operation === "search_lore") {
     const query = a.query.replace(new RegExp("[^\\p{L}\\p{N}\\s-]", "gu"), " ").trim();
