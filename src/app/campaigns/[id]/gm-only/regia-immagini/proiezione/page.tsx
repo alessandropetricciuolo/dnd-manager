@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { DualSourceImage } from "@/components/dual-source-image";
+import { ProjectionPresence } from "@/components/gm/projection-presence";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -14,17 +15,26 @@ type ProjectedImage = {
   telegram_fallback_id: string | null;
 };
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Proiezione multipla per il secondo schermo: mostra in un'unica finestra
  * tutte le immagini selezionate nella Regia Immagini (?items=id1,id2,...).
  * Gli id sono UUID wiki oppure pg-{uuid} per i personaggi.
  */
-export default async function MultiImageProjectionPage({ params, searchParams }: PageProps) {
+export default async function MultiImageProjectionPage({
+  params,
+  searchParams,
+}: PageProps) {
   const { id: campaignId } = await params;
   const sp = (await searchParams) ?? {};
-  const itemsRaw = typeof sp.items === "string" ? sp.items : Array.isArray(sp.items) ? sp.items[0] : "";
+  const itemsRaw =
+    typeof sp.items === "string"
+      ? sp.items
+      : Array.isArray(sp.items)
+        ? sp.items[0]
+        : "";
 
   const supabase = await createSupabaseServerClient();
   const {
@@ -32,26 +42,38 @@ export default async function MultiImageProjectionPage({ params, searchParams }:
   } = await supabase.auth.getUser();
   if (!user) redirect("/dashboard");
 
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
   const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
   if (!isGmOrAdmin) notFound();
 
   const orderedIds = (itemsRaw ?? "")
     .split(",")
     .map((s) => s.trim())
-    .filter((s) => UUID_REGEX.test(s) || (s.startsWith("pg-") && UUID_REGEX.test(s.slice(3))));
+    .filter(
+      (s) =>
+        UUID_REGEX.test(s) ||
+        (s.startsWith("pg-") && UUID_REGEX.test(s.slice(3))),
+    );
 
   const wikiIds = orderedIds.filter((s) => !s.startsWith("pg-"));
-  const characterIds = orderedIds.filter((s) => s.startsWith("pg-")).map((s) => s.slice(3));
+  const characterIds = orderedIds
+    .filter((s) => s.startsWith("pg-"))
+    .map((s) => s.slice(3));
 
-  let wikiQuery = wikiIds.length > 0
-    ? supabase
-        .from("wiki_entities")
-        .select("id, name, image_url, telegram_fallback_id")
-        .eq("campaign_id", campaignId)
-        .in("id", wikiIds)
-    : null;
-  if (wikiQuery && profile?.role !== "admin") wikiQuery = wikiQuery.eq("admin_only", false);
+  let wikiQuery =
+    wikiIds.length > 0
+      ? supabase
+          .from("wiki_entities")
+          .select("id, name, image_url, telegram_fallback_id")
+          .eq("campaign_id", campaignId)
+          .in("id", wikiIds)
+      : null;
+  if (wikiQuery && profile?.role !== "admin")
+    wikiQuery = wikiQuery.eq("admin_only", false);
   const [wikiRes, charRes] = await Promise.all([
     wikiQuery ?? Promise.resolve({ data: [] }),
     characterIds.length > 0
@@ -64,12 +86,23 @@ export default async function MultiImageProjectionPage({ params, searchParams }:
   ]);
 
   const wikiById = new Map(
-    ((wikiRes.data ?? []) as { id: string; name: string; image_url: string | null; telegram_fallback_id: string | null }[]).map(
-      (r) => [r.id, r]
-    )
+    (
+      (wikiRes.data ?? []) as {
+        id: string;
+        name: string;
+        image_url: string | null;
+        telegram_fallback_id: string | null;
+      }[]
+    ).map((r) => [r.id, r]),
   );
   const charById = new Map(
-    ((charRes.data ?? []) as { id: string; name: string; image_url: string | null }[]).map((r) => [r.id, r])
+    (
+      (charRes.data ?? []) as {
+        id: string;
+        name: string;
+        image_url: string | null;
+      }[]
+    ).map((r) => [r.id, r]),
   );
 
   // Mantiene l'ordine di selezione della regia.
@@ -78,7 +111,12 @@ export default async function MultiImageProjectionPage({ params, searchParams }:
     if (rawId.startsWith("pg-")) {
       const row = charById.get(rawId.slice(3));
       if (row && row.image_url) {
-        images.push({ key: rawId, name: row.name, image_url: row.image_url, telegram_fallback_id: null });
+        images.push({
+          key: rawId,
+          name: row.name,
+          image_url: row.image_url,
+          telegram_fallback_id: null,
+        });
       }
     } else {
       const row = wikiById.get(rawId);
@@ -105,26 +143,35 @@ export default async function MultiImageProjectionPage({ params, searchParams }:
   const rows = Math.ceil(images.length / cols);
 
   return (
-    <div
-      className="grid h-dvh w-screen gap-1 bg-black p-1"
-      style={{
-        gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-        gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
-      }}
-    >
-      {images.map((img) => (
-        <figure key={img.key} className="relative flex min-h-0 min-w-0 items-center justify-center overflow-hidden">
-          <DualSourceImage
-            driveUrl={img.image_url ?? undefined}
-            telegramFallbackId={img.telegram_fallback_id ?? undefined}
-            alt={img.name}
-            className="max-h-full max-w-full object-contain"
-          />
-          <figcaption className="absolute bottom-1 left-1/2 -translate-x-1/2 rounded bg-black/70 px-2 py-0.5 text-xs font-medium text-amber-100">
-            {img.name}
-          </figcaption>
-        </figure>
-      ))}
-    </div>
+    <>
+      <ProjectionPresence
+        campaignId={campaignId}
+        itemIds={images.map((image) => image.key)}
+      />
+      <div
+        className="grid h-dvh w-screen gap-1 bg-black p-1"
+        style={{
+          gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+          gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
+        }}
+      >
+        {images.map((img) => (
+          <figure
+            key={img.key}
+            className="relative flex min-h-0 min-w-0 items-center justify-center overflow-hidden"
+          >
+            <DualSourceImage
+              driveUrl={img.image_url ?? undefined}
+              telegramFallbackId={img.telegram_fallback_id ?? undefined}
+              alt={img.name}
+              className="max-h-full max-w-full object-contain"
+            />
+            <figcaption className="absolute bottom-1 left-1/2 -translate-x-1/2 rounded bg-black/70 px-2 py-0.5 text-xs font-medium text-amber-100">
+              {img.name}
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+    </>
   );
 }

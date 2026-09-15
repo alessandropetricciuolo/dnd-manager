@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { openProjectionWindow } from "@/lib/browser/projection-window";
+import { useProjectedImageIds } from "@/components/gm/projection-presence";
 
 type Props = {
   open: boolean;
@@ -95,6 +96,7 @@ export function GmGallerySheet({
   const [relatedLoading, setRelatedLoading] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const projectedIds = useProjectedImageIds(campaignId);
   const isLong = campaignType === "long";
   useEffect(() => {
     if (open) setRecentIds(readRecent(campaignId));
@@ -190,7 +192,10 @@ export function GmGallerySheet({
         JSON.stringify(next),
       );
       setRecentIds(next);
-      await openProjectionWindow(url, "PlayerScreenWindow");
+      await openProjectionWindow(
+        `/campaigns/${campaignId}/gm-only/regia-immagini/proiezione?items=${item.id}`,
+        "PlayerScreenWindow",
+      );
     },
     [campaignId],
   );
@@ -219,7 +224,12 @@ export function GmGallerySheet({
         image_url: link.image_url,
         telegram_fallback_id: link.telegram_fallback_id,
       });
-      if (url) await openProjectionWindow(url, "PlayerScreenWindow");
+      if (url) {
+        await openProjectionWindow(
+          `/campaigns/${campaignId}/gm-only/regia-immagini/proiezione?items=${link.id}`,
+          "PlayerScreenWindow",
+        );
+      }
     },
     [campaignId],
   );
@@ -457,6 +467,7 @@ export function GmGallerySheet({
                     items={recent}
                     selectionMode={selectionMode}
                     selectedIds={selectedIds}
+                    projectedIds={projectedIds}
                     onSelect={toggleSelected}
                     onProject={handleClickImage}
                     onRelated={handleShowRelated}
@@ -468,6 +479,7 @@ export function GmGallerySheet({
                     items={missionItems}
                     selectionMode={selectionMode}
                     selectedIds={selectedIds}
+                    projectedIds={projectedIds}
                     onSelect={toggleSelected}
                     onProject={handleClickImage}
                     onRelated={handleShowRelated}
@@ -483,6 +495,7 @@ export function GmGallerySheet({
                     items={otherItems}
                     selectionMode={selectionMode}
                     selectedIds={selectedIds}
+                    projectedIds={projectedIds}
                     onSelect={toggleSelected}
                     onProject={handleClickImage}
                     onRelated={handleShowRelated}
@@ -518,6 +531,7 @@ function GallerySection({
   items,
   selectionMode,
   selectedIds,
+  projectedIds,
   onSelect,
   onProject,
   onRelated,
@@ -526,6 +540,7 @@ function GallerySection({
   items: GmGalleryItem[];
   selectionMode: boolean;
   selectedIds: string[];
+  projectedIds: Set<string>;
   onSelect: (id: string) => void;
   onProject: (item: GmGalleryItem) => void;
   onRelated: (item: GmGalleryItem) => void;
@@ -543,6 +558,7 @@ function GallerySection({
             item={item}
             selectionMode={selectionMode}
             selectedIndex={selectedIds.indexOf(item.id)}
+            isProjected={projectedIds.has(item.id)}
             onSelect={onSelect}
             onProject={onProject}
             onRelated={onRelated}
@@ -556,6 +572,7 @@ function GalleryCard({
   item,
   selectionMode,
   selectedIndex,
+  isProjected,
   onSelect,
   onProject,
   onRelated,
@@ -563,6 +580,7 @@ function GalleryCard({
   item: GmGalleryItem;
   selectionMode: boolean;
   selectedIndex: number;
+  isProjected: boolean;
   onSelect: (id: string) => void;
   onProject: (item: GmGalleryItem) => void;
   onRelated: (item: GmGalleryItem) => void;
@@ -586,6 +604,15 @@ function GalleryCard({
           alt={item.title}
           className="h-full w-full object-cover"
         />
+        {isProjected && (
+          <span
+            title="Mostrata sul secondo schermo"
+            aria-label="Mostrata sul secondo schermo"
+            className="absolute bottom-2 right-2 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-emerald-300/80 bg-emerald-500 text-zinc-950 shadow-lg shadow-black/40"
+          >
+            <MonitorPlay className="h-4 w-4" />
+          </span>
+        )}
         {selectionMode ? (
           <span
             className={cn(
