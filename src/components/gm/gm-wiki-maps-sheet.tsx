@@ -15,9 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { getGmRegiaWikiMapsAction, type GmRegiaWikiMap } from "@/app/campaigns/gm-actions";
 import { cn } from "@/lib/utils";
-
-const POPOUT_FEATURES =
-  "width=1200,height=800,menubar=no,toolbar=no,location=no,status=no";
+import { openProjectionWindow } from "@/lib/browser/projection-window";
 
 const MAP_TYPE_LABEL: Record<string, string> = {
   world: "Mondo",
@@ -61,10 +59,13 @@ export function GmWikiMapsSheet({ open, onOpenChange, campaignId }: Props) {
   }, [maps, search]);
 
   const projectMap = useCallback(
-    (map: GmRegiaWikiMap) => {
+    async (map: GmRegiaWikiMap) => {
       setActiveMapId(map.id);
       const viewUrl = `/campaigns/${campaignId}/maps/${map.id}/view`;
-      const popup = window.open(viewUrl, "MapPlayerWindow", POPOUT_FEATURES);
+      const popup = await openProjectionWindow(viewUrl, "MapPlayerWindow", {
+        fallbackWidth: 1200,
+        fallbackHeight: 800,
+      });
       if (!popup) {
         toast.error("Impossibile aprire la proiezione. Consenti i popup per questo sito.");
       }

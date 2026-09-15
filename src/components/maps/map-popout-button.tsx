@@ -3,9 +3,7 @@
 import { ExternalLink } from "lucide-react";
 import { Button, type ButtonProps } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-const POPOUT_FEATURES =
-  "width=1200,height=800,menubar=no,toolbar=no,location=no,status=no";
+import { openProjectionWindow } from "@/lib/browser/projection-window";
 
 type MapPopoutButtonProps = {
   imageUrl: string;
@@ -26,9 +24,9 @@ export function MapPopoutButton({
   variant = "outline",
   size = "sm",
 }: MapPopoutButtonProps) {
-  function handlePopout() {
+  async function handlePopout() {
     const url = viewUrl ?? imageUrl;
-    window.open(url, "MapWindow", POPOUT_FEATURES);
+    await openProjectionWindow(url, "MapWindow", { fallbackWidth: 1200, fallbackHeight: 800 });
   }
 
   if (compact) {

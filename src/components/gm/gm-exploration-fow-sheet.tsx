@@ -32,6 +32,7 @@ import { getSceneFloorGmNotesAction } from "@/app/campaigns/scene-document-actio
 import { getExplorationMapPublicUrl } from "@/lib/exploration/exploration-storage";
 import { parsePolygonJson } from "@/lib/exploration/fow-geometry";
 import { sceneGmNotesToOverlay, type GmNoteOverlayVm } from "@/lib/map-core/viewer";
+import { openProjectionWindow } from "@/lib/browser/projection-window";
 import {
   ExplorationMapStage,
   hitTestRegion,
@@ -224,23 +225,14 @@ export function GmExplorationFowSheet({ open, onOpenChange, campaignId }: Props)
     toast.success(isRevealed ? "Tutte le zone rivelate." : "Tutte le zone oscurate.");
   }
 
-  const openProjectionWindow = useCallback(() => {
+  const handleOpenProjectionWindow = useCallback(async () => {
     if (!selectedMapId) return;
     setProjectionMapId(selectedMapId);
     const url = `/campaigns/${campaignId}/gm-only/vista-dall-alto/proiezione?mapId=${selectedMapId}`;
-    const width = Math.max(window.screen.availWidth || 1920, 1024);
-    const height = Math.max(window.screen.availHeight || 1080, 720);
-    const features = `width=${width},height=${height},left=0,top=0,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=no`;
-    const popup = window.open(url, "FowProjectionWindow", features);
+    const popup = await openProjectionWindow(url, "FowProjectionWindow", { fitCurrentScreen: true });
     if (!popup) {
       toast.error("Impossibile aprire la proiezione. Consenti i popup per questo sito.");
       return;
-    }
-    try {
-      popup.moveTo(0, 0);
-      popup.resizeTo(width, height);
-    } catch {
-      // Browser may block moveTo/resizeTo.
     }
   }, [campaignId, selectedMapId]);
 
@@ -309,7 +301,7 @@ export function GmExplorationFowSheet({ open, onOpenChange, campaignId }: Props)
                   size="sm"
                   variant="outline"
                   className="h-8 border-amber-600/40 text-xs text-amber-100"
-                  onClick={openProjectionWindow}
+                  onClick={handleOpenProjectionWindow}
                 >
                   <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
                   Proiezione 2° schermo

@@ -29,6 +29,7 @@ import {
 } from "@/components/exploration/exploration-map-stage";
 import { useExplorationMapGrid } from "@/components/exploration/use-exploration-map-grid";
 import { mapSourceLabel } from "@/lib/exploration/exploration-map-grid";
+import { openProjectionWindow } from "@/lib/browser/projection-window";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -160,22 +161,13 @@ export function VistaDallAltoClient({
   );
   const vm = useMemo(() => rowsToVm(regionsForMap), [regionsForMap]);
 
-  const openProjectionFullscreenWindow = useCallback(() => {
+  const openProjectionFullscreenWindow = useCallback(async () => {
     if (!selectedMapId) return;
     const url = `/campaigns/${campaignId}/gm-only/vista-dall-alto/proiezione?mapId=${selectedMapId}`;
-    const width = Math.max(window.screen.availWidth || 1920, 1024);
-    const height = Math.max(window.screen.availHeight || 1080, 720);
-    const features = `width=${width},height=${height},left=0,top=0,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=no`;
-    const popup = window.open(url, "FowProjectionWindow", features);
+    const popup = await openProjectionWindow(url, "FowProjectionWindow", { fitCurrentScreen: true });
     if (!popup) {
       toast.error("Impossibile aprire la proiezione. Consenti i popup per questo sito.");
       return;
-    }
-    try {
-      popup.moveTo(0, 0);
-      popup.resizeTo(width, height);
-    } catch {
-      // Alcuni browser bloccano moveTo/resizeTo: la finestra resta comunque aperta.
     }
   }, [campaignId, selectedMapId]);
 

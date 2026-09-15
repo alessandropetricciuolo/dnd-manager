@@ -35,6 +35,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { openProjectionWindow } from "@/lib/browser/projection-window";
 
 type Props = {
   open: boolean;
@@ -177,7 +178,7 @@ export function GmGallerySheet({
     [items],
   );
   const handleClickImage = useCallback(
-    (item: GmGalleryItem) => {
+    async (item: GmGalleryItem) => {
       const url = resolveImageUrl(item);
       if (!url) return;
       const next = [
@@ -189,11 +190,7 @@ export function GmGallerySheet({
         JSON.stringify(next),
       );
       setRecentIds(next);
-      window.open(
-        url,
-        "PlayerScreenWindow",
-        "width=1280,height=720,menubar=no,toolbar=no,location=no,status=no",
-      );
+      await openProjectionWindow(url, "PlayerScreenWindow");
     },
     [campaignId],
   );
@@ -210,14 +207,11 @@ export function GmGallerySheet({
     [campaignId],
   );
   const handleProjectRelated = useCallback(
-    (link: RelatedEntityLink) => {
-      const features =
-        "width=1280,height=720,menubar=no,toolbar=no,location=no,status=no";
+    async (link: RelatedEntityLink) => {
       if (link.kind === "map") {
-        window.open(
+        await openProjectionWindow(
           `/campaigns/${campaignId}/maps/${link.id}/view`,
           "MapPlayerWindow",
-          features,
         );
         return;
       }
@@ -225,7 +219,7 @@ export function GmGallerySheet({
         image_url: link.image_url,
         telegram_fallback_id: link.telegram_fallback_id,
       });
-      if (url) window.open(url, "PlayerScreenWindow", features);
+      if (url) await openProjectionWindow(url, "PlayerScreenWindow");
     },
     [campaignId],
   );
@@ -233,12 +227,11 @@ export function GmGallerySheet({
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
-  const handleProjectSelected = () => {
+  const handleProjectSelected = async () => {
     if (!selectedIds.length) return;
-    window.open(
+    await openProjectionWindow(
       `/campaigns/${campaignId}/gm-only/regia-immagini/proiezione?items=${selectedIds.join(",")}`,
       "PlayerScreenWindow",
-      "width=1280,height=720,menubar=no,toolbar=no,location=no,status=no",
     );
   };
   useEffect(() => {

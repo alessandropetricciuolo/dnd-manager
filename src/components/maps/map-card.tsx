@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { deleteMap } from "@/app/campaigns/map-actions";
 import { EditMapDialog } from "./edit-map-dialog";
 import { cn } from "@/lib/utils";
+import { openProjectionWindow } from "@/lib/browser/projection-window";
 
 const MAP_TYPE_LABELS: Record<string, string> = {
   world: "Mondo",
@@ -22,9 +23,6 @@ const MAP_TYPE_LABELS: Record<string, string> = {
   building: "Edificio",
   region: "Regione",
 };
-
-const POPOUT_FEATURES =
-  "width=1200,height=800,menubar=no,toolbar=no,location=no,status=no";
 
 type MapCardProps = {
   campaignId: string;
@@ -80,11 +78,11 @@ export function MapCard({
     }
   }
 
-  function handlePopout(e: React.MouseEvent) {
+  async function handlePopout(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
     const viewUrl = `/campaigns/${campaignId}/maps/${map.id}/view`;
-    window.open(viewUrl, "MapWindow", POPOUT_FEATURES);
+    await openProjectionWindow(viewUrl, "MapWindow", { fallbackWidth: 1200, fallbackHeight: 800 });
   }
 
   const typeLabel = MAP_TYPE_LABELS[map.map_type ?? ""] ?? "Mappa";
