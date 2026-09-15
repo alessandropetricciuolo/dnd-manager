@@ -442,11 +442,20 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
     <CreateCharacterDialog campaignId={campaign.id} initialOpen={openCreateDialogOnLoad} />
   ) : undefined;
   const gmPrimaryAction = isGmOrAdmin ? (
-    <GmScreenLauncher
-      campaignId={campaign.id}
-      label="Apri Schermo GM"
-      className="h-9 border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
-    />
+    <div className="flex items-center gap-1.5">
+      <GmScreenLauncher
+        campaignId={campaign.id}
+        label="Apri Schermo GM"
+        className="h-9 border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
+      />
+      {!isTorneo ? (
+        <GmScreenLauncher
+          campaignId={campaign.id}
+          variant="v2"
+          className="h-9 border-cyan-500/50 text-cyan-200 hover:bg-cyan-500/20"
+        />
+      ) : null}
+    </div>
   ) : undefined;
   const campaignSectionActions = isGmOrAdmin ? {
     wiki: (
