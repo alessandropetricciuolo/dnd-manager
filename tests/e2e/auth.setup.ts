@@ -1,5 +1,4 @@
-import { execSync } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { test as setup, expect } from "@playwright/test";
 
@@ -14,10 +13,13 @@ type CredentialsFile = {
 setup.describe.configure({ mode: "serial" });
 
 setup.beforeAll(() => {
-  execSync("npx tsx scripts/e2e-provision-users.ts", {
-    stdio: "inherit",
-    cwd: path.join(__dirname, "../.."),
-  });
+  const credentialsPath = path.join(authDir, "credentials.json");
+  if (!existsSync(credentialsPath)) {
+    throw new Error(
+      "Test E2E autenticati disabilitati: manca tests/e2e/.auth/credentials.json. " +
+        "Il progetto non crea piu utenti o campagne QA automaticamente."
+    );
+  }
 });
 
 async function loginAndSave(role: "admin" | "gm" | "player", email: string, password: string, page: import("@playwright/test").Page) {
