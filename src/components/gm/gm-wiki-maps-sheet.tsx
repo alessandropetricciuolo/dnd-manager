@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ExternalLink, Map as MapIcon } from "lucide-react";
+import { ExternalLink, Map as MapIcon, MonitorPlay } from "lucide-react";
 import { toast } from "sonner";
 import {
   Sheet,
@@ -22,6 +22,9 @@ const MAP_TYPE_LABEL: Record<string, string> = {
   continent: "Continente",
   city: "Città",
   dungeon: "Dungeon",
+  district: "Quartiere",
+  building: "Edificio",
+  region: "Regione",
 };
 
 type Props = {
@@ -34,20 +37,42 @@ export function GmWikiMapsSheet({ open, onOpenChange, campaignId }: Props) {
   const [maps, setMaps] = useState<GmRegiaWikiMap[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [activeMapId, setActiveMapId] = useState<string | null>(null);
+  const loadRequestRef = useRef(0);
+
+  const loadMaps = useCallback(async () => {
+    const requestId = ++loadRequestRef.current;
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const res = await getGmRegiaWikiMapsAction(campaignId);
+      if (requestId !== loadRequestRef.current) return;
+      if (res.success) {
+        setMaps(res.data ?? []);
+      } else {
+        setLoadError(res.error);
+      }
+    } catch {
+      if (requestId === loadRequestRef.current) {
+        setLoadError("Impossibile caricare le mappe. Riprova.");
+      }
+    } finally {
+      if (requestId === loadRequestRef.current) setLoading(false);
+    }
+  }, [campaignId]);
 
   useEffect(() => {
     if (!open) {
       setSearch("");
+      loadRequestRef.current += 1;
       return;
     }
-    setLoading(true);
-    void getGmRegiaWikiMapsAction(campaignId).then((res) => {
-      if (res.success && res.data) setMaps(res.data);
-      else setMaps([]);
-      setLoading(false);
-    });
-  }, [open, campaignId]);
+    void loadMaps();
+    return () => {
+      loadRequestRef.current += 1;
+    };
+  }, [open, loadMaps]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -60,7 +85,6 @@ export function GmWikiMapsSheet({ open, onOpenChange, campaignId }: Props) {
 
   const projectMap = useCallback(
     async (map: GmRegiaWikiMap) => {
-      setActiveMapId(map.id);
       const viewUrl = `/campaigns/${campaignId}/maps/${map.id}/view`;
       const popup = await openProjectionWindow(viewUrl, "MapPlayerWindow", {
         fallbackWidth: 1200,
@@ -68,7 +92,9 @@ export function GmWikiMapsSheet({ open, onOpenChange, campaignId }: Props) {
       });
       if (!popup) {
         toast.error("Impossibile aprire la proiezione. Consenti i popup per questo sito.");
+        return;
       }
+      setActiveMapId(map.id);
     },
     [campaignId]
   );
@@ -111,6 +137,19 @@ export function GmWikiMapsSheet({ open, onOpenChange, campaignId }: Props) {
           <div className="min-h-0 flex-1 overflow-y-auto pb-2">
             {loading ? (
               <p className="py-6 text-center text-xs text-zinc-500">Caricamento mappe…</p>
+            ) : loadError ? (
+              <div role="alert" className="flex flex-col items-center gap-3 py-6 text-center">
+                <p className="text-xs text-rose-300">{loadError}</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="border-amber-600/40 text-xs text-amber-100 hover:bg-amber-600/10"
+                  onClick={() => void loadMaps()}
+                >
+                  Riprova
+                </Button>
+              </div>
             ) : filtered.length === 0 ? (
               <p className="py-6 text-center text-xs text-zinc-500">
                 Nessuna mappa trovata. Carica mappe dalla tab Mappe della campagna.
@@ -121,6 +160,8 @@ export function GmWikiMapsSheet({ open, onOpenChange, campaignId }: Props) {
                   <button
                     key={map.id}
                     type="button"
+                    aria-label={`Proietta ${map.name}`}
+                    title={`Proietta ${map.name}`}
                     className={cn(
                       "group flex flex-col overflow-hidden rounded-md border text-left text-xs transition-colors",
                       activeMapId === map.id
@@ -142,6 +183,10 @@ export function GmWikiMapsSheet({ open, onOpenChange, campaignId }: Props) {
                     <div className="flex flex-col gap-0.5 px-2 py-1.5">
                       <span className="line-clamp-2 text-[11px] font-medium text-amber-100">
                         {map.name}
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-amber-300">
+                        <MonitorPlay className="h-3 w-3" aria-hidden="true" />
+                        Proietta
                       </span>
                       {map.map_type ? (
                         <span className="text-[10px] uppercase tracking-wide text-amber-400/70">

@@ -12,6 +12,7 @@ type DownloadAllImagesButtonProps = {
   size?: "default" | "sm" | "lg";
   className?: string;
   label?: string;
+  compactLabel?: string;
 };
 
 function parseFilename(contentDisposition: string | null): string {
@@ -26,6 +27,7 @@ export function DownloadAllImagesButton({
   size = "sm",
   className,
   label,
+  compactLabel,
 }: DownloadAllImagesButtonProps) {
   const [loading, setLoading] = useState(false);
 
@@ -76,7 +78,14 @@ export function DownloadAllImagesButton({
       onClick={() => void handleDownload()}
     >
       {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-      {loading ? "Preparo ZIP..." : (label ?? defaultLabel)}
+      {loading ? "Preparo ZIP..." : (
+        <>
+          <span className={compactLabel ? "hidden sm:inline" : undefined}>
+            {label ?? defaultLabel}
+          </span>
+          {compactLabel && <span className="sm:hidden">{compactLabel}</span>}
+        </>
+      )}
     </Button>
   );
 }

@@ -851,6 +851,8 @@ export type GmRegiaWikiMap = {
   map_type: string | null;
 };
 
+const GM_REGIA_MAP_PAGE_SIZE = 1000;
+
 /** Mappe wiki per Regia Mappe nel GM Screen (solo visualizzazione). */
 export async function getGmRegiaWikiMapsAction(
   campaignId: string
@@ -864,15 +866,22 @@ export async function getGmRegiaWikiMapsAction(
     : { data: null };
   const isAdmin = currentProfile?.role === "admin";
 
-  let mapsQuery = supabase
-    .from("maps")
-    .select("id, name, image_url, map_type")
-    .eq("campaign_id", campaignId)
-    .order("name", { ascending: true });
-  if (!isAdmin) mapsQuery = mapsQuery.eq("admin_only", false);
-  const { data, error } = await mapsQuery;
-
-  if (error) return { success: false, error: error.message };
+  const data: Array<{ id: string; name: string; image_url: string; map_type: string | null }> = [];
+  for (let from = 0; ; from += GM_REGIA_MAP_PAGE_SIZE) {
+    let mapsQuery = supabase
+      .from("maps")
+      .select("id, name, image_url, map_type")
+      .eq("campaign_id", campaignId)
+      .order("name", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, from + GM_REGIA_MAP_PAGE_SIZE - 1);
+    if (!isAdmin) mapsQuery = mapsQuery.eq("admin_only", false);
+    const { data: page, error } = await mapsQuery;
+    if (error) return { success: false, error: error.message };
+    const rows = (page ?? []) as Array<{ id: string; name: string; image_url: string; map_type: string | null }>;
+    data.push(...rows);
+    if (rows.length < GM_REGIA_MAP_PAGE_SIZE) break;
+  }
 
   return {
     success: true,

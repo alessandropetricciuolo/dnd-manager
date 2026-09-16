@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Sheet,
   SheetContent,
@@ -94,6 +94,8 @@ export function GmGallerySheet({
   const [relatedFor, setRelatedFor] = useState<GmGalleryItem | null>(null);
   const [relatedLinks, setRelatedLinks] = useState<RelatedEntityLink[]>([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
+  const [relatedError, setRelatedError] = useState<string | null>(null);
+  const relatedRequestRef = useRef(0);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const projectedIds = useProjectedImageIds(campaignId);
@@ -201,13 +203,25 @@ export function GmGallerySheet({
   );
   const handleShowRelated = useCallback(
     (item: GmGalleryItem) => {
+      const requestId = ++relatedRequestRef.current;
       setRelatedFor(item);
       setRelatedLinks([]);
+      setRelatedError(null);
       setRelatedLoading(true);
-      void getRelatedEntityLinks(campaignId, item.id).then((res) => {
-        setRelatedLinks(res.success ? res.data : []);
-        setRelatedLoading(false);
-      });
+      void getRelatedEntityLinks(campaignId, item.id)
+        .then((res) => {
+          if (requestId !== relatedRequestRef.current) return;
+          if (res.success) setRelatedLinks(res.data);
+          else setRelatedError(res.error);
+        })
+        .catch(() => {
+          if (requestId === relatedRequestRef.current) {
+            setRelatedError("Impossibile caricare i collegamenti. Riprova.");
+          }
+        })
+        .finally(() => {
+          if (requestId === relatedRequestRef.current) setRelatedLoading(false);
+        });
     },
     [campaignId],
   );
@@ -244,28 +258,56 @@ export function GmGallerySheet({
       "PlayerScreenWindow",
     );
   };
+  const handleRelatedClick = useCallback(
+    async (link: RelatedEntityLink) => {
+      if (selectionMode && link.kind === "wiki") {
+        const url = resolveImageUrl({
+          image_url: link.image_url,
+          telegram_fallback_id: link.telegram_fallback_id,
+        });
+        if (url) {
+          toggleSelected(link.id);
+          return;
+        }
+      }
+      await handleProjectRelated(link);
+    },
+    [handleProjectRelated, selectionMode],
+  );
   useEffect(() => {
     if (!open) {
+      relatedRequestRef.current += 1;
       setRelatedFor(null);
       setRelatedLinks([]);
+      setRelatedError(null);
+      setRelatedLoading(false);
       setSelectionMode(false);
       setSelectedIds([]);
     }
   }, [open]);
+  useEffect(() => {
+    relatedRequestRef.current += 1;
+    setRelatedFor(null);
+    setRelatedLinks([]);
+    setRelatedError(null);
+    setRelatedLoading(false);
+    setSelectionMode(false);
+    setSelectedIds([]);
+  }, [campaignId]);
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
         className="left-[4vw] right-[4vw] top-[4vh] bottom-[4vh] flex h-auto w-auto max-w-none flex-col gap-0 overflow-hidden rounded-lg border-amber-600/30 bg-zinc-950 p-0 text-zinc-100 shadow-2xl"
       >
-        <SheetHeader className="flex shrink-0 flex-row items-center justify-between gap-4 border-b border-amber-600/20 bg-zinc-950 px-5 py-3 pr-14">
-          <SheetTitle className="flex items-center gap-2 text-left text-lg text-amber-200">
+        <SheetHeader className="flex min-w-0 shrink-0 flex-row items-center justify-between gap-3 border-b border-amber-600/20 bg-zinc-950 px-5 py-3 pr-14">
+          <SheetTitle className="flex min-w-0 flex-1 items-center gap-2 text-left text-lg text-amber-200">
             <ImageIcon className="h-5 w-5 text-amber-400" /> Regia Immagini{" "}
-            <span className="text-xs font-normal text-zinc-500">
+            <span className="truncate text-xs font-normal text-zinc-500">
               {filtered.length} elementi
             </span>
           </SheetTitle>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <div className="relative hidden w-72 md:block">
               <Search className="absolute left-2.5 top-2 h-4 w-4 text-zinc-500" />
               <Input
@@ -280,6 +322,8 @@ export function GmGallerySheet({
               campaignId={campaignId}
               variant="outline"
               size="sm"
+              label="Scarica immagini campagna (ZIP)"
+              compactLabel="ZIP"
               className="h-8 border-amber-600/40 text-amber-100 hover:bg-amber-600/10"
             />
           </div>
@@ -375,86 +419,7 @@ export function GmGallerySheet({
               {selectionMode ? "Annulla selezione" : "Selezione multipla"}
             </Button>
           </aside>
-          <main className="min-h-0 flex-1 overflow-y-auto px-4 pb-24 pt-5 md:px-6">
-            {relatedFor && (
-              <div className="mb-5 rounded-md border border-amber-600/35 bg-zinc-900 p-3">
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-xs font-medium text-amber-200">
-                    <Link2 className="h-4 w-4 text-amber-400" /> Collegate a:{" "}
-                    {relatedFor.title}
-                  </span>
-                  <button
-                    type="button"
-                    aria-label="Chiudi collegate"
-                    onClick={() => setRelatedFor(null)}
-                    className="rounded p-1 text-zinc-400 hover:bg-zinc-800"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-                {relatedLoading ? (
-                  <div className="flex items-center gap-2 py-3 text-xs text-zinc-400">
-                    <Loader2 className="h-4 w-4 animate-spin" /> Carico i
-                    collegamenti…
-                  </div>
-                ) : relatedLinks.length === 0 ? (
-                  <p className="py-3 text-xs text-zinc-500">
-                    Nessuna relazione trovata.
-                  </p>
-                ) : (
-                  <div className="mt-2 grid gap-1 sm:grid-cols-2 lg:grid-cols-3">
-                    {relatedLinks.map((link) => (
-                      <div
-                        key={link.relationshipId}
-                        className="flex items-center gap-2 rounded border border-zinc-800 bg-zinc-950 px-2 py-1"
-                      >
-                        <button
-                          type="button"
-                          onClick={() =>
-                            (link.kind === "map" ||
-                              link.image_url ||
-                              link.telegram_fallback_id) &&
-                            handleProjectRelated(link)
-                          }
-                          className="flex min-w-0 flex-1 items-center gap-2 text-left"
-                        >
-                          <span className="h-7 w-7 shrink-0 overflow-hidden rounded bg-zinc-800">
-                            {link.kind === "map" ? (
-                              <Map className="h-full w-full p-1.5 text-sky-300" />
-                            ) : (
-                              (link.image_url || link.telegram_fallback_id) && (
-                                <DualSourceImage
-                                  driveUrl={link.image_url ?? undefined}
-                                  telegramFallbackId={
-                                    link.telegram_fallback_id ?? undefined
-                                  }
-                                  alt={link.name}
-                                  className="h-full w-full object-cover"
-                                />
-                              )
-                            )}
-                          </span>
-                          <span className="truncate text-[11px] text-amber-100">
-                            {link.name}
-                          </span>
-                        </button>
-                        {link.kind === "wiki" && (
-                          <a
-                            href={`/campaigns/${campaignId}/wiki/${link.id}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            aria-label={`Apri ${link.name}`}
-                            className="text-amber-300"
-                          >
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </a>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+          <main className="min-h-0 min-w-0 flex-1 overflow-y-auto px-4 pb-5 pt-5 md:px-6">
             {filtered.length === 0 ? (
               <div className="flex min-h-64 items-center justify-center text-sm text-zinc-500">
                 Nessuna immagine trovata per questa campagna.
@@ -504,9 +469,156 @@ export function GmGallerySheet({
               </>
             )}
           </main>
+          {relatedFor && (
+            <aside
+              aria-label={`Collegamenti di ${relatedFor.title}`}
+              className="min-h-0 max-h-[42%] shrink-0 overflow-y-auto border-t border-amber-600/20 bg-zinc-950 px-4 py-4 md:max-h-none md:w-[43%] md:border-l md:border-t-0 md:px-5 md:py-5"
+            >
+              <div className="flex items-start justify-between gap-3 border-b border-zinc-800 pb-3">
+                <div className="min-w-0">
+                  <h2 className="flex items-center gap-2 text-sm font-medium text-amber-200">
+                    <Link2 className="h-4 w-4 text-amber-400" /> Collegamenti
+                  </h2>
+                  <p className="mt-1 line-clamp-2 break-words text-xs text-zinc-400" title={relatedFor.title}>{relatedFor.title}</p>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Chiudi collegamenti"
+                  onClick={() => {
+                    relatedRequestRef.current += 1;
+                    setRelatedFor(null);
+                    setRelatedLinks([]);
+                    setRelatedError(null);
+                    setRelatedLoading(false);
+                  }}
+                  className="rounded p-1 text-zinc-400 hover:bg-zinc-800"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              {relatedLoading ? (
+                <div className="flex items-center gap-2 py-6 text-xs text-zinc-400">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Carico i collegamenti…
+                </div>
+              ) : relatedError ? (
+                <div role="alert" className="flex flex-col items-start gap-3 py-6">
+                  <p className="text-xs text-rose-300">{relatedError}</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="border-amber-600/40 text-xs text-amber-100 hover:bg-amber-600/10"
+                    onClick={() => handleShowRelated(relatedFor)}
+                  >
+                    Riprova
+                  </Button>
+                </div>
+              ) : relatedLinks.length === 0 ? (
+                <p className="py-6 text-xs text-zinc-500">Nessuna relazione trovata.</p>
+              ) : (
+                <div className="grid gap-3 py-4 sm:grid-cols-2 md:grid-cols-1 xl:grid-cols-2">
+                  {relatedLinks.map((link) => {
+                    const hasImage = link.kind === "wiki" && Boolean(link.image_url || link.telegram_fallback_id);
+                    const canActivate = link.kind === "map" || hasImage;
+                    const relatedSelectedIndex = hasImage ? selectedIds.indexOf(link.id) : -1;
+                    const relatedSelected = relatedSelectedIndex >= 0;
+                    const direction = link.direction === "out" ? "Verso" : "Da";
+                    const relationText = link.label.trim() || "Collegamento";
+                    const relationContext = `${direction} · ${relationText}`;
+                    const content = (
+                      <>
+                        <span className="relative h-16 w-16 shrink-0 overflow-hidden rounded bg-zinc-800">
+                          {link.kind === "map" ? (
+                            <Map className="h-full w-full p-3 text-sky-300" aria-hidden="true" />
+                          ) : hasImage ? (
+                            <DualSourceImage
+                              driveUrl={link.image_url ?? undefined}
+                              telegramFallbackId={link.telegram_fallback_id ?? undefined}
+                              alt={link.name}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <ImageIcon className="h-full w-full p-3 text-zinc-600" aria-hidden="true" />
+                          )}
+                          {hasImage && selectionMode && (
+                            <span
+                              className={cn(
+                                "absolute left-1 top-1 flex h-5 w-5 items-center justify-center rounded-full border text-[10px] font-semibold",
+                                relatedSelected
+                                  ? "border-amber-400 bg-amber-500 text-zinc-950"
+                                  : "border-zinc-500 bg-zinc-900/90 text-zinc-400",
+                              )}
+                            >
+                              {relatedSelected ? (
+                                relatedSelectedIndex + 1
+                              ) : (
+                                <Check className="h-3 w-3 opacity-60" />
+                              )}
+                            </span>
+                          )}
+                          {hasImage && projectedIds.has(link.id) && (
+                            <span
+                              title="Mostrata sul secondo schermo"
+                              aria-label="Mostrata sul secondo schermo"
+                              className="absolute bottom-1 right-1 flex h-6 w-6 items-center justify-center rounded-full border border-emerald-300/80 bg-emerald-500 text-zinc-950 shadow-lg shadow-black/40"
+                            >
+                              <MonitorPlay className="h-3.5 w-3.5" />
+                            </span>
+                          )}
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block line-clamp-2 break-words text-xs font-medium text-amber-100" title={link.name}>{link.name}</span>
+                          <span className="mt-1 block line-clamp-2 break-words text-[10px] text-zinc-400" title={relationContext}>{relationContext}</span>
+                          {!canActivate && (
+                            <span className="mt-1 block text-[10px] text-zinc-500">Nessuna immagine disponibile</span>
+                          )}
+                        </span>
+                      </>
+                    );
+                    return (
+                      <div
+                        key={link.relationshipId}
+                        className={cn(
+                          "flex min-w-0 items-center gap-2 rounded border bg-zinc-900 px-2 py-2",
+                          relatedSelected
+                            ? "border-amber-400 ring-1 ring-amber-500/60"
+                            : "border-zinc-800",
+                        )}
+                      >
+                        {canActivate ? (
+                          <button
+                            type="button"
+                            onClick={() => void handleRelatedClick(link)}
+                            aria-pressed={link.kind === "wiki" && selectionMode ? relatedSelected : undefined}
+                            aria-label={selectionMode && link.kind === "wiki" ? `Seleziona ${link.name}` : link.kind === "map" ? `Proietta mappa ${link.name}` : `Proietta ${link.name}`}
+                            className="flex min-w-0 flex-1 items-center gap-3 text-left hover:bg-zinc-800/70"
+                          >
+                            {content}
+                          </button>
+                        ) : (
+                          <div className="flex min-w-0 flex-1 items-center gap-3">{content}</div>
+                        )}
+                        {link.kind === "wiki" && (
+                          <a
+                            href={`/campaigns/${campaignId}/wiki/${link.id}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            aria-label={`Apri ${link.name}`}
+                            className="shrink-0 rounded p-1 text-amber-300 hover:bg-zinc-800"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </aside>
+          )}
         </div>
         {selectionMode && (
-          <div className="absolute inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 border-t border-amber-600/30 bg-zinc-900 px-5 py-3">
+          <div className="flex shrink-0 items-center justify-between gap-3 border-t border-amber-600/30 bg-zinc-900 px-5 py-3">
             <span className="text-xs text-zinc-300">
               {selectedIds.length} immagini selezionate
             </span>
@@ -551,7 +663,7 @@ function GallerySection({
         <h2 className="text-sm font-semibold text-amber-100">{title}</h2>
         <span className="text-[11px] text-zinc-500">{items.length}</span>
       </div>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-3">
         {items.map((item) => (
           <GalleryCard
             key={item.id}
@@ -586,97 +698,98 @@ function GalleryCard({
   onRelated: (item: GmGalleryItem) => void;
 }) {
   const selected = selectedIndex >= 0;
+  const hasRelated = item.category !== "pg";
   return (
-    <button
-      type="button"
-      onClick={() => (selectionMode ? onSelect(item.id) : onProject(item))}
+    <article
       className={cn(
-        "group flex min-w-0 flex-col overflow-hidden rounded-md border bg-zinc-900 text-left transition-colors",
+        "group relative flex min-w-0 flex-col overflow-hidden rounded-md border bg-zinc-900 text-left transition-colors",
         selected
           ? "border-amber-400 ring-2 ring-amber-500/60"
           : "border-zinc-800 hover:border-amber-600/70",
       )}
     >
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-800">
-        <DualSourceImage
-          driveUrl={item.image_url ?? undefined}
-          telegramFallbackId={item.telegram_fallback_id ?? undefined}
-          alt={item.title}
-          className="h-full w-full object-cover"
-        />
-        {isProjected && (
-          <span
-            title="Mostrata sul secondo schermo"
-            aria-label="Mostrata sul secondo schermo"
-            className="absolute bottom-2 right-2 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-emerald-300/80 bg-emerald-500 text-zinc-950 shadow-lg shadow-black/40"
-          >
-            <MonitorPlay className="h-4 w-4" />
+      <button
+        type="button"
+        onClick={() => (selectionMode ? onSelect(item.id) : onProject(item))}
+        aria-pressed={selectionMode ? selected : undefined}
+        aria-label={selectionMode ? `Seleziona ${item.title}` : `Proietta ${item.title}`}
+        className="flex min-w-0 flex-col text-left"
+      >
+        <div className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-800">
+          <DualSourceImage
+            driveUrl={item.image_url ?? undefined}
+            telegramFallbackId={item.telegram_fallback_id ?? undefined}
+            alt={item.title}
+            className="h-full w-full object-cover"
+          />
+          {isProjected && (
+            <span
+              title="Mostrata sul secondo schermo"
+              aria-label="Mostrata sul secondo schermo"
+              className="absolute bottom-2 right-2 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-emerald-300/80 bg-emerald-500 text-zinc-950 shadow-lg shadow-black/40"
+            >
+              <MonitorPlay className="h-4 w-4" />
+            </span>
+          )}
+          {selectionMode && (
+            <span
+              className={cn(
+                "absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded-full border text-[10px] font-semibold",
+                selected
+                  ? "border-amber-400 bg-amber-500 text-zinc-950"
+                  : "border-zinc-500 bg-zinc-900/90 text-zinc-400",
+              )}
+            >
+              {selected ? (
+                selectedIndex + 1
+              ) : (
+                <Check className="h-3.5 w-3.5 opacity-60" />
+              )}
+            </span>
+          )}
+        </div>
+        <div className="min-h-[4.25rem] px-2 py-2">
+          <span className="line-clamp-2 text-xs font-medium text-amber-100">
+            {item.title}
           </span>
-        )}
-        {selectionMode ? (
-          <span
-            className={cn(
-              "absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded-full border text-[10px] font-semibold",
-              selected
-                ? "border-amber-400 bg-amber-500 text-zinc-950"
-                : "border-zinc-500 bg-zinc-900/90 text-zinc-400",
-            )}
-          >
-            {selected ? (
-              selectedIndex + 1
-            ) : (
-              <Check className="h-3.5 w-3.5 opacity-60" />
-            )}
+          <span className="mt-1 block text-[10px] uppercase tracking-wide text-amber-400/70">
+            {categoryLabel(item.category)}
           </span>
-        ) : (
-          <div className="absolute inset-x-2 top-2 flex justify-between opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
-            {item.category !== "pg" && (
-              <span
-                role="button"
-                tabIndex={0}
-                aria-label="Mostra entità collegate"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRelated(item);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onRelated(item);
-                  }
-                }}
-                className="flex h-7 w-7 items-center justify-center rounded border border-amber-600/40 bg-zinc-900/90 text-amber-100"
-              >
-                <Link2 className="h-3.5 w-3.5" />
-              </span>
-            )}
+          {item.mission_title && (
+            <span className="mt-0.5 block truncate text-[10px] text-zinc-500">
+              {item.mission_title}
+            </span>
+          )}
+        </div>
+      </button>
+      {(hasRelated || !selectionMode) && (
+        <div className="flex items-center justify-between gap-2 border-t border-zinc-800 px-2 py-1.5">
+          {hasRelated ? (
+            <button
+              type="button"
+              onClick={() => onRelated(item)}
+              aria-label={`Collegamenti di ${item.title}`}
+              className="inline-flex min-h-8 items-center gap-1 rounded px-1 text-[10px] font-medium text-amber-200 hover:bg-zinc-800"
+            >
+              <Link2 className="h-3.5 w-3.5" aria-hidden="true" />
+              Collegamenti
+            </button>
+          ) : (
+            <span />
+          )}
+          {!selectionMode && (
             <DownloadImageButton
               driveUrl={item.image_url}
               telegramFallbackId={item.telegram_fallback_id}
               filename={item.title}
               compact
-              stopPropagation
               variant="secondary"
               size="icon"
-              className="h-7 w-7 border-amber-600/40 bg-zinc-900/90 text-amber-100"
+              className="h-8 w-8 border-amber-600/40 bg-zinc-900/90 text-amber-100"
             />
-          </div>
-        )}
-      </div>
-      <div className="min-h-[4.25rem] px-2 py-2">
-        <span className="line-clamp-2 text-xs font-medium text-amber-100">
-          {item.title}
-        </span>
-        <span className="mt-1 block text-[10px] uppercase tracking-wide text-amber-400/70">
-          {categoryLabel(item.category)}
-        </span>
-        {item.mission_title && (
-          <span className="mt-0.5 block truncate text-[10px] text-zinc-500">
-            {item.mission_title}
-          </span>
-        )}
-      </div>
-    </button>
+          )}
+        </div>
+      )}
+    </article>
   );
 }

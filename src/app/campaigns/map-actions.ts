@@ -17,6 +17,7 @@ import {
 } from "@/lib/campaign-memory-indexer";
 import { assertCanManageAdminContent, isGlobalAdmin, logAdminContentTransition, resolveAdminContentAccess } from "@/lib/admin-content";
 import { resolveAdminOnlyTransition } from "@/lib/admin-content/transitions";
+import { buildWikiLocationMapIndex, countPinsByTarget } from "@/lib/maps/wiki-location-link";
 
 const VISIBILITY_VALUES = ["public", "secret", "selective"] as const;
 type Visibility = (typeof VISIBILITY_VALUES)[number];
@@ -593,11 +594,107 @@ export type WikiLocationPinOption = {
   id: string;
   name: string;
   boundMapId: string | null;
+  /** Numero di pin che puntano al luogo, direttamente o tramite la sua mappa. */
+  pinCount: number | null;
 };
 
 export type ListWikiLocationsForMapResult =
-  | { success: true; data: WikiLocationPinOption[] }
+  | {
+      success: true;
+      data: WikiLocationPinOption[];
+      mapPinCounts: Record<string, number | null>;
+      pinCountsAvailable: boolean;
+    }
   | { success: false; message: string };
+
+type PagedQueryResult<T> = {
+  data: T[] | null;
+  error: { message?: string; code?: string } | null;
+};
+
+const MAP_PIN_PAGE_SIZE = 1000;
+
+async function fetchPagedRows<T>(
+  loadPage: (from: number, to: number) => PromiseLike<PagedQueryResult<T>>
+): Promise<{ data: T[]; error: PagedQueryResult<T>["error"] }> {
+  const rows: T[] = [];
+  for (let from = 0; ; from += MAP_PIN_PAGE_SIZE) {
+    const { data, error } = await loadPage(from, from + MAP_PIN_PAGE_SIZE - 1);
+    if (error) return { data: rows, error };
+    const page = data ?? [];
+    rows.push(...page);
+    if (page.length < MAP_PIN_PAGE_SIZE) return { data: rows, error: null };
+  }
+}
+
+async function fetchCampaignMapRows(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  campaignId: string,
+  isAdmin: boolean
+): Promise<{
+  data: Array<{ id: string; wiki_entity_id: string | null; admin_only?: boolean }>;
+  error: { message?: string; code?: string } | null;
+  bindingsAvailable: boolean;
+}> {
+  const withBindings = await fetchPagedRows<{ id: string; wiki_entity_id: string | null; admin_only?: boolean }>(
+    (from, to) => {
+      let query = supabase
+        .from("maps")
+        .select("id, wiki_entity_id, admin_only")
+        .eq("campaign_id", campaignId)
+        .order("id", { ascending: true })
+        .range(from, to);
+      if (!isAdmin) query = query.eq("admin_only", false);
+      return query;
+    }
+  );
+  if (!withBindings.error || !withBindings.error.message?.includes("wiki_entity_id")) {
+    return { data: withBindings.data, error: withBindings.error, bindingsAvailable: true };
+  }
+
+  const legacy = await fetchPagedRows<{ id: string; admin_only?: boolean }>((from, to) => {
+    let query = supabase
+      .from("maps")
+      .select("id, admin_only")
+      .eq("campaign_id", campaignId)
+      .order("id", { ascending: true })
+      .range(from, to);
+    if (!isAdmin) query = query.eq("admin_only", false);
+    return query;
+  });
+  return {
+    data: legacy.data.map((row) => ({ ...row, wiki_entity_id: null })),
+    error: legacy.error,
+    bindingsAvailable: false,
+  };
+}
+
+async function fetchCampaignPins(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  mapIds: string[]
+): Promise<{
+  data: Array<{ id: string; map_id: string; link_map_id: string | null; link_entity_id: string | null }>;
+  error: { message?: string; code?: string } | null;
+}> {
+  if (mapIds.length === 0) return { data: [], error: null };
+  const rows: Array<{ id: string; map_id: string; link_map_id: string | null; link_entity_id: string | null }> = [];
+  // Keep IN filters bounded so large campaigns do not exceed request URL limits.
+  for (let index = 0; index < mapIds.length; index += 100) {
+    const mapIdChunk = mapIds.slice(index, index + 100);
+    const result = await fetchPagedRows<{ id: string; map_id: string; link_map_id: string | null; link_entity_id: string | null }>(
+      (from, to) =>
+        supabase
+          .from("map_pins")
+          .select("id, map_id, link_map_id, link_entity_id")
+          .in("map_id", mapIdChunk)
+          .order("id", { ascending: true })
+          .range(from, to)
+    );
+    if (result.error) return { data: rows, error: result.error };
+    rows.push(...result.data);
+  }
+  return { data: rows, error: null };
+}
 
 /** Luoghi wiki della campagna, con eventuale mappa interattiva collegata. */
 export async function listWikiLocationsForMapAction(
@@ -612,44 +709,57 @@ export async function listWikiLocationsForMapAction(
     } = await supabase.auth.getUser();
     if (userError || !user) return { success: false, message: "Non autenticato." };
     const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    if (profile?.role !== "gm" && profile?.role !== "admin") {
+      return { success: false, message: "Non autorizzato. Solo GM e Admin possono leggere i collegamenti dei pin." };
+    }
     const isAdmin = profile?.role === "admin";
 
-    let entitiesQuery = supabase
+    const entitiesResult = await fetchPagedRows<{ id: string; name: string; admin_only?: boolean }>((from, to) => {
+      let query = supabase
         .from("wiki_entities")
         .select("id, name, admin_only")
         .eq("campaign_id", campaignId)
         .eq("type", "location")
-        .order("name", { ascending: true });
-    let boundMapsQuery = supabase
-        .from("maps")
-        .select("id, wiki_entity_id, admin_only")
-        .eq("campaign_id", campaignId)
-        .not("wiki_entity_id", "is", null);
-    if (!isAdmin) {
-      entitiesQuery = entitiesQuery.eq("admin_only", false);
-      boundMapsQuery = boundMapsQuery.eq("admin_only", false);
-    }
-    const [{ data: entities, error: entErr }, { data: boundMaps, error: mapErr }] = await Promise.all([
-      entitiesQuery,
-      boundMapsQuery,
-    ]);
-    if (entErr) return { success: false, message: entErr.message };
-    if (mapErr && !mapErr.message?.includes("wiki_entity_id")) {
-      return { success: false, message: mapErr.message };
+        .order("name", { ascending: true })
+        .order("id", { ascending: true })
+        .range(from, to);
+      if (!isAdmin) query = query.eq("admin_only", false);
+      return query;
+    });
+    if (entitiesResult.error) return { success: false, message: entitiesResult.error.message ?? "Errore nel caricamento dei luoghi." };
+
+    const mapsResult = await fetchCampaignMapRows(supabase, campaignId, isAdmin);
+    if (mapsResult.error) return { success: false, message: mapsResult.error.message ?? "Errore nel caricamento delle mappe." };
+    const mapRows = mapsResult.data;
+    const visibleMapIds = mapRows.map((row) => row.id);
+    const visibleEntityIds = entitiesResult.data.map((row) => row.id);
+    const entityIdToMapId = buildWikiLocationMapIndex(mapRows);
+    const mapIdToEntityId: Record<string, string> = {};
+    for (const row of mapRows) {
+      if (row.wiki_entity_id) mapIdToEntityId[row.id] = row.wiki_entity_id;
     }
 
-    const mapByEntity = new Map<string, string>();
-    for (const row of (boundMaps ?? []) as Array<{ id: string; wiki_entity_id: string | null }>) {
-      if (row.wiki_entity_id) mapByEntity.set(row.wiki_entity_id, row.id);
-    }
+    const pinsResult = await fetchCampaignPins(supabase, visibleMapIds);
+    const pinCountsAvailable = mapsResult.bindingsAvailable && !pinsResult.error;
+    const pinCounts = pinCountsAvailable
+      ? countPinsByTarget(pinsResult.data, entityIdToMapId, mapIdToEntityId, {
+          mapIds: visibleMapIds,
+          entityIds: visibleEntityIds,
+        })
+      : null;
+    const mapPinCounts: Record<string, number | null> = {};
+    for (const mapId of visibleMapIds) mapPinCounts[mapId] = pinCounts?.mapPinCounts[mapId] ?? (pinCountsAvailable ? 0 : null);
 
     return {
       success: true,
-      data: ((entities ?? []) as Array<{ id: string; name: string }>).map((e) => ({
+      data: entitiesResult.data.map((e) => ({
         id: e.id,
         name: e.name,
-        boundMapId: mapByEntity.get(e.id) ?? null,
+        boundMapId: entityIdToMapId[e.id] ?? null,
+        pinCount: pinCounts?.wikiPinCounts[e.id] ?? (pinCountsAvailable ? 0 : null),
       })),
+      mapPinCounts,
+      pinCountsAvailable,
     };
   } catch (err) {
     console.error("[listWikiLocationsForMapAction]", err);

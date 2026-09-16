@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import type { CampaignMapOption } from "./interactive-map";
 import { UploadMapInlineForm } from "@/components/maps/upload-map-inline-form";
 import { listWikiLocationsForMapAction, type WikiLocationPinOption } from "@/app/campaigns/map-actions";
+import { formatPinCountLabel } from "@/lib/maps/wiki-location-link";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 type LinkKind = "none" | "map" | "location";
@@ -54,24 +55,53 @@ export function NewPinDialog({
   const [linkedMapId, setLinkedMapId] = useState("");
   const [linkedEntityId, setLinkedEntityId] = useState("");
   const [wikiLocations, setWikiLocations] = useState<WikiLocationPinOption[]>([]);
+  const [mapPinCounts, setMapPinCounts] = useState<Record<string, number | null>>({});
+  const [pinCountsAvailable, setPinCountsAvailable] = useState(false);
   const [loadingLocations, setLoadingLocations] = useState(false);
-  const [extraMapOption, setExtraMapOption] = useState<{ id: string; name: string } | null>(null);
+  const [locationsError, setLocationsError] = useState<string | null>(null);
+  const locationsCampaignIdRef = useRef<string | null>(null);
+  const [extraMapOption, setExtraMapOption] = useState<{ id: string; name: string; pinCount: number } | null>(null);
   const [showSubmapPanel, setShowSubmapPanel] = useState(false);
   const [uploadFormKey, setUploadFormKey] = useState(0);
 
   useEffect(() => {
     if (!open) return;
+    if (locationsCampaignIdRef.current && locationsCampaignIdRef.current !== campaignId) {
+      setWikiLocations([]);
+      setMapPinCounts({});
+    }
+    locationsCampaignIdRef.current = campaignId;
     setLinkKind("none");
     setLinkedMapId("");
     setLinkedEntityId("");
+    setLocationsError(null);
+    setPinCountsAvailable(false);
     setExtraMapOption(null);
     setShowSubmapPanel(false);
     setUploadFormKey((k) => k + 1);
     setLoadingLocations(true);
-    void listWikiLocationsForMapAction(campaignId).then((res) => {
-      if (res.success) setWikiLocations(res.data);
-      setLoadingLocations(false);
-    });
+    let active = true;
+    void listWikiLocationsForMapAction(campaignId)
+      .then((res) => {
+        if (!active) return;
+        if (res.success) {
+          setWikiLocations(res.data);
+          setMapPinCounts(res.mapPinCounts);
+          setPinCountsAvailable(res.pinCountsAvailable);
+          setLocationsError(null);
+        } else {
+          setLocationsError(res.message);
+        }
+      })
+      .catch(() => {
+        if (active) setLocationsError("Impossibile caricare i collegamenti dei pin. Riprova.");
+      })
+      .finally(() => {
+        if (active) setLoadingLocations(false);
+      });
+    return () => {
+      active = false;
+    };
   }, [open, campaignId]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -143,12 +173,15 @@ export function NewPinDialog({
                 <option value="">Seleziona mappa</option>
                 {extraMapOption && (
                   <option value={extraMapOption.id}>
-                    {extraMapOption.name} (appena caricata)
+                    {extraMapOption.name} (appena caricata) — {formatPinCountLabel(extraMapOption.pinCount)}
                   </option>
                 )}
                 {campaignMaps.map((m) => (
                   <option key={m.id} value={m.id}>
-                    {m.name}
+                    {m.name} — {formatPinCountLabel(
+                      Object.prototype.hasOwnProperty.call(mapPinCounts, m.id) ? mapPinCounts[m.id] : null,
+                      pinCountsAvailable
+                    )}
                   </option>
                 ))}
               </select>
@@ -172,6 +205,8 @@ export function NewPinDialog({
                   <option key={loc.id} value={loc.id}>
                     {loc.name}
                     {loc.boundMapId ? " (con mappa)" : ""}
+                    {" — "}
+                    {formatPinCountLabel(loc.pinCount, pinCountsAvailable)}
                   </option>
                 ))}
               </select>
@@ -180,6 +215,11 @@ export function NewPinDialog({
                 duplicare la scheda.
               </p>
             </div>
+          )}
+          {locationsError && (
+            <p role="alert" className="text-xs text-rose-300">
+              {locationsError}
+            </p>
           )}
         </form>
 
@@ -218,7 +258,8 @@ export function NewPinDialog({
                   appearance="pinDialog"
                   onCancel={() => setShowSubmapPanel(false)}
                   onUploaded={({ id, name }) => {
-                    setExtraMapOption({ id, name });
+                    // La mappa è appena stata creata e non può avere pin preesistenti.
+                    setExtraMapOption({ id, name, pinCount: 0 });
                     setLinkedMapId(id);
                     setShowSubmapPanel(false);
                     onSubmapCreated?.();
