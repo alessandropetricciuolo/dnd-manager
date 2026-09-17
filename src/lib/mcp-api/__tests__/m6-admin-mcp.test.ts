@@ -14,7 +14,7 @@ function fakeDb(results: unknown[]) {
     from(table: string) {
       calls.push(["from", table]);
       const query: any = {};
-      for (const method of ["select", "eq", "or", "order", "range", "insert", "update", "ilike", "limit"]) query[method] = (...args: unknown[]) => { calls.push([method, ...args]); return query; };
+      for (const method of ["select", "eq", "in", "or", "order", "range", "insert", "update", "ilike", "limit"]) query[method] = (...args: unknown[]) => { calls.push([method, ...args]); return query; };
       const next = () => ({ data: results.shift(), error: null });
       query.maybeSingle = async () => next(); query.single = async () => next();
       query.then = (resolve: (value: unknown) => unknown) => Promise.resolve(next()).then(resolve);
@@ -76,6 +76,33 @@ test("search_maps resolves parent IDs, get_map verifies writes, and upload block
   const duplicate = fakeDb([{ id: campaign, type: "long", admin_drafts_enabled: true }, almaria]);
   await assert.rejects(executeContent(admin(duplicate.db), { operation: "upload_map", args: { campaign_id: campaign, name: "Almaria", image_url: "https://cdn.example.com/map.png" } }), (error: any) => error.status === 409);
   assert(!duplicate.calls.some((call) => call[0] === "insert"));
+});
+
+test("list_wiki_relationships paginates real rows and protects Admin-only endpoints", async () => {
+  process.env.MCP_CAMPAIGN_ID = campaign;
+  const publicTarget = "33333333-3333-4333-8333-333333333333";
+  const mapId = "44444444-4444-4444-8444-444444444444";
+  const relationships = [
+    { id: "55555555-5555-4555-8555-555555555555", campaign_id: campaign, source_id: entityId, target_id: publicTarget, target_map_id: null, label: "alleato", created_at: "2026-01-01" },
+    { id: "66666666-6666-4666-8666-666666666666", campaign_id: campaign, source_id: publicTarget, target_id: null, target_map_id: mapId, label: "si trova in", created_at: "2026-01-02" },
+  ];
+  const entities = [
+    { id: entityId, name: "Segreto", type: "lore", admin_only: true },
+    { id: publicTarget, name: "Pubblico", type: "location", admin_only: false },
+  ];
+  const maps = [{ id: mapId, name: "Almaria", map_type: "continent", admin_only: false }];
+  const publicRead = fakeDb([{ id: campaign, admin_drafts_enabled: true }, relationships, entities, maps]);
+  const result: any = await executeContent(admin(publicRead.db), { operation: "list_wiki_relationships", args: { campaign_id: campaign, limit: 2 } });
+  assert.equal(result.relationships.length, 1);
+  assert.equal(result.relationships[0].target_map.name, "Almaria");
+  assert.equal(result.next_offset, 2);
+  assert.equal(result.admin_only, false);
+
+  const adminRead = fakeDb([{ id: campaign, admin_drafts_enabled: true }, relationships, entities, maps]);
+  const protectedResult: any = await executeContent(admin(adminRead.db), { operation: "list_wiki_relationships", args: { campaign_id: campaign, limit: 2, admin_only: true } });
+  assert.equal(protectedResult.relationships.length, 2);
+  assert.equal(protectedResult.relationships[0].source.name, "Segreto");
+  assert.equal(protectedResult.admin_only, true);
 });
 
 test("verified Admin can opt into protected search and creates protected rows", async () => {

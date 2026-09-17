@@ -67,6 +67,12 @@ export function createBdMcpServer(auth: McpAuthContext) {
     entity_id: entityId,
     admin_only: adminOnly,
   }, true);
+  register("list_wiki_relationships", "List real Wiki-to-Wiki and Wiki-to-map relationship rows with endpoint metadata. Admin-only endpoints require explicit opt-in.", {
+    campaign_id: campaignId,
+    limit: z.number().int().min(1).max(100).optional(),
+    offset: z.number().int().min(0).max(10_000).optional(),
+    admin_only: adminOnly,
+  }, true);
   register("search_maps", "List or search scoped Atlas maps before creating one. Use this to resolve parent IDs and prevent duplicates.", {
     campaign_id: campaignId,
     query: z.string().trim().min(1).max(200).optional(),

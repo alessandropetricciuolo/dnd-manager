@@ -1,6 +1,6 @@
 export const entityKinds = ["campaign", "npc", "location", "faction", "quest", "item", "event", "session", "lore", "player_character", "monster"] as const;
 export const statuses = ["draft", "proposed", "canonical", "deprecated"] as const;
-export const operations = ["search_lore", "get_entity", "search_maps", "get_map", "create_lore", "create_npc", "create_location", "create_item", "create_monster", "update_entity", "upload_asset", "attach_asset", "upload_entity_image", "upload_map", "set_status",
+export const operations = ["search_lore", "get_entity", "list_wiki_relationships", "search_maps", "get_map", "create_lore", "create_npc", "create_location", "create_item", "create_monster", "update_entity", "upload_asset", "attach_asset", "upload_entity_image", "upload_map", "set_status",
   "search_missions", "get_mission", "create_mission", "update_mission", "set_mission_status", "complete_mission", "reopen_mission", "delete_mission",
   "list_mission_encounters", "create_mission_encounter", "update_mission_encounter", "delete_mission_encounter", "replace_encounter_monsters", "link_mission_resource"] as const;
 export type Operation = typeof operations[number];
@@ -31,6 +31,7 @@ const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 const fields: Record<Operation, string[]> = {
   search_lore: ["query", "limit", "offset", "admin_only"],
   get_entity: ["entity_id", "admin_only"],
+  list_wiki_relationships: ["limit", "offset", "admin_only"],
   search_maps: ["query", "map_type", "limit", "offset", "admin_only"],
   get_map: ["map_id", "admin_only"],
   create_lore: ["name", "body", "attributes", "admin_only"],
@@ -78,6 +79,10 @@ export function validate(raw: unknown): { operation: Operation; args: Record<str
   if (operation === "search_lore") {
     if (args.query === undefined) return fail();
     if (args.limit !== undefined && (!Number.isInteger(args.limit) || args.limit < 1 || args.limit > 50)) return fail();
+    if (args.offset !== undefined && (!Number.isInteger(args.offset) || args.offset < 0 || args.offset > 10000)) return fail();
+  }
+  if (operation === "list_wiki_relationships") {
+    if (args.limit !== undefined && (!Number.isInteger(args.limit) || args.limit < 1 || args.limit > 100)) return fail();
     if (args.offset !== undefined && (!Number.isInteger(args.offset) || args.offset < 0 || args.offset > 10000)) return fail();
   }
   if (operation === "search_maps") {

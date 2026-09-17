@@ -54,6 +54,37 @@ export async function executeContent(auth: McpAuthContext, raw: unknown, deps = 
     return { entities: rows.map(envelope), offset, limit, admin_only: auth.isAdmin && adminOnlyRequested };
   }
 
+  if (operation === "list_wiki_relationships") {
+    const offset = a.offset ?? 0, limit = a.limit ?? 100;
+    const relationships = checked(await auth.db.from("wiki_relationships")
+      .select("id,campaign_id,source_id,target_id,target_map_id,label,created_at")
+      .eq("campaign_id", a.campaign_id).order("created_at").order("id").range(offset, offset + limit - 1)) ?? [];
+    const entityIds = [...new Set(relationships.flatMap((relationship: Record<string, any>) => [relationship.source_id, relationship.target_id]).filter(Boolean))];
+    const mapIds = [...new Set(relationships.map((relationship: Record<string, any>) => relationship.target_map_id).filter(Boolean))];
+    const entities = entityIds.length ? checked(await auth.db.from("wiki_entities").select("id,name,type,admin_only").eq("campaign_id", a.campaign_id).in("id", entityIds)) ?? [] : [];
+    const maps = mapIds.length ? checked(await auth.db.from("maps").select("id,name,map_type,admin_only").eq("campaign_id", a.campaign_id).in("id", mapIds)) ?? [] : [];
+    const entityById = new Map(entities.map((entity: Record<string, any>) => [entity.id, entity]));
+    const mapById = new Map(maps.map((map: Record<string, any>) => [map.id, map]));
+    const includeProtected = auth.isAdmin && adminOnlyRequested;
+    const visible = relationships.flatMap((relationship: Record<string, any>) => {
+      const source = entityById.get(relationship.source_id);
+      const target = relationship.target_id ? entityById.get(relationship.target_id) : null;
+      const targetMap = relationship.target_map_id ? mapById.get(relationship.target_map_id) : null;
+      // Missing endpoints are hidden instead of leaking an otherwise unreadable relationship.
+      if (!source || (relationship.target_id && !target) || (relationship.target_map_id && !targetMap)) return [];
+      if (!includeProtected && (source.admin_only || target?.admin_only || targetMap?.admin_only)) return [];
+      return [{
+        id: relationship.id, campaign_id: relationship.campaign_id, source_id: relationship.source_id,
+        target_id: relationship.target_id, target_map_id: relationship.target_map_id, label: relationship.label,
+        created_at: relationship.created_at,
+        source: { id: source.id, name: source.name, type: source.type, admin_only: source.admin_only === true },
+        target: target ? { id: target.id, name: target.name, type: target.type, admin_only: target.admin_only === true } : null,
+        target_map: targetMap ? { id: targetMap.id, name: targetMap.name, map_type: targetMap.map_type, admin_only: targetMap.admin_only === true } : null,
+      }];
+    });
+    return { relationships: visible, offset, limit, next_offset: relationships.length === limit ? offset + limit : null, admin_only: includeProtected };
+  }
+
   if (operation === "search_maps") {
     const offset = a.offset ?? 0, limit = a.limit ?? 50;
     let request = auth.db.from("maps").select(mapColumns).eq("campaign_id", a.campaign_id);
