@@ -105,6 +105,33 @@ test("list_wiki_relationships paginates real rows and protects Admin-only endpoi
   assert.equal(protectedResult.admin_only, true);
 });
 
+test("upsert_wiki_relationship validates endpoints, is idempotent, and reads back the stored row", async () => {
+  process.env.MCP_CAMPAIGN_ID = campaign;
+  const targetId = "33333333-3333-4333-8333-333333333333";
+  const source = { id: entityId, name: "Portico", type: "location", admin_only: false };
+  const target = { id: targetId, name: "Taverna", type: "location", admin_only: false };
+  const stored = { id: "55555555-5555-4555-8555-555555555555", campaign_id: campaign, source_id: entityId, target_id: targetId, target_map_id: null, label: "contiene", created_at: "2026-01-01" };
+  assert.throws(() => validate({ operation: "upsert_wiki_relationship", args: { campaign_id: campaign, source_id: entityId, target_id: targetId, target_map_id: targetId, label: "x" } }), ApiError);
+  assert.throws(() => validate({ operation: "upsert_wiki_relationship", args: { campaign_id: campaign, source_id: entityId, target_id: entityId, label: "x" } }), ApiError);
+
+  const create = fakeDb([{ id: campaign, admin_drafts_enabled: true }, source, target, null, { id: stored.id }, stored]);
+  const created: any = await executeContent(admin(create.db), { operation: "upsert_wiki_relationship", args: { campaign_id: campaign, source_id: entityId, target_id: targetId, label: " contiene " } });
+  assert.equal(created.created, true);
+  assert.equal(created.relationship.id, stored.id);
+  assert.equal(created.relationship.target.name, "Taverna");
+  const payload = create.calls.find((call) => call[0] === "insert")?.[1] as Record<string, unknown>;
+  assert.equal(payload.label, "contiene");
+
+  const existing = fakeDb([{ id: campaign, admin_drafts_enabled: true }, source, target, stored]);
+  const repeated: any = await executeContent(admin(existing.db), { operation: "upsert_wiki_relationship", args: { campaign_id: campaign, source_id: entityId, target_id: targetId, label: "contiene" } });
+  assert.equal(repeated.created, false);
+  assert(!existing.calls.some((call) => call[0] === "insert"));
+
+  const protectedEndpoint = fakeDb([{ id: campaign, admin_drafts_enabled: true }, { ...source, admin_only: true }, target]);
+  await assert.rejects(executeContent(admin(protectedEndpoint.db), { operation: "upsert_wiki_relationship", args: { campaign_id: campaign, source_id: entityId, target_id: targetId, label: "contiene" } }), (error: any) => error.status === 404);
+  assert(!protectedEndpoint.calls.some((call) => call[0] === "insert"));
+});
+
 test("verified Admin can opt into protected search and creates protected rows", async () => {
   process.env.MCP_CAMPAIGN_ID = campaign;
   const search = fakeDb([{ id: campaign, admin_drafts_enabled: true }, [row]]);

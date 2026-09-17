@@ -1,6 +1,6 @@
 export const entityKinds = ["campaign", "npc", "location", "faction", "quest", "item", "event", "session", "lore", "player_character", "monster"] as const;
 export const statuses = ["draft", "proposed", "canonical", "deprecated"] as const;
-export const operations = ["search_lore", "get_entity", "list_wiki_relationships", "search_maps", "get_map", "create_lore", "create_npc", "create_location", "create_item", "create_monster", "update_entity", "upload_asset", "attach_asset", "upload_entity_image", "upload_map", "set_status",
+export const operations = ["search_lore", "get_entity", "list_wiki_relationships", "upsert_wiki_relationship", "search_maps", "get_map", "create_lore", "create_npc", "create_location", "create_item", "create_monster", "update_entity", "upload_asset", "attach_asset", "upload_entity_image", "upload_map", "set_status",
   "search_missions", "get_mission", "create_mission", "update_mission", "set_mission_status", "complete_mission", "reopen_mission", "delete_mission",
   "list_mission_encounters", "create_mission_encounter", "update_mission_encounter", "delete_mission_encounter", "replace_encounter_monsters", "link_mission_resource"] as const;
 export type Operation = typeof operations[number];
@@ -32,6 +32,7 @@ const fields: Record<Operation, string[]> = {
   search_lore: ["query", "limit", "offset", "admin_only"],
   get_entity: ["entity_id", "admin_only"],
   list_wiki_relationships: ["limit", "offset", "admin_only"],
+  upsert_wiki_relationship: ["source_id", "target_id", "target_map_id", "label", "admin_only"],
   search_maps: ["query", "map_type", "limit", "offset", "admin_only"],
   get_map: ["map_id", "admin_only"],
   create_lore: ["name", "body", "attributes", "admin_only"],
@@ -64,7 +65,7 @@ export function validate(raw: unknown): { operation: Operation; args: Record<str
   if (!args || typeof args !== "object" || Array.isArray(args) || typeof args.campaign_id !== "string" || !uuid.test(args.campaign_id)) return fail();
   const operation = r.operation as Operation;
   if (Object.keys(args).some((key) => key !== "campaign_id" && !fields[operation].includes(key))) return fail();
-  for (const key of ["entity_id", "asset_id", "map_id", "mission_id", "guild_id", "encounter_id", "resource_id"]) if (args[key] !== undefined && (typeof args[key] !== "string" || !uuid.test(args[key]))) return fail();
+  for (const key of ["entity_id", "asset_id", "map_id", "source_id", "target_id", "target_map_id", "mission_id", "guild_id", "encounter_id", "resource_id"]) if (args[key] !== undefined && (typeof args[key] !== "string" || !uuid.test(args[key]))) return fail();
   if (["update_entity", "upload_entity_image", "set_status"].includes(operation) && (!Number.isSafeInteger(args.revision) || args.revision < 1)) return fail();
   if (["create_lore", "create_npc", "create_location", "create_item", "create_monster"].includes(operation) && (args.name === undefined || args.body === undefined)) return fail();
   for (const [key, max] of [["name", 200], ["body", 100000], ["query", 200]] as const) {
@@ -84,6 +85,12 @@ export function validate(raw: unknown): { operation: Operation; args: Record<str
   if (operation === "list_wiki_relationships") {
     if (args.limit !== undefined && (!Number.isInteger(args.limit) || args.limit < 1 || args.limit > 100)) return fail();
     if (args.offset !== undefined && (!Number.isInteger(args.offset) || args.offset < 0 || args.offset > 10000)) return fail();
+  }
+  if (operation === "upsert_wiki_relationship") {
+    if (typeof args.source_id !== "string" || !uuid.test(args.source_id)) return fail();
+    if ((args.target_id === undefined) === (args.target_map_id === undefined)) return fail();
+    if (args.target_id === args.source_id) return fail();
+    if (typeof args.label !== "string" || !args.label.trim() || args.label.length > 200) return fail();
   }
   if (operation === "search_maps") {
     if (args.query !== undefined && (typeof args.query !== "string" || !args.query.trim() || args.query.length > 200)) return fail();

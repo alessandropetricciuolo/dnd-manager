@@ -85,6 +85,47 @@ export async function executeContent(auth: McpAuthContext, raw: unknown, deps = 
     return { relationships: visible, offset, limit, next_offset: relationships.length === limit ? offset + limit : null, admin_only: includeProtected };
   }
 
+  if (operation === "upsert_wiki_relationship") {
+    const relationshipColumns = "id,campaign_id,source_id,target_id,target_map_id,label,created_at";
+    const source = checked(await auth.db.from("wiki_entities").select("id,name,type,admin_only").eq("id", a.source_id).eq("campaign_id", a.campaign_id).maybeSingle());
+    if (!source) throw new ApiError(404, "Source entity not found");
+    const target = a.target_id ? checked(await auth.db.from("wiki_entities").select("id,name,type,admin_only").eq("id", a.target_id).eq("campaign_id", a.campaign_id).maybeSingle()) : null;
+    const targetMap = a.target_map_id ? checked(await auth.db.from("maps").select("id,name,map_type,admin_only").eq("id", a.target_map_id).eq("campaign_id", a.campaign_id).maybeSingle()) : null;
+    if (a.target_id && !target) throw new ApiError(404, "Target entity not found");
+    if (a.target_map_id && !targetMap) throw new ApiError(404, "Target map not found");
+    if (!adminOnlyRequested && (source.admin_only || target?.admin_only || targetMap?.admin_only)) throw notFound();
+
+    const label = a.label.trim();
+    const findExisting = () => {
+      let request = auth.db.from("wiki_relationships").select(relationshipColumns)
+        .eq("campaign_id", a.campaign_id).eq("source_id", a.source_id).eq("label", label);
+      request = a.target_id ? request.eq("target_id", a.target_id) : request.eq("target_map_id", a.target_map_id);
+      return request.maybeSingle();
+    };
+    let relationship = checked(await findExisting());
+    let created = false;
+    if (!relationship) {
+      const payload = {
+        campaign_id: a.campaign_id, source_id: a.source_id,
+        target_id: a.target_id ?? null, target_map_id: a.target_map_id ?? null, label,
+      };
+      const inserted = await auth.db.from("wiki_relationships").insert(payload).select("id").single();
+      if (inserted.error && (inserted.error as { code?: string }).code !== "23505") throw new ApiError(503, "Relationship write failed");
+      relationship = checked(await findExisting());
+      if (!relationship) throw new ApiError(503, "Relationship readback failed");
+      created = !inserted.error;
+    }
+    return {
+      relationship: {
+        ...relationship,
+        source: { id: source.id, name: source.name, type: source.type, admin_only: source.admin_only === true },
+        target: target ? { id: target.id, name: target.name, type: target.type, admin_only: target.admin_only === true } : null,
+        target_map: targetMap ? { id: targetMap.id, name: targetMap.name, map_type: targetMap.map_type, admin_only: targetMap.admin_only === true } : null,
+      },
+      created,
+    };
+  }
+
   if (operation === "search_maps") {
     const offset = a.offset ?? 0, limit = a.limit ?? 50;
     let request = auth.db.from("maps").select(mapColumns).eq("campaign_id", a.campaign_id);
