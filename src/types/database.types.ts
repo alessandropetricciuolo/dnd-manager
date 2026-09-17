@@ -356,11 +356,51 @@ export interface Database {
           notes: string | null;
           location: string | null;
           dm_id: string | null;
+          session_summary: string | null;
+          gm_private_notes: string | null;
+          is_pre_closed: boolean;
+          pre_closed_xp_gained: number | null;
+          pre_closed_xp_awards: Json | null;
           created_at: string;
           updated_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["sessions"]["Row"], "created_at" | "updated_at">;
+        Insert: Omit<
+          Database["public"]["Tables"]["sessions"]["Row"],
+          "created_at" | "updated_at" | "session_summary" | "gm_private_notes" | "is_pre_closed" | "pre_closed_xp_gained" | "pre_closed_xp_awards"
+        > & {
+          session_summary?: string | null;
+          gm_private_notes?: string | null;
+          is_pre_closed?: boolean;
+          pre_closed_xp_gained?: number | null;
+          pre_closed_xp_awards?: Json | null;
+        };
         Update: Partial<Database["public"]["Tables"]["sessions"]["Insert"]>;
+      };
+      session_xp_awards: {
+        Row: {
+          id: string;
+          session_id: string;
+          campaign_id: string;
+          player_id: string;
+          character_id: string | null;
+          xp_awarded: number;
+          xp_after: number | null;
+          source: "session_close" | "manual_adjustment" | "migration";
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          session_id: string;
+          campaign_id: string;
+          player_id: string;
+          character_id?: string | null;
+          xp_awarded?: number;
+          xp_after?: number | null;
+          source?: "session_close" | "manual_adjustment" | "migration";
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["session_xp_awards"]["Insert"]>;
+        Relationships: [];
       };
       wiki_entities: {
         Row: {
@@ -1551,6 +1591,53 @@ export interface Database {
       };
     };
     Functions: {
+      close_session_with_xp_persisted: {
+        Args: {
+          p_session_id: string;
+          p_actor_id: string;
+          p_attendance: Json;
+          p_xp_gained: number;
+          p_per_player_xp_awards: Json;
+          p_summary: string | null;
+          p_gm_private_notes: string | null;
+        };
+        Returns: { applied_awards: number; skipped_awards: number }[];
+      };
+      set_character_xp_canonical: {
+        Args: {
+          p_character_id: string;
+          p_actor_id: string;
+          p_next_xp: number;
+        };
+        Returns: {
+          campaign_id: string;
+          character_id: string;
+          current_xp: number;
+          member_xp_earned: number;
+        }[];
+      };
+      close_session_with_xp: {
+        Args: {
+          p_session_id: string;
+          p_actor_id: string;
+          p_attendance: Json;
+          p_xp_gained: number;
+          p_per_player_xp_awards: Json;
+          p_summary: string | null;
+          p_gm_private_notes: string | null;
+        };
+        Returns: { applied_awards: number; skipped_awards: number }[];
+      };
+      save_session_preclose: {
+        Args: {
+          p_session_id: string;
+          p_actor_id: string;
+          p_attendance: Json;
+          p_xp_gained: number;
+          p_per_player_xp_awards: Json;
+        };
+        Returns: boolean;
+      };
       forge_create_sale: {
         Args: {
           p_sale_date: string;

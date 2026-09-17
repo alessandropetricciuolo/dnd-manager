@@ -989,6 +989,11 @@ export function CharacterCardGm({
               <span className="tabular-nums">{xpLabel}</span>
               <span className="tabular-nums">{Math.round(progressPercent)}%</span>
             </div>
+            {character.xp_sync_status === "mismatch" ? (
+              <p className="text-[10px] text-amber-300/90">
+                Scheda canonica: {xp} PE. Registro membro: {character.member_xp ?? 0} PE. Usa “Salva PE” per riallinearli.
+              </p>
+            ) : null}
             <div className="flex items-center gap-1.5 pt-1">
               <Input
                 type="number"

@@ -38,6 +38,7 @@ import {
   normalizeCharacterSheetStoragePath,
 } from "@/lib/character-sheets/storage-path";
 import type { GeneratedSheetBuildMeta } from "@/lib/character-sheet-build-meta";
+import { resolveCharacterXp, type CharacterXpSyncStatus } from "@/lib/character-xp";
 
 const SIGNED_URL_EXPIRY_SEC = 3600;
 
@@ -56,6 +57,10 @@ export type CampaignCharacterRow = {
   hit_points?: number | null;
   /** XP correnti del personaggio. */
   current_xp: number;
+  /** Totale compatibile del membro campagna, esposto solo per audit/sync GM. */
+  member_xp?: number | null;
+  /** Stato di allineamento fra scheda canonica e totale compatibile. */
+  xp_sync_status?: CharacterXpSyncStatus;
   /** Livello attuale (1-20). */
   level: number;
   /** Solo per GM/Admin; per i Player non viene mai restituito (null/undefined) */
@@ -239,13 +244,16 @@ export async function getCampaignCharacters(
       }
       const { sheet_file_path: _, ...rest } = row;
       const calendarResolved = resolveCharacterCalendar(calendarCtx, rest);
-      const syncedXp =
-        typeof rest.assigned_to === "string" && rest.assigned_to
-          ? xpByPlayerId.get(rest.assigned_to) ?? rest.current_xp ?? 0
-          : rest.current_xp ?? 0;
+      const xpResolution = resolveCharacterXp({
+        currentXp: rest.current_xp,
+        memberXp: rest.assigned_to ? xpByPlayerId.get(rest.assigned_to) : null,
+        assignedTo: rest.assigned_to,
+      });
       withUrls.push({
         ...rest,
-        current_xp: syncedXp,
+        current_xp: xpResolution.currentXp,
+        member_xp: xpResolution.memberXp,
+        xp_sync_status: xpResolution.syncStatus,
         sheet_url,
         time_offset_hours: typeof rest.time_offset_hours === "number" ? rest.time_offset_hours : 0,
         calendar_current_date: calendarResolved.date,
@@ -299,34 +307,6 @@ export async function getCampaignCharacters(
       coins_cp: typeof (r as { coins_cp?: number }).coins_cp === "number" ? (r as { coins_cp: number }).coins_cp : 0,
     };
   });
-  const assignedPlayerIds = Array.from(
-    new Set(
-      list
-        .map((r) => r.assigned_to)
-        .filter((id): id is string => typeof id === "string" && id.trim().length > 0)
-    )
-  );
-  if (assignedPlayerIds.length > 0) {
-    const { data: memberRows } = await supabase
-      .from("campaign_members")
-      .select("player_id, xp_earned")
-      .eq("campaign_id", campaignId)
-      .in("player_id", assignedPlayerIds);
-    const xpByPlayerId = new Map<string, number>();
-    for (const row of (memberRows ?? []) as Array<{ player_id: string; xp_earned: number | null }>) {
-      xpByPlayerId.set(
-        row.player_id,
-        typeof row.xp_earned === "number" && Number.isFinite(row.xp_earned)
-          ? Math.max(0, Math.floor(row.xp_earned))
-          : 0
-      );
-    }
-    for (const row of list) {
-      if (typeof row.assigned_to === "string" && row.assigned_to) {
-        row.current_xp = xpByPlayerId.get(row.assigned_to) ?? row.current_xp ?? 0;
-      }
-    }
-  }
   return { success: true, data: list };
 }
 
@@ -744,7 +724,7 @@ export async function assignCharacter(
 
   const { data: char, error: fetchErr } = await supabase
     .from("campaign_characters")
-    .select("campaign_id, name")
+    .select("campaign_id, name, current_xp, assigned_to")
     .eq("id", characterId)
     .single();
 
@@ -758,6 +738,32 @@ export async function assignCharacter(
   if (error) {
     console.error("[assignCharacter]", error);
     return { success: false, error: error.message ?? "Errore nell'assegnazione." };
+  }
+
+  if (playerId) {
+    const admin = createSupabaseAdminClient();
+    const { error: syncXpError } = await admin.rpc("set_character_xp_canonical" as never, {
+      p_character_id: characterId,
+      p_actor_id: ctx.userId,
+      p_next_xp:
+        typeof (char as { current_xp?: number | null }).current_xp === "number"
+          ? Math.max(0, Math.floor((char as { current_xp: number }).current_xp))
+          : 0,
+    } as never);
+    if (syncXpError) {
+      // L'assegnazione e la sincronizzazione devono apparire come una sola
+      // operazione all'utente: ripristiniamo lo stato non assegnato se la
+      // seconda parte fallisce.
+      await supabase
+        .from("campaign_characters")
+        .update({ assigned_to: (char as { assigned_to?: string | null }).assigned_to ?? null })
+        .eq("id", characterId)
+        .eq("assigned_to", playerId);
+      return {
+        success: false,
+        error: syncXpError.message ?? "Errore sincronizzazione PE dopo l'assegnazione.",
+      };
+    }
   }
 
   if (playerId) {
@@ -1094,8 +1100,8 @@ export async function setCharacterCalendarOverride(
 }
 
 /**
- * GM/Admin: imposta manualmente i PE del giocatore assegnato al personaggio.
- * I PE restano sincronizzati tra campaign_members.xp_earned e campaign_characters.current_xp.
+ * GM/Admin: imposta manualmente i PE canonici della scheda personaggio.
+ * Il totale compatibile del membro viene aggiornato dalla stessa transazione.
  */
 export async function setCharacterExperience(
   characterId: string,
@@ -1110,49 +1116,22 @@ export async function setCharacterExperience(
 
   const nextXp = Number.isFinite(nextXpRaw) ? Math.max(0, Math.floor(nextXpRaw)) : 0;
   const admin = createSupabaseAdminClient();
-
-  const { data: rowRaw, error: fetchErr } = await admin
-    .from("campaign_characters")
-    .select("id, campaign_id, assigned_to")
-    .eq("id", id)
-    .maybeSingle();
-  const row = rowRaw as { id: string; campaign_id: string; assigned_to: string | null } | null;
-  if (fetchErr || !row) return { success: false, error: fetchErr?.message ?? "Personaggio non trovato." };
-
-  if (!row.assigned_to) {
-    return { success: false, error: "Assegna prima il personaggio a un giocatore." };
+  const { data, error } = await admin.rpc("set_character_xp_canonical" as never, {
+    p_character_id: id,
+    p_actor_id: ctx.userId,
+    p_next_xp: nextXp,
+  } as never);
+  if (error) {
+    const message = error.message ?? "Errore sincronizzazione PE personaggio.";
+    if (message.includes("character_not_assigned")) {
+      return { success: false, error: "Assegna prima il personaggio a un giocatore." };
+    }
+    return { success: false, error: message };
   }
+  const resultRow = Array.isArray(data) ? (data[0] as { campaign_id?: string } | undefined) : undefined;
+  if (!resultRow?.campaign_id) return { success: false, error: "Risultato sincronizzazione PE non valido." };
 
-  const { data: existingMember } = await admin
-    .from("campaign_members")
-    .select("id")
-    .eq("campaign_id", row.campaign_id)
-    .eq("player_id", row.assigned_to)
-    .maybeSingle();
-
-  if (existingMember) {
-    const { error: memberUpdErr } = await admin
-      .from("campaign_members")
-      .update({ xp_earned: nextXp } as never)
-      .eq("id", (existingMember as { id: string }).id);
-    if (memberUpdErr) return { success: false, error: memberUpdErr.message ?? "Errore aggiornamento PE giocatore." };
-  } else {
-    const { error: memberInsErr } = await admin.from("campaign_members").insert({
-      campaign_id: row.campaign_id,
-      player_id: row.assigned_to,
-      xp_earned: nextXp,
-    } as never);
-    if (memberInsErr) return { success: false, error: memberInsErr.message ?? "Errore creazione membro campagna." };
-  }
-
-  const { error: charsErr } = await admin
-    .from("campaign_characters")
-    .update({ current_xp: nextXp } as never)
-    .eq("campaign_id", row.campaign_id)
-    .eq("assigned_to", row.assigned_to);
-  if (charsErr) return { success: false, error: charsErr.message ?? "Errore sincronizzazione PE personaggio." };
-
-  revalidatePath(`/campaigns/${row.campaign_id}`);
+  revalidatePath(`/campaigns/${resultRow.campaign_id}`);
   revalidatePath("/dashboard");
   return { success: true, message: "PE aggiornati." };
 }

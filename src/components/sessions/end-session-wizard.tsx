@@ -266,6 +266,12 @@ export function EndSessionWizard({
       const meta = await getSessionWizardMeta(sessionId);
       if (meta.success && meta.data?.is_pre_closed) {
         setIsPreClosed(true);
+        if (meta.data.pre_closed_xp_gained != null) {
+          setXpGained(Math.max(0, Math.floor(meta.data.pre_closed_xp_gained)));
+        }
+        if (meta.data.pre_closed_xp_awards.length > 0) {
+          setResolvedPerPlayerXpAwards(meta.data.pre_closed_xp_awards);
+        }
         setStep(2 as StepId);
       }
 
@@ -570,9 +576,12 @@ export function EndSessionWizard({
       return;
     }
     setPreClosing(true);
-    const payload: Pick<CloseSessionActionPayload, "attendance" | "xpGained"> = {
+    const payload: Pick<CloseSessionActionPayload, "attendance" | "xpGained" | "perPlayerXpAwards"> = {
       attendance,
       xpGained: Math.max(0, Math.floor(xpGained)),
+      perPlayerXpAwards: resolvedPerPlayerXpAwards?.filter(
+        (award) => attendance[award.playerId] === "attended"
+      ),
     };
     const res = await preCloseSessionAction(sessionId, payload);
     setPreClosing(false);
