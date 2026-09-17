@@ -94,17 +94,20 @@ export async function executeContent(auth: McpAuthContext, raw: unknown, deps = 
     if (a.target_id && !target) throw new ApiError(404, "Target entity not found");
     if (a.target_map_id && !targetMap) throw new ApiError(404, "Target map not found");
     if (!adminOnlyRequested && (source.admin_only || target?.admin_only || targetMap?.admin_only)) throw notFound();
+    if (!source.admin_only && target?.admin_only) throw new ApiError(400, "Public entities cannot link to Admin-only entities");
 
     const label = a.label.trim();
     const findExisting = () => {
       let request = auth.db.from("wiki_relationships").select(relationshipColumns)
-        .eq("campaign_id", a.campaign_id).eq("source_id", a.source_id).eq("label", label);
+        .eq("campaign_id", a.campaign_id).eq("source_id", a.source_id);
       request = a.target_id ? request.eq("target_id", a.target_id) : request.eq("target_map_id", a.target_map_id);
       return request.maybeSingle();
     };
     let relationship = checked(await findExisting());
     let created = false;
-    if (!relationship) {
+    if (relationship && relationship.label !== label) {
+      relationship = checked(await auth.db.from("wiki_relationships").update({ label }).eq("id", relationship.id).select(relationshipColumns).single());
+    } else if (!relationship) {
       const payload = {
         campaign_id: a.campaign_id, source_id: a.source_id,
         target_id: a.target_id ?? null, target_map_id: a.target_map_id ?? null, label,

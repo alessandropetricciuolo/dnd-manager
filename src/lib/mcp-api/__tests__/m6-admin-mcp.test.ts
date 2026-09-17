@@ -127,9 +127,20 @@ test("upsert_wiki_relationship validates endpoints, is idempotent, and reads bac
   assert.equal(repeated.created, false);
   assert(!existing.calls.some((call) => call[0] === "insert"));
 
+  const relabelled = { ...stored, label: "ospita" };
+  const relabel = fakeDb([{ id: campaign, admin_drafts_enabled: true }, source, target, stored, relabelled]);
+  const updated: any = await executeContent(admin(relabel.db), { operation: "upsert_wiki_relationship", args: { campaign_id: campaign, source_id: entityId, target_id: targetId, label: "ospita" } });
+  assert.equal(updated.created, false);
+  assert.equal(updated.relationship.label, "ospita");
+  assert(relabel.calls.some((call) => call[0] === "update"));
+
   const protectedEndpoint = fakeDb([{ id: campaign, admin_drafts_enabled: true }, { ...source, admin_only: true }, target]);
   await assert.rejects(executeContent(admin(protectedEndpoint.db), { operation: "upsert_wiki_relationship", args: { campaign_id: campaign, source_id: entityId, target_id: targetId, label: "contiene" } }), (error: any) => error.status === 404);
   assert(!protectedEndpoint.calls.some((call) => call[0] === "insert"));
+
+  const publicToProtected = fakeDb([{ id: campaign, admin_drafts_enabled: true }, source, { ...target, admin_only: true }]);
+  await assert.rejects(executeContent(admin(publicToProtected.db), { operation: "upsert_wiki_relationship", args: { campaign_id: campaign, source_id: entityId, target_id: targetId, label: "contiene", admin_only: true } }), (error: any) => error.status === 400);
+  assert(!publicToProtected.calls.some((call) => call[0] === "insert"));
 });
 
 test("verified Admin can opt into protected search and creates protected rows", async () => {
