@@ -105,8 +105,8 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.set_character_xp_canonical(UUID, UUID, INTEGER) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.close_session_with_xp_persisted(UUID, UUID, JSONB, INTEGER, JSONB, TEXT, TEXT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.set_character_xp_canonical(UUID, UUID, INTEGER) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.close_session_with_xp_persisted(UUID, UUID, JSONB, INTEGER, JSONB, TEXT, TEXT) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.set_character_xp_canonical(UUID, UUID, INTEGER) TO service_role;
 GRANT EXECUTE ON FUNCTION public.close_session_with_xp_persisted(UUID, UUID, JSONB, INTEGER, JSONB, TEXT, TEXT) TO service_role;
 
