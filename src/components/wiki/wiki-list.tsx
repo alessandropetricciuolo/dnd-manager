@@ -51,15 +51,18 @@ export async function WikiList({
     visibility?: string;
     sort_order?: number | null;
     tags?: string[] | null;
-    content?: { body?: string } | null;
+    content?: { body?: string; description?: string } | null;
     linked_mission_id?: string | null;
     admin_only?: boolean;
+    image_url?: string | null;
+    telegram_fallback_id?: string | null;
+    attributes?: Record<string, unknown> | null;
   };
   let entities: EntityRow[] | null = null;
   let error: { message?: string } | null = null;
   let entityQuery = supabase
     .from("wiki_entities")
-    .select("id, name, type, is_secret, visibility, sort_order, tags, content, linked_mission_id, admin_only")
+    .select("id, name, type, is_secret, visibility, sort_order, tags, content, linked_mission_id, admin_only, image_url, telegram_fallback_id, attributes")
     .eq("campaign_id", campaignId)
     .order("name");
   if (!isAdmin) entityQuery = entityQuery.eq("admin_only", false);
@@ -67,7 +70,7 @@ export async function WikiList({
   if (res.error?.message?.includes("linked_mission_id")) {
     let fallbackQuery = supabase
       .from("wiki_entities")
-      .select("id, name, type, is_secret, visibility, sort_order, tags, content, admin_only")
+      .select("id, name, type, is_secret, visibility, sort_order, tags, content, admin_only, image_url, telegram_fallback_id, attributes")
       .eq("campaign_id", campaignId)
       .order("name");
     if (!isAdmin) fallbackQuery = fallbackQuery.eq("admin_only", false);
@@ -209,6 +212,10 @@ export async function WikiList({
     sortOrder: e.sort_order ?? null,
     tags: e.tags ?? [],
     description: getWikiContentDescription(e.content) || getWikiContentBody(e.content),
+    contentBody: getWikiContentBody(e.content),
+    imageUrl: e.image_url ?? null,
+    telegramFallbackId: e.telegram_fallback_id ?? null,
+    attributes: (e.attributes ?? {}) as Record<string, unknown>,
     selectiveAudienceLabel: selectiveAudienceByEntityId[e.id] ?? null,
     linkedMissionId: e.linked_mission_id ?? null,
     missionTitle: e.linked_mission_id ? missionTitleById.get(e.linked_mission_id) ?? null : null,

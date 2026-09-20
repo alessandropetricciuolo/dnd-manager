@@ -32,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ExternalLink, Pencil, Plus, RefreshCw, Swords, Trash2 } from "lucide-react";
+import { ExternalLink, LayoutGrid, List, Pencil, Plus, RefreshCw, Swords, Trash2 } from "lucide-react";
 import { NameGeneratorField } from "@/components/name-generator/name-generator-field";
 import { cn } from "@/lib/utils";
 
@@ -122,68 +122,162 @@ function missionStatusLabel(status: string | null | undefined): string {
   return "Non accettabile";
 }
 
+function gradeBadgeClass(grade: string | null | undefined): string {
+  const g = (grade ?? "D").trim().toUpperCase();
+  if (g === "S") return "border-yellow-400/60 bg-yellow-950/80 text-yellow-300 shadow-[0_0_12px_rgba(234,179,8,0.25)]";
+  if (g === "A") return "border-red-500/60 bg-red-950/80 text-red-300 shadow-[0_0_10px_rgba(239,68,68,0.2)]";
+  if (g === "B") return "border-blue-500/60 bg-blue-950/80 text-blue-300";
+  if (g === "C") return "border-amber-600/60 bg-amber-950/80 text-amber-300";
+  return "border-zinc-500/60 bg-zinc-900/80 text-zinc-300";
+}
+
 function missionRowTone(status: string | null | undefined): string {
   const normalized = normalizeMissionStatus(status);
   if (normalized === "open") {
-    return "bg-emerald-900/20 hover:bg-emerald-700/20";
+    return "bg-guild-stone/50 hover:bg-brass-base/10";
   }
   if (normalized === "in_progress") {
-    return "bg-amber-900/20 hover:bg-amber-700/20";
+    return "bg-amber-950/20 hover:bg-amber-900/30";
   }
-  return "bg-red-900/20 hover:bg-red-700/20";
+  return "bg-zinc-950/40 opacity-75 hover:opacity-100";
 }
 
 function missionStatusBadgeClass(status: string | null | undefined): string {
   const normalized = normalizeMissionStatus(status);
-  if (normalized === "open") return "bg-emerald-900/50 text-emerald-200";
-  if (normalized === "in_progress") return "bg-amber-900/40 text-amber-200";
-  return "bg-red-900/40 text-red-200";
+  if (normalized === "open") return "border border-emerald-500/40 bg-emerald-950/60 text-emerald-300";
+  if (normalized === "in_progress") return "border border-amber-500/40 bg-amber-950/60 text-amber-300";
+  return "border border-zinc-600/40 bg-zinc-900/60 text-zinc-400";
 }
 
-function MissionMobileCard({
+function ParchmentQuestCard({
   mission,
   onOpen,
 }: {
   mission: MissionBoardMission;
   onOpen: () => void;
 }) {
+  const status = normalizeMissionStatus(mission.status);
+  const grade = (mission.grade ?? "D").trim().toUpperCase();
+
+  // Rotazione organica impercettibile basata sull'ID per simulare fogli appesi naturalmente
+  const rotation = useMemo(() => {
+    let hash = 0;
+    for (let i = 0; i < mission.id.length; i++) {
+      hash = (hash << 5) - hash + mission.id.charCodeAt(i);
+    }
+    const angles = [-1.2, 0.9, -0.6, 1.2, -1.0, 0.6, -0.8, 1.0];
+    return angles[Math.abs(hash) % angles.length];
+  }, [mission.id]);
+
+  // Calcolo teschi di difficoltà in base al grado
+  const skullsCount =
+    grade === "S" ? 5 : grade === "A" ? 4 : grade === "B" ? 3 : grade === "C" ? 2 : 1;
+  const skulls = "💀".repeat(skullsCount);
+
   return (
-    <button
-      type="button"
+    <div
       onClick={onOpen}
-      className={cn(
-        "w-full rounded-xl border border-amber-600/20 p-3 text-left transition-colors active:scale-[0.99]",
-        missionRowTone(mission.status)
-      )}
+      role="button"
+      tabIndex={0}
+      style={{ transform: `rotate(${rotation}deg)` }}
+      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onOpen()}
+      className="parchment-notice group flex flex-col justify-between p-4 pt-6 sm:p-5 sm:pt-7 text-left cursor-pointer min-h-[350px] focus:outline-none focus:ring-2 focus:ring-amber-800/60 select-none hover:!rotate-0"
     >
-      <div className="flex items-start gap-3">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-600/15 font-serif text-xl font-bold text-amber-200 ring-1 ring-amber-500/25">
-          {mission.grade?.trim() || "?"}
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={cn(
-                "rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-                missionStatusBadgeClass(mission.status)
-              )}
-            >
-              {missionStatusLabel(mission.status)}
+      {/* Chiodo in ferro battuto in alto al centro */}
+      <span className="parchment-nail" />
+
+      {/* Testata della Pergamena */}
+      <div>
+        {/* Rango & Punti Gloria */}
+        <div className="flex items-center justify-between gap-1 text-[10px] font-cinzel font-bold text-[#734f2d] uppercase tracking-wider mb-2 border-b border-[#a88457]/30 pb-1.5">
+          <span className="inline-flex items-center gap-1 font-extrabold">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#8c2d19]" />
+            Rango {grade}
+          </span>
+          {(mission.points_reward ?? 0) > 0 ? (
+            <span className="text-[#8c2d19] font-mono font-bold">+{mission.points_reward} Gloria</span>
+          ) : (
+            <span className="text-[#734f2d]/80">Taglia Gilda</span>
+          )}
+        </div>
+
+        {/* Titolo Monumentale della Taglia */}
+        <h3 className="font-cinzel text-base sm:text-lg font-extrabold text-[#2c180b] text-center leading-snug tracking-tight group-hover:text-[#8c2d19] transition-colors">
+          {mission.title}
+        </h3>
+
+        {/* Bando / Committente */}
+        {mission.committente?.trim() ? (
+          <p className="mt-1.5 text-center text-[11px] font-serif text-[#6b4728] italic line-clamp-1">
+            Bando di: <strong className="font-semibold text-[#382010] not-italic">{mission.committente}</strong>
+          </p>
+        ) : null}
+
+        {/* Divisore Araldico */}
+        <div className="my-2.5 flex items-center justify-center gap-2 text-[#8b6540]/40">
+          <span className="h-px w-10 bg-[#8b6540]/30" />
+          <span className="text-[8px] text-[#8b6540]">♦</span>
+          <span className="h-px w-10 bg-[#8b6540]/30" />
+        </div>
+
+        {/* Descrizione del Bando in Inchiostro */}
+        <p className="text-center font-serif text-xs leading-relaxed text-[#3f2814] line-clamp-3 px-1">
+          {mission.description?.trim() ||
+            "Bando di taglia registrato negli archivi di gilda. Presentati al committente per ricevere le specifiche dell'incarico."}
+        </p>
+
+        {mission.ubicazione?.trim() ? (
+          <p className="mt-2 text-center text-[11px] font-serif text-[#6b4728] line-clamp-1">
+            📍 {mission.ubicazione}
+          </p>
+        ) : null}
+      </div>
+
+      {/* Parte Inferiore: Ricompensa Monete, Difficoltà e Sigillo Fisico */}
+      <div className="mt-4 pt-3 border-t border-[#a88457]/40 flex items-end justify-between gap-2">
+        {/* Moneta d'oro e Difficoltà */}
+        <div className="space-y-1.5 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="parchment-gold-coin" title="Ricompensa ufficiale">
+              🪙
             </span>
-            {(mission.points_reward ?? 0) > 0 ? (
-              <span className="text-[10px] tabular-nums text-zinc-400">{mission.points_reward} pt</span>
-            ) : null}
+            <div className="min-w-0">
+              <span className="block text-[10px] font-serif uppercase tracking-wider text-[#734f2d]/90 font-semibold leading-none">
+                Difficoltà:
+              </span>
+              <span className="text-xs tracking-tighter" title={`Grado ${grade}`}>
+                {skulls}
+              </span>
+            </div>
           </div>
-          <p className="mt-1.5 font-serif text-base font-semibold leading-snug text-zinc-50">{mission.title}</p>
-          {mission.committente?.trim() ? (
-            <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-zinc-300">{mission.committente}</p>
-          ) : null}
-          {mission.ubicazione?.trim() ? (
-            <p className="mt-0.5 truncate text-[11px] text-zinc-500">{mission.ubicazione}</p>
-          ) : null}
+
+          {mission.paga?.trim() ? (
+            <div className="font-cinzel text-xs font-extrabold text-[#6d3e0c] truncate">
+              Paga: <span className="tabular-nums font-bold">{mission.paga}</span>
+            </div>
+          ) : (
+            <div className="text-[11px] font-serif italic text-[#6d3e0c]">Ricompensa d&apos;onore</div>
+          )}
+        </div>
+
+        {/* Sigillo Fisico (Ceralacca o Timbro ad Inchiostro) */}
+        <div className="shrink-0 flex items-center justify-end">
+          {status === "completed" ? (
+            <div className="ink-stamp-completed">
+              COMPLETATA
+            </div>
+          ) : status === "in_progress" ? (
+            <div className="ink-stamp-progress">
+              IN CORSO
+            </div>
+          ) : (
+            <div className="wax-seal-badge" title="Bando aperto e accettabile">
+              <span>ATTIVA</span>
+            </div>
+          )}
         </div>
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -259,6 +353,7 @@ export function MissionBoard({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  const [displayMode, setDisplayMode] = useState<"board" | "table">("board");
 
   const sortedGuilds = useMemo(() => {
     return [...guilds].sort((a, b) => {
@@ -615,45 +710,31 @@ export function MissionBoard({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-xl border p-3 font-serif sm:p-4 md:p-6",
-        "font-[var(--font-missions)]",
-        "border-amber-600/25 bg-[linear-gradient(180deg,rgba(28,25,23,0.2),rgba(0,0,0,0.35))]",
-        "shadow-[0_0_0_1px_rgba(217,119,6,0.14),0_10px_24px_rgba(0,0,0,0.24)]"
+        "card-guild-stone relative overflow-hidden rounded-2xl border-2 border-brass-base/40 p-4 font-serif sm:p-6 shadow-2xl backdrop-blur-md",
+        "font-[var(--font-missions)]"
       )}
     >
-      <div
-        className="pointer-events-none absolute inset-0 opacity-90"
-        style={{
-          backgroundImage:
-            "repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 2px, transparent 2px, transparent 10px), repeating-linear-gradient(-45deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 9px), linear-gradient(180deg, rgba(0,0,0,0.10), rgba(0,0,0,0.55))",
-        }}
-      />
+      <div className="corner-ornament-tl" />
+      <div className="corner-ornament-tr" />
+      <div className="corner-ornament-bl" />
+      <div className="corner-ornament-br" />
 
-      <div className="pointer-events-none absolute inset-0 opacity-90">
-        <div className="absolute -left-24 -top-12 h-72 w-72 rounded-full bg-[radial-gradient(circle_at_center,rgba(56,189,248,0.18),transparent_60%)] blur-sm" />
-        <div className="absolute left-1/2 top-[-30px] h-64 w-64 -translate-x-1/2 rounded-full bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.16),transparent_60%)] blur-sm" />
-        <div className="absolute inset-0 bg-[linear-gradient(115deg,rgba(56,189,248,0.05),transparent_45%),linear-gradient(250deg,rgba(168,85,247,0.06),transparent_40%)]" />
-      </div>
-
-      <div className="relative">
-        <div className="mb-3 flex flex-wrap items-start justify-between gap-3 md:mb-4">
+      <div className="relative z-10">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-4 border-b border-brass-base/20 pb-4">
           <div className="min-w-0">
-            <h2 className="text-base font-semibold tracking-wide text-amber-200 sm:text-lg md:text-xl">
-              Missioni
+            <h2 className="font-serif text-2xl font-extrabold tracking-tight text-gold-relief sm:text-3xl">
+              Bacheca delle Taglie & Contratti di Gilda
             </h2>
             <details className="group mt-2 md:hidden">
-              <summary className="cursor-pointer text-xs text-amber-200/80 marker:content-none">
-                <span className="underline decoration-amber-600/40 underline-offset-2">Come funzionano i ranghi</span>
+              <summary className="cursor-pointer text-xs text-brass-light/80 marker:content-none font-serif">
+                <span className="underline decoration-brass-base/40 underline-offset-2">Guida ai Ranghi di Gilda</span>
               </summary>
-              <p className="mt-2 text-xs leading-relaxed text-zinc-300">
-                Ranghi gilda: D → C → B → A → S. I punti premio aumentano il punteggio; con «Rango automatico» attivo
-                il rango segue le soglie.
+              <p className="mt-2 text-xs leading-relaxed text-parchment-300">
+                Ranghi: D → C → B → A → S. I punti premio aumentano la reputazione del party.
               </p>
             </details>
-            <p className="mt-1 hidden max-w-xl text-xs text-zinc-300 md:block">
-              Ranghi gilda: D → C → B → A → S. I punti premio delle missioni completate aumentano il punteggio; se
-              «Rango automatico» è attivo, il rango si aggiorna alle soglie (modificabili nel codice). Puoi sempre
-              impostare rango e punti a mano nella gilda.
+            <p className="mt-1 hidden max-w-xl text-xs leading-relaxed text-parchment-300 md:block">
+              Consulta le missioni disponibili nel regno, graduate dal rango D (ferro) al rango leggendario S (oro). I punti gloria ottenuti accrescono il prestigio della tua gilda.
             </p>
           </div>
           {isGmOrAdmin && !hideHeaderActions && (
@@ -662,14 +743,14 @@ export function MissionBoard({
                 type="button"
                 variant="outline"
                 onClick={openProjectionTab}
-                className="border-amber-600/40 text-amber-100 hover:bg-amber-600/15"
+                className="border border-brass-base/40 bg-guild-stone text-parchment-200 hover:bg-brass-base/20 hover:text-brass-light font-serif text-xs"
               >
-                <ExternalLink className="mr-2 h-4 w-4" />
-                Apri proiezione
+                <ExternalLink className="mr-1.5 h-3.5 w-3.5 text-brass-base" />
+                Proiezione Tavolo
               </Button>
               {isAdmin ? <BulkImportMissionsDialog campaignId={campaignId} /> : null}
-              <Button onClick={openAddMission} disabled={isPending} className="bg-amber-600 text-zinc-950 hover:bg-amber-500">
-                <Plus className="mr-2 h-4 w-4" />
+              <Button onClick={openAddMission} disabled={isPending} className="btn-wax-seal text-xs font-serif font-bold uppercase tracking-wider shadow-md">
+                <Plus className="mr-1.5 h-4 w-4" />
                 Nuova Missione
               </Button>
             </div>
@@ -677,75 +758,153 @@ export function MissionBoard({
         </div>
 
         <Tabs defaultValue="missions">
-          <TabsList className="mb-3 grid h-auto w-full grid-cols-2 bg-zinc-950/30 border border-amber-600/25 backdrop-blur supports-[backdrop-filter]:bg-zinc-950/40 md:inline-flex md:w-auto">
-            <TabsTrigger value="missions" className="text-xs sm:text-sm">
-              Missioni
-            </TabsTrigger>
-            <TabsTrigger value="ranking" className="text-xs sm:text-sm">
-              Classifica
-            </TabsTrigger>
-          </TabsList>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <TabsList className="grid h-auto w-full grid-cols-2 rounded-xl border border-brass-base/30 bg-guild-stone/80 p-1 md:inline-flex md:w-auto">
+              <TabsTrigger value="missions" className="text-xs font-serif uppercase tracking-wider data-[state=active]:bg-brass-base/20 data-[state=active]:text-brass-light sm:text-sm">
+                Bandi & Missioni ({sortedMissions.length})
+              </TabsTrigger>
+              <TabsTrigger value="ranking" className="text-xs font-serif uppercase tracking-wider data-[state=active]:bg-brass-base/20 data-[state=active]:text-brass-light sm:text-sm">
+                Classifica Gilde ({sortedGuilds.length})
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Selettore Vista per la Bacheca (Bacheca Pergamene vs Tabella) */}
+            <div className="flex items-center gap-1 rounded-lg border border-brass-base/30 bg-guild-stone/80 p-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setDisplayMode("board")}
+                className={cn(
+                  "h-7 px-2.5 text-xs font-serif font-bold tracking-wider",
+                  displayMode === "board"
+                    ? "bg-brass-base/20 text-brass-light border border-brass-base/40 shadow-sm"
+                    : "text-parchment-400 hover:text-parchment-200"
+                )}
+                title="Visualizzazione autentica in legno con pergamene e sigilli"
+              >
+                <LayoutGrid className="mr-1.5 h-3.5 w-3.5" />
+                Bacheca Taverna
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setDisplayMode("table")}
+                className={cn(
+                  "h-7 px-2.5 text-xs font-serif font-bold tracking-wider",
+                  displayMode === "table"
+                    ? "bg-brass-base/20 text-brass-light border border-brass-base/40 shadow-sm"
+                    : "text-parchment-400 hover:text-parchment-200"
+                )}
+                title="Visualizzazione a registro tabellare"
+              >
+                <List className="mr-1.5 h-3.5 w-3.5" />
+                Registro
+              </Button>
+            </div>
+          </div>
 
           <TabsContent value="missions">
-            <div className="flex flex-col gap-2 md:hidden">
-              {sortedMissions.length === 0 ? (
-                <p className="rounded-lg border border-amber-600/20 bg-zinc-950/30 px-4 py-6 text-center text-sm text-zinc-400">
-                  Nessuna missione disponibile.
-                </p>
-              ) : (
-                sortedMissions.map((m) => (
-                  <MissionMobileCard key={m.id} mission={m} onOpen={() => openDetailsMission(m)} />
-                ))
-              )}
-            </div>
-
-            <div className="hidden rounded-lg border border-amber-600/20 bg-zinc-950/30 p-3 md:block">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-amber-600/20 hover:bg-transparent">
-                    <TableHead className="text-[11px] uppercase tracking-wider text-amber-200/90">Stato</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider text-amber-200/90">Grado</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider text-amber-200/90">Titolo</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider text-amber-200/90">Committente</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider text-amber-200/90">Ubicazione</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider text-amber-200/90">Paga</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider text-amber-200/90">Urgenza</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider text-amber-200/90">Pt.</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+            {displayMode === "board" ? (
+              /* LA VERA BACHECA IN LEGNO CON PERGAMENE E SIGILLI DEL MOCKUP */
+              <div className="quest-board-frame p-4 sm:p-6 md:p-8 min-h-[480px]">
+                {sortedMissions.length === 0 ? (
+                  <div className="parchment-notice mx-auto max-w-md p-8 text-center my-12">
+                    <span className="parchment-nail" />
+                    <h4 className="font-cinzel text-lg font-bold text-[#2c180b]">Nessun Bando Affisso</h4>
+                    <p className="mt-2 font-serif text-xs leading-relaxed text-[#523318]">
+                      La bacheca della taverna è momentaneamente sgombra. Nessun committente o mostro richiede l&apos;intervento degli avventurieri.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-6 sm:gap-7 items-start">
+                    {sortedMissions.map((m) => (
+                      <ParchmentQuestCard key={m.id} mission={m} onOpen={() => openDetailsMission(m)} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* VISTA REGISTRO A TABELLA */
+              <>
+                <div className="flex flex-col gap-3 md:hidden">
                   {sortedMissions.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-zinc-400">
-                        Nessuna missione disponibile.
-                      </TableCell>
-                    </TableRow>
+                    <p className="rounded-xl border border-brass-base/20 bg-guild-stone/40 px-4 py-8 text-center text-sm text-parchment-400">
+                      Nessuna missione disponibile sulla bacheca.
+                    </p>
                   ) : (
                     sortedMissions.map((m) => (
-                      <TableRow
-                        key={m.id}
-                        className={cn(
-                          "cursor-pointer transition-colors",
-                          missionRowTone(m.status)
-                        )}
-                        onClick={() => openDetailsMission(m)}
-                      >
-                        <TableCell className="whitespace-nowrap text-xs text-amber-100/90">
-                          {missionStatusLabel(m.status)}
-                        </TableCell>
-                        <TableCell className="font-medium text-amber-100">{m.grade}</TableCell>
-                        <TableCell className="text-zinc-100">{m.title}</TableCell>
-                        <TableCell className="text-zinc-200">{m.committente}</TableCell>
-                        <TableCell className="text-zinc-200">{m.ubicazione}</TableCell>
-                        <TableCell className="text-zinc-200">{m.paga}</TableCell>
-                        <TableCell className="text-zinc-200">{m.urgenza}</TableCell>
-                        <TableCell className="text-zinc-200">{m.points_reward ?? 0}</TableCell>
-                      </TableRow>
+                      <ParchmentQuestCard key={m.id} mission={m} onOpen={() => openDetailsMission(m)} />
                     ))
                   )}
-                </TableBody>
-              </Table>
-            </div>
+                </div>
+
+                <div className="hidden overflow-hidden rounded-xl border border-brass-base/30 bg-guild-stone/50 shadow-inner md:block">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-b border-brass-base/20 bg-guild-oak/80 hover:bg-guild-oak/80">
+                        <TableHead className="text-[11px] font-serif uppercase tracking-wider text-brass-light">Stato</TableHead>
+                        <TableHead className="text-[11px] font-serif uppercase tracking-wider text-brass-light">Grado</TableHead>
+                        <TableHead className="text-[11px] font-serif uppercase tracking-wider text-brass-light">Titolo</TableHead>
+                        <TableHead className="text-[11px] font-serif uppercase tracking-wider text-brass-light">Committente</TableHead>
+                        <TableHead className="text-[11px] font-serif uppercase tracking-wider text-brass-light">Ubicazione</TableHead>
+                        <TableHead className="text-[11px] font-serif uppercase tracking-wider text-brass-light">Paga</TableHead>
+                        <TableHead className="text-[11px] font-serif uppercase tracking-wider text-brass-light">Urgenza</TableHead>
+                        <TableHead className="text-[11px] font-serif uppercase tracking-wider text-brass-light">Gloria</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {sortedMissions.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={8} className="text-center py-8 text-parchment-400 font-serif">
+                            Nessuna missione disponibile sulla bacheca.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        sortedMissions.map((m) => (
+                          <TableRow
+                            key={m.id}
+                            className={cn(
+                              "cursor-pointer border-b border-brass-base/10 transition-colors",
+                              missionRowTone(m.status)
+                            )}
+                            onClick={() => openDetailsMission(m)}
+                          >
+                            <TableCell className="whitespace-nowrap">
+                              <span
+                                className={cn(
+                                  "inline-block rounded-full px-2 py-0.5 text-[10px] font-serif uppercase tracking-wider",
+                                  missionStatusBadgeClass(m.status)
+                                )}
+                              >
+                                {missionStatusLabel(m.status)}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <span
+                                className={cn(
+                                  "inline-flex h-7 w-7 items-center justify-center rounded-md font-serif text-sm font-extrabold border shadow-inner",
+                                  gradeBadgeClass(m.grade)
+                                )}
+                              >
+                                {m.grade}
+                              </span>
+                            </TableCell>
+                            <TableCell className="font-serif font-bold text-parchment-100">{m.title}</TableCell>
+                            <TableCell className="text-xs text-parchment-300">{m.committente}</TableCell>
+                            <TableCell className="text-xs text-parchment-300">{m.ubicazione}</TableCell>
+                            <TableCell className="text-xs font-serif font-medium text-brass-light">{m.paga}</TableCell>
+                            <TableCell className="text-xs text-parchment-300">{m.urgenza}</TableCell>
+                            <TableCell className="font-mono text-xs font-bold text-brass-base">+{m.points_reward ?? 0}</TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
+            )}
           </TabsContent>
 
           <TabsContent value="ranking">
@@ -878,9 +1037,9 @@ export function MissionBoard({
       </div>
 
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <DialogContent className="border-amber-600/30 bg-zinc-950 text-zinc-100 sm:max-w-2xl">
+        <DialogContent className="border-brass-base/40 bg-[#140f0c] text-parchment-100 shadow-2xl backdrop-blur-md sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Dettagli Missione</DialogTitle>
+            <DialogTitle className="font-cinzel text-xl font-extrabold text-gold-relief">Dettagli Bando di Taglia</DialogTitle>
           </DialogHeader>
 
           {detailsMission ? (
@@ -891,18 +1050,18 @@ export function MissionBoard({
               <div className="flex flex-wrap gap-2 text-sm">
                 <span
                   className={cn(
-                    "rounded-md px-2 py-0.5 text-xs font-semibold",
+                    "rounded-md px-2.5 py-0.5 text-xs font-cinzel font-bold tracking-wider uppercase border",
                     status === "open"
-                      ? "bg-emerald-900/50 text-emerald-200"
+                      ? "bg-emerald-950/60 text-emerald-200 border-emerald-600/40"
                       : status === "in_progress"
-                        ? "bg-amber-900/40 text-amber-200"
-                        : "bg-red-900/40 text-red-200"
+                        ? "bg-amber-950/60 text-amber-200 border-amber-600/40"
+                        : "bg-red-950/60 text-red-200 border-red-600/40"
                   )}
                 >
                   {missionStatusLabel(status)}
                 </span>
-                <span className="text-zinc-400">
-                  Punti premio: <strong className="text-zinc-200">{detailsMission.points_reward ?? 0}</strong>
+                <span className="text-parchment-400 font-serif text-xs self-center">
+                  Punti premio gilda: <strong className="text-brass-light font-mono font-bold">+{detailsMission.points_reward ?? 0}</strong>
                 </span>
               </div>
                 );
@@ -975,36 +1134,36 @@ export function MissionBoard({
                 </div>
               )}
 
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2 rounded-lg border border-brass-base/20 bg-[#0c0906]/60 p-3.5">
                 <div>
-                  <p className="text-xs text-amber-200/70">Grado</p>
-                  <p className="font-semibold">{detailsMission.grade}</p>
+                  <p className="text-[11px] font-cinzel font-semibold text-brass-light/80 uppercase">Grado</p>
+                  <p className="font-serif font-bold text-parchment-100">{detailsMission.grade}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-amber-200/70">Titolo</p>
-                  <p className="font-semibold">{detailsMission.title}</p>
+                  <p className="text-[11px] font-cinzel font-semibold text-brass-light/80 uppercase">Titolo</p>
+                  <p className="font-serif font-bold text-parchment-100">{detailsMission.title}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-amber-200/70">Committente</p>
-                  <p>{detailsMission.committente}</p>
+                  <p className="text-[11px] font-cinzel font-semibold text-brass-light/80 uppercase">Committente</p>
+                  <p className="font-serif text-parchment-200">{detailsMission.committente || "—"}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-amber-200/70">Ubicazione</p>
-                  <p>{detailsMission.ubicazione}</p>
+                  <p className="text-[11px] font-cinzel font-semibold text-brass-light/80 uppercase">Ubicazione</p>
+                  <p className="font-serif text-parchment-200">{detailsMission.ubicazione || "—"}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-amber-200/70">Paga</p>
-                  <p>{detailsMission.paga}</p>
+                  <p className="text-[11px] font-cinzel font-semibold text-brass-light/80 uppercase">Paga</p>
+                  <p className="font-serif font-semibold text-brass-light">{detailsMission.paga || "—"}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-amber-200/70">Urgenza</p>
-                  <p>{detailsMission.urgenza}</p>
+                  <p className="text-[11px] font-cinzel font-semibold text-brass-light/80 uppercase">Urgenza</p>
+                  <p className="font-serif text-parchment-200">{detailsMission.urgenza || "—"}</p>
                 </div>
               </div>
 
-              <div className="rounded-lg border border-amber-600/20 bg-zinc-950/30 p-3">
-                <p className="mb-2 text-xs text-amber-200/70">Descrizione</p>
-                <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-100">{detailsMission.description}</p>
+              <div className="rounded-lg border border-amber-800/30 bg-[#120d09]/80 p-4">
+                <p className="mb-2 text-[11px] font-cinzel font-semibold text-brass-light/80 uppercase">Bando e Specifiche</p>
+                <p className="whitespace-pre-wrap font-serif text-sm leading-relaxed text-parchment-100">{detailsMission.description}</p>
               </div>
 
               {isGmOrAdmin && (
@@ -1188,9 +1347,11 @@ export function MissionBoard({
       </Dialog>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="border-amber-600/30 bg-zinc-950 text-zinc-100 sm:max-w-2xl">
+        <DialogContent className="border-brass-base/40 bg-[#140f0c] text-parchment-100 shadow-2xl backdrop-blur-md sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editMode === "add" ? "Nuova Missione" : "Modifica Missione"}</DialogTitle>
+            <DialogTitle className="font-cinzel text-xl font-extrabold text-gold-relief">
+              {editMode === "add" ? "Nuovo Bando di Taglia" : "Modifica Bando di Taglia"}
+            </DialogTitle>
           </DialogHeader>
 
           <div className="grid gap-4">
@@ -1307,9 +1468,11 @@ export function MissionBoard({
       </Dialog>
 
       <Dialog open={guildDialogOpen} onOpenChange={setGuildDialogOpen}>
-        <DialogContent className="border-amber-600/30 bg-zinc-950 text-zinc-100 sm:max-w-xl">
+        <DialogContent className="border-brass-base/40 bg-[#140f0c] text-parchment-100 shadow-2xl backdrop-blur-md sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>{guildDialogMode === "add" ? "Nuova Gilda" : "Modifica Gilda"}</DialogTitle>
+            <DialogTitle className="font-cinzel text-xl font-extrabold text-gold-relief">
+              {guildDialogMode === "add" ? "Registra Nuova Gilda" : "Modifica Gilda"}
+            </DialogTitle>
           </DialogHeader>
 
           <div className="grid gap-4">

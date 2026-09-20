@@ -5,16 +5,16 @@ import Link from "next/link";
 
 function PublicAuthLinks() {
   return (
-    <div className="flex items-center gap-2 sm:gap-3">
+    <div className="flex items-center gap-2.5 sm:gap-3.5">
       <Link
         href="/login"
-        className="hidden text-sm font-medium text-barber-paper/90 transition-colors hover:text-barber-gold sm:inline"
+        className="hidden text-xs font-serif uppercase tracking-wider text-parchment-200 transition-colors hover:text-brass-light sm:inline"
       >
         Entra
       </Link>
       <Link
         href="/login"
-        className="rounded-md bg-barber-red px-3 py-1.5 text-sm font-medium text-barber-paper transition-colors hover:bg-barber-red/90 sm:px-4 sm:py-2"
+        className="btn-wax-seal inline-flex items-center justify-center rounded-lg px-3.5 py-1.5 text-xs font-serif uppercase tracking-widest font-bold text-parchment-100 shadow-md sm:px-4 sm:py-1.5"
       >
         Unisciti
       </Link>

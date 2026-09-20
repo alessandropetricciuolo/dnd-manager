@@ -156,15 +156,18 @@ export function GmFiles({ campaignId }: GmFilesProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h3 className="text-base font-semibold text-slate-200">Archivio GM</h3>
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-barber-gold/20 pb-3">
+        <div className="flex items-center gap-2">
+          <FileIcon className="h-5 w-5 text-barber-gold" />
+          <h3 className="font-cinzel text-lg font-bold text-gold-relief">Archivio Documenti del Master</h3>
+        </div>
         <form onSubmit={handleUpload} className="flex flex-wrap items-end gap-2">
           <div className="space-y-1">
-            <label className="text-[11px] uppercase tracking-wide text-slate-400">Categoria</label>
+            <label className="text-[10px] uppercase font-semibold tracking-wide text-barber-gold/80">Categoria</label>
             <select
               value={linkKind}
               onChange={(e) => setLinkKind(e.target.value as "free" | "wiki_section" | "mission")}
-              className="h-9 rounded-md border border-violet-500/30 bg-slate-900 px-2 text-xs text-slate-100"
+              className="h-9 rounded-md border border-barber-gold/30 bg-black/50 px-2 text-xs text-barber-paper"
             >
               <option value="free">Libero</option>
               <option value="wiki_section">Sezione Wiki</option>
@@ -173,11 +176,11 @@ export function GmFiles({ campaignId }: GmFilesProps) {
           </div>
           {linkKind === "wiki_section" ? (
             <div className="space-y-1">
-              <label className="text-[11px] uppercase tracking-wide text-slate-400">Sezione Wiki</label>
+              <label className="text-[10px] uppercase font-semibold tracking-wide text-barber-gold/80">Sezione Wiki</label>
               <select
                 value={wikiSection}
                 onChange={(e) => setWikiSection(e.target.value as "npc" | "monster" | "location" | "item" | "lore" | "pg")}
-                className="h-9 rounded-md border border-violet-500/30 bg-slate-900 px-2 text-xs text-slate-100"
+                className="h-9 rounded-md border border-barber-gold/30 bg-black/50 px-2 text-xs text-barber-paper"
               >
                 <option value="npc">NPC</option>
                 <option value="monster">Mostri</option>
@@ -190,11 +193,11 @@ export function GmFiles({ campaignId }: GmFilesProps) {
           ) : null}
           {linkKind === "mission" ? (
             <div className="space-y-1">
-              <label className="text-[11px] uppercase tracking-wide text-slate-400">Missione</label>
+              <label className="text-[10px] uppercase font-semibold tracking-wide text-barber-gold/80">Missione</label>
               <select
                 value={linkedMissionId}
                 onChange={(e) => setLinkedMissionId(e.target.value)}
-                className="h-9 min-w-[190px] rounded-md border border-violet-500/30 bg-slate-900 px-2 text-xs text-slate-100"
+                className="h-9 min-w-[190px] rounded-md border border-barber-gold/30 bg-black/50 px-2 text-xs text-barber-paper"
               >
                 <option value="none">Seleziona missione...</option>
                 {missions.map((m) => (
@@ -209,94 +212,103 @@ export function GmFiles({ campaignId }: GmFilesProps) {
             ref={fileInputRef}
             type="file"
             name="file"
-            className="max-w-[220px] text-sm text-slate-300 file:mr-2 file:rounded file:border-0 file:bg-violet-600 file:px-3 file:py-1.5 file:text-sm file:text-white file:hover:bg-violet-700"
+            className="max-w-[220px] text-xs text-barber-paper/80 file:mr-2 file:rounded-md file:border-0 file:bg-barber-gold/20 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-barber-gold file:hover:bg-barber-gold/30"
           />
           <Button
             type="submit"
             disabled={uploading}
             variant="outline"
             size="sm"
-            className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
+            className="border-barber-gold/40 text-barber-gold hover:bg-barber-gold/15"
           >
             {uploading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="mr-2 h-4 w-4 animate-spin text-barber-gold" />
             ) : (
               <Upload className="mr-2 h-4 w-4" />
             )}
-            Carica
+            Carica file
           </Button>
         </form>
       </div>
-      <p className="text-xs text-slate-500">
-        Le immagini fino a 4 MB vengono salvate su Telegram. Gli altri file restano su Supabase Storage.
+      <p className="text-xs text-barber-paper/50">
+        Immagini fino a 4 MB salvate istantaneamente su Telegram. Altri formati archiviati nel deposito sicuro di Gilda.
       </p>
 
       {loading ? (
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-violet-400" />
+          <Loader2 className="h-8 w-8 animate-spin text-barber-gold" />
         </div>
       ) : files.length === 0 ? (
-        <p className="rounded-lg border border-violet-800/40 bg-slate-900/60 px-4 py-6 text-center text-sm text-slate-400">
-          Nessun file. Carica qualsiasi tipo di file (PDF, immagini, documenti, zip, ecc.) nell&apos;archivio.
-        </p>
+        <div className="card-guild-stone relative rounded-xl p-6 text-center">
+          <span className="corner-ornament-tl" />
+          <span className="corner-ornament-tr" />
+          <span className="corner-ornament-bl" />
+          <span className="corner-ornament-br" />
+          <p className="font-cinzel text-base text-barber-gold/80">Archivio documenti vuoto</p>
+          <p className="mt-1 text-xs text-barber-paper/60">
+            Nessun file presente. Carica mappe esterne, tabelle PDF, documenti o zip nell&apos;archivio di gilda.
+          </p>
+        </div>
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2">
           {files.map((att) => (
-            <Card
+            <div
               key={att.id}
-              className="border-violet-800/40 bg-slate-900/60 transition-colors hover:border-violet-700/50"
+              className="card-guild-stone relative rounded-xl p-4 shadow-md transition-all hover:border-barber-gold/50 flex flex-row items-center gap-3 min-w-0"
             >
-              <CardContent className="flex flex-row items-center gap-3 p-4">
-                <FileIcon className="h-8 w-8 shrink-0 text-violet-400" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-violet-100" title={att.file_name}>
-                    {att.file_name}
+              <span className="corner-ornament-tl" />
+              <span className="corner-ornament-tr" />
+              <span className="corner-ornament-bl" />
+              <span className="corner-ornament-br" />
+              <FileIcon className="h-8 w-8 shrink-0 text-barber-gold" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-barber-paper" title={att.file_name}>
+                  {att.file_name}
+                </p>
+                <p className="text-[11px] text-barber-gold/90 font-medium">
+                  {att.link_kind === "free"
+                    ? "Libero"
+                    : att.link_kind === "wiki_section"
+                      ? `Wiki: ${att.wiki_section ?? "sezione"}`
+                      : `Missione: ${missionTitleById(att.linked_mission_id) ?? "non impostata"}`}
+                </p>
+                {att.file_size != null && (
+                  <p className="text-xs text-barber-paper/50">
+                    {(att.file_size / 1024).toFixed(1)} KB
                   </p>
-                  <p className="text-[11px] text-violet-300/85">
-                    {att.link_kind === "free"
-                      ? "Libero"
-                      : att.link_kind === "wiki_section"
-                        ? `Wiki: ${att.wiki_section ?? "sezione"}`
-                        : `Missione: ${missionTitleById(att.linked_mission_id) ?? "non impostata"}`}
-                  </p>
-                  {att.file_size != null && (
-                    <p className="text-xs text-slate-500">
-                      {(att.file_size / 1024).toFixed(1)} KB
-                    </p>
-                  )}
-                </div>
-                <div className="flex shrink-0 gap-1">
-                  {att.signed_url && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-slate-400 hover:text-violet-300"
-                      asChild
-                    >
-                      <a href={att.signed_url} download={att.file_name} target="_blank" rel="noopener noreferrer" title="Scarica">
-                        <Download className="h-4 w-4" />
-                      </a>
-                    </Button>
-                  )}
+                )}
+              </div>
+              <div className="flex shrink-0 gap-1">
+                {att.signed_url && (
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-slate-400 hover:text-red-400"
-                    onClick={() => handleDelete(att)}
-                    disabled={deleteLoadingId === att.id}
-                    title="Elimina"
+                    className="h-8 w-8 text-barber-gold hover:bg-barber-gold/15"
+                    asChild
                   >
-                    {deleteLoadingId === att.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-4 w-4" />
-                    )}
+                    <a href={att.signed_url} download={att.file_name} target="_blank" rel="noopener noreferrer" title="Scarica">
+                      <Download className="h-4 w-4" />
+                    </a>
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
+                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-barber-paper/60 hover:text-barber-red hover:bg-barber-red/10"
+                  onClick={() => handleDelete(att)}
+                  disabled={deleteLoadingId === att.id}
+                  title="Elimina"
+                >
+                  {deleteLoadingId === att.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
           ))}
         </ul>
       )}

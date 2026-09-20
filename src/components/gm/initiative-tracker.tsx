@@ -60,6 +60,7 @@ import { normalizeCombatConditions, type CombatConditionId } from "@/lib/combat-
 import { SpellSlotsCell } from "@/components/gm/spell-slots-cell";
 import type { Json } from "@/types/database.types";
 import { formatTimerMmSs } from "@/lib/torneo/match-timer";
+import { TacticalInitiativeCards } from "./screen-tactical/tactical-initiative-cards";
 
 export type TorneoMegatimerControls = {
   enabled: boolean;
@@ -300,6 +301,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
   const isControlled = typeof onChange === "function" && value != null;
 
   const [entries, setEntries] = useState<InitiativeEntry[]>([]);
+  const [trackerDisplay, setTrackerDisplay] = useState<"tactical" | "table">("tactical");
   const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
   const [roundNumber, setRoundNumber] = useState(1);
   const [turnElapsedSeconds, setTurnElapsedSeconds] = useState(0);
@@ -1070,6 +1072,33 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
             <Edit3 className="mr-1 h-3 w-3" />
             Manuale
           </Button>
+
+          <div className="ml-auto flex items-center rounded border border-brass-base/30 bg-[#160f0b] p-0.5">
+            <button
+              type="button"
+              onClick={() => setTrackerDisplay("tactical")}
+              className={cn(
+                "rounded px-2 py-0.5 text-[10px] font-cinzel font-bold transition-colors",
+                trackerDisplay === "tactical"
+                  ? "bg-guild-gold text-guild-black shadow-sm"
+                  : "text-parchment-400 hover:text-parchment-200"
+              )}
+            >
+              Tattica
+            </button>
+            <button
+              type="button"
+              onClick={() => setTrackerDisplay("table")}
+              className={cn(
+                "rounded px-2 py-0.5 text-[10px] font-cinzel font-bold transition-colors",
+                trackerDisplay === "table"
+                  ? "bg-guild-gold text-guild-black shadow-sm"
+                  : "text-parchment-400 hover:text-parchment-200"
+              )}
+            >
+              Tabella
+            </button>
+          </div>
         </div>
         </div>
 
@@ -1198,7 +1227,36 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
         ) : null}
       </header>
 
-      <div className="min-h-0 flex-1 overflow-auto rounded border border-amber-600/30 bg-zinc-900/80">
+      {trackerDisplay === "tactical" ? (
+        <div className="min-h-0 flex-1 overflow-hidden rounded border border-brass-base/30 bg-[#120d09]">
+          <TacticalInitiativeCards
+            entries={entries}
+            currentTurnIndex={currentTurnIndex}
+            currentRound={roundNumber}
+            onSelectTurn={(idx) => setCurrentTurnIndex(idx)}
+            onNextTurn={nextTurn}
+            onPrevTurn={prevTurn}
+            onUpdateHp={(id, delta) => {
+              const e = entries.find((x) => x.id === id);
+              if (e) void applyHpChange(id, e.hp + delta);
+            }}
+            onSetHp={(id, hp) => void applyHpChange(id, hp)}
+            onToggleDead={(id) => void toggleDead(id)}
+            onToggleCondition={(id, cId) => {
+              const e = entries.find((x) => x.id === id);
+              if (e) {
+                const cur = normalizeCombatConditions(e.conditions);
+                const next = cur.includes(cId) ? cur.filter((x) => x !== cId) : [...cur, cId];
+                updateEntry(id, { conditions: next });
+              }
+            }}
+            onOpenMonsterStat={onOpenMonsterStat}
+            onDeleteEntry={removeEntry}
+            onOpenAddModal={() => setAddMonsterOpen(true)}
+          />
+        </div>
+      ) : (
+        <div className="min-h-0 flex-1 overflow-auto rounded border border-amber-600/30 bg-zinc-900/80">
         <Table>
           <TableHeader>
             <TableRow className="border-amber-600/20 hover:bg-transparent">
@@ -1611,6 +1669,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
           </TableBody>
         </Table>
       </div>
+      )}
 
       {/* Dialog Aggiungi PG */}
       <Dialog open={addPcOpen} onOpenChange={setAddPcOpen}>

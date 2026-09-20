@@ -11,10 +11,10 @@ type FiveeStatblockViewProps = {
 function StatCell({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div className="min-w-0">
-      <div className="text-[9px] font-semibold uppercase tracking-wide text-zinc-400">{label}</div>
-      <div className="text-[12px] font-semibold leading-tight text-sky-300">
+      <div className="text-[9px] font-cinzel font-bold uppercase tracking-wider text-brass-light/80">{label}</div>
+      <div className="text-[13px] font-serif font-bold leading-tight text-parchment-100">
         {value}
-        {sub ? <span className="ml-1 text-[10px] font-normal text-zinc-400">({sub})</span> : null}
+        {sub ? <span className="ml-1 text-[10px] font-normal text-parchment-400">({sub})</span> : null}
       </div>
     </div>
   );
@@ -22,9 +22,9 @@ function StatCell({ label, value, sub }: { label: string; value: string; sub?: s
 
 function TraitRow({ label, value }: { label: string; value: string }) {
   return (
-    <p className="text-[11px] leading-snug text-zinc-200">
-      <span className="font-semibold text-zinc-300">{label}</span>{" "}
-      <span className="text-zinc-200">{value}</span>
+    <p className="text-[11px] leading-snug text-parchment-200">
+      <span className="font-cinzel font-bold text-brass-light/90">{label}:</span>{" "}
+      <span className="font-serif text-parchment-200">{value}</span>
     </p>
   );
 }
@@ -35,7 +35,7 @@ function formatInlineMd(text: string) {
   return parts.map((part, i) => {
     if (part.startsWith("*") && part.endsWith("*") && part.length > 2) {
       return (
-        <em key={i} className="not-italic text-amber-100/95">
+        <em key={i} className="not-italic text-amber-200/95 font-serif font-semibold">
           {part.slice(1, -1)}
         </em>
       );
@@ -47,15 +47,15 @@ function formatInlineMd(text: string) {
 function NamedBlocks({ title, blocks }: { title: string; blocks: DenseNamedBlock[] }) {
   if (!blocks.length) return null;
   return (
-    <section className="mt-2">
-      <h3 className="border-b border-amber-700/50 pb-0.5 font-[family-name:var(--font-serif)] text-[12px] font-bold uppercase tracking-wide text-amber-300">
+    <section className="mt-3">
+      <h3 className="border-b border-brass-base/30 pb-1 font-cinzel text-xs font-bold uppercase tracking-wider text-brass-light">
         {title}
       </h3>
-      <div className="mt-1 space-y-1.5">
+      <div className="mt-1.5 space-y-2 font-serif">
         {blocks.map((b, idx) => (
-          <p key={`${b.name}-${idx}`} className="text-[11px] leading-snug text-zinc-200">
+          <p key={`${b.name}-${idx}`} className="text-[11px] leading-relaxed text-parchment-200">
             {b.name ? (
-              <span className="font-semibold italic text-zinc-100">{b.name}. </span>
+              <span className="font-bold italic text-parchment-100 not-italic font-cinzel text-[11px] text-amber-300">{b.name}. </span>
             ) : null}
             <span>{formatInlineMd(b.body)}</span>
           </p>
@@ -68,11 +68,11 @@ function NamedBlocks({ title, blocks }: { title: string; blocks: DenseNamedBlock
 function SpellcastingBlocks({ blocks }: { blocks: DenseNamedBlock[] }) {
   if (!blocks.length) return null;
   return (
-    <section className="mt-2">
-      <h3 className="border-b border-amber-700/50 pb-0.5 font-[family-name:var(--font-serif)] text-[12px] font-bold uppercase tracking-wide text-amber-300">
+    <section className="mt-3">
+      <h3 className="border-b border-brass-base/30 pb-1 font-cinzel text-xs font-bold uppercase tracking-wider text-brass-light">
         Incantesimi
       </h3>
-      <div className="mt-1 space-y-2">
+      <div className="mt-1.5 space-y-2 font-serif">
         {blocks.map((b, idx) => {
           const lines = b.body.split(/\n+/).map((l) => l.trim()).filter(Boolean);
           const prose: string[] = [];
@@ -87,17 +87,17 @@ function SpellcastingBlocks({ blocks }: { blocks: DenseNamedBlock[] }) {
             }
           }
           return (
-            <div key={`${b.name}-${idx}`} className="text-[11px] leading-snug text-zinc-200">
+            <div key={`${b.name}-${idx}`} className="text-[11px] leading-relaxed text-parchment-200">
               {b.name ? (
-                <p className="font-semibold italic text-zinc-100">{b.name}.</p>
+                <p className="font-bold font-cinzel text-amber-300">{b.name}.</p>
               ) : null}
               {prose.length > 0 ? (
-                <p className="mt-0.5 text-zinc-300">{formatInlineMd(prose.join(" "))}</p>
+                <p className="mt-0.5 text-parchment-300">{formatInlineMd(prose.join(" "))}</p>
               ) : null}
               {list.length > 0 ? (
-                <ul className="mt-1 space-y-0.5 border-l border-amber-700/30 pl-2">
+                <ul className="mt-1 space-y-0.5 border-l-2 border-brass-base/40 pl-2">
                   {list.map((line, li) => (
-                    <li key={li} className="text-zinc-200">
+                    <li key={li} className="text-parchment-200">
                       {formatInlineMd(line)}
                     </li>
                   ))}
@@ -115,48 +115,48 @@ export function FiveeStatblockView({ data, className }: FiveeStatblockViewProps)
   const abilityKeys = ABILITY_ORDER.filter((k) => data.abilities[k]);
 
   return (
-    <article className={cn("fivee-ref text-[11px] leading-snug text-zinc-200", className)}>
-      <header className="mb-1">
+    <article className={cn("fivee-ref text-[11px] leading-snug text-parchment-200", className)}>
+      {/* Testata Monumentale Cremisi & Oro (Mockup) */}
+      <header className="mb-2 rounded-t-md bg-gradient-to-r from-[#5a1215] to-[#36090c] p-3 border-b-2 border-amber-600/40 shadow-md">
         <div className="flex items-baseline justify-between gap-2">
-          <h2 className="font-[family-name:var(--font-serif)] text-[1.15rem] font-bold uppercase leading-none tracking-wide text-amber-300">
+          <h2 className="font-cinzel text-lg sm:text-xl font-extrabold uppercase leading-tight tracking-wider text-[#fae5be] drop-shadow">
             {data.name}
           </h2>
           {data.sourceLabel ? (
-            <span className="shrink-0 text-[10px] font-medium text-rose-300/90">{data.sourceLabel}</span>
+            <span className="shrink-0 text-[10px] font-medium text-amber-300/90 border border-amber-600/30 px-1.5 py-0.5 rounded bg-black/40">
+              {data.sourceLabel}
+            </span>
           ) : null}
         </div>
         {data.typeLine ? (
-          <p className="mt-0.5 text-[11px] italic text-zinc-300">{data.typeLine}</p>
+          <p className="mt-1 font-serif text-xs italic text-amber-200/80">{data.typeLine}</p>
         ) : null}
       </header>
 
-      <div className="grid grid-cols-5 gap-x-2 gap-y-1 border-y border-zinc-700/80 py-1.5">
+      {/* Vitals Summary Strip */}
+      <div className="grid grid-cols-5 gap-x-2 gap-y-1 border-y border-brass-base/20 bg-[#16100c] p-2 rounded">
         <StatCell label="CA" value={data.ac ?? "—"} />
         <StatCell label="Init." value={data.initiative ?? "—"} />
         <StatCell label="PF" value={data.hp?.replace(/\s*\(.*\)\s*$/, "") ?? "—"} sub={data.hp?.match(/\(([^)]+)\)/)?.[1]} />
-        <StatCell label="Vel." value={data.speed ?? "—"} />
+        <StatCell label="Velocità" value={data.speed ?? "—"} />
         <StatCell
-          label="GS"
+          label="Sfida"
           value={data.cr ?? "—"}
           sub={data.xp ? `${data.xp} PE` : undefined}
         />
       </div>
 
+      {/* Nastro Orizzontale Caratteristiche (STR, DEX, CON, INT, WIS, CHA) */}
       {abilityKeys.length > 0 ? (
-        <div className="mt-1.5 grid grid-cols-3 gap-1 rounded bg-zinc-900/90 p-1.5 sm:grid-cols-6">
+        <div className="mt-2 grid grid-cols-3 gap-1 rounded border border-brass-base/20 bg-[#18110c] p-2 sm:grid-cols-6">
           {abilityKeys.map((key) => {
             const a = data.abilities[key]!;
             return (
               <div key={key} className="min-w-0 text-center">
-                <div className="text-[9px] font-bold uppercase text-zinc-400">{key}</div>
-                <div className="text-[12px] font-semibold text-zinc-100">{a.score}</div>
-                <div className="mt-0.5 flex justify-center gap-2 text-[9px] text-zinc-500">
-                  <span>
-                    MOD <span className="font-semibold text-sky-300">{a.mod}</span>
-                  </span>
-                  <span>
-                    TS <span className="font-semibold text-sky-300">{a.save}</span>
-                  </span>
+                <div className="text-[10px] font-cinzel font-black uppercase text-brass-light">{key}</div>
+                <div className="text-[13px] font-serif font-bold text-parchment-100">{a.score}</div>
+                <div className="mt-0.5 text-[10px] font-mono text-amber-300 font-semibold">
+                  ({a.mod})
                 </div>
               </div>
             );

@@ -549,11 +549,15 @@ export function CharacterCardGm({
   if (isTorneoCampaign) {
     return (
       <>
-        <Card className="relative overflow-hidden border-barber-gold/40 bg-barber-dark/80">
+        <div className="card-guild-stone relative overflow-hidden rounded-xl border border-[#3b322b] p-2.5 pt-8 shadow-lg min-w-0">
+          <span className="corner-ornament-tl" />
+          <span className="corner-ornament-tr" />
+          <span className="corner-ornament-bl" />
+          <span className="corner-ornament-br" />
           {cardActionButtons("sm")}
-          <CardContent className="space-y-2 p-2 pt-8">
+          <div className="space-y-2">
             <div className="flex gap-2">
-              <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-barber-dark ring-1 ring-barber-gold/25">
+              <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-barber-dark border border-barber-gold/40 shadow-sm">
                 <Image
                   src={imageSrc}
                   alt={character.name}
@@ -565,15 +569,15 @@ export function CharacterCardGm({
                 />
               </div>
               <div className="min-w-0 flex-1 pr-14">
-                <h3 className="truncate text-sm font-semibold text-barber-paper">{character.name}</h3>
+                <h3 className="font-cinzel truncate text-sm font-bold text-barber-gold">{character.name}</h3>
                 {raceClassSubtitle}
                 {statsDl(true)}
               </div>
             </div>
             {backgroundPreview ? (
-              <p className="line-clamp-2 text-xs text-muted-foreground">{character.background}</p>
+              <p className="line-clamp-2 text-xs text-barber-paper/70">{character.background}</p>
             ) : (
-              <p className="line-clamp-2 text-xs italic text-muted-foreground">Nessun background.</p>
+              <p className="line-clamp-2 text-xs italic text-barber-paper/40">Nessun background.</p>
             )}
             <Button
               type="button"
@@ -585,17 +589,19 @@ export function CharacterCardGm({
               <Eye className="mr-1.5 h-3.5 w-3.5" />
               Dettagli
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {detailsOpen && (
           <Sheet open={detailsOpen} onOpenChange={setDetailsOpen}>
             <SheetContent
               side="right"
-              className="flex h-full max-h-[100dvh] w-full max-w-lg flex-col overflow-hidden border-barber-gold/40 bg-barber-dark text-barber-paper sm:max-w-lg"
+              className="flex h-full max-h-[100dvh] w-full max-w-lg flex-col overflow-hidden border-barber-gold/40 bg-[#120f0d] text-barber-paper sm:max-w-lg"
             >
-              <SheetHeader className="shrink-0 space-y-1 text-left">
-                <SheetTitle className="text-barber-paper">Scheda di lettura — {character.name}</SheetTitle>
+              <SheetHeader className="shrink-0 space-y-1 text-left border-b border-barber-gold/20 pb-3">
+                <SheetTitle className="font-cinzel text-lg font-bold text-gold-relief">
+                  Dossier Personaggio — {character.name}
+                </SheetTitle>
                 <SheetDescription className="text-barber-paper/65">
                   Solo consultazione. Per modificare usa &quot;Modifica&quot; sulla card.
                 </SheetDescription>
@@ -667,7 +673,11 @@ export function CharacterCardGm({
 
   return (
     <>
-      <Card className="relative overflow-hidden border-barber-gold/40 bg-barber-dark/80">
+      <div className="card-guild-stone relative overflow-hidden rounded-xl border border-[#3b322b] shadow-lg min-w-0">
+        <span className="corner-ornament-tl" />
+        <span className="corner-ornament-tr" />
+        <span className="corner-ornament-bl" />
+        <span className="corner-ornament-br" />
         {/* Azioni compatte in alto a destra */}
         <div className="absolute right-2 top-2 z-[1] flex items-center gap-0.5">
           {character.sheet_url && (
@@ -816,9 +826,9 @@ export function CharacterCardGm({
           )}
         </div>
 
-        <CardContent className="space-y-3 p-3 pt-10">
+        <div className="space-y-3 p-3.5 pt-10">
           <div className="flex gap-3">
-            <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-md bg-barber-dark ring-1 ring-barber-gold/25">
+            <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-barber-dark border border-barber-gold/40 shadow-md">
               <Image
                 src={imageSrc}
                 alt={character.name}
@@ -830,7 +840,7 @@ export function CharacterCardGm({
               />
             </div>
             <div className="min-w-0 flex-1 pr-10">
-              <h3 className="truncate font-semibold text-barber-paper">{character.name}</h3>
+              <h3 className="font-cinzel truncate font-bold text-gold-relief text-base">{character.name}</h3>
               <div className="mt-0.5 min-h-4 text-[10px] leading-tight text-barber-paper/75 sm:text-[11px]">
                 {raceLabel ? (
                   <>
@@ -1050,17 +1060,19 @@ export function CharacterCardGm({
             )}
           </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {detailsOpen && (
         <Sheet open={detailsOpen} onOpenChange={setDetailsOpen}>
           <SheetContent
             side="right"
-            className="flex h-full max-h-[100dvh] w-full max-w-lg flex-col overflow-hidden border-barber-gold/40 bg-barber-dark text-barber-paper sm:max-w-lg"
+            className="flex h-full max-h-[100dvh] w-full max-w-lg flex-col overflow-hidden border-barber-gold/40 bg-[#120f0d] text-barber-paper sm:max-w-lg"
           >
-          <SheetHeader className="shrink-0 space-y-1 text-left">
-            <SheetTitle className="text-barber-paper">Scheda di lettura — {character.name}</SheetTitle>
+          <SheetHeader className="shrink-0 space-y-1 text-left border-b border-barber-gold/20 pb-3">
+            <SheetTitle className="font-cinzel text-lg font-bold text-gold-relief">
+              Dossier Personaggio — {character.name}
+            </SheetTitle>
             <SheetDescription className="text-barber-paper/65">
               Solo consultazione. Per modificare usa &quot;Modifica&quot; sulla card.
             </SheetDescription>

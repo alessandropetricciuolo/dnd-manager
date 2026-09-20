@@ -1,9 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* Utility per scroll orizzontale senza scrollbar visibile (es. tab navigazione giocatore) */
 @layer utilities {
+  .font-cinzel {
+    font-family: 'Cinzel', Georgia, serif;
+  }
+  .font-sans-warm {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+  .font-mono-dnd {
+    font-family: 'JetBrains Mono', monospace;
+  }
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -12,49 +23,302 @@
     display: none;
   }
 
-  /** Scroll verticale visibile (descrizioni mappe, pannelli lunghi) */
+  /** Scroll verticale visibile (descrizioni mappe, pannelli lunghi) in ottone satinato */
   .scrollbar-barber-y {
     scrollbar-width: thin;
-    scrollbar-color: rgba(251, 191, 36, 0.45) rgba(28, 25, 23, 0.5);
+    scrollbar-color: rgba(200, 157, 73, 0.45) rgba(20, 18, 16, 0.6);
   }
   .scrollbar-barber-y::-webkit-scrollbar {
     width: 8px;
   }
   .scrollbar-barber-y::-webkit-scrollbar-track {
-    background: rgba(28, 25, 23, 0.5);
+    background: rgba(20, 18, 16, 0.6);
     border-radius: 4px;
   }
   .scrollbar-barber-y::-webkit-scrollbar-thumb {
-    background: rgba(251, 191, 36, 0.45);
+    background: rgba(200, 157, 73, 0.45);
     border-radius: 4px;
   }
   .scrollbar-barber-y::-webkit-scrollbar-thumb:hover {
-    background: rgba(251, 191, 36, 0.65);
+    background: rgba(200, 157, 73, 0.7);
+  }
+
+  /* Sigillo in ceralacca cremisi tattile per CTA primarie */
+  .btn-wax-seal {
+    background: radial-gradient(circle at 35% 30%, #a82727, #831a1a 65%, #561111 100%);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.3), inset 0 -2px 3px rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(241, 216, 153, 0.4);
+    transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .btn-wax-seal:hover {
+    background: radial-gradient(circle at 35% 30%, #bc2d2d, #941e1e 65%, #631414 100%);
+    box-shadow: 0 6px 20px rgba(148, 33, 33, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.4);
+    transform: translateY(-1px);
+  }
+  .btn-wax-seal:active {
+    transform: translateY(1px) scale(0.985);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.7), inset 0 2px 4px rgba(0, 0, 0, 0.7);
+  }
+
+  /* Card in pietra scolpita con bordo inciso in metallo brunito */
+  .card-guild-stone {
+    background: radial-gradient(ellipse at 50% 0%, #1e1915 0%, #141210 70%);
+    border: 1px solid #3b322b;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(200, 157, 73, 0.15);
+    position: relative;
+    transition: all 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .card-guild-stone:hover {
+    border-color: #c89d49;
+    box-shadow: 0 14px 35px rgba(0, 0, 0, 0.65), 0 0 15px rgba(200, 157, 73, 0.1), inset 0 1px 0 rgba(241, 216, 153, 0.3);
+  }
+
+  /* Rilievo dorato per titoli monumentali */
+  .text-gold-relief {
+    background: linear-gradient(180deg, #fff2cc 0%, #f1d899 30%, #c89d49 70%, #9e7529 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.8));
+  }
+
+  /* Staffe araldiche d'angolo in ottone */
+  .corner-ornament-tl {
+    position: absolute;
+    top: -1px;
+    left: -1px;
+    width: 12px;
+    height: 12px;
+    border-top: 2px solid #c89d49;
+    border-left: 2px solid #c89d49;
+    pointer-events: none;
+  }
+  .corner-ornament-tr {
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    width: 12px;
+    height: 12px;
+    border-top: 2px solid #c89d49;
+    border-right: 2px solid #c89d49;
+    pointer-events: none;
+  }
+  .corner-ornament-bl {
+    position: absolute;
+    bottom: -1px;
+    left: -1px;
+    width: 12px;
+    height: 12px;
+    border-bottom: 2px solid #c89d49;
+    border-left: 2px solid #c89d49;
+    pointer-events: none;
+  }
+  .corner-ornament-br {
+    position: absolute;
+    bottom: -1px;
+    right: -1px;
+    width: 12px;
+    height: 12px;
+    border-bottom: 2px solid #c89d49;
+    border-right: 2px solid #c89d49;
+    pointer-events: none;
+  }
+
+  /* Cifre tabulari D&D (statistiche allineate) */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* =========================================================
+     BACHECA DELLE MISSIONI (Physical Tavern Notice Board)
+     ========================================================= */
+
+  /* Cornice massiccia in legno di quercia sagomata (Tavern Quest Board) */
+  .quest-board-frame {
+    background: 
+      radial-gradient(ellipse at 50% 30%, #362013 0%, #20130b 65%, #0f0804 100%);
+    border: 16px solid #3c2415;
+    outline: 3px solid #160c06;
+    box-shadow: 
+      0 30px 70px rgba(0, 0, 0, 0.95),
+      inset 0 6px 30px rgba(0, 0, 0, 0.95),
+      inset 0 0 70px rgba(0, 0, 0, 0.85);
+    border-radius: 1.25rem;
+    position: relative;
+  }
+
+  @media (min-width: 768px) {
+    .quest-board-frame {
+      border-width: 22px;
+    }
+  }
+
+  /* Foglio di pergamena antica appeso alla bacheca */
+  .parchment-notice {
+    background: 
+      radial-gradient(circle at 50% 8%, rgba(255, 255, 255, 0.45) 0%, transparent 60%),
+      linear-gradient(178deg, #fcf5e2 0%, #f3e2bf 35%, #e2c086 90%, #d4aa69 100%);
+    border: 1px solid #9e7545;
+    box-shadow: 
+      0 14px 28px rgba(0, 0, 0, 0.75),
+      0 3px 8px rgba(0, 0, 0, 0.45),
+      inset 0 0 35px rgba(160, 110, 50, 0.22),
+      inset 0 0 8px rgba(110, 70, 25, 0.28);
+    border-radius: 3px;
+    position: relative;
+    transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .parchment-notice:hover {
+    transform: translateY(-6px) scale(1.018);
+    box-shadow: 
+      0 26px 48px rgba(0, 0, 0, 0.85),
+      0 6px 14px rgba(0, 0, 0, 0.5),
+      inset 0 0 25px rgba(168, 120, 65, 0.15);
+  }
+
+  /* Chiodo / Spilla in ferro battuto scuro */
+  .parchment-nail {
+    position: absolute;
+    top: -9px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #888888 0%, #2f2f2f 60%, #0d0d0d 100%);
+    border: 1px solid #141414;
+    box-shadow: 
+      0 4px 6px rgba(0, 0, 0, 0.9),
+      0 1px 2px rgba(0, 0, 0, 0.6);
+    z-index: 10;
+  }
+  .parchment-nail::after {
+    content: '';
+    position: absolute;
+    top: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 10px;
+    height: 4px;
+    background: radial-gradient(ellipse at center, rgba(0,0,0,0.5) 0%, transparent 80%);
+  }
+
+  /* Medaglia / Moneta d'oro 3D coniata */
+  .parchment-gold-coin {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #ffdf7a 0%, #dca32b 55%, #8c5b0d 100%);
+    border: 1.5px solid #6b4306;
+    box-shadow: 
+      0 2px 5px rgba(0, 0, 0, 0.5),
+      inset 0 1px 1px rgba(255, 255, 255, 0.8),
+      inset 0 -1px 2px rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 800;
+    color: #4a2802;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+    user-select: none;
+    flex-shrink: 0;
+  }
+
+  /* Sigillo in ceralacca rossa impresso sulla pergamena */
+  .wax-seal-badge {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #dc2626 0%, #991b1b 50%, #6b1212 85%, #450a0a 100%);
+    box-shadow: 
+      0 4px 12px rgba(0, 0, 0, 0.75),
+      inset 0 2px 3px rgba(255, 255, 255, 0.45),
+      inset 0 -3px 5px rgba(0, 0, 0, 0.8);
+    border: 2px ridge #ef4444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff1d6;
+    font-family: var(--font-cinzel), serif;
+    font-weight: 900;
+    font-size: 9.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+    user-select: none;
+    transform: rotate(-6deg);
+    position: relative;
+    flex-shrink: 0;
+  }
+  .wax-seal-badge::before {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border-radius: 50%;
+    border: 1px dashed rgba(255, 230, 180, 0.35);
+  }
+
+  /* Timbro a inchiostro verde per missione completata */
+  .ink-stamp-completed {
+    border: 3.5px double #14532d;
+    background-color: rgba(20, 83, 45, 0.08);
+    color: #14532d;
+    font-family: var(--font-cinzel), serif;
+    font-weight: 900;
+    font-size: 13px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 4px 11px;
+    transform: rotate(-8deg);
+    border-radius: 3px;
+    box-shadow: inset 0 0 5px rgba(20, 83, 45, 0.25);
+    user-select: none;
+    text-shadow: 0 0 1px rgba(20, 83, 45, 0.3);
+    flex-shrink: 0;
+  }
+
+  /* Timbro a inchiostro ambra per missione in corso */
+  .ink-stamp-progress {
+    border: 3px double #9a3412;
+    background-color: rgba(154, 52, 18, 0.08);
+    color: #9a3412;
+    font-family: var(--font-cinzel), serif;
+    font-weight: 900;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    transform: rotate(5deg);
+    border-radius: 3px;
+    box-shadow: inset 0 0 4px rgba(154, 52, 18, 0.25);
+    user-select: none;
+    flex-shrink: 0;
   }
 }
 
 @layer base {
   :root {
-    /* Barber & Dragons: barber-dark #1c1917, barber-gold #fbbf24, barber-red #991b1b, barber-paper #f5f5f4 */
-    --background: 24 10% 10%;
-    --foreground: 40 6% 96%;
-    --card: 24 10% 12%;
-    --card-foreground: 40 6% 96%;
-    --popover: 24 10% 12%;
-    --popover-foreground: 40 6% 96%;
-    --primary: 0 64% 35%;
-    --primary-foreground: 40 6% 96%;
-    --secondary: 43 96% 56%;
-    --secondary-foreground: 24 10% 10%;
-    --muted: 24 8% 18%;
-    --muted-foreground: 40 4% 65%;
-    --accent: 43 96% 56%;
-    --accent-foreground: 24 10% 10%;
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 40 6% 96%;
-    --border: 43 30% 30%;
-    --input: 24 8% 18%;
-    --ring: 43 96% 56%;
+    /* Barber & Dragons — The Guildhall Design System */
+    --background: 24 14% 7%;
+    --foreground: 40 22% 94%;
+    --card: 24 14% 10%;
+    --card-foreground: 40 22% 94%;
+    --popover: 24 14% 10%;
+    --popover-foreground: 40 22% 94%;
+    --primary: 0 64% 36%;
+    --primary-foreground: 40 22% 94%;
+    --secondary: 40 52% 54%;
+    --secondary-foreground: 24 14% 7%;
+    --muted: 24 12% 14%;
+    --muted-foreground: 40 10% 63%;
+    --accent: 40 52% 54%;
+    --accent-foreground: 24 14% 7%;
+    --destructive: 0 64% 36%;
+    --destructive-foreground: 40 22% 94%;
+    --border: 24 18% 20%;
+    --input: 24 12% 16%;
+    --ring: 40 52% 54%;
     --radius: 0.5rem;
   }
 
@@ -63,16 +327,17 @@
   }
 
   html {
-    background-color: #1c1917;
+    background-color: #0b0908;
+    color-scheme: dark;
   }
 
   html.dark {
-    background-color: #1c1917;
+    background-color: #0b0908;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
-    background-color: hsl(var(--background));
+    background-color: #0b0908;
     min-height: 100vh;
   }
 }
@@ -335,3 +600,56 @@ html.vista-proiezione-fullscreen iframe[src*="iubenda"] {
   width: 0.875rem !important;
   height: 0.875rem !important;
 }
+
+/* =========================================================
+   GM SCREEN 2.0 — PLANCIA TATTICA (WAR ROOM MOCKUP THEME)
+   ========================================================= */
+
+/* Scudo metallico per la Classe Armatura (AC Shield) */
+.tactical-ac-shield {
+  position: relative;
+  width: 36px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #3b2516 0%, #22140a 60%, #120904 100%);
+  border: 1.5px solid #a3733a;
+  clip-path: polygon(50% 0%, 100% 12%, 100% 68%, 50% 100%, 0% 68%, 0% 12%);
+  box-shadow: 
+    0 3px 8px rgba(0, 0, 0, 0.7),
+    inset 0 1px 1px rgba(255, 255, 255, 0.25),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.8);
+  flex-shrink: 0;
+}
+
+/* Barra Punti Ferita Tattica a doppio riempimento */
+.tactical-hp-track {
+  height: 8px;
+  border-radius: 3px;
+  background-color: #2e0d0d;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(163, 115, 58, 0.3);
+}
+
+.tactical-hp-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #15803d 0%, #22c55e 100%);
+  border-radius: 2px;
+  transition: width 240ms ease-out;
+}
+
+.tactical-hp-bar-low {
+  background: linear-gradient(90deg, #b91c1c 0%, #ef4444 100%) !important;
+}
+
+.tactical-hp-bar-mid {
+  background: linear-gradient(90deg, #b45309 0%, #f59e0b 100%) !important;
+}
+
+/* D20 icon / crest */
+.tactical-d20-emblem {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
+}
+

@@ -118,7 +118,7 @@ export async function CampaignList({ variant = "all" }: CampaignListProps) {
 
   if (error) {
     return (
-      <p className="text-sm text-red-400">
+      <p className="text-sm text-crimson-light font-serif">
         Errore nel caricamento delle campagne. Riprova più tardi.
       </p>
     );
@@ -126,49 +126,74 @@ export async function CampaignList({ variant = "all" }: CampaignListProps) {
 
   if (!campaigns?.length) {
     return (
-      <p className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 px-6 py-8 text-center text-barber-paper/80">
-        {getEmptyMessage(variant, isGmOrAdmin)}
-      </p>
+      <div className="card-guild-stone relative rounded-2xl p-8 text-center max-w-md mx-auto shadow-xl">
+        <div className="corner-ornament-tl" />
+        <div className="corner-ornament-tr" />
+        <div className="corner-ornament-bl" />
+        <div className="corner-ornament-br" />
+        <p className="font-serif text-sm text-parchment-300 leading-relaxed">
+          {getEmptyMessage(variant, isGmOrAdmin)}
+        </p>
+      </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 min-w-0">
-      {campaigns.map((campaign, index) => (
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 min-w-0">
+      {campaigns.map((campaign) => (
         <Link
           key={campaign.id}
           href={`/campaigns/${campaign.id}`}
           prefetch={false}
-          className="min-w-0"
+          className="group min-w-0 block"
         >
-          <Card className="overflow-hidden border-barber-gold/40 bg-barber-dark/90 transition-colors hover:border-barber-gold/50 hover:bg-barber-dark min-w-0">
-            <div className="relative aspect-[3/2] w-full min-w-0 bg-barber-dark">
-              <Image
-                src={campaign.image_url ?? PLACEHOLDER_IMAGE}
-                alt={campaign.name}
-                fill
-                className="object-contain"
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                placeholder="blur"
-                blurDataURL={IMAGE_BLUR_PLACEHOLDER}
-              />
+          <article className="card-guild-stone relative flex h-full flex-col justify-between overflow-hidden rounded-2xl border-2 border-brass-base/30 shadow-xl transition-all duration-300 group-hover:-translate-y-1.5 group-hover:border-brass-base/70 group-hover:shadow-[0_12px_30px_rgba(200,157,73,0.15)] min-w-0">
+            <div className="corner-ornament-tl" />
+            <div className="corner-ornament-tr" />
+            <div className="corner-ornament-bl" />
+            <div className="corner-ornament-br" />
+
+            <div>
+              {/* Immagine con cornice araldica e gradienti */}
+              <div className="relative aspect-[16/9] w-full min-w-0 overflow-hidden bg-guild-void border-b border-brass-base/20">
+                <Image
+                  src={campaign.image_url ?? PLACEHOLDER_IMAGE}
+                  alt={campaign.name}
+                  fill
+                  className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  placeholder="blur"
+                  blurDataURL={IMAGE_BLUR_PLACEHOLDER}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-guild-void via-transparent to-transparent opacity-80" />
+              </div>
+
+              <div className="p-5">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-brass-base/30 bg-guild-oak/90 px-2.5 py-0.5 text-[10px] font-serif uppercase tracking-wider text-brass-light">
+                  <span>✦ Campagna Ufficiale</span>
+                </span>
+
+                <h3 className="mt-3 line-clamp-1 font-serif text-lg font-bold text-parchment-100 group-hover:text-brass-light transition-colors">
+                  {campaign.name}
+                </h3>
+
+                {campaign.description && (
+                  <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-parchment-300">
+                    {campaign.description}
+                  </p>
+                )}
+              </div>
             </div>
-            <CardHeader className="pb-2 min-w-0">
-              <CardTitle className="line-clamp-1 break-words text-base text-barber-paper sm:text-lg">
-                {campaign.name}
-              </CardTitle>
-              {campaign.description && (
-                <CardDescription className="line-clamp-3 break-words text-barber-paper/70 sm:line-clamp-4 md:line-clamp-2">
-                  {campaign.description}
-                </CardDescription>
-              )}
-            </CardHeader>
-            <CardContent className="pt-0">
-              <span className="text-xs text-barber-gold">
-                Entra nella campagna →
+
+            <div className="border-t border-guild-border/80 px-5 py-3.5 bg-guild-oak/40 flex items-center justify-between">
+              <span className="text-xs font-serif uppercase tracking-wider text-brass-light group-hover:text-brass-light font-semibold">
+                Esplora Campagna
               </span>
-            </CardContent>
-          </Card>
+              <span className="text-sm text-brass-base group-hover:translate-x-1 transition-transform">
+                →
+              </span>
+            </div>
+          </article>
         </Link>
       ))}
     </div>

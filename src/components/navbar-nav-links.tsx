@@ -33,18 +33,18 @@ function isCampaignDetailPath(pathname: string | null): boolean {
 function navLinkClass(pathname: string | null, href: string) {
   const active = pathname === href || (href !== "/" && pathname?.startsWith(`${href}/`));
   return cn(
-    "text-sm font-medium transition-colors",
-    active ? "text-barber-gold" : "text-barber-paper/90 hover:text-barber-gold"
+    "text-xs font-serif uppercase tracking-wider transition-colors",
+    active ? "text-brass-light font-bold drop-shadow-[0_0_8px_rgba(200,157,73,0.3)]" : "text-parchment-300 hover:text-brass-light"
   );
 }
 
 function sheetLinkClass(pathname: string | null, href: string) {
   const active = pathname === href || (href !== "/" && pathname?.startsWith(`${href}/`));
   return cn(
-    "rounded-lg px-3 py-2.5 text-base font-medium transition-colors",
+    "rounded-lg px-3 py-2.5 text-sm font-serif uppercase tracking-wider transition-colors",
     active
-      ? "bg-barber-gold/15 text-barber-gold"
-      : "text-barber-paper/90 hover:bg-barber-gold/10 hover:text-barber-gold"
+      ? "bg-brass-base/15 text-brass-light font-bold border-l-2 border-brass-base"
+      : "text-parchment-300 hover:bg-brass-base/10 hover:text-brass-light"
   );
 }
 
@@ -71,13 +71,13 @@ export function NavbarNavLinks() {
           className="hidden min-w-0 items-center gap-2 text-xs sm:flex sm:max-w-[min(52vw,34rem)]"
           aria-label="Posizione nella campagna"
         >
-          <span className="shrink-0 text-barber-paper/45">Campagna</span>
-          <span className="text-barber-paper/30">/</span>
-          <span className="truncate font-serif text-sm font-semibold text-barber-paper">
+          <span className="shrink-0 text-parchment-500 font-serif">Campagna</span>
+          <span className="text-guild-border">/</span>
+          <span className="truncate font-serif text-sm font-bold text-parchment-100">
             {navigation?.campaignName ?? "Campagna"}
           </span>
-          <span className="text-barber-paper/30">/</span>
-          <span className="truncate font-medium text-barber-gold">
+          <span className="text-guild-border">/</span>
+          <span className="truncate font-mono text-xs font-semibold text-brass-light">
             {navigation?.sectionLabel ?? "Workspace"}
           </span>
         </div>
@@ -101,7 +101,7 @@ export function NavbarNavLinks() {
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="shrink-0 text-barber-paper hover:bg-barber-gold/10 hover:text-barber-gold sm:hidden"
+                className="shrink-0 text-parchment-200 hover:bg-brass-base/10 hover:text-brass-light sm:hidden"
                 aria-label="Apri menu di navigazione"
               >
                 <Menu className="h-5 w-5" />
@@ -109,10 +109,10 @@ export function NavbarNavLinks() {
             </SheetTrigger>
             <SheetContent
               side="right"
-              className="flex w-[min(100vw-2rem,20rem)] flex-col border-barber-gold/20 bg-barber-dark text-barber-paper"
+              className="flex w-[min(100vw-2rem,20rem)] flex-col border-brass-base/30 bg-guild-oak text-parchment-100"
             >
               <SheetHeader>
-                <SheetTitle className="text-left font-serif text-barber-gold">Menu</SheetTitle>
+                <SheetTitle className="text-left font-serif text-gold-relief text-lg">Menu di Gilda</SheetTitle>
               </SheetHeader>
               <nav className="mt-4 flex flex-col gap-1">
                 {desktopLinks.map((link) => (
@@ -126,11 +126,12 @@ export function NavbarNavLinks() {
                   </Link>
                 ))}
               </nav>
-              <div className="mt-auto flex flex-col gap-2 border-t border-barber-gold/20 pt-4">
+              <div className="mt-auto flex flex-col gap-2 border-t border-guild-border pt-4">
                 {isLoggedIn ? (
                   <Button
                     asChild
-                    className="w-full bg-barber-gold text-barber-dark hover:bg-barber-gold/90"
+                    variant="wax"
+                    className="w-full text-xs font-serif uppercase tracking-widest font-bold"
                   >
                     <Link href="/dashboard" onClick={closeMenu}>
                       Area personale
@@ -140,8 +141,8 @@ export function NavbarNavLinks() {
                   <>
                     <Button
                       asChild
-                      variant="outline"
-                      className="w-full border-barber-gold/40 text-barber-gold hover:bg-barber-gold/10"
+                      variant="stone"
+                      className="w-full text-xs font-serif uppercase tracking-wider font-semibold text-brass-light"
                     >
                       <Link href="/login" onClick={closeMenu}>
                         Entra
@@ -149,7 +150,8 @@ export function NavbarNavLinks() {
                     </Button>
                     <Button
                       asChild
-                      className="w-full bg-barber-red text-barber-paper hover:bg-barber-red/90"
+                      variant="wax"
+                      className="w-full text-xs font-serif uppercase tracking-widest font-bold"
                     >
                       <Link href="/login" onClick={closeMenu}>
                         Unisciti

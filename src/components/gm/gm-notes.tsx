@@ -123,57 +123,60 @@ export function GmNotes({ campaignId }: GmNotesProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h3 className="text-base font-semibold text-slate-200">Note GM</h3>
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-barber-gold/20 pb-3">
+        <div className="flex items-center gap-2">
+          <FileText className="h-5 w-5 text-barber-gold" />
+          <h3 className="font-cinzel text-lg font-bold text-gold-relief">Taccuino Segreto del Master</h3>
+        </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button
               type="button"
               variant="outline"
               size="sm"
-              className="border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
+              className="border-barber-gold/40 text-barber-gold hover:bg-barber-gold/15"
               onClick={openCreate}
             >
               <Plus className="mr-2 h-4 w-4" />
               Nuova nota
             </Button>
           </DialogTrigger>
-          <DialogContent className="border-violet-800/50 bg-slate-900 sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle className="text-violet-100">
-                {editingNote ? "Modifica nota" : "Nuova nota"}
+          <DialogContent className="border-barber-gold/40 bg-[#120f0d] text-barber-paper sm:max-w-lg">
+            <DialogHeader className="border-b border-barber-gold/20 pb-2">
+              <DialogTitle className="font-cinzel text-lg font-bold text-gold-relief">
+                {editingNote ? "Modifica appunto segreto" : "Nuovo appunto segreto"}
               </DialogTitle>
-              <DialogDescription className="text-slate-400">
-                Le note sono visibili solo a te (GM/Admin).
+              <DialogDescription className="text-barber-paper/65">
+                Queste note sono protette e visibili esclusivamente al Dungeon Master.
               </DialogDescription>
             </DialogHeader>
-            <form key={editingNote?.id ?? "new"} onSubmit={handleSubmit} className="space-y-4">
+            <form key={editingNote?.id ?? "new"} onSubmit={handleSubmit} className="space-y-4 pt-2">
               <div className="space-y-2">
-                <Label htmlFor="gm-note-title">Titolo</Label>
+                <Label htmlFor="gm-note-title" className="text-barber-paper/85">Titolo</Label>
                 <Input
                   id="gm-note-title"
                   name="title"
                   defaultValue={editingNote?.title ?? ""}
                   placeholder="Es. Segreti del capitolo 2"
-                  className="border-slate-600 bg-slate-800 text-slate-100"
+                  className="border-barber-gold/30 bg-black/50 text-barber-paper"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="gm-note-content">Contenuto</Label>
+                <Label htmlFor="gm-note-content" className="text-barber-paper/85">Contenuto</Label>
                 <Textarea
                   id="gm-note-content"
                   name="content"
                   defaultValue={editingNote?.content ?? ""}
-                  placeholder="Scrivi qui le tue note..."
+                  placeholder="Scrivi qui i piani segreti, retroscena o incontri..."
                   rows={12}
-                  className="min-h-[200px] resize-y border-slate-600 bg-slate-800 text-slate-100"
+                  className="min-h-[200px] resize-y border-barber-gold/30 bg-black/50 text-barber-paper"
                 />
               </div>
               <ImageSourceField
                 fileInputName="image"
                 urlFieldName="image_url"
-                label="Immagine (opzionale)"
+                label="Immagine di supporto (opzionale)"
                 disabled={formLoading}
                 previewUrl={editingNote?.image_url ?? null}
                 hint="Carica o incolla URL; salvata su Telegram."
@@ -184,29 +187,29 @@ export function GmNotes({ campaignId }: GmNotesProps) {
                     type="checkbox"
                     id="gm-note-remove-image"
                     name="remove_image"
-                    className="h-4 w-4 rounded border-slate-500 bg-slate-800 text-violet-500"
+                    className="h-4 w-4 rounded border-barber-gold/40 bg-black/50 text-barber-gold"
                   />
-                  <Label htmlFor="gm-note-remove-image" className="cursor-pointer text-sm text-slate-400">
+                  <Label htmlFor="gm-note-remove-image" className="cursor-pointer text-sm text-barber-paper/70">
                     Rimuovi immagine
                   </Label>
                 </div>
               )}
-              <DialogFooter>
+              <DialogFooter className="gap-2 sm:gap-0">
                 <Button
                   type="button"
                   variant="ghost"
                   onClick={() => setDialogOpen(false)}
-                  className="text-slate-400"
+                  className="text-barber-paper/60 hover:text-barber-paper"
                 >
                   Annulla
                 </Button>
                 <Button
                   type="submit"
                   disabled={formLoading}
-                  className="bg-violet-600 hover:bg-violet-700"
+                  className="btn-wax-seal text-white font-medium"
                 >
                   {formLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {editingNote ? "Salva" : "Crea"}
+                  {editingNote ? "Salva appunto" : "Sigilla nota"}
                 </Button>
               </DialogFooter>
             </form>
@@ -216,55 +219,68 @@ export function GmNotes({ campaignId }: GmNotesProps) {
 
       {loading ? (
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-violet-400" />
+          <Loader2 className="h-8 w-8 animate-spin text-barber-gold" />
         </div>
       ) : notes.length === 0 ? (
-        <p className="rounded-lg border border-violet-800/40 bg-slate-900/60 px-4 py-6 text-center text-sm text-slate-400">
-          Nessuna nota. Clicca &quot;Nuova nota&quot; per aggiungerne una.
-        </p>
+        <div className="card-guild-stone relative rounded-xl p-6 text-center">
+          <span className="corner-ornament-tl" />
+          <span className="corner-ornament-tr" />
+          <span className="corner-ornament-bl" />
+          <span className="corner-ornament-br" />
+          <p className="font-cinzel text-base text-barber-gold/80">Il taccuino è intonso</p>
+          <p className="mt-1 text-xs text-barber-paper/60">
+            Nessuna nota registrata. Clicca &quot;Nuova nota&quot; per aggiungere retroscena o promemoria.
+          </p>
+        </div>
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2">
           {notes.map((note) => (
-            <Card
+            <div
               key={note.id}
-              className="border-violet-800/40 bg-slate-900/60 transition-colors hover:border-violet-700/50"
+              className="card-guild-stone relative rounded-xl p-4 shadow-lg transition-all hover:border-barber-gold/50 min-w-0"
             >
-              <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
-                <CardTitle className="flex items-center gap-2 text-base text-violet-100">
-                  <FileText className="h-4 w-4 shrink-0 text-violet-400" />
-                  <span className="line-clamp-1">{note.title}</span>
-                </CardTitle>
+              <span className="corner-ornament-tl" />
+              <span className="corner-ornament-tr" />
+              <span className="corner-ornament-bl" />
+              <span className="corner-ornament-br" />
+              
+              <div className="flex items-start justify-between gap-2 border-b border-barber-gold/15 pb-2 mb-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <FileText className="h-4 w-4 shrink-0 text-barber-gold/80" />
+                  <span className="font-cinzel text-sm font-bold text-barber-gold truncate">{note.title}</span>
+                </div>
                 <div className="flex shrink-0 gap-1">
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-slate-400 hover:text-violet-300"
+                    className="h-7 w-7 text-barber-paper/70 hover:text-barber-gold hover:bg-barber-gold/10"
                     onClick={() => openEdit(note)}
-                    title="Modifica"
+                    title="Modifica appunto"
                   >
-                    <Pencil className="h-4 w-4" />
+                    <Pencil className="h-3.5 w-3.5" />
                   </Button>
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-slate-400 hover:text-red-400"
+                    className="h-7 w-7 text-barber-paper/70 hover:text-barber-red hover:bg-barber-red/10"
                     onClick={() => handleDelete(note)}
                     disabled={deleteLoadingId === note.id}
-                    title="Elimina"
+                    title="Elimina appunto"
                   >
                     {deleteLoadingId === note.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3.5 w-3.5" />
                     )}
                   </Button>
                 </div>
-              </CardHeader>
-              <CardContent className="pt-0">
+              </div>
+
+              <div>
                 {note.image_url && (
-                  <div className="relative mb-2 aspect-video w-full overflow-hidden rounded-md border border-violet-800/40 bg-slate-800">
+                  <div className="relative mb-2 aspect-video w-full overflow-hidden rounded-md border border-barber-gold/25 bg-black/40">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={note.image_url}
@@ -273,15 +289,15 @@ export function GmNotes({ campaignId }: GmNotesProps) {
                     />
                   </div>
                 )}
-                <p className="line-clamp-2 text-sm text-slate-400">
+                <p className="line-clamp-3 text-xs text-barber-paper/80 leading-relaxed">
                   {note.content
                     ? note.content.length <= PREVIEW_LEN
                       ? note.content
                       : `${note.content.slice(0, PREVIEW_LEN)}…`
                     : "—"}
                 </p>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           ))}
         </ul>
       )}
