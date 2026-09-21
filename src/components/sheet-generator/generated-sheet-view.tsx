@@ -2,11 +2,6 @@
 
 import type { GeneratedCharacterSheet } from "@/lib/sheet-generator/types";
 import type { QuickManualSection } from "@/lib/sheet-generator/quick-manual-builder";
-import {
-  buildCompiledSheetExportPayload,
-  buildCompiledSheetPdfRequestBody,
-  compiledSheetJsonFileName,
-} from "@/lib/sheet-generator/sheet-pdf-payload";
 
 type Props = {
   sheet: GeneratedCharacterSheet;
@@ -45,82 +40,8 @@ export function GeneratedSheetView({
   const storyTrim = (characterStory ?? "").trim();
   const storyInPdf = includeBackgroundStoryInPdf && !!storyTrim;
 
-  function downloadCompiledJson() {
-    if (!sheetData) return;
-    const payload = buildCompiledSheetExportPayload({
-      sheetData,
-      sheet,
-      quickManualSections,
-      backgroundPdfSections,
-      includeBackgroundStoryInPdf,
-      characterStory,
-    });
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = compiledSheetJsonFileName(sheet);
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  async function downloadCompiledPdf() {
-    if (!sheetData) return;
-    const res = await fetch("/api/sheet-pdf", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(
-        buildCompiledSheetPdfRequestBody({
-          sheetData,
-          sheet,
-          quickManualSections,
-          backgroundPdfSections,
-          includeBackgroundStoryInPdf,
-          characterStory,
-        })
-      ),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      alert(err?.error ?? "Errore durante la generazione del PDF compilato.");
-      return;
-    }
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${sheet.characterName || "scheda"}-compilata.pdf`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
   return (
     <div className="mt-6 space-y-4 print:mt-0">
-      <div className="flex flex-wrap justify-end gap-2 print:hidden">
-        <button
-          type="button"
-          onClick={downloadCompiledJson}
-          disabled={!sheetData}
-          className="rounded border border-barber-gold/40 bg-barber-dark px-4 py-2 text-sm font-medium text-barber-gold hover:bg-barber-gold/10 disabled:opacity-60"
-        >
-          Scarica JSON
-        </button>
-        <button
-          type="button"
-          onClick={downloadCompiledPdf}
-          disabled={!sheetData}
-          className="rounded border border-barber-gold/40 bg-barber-dark px-4 py-2 text-sm font-medium text-barber-gold hover:bg-barber-gold/10 disabled:opacity-60"
-        >
-          Scarica Scheda_Base compilata
-        </button>
-        <button
-          type="button"
-          onClick={() => window.print()}
-          className="rounded bg-barber-red px-4 py-2 text-sm font-medium text-barber-paper hover:bg-barber-red/90"
-        >
-          Stampa / Salva PDF
-        </button>
-      </div>
       <article className="rounded-xl border border-barber-gold/30 bg-barber-dark/70 p-5 print:rounded-none print:border-0 print:bg-white print:p-0 print:text-black">
         <header className="mb-4 grid gap-2 md:grid-cols-3">
           <div><b>Nome:</b> {sheet.characterName}</div>
@@ -135,7 +56,6 @@ export function GeneratedSheetView({
           <p className="mb-4 text-xs text-barber-paper/65 print:hidden">
             PDF compilato: scheda
             {quickManualSections.length ? " + manuale rapido" : ""}
-            {backgroundPdfSections.length ? " + background (manuale)" : ""}
             {storyInPdf ? " + storia del personaggio" : ""}
           </p>
         )}

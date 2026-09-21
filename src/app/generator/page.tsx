@@ -3,11 +3,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import {
-  generateFeatureSummaryV2Action,
-  generateSheetAction,
-  previewBuildChoicesAction,
-} from "@/lib/actions/generator-actions";
+import { generateSheetAction, previewBuildChoicesAction } from "@/lib/actions/generator-actions";
 import { BACKGROUND_OPTIONS, CLASS_OPTIONS, RACE_OPTIONS } from "@/lib/character-build-catalog";
 import { subclassCatalogSourceSuffix, supplementSubclassesForClass } from "@/lib/character-subclass-catalog";
 import { GeneratedSheetView } from "@/components/sheet-generator/generated-sheet-view";
@@ -24,10 +20,7 @@ import {
   parseGeneratedSheetBuildMeta,
 } from "@/lib/character-sheet-build-meta";
 import { spellcastingMetaFromGeneratedSheet } from "@/lib/sheet-generator/spell-slots";
-import {
-  buildCompiledSheetExportPayload,
-  buildCompiledSheetPdfRequestBody,
-} from "@/lib/sheet-generator/sheet-pdf-payload";
+import { buildCompiledSheetPdfRequestBody } from "@/lib/sheet-generator/sheet-pdf-payload";
 import { formatSheetSaveError } from "@/lib/sheet-save-errors";
 import { arrayBufferToBase64 } from "@/lib/utils/array-buffer-base64";
 
@@ -54,7 +47,6 @@ function GeneratorPageContent() {
       campaignId: searchParams.get("campaignId") ?? "",
       characterId: searchParams.get("characterId") ?? "",
       returnTo: searchParams.get("returnTo") ?? "",
-      autogen: searchParams.get("autogen") === "1",
       powerPlayer: searchParams.get("powerPlayer") === "1",
       torneoMode: searchParams.get("torneoMode") === "1",
       includeBackgroundStoryInPdf: searchParams.get("includeBackgroundStoryInPdf") === "1",
@@ -66,7 +58,6 @@ function GeneratorPageContent() {
   const [selectedClass, setSelectedClass] = useState<string>(initial.classLabel);
   const [selectedRaceSlug, setSelectedRaceSlug] = useState<string>(initial.raceSlug);
   const [resultMessage, setResultMessage] = useState<string | null>(null);
-  const [resultJson, setResultJson] = useState<string | null>(null);
   const [sheetDataObj, setSheetDataObj] = useState<Record<string, unknown> | null>(null);
   const [quickManualSections, setQuickManualSections] = useState<QuickManualSection[]>([]);
   const [backgroundPdfSections, setBackgroundPdfSections] = useState<QuickManualSection[]>([]);
@@ -75,8 +66,6 @@ function GeneratorPageContent() {
   );
   const [sheet, setSheet] = useState<GeneratedCharacterSheet | null>(null);
   const [featureSummaryV2, setFeatureSummaryV2] = useState<FeatureSummaryV2 | null>(null);
-  const [isGeneratingV2, setIsGeneratingV2] = useState(false);
-  const [isCompilingV2, setIsCompilingV2] = useState(false);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [isSavingSheet, setIsSavingSheet] = useState(false);
   const [characterStory, setCharacterStory] = useState(initial.characterStory);
@@ -84,7 +73,6 @@ function GeneratorPageContent() {
   const [choicesPreview, setChoicesPreview] = useState<BuildChoicesPreview | null>(null);
   const [buildOverrides, setBuildOverrides] = useState<CharacterBuildOverrides | null>(null);
   const [formLevel, setFormLevel] = useState(Number.parseInt(initial.level, 10) || 1);
-  const autogenKeyRef = useRef<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   const race = RACE_OPTIONS.find((r) => r.slug === selectedRaceSlug) ?? null;
@@ -211,7 +199,7 @@ function GeneratorPageContent() {
         } catch (e) {
           const msg =
             e instanceof DOMException && e.name === "QuotaExceededError"
-              ? "Spazio localStorage insufficiente per il PDF. Riduci la scheda o scarica il PDF dal bottone «Stampa / Salva PDF» e caricane un file più leggero."
+              ? "Spazio locale insufficiente per il PDF. Riduci il contenuto della scheda e riprova."
               : "Impossibile salvare la scheda in bozza locale. Riprova o carica un PDF manualmente.";
           setResultMessage(msg);
           toast.error(msg);
@@ -237,69 +225,6 @@ function GeneratorPageContent() {
     }
   }
 
-  async function handleGenerateFeaturesV2() {
-    if (!sheet || isGeneratingV2) return;
-    setIsGeneratingV2(true);
-    try {
-      const result = await generateFeatureSummaryV2Action(sheet, buildOverrides);
-      if (!result.success || !result.summary) {
-        toast.error(result.message);
-        setResultMessage(result.message);
-        return;
-      }
-      setFeatureSummaryV2(result.summary);
-      setResultMessage(result.message);
-      if (result.summary.diagnostics.verifiedByManual) toast.success(result.message);
-      else toast.warning(result.message);
-    } finally {
-      setIsGeneratingV2(false);
-    }
-  }
-
-  async function handleCompileFeaturesV2() {
-    if (!sheet || !sheetDataObj || !featureSummaryV2 || isCompilingV2) return;
-    setIsCompilingV2(true);
-    try {
-      const fields = {
-        ...sheetDataObj,
-        ...featureSummaryV2.fields,
-      };
-      const pdfRes = await fetch("/api/sheet-pdf", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
-          buildCompiledSheetPdfRequestBody({
-            sheetData: fields,
-            sheet,
-            quickManualSections,
-            backgroundPdfSections,
-            includeBackgroundStoryInPdf,
-            characterStory,
-            fileName: `${sheet.characterName || "scheda"}-compilata-v2.pdf`,
-          })
-        ),
-      });
-      if (!pdfRes.ok) {
-        const err = await pdfRes.json().catch(() => ({}));
-        throw new Error(err?.error ?? "Errore generazione PDF V2.");
-      }
-      const blob = await pdfRes.blob();
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = `${sheet.characterName || "scheda"}-compilata-v2.pdf`;
-      anchor.click();
-      URL.revokeObjectURL(url);
-      toast.success("PDF V2 compilato con i privilegi verificati dal manuale.");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Errore generazione PDF V2.";
-      setResultMessage(message);
-      toast.error(message);
-    } finally {
-      setIsCompilingV2(false);
-    }
-  }
-
   async function runGenerateSheet(formData: FormData, overrides?: CharacterBuildOverrides | null) {
     if (overrides && Object.keys(overrides).length > 0) {
       formData.set("buildOverridesJson", JSON.stringify(overrides));
@@ -308,7 +233,6 @@ function GeneratorPageContent() {
     }
 
     setResultMessage(null);
-    setResultJson(null);
     setSheetDataObj(null);
     setFeatureSummaryV2(null);
     setQuickManualSections([]);
@@ -324,22 +248,9 @@ function GeneratorPageContent() {
       setSheetDataObj(result.sheetData);
       setQuickManualSections(result.quickManualSections ?? []);
       setBackgroundPdfSections(result.backgroundPdfSections ?? []);
+      setFeatureSummaryV2(result.featureSummaryV2 ?? null);
       setIncludeBackgroundStoryInPdf(!!result.includeBackgroundStoryInPdf);
       if (result.characterStory != null) setCharacterStory(result.characterStory);
-      setResultJson(
-        JSON.stringify(
-          buildCompiledSheetExportPayload({
-            sheetData: result.sheetData,
-            sheet: result.sheet,
-            quickManualSections: result.quickManualSections,
-            backgroundPdfSections: result.backgroundPdfSections,
-            includeBackgroundStoryInPdf: !!result.includeBackgroundStoryInPdf,
-            characterStory: result.characterStory,
-          }),
-          null,
-          2
-        )
-      );
       setPhase("done");
     }
     return result;
@@ -374,7 +285,6 @@ function GeneratorPageContent() {
         setResultMessage(previewResult.message);
         setSheet(null);
         setSheetDataObj(null);
-        setResultJson(null);
         return;
       }
       await runGenerateSheet(formData, null);
@@ -402,65 +312,6 @@ function GeneratorPageContent() {
     setSelectedRaceSlug(initial.raceSlug);
   }, [initial.classLabel, initial.raceSlug]);
 
-  useEffect(() => {
-    if (!initial.autogen) return;
-    if (!initial.characterName || !initial.raceSlug || !initial.classLabel || !initial.backgroundSlug) return;
-    const autogenKey = JSON.stringify({
-      characterName: initial.characterName,
-      raceSlug: initial.raceSlug,
-      subraceSlug: initial.subraceSlug,
-      classLabel: initial.classLabel,
-      classSubclass: initial.classSubclass,
-      backgroundSlug: initial.backgroundSlug,
-      level: initial.level,
-      alignment: initial.alignment,
-      age: initial.age,
-      height: initial.height,
-      weight: initial.weight,
-      sex: initial.sex,
-      powerPlayer: initial.powerPlayer,
-      torneoMode: initial.torneoMode,
-      includeBackgroundStoryInPdf: initial.includeBackgroundStoryInPdf,
-      characterStory: initial.characterStory,
-    });
-    if (autogenKeyRef.current === autogenKey) return;
-    autogenKeyRef.current = autogenKey;
-    const fd = new FormData();
-    fd.set("characterName", initial.characterName);
-    fd.set("raceSlug", initial.raceSlug);
-    if (initial.subraceSlug) fd.set("subraceSlug", initial.subraceSlug);
-    fd.set("classLabel", initial.classLabel);
-    if (initial.classSubclass) fd.set("classSubclass", initial.classSubclass);
-    fd.set("backgroundSlug", initial.backgroundSlug);
-    fd.set("level", initial.level || "1");
-    if (initial.alignment) fd.set("alignment", initial.alignment);
-    if (initial.age) fd.set("age", initial.age);
-    if (initial.height) fd.set("height", initial.height);
-    if (initial.weight) fd.set("weight", initial.weight);
-    if (initial.sex) fd.set("sex", initial.sex);
-    if (initial.powerPlayer) fd.set("powerPlayer", "1");
-    if (initial.torneoMode) fd.set("torneoMode", "1");
-    if (initial.includeBackgroundStoryInPdf) fd.set("includeBackgroundStoryInPdf", "1");
-    if (initial.characterStory) fd.set("characterStory", initial.characterStory);
-
-    startTransition(async () => {
-      setFormLevel(Number.parseInt(initial.level, 10) || 1);
-      const previewResult = await previewBuildChoicesAction(fd);
-      if (!previewResult.success) {
-        setResultMessage(previewResult.message);
-        return;
-      }
-      if (previewResult.preview?.slots.length) {
-        setChoicesPreview(previewResult.preview);
-        setBuildOverrides(previewResult.preview.overrides);
-        setPhase("choices");
-        setResultMessage(previewResult.message);
-        return;
-      }
-      await runGenerateSheet(fd, null);
-    });
-  }, [initial, startTransition]);
-
   return (
     <main className="min-h-[calc(100vh-64px)] bg-gradient-to-b from-[#12100f] via-[#161312] to-[#1d1714] px-4 py-10 text-barber-paper md:px-8">
       <section className="mx-auto w-full max-w-3xl rounded-2xl border border-barber-gold/30 bg-barber-dark/80 p-6 shadow-[0_0_50px_rgba(251,191,36,0.08)]">
@@ -479,34 +330,6 @@ function GeneratorPageContent() {
             >
               {returnLabel}
             </button>
-            <button
-              type="button"
-              onClick={handleSaveToCharacterSheet}
-              disabled={isSavingSheet || !sheetDataObj || !sheet}
-              className="rounded border border-barber-gold/40 px-3 py-1.5 text-xs text-barber-gold hover:bg-barber-gold/10"
-            >
-              {isSavingSheet ? "Salvataggio PDF..." : "Salva scheda PDF"}
-            </button>
-            {sheet && (
-              <>
-                <button
-                  type="button"
-                  onClick={handleGenerateFeaturesV2}
-                  disabled={isGeneratingV2}
-                  className="rounded border border-emerald-400/50 px-3 py-1.5 text-xs text-emerald-200 hover:bg-emerald-400/10 disabled:opacity-60"
-                >
-                  {isGeneratingV2 ? "Generazione V2..." : "Genera privilegi V2"}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCompileFeaturesV2}
-                  disabled={isCompilingV2 || !featureSummaryV2}
-                  className="rounded bg-emerald-700/80 px-3 py-1.5 text-xs text-white hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {isCompilingV2 ? "Compilazione PDF V2..." : "Compila PDF V2"}
-                </button>
-              </>
-            )}
           </div>
           <h1 className="flex items-center gap-2 text-2xl font-semibold text-barber-gold">
             <Sparkles className="h-5 w-5" />
@@ -737,10 +560,10 @@ function GeneratorPageContent() {
                 className="mt-1 h-4 w-4 shrink-0 rounded border-barber-gold/40 text-barber-red focus:ring-barber-gold"
               />
               <span>
-                <span className="font-medium text-barber-gold">Background e storia nel PDF</span>
+                <span className="font-medium text-barber-gold">Includi la storia nel PDF</span>
                 <span className="mt-1 block text-barber-paper/75">
-                  Dopo la scheda (e dopo il manuale rapido, se attivo): testo del background scelto dal
-                  manuale e, se hai scritto la storia sopra, una pagina «Storia del personaggio».
+                  Aggiunge al PDF solo la storia scritta sopra. Il testo del background del manuale non
+                  viene stampato.
                 </span>
               </span>
             </label>
@@ -759,8 +582,8 @@ function GeneratorPageContent() {
               <span>
                 <span className="font-medium text-barber-gold">Power player (scheda)</span>
                 <span className="mt-1 block text-barber-paper/75">
-                  Trucchetti e incantesimi scelti da una tier list orientata al combattimento, rispettando
-                  gli slot disponibili per livello (niente liste piene solo di incantesimi al massimo livello).
+                  Applica il min/max alle caratteristiche e privilegia le scelte orientate al combattimento.
+                  Senza questa opzione il personaggio ha statistiche bilanciate e al massimo un modificatore negativo.
                 </span>
               </span>
             </label>
@@ -855,14 +678,16 @@ function GeneratorPageContent() {
             )}
           </section>
         )}
-        {resultJson && (
-          <div className="mt-5 rounded-md border border-barber-gold/25 bg-black/30 p-4">
-            <p className="mb-2 text-xs uppercase tracking-wide text-barber-gold/80">
-              JSON Scheda Generata
-            </p>
-            <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap text-xs text-barber-paper/90">
-              {resultJson}
-            </pre>
+        {sheet && sheetDataObj && (
+          <div className="mt-6 border-t border-barber-gold/20 pt-5">
+            <button
+              type="button"
+              onClick={handleSaveToCharacterSheet}
+              disabled={isSavingSheet}
+              className="inline-flex h-11 w-full items-center justify-center rounded-md bg-barber-red px-5 text-sm font-medium text-barber-paper hover:bg-barber-red/90 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isSavingSheet ? "Salvataggio PDF..." : "Salva scheda PDF e torna al personaggio"}
+            </button>
           </div>
         )}
       </section>

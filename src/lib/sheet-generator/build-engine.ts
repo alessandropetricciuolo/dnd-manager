@@ -335,7 +335,10 @@ function proficiencyBonus(level: number): number {
   return 2 + Math.floor((Math.max(1, Math.min(20, level)) - 1) / 4);
 }
 
-export function buildPointBuy(primaryOrder: AbilityKey[]): Record<AbilityKey, number> {
+export function buildPointBuy(
+  primaryOrder: AbilityKey[],
+  powerPlayer = false
+): Record<AbilityKey, number> {
   const scores: Record<AbilityKey, number> = {
     str: 8,
     dex: 8,
@@ -344,10 +347,11 @@ export function buildPointBuy(primaryOrder: AbilityKey[]): Record<AbilityKey, nu
     wis: 8,
     cha: 8,
   };
-  const targets = [15, 15, 14, 12, 10, 8];
+  const orderedAbilities = Array.from(new Set([...primaryOrder, ...ABILITIES]));
+  const targets = powerPlayer ? [15, 15, 14, 10, 8, 8] : [15, 14, 13, 12, 10, 8];
   let budget = 27;
-  for (let i = 0; i < primaryOrder.length; i += 1) {
-    const ability = primaryOrder[i];
+  for (let i = 0; i < orderedAbilities.length; i += 1) {
+    const ability = orderedAbilities[i];
     const target = targets[i] ?? 8;
     while (scores[ability] < target && scores[ability] < 15) {
       const next = scores[ability] + 1;
@@ -652,7 +656,8 @@ function applyLevelAbilityIncreases(
 export function computeCoreSheet(
   classLabel: string,
   level: number,
-  backgroundSlug?: string | null
+  backgroundSlug?: string | null,
+  powerPlayer = false
 ): Pick<
   GeneratedCharacterSheet,
   | "abilities"
@@ -676,7 +681,7 @@ export function computeCoreSheet(
   | "languages"
 > {
   const cfg = CLASS_CONFIG[classLabel] ?? CLASS_CONFIG.Guerriero;
-  const abilities = buildPointBuy(cfg.primary);
+  const abilities = buildPointBuy(cfg.primary, powerPlayer);
   return computeCoreFromAbilities(classLabel, level, abilities, backgroundSlug);
 }
 
@@ -684,7 +689,12 @@ export async function buildGeneratedCharacterSheet(
   input: CharacterGeneratorInput,
   requestOrigin?: string | null
 ): Promise<GeneratorBuildResult> {
-  const baseCore = computeCoreSheet(input.classLabel, input.level, input.backgroundSlug);
+  const baseCore = computeCoreSheet(
+    input.classLabel,
+    input.level,
+    input.backgroundSlug,
+    !!input.powerPlayer
+  );
   const initialRules = await resolveGeneratorRules(
     {
       raceSlug: input.raceSlug,

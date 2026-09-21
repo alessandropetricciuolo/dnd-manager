@@ -159,7 +159,6 @@ export function EditCharacterDialog({
       classLabel,
       backgroundSlug,
       level: levelRaw || "1",
-      autogen: "1",
       campaignId: character.campaign_id,
       characterId: character.id,
       returnTo: `/campaigns/${character.campaign_id}?tab=pg&openEditCharacter=${character.id}`,

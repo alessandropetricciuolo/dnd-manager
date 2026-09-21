@@ -7,7 +7,6 @@ import {
 } from "@/lib/sheet-generator/build-choices";
 import type { BuildChoicesPreview, CharacterBuildOverrides } from "@/lib/sheet-generator/build-choices-types";
 import {
-  buildBackgroundPdfSections,
   buildQuickManualSections,
   type QuickManualSection,
 } from "@/lib/sheet-generator/quick-manual-builder";
@@ -25,6 +24,7 @@ export type GenerateSheetResult = {
   backgroundPdfSections?: QuickManualSection[];
   includeBackgroundStoryInPdf?: boolean;
   characterStory?: string | null;
+  featureSummaryV2?: FeatureSummaryV2;
   warnings?: string[];
 };
 
@@ -136,12 +136,13 @@ export async function generateSheetAction(formData: FormData): Promise<GenerateS
   try {
     const requestOrigin = await requestOriginFromHeaders();
     const built = await buildGeneratedCharacterSheet(input, requestOrigin);
-    const sheetData = mapGeneratedSheetToPdfFields(built.sheet);
+    const featureSummaryV2 = buildFeatureSummaryV2(built.sheet, input.buildOverrides);
+    const sheetData = {
+      ...mapGeneratedSheetToPdfFields(built.sheet),
+      ...featureSummaryV2.fields,
+    };
     const quickManualSections = input.torneoMode
       ? await buildQuickManualSections(built.sheet)
-      : undefined;
-    const backgroundPdfSections = input.includeBackgroundStoryInPdf
-      ? buildBackgroundPdfSections(built.sheet)
       : undefined;
     return {
       success: true,
@@ -149,9 +150,10 @@ export async function generateSheetAction(formData: FormData): Promise<GenerateS
       sheet: built.sheet,
       sheetData,
       quickManualSections,
-      backgroundPdfSections,
+      backgroundPdfSections: undefined,
       includeBackgroundStoryInPdf: !!input.includeBackgroundStoryInPdf,
       characterStory: input.characterStory ?? null,
+      featureSummaryV2,
       warnings: built.warnings,
     };
   } catch (error) {
@@ -162,10 +164,7 @@ export async function generateSheetAction(formData: FormData): Promise<GenerateS
   }
 }
 
-/**
- * Pipeline sperimentale V2 per i due campi dei privilegi. Non modifica il
- * mapper V1 e lavora sulla scheda già risolta dal generatore corrente.
- */
+/** Compatibilita per i chiamanti legacy: il flusso principale usa gia V2. */
 export async function generateFeatureSummaryV2Action(
   sheet: GeneratedCharacterSheet,
   overrides?: CharacterBuildOverrides | null

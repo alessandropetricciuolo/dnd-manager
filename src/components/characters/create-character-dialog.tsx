@@ -361,6 +361,7 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
     const classLabel = (fd.get("character_class") as string | null)?.trim() ?? "";
     const classSubclass = (fd.get("class_subclass") as string | null)?.trim() ?? "";
     const backgroundSlug = (fd.get("background_slug") as string | null)?.trim() ?? "";
+    const level = (fd.get("level") as string | null)?.trim() || "1";
 
     if (!characterName || !raceSlug || !classLabel || !backgroundSlug) {
       toast.error("Per l'anteprima compila almeno nome, razza, classe e background.");
@@ -372,8 +373,7 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
       raceSlug,
       classLabel,
       backgroundSlug,
-      level: "1",
-      autogen: "1",
+      level,
       campaignId,
       returnTo: `/campaigns/${campaignId}?tab=pg&openCreateCharacter=1`,
     });

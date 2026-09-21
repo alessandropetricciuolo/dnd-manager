@@ -11,6 +11,18 @@ test("point buy respects 27-budget constraints", () => {
   }
 });
 
+test("standard point buy has at most one negative modifier", () => {
+  const out = buildPointBuy(["int", "con", "dex"]);
+  assert.ok(Object.values(out).filter((score) => score < 10).length <= 1);
+});
+
+test("power player point buy keeps the min-max spread", () => {
+  const out = buildPointBuy(["int", "con", "dex"], true);
+  assert.ok(Object.values(out).filter((score) => score < 10).length > 1);
+  assert.equal(out.int, 15);
+  assert.equal(out.con, 15);
+});
+
 test("compute core sheet includes coherent derived stats", () => {
   const core = computeCoreSheet("Guerriero", 3);
   assert.equal(core.proficiencyBonus, 2);
