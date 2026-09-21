@@ -47,6 +47,14 @@ export type DenseStatblock = {
   parseConfidence: "high" | "medium" | "low";
 };
 
+export type DenseStatblockFallback = {
+  ac?: string | number | null;
+  hp?: string | number | null;
+  cr?: string | number | null;
+  xp?: string | number | null;
+  attacks?: string | null;
+};
+
 const ABILITY_ORDER: DenseAbilityKey[] = ["FOR", "DES", "COS", "INT", "SAG", "CAR"];
 
 const ABILITY_ALIASES: Record<string, DenseAbilityKey> = {
@@ -87,6 +95,61 @@ function parseScoreCell(raw: string): { score: number; mod: string } | null {
   return { score, mod };
 }
 
+function normalizeTableLabel(value: string): string {
+  return stripMd(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/gi, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function parseMarkdownKeyValueRows(text: string): Map<string, string> {
+  const rows = new Map<string, string>();
+  const tableLines = text.split("\n").map((line) =>
+    line.includes("|")
+      ? line
+      .split("|")
+      .map((cell) => cell.trim())
+      .filter(Boolean)
+      : []
+  );
+  const isSeparator = (cells: string[]) =>
+    cells.length >= 2 && cells.every((cell) => /^:?-{3,}:?$/.test(cell));
+
+  // Tabella orizzontale: | CA | PF | ... |, separatore, poi | 16 | 85 | ... |.
+  for (let i = 0; i < tableLines.length - 2; i++) {
+    const headers = tableLines[i] ?? [];
+    const separator = tableLines[i + 1] ?? [];
+    const values = tableLines[i + 2] ?? [];
+    if (!isSeparator(separator) || headers.length < 2 || values.length !== headers.length) continue;
+    for (let j = 0; j < headers.length; j++) {
+      const label = normalizeTableLabel(headers[j] ?? "");
+      const value = stripMd(values[j] ?? "");
+      if (label && value && !rows.has(label)) rows.set(label, value);
+    }
+  }
+
+  // Tabella verticale: | Statistica | Valore | seguita da una riga per campo.
+  for (let i = 0; i < tableLines.length; i++) {
+    const cells = tableLines[i] ?? [];
+    if (cells.length < 2 || isSeparator(cells) || isSeparator(tableLines[i + 1] ?? [])) continue;
+    const label = normalizeTableLabel(cells[0] ?? "");
+    const value = stripMd(cells.slice(1).join(" | "));
+    if (label && value && !rows.has(label)) rows.set(label, value);
+  }
+  return rows;
+}
+
+function tableField(text: string, labels: string[]): string | null {
+  const rows = parseMarkdownKeyValueRows(text);
+  for (const label of labels) {
+    const value = rows.get(normalizeTableLabel(label));
+    if (value) return value;
+  }
+  return null;
+}
+
 function boldField(text: string, labels: string[]): string | null {
   for (const label of labels) {
     const re = new RegExp(`\\*\\*${label}\\*\\*\\s*[:]?\\s*([^\\n*]+)`, "i");
@@ -96,7 +159,18 @@ function boldField(text: string, labels: string[]): string | null {
     const m2 = text.match(rePlain);
     if (m2?.[1]) return m2[1].trim();
   }
-  return null;
+  return tableField(text, labels);
+}
+
+function parseVerticalAbilityTable(text: string): Partial<Record<DenseAbilityKey, DenseAbilityScore>> {
+  const out: Partial<Record<DenseAbilityKey, DenseAbilityScore>> = {};
+  const rows = parseMarkdownKeyValueRows(text);
+  for (const [label, value] of rows) {
+    const key = ABILITY_ALIASES[label.toUpperCase()];
+    const parsed = parseScoreCell(value);
+    if (key && parsed) out[key] = { ...parsed, save: parsed.mod };
+  }
+  return out;
 }
 
 function parseHtmlAbilityTable(text: string): Partial<Record<DenseAbilityKey, DenseAbilityScore>> {
@@ -299,7 +373,11 @@ function parseCrXp(raw: string | null): { cr: string | null; xp: string | null }
 
 export function parseDenseStatblock(
   markdown: string,
-  opts?: { sourceLabel?: string | null; fallbackName?: string | null }
+  opts?: {
+    sourceLabel?: string | null;
+    fallbackName?: string | null;
+    fallbackStats?: DenseStatblockFallback | null;
+  }
 ): DenseStatblock {
   const raw = (markdown ?? "").replace(/\r\n/g, "\n").trim();
   const empty: DenseStatblock = {
@@ -344,6 +422,7 @@ export function parseDenseStatblock(
   let abilities = {
     ...parseHtmlAbilityTable(meta),
     ...parseMarkdownAbilityTable(meta),
+    ...parseVerticalAbilityTable(meta),
   };
 
   const savesLine = boldField(meta, ["Tiri Salvezza", "Saving Throws"]);
@@ -355,14 +434,30 @@ export function parseDenseStatblock(
     if (!abilities[key]!.save) abilities[key]!.save = abilities[key]!.mod;
   }
 
-  const ac = boldField(meta, ["Classe Armatura", "Armor Class", "CA", "AC"]);
-  const hp = boldField(meta, ["Punti Ferita", "Punti Vita", "Hit Points", "HP", "PF"]);
+  const fallback = opts?.fallbackStats;
+  const asFallbackString = (value: string | number | null | undefined): string | null =>
+    value === null || value === undefined || String(value).trim() === ""
+      ? null
+      : String(value).trim();
+  const ac =
+    boldField(meta, ["Classe Armatura", "Armor Class", "CA", "AC"]) ??
+    asFallbackString(fallback?.ac);
+  const hp =
+    boldField(meta, ["Punti Ferita", "Punti Vita", "Hit Points", "HP", "PF"]) ??
+    asFallbackString(fallback?.hp);
   const speed = boldField(meta, ["Velocità", "Speed"]);
   const initiative =
     boldField(meta, ["Iniziativa", "Initiative", "Init"]) ??
     (abilities.DES ? abilities.DES.mod : null);
-  const crRaw = boldField(meta, ["Sfida", "Grado di Sfida", "Challenge", "CR", "GS"]);
-  const { cr, xp } = parseCrXp(crRaw);
+  const crRaw =
+    boldField(meta, ["Sfida", "Grado di Sfida", "Challenge", "CR", "GS"]) ??
+    asFallbackString(fallback?.cr);
+  const parsedChallenge = parseCrXp(crRaw);
+  const cr = parsedChallenge.cr;
+  const xp =
+    parsedChallenge.xp ??
+    boldField(meta, ["Punti Esperienza", "Experience Points", "PE", "XP"]) ??
+    asFallbackString(fallback?.xp);
 
   const skills = boldField(meta, ["Abilità", "Skills"]);
   const damageResistances = boldField(meta, [
@@ -405,7 +500,12 @@ export function parseDenseStatblock(
 
   const traitsAll = extractNamedBlocks(traitsText).filter((b) => b.name);
   const { traits, spellcasting } = partitionTraitsAndSpellcasting(traitsAll);
-  const actions = extractNamedBlocks(actionsText).filter((b) => b.name);
+  const parsedActions = extractNamedBlocks(actionsText).filter((b) => b.name);
+  const fallbackAttacks = fallback?.attacks?.trim();
+  const actions =
+    parsedActions.length > 0 || !fallbackAttacks
+      ? parsedActions
+      : [{ name: "Attacchi", body: fallbackAttacks }];
   const bonusActions = extractNamedBlocks(bonusText).filter((b) => b.name);
   const reactions = extractNamedBlocks(reactionsText).filter((b) => b.name);
   const legendaryActions = extractNamedBlocks(legendaryText).filter((b) => b.name);

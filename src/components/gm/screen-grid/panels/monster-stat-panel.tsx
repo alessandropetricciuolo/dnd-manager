@@ -9,7 +9,11 @@ import {
 } from "@/lib/actions/wiki-bestiary-search-actions";
 import { getEntity, getMonstersForInitiative } from "@/app/campaigns/wiki-actions";
 import { getWikiContentBody } from "@/lib/wiki/content";
-import { parseDenseStatblock, type DenseStatblock } from "@/lib/manuals/dense-statblock-parser";
+import {
+  parseDenseStatblock,
+  type DenseStatblock,
+  type DenseStatblockFallback,
+} from "@/lib/manuals/dense-statblock-parser";
 import { FiveeStatblockView } from "@/components/gm/screen-grid/renderers/fivee-statblock-view";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,6 +62,7 @@ export function MonsterStatPanel({ entityId, name, bestiaryChunkId }: MonsterSta
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rawMarkdown, setRawMarkdown] = useState("");
+  const [fallbackStats, setFallbackStats] = useState<DenseStatblockFallback | null>(null);
   const [sourceLabel, setSourceLabel] = useState<string | null>(null);
   const [wikiHits, setWikiHits] = useState<WikiMonsterHit[]>([]);
   const [manualHits, setManualHits] = useState<BestiarySearchHit[]>([]);
@@ -69,8 +74,9 @@ export function MonsterStatPanel({ entityId, name, bestiaryChunkId }: MonsterSta
     return parseDenseStatblock(rawMarkdown, {
       sourceLabel,
       fallbackName: name ?? null,
+      fallbackStats,
     });
-  }, [rawMarkdown, sourceLabel, name]);
+  }, [rawMarkdown, sourceLabel, name, fallbackStats]);
 
   const loadWikiEntity = useCallback(
     async (id: string) => {
@@ -85,6 +91,18 @@ export function MonsterStatPanel({ entityId, name, bestiaryChunkId }: MonsterSta
         setActiveEntityId(id);
         setActiveChunkId(undefined);
         setSourceLabel("Wiki campagna");
+        const attrs = (entity.attributes ?? {}) as Record<string, unknown>;
+        const combat =
+          attrs.combat_stats && typeof attrs.combat_stats === "object"
+            ? (attrs.combat_stats as Record<string, unknown>)
+            : {};
+        setFallbackStats({
+          ac: typeof combat.ac === "string" || typeof combat.ac === "number" ? combat.ac : null,
+          hp: typeof combat.hp === "string" || typeof combat.hp === "number" ? combat.hp : null,
+          cr: typeof combat.cr === "string" || typeof combat.cr === "number" ? combat.cr : null,
+          xp: entity.xp_value,
+          attacks: typeof combat.attacks === "string" ? combat.attacks : null,
+        });
         setRawMarkdown(
           wikiEntityToMarkdown({
             name: entity.name,
@@ -113,6 +131,7 @@ export function MonsterStatPanel({ entityId, name, bestiaryChunkId }: MonsterSta
         setActiveChunkId(chunkId);
         setActiveEntityId(undefined);
         setSourceLabel(res.sourceLabel ?? label ?? null);
+        setFallbackStats(null);
         setRawMarkdown(res.text);
       } finally {
         setLoading(false);
@@ -131,6 +150,7 @@ export function MonsterStatPanel({ entityId, name, bestiaryChunkId }: MonsterSta
       setLoading(true);
       setError(null);
       setRawMarkdown("");
+      setFallbackStats(null);
       setActiveEntityId(undefined);
       setActiveChunkId(undefined);
       try {

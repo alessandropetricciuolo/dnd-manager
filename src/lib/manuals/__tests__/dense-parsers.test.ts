@@ -56,6 +56,79 @@ test("parseDenseStatblock: Drow Mago ha sezione Incantesimi dedicata", () => {
   assert.ok(!sb.traits.some((t) => /Incantesimi/i.test(t.name)));
 });
 
+test("parseDenseStatblock: impagina la tabella verticale degli homebrew", () => {
+  const sb = parseDenseStatblock(`# Custode del Varco
+
+## Stat Block
+
+| Statistica | Valore |
+| --- | --- |
+| CA | 16 |
+| PF | 85 (10d10 + 30) |
+| Velocità | 9 m |
+| FOR | 18 (+4) |
+| DES | 12 (+1) |
+| COS | 16 (+3) |
+| INT | 8 (-1) |
+| SAG | 14 (+2) |
+| CAR | 10 (+0) |
+| CR | 5 |
+| PE | 1.800 |
+
+## Azioni
+
+**Artiglio.** Attacco con arma da mischia: +7 a colpire.`);
+
+  assert.equal(sb.ac, "16");
+  assert.equal(sb.hp, "85 (10d10 + 30)");
+  assert.equal(sb.speed, "9 m");
+  assert.equal(sb.cr, "5");
+  assert.equal(sb.xp, "1.800");
+  assert.equal(sb.abilities.FOR?.score, 18);
+  assert.equal(sb.abilities.CAR?.mod, "+0");
+  assert.ok(sb.actions.some((action) => action.name === "Artiglio"));
+  assert.equal(sb.parseConfidence, "high");
+});
+
+test("parseDenseStatblock: impagina la tabella orizzontale degli homebrew", () => {
+  const sb = parseDenseStatblock(`# Predatore Cinereo
+
+## Stat Block
+
+| CA | PF | Velocità | FOR | DES | COS | INT | SAG | CAR | CR | PE |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 15 | 68 (8d10 + 24) | 12 m | 17 (+3) | 14 (+2) | 16 (+3) | 7 (-2) | 12 (+1) | 8 (-1) | 4 | 1.100 |`);
+
+  assert.equal(sb.ac, "15");
+  assert.equal(sb.hp, "68 (8d10 + 24)");
+  assert.equal(sb.speed, "12 m");
+  assert.equal(sb.cr, "4");
+  assert.equal(sb.xp, "1.100");
+  assert.equal(sb.abilities.DES?.score, 14);
+  assert.equal(sb.abilities.INT?.mod, "-2");
+  assert.equal(sb.parseConfidence, "medium");
+});
+
+test("parseDenseStatblock: usa combat_stats per uno statblock homebrew non strutturato", () => {
+  const sb = parseDenseStatblock("# Segugio delle Maree\n\nCreatura anfibia in agguato.", {
+    fallbackStats: {
+      ac: "14",
+      hp: "45",
+      cr: "2",
+      xp: 450,
+      attacks: "Morso +5, 1d8+3 perforanti.",
+    },
+  });
+
+  assert.equal(sb.ac, "14");
+  assert.equal(sb.hp, "45");
+  assert.equal(sb.cr, "2");
+  assert.equal(sb.xp, "450");
+  assert.deepEqual(sb.actions, [{ name: "Attacchi", body: "Morso +5, 1d8+3 perforanti." }]);
+  assert.notEqual(sb.parseConfidence, "low");
+  assert.equal(sb.leftoverMarkdown, "");
+});
+
 test("parseDenseRulesDoc: Spese sections", () => {
   const phb = readFileSync(join(process.cwd(), "public/manuals/manuale_giocatore.md"), "utf8");
   const start = phb.indexOf("# SPESE\n");
