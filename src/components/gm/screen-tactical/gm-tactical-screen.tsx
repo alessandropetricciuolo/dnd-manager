@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeftRight,
   BookOpen,
@@ -93,20 +93,21 @@ export function GmTacticalScreen({
     return list;
   }, [long?.initiativeState?.entries]);
 
+  const didAutoInitMonsters = useRef(false);
   // All'avvio dell'iniziativa, popola automaticamente i due mostri se presenti
   useEffect(() => {
+    if (didAutoInitMonsters.current) return;
     if (combatMonsters.length > 0) {
+      didAutoInitMonsters.current = true;
       const first = combatMonsters[0];
       const second = combatMonsters.length > 1 ? combatMonsters[1] : null;
 
-      if (selectedMonster1.name === "Goblin Boss") {
-        setSelectedMonster1({
-          entityId: first.entityId,
-          name: first.cleanName,
-        });
-      }
+      setSelectedMonster1({
+        entityId: first.entityId,
+        name: first.cleanName,
+      });
 
-      if (second && selectedMonster2.name === "Goblin") {
+      if (second) {
         setSelectedMonster2({
           entityId: second.entityId,
           name: second.cleanName,
