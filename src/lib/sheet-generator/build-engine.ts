@@ -20,6 +20,7 @@ import type {
 } from "@/lib/sheet-generator/types";
 
 const ABILITIES: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
+const BALANCED_FALLBACK_ORDER: AbilityKey[] = ["wis", "dex", "con", "int", "cha", "str"];
 
 const SKILL_ABILITY: Record<SkillKey, AbilityKey> = {
   acrobatics: "dex",
@@ -347,7 +348,7 @@ export function buildPointBuy(
     wis: 8,
     cha: 8,
   };
-  const orderedAbilities = Array.from(new Set([...primaryOrder, ...ABILITIES]));
+  const orderedAbilities = Array.from(new Set([...primaryOrder, ...BALANCED_FALLBACK_ORDER]));
   const targets = powerPlayer ? [15, 15, 14, 10, 8, 8] : [15, 14, 13, 12, 10, 8];
   let budget = 27;
   for (let i = 0; i < orderedAbilities.length; i += 1) {
@@ -627,28 +628,83 @@ function applyAbilityBonuses(
   return out;
 }
 
-function applyLevelAbilityIncreases(
+function abilityScoreImprovementLevels(classLabel: string): number[] {
+  if (classLabel === "Guerriero") return [4, 6, 8, 12, 14, 16, 19];
+  if (classLabel === "Ladro") return [4, 8, 10, 12, 16, 19];
+  return [4, 8, 12, 16, 19];
+}
+
+function abilityPriorityWeights(primaryOrder: AbilityKey[]): Record<AbilityKey, number> {
+  const order = Array.from(new Set([...primaryOrder, ...BALANCED_FALLBACK_ORDER]));
+  const weights = [100, 40, 25, 12, 8, 4];
+  return order.reduce((acc, ability, index) => {
+    acc[ability] = weights[index] ?? 1;
+    return acc;
+  }, {} as Record<AbilityKey, number>);
+}
+
+type AbilityIncrease = Partial<Record<AbilityKey, number>>;
+
+function legalAbilityIncreases(abilities: Record<AbilityKey, number>): AbilityIncrease[] {
+  const candidates: AbilityIncrease[] = [];
+  for (const ability of ABILITIES) {
+    if (abilities[ability] <= 18) candidates.push({ [ability]: 2 });
+  }
+  for (let i = 0; i < ABILITIES.length; i += 1) {
+    for (let j = i + 1; j < ABILITIES.length; j += 1) {
+      const first = ABILITIES[i];
+      const second = ABILITIES[j];
+      if (abilities[first] < 20 && abilities[second] < 20) {
+        candidates.push({ [first]: 1, [second]: 1 });
+      }
+    }
+  }
+  return candidates;
+}
+
+function scoreAbilityIncrease(
+  abilities: Record<AbilityKey, number>,
+  increase: AbilityIncrease,
+  weights: Record<AbilityKey, number>
+): number {
+  let modifierGainScore = 0;
+  let priorityProgressScore = 0;
+  for (const ability of ABILITIES) {
+    const delta = increase[ability] ?? 0;
+    if (!delta) continue;
+    const before = modifier(abilities[ability]);
+    const after = modifier(abilities[ability] + delta);
+    modifierGainScore += (after - before) * weights[ability];
+    priorityProgressScore += delta * weights[ability];
+  }
+  // Il beneficio immediato del modificatore domina; la progressione verso il
+  // prossimo scatto decide soltanto i pareggi.
+  return modifierGainScore * 1_000 + priorityProgressScore;
+}
+
+export function applyLevelAbilityIncreases(
   abilities: Record<AbilityKey, number>,
   level: number,
-  primaryOrder: AbilityKey[]
+  primaryOrder: AbilityKey[],
+  classLabel: string
 ): Record<AbilityKey, number> {
   const out = { ...abilities };
-  const milestones = [4, 8, 12, 16, 20];
+  const milestones = abilityScoreImprovementLevels(classLabel);
   const asiCount = milestones.filter((m) => level >= m).length;
-  let points = asiCount * 2;
-  if (points <= 0) return out;
+  if (asiCount <= 0) return out;
 
-  const priority: AbilityKey[] = Array.from(new Set([...primaryOrder, "con", "dex", "wis", "cha", "int", "str"]));
-  while (points > 0) {
-    let spent = false;
-    for (const a of priority) {
-      if (points <= 0) break;
-      if (out[a] >= 20) continue;
-      out[a] += 1;
-      points -= 1;
-      spent = true;
+  const weights = abilityPriorityWeights(primaryOrder);
+  for (let milestone = 0; milestone < asiCount; milestone += 1) {
+    const best = legalAbilityIncreases(out).reduce<AbilityIncrease | null>((winner, candidate) => {
+      if (!winner) return candidate;
+      return scoreAbilityIncrease(out, candidate, weights) > scoreAbilityIncrease(out, winner, weights)
+        ? candidate
+        : winner;
+    }, null);
+    if (!best) break;
+    for (const ability of ABILITIES) {
+      out[ability] = Math.min(20, out[ability] + (best[ability] ?? 0));
     }
-    if (!spent) break;
   }
   return out;
 }
@@ -718,7 +774,12 @@ export async function buildGeneratedCharacterSheet(
     return acc;
   }, {} as Partial<Record<AbilityKey, number>>);
   const raceBoosted = applyAbilityBonuses(baseCore.abilities, raceBonuses);
-  const boostedAbilities = applyLevelAbilityIncreases(raceBoosted, input.level, cfg.primary);
+  const boostedAbilities = applyLevelAbilityIncreases(
+    raceBoosted,
+    input.level,
+    cfg.primary,
+    input.classLabel
+  );
   const core = computeCoreFromAbilities(
     input.classLabel,
     input.level,

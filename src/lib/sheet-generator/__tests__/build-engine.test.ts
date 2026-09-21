@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildPointBuy, computeCoreSheet } from "@/lib/sheet-generator/build-engine";
+import {
+  applyLevelAbilityIncreases,
+  buildPointBuy,
+  computeCoreSheet,
+} from "@/lib/sheet-generator/build-engine";
 
 test("point buy respects 27-budget constraints", () => {
   const out = buildPointBuy(["int", "con", "dex", "wis", "cha", "str"]);
@@ -21,6 +25,25 @@ test("power player point buy keeps the min-max spread", () => {
   assert.ok(Object.values(out).filter((score) => score < 10).length > 1);
   assert.equal(out.int, 15);
   assert.equal(out.con, 15);
+});
+
+test("balanced bard prioritizes wisdom over strength after class abilities", () => {
+  const out = buildPointBuy(["cha", "dex", "con"]);
+  assert.deepEqual(out, { str: 8, dex: 14, con: 13, int: 10, wis: 12, cha: 15 });
+});
+
+test("bard level 4 splits ASI across odd primary and secondary scores", () => {
+  const dwarfBard = { str: 10, dex: 14, con: 15, int: 10, wis: 12, cha: 15 } as const;
+  const out = applyLevelAbilityIncreases(dwarfBard, 4, ["cha", "dex", "con"], "Bardo");
+  assert.equal(out.cha, 16);
+  assert.equal(out.con, 16);
+});
+
+test("bard level 8 then raises charisma from 16 to 18", () => {
+  const dwarfBard = { str: 10, dex: 14, con: 15, int: 10, wis: 12, cha: 15 } as const;
+  const out = applyLevelAbilityIncreases(dwarfBard, 8, ["cha", "dex", "con"], "Bardo");
+  assert.equal(out.cha, 18);
+  assert.equal(out.con, 16);
 });
 
 test("compute core sheet includes coherent derived stats", () => {
