@@ -72,9 +72,21 @@ export default async function HomePage() {
           <div className="grid items-center gap-10 lg:grid-cols-12 lg:gap-12">
             {/* Colonna Sinistra: Copywriting Nobile & CTA */}
             <div className="flex flex-col gap-6 lg:col-span-7">
-              <div className="inline-flex max-w-fit items-center gap-2 rounded-full border border-brass-base/40 bg-guild-oak/90 px-3.5 py-1 text-[11px] font-medium uppercase tracking-[0.2em] text-brass-light backdrop-blur shadow-sm">
-                <span className="h-1.5 w-1.5 rounded-full bg-brass-base animate-ping" />
-                <span>La Gilda di D&amp;D dal Vivo · Napoli</span>
+              <div className="flex flex-wrap items-center gap-3.5">
+                <div className="relative h-10 w-auto sm:h-12 shrink-0">
+                  <Image
+                    src="/logo.png"
+                    alt="Barber & Dragons"
+                    width={200}
+                    height={70}
+                    className="h-9 w-auto sm:h-11 object-contain drop-shadow-[0_0_15px_rgba(217,119,6,0.35)]"
+                    priority
+                  />
+                </div>
+                <div className="inline-flex max-w-fit items-center gap-2 rounded-full border border-brass-base/40 bg-guild-oak/90 px-3.5 py-1 text-[11px] font-medium uppercase tracking-[0.2em] text-brass-light backdrop-blur shadow-sm">
+                  <span className="h-1.5 w-1.5 rounded-full bg-brass-base animate-ping" />
+                  <span>La Gilda di D&amp;D dal Vivo · Napoli</span>
+                </div>
               </div>
 
               <h1 className="font-serif text-4xl font-black leading-[1.08] tracking-tight sm:text-5xl md:text-6xl text-gold-relief">
@@ -125,10 +137,10 @@ export default async function HomePage() {
                 </div>
                 <div className="flex flex-col gap-1 border-l border-guild-border/60 pl-3">
                   <div className="flex items-center gap-1.5 text-xs font-semibold text-brass-light font-serif">
-                    <Beer className="h-4 w-4 text-brass-base" />
-                    <span>La Locanda</span>
+                    <MapPinned className="h-4 w-4 text-brass-base" />
+                    <span>Mappe &amp; Miniature</span>
                   </div>
-                  <p className="text-[11px] text-parchment-500 leading-tight">Birre e snack di gilda</p>
+                  <p className="text-[11px] text-parchment-500 leading-tight">Tavolo con mappa proiettata</p>
                 </div>
                 <div className="flex flex-col gap-1 border-l border-guild-border/60 pl-3">
                   <div className="flex items-center gap-1.5 text-xs font-semibold text-brass-light font-serif">
@@ -153,7 +165,7 @@ export default async function HomePage() {
                   <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-guild-void">
                     <Image
                       src="/hero-tabletop.jpg"
-                      alt="Sessione dal vivo di Dungeons & Dragons a Barber and Dragons"
+                      alt="Sessione dal vivo di Dungeons & Dragons con mappa proiettata sul tavolo"
                       fill
                       priority
                       className="object-cover object-center transition-transform duration-700 hover:scale-105"
@@ -162,21 +174,21 @@ export default async function HomePage() {
                     <div className="absolute inset-0 bg-gradient-to-t from-guild-void via-transparent to-transparent opacity-80" />
                     
                     {/* Badge sovrapposto in basso */}
-                    <div className="absolute inset-x-3 bottom-3 flex items-center justify-between rounded-lg border border-brass-base/30 bg-guild-stone/90 p-2.5 backdrop-blur">
+                    <div className="absolute inset-x-3 bottom-3 flex items-center justify-between rounded-lg border border-brass-base/30 bg-guild-stone/95 p-2.5 backdrop-blur shadow-lg">
                       <div className="flex items-center gap-2">
-                        <span className="flex h-2 w-2 rounded-full bg-emerald-400" />
-                        <span className="text-xs font-serif font-bold text-parchment-100">
-                          La Forgia · Tavolo Live
+                        <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                        <span className="text-xs font-serif font-bold text-gold-relief tracking-wide">
+                          Tavolo con Mappa Proiettata · D&amp;D dal Vivo
                         </span>
                       </div>
-                      <span className="text-[11px] text-brass-light/80 font-mono">Napoli</span>
+                      <span className="text-[11px] text-brass-light/90 font-serif font-semibold">Napoli</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Sigillo circolare decorativo */}
                 <div className="absolute -bottom-4 -left-4 hidden sm:flex h-14 w-14 items-center justify-center rounded-full border-2 border-brass-base bg-crimson-base text-parchment-100 shadow-xl">
-                  <Flame className="h-7 w-7 text-brass-light" />
+                  <Dices className="h-7 w-7 text-brass-light" />
                 </div>
               </div>
             </div>
@@ -186,7 +198,7 @@ export default async function HomePage() {
           <div className="mt-14 border-t border-guild-border/80 pt-8">
             <div className="mb-4 flex items-center justify-between">
               <p className="text-xs font-medium uppercase tracking-[0.2em] text-brass-base/80 font-serif">
-                Campagne Attive in Locanda
+                Campagne &amp; Tavoli Attivi
               </p>
               <Link
                 href="/scopri"
@@ -490,7 +502,7 @@ export default async function HomePage() {
                 </li>
                 <li className="flex items-start gap-2.5">
                   <CheckCircle2 className="h-5 w-5 text-brass-base shrink-0 mt-0.5" />
-                  <span>Ambiente caloroso in locanda: birre artigianali, snack e relax.</span>
+                  <span>Ambiente accogliente: compagni di gilda, snack e divertimento.</span>
                 </li>
               </ul>
               {!isLoggedIn ? (
