@@ -46,6 +46,9 @@ function authErrorMessage(
   if (error.status && error.status >= 500) {
     return "Errore temporaneo del servizio. Riprova tra qualche minuto.";
   }
+  if (error.message?.includes("Failed to fetch") || error.message?.includes("fetch failed")) {
+    return "Impossibile contattare il server di autenticazione. Verifica la connessione internet e riprova.";
+  }
   const msg =
     error.message?.trim() ||
     error.msg?.trim() ||

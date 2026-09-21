@@ -17,14 +17,14 @@ import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { cn } from "@/lib/utils";
 import { useCampaignNavigation } from "@/components/campaigns/campaign-navigation-context";
 
+import type { User } from "@supabase/supabase-js";
+
 const PUBLIC_NAV_LINKS = [
   { href: "/scopri", label: "Scopri" },
   { href: "/masters", label: "Albo Master" },
   { href: "/hall-of-fame", label: "Classifica Eroi" },
   { href: "/contatti", label: "Contatti" },
 ] as const;
-
-const LOGGED_IN_NAV_LINK = { href: "/dashboard", label: "Area personale" } as const;
 
 function isCampaignDetailPath(pathname: string | null): boolean {
   return Boolean(pathname?.match(/^\/campaigns\/[^/]+$/));
@@ -48,17 +48,16 @@ function sheetLinkClass(pathname: string | null, href: string) {
   );
 }
 
-export function NavbarNavLinks() {
+export function NavbarNavLinks({ initialUser }: { initialUser?: User | null }) {
   const pathname = usePathname();
-  const { user, ready } = useSupabaseUser();
+  const { user } = useSupabaseUser(initialUser);
+  const currentUser = user ?? initialUser;
   const { navigation } = useCampaignNavigation();
   const [menuOpen, setMenuOpen] = useState(false);
   const onCampaignDetail = isCampaignDetailPath(pathname);
-  const isLoggedIn = ready && Boolean(user);
+  const isLoggedIn = Boolean(currentUser);
 
-  const desktopLinks = isLoggedIn
-    ? [LOGGED_IN_NAV_LINK, ...PUBLIC_NAV_LINKS]
-    : [...PUBLIC_NAV_LINKS];
+  const desktopLinks = PUBLIC_NAV_LINKS;
 
   function closeMenu() {
     setMenuOpen(false);
@@ -134,7 +133,7 @@ export function NavbarNavLinks() {
                     className="w-full text-xs font-serif uppercase tracking-widest font-bold"
                   >
                     <Link href="/dashboard" onClick={closeMenu}>
-                      Area personale
+                      Dashboard
                     </Link>
                   </Button>
                 ) : (
@@ -165,7 +164,7 @@ export function NavbarNavLinks() {
         </>
       )}
 
-      <NavbarAuthSlot />
+      <NavbarAuthSlot initialUser={currentUser} />
     </div>
   );
 }

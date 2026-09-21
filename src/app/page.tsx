@@ -72,14 +72,15 @@ export default async function HomePage() {
           <div className="grid items-center gap-10 lg:grid-cols-12 lg:gap-12">
             {/* Colonna Sinistra: Copywriting Nobile & CTA */}
             <div className="flex flex-col gap-6 lg:col-span-7">
-              <div className="flex flex-wrap items-center gap-3.5">
-                <div className="relative h-10 w-auto sm:h-12 shrink-0">
+              {/* Grand Barber & Dragons Insignia */}
+              <div className="flex flex-col items-start gap-4">
+                <div className="relative">
                   <Image
                     src="/logo.png"
                     alt="Barber & Dragons"
-                    width={200}
-                    height={70}
-                    className="h-9 w-auto sm:h-11 object-contain drop-shadow-[0_0_15px_rgba(217,119,6,0.35)]"
+                    width={400}
+                    height={150}
+                    className="h-20 sm:h-24 md:h-28 lg:h-32 w-auto object-contain drop-shadow-[0_8px_32px_rgba(217,119,6,0.5)] filter brightness-105"
                     priority
                   />
                 </div>

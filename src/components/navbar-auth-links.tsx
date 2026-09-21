@@ -1,14 +1,31 @@
-"use client";
-
 import Link from "next/link";
+import { LayoutDashboard } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { NavbarUserMenu } from "@/components/navbar-user-menu";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
+import type { User } from "@supabase/supabase-js";
 
-export function NavbarAuthLinks() {
-  const { user, ready } = useSupabaseUser();
+export function NavbarAuthLinks({ initialUser }: { initialUser?: User | null }) {
+  const { user, ready } = useSupabaseUser(initialUser);
+  const currentUser = user ?? initialUser;
 
-  if (ready && user) {
-    return <NavbarUserMenu user={user} />;
+  if (currentUser) {
+    return (
+      <div className="flex items-center gap-2 sm:gap-3">
+        <Button
+          asChild
+          size="sm"
+          variant="wax"
+          className="h-8 sm:h-9 px-2.5 sm:px-3.5 text-xs font-serif uppercase tracking-wider font-bold shadow-md"
+        >
+          <Link href="/dashboard" className="inline-flex items-center gap-1.5 sm:gap-2">
+            <LayoutDashboard className="h-3.5 w-3.5 text-amber-200" />
+            <span>Dashboard</span>
+          </Link>
+        </Button>
+        <NavbarUserMenu user={currentUser} />
+      </div>
+    );
   }
 
   return (
