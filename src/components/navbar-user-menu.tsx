@@ -60,10 +60,10 @@ export function NavbarUserMenu({ user }: UserMenuProps) {
         <Button
           variant="ghost"
           size="icon"
-          className="rounded-full border border-barber-gold/40 bg-barber-dark/80 text-barber-gold hover:bg-barber-gold/20 hover:text-barber-gold focus:ring-barber-gold/50"
+          className="rounded-full border-2 border-brass-base/60 bg-guild-oak text-brass-light hover:bg-brass-base/20 hover:text-brass-light focus:ring-brass-base/50 shadow-md"
           aria-label="Menu utente"
         >
-          <span className="flex h-9 w-9 items-center justify-center text-sm font-semibold">
+          <span className="flex h-9 w-9 items-center justify-center font-serif text-xs font-bold uppercase tracking-wider">
             {initials}
           </span>
         </Button>
@@ -71,30 +71,30 @@ export function NavbarUserMenu({ user }: UserMenuProps) {
       <DropdownMenuContent
         align="end"
         sideOffset={8}
-        className="min-w-[180px] border-barber-gold/20 bg-barber-dark/95 text-barber-paper backdrop-blur-xl"
+        className="min-w-[200px] border border-brass-base/30 bg-guild-oak/95 text-parchment-100 backdrop-blur-xl shadow-2xl p-1.5"
       >
-        <DropdownMenuItem asChild className="focus:bg-barber-gold/20 focus:text-barber-gold">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <LayoutDashboard className="h-4 w-4" />
-            Dashboard
+        <DropdownMenuItem asChild className="rounded-md font-serif text-xs uppercase tracking-wider text-parchment-200 focus:bg-brass-base/15 focus:text-brass-light cursor-pointer">
+          <Link href="/dashboard" className="flex items-center gap-2.5 py-2">
+            <LayoutDashboard className="h-4 w-4 text-brass-base" />
+            <span>Dashboard</span>
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem asChild className="focus:bg-barber-gold/20 focus:text-barber-gold">
-          <Link href="/profile" className="flex items-center gap-2">
-            <User className="h-4 w-4" />
-            Il mio profilo
+        <DropdownMenuItem asChild className="rounded-md font-serif text-xs uppercase tracking-wider text-parchment-200 focus:bg-brass-base/15 focus:text-brass-light cursor-pointer">
+          <Link href="/profile" className="flex items-center gap-2.5 py-2">
+            <User className="h-4 w-4 text-brass-base" />
+            <span>Il mio profilo</span>
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuSeparator className="bg-barber-gold/20" />
+        <DropdownMenuSeparator className="bg-guild-border my-1" />
         <DropdownMenuItem
-          className="focus:bg-barber-red/20 focus:text-barber-paper"
+          className="rounded-md font-serif text-xs uppercase tracking-wider text-crimson-light focus:bg-crimson-base/20 focus:text-crimson-light cursor-pointer py-2"
           onSelect={(e) => {
             e.preventDefault();
             handleLogout();
           }}
         >
-          <LogOut className="mr-2 h-4 w-4" />
-          Esci
+          <LogOut className="mr-2.5 h-4 w-4 text-crimson-base" />
+          <span>Esci dalla Taverna</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

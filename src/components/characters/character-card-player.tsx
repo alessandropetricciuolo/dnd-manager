@@ -295,98 +295,144 @@ export function CharacterCardPlayer({
   );
 
   return (
-      <Card className="overflow-hidden border-barber-gold/40 bg-barber-dark/90 min-w-0">
-        <div className="space-y-2 min-w-0">
-          <div className="relative aspect-[4/5] w-full max-w-md mx-auto overflow-hidden bg-barber-dark min-w-0">
+    <div className="card-guild-stone relative rounded-2xl p-4 md:p-8 shadow-2xl min-w-0">
+      <span className="corner-ornament-tl" />
+      <span className="corner-ornament-tr" />
+      <span className="corner-ornament-bl" />
+      <span className="corner-ornament-br" />
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8 items-start">
+        {/* Colonna Ritratto Eroe */}
+        <div className="lg:col-span-5 xl:col-span-4 space-y-3">
+          <div className="relative aspect-[4/5] w-full mx-auto overflow-hidden rounded-xl border-2 border-barber-gold/40 bg-barber-dark shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_20px_rgba(200,157,73,0.15)] ring-1 ring-black/80">
             <Image
               src={imageSrc}
               alt={character.name}
               fill
               className="object-cover"
-              sizes="(max-width: 500px) 100vw, 400px"
+              sizes="(max-width: 768px) 100vw, 400px"
               priority
               unoptimized={!!character.image_url}
               onError={() => setImgError(true)}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-barber-dark via-barber-dark/40 to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 min-w-0">
-              <h2 className="text-xl font-semibold text-barber-paper break-words md:text-2xl lg:text-3xl">
-                {character.name}
-              </h2>
-              {/* div: non usare <p> qui — i trigger tooltip non possono stare dentro <p> (HTML invalido). */}
-              <div className="mt-1 text-sm text-barber-paper/85">
-                {raceDisplayLabel ? (
-                  <>
-                    <RulesTip label={raceDisplayLabel}>{raceDisplayBody}</RulesTip>
-                    {" · "}
-                  </>
-                ) : null}
-                <RulesTip label={classLabel}>{classBody}</RulesTip>
-                {classSubclassLabel ? (
-                  <>
-                    {" · "}
-                    <RulesTip label={classSubclassLabel}>{classSubclassBody}</RulesTip>
-                  </>
-                ) : null}
-                {" · "}Livello {storedLevel}
-                {(spellSlotsLabel || cantripsLabel) && (
-                  <>
-                    {" · "}Slot: {[spellSlotsLabel, cantripsLabel].filter(Boolean).join(" · ")}
-                  </>
-                )}
-                {spellsBody ? (
-                  <>
-                    {" · "}
-                    <SpellsTip listText={spellsBody} details={snap?.spellsDetailsMd} />
-                  </>
-                ) : null}
-                {!isTorneoCampaign ? (
-                  <>
-                    <span className="mt-0.5 block text-xs text-barber-paper/65 tabular-nums">
-                      Tempo vissuto: {character.time_offset_hours ?? 0} h
-                    </span>
-                    <span className="mt-0.5 block text-xs text-barber-paper/65">
-                      Data fantasy: {character.calendar_date_label ?? "Non impostata"}
-                    </span>
-                  </>
-                ) : null}
-                {isLongCampaign && (
-                  <span className="mt-0.5 block text-xs text-barber-gold/90 tabular-nums">
-                    {character.coins_gp ?? 0} oro · {character.coins_sp ?? 0} arg · {character.coins_cp ?? 0} ram
-                  </span>
-                )}
-              </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 pointer-events-none" />
+            
+            {/* Medaglione Livello sovrapposto in basso a destra */}
+            <div className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-lg border border-barber-gold/50 bg-[#120f0d]/90 px-3 py-1.5 shadow-lg backdrop-blur-sm">
+              <span className="text-[10px] uppercase font-semibold tracking-wider text-barber-paper/70">Livello</span>
+              <span className="font-cinzel text-lg font-bold text-gold-relief">{storedLevel}</span>
             </div>
           </div>
+
           {character.image_url && (
-            <div className="flex justify-end px-4">
+            <div className="flex justify-end pt-1">
               <ImageMediaActions driveUrl={character.image_url} title={character.name} />
             </div>
           )}
         </div>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-barber-gold">
-            Background
-            {bgRulesLabel ? (
-              <span className="text-sm font-normal text-barber-paper/70">
-                (
-                <RulesTip label={`${bgRulesBookPrefix}: ${bgRulesLabel}`}>
-                  {tooltipOrWarnings(snap?.backgroundRulesMd, snap, staleFallback)}
-                </RulesTip>
-                )
-              </span>
-            ) : null}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0 min-w-0">
-          {character.background ? (
-            <div className="whitespace-pre-wrap break-words text-barber-paper/90 leading-relaxed overflow-hidden">
-              {character.background}
+
+        {/* Colonna Dati Eroe & Vitals */}
+        <div className="lg:col-span-7 xl:col-span-8 space-y-6 min-w-0">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="h-1.5 w-1.5 rotate-45 border border-barber-gold/80 bg-barber-gold/40" />
+              <span className="text-xs uppercase tracking-widest text-barber-gold/80 font-semibold">Dossier Eroe</span>
             </div>
-          ) : (
-            <p className="text-barber-paper/50 italic">Nessun background inserito dal Master.</p>
-          )}
-        </CardContent>
-      </Card>
+            <h1 className="font-cinzel text-2xl sm:text-3xl lg:text-4xl font-bold tracking-wide text-gold-relief break-words">
+              {character.name}
+            </h1>
+
+            {/* Araldica di classe e razza */}
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-barber-paper/90">
+              {raceDisplayLabel ? (
+                <span className="inline-flex items-center rounded-md border border-barber-gold/30 bg-barber-gold/10 px-2.5 py-1 font-medium">
+                  <RulesTip label={raceDisplayLabel}>{raceDisplayBody}</RulesTip>
+                </span>
+              ) : null}
+
+              <span className="inline-flex items-center rounded-md border border-barber-gold/30 bg-barber-gold/10 px-2.5 py-1 font-medium">
+                <RulesTip label={classLabel}>{classBody}</RulesTip>
+              </span>
+
+              {classSubclassLabel ? (
+                <span className="inline-flex items-center rounded-md border border-amber-600/40 bg-amber-950/30 px-2.5 py-1 text-amber-200">
+                  <RulesTip label={classSubclassLabel}>{classSubclassBody}</RulesTip>
+                </span>
+              ) : null}
+
+              {(spellSlotsLabel || cantripsLabel) && (
+                <span className="inline-flex items-center rounded-md border border-cyan-700/40 bg-cyan-950/30 px-2.5 py-1 text-cyan-200">
+                  Slot: {[spellSlotsLabel, cantripsLabel].filter(Boolean).join(" · ")}
+                </span>
+              )}
+
+              {spellsBody ? (
+                <span className="inline-flex items-center rounded-md border border-cyan-600/40 bg-cyan-950/40 px-2.5 py-1 text-cyan-100">
+                  <SpellsTip listText={spellsBody} details={snap?.spellsDetailsMd} />
+                </span>
+              ) : null}
+            </div>
+          </div>
+
+          {/* Banner Cronaca Fantasy & Risorse */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+            {!isTorneoCampaign && (
+              <div className="rounded-xl border border-barber-gold/20 bg-black/40 p-3.5 space-y-1">
+                <p className="text-[10px] uppercase tracking-wider text-barber-gold/70 font-semibold">Cronaca Temporale</p>
+                <p className="text-sm font-medium text-barber-paper">
+                  {character.calendar_date_label ?? "Data non impostata"}
+                </p>
+                <p className="text-xs text-barber-paper/60 tabular-nums">
+                  Tempo vissuto: <strong className="text-barber-paper/85">{character.time_offset_hours ?? 0} ore</strong>
+                </p>
+              </div>
+            )}
+
+            {isLongCampaign && (
+              <div className="rounded-xl border border-barber-gold/20 bg-black/40 p-3.5 space-y-1">
+                <p className="text-[10px] uppercase tracking-wider text-barber-gold/70 font-semibold">Borsa del Personaggio</p>
+                <div className="flex items-center gap-3 text-sm font-semibold text-barber-gold pt-0.5 tabular-nums">
+                  <span>{character.coins_gp ?? 0} <span className="text-xs font-normal text-barber-paper/70">oro</span></span>
+                  <span>·</span>
+                  <span>{character.coins_sp ?? 0} <span className="text-xs font-normal text-barber-paper/70">arg</span></span>
+                  <span>·</span>
+                  <span>{character.coins_cp ?? 0} <span className="text-xs font-normal text-barber-paper/70">ram</span></span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Tomo Background / Lore */}
+          <div className="relative rounded-xl border border-barber-gold/25 bg-[#12100e]/95 p-4 sm:p-5 shadow-inner">
+            <div className="flex items-center justify-between border-b border-barber-gold/15 pb-2 mb-3">
+              <div className="flex items-center gap-2">
+                <span className="font-cinzel text-base font-bold text-barber-gold">
+                  Origini & Retroscena
+                </span>
+                {bgRulesLabel ? (
+                  <span className="text-xs text-barber-paper/70 font-normal">
+                    (
+                    <RulesTip label={`${bgRulesBookPrefix}: ${bgRulesLabel}`}>
+                      {tooltipOrWarnings(snap?.backgroundRulesMd, snap, staleFallback)}
+                    </RulesTip>
+                    )
+                  </span>
+                ) : null}
+              </div>
+            </div>
+
+            {character.background ? (
+              <div className="whitespace-pre-wrap break-words text-sm text-barber-paper/90 leading-relaxed max-h-96 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-barber-gold/20">
+                {character.background}
+              </div>
+            ) : (
+              <p className="text-sm text-barber-paper/50 italic py-2">
+                Nessun retroscena registrato negli annali dal Dungeon Master.
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

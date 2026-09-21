@@ -38,19 +38,11 @@ function NavLinks({
   const pathname = usePathname();
   const linkClass = (path: string) =>
     cn(
-      "flex h-10 items-center gap-0 rounded-lg text-sm font-medium transition-colors",
+      "flex h-10 items-center gap-0 rounded-lg text-sm font-medium transition-all duration-200",
       "justify-center px-0 group-hover/sidebar:justify-start group-hover/sidebar:gap-3 group-hover/sidebar:px-3",
-      path === "/forge"
-        ? pathname === path || pathname?.startsWith("/forge/")
-          ? "bg-barber-gold/20 text-barber-gold"
-          : "text-barber-paper/80 hover:bg-barber-gold/10 hover:text-barber-gold"
-        : path === "/vault"
-          ? pathname === path || pathname?.startsWith("/vault/")
-            ? "bg-barber-gold/20 text-barber-gold"
-            : "text-barber-paper/80 hover:bg-barber-gold/10 hover:text-barber-gold"
-          : pathname === path
-            ? "bg-barber-gold/20 text-barber-gold"
-            : "text-barber-paper/80 hover:bg-barber-gold/10 hover:text-barber-gold"
+      pathname === path || (path !== "/dashboard" && pathname?.startsWith(path + "/"))
+        ? "bg-brass-base/20 text-brass-light border-l-2 border-brass-base font-serif shadow-sm"
+        : "text-parchment-300 hover:bg-guild-stone/60 hover:text-brass-light"
     );
 
   const isCampaignDetail = pathname?.match(/^\/campaigns\/[^/]+$/);
@@ -192,7 +184,7 @@ export function DashboardShell({ children, isAdmin, isGmOrAdmin, hasForgeAccess 
       <aside
         className={cn(
           "group/sidebar relative z-30 hidden shrink-0 flex-col overflow-hidden",
-          "border-r border-barber-gold/20 bg-barber-dark/95 backdrop-blur-sm",
+          "border-r border-brass-base/20 bg-guild-void/95 backdrop-blur-md",
           "w-14 transition-[width] duration-200 ease-out hover:w-56",
           "md:flex"
         )}
@@ -210,9 +202,9 @@ export function DashboardShell({ children, isAdmin, isGmOrAdmin, hasForgeAccess 
 
       <div className="flex flex-1 flex-col md:contents">
         {!isCampaignPage && (
-          <div className="flex items-center gap-2 border-b border-barber-gold/20 bg-barber-dark/80 px-4 py-3 md:hidden">
+          <div className="flex items-center gap-2 border-b border-brass-base/20 bg-guild-oak/95 px-4 py-3 backdrop-blur-md md:hidden">
             <MobileNavMenu isAdmin={isAdmin} isGmOrAdmin={isGmOrAdmin} hasForgeAccess={hasForgeAccess} hasVaultAccess={hasVaultAccess} />
-            <span className="truncate text-sm font-medium text-barber-paper/90">Menu</span>
+            <span className="truncate text-sm font-medium text-parchment-200">Menu di Gilda</span>
           </div>
         )}
 

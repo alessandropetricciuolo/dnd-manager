@@ -10,14 +10,40 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
-        serif: ["var(--font-serif)", "Georgia", "serif"],
+        sans: ["'Plus Jakarta Sans'", "var(--font-sans)", "system-ui", "sans-serif"],
+        serif: ["Cinzel", "var(--font-cinzel)", "Georgia", "serif"],
+        cinzel: ["Cinzel", "var(--font-cinzel)", "Georgia", "serif"],
+        mono: ["'JetBrains Mono'", "var(--font-mono)", "monospace"],
+        missions: ["var(--font-missions)", "serif"],
       },
       colors: {
-        "barber-red": "#991b1b",
-        "barber-gold": "#fbbf24",
-        "barber-dark": "#1c1917",
-        "barber-paper": "#f5f5f4",
+        "barber-red": "#942121",
+        "barber-gold": "#c89d49",
+        "barber-dark": "#141210",
+        "barber-paper": "#f5f2eb",
+        guild: {
+          void: "#0b0908",
+          stone: "#141210",
+          oak: "#1c1815",
+          "oak-highlight": "#27221e",
+          border: "#3b322b",
+          "border-light": "#54463c",
+        },
+        brass: {
+          light: "#f1d899",
+          base: "#c89d49",
+          dark: "#7e5f24",
+        },
+        crimson: {
+          base: "#942121",
+          hover: "#7a1919",
+          dark: "#5c1313",
+        },
+        parchment: {
+          100: "#f5f2eb",
+          300: "#cdc5b4",
+          500: "#8c8270",
+        },
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {

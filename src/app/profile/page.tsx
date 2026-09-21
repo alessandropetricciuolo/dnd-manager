@@ -63,51 +63,71 @@ export default async function ProfilePage() {
   const trophyData = await getTrophyDataForPlayer(user.id);
 
   return (
-    <div className="min-h-screen bg-barber-dark p-4 py-10 md:p-8">
+    <div className="min-h-screen bg-guild-void text-parchment-100 font-sans p-4 py-10 md:p-8">
       <div className="mx-auto w-full max-w-xl space-y-6">
-        <header className="flex items-center gap-3">
+        <header className="flex items-center justify-between border-b border-guild-border/80 pb-4">
           <Link href="/dashboard">
             <Button
-              variant="ghost"
+              variant="stone"
               size="sm"
-              className="text-barber-paper/80 hover:text-barber-paper"
+              className="text-xs font-serif uppercase tracking-wider text-brass-light"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Dashboard
             </Button>
           </Link>
-          <h1 className="flex items-center gap-2 font-serif text-2xl font-bold leading-tight text-barber-paper sm:text-3xl">
-            <User className="h-6 w-6 shrink-0 text-barber-gold" />
-            Il tuo profilo
-          </h1>
+          <div className="text-right">
+            <span className="text-[10px] font-serif uppercase tracking-widest text-brass-base">
+              ✦ Scheda Personale ✦
+            </span>
+            <h1 className="font-serif text-2xl font-bold leading-tight text-gold-relief">
+              Dossier dell&apos;Eroe
+            </h1>
+          </div>
         </header>
 
-        <div className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 p-4 mb-6">
-          <h2 className="text-sm font-medium text-barber-paper/70 mb-2">Affidabilità</h2>
-          <div className="flex flex-wrap gap-4 text-sm">
-            <span className="flex items-center gap-2 text-barber-gold">
-              <UserCheck className="h-4 w-4" />
-              Presente: {attendedCount ?? 0} sessioni
+        {/* Affidabilità al Tavolo */}
+        <div className="card-guild-stone relative rounded-2xl p-5 shadow-lg">
+          <div className="corner-ornament-tl" />
+          <div className="corner-ornament-tr" />
+          <div className="corner-ornament-bl" />
+          <div className="corner-ornament-br" />
+
+          <h2 className="font-serif text-xs font-bold uppercase tracking-wider text-brass-light mb-3">
+            ✦ Affidabilità al Tavolo
+          </h2>
+          <div className="flex flex-wrap gap-4 text-xs font-mono">
+            <span className="inline-flex items-center gap-2 rounded-lg border border-brass-base/30 bg-guild-oak/80 px-3 py-1.5 text-brass-light">
+              <UserCheck className="h-4 w-4 text-brass-base" />
+              <span>Presente: <strong className="text-brass-light font-bold">{attendedCount ?? 0}</strong> sessioni</span>
             </span>
-            <span className="flex items-center gap-2 text-red-300/90">
-              <UserX className="h-4 w-4" />
-              Assente: {absentCount ?? 0} sessioni
+            <span className="inline-flex items-center gap-2 rounded-lg border border-crimson-base/40 bg-crimson-base/15 px-3 py-1.5 text-crimson-light">
+              <UserX className="h-4 w-4 text-crimson-light" />
+              <span>Assente: <strong className="font-bold">{absentCount ?? 0}</strong> sessioni</span>
             </span>
           </div>
         </div>
 
-        <div className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 p-4 mb-6">
-          <h2 className="text-sm font-medium text-barber-paper/70 mb-2">Campagne giocate</h2>
+        {/* Campagne Giocate */}
+        <div className="card-guild-stone relative rounded-2xl p-5 shadow-lg">
+          <div className="corner-ornament-tl" />
+          <div className="corner-ornament-tr" />
+          <div className="corner-ornament-bl" />
+          <div className="corner-ornament-br" />
+
+          <h2 className="font-serif text-xs font-bold uppercase tracking-wider text-brass-light mb-3">
+            ✦ Cronache e Campagne Giocate
+          </h2>
           {playedCampaigns.length === 0 ? (
-            <p className="text-sm text-barber-paper/60">Nessuna campagna registrata al momento.</p>
+            <p className="text-xs text-parchment-400 italic">Nessuna saga registrata al momento.</p>
           ) : (
             <ul className="space-y-2">
               {playedCampaigns.map((c) => (
-                <li key={c.id} className="flex flex-wrap items-center gap-2">
-                  <Link href={`/campaigns/${c.id}`} className="text-barber-gold hover:underline">
+                <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-guild-border/60 bg-guild-oak/40 p-2.5">
+                  <Link href={`/campaigns/${c.id}`} className="font-serif text-sm font-semibold text-parchment-100 hover:text-brass-light transition-colors">
                     {c.name}
                   </Link>
-                  <span className="rounded-full border border-barber-gold/30 px-2 py-0.5 text-xs text-barber-paper/70">
+                  <span className="rounded-full border border-brass-base/30 bg-guild-void px-2.5 py-0.5 text-[10px] font-mono uppercase tracking-wider text-brass-light">
                     {c.type === "oneshot" ? "Oneshot" : c.type === "quest" ? "Quest" : c.type === "long" ? "Campagna Lunga" : "Campagna"}
                   </span>
                 </li>
@@ -116,8 +136,16 @@ export default async function ProfilePage() {
           )}
         </div>
 
-        <section className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 p-6">
-          <h2 className="text-sm font-medium text-barber-paper/90 mb-4">Bacheca dei Trofei</h2>
+        {/* Bacheca dei Trofei */}
+        <section className="card-guild-stone relative rounded-2xl p-6 shadow-lg">
+          <div className="corner-ornament-tl" />
+          <div className="corner-ornament-tr" />
+          <div className="corner-ornament-bl" />
+          <div className="corner-ornament-br" />
+
+          <h2 className="font-serif text-xs font-bold uppercase tracking-wider text-brass-light mb-4">
+            ✦ Bacheca dei Trofei di Gilda
+          </h2>
           <PlayerTrophyBoard
             unlocked={trophyData.unlocked}
             inProgress={trophyData.inProgress}
@@ -126,7 +154,12 @@ export default async function ProfilePage() {
         </section>
 
         {isPlayer ? (
-          <div className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 p-6">
+          <div className="card-guild-stone relative rounded-2xl p-6 shadow-lg">
+            <div className="corner-ornament-tl" />
+            <div className="corner-ornament-tr" />
+            <div className="corner-ornament-bl" />
+            <div className="corner-ornament-br" />
+
             <ProfileUnifiedForm
               defaultValues={{
                 first_name: profile?.first_name ?? "",
@@ -144,7 +177,12 @@ export default async function ProfilePage() {
           </div>
         ) : (
           <>
-            <div className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 p-6">
+            <div className="card-guild-stone relative rounded-2xl p-6 shadow-lg">
+              <div className="corner-ornament-tl" />
+              <div className="corner-ornament-tr" />
+              <div className="corner-ornament-bl" />
+              <div className="corner-ornament-br" />
+
               <ProfileForm
                 defaultValues={{
                   first_name: profile?.first_name ?? "",
@@ -155,8 +193,13 @@ export default async function ProfilePage() {
                 }}
               />
             </div>
-            <div className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 p-6">
-              <h2 className="text-sm font-medium text-barber-paper/70 mb-3">Preferenze</h2>
+            <div className="card-guild-stone relative rounded-2xl p-6 shadow-lg">
+              <div className="corner-ornament-tl" />
+              <div className="corner-ornament-tr" />
+              <div className="corner-ornament-bl" />
+              <div className="corner-ornament-br" />
+
+              <h2 className="font-serif text-xs font-bold uppercase tracking-wider text-brass-light mb-3">✦ Preferenze Missive</h2>
               <NotificationPreferenceForm
                 notificationsDisabled={profile?.notifications_disabled ?? false}
               />

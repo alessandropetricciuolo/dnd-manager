@@ -135,3 +135,89 @@ export function flattenTreeIds(nodes: MapTreeNode[]): string[] {
   walk(nodes);
   return ids;
 }
+
+export function getBreadcrumbTrail(
+  nodes: MapTreeNode[],
+  targetId: string
+): GalleryMap[] {
+  const trail: GalleryMap[] = [];
+
+  function walk(list: MapTreeNode[], currentTrail: GalleryMap[]): boolean {
+    for (const node of list) {
+      const nextTrail = [...currentTrail, node.map];
+      if (node.map.id === targetId) {
+        trail.push(...nextTrail);
+        return true;
+      }
+      if (node.children.length && walk(node.children, nextTrail)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  walk(nodes, []);
+  return trail;
+}
+
+export function findNodeById(
+  nodes: MapTreeNode[],
+  targetId: string
+): MapTreeNode | null {
+  for (const node of nodes) {
+    if (node.map.id === targetId) return node;
+    if (node.children.length > 0) {
+      const found = findNodeById(node.children, targetId);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+export function filterMapTree(
+  nodes: MapTreeNode[],
+  predicate: (map: GalleryMap) => boolean
+): { filtered: MapTreeNode[]; matchedIds: Set<string>; ancestorIds: Set<string> } {
+  const matchedIds = new Set<string>();
+  const ancestorIds = new Set<string>();
+
+  function walk(list: MapTreeNode[], currentAncestors: string[]): MapTreeNode[] {
+    const result: MapTreeNode[] = [];
+    for (const node of list) {
+      const isDirectMatch = predicate(node.map);
+      const filteredChildren = walk(node.children, [...currentAncestors, node.map.id]);
+      const hasMatchingChild = filteredChildren.length > 0;
+
+      if (isDirectMatch) {
+        matchedIds.add(node.map.id);
+        for (const ancId of currentAncestors) {
+          ancestorIds.add(ancId);
+        }
+      }
+
+      if (isDirectMatch || hasMatchingChild) {
+        result.push({
+          ...node,
+          children: filteredChildren,
+        });
+      }
+    }
+    return result;
+  }
+
+  const filtered = walk(nodes, []);
+  return { filtered, matchedIds, ancestorIds };
+}
+
+export function countAllNodes(nodes: MapTreeNode[]): number {
+  let count = 0;
+  function walk(list: MapTreeNode[]) {
+    count += list.length;
+    for (const n of list) {
+      if (n.children.length) walk(n.children);
+    }
+  }
+  walk(nodes);
+  return count;
+}
+

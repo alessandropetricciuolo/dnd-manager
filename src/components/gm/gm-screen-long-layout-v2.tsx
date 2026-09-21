@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Calendar, Flag, Headphones, Images, MessageCircle, ScrollText, Users } from "lucide-react";
+import { Calendar, Dices, Flag, Headphones, Images, LayoutGrid, MessageCircle, ScrollText, Swords, Users } from "lucide-react";
 import { GmScreenMapRegia } from "./gm-screen-map-regia";
 import { SecretWhispersSheet } from "./secret-whispers-sheet";
 import { GmGallerySheet } from "./gm-gallery-sheet";
@@ -11,6 +11,7 @@ import { GmSpotifyEmbedDock } from "./gm-spotify-embed-dock";
 import { GmScreenLongStateProvider, useGmScreenLongState } from "./gm-screen-long-state";
 import { EndSessionWizard } from "@/components/sessions/end-session-wizard";
 import { GmScreenBoard, type GmWorkspaceMode } from "@/components/gm/screen-grid";
+import { GmTacticalScreen } from "./screen-tactical/gm-tactical-screen";
 import { computeSessionXpAwards } from "./player-session-tracker";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -75,10 +76,27 @@ function LongWorkspace({
   const [spotifyEmbedPlaylistId, setSpotifyEmbedPlaylistId] = useState<string | null>(null);
   const audioForge = useGmAudioForge(campaignId);
   const [workspaceMode, setWorkspaceMode] = useState<GmWorkspaceMode>("session");
+  const [screenView, setScreenView] = useState<"tactical" | "grid">("tactical");
   const [quickNoteOpen, setQuickNoteOpen] = useState(false);
   const [quickNoteLoading, setQuickNoteLoading] = useState(false);
   const [quickNoteTitle, setQuickNoteTitle] = useState("");
   const [quickNoteContent, setQuickNoteContent] = useState("");
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`gm_screen_view_${campaignId}`);
+      if (saved === "grid" || saved === "tactical") {
+        setScreenView(saved);
+      }
+    } catch {}
+  }, [campaignId]);
+
+  const handleScreenViewChange = (view: "tactical" | "grid") => {
+    setScreenView(view);
+    try {
+      localStorage.setItem(`gm_screen_view_${campaignId}`, view);
+    } catch {}
+  };
 
   useEffect(() => {
     if (autoOpenDebrief && selectedSessionId) {
@@ -278,83 +296,125 @@ function LongWorkspace({
       </div>
 
       <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-amber-600/20 px-2 py-1">
-          <div className="flex items-center gap-1 text-amber-300">
-            <Calendar className="h-3 w-3" />
-            <span className="text-[10px] font-semibold uppercase tracking-wide">GM 2.0</span>
-          </div>
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-brass-base/20 bg-gradient-to-r from-[#140e09] via-[#1a120c] to-[#120d09] px-3 py-1.5 shadow-md">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Crest & Title */}
+            <div className="flex items-center gap-2 pr-2 border-r border-brass-base/25">
+              <div className="relative flex h-6 w-6 items-center justify-center rounded border border-brass-light/50 bg-gradient-to-br from-amber-600/30 to-amber-950/80 shadow-[0_0_8px_rgba(217,119,6,0.3)]">
+                <Dices className="h-3.5 w-3.5 text-brass-light" />
+              </div>
+              <h1 className="font-cinzel text-xs font-bold uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-brass-light via-amber-200 to-amber-400">
+                GM Screen 2.0
+              </h1>
+            </div>
 
-          <Select
-            value={selectedSessionId ?? "none"}
-            onValueChange={(value) => setSelectedSessionId(value === "none" ? null : value)}
-            disabled={loadingSessions}
-          >
-            <SelectTrigger className="h-6 max-w-[14rem] border-amber-600/30 bg-zinc-900 px-2 text-[10px] text-zinc-100">
-              <SelectValue placeholder="Sessione" />
-            </SelectTrigger>
-            <SelectContent className="border-amber-600/20 bg-zinc-900">
-              <SelectItem value="none" className="text-[11px] text-zinc-300 focus:bg-amber-600/20 focus:text-zinc-100">
-                Nessuna sessione
-              </SelectItem>
-              {sessions.map((session) => (
-                <SelectItem
-                  key={session.id}
-                  value={session.id}
-                  className="text-[11px] text-zinc-300 focus:bg-amber-600/20 focus:text-zinc-100"
-                >
-                  {session.title?.trim() || new Date(session.scheduled_at).toLocaleDateString("it-IT")}
+            {/* View Switcher: Tactical vs Grid */}
+            <div className="inline-flex items-center rounded border border-brass-base/30 bg-[#0e0906] p-0.5 shadow-inner">
+              <button
+                type="button"
+                onClick={() => handleScreenViewChange("tactical")}
+                className={cn(
+                  "flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-cinzel font-semibold transition-all",
+                  screenView === "tactical"
+                    ? "bg-gradient-to-r from-amber-700/90 to-amber-800/90 text-parchment-100 shadow-sm border border-brass-light/40"
+                    : "text-parchment-400 hover:text-parchment-100 hover:bg-brass-base/10"
+                )}
+                title="Plancia Tattica da Combattimento"
+              >
+                <Swords className="h-3 w-3 text-amber-300" />
+                <span>Plancia Tattica</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleScreenViewChange("grid")}
+                className={cn(
+                  "flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-cinzel font-semibold transition-all",
+                  screenView === "grid"
+                    ? "bg-gradient-to-r from-amber-700/90 to-amber-800/90 text-parchment-100 shadow-sm border border-brass-light/40"
+                    : "text-parchment-400 hover:text-parchment-100 hover:bg-brass-base/10"
+                )}
+                title="Griglia Modulare Personalizzabile"
+              >
+                <LayoutGrid className="h-3 w-3 text-amber-300" />
+                <span>Griglia Modulare</span>
+              </button>
+            </div>
+
+            {/* Session Selector */}
+            <Select
+              value={selectedSessionId ?? "none"}
+              onValueChange={(value) => setSelectedSessionId(value === "none" ? null : value)}
+              disabled={loadingSessions}
+            >
+              <SelectTrigger className="h-6 max-w-[14rem] border-brass-base/30 bg-zinc-900 px-2 text-[10px] text-zinc-100">
+                <SelectValue placeholder="Sessione" />
+              </SelectTrigger>
+              <SelectContent className="border-amber-600/20 bg-zinc-900">
+                <SelectItem value="none" className="text-[11px] text-zinc-300 focus:bg-amber-600/20 focus:text-zinc-100">
+                  Nessuna sessione
                 </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+                {sessions.map((session) => (
+                  <SelectItem
+                    key={session.id}
+                    value={session.id}
+                    className="text-[11px] text-zinc-300 focus:bg-amber-600/20 focus:text-zinc-100"
+                  >
+                    {session.title?.trim() || new Date(session.scheduled_at).toLocaleDateString("it-IT")}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          <Badge variant="outline" className="h-5 border-amber-500/30 bg-transparent px-1.5 text-[9px] text-amber-100">
-            <Users className="mr-0.5 h-2.5 w-2.5" />
-            {sessionCharacters.length} PG
-          </Badge>
+            <Badge variant="outline" className="h-5 border-amber-500/30 bg-transparent px-1.5 text-[9px] text-amber-100">
+              <Users className="mr-0.5 h-2.5 w-2.5" />
+              {sessionCharacters.length} PG
+            </Badge>
 
-          <Badge variant="outline" className="h-5 border-zinc-700 bg-transparent px-1.5 text-[9px] text-zinc-300">
-            {signups.length} iscritti
-          </Badge>
+            <Badge variant="outline" className="h-5 border-zinc-700 bg-transparent px-1.5 text-[9px] text-zinc-300">
+              {signups.length} iscritti
+            </Badge>
 
-          <div className="inline-flex items-center rounded border border-amber-600/30 bg-zinc-900 p-px">
-            <Button
-              type="button"
-              size="sm"
-              variant={workspaceMode === "session" ? "secondary" : "ghost"}
-              className={cn(
-                "h-5 px-1.5 text-[9px]",
-                workspaceMode === "session"
-                  ? "bg-amber-600/20 text-amber-100 hover:bg-amber-600/25"
-                  : "text-zinc-300 hover:text-zinc-100"
-              )}
-              onClick={() => setWorkspaceMode("session")}
-            >
-              Sessione
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={workspaceMode === "closure" ? "secondary" : "ghost"}
-              className={cn(
-                "h-5 px-1.5 text-[9px]",
-                workspaceMode === "closure"
-                  ? "bg-amber-600/20 text-amber-100 hover:bg-amber-600/25"
-                  : "text-zinc-300 hover:text-zinc-100"
-              )}
-              onClick={() => setWorkspaceMode("closure")}
-            >
-              Chiusura
-            </Button>
+            {screenView === "grid" && (
+              <div className="inline-flex items-center rounded border border-amber-600/30 bg-zinc-900 p-px">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={workspaceMode === "session" ? "secondary" : "ghost"}
+                  className={cn(
+                    "h-5 px-1.5 text-[9px]",
+                    workspaceMode === "session"
+                      ? "bg-amber-600/20 text-amber-100 hover:bg-amber-600/25"
+                      : "text-zinc-300 hover:text-zinc-100"
+                  )}
+                  onClick={() => setWorkspaceMode("session")}
+                >
+                  Sessione
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={workspaceMode === "closure" ? "secondary" : "ghost"}
+                  className={cn(
+                    "h-5 px-1.5 text-[9px]",
+                    workspaceMode === "closure"
+                      ? "bg-amber-600/20 text-amber-100 hover:bg-amber-600/25"
+                      : "text-zinc-300 hover:text-zinc-100"
+                  )}
+                  onClick={() => setWorkspaceMode("closure")}
+                >
+                  Chiusura
+                </Button>
+              </div>
+            )}
+
+            {hasUnsavedLocalState ? (
+              <Badge variant="outline" className="h-5 border-cyan-500/30 bg-transparent px-1.5 text-[9px] text-cyan-100">
+                Locale
+              </Badge>
+            ) : null}
           </div>
 
-          {hasUnsavedLocalState ? (
-            <Badge variant="outline" className="h-5 border-cyan-500/30 bg-transparent px-1.5 text-[9px] text-cyan-100">
-              Locale
-            </Badge>
-          ) : null}
-
-          <div className="ml-auto flex flex-wrap items-center gap-1">
+          <div className="flex flex-wrap items-center gap-1">
             <Button
               type="button"
               variant="outline"
@@ -410,16 +470,25 @@ function LongWorkspace({
         )}
 
         <div className="min-h-0 flex-1 overflow-hidden p-1">
-          <GmScreenBoard
-            campaignId={campaignId}
-            currentUserId={currentUserId}
-            campaignType="long"
-            selectedSessionId={selectedSessionId}
-            mode={workspaceMode}
-            onModeChange={setWorkspaceMode}
-            sheetOpeners={sheetOpeners}
-            toolbarExtra={closureToolbar}
-          />
+          {screenView === "tactical" ? (
+            <GmTacticalScreen
+              campaignId={campaignId}
+              currentUserId={currentUserId}
+              campaignType="long"
+              selectedSessionId={selectedSessionId}
+            />
+          ) : (
+            <GmScreenBoard
+              campaignId={campaignId}
+              currentUserId={currentUserId}
+              campaignType="long"
+              selectedSessionId={selectedSessionId}
+              mode={workspaceMode}
+              onModeChange={setWorkspaceMode}
+              sheetOpeners={sheetOpeners}
+              toolbarExtra={closureToolbar}
+            />
+          )}
         </div>
 
         <SecretWhispersSheet

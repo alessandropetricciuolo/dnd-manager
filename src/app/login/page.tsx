@@ -177,34 +177,47 @@ function LoginPageContent() {
   };
 
   return (
-    <div className="min-h-screen bg-barber-dark flex items-center justify-center p-4 md:px-6">
-      <Card className="w-full max-w-md border-barber-gold/40 bg-barber-dark/95 shadow-[0_0_40px_rgba(251,191,36,0.15)] backdrop-blur p-4 md:p-6">
-        <CardHeader className="space-y-2 px-0 pt-0">
-          <p className="text-xs font-medium uppercase tracking-[0.3em] text-barber-gold/70">
-            Barber & Dragons
-          </p>
-          <CardTitle className="text-2xl font-semibold text-barber-paper">
-            Portale dell&apos;Avventuriero
-          </CardTitle>
-          <CardDescription className="text-barber-paper/80">
-            {mode === "login"
-              ? "Accedi per continuare la tua campagna."
-              : "Crea un account per iniziare una nuova avventura."}
-          </CardDescription>
-        </CardHeader>
+    <div className="relative min-h-screen bg-guild-void flex items-center justify-center p-4 md:px-6 overflow-hidden">
+      {/* Sfondo caldo e sfumato da taverna */}
+      <div
+        className="absolute inset-0 bg-cover bg-center opacity-10 mix-blend-luminosity filter blur-md"
+        style={{ backgroundImage: `url(/hero-tabletop.jpg)` }}
+        aria-hidden
+      />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_30%,rgba(200,157,73,0.12),transparent)]" aria-hidden />
 
-        <CardContent className="space-y-6 px-0 pb-0">
-          <div className="inline-flex w-full rounded-full border border-barber-gold/50 bg-barber-dark p-1 text-sm">
+      <div className="card-guild-stone relative w-full max-w-md rounded-2xl p-6 sm:p-8 shadow-2xl z-10">
+        <div className="corner-ornament-tl" />
+        <div className="corner-ornament-tr" />
+        <div className="corner-ornament-bl" />
+        <div className="corner-ornament-br" />
+
+        <div className="space-y-1.5 text-center mb-6">
+          <p className="text-[11px] font-serif uppercase tracking-[0.25em] text-brass-base">
+            ✦ Barber &amp; Dragons ✦
+          </p>
+          <h1 className="font-serif text-2xl font-extrabold tracking-tight text-gold-relief sm:text-3xl">
+            Portale dell&apos;Avventuriero
+          </h1>
+          <p className="text-xs text-parchment-300">
+            {mode === "login"
+              ? "Accedi con le tue credenziali per continuare la tua saga."
+              : "Crea il tuo profilo di gilda per unirti al tavolo."}
+          </p>
+        </div>
+
+        <div className="space-y-6">
+          <div className="inline-flex w-full rounded-xl border border-brass-base/30 bg-guild-void/80 p-1 text-xs">
             <button
               type="button"
               onClick={() => {
                 setMode("login");
                 setSignupCompleted(false);
               }}
-              className={`flex-1 min-h-[44px] rounded-full px-3 py-2 transition ${
+              className={`flex-1 min-h-[40px] rounded-lg font-serif uppercase tracking-wider font-semibold transition ${
                 mode === "login"
-                  ? "bg-barber-red text-barber-paper shadow"
-                  : "text-barber-paper/80 hover:text-barber-gold"
+                  ? "bg-crimson-base text-parchment-100 shadow-md"
+                  : "text-parchment-300 hover:text-brass-light"
               }`}
             >
               Accedi
@@ -212,10 +225,10 @@ function LoginPageContent() {
             <button
               type="button"
               onClick={() => setMode("signup")}
-              className={`flex-1 min-h-[44px] rounded-full px-3 py-2 transition ${
+              className={`flex-1 min-h-[40px] rounded-lg font-serif uppercase tracking-wider font-semibold transition ${
                 mode === "signup"
-                  ? "bg-barber-red text-barber-paper shadow"
-                  : "text-barber-paper/80 hover:text-barber-gold"
+                  ? "bg-crimson-base text-parchment-100 shadow-md"
+                  : "text-parchment-300 hover:text-brass-light"
               }`}
             >
               Registrati
@@ -223,14 +236,14 @@ function LoginPageContent() {
           </div>
 
           {mode === "signup" && signupCompleted ? (
-            <div className="space-y-4 rounded-xl border border-barber-gold/30 bg-barber-dark/70 p-4">
-              <h3 className="text-lg font-semibold text-barber-gold">Registrazione Completata</h3>
-              <p className="text-sm text-barber-paper/85">
-                Il tuo account e pronto. Se vuoi, entra nella community per restare aggiornato sulle prossime
+            <div className="space-y-4 rounded-xl border border-brass-base/30 bg-guild-stone p-5 text-center">
+              <h3 className="font-serif text-lg font-bold text-gold-relief">Registrazione Completata</h3>
+              <p className="text-xs leading-relaxed text-parchment-300">
+                Il tuo account è pronto. Se vuoi, entra nella community per restare aggiornato sulle prossime
                 giocate.
               </p>
               {signupRequiresEmailConfirm && (
-                <p className="text-xs text-barber-paper/70">
+                <p className="text-xs text-parchment-400">
                   Potrebbe essere richiesta la conferma email prima del primo accesso in dashboard.
                 </p>
               )}
@@ -239,15 +252,15 @@ function LoginPageContent() {
                   href={whatsappCommunityLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex min-h-[44px] w-full items-center justify-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500"
+                  className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-emerald-700 px-4 py-2 text-xs font-serif uppercase tracking-wider font-semibold text-white transition hover:bg-emerald-600 shadow-md"
                 >
                   Unisciti alla Community WhatsApp
                 </a>
               ) : null}
               <Button
                 type="button"
-                variant="outline"
-                className="w-full border-barber-gold/40 text-barber-paper hover:bg-barber-gold/10"
+                variant="stone"
+                className="w-full text-xs font-serif uppercase tracking-wider font-semibold text-brass-light"
                 onClick={() => {
                   if (signupRequiresEmailConfirm) {
                     setMode("login");
@@ -257,15 +270,15 @@ function LoginPageContent() {
                   router.push("/dashboard");
                 }}
               >
-                {signupRequiresEmailConfirm ? "Vai al login dopo conferma email" : "Vai alla Dashboard"}
+                {signupRequiresEmailConfirm ? "Vai al login dopo conferma email" : "Entra nella Dashboard"}
               </Button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
             {mode === "signup" && (
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="first_name" className="text-barber-paper/90">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="first_name" className="text-[11px] font-serif uppercase tracking-wider text-brass-light">
                     Nome
                   </Label>
                   <Input
@@ -274,13 +287,13 @@ function LoginPageContent() {
                     type="text"
                     autoComplete="given-name"
                     placeholder="Mario"
-                    className="bg-barber-dark border-barber-gold/30 text-barber-paper placeholder:text-barber-paper/50"
+                    className="h-11 border-guild-border bg-guild-void/80 text-parchment-100 placeholder:text-parchment-500/50 focus:border-brass-base"
                     disabled={isLoading}
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="last_name" className="text-barber-paper/90">
+                <div className="space-y-1.5">
+                  <Label htmlFor="last_name" className="text-[11px] font-serif uppercase tracking-wider text-brass-light">
                     Cognome
                   </Label>
                   <Input
@@ -289,7 +302,7 @@ function LoginPageContent() {
                     type="text"
                     autoComplete="family-name"
                     placeholder="Rossi"
-                    className="bg-barber-dark border-barber-gold/30 text-barber-paper placeholder:text-barber-paper/50"
+                    className="h-11 border-guild-border bg-guild-void/80 text-parchment-100 placeholder:text-parchment-500/50 focus:border-brass-base"
                     disabled={isLoading}
                     required
                   />
@@ -297,8 +310,8 @@ function LoginPageContent() {
               </div>
             )}
             {mode === "signup" && (
-              <div className="space-y-2">
-                <Label htmlFor="date_of_birth" className="text-barber-paper/90">
+              <div className="space-y-1.5">
+                <Label htmlFor="date_of_birth" className="text-[11px] font-serif uppercase tracking-wider text-brass-light">
                   Data di nascita
                 </Label>
                 <Input
@@ -306,15 +319,15 @@ function LoginPageContent() {
                   name="date_of_birth"
                   type="date"
                   autoComplete="bday"
-                  className="bg-barber-dark border-barber-gold/30 text-barber-paper"
+                  className="h-11 border-guild-border bg-guild-void/80 text-parchment-100 focus:border-brass-base"
                   disabled={isLoading}
                   required
                 />
               </div>
             )}
             {mode === "signup" && (
-              <div className="space-y-2">
-                <Label htmlFor="phone" className="text-barber-paper/90">
+              <div className="space-y-1.5">
+                <Label htmlFor="phone" className="text-[11px] font-serif uppercase tracking-wider text-brass-light">
                   Cellulare
                 </Label>
                 <Input
@@ -323,30 +336,29 @@ function LoginPageContent() {
                   type="tel"
                   autoComplete="tel"
                   placeholder="+39 333 1234567"
-                  className="bg-barber-dark border-barber-gold/30 text-barber-paper placeholder:text-barber-paper/50"
+                  className="h-11 border-guild-border bg-guild-void/80 text-parchment-100 placeholder:text-parchment-500/50 focus:border-brass-base"
                   disabled={isLoading}
                 />
               </div>
             )}
             {mode === "signup" && (
-              <div className="rounded-md border border-barber-gold/20 bg-barber-dark/60 p-3">
-                <label htmlFor="whatsapp_opt_in" className="flex items-start gap-3 text-sm text-barber-paper/85">
+              <div className="rounded-lg border border-brass-base/20 bg-guild-void/70 p-3">
+                <label htmlFor="whatsapp_opt_in" className="flex items-start gap-2.5 text-xs text-parchment-300">
                   <input
                     id="whatsapp_opt_in"
                     name="whatsapp_opt_in"
                     type="checkbox"
-                    className="mt-0.5 h-4 w-4 rounded border-barber-gold/40 bg-barber-dark"
+                    className="mt-0.5 h-4 w-4 rounded border-guild-border bg-guild-void text-brass-base focus:ring-brass-base"
                     disabled={isLoading}
                   />
                   <span>
-                    Acconsento a essere aggiunto alla community WhatsApp di Barber & Dragons, dove organizziamo le
-                    giocate e condividiamo tutte le info utili.
+                    Acconsento a essere aggiunto alla community WhatsApp di Barber &amp; Dragons per le giocate dal vivo.
                   </span>
                 </label>
               </div>
             )}
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-barber-paper/90">
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-[11px] font-serif uppercase tracking-wider text-brass-light">
                 Email
               </Label>
               <Input
@@ -355,21 +367,21 @@ function LoginPageContent() {
                 type="email"
                 autoComplete="email"
                 placeholder="avventuriero@esempio.com"
-                className="bg-barber-dark border-barber-gold/30 text-barber-paper placeholder:text-barber-paper/50"
+                className="h-11 border-guild-border bg-guild-void/80 text-parchment-100 placeholder:text-parchment-500/50 focus:border-brass-base"
                 disabled={isLoading}
                 required
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-barber-paper/90">
+                <Label htmlFor="password" className="text-[11px] font-serif uppercase tracking-wider text-brass-light">
                   Password
                 </Label>
                 {mode === "login" && (
                   <Link
                     href="/forgot-password"
-                    className="text-xs text-barber-gold hover:text-barber-gold/80 transition-colors"
+                    className="text-xs text-brass-base hover:text-brass-light transition-colors"
                   >
                     Password dimenticata?
                   </Link>
@@ -382,7 +394,7 @@ function LoginPageContent() {
                 autoComplete={
                   mode === "login" ? "current-password" : "new-password"
                 }
-                className="bg-barber-dark border-barber-gold/30 text-barber-paper placeholder:text-barber-paper/50"
+                className="h-11 border-guild-border bg-guild-void/80 text-parchment-100 placeholder:text-parchment-500/50 focus:border-brass-base"
                 disabled={isLoading}
                 required
               />
@@ -390,31 +402,30 @@ function LoginPageContent() {
 
             <SubmitButton
               pending={isLoading}
-              loadingText="Elaborazione..."
-              className="w-full min-h-[44px] bg-barber-red hover:bg-barber-red/90 text-barber-paper font-semibold"
+              loadingText="Accesso ai registri..."
+              className="mt-2 w-full min-h-[46px] btn-wax-seal rounded-lg font-serif uppercase tracking-widest font-bold text-parchment-100 shadow-xl"
             >
-              {mode === "login" ? "Entra nella Taverna" : "Crea il tuo eroe"}
+              {mode === "login" ? "Entra nella Taverna" : "Crea il tuo Eroe"}
             </SubmitButton>
             </form>
           )}
-        </CardContent>
+        </div>
 
-        <CardFooter className="flex flex-col items-start gap-1 text-xs text-barber-paper/60 px-0 pb-0">
+        <div className="mt-6 border-t border-guild-border/80 pt-4 text-center text-[11px] text-parchment-500 space-y-1">
           <p>
             Con l&apos;accesso creiamo automaticamente un profilo{" "}
-            <span className="font-semibold text-barber-gold">player</span> per
-            te.
+            <span className="font-semibold text-brass-light font-mono">player</span>.
           </p>
-          <p>In futuro potrai diventare Game Master dalle impostazioni.</p>
-        </CardFooter>
-      </Card>
+          <p>In futuro potrai richiedere l&apos;abilitazione Game Master.</p>
+        </div>
+      </div>
     </div>
   );
 }
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-barber-dark" />}>
+    <Suspense fallback={<div className="min-h-screen bg-guild-void" />}>
       <LoginPageContent />
     </Suspense>
   );

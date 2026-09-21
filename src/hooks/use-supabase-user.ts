@@ -4,10 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createSupabaseBrowserClient } from "@/utils/supabase/client";
 
-export function useSupabaseUser() {
+export function useSupabaseUser(initialUser?: User | null) {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
-  const [user, setUser] = useState<User | null>(null);
-  const [ready, setReady] = useState(false);
+  const [user, setUser] = useState<User | null>(initialUser ?? null);
+  const [ready, setReady] = useState(Boolean(initialUser));
 
   useEffect(() => {
     let mounted = true;

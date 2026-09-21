@@ -97,35 +97,47 @@ function PlayerSessionBookingCard({
 }) {
   const [expanded, setExpanded] = useState(false);
   const hasDetails = Boolean(session.dm_name || session.notes?.trim());
-  const dateLabel = formatSessionInRome(session.scheduled_at, "EEE d MMM yyyy", { locale: it });
+  const dateLabel = formatSessionInRome(session.scheduled_at, "EEEE d MMMM yyyy", { locale: it });
   const timeLabel = formatSessionInRome(session.scheduled_at, "HH:mm", { locale: it });
   const isSignedUp = session.currentUserSignupStatus != null;
 
   return (
-    <article className="overflow-hidden rounded-xl bg-barber-dark/80 ring-1 ring-barber-gold/25">
-      <div className="flex items-center gap-2 p-3">
+    <article className="card-guild-stone group relative overflow-hidden rounded-2xl border-2 border-brass-base/40 p-4 shadow-xl transition-all duration-300 hover:border-brass-base/70 hover:shadow-[0_8px_25px_rgba(200,157,73,0.15)]">
+      <div className="corner-ornament-tl" />
+      <div className="corner-ornament-tr" />
+      <div className="corner-ornament-bl" />
+      <div className="corner-ornament-br" />
+
+      <div className="flex items-start justify-between gap-3">
         <button
           type="button"
           className={cn("min-w-0 flex-1 text-left", hasDetails && "cursor-pointer")}
           onClick={() => hasDetails && setExpanded((v) => !v)}
           aria-expanded={hasDetails ? expanded : undefined}
         >
-          <time dateTime={session.scheduled_at} className="block text-xs text-barber-paper/60">
+          <span className="inline-block text-[11px] font-serif uppercase tracking-widest text-brass-base capitalize">
             {dateLabel}
-          </time>
-          <span className="font-serif text-2xl font-semibold leading-none text-barber-gold">{timeLabel}</span>
+          </span>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="font-serif text-3xl font-extrabold tracking-tight text-gold-relief">
+              {timeLabel}
+            </span>
+            <span className="text-[10px] font-mono text-parchment-400 uppercase tracking-widest">
+              Roma
+            </span>
+          </div>
         </button>
 
-        <div className="flex shrink-0 flex-col items-end gap-1.5">
+        <div className="flex shrink-0 flex-col items-end gap-2">
           {!isSignedUp ? (
             <Button
               size="sm"
-              className="h-9 bg-barber-red px-4 text-xs font-semibold hover:bg-barber-red/90"
+              className="btn-wax-seal h-9 px-4 text-xs font-serif font-bold uppercase tracking-wider shadow-md hover:scale-[1.02] transition-transform"
               disabled={joinLoading}
               onClick={() => onJoin(session.id)}
             >
-              <UserPlus className="mr-1 h-3.5 w-3.5" />
-              {joinLoading ? "…" : "Iscriviti"}
+              <UserPlus className="mr-1.5 h-3.5 w-3.5" />
+              {joinLoading ? "Inscrizione…" : "Prenota Posto"}
             </Button>
           ) : (
             <PlayerSignupStatus status={session.currentUserSignupStatus!} />
@@ -133,31 +145,32 @@ function PlayerSessionBookingCard({
           {hasDetails ? (
             <button
               type="button"
-              className="inline-flex items-center gap-0.5 text-[10px] text-barber-paper/45 hover:text-barber-gold"
+              className="inline-flex items-center gap-1 text-[11px] font-serif uppercase tracking-wider text-parchment-400 hover:text-brass-light transition-colors"
               onClick={() => setExpanded((v) => !v)}
               aria-label={expanded ? "Nascondi dettagli" : "Mostra dettagli"}
             >
-              Dettagli
-              {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+              <span>{expanded ? "Meno" : "Dettagli"}</span>
+              {expanded ? <ChevronUp className="h-3 w-3 text-brass-base" /> : <ChevronDown className="h-3 w-3 text-brass-base" />}
             </button>
           ) : null}
         </div>
       </div>
 
       {expanded && hasDetails ? (
-        <div className="space-y-2 border-t border-barber-gold/15 px-3 py-2.5 text-sm">
-          <StatusBadge tone={session.status === "scheduled" ? "success" : "muted"}>
-            {session.status === "scheduled" ? "Open" : "Closed"}
-          </StatusBadge>
-          {session.dm_name ? (
-            <p className="text-barber-paper/75">
-              <span className="text-barber-paper/45">Master · </span>
-              {session.dm_name}
-            </p>
-          ) : null}
+        <div className="mt-3 space-y-2 border-t border-brass-base/20 pt-3 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="rounded-full border border-brass-base/30 bg-guild-stone px-2 py-0.5 text-[10px] font-serif uppercase text-brass-light">
+              {session.status === "scheduled" ? "Tavolo Convocato" : "Concluso"}
+            </span>
+            {session.dm_name ? (
+              <span className="text-parchment-300">
+                <strong className="text-brass-base font-serif">Master:</strong> {session.dm_name}
+              </span>
+            ) : null}
+          </div>
           {session.notes ? (
-            <p className="flex items-start gap-2 text-barber-paper/75">
-              <MapPinIcon className="mt-0.5 h-4 w-4 shrink-0 text-barber-gold/70" />
+            <p className="flex items-start gap-2 text-parchment-300 bg-guild-stone/50 rounded-lg p-2 border border-brass-base/15">
+              <MapPinIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brass-base" />
               <span>{session.notes}</span>
             </p>
           ) : null}
@@ -310,14 +323,19 @@ export function SessionListClient({
           const isTodayOrPast = sessionInstant <= new Date();
 
           const sessionCard = (
-            <Card className="w-full border-barber-gold/40 bg-barber-dark/90">
-              <CardHeader className="pb-2">
+            <div className="card-guild-stone relative w-full overflow-hidden rounded-2xl border-2 border-brass-base/40 p-5 shadow-xl transition-all hover:border-brass-base/60">
+              <div className="corner-ornament-tl" />
+              <div className="corner-ornament-tr" />
+              <div className="corner-ornament-bl" />
+              <div className="corner-ornament-br" />
+
+              <div className="pb-3 border-b border-brass-base/20">
                 {isGmOrAdmin ? (
-                  <div className="mb-2 flex flex-wrap items-center gap-2 border-b border-barber-gold/10 pb-2 sm:hidden">
-                    <CalendarIcon className="h-4 w-4 shrink-0 text-barber-gold/70" />
+                  <div className="mb-2 flex flex-wrap items-center gap-2 border-b border-brass-base/10 pb-2 sm:hidden">
+                    <CalendarIcon className="h-4 w-4 shrink-0 text-brass-base" />
                     <time
                       dateTime={session.scheduled_at}
-                      className="text-sm font-medium text-barber-paper"
+                      className="text-sm font-serif font-bold text-parchment-100"
                     >
                       {formatSessionInRome(session.scheduled_at, "EEE d MMM yyyy · HH:mm", {
                         locale: it,
@@ -328,12 +346,12 @@ export function SessionListClient({
                 <div className="flex items-center justify-between gap-2">
                   <div
                     className={cn(
-                      "flex min-w-0 items-center gap-2 text-barber-paper/55",
+                      "flex min-w-0 items-center gap-2 text-parchment-300",
                       isGmOrAdmin && "sm:sr-only"
                     )}
                   >
-                    <CalendarIcon className="h-4 w-4 shrink-0" />
-                    <time dateTime={session.scheduled_at}>
+                    <CalendarIcon className="h-4 w-4 shrink-0 text-brass-base" />
+                    <time dateTime={session.scheduled_at} className="font-serif">
                       {formatSessionInRome(session.scheduled_at, "EEEE d MMMM yyyy, HH:mm", {
                         locale: it,
                       })}
@@ -343,7 +361,7 @@ export function SessionListClient({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-9 w-9 p-0 shrink-0 text-barber-paper/55 hover:text-red-400 hover:bg-red-500/10"
+                      className="h-8 w-8 p-0 shrink-0 text-parchment-400 hover:text-red-400 hover:bg-red-500/10"
                       disabled={!!deleteSessionLoadingId}
                       onClick={() => handleDeleteSession(session.id)}
                       title="Elimina sessione"
@@ -353,25 +371,28 @@ export function SessionListClient({
                     </Button>
                   )}
                 </div>
-                <CardTitle className="text-base text-barber-paper">
-                  {isOpen ? (
-                    <StatusBadge tone="success">Open</StatusBadge>
-                  ) : (
-                    <StatusBadge tone="muted">Closed</StatusBadge>
+                <div className="mt-2 flex items-center justify-between">
+                  <div className="text-base text-parchment-100">
+                    {isOpen ? (
+                      <StatusBadge tone="success">Tavolo Convocato (Open)</StatusBadge>
+                    ) : (
+                      <StatusBadge tone="muted">Sessione Conclusa</StatusBadge>
+                    )}
+                  </div>
+                  {session.dm_name && (
+                    <p className="text-xs font-serif text-brass-light">
+                      <span className="text-parchment-400">Master: </span>
+                      {session.dm_name}
+                    </p>
                   )}
-                </CardTitle>
-                {session.dm_name && (
-                  <p className="text-xs font-medium text-barber-paper/55 mt-1">
-                    DM: {session.dm_name}
-                  </p>
-                )}
-              </CardHeader>
-              <CardContent className="pt-0 space-y-3">
+                </div>
+              </div>
+              <div className="pt-3 space-y-3">
                 {session.notes && (
-                  <CardDescription className="flex items-center gap-2 text-barber-paper/85">
-                    <MapPinIcon className="h-4 w-4 shrink-0" />
+                  <div className="flex items-center gap-2 text-xs text-parchment-300 bg-guild-stone/50 p-2.5 rounded-lg border border-brass-base/15">
+                    <MapPinIcon className="h-4 w-4 shrink-0 text-brass-base" />
                     <span>{session.notes}</span>
-                  </CardDescription>
+                  </div>
                 )}
                 {/* GM/Admin: Chiudi Sessione (solo se data passata e ancora scheduled) */}
                 {isGmOrAdmin && isTodayOrPast && session.status === "scheduled" && (
@@ -658,8 +679,8 @@ export function SessionListClient({
                     )}
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           );
 
           if (!isGmOrAdmin) {

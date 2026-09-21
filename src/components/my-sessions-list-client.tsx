@@ -29,33 +29,33 @@ export function MySessionsListClient({
   const [storicoOpen, setStoricoOpen] = useState(false);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div>
-        <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-barber-paper">
-          <CalendarDays className="h-4 w-4 text-barber-gold" />
-          In programma ({inProgramma.length})
+        <h3 className="mb-3 flex items-center gap-2 font-serif text-sm font-bold uppercase tracking-wider text-brass-light">
+          <CalendarDays className="h-4 w-4 text-brass-base" />
+          <span>In programma ({inProgramma.length})</span>
         </h3>
         <SessionCards
           rows={inProgramma}
-          emptyMessage="Nessuna sessione in programma."
+          emptyMessage="Nessuna sessione in programma al momento."
         />
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-barber-gold/30 bg-barber-dark/80">
+      <div className="card-guild-stone overflow-hidden rounded-2xl border border-brass-base/30 shadow-md">
         <button
           type="button"
           aria-expanded={storicoOpen}
           onClick={() => setStoricoOpen((open) => !open)}
-          className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-barber-gold/[0.06]"
+          className="flex w-full items-center justify-between gap-3 px-5 py-3.5 text-left transition-colors hover:bg-brass-base/10"
         >
-          <span className="flex min-w-0 items-center gap-2 font-medium text-barber-paper">
-            <History className="h-4 w-4 shrink-0 text-barber-gold" />
+          <span className="flex min-w-0 items-center gap-2.5 font-serif text-xs font-bold uppercase tracking-wider text-parchment-200">
+            <History className="h-4 w-4 shrink-0 text-brass-base" />
             <span className="truncate">Storico sessioni ({storico.length})</span>
           </span>
           {storicoOpen ? (
-            <ChevronUp className="h-4 w-4 shrink-0 text-barber-gold/70" aria-hidden />
+            <ChevronUp className="h-4 w-4 shrink-0 text-brass-light" aria-hidden />
           ) : (
-            <ChevronDown className="h-4 w-4 shrink-0 text-barber-gold/70" aria-hidden />
+            <ChevronDown className="h-4 w-4 shrink-0 text-brass-light" aria-hidden />
           )}
         </button>
         <div
@@ -65,7 +65,7 @@ export function MySessionsListClient({
           )}
         >
           <div className="overflow-hidden">
-            <div className="border-t border-barber-gold/20 px-4 pb-4 pt-3">
+            <div className="border-t border-guild-border/80 px-5 pb-5 pt-4">
               <SessionCards
                 rows={storico}
                 emptyMessage="Nessuna sessione nello storico."
@@ -87,39 +87,50 @@ function SessionCards({
 }) {
   if (rows.length === 0) {
     return (
-      <p className="rounded-xl border border-barber-gold/20 bg-barber-dark/60 px-4 py-6 text-center text-sm text-barber-paper/70">
+      <div className="card-guild-stone rounded-xl border border-guild-border/80 p-6 text-center text-xs text-parchment-400">
         {emptyMessage}
-      </p>
+      </div>
     );
   }
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
       {rows.map((r) => (
-        <Card key={r.id} className="border-barber-gold/30 bg-barber-dark/80">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base text-barber-paper">{r.campaign_name}</CardTitle>
+        <article key={r.id} className="card-guild-stone relative rounded-xl border border-brass-base/30 p-4 shadow-md transition-transform hover:-translate-y-0.5">
+          <div className="corner-ornament-tl" />
+          <div className="corner-ornament-tr" />
+          <div className="corner-ornament-bl" />
+          <div className="corner-ornament-br" />
+
+          <div>
+            <span className="text-[10px] font-serif uppercase tracking-widest text-brass-base">
+              Sessione di Gioco
+            </span>
+            <h4 className="mt-1 font-serif text-base font-bold text-parchment-100">
+              {r.campaign_name}
+            </h4>
             {r.session_title ? (
-              <p className="text-sm text-barber-paper/70">{r.session_title}</p>
+              <p className="mt-0.5 text-xs italic text-brass-light/90">{r.session_title}</p>
             ) : null}
-          </CardHeader>
-          <CardContent className="space-y-1 text-sm text-barber-paper/80">
+          </div>
+
+          <div className="mt-3 space-y-1.5 border-t border-guild-border/70 pt-2.5 text-xs text-parchment-300">
             <p className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 shrink-0 text-barber-gold/80" />
-              {r.formatted_date}
+              <CalendarDays className="h-3.5 w-3.5 shrink-0 text-brass-base" />
+              <span className="font-mono">{r.formatted_date}</span>
             </p>
             {r.location ? (
               <p className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 shrink-0 text-barber-gold/80" />
-                {r.location}
+                <MapPin className="h-3.5 w-3.5 shrink-0 text-brass-base" />
+                <span>{r.location}</span>
               </p>
             ) : (
-              <p className="flex items-center gap-2 text-barber-paper/50">
-                <MapPin className="h-4 w-4 shrink-0" />
-                Luogo da definire
+              <p className="flex items-center gap-2 text-parchment-500">
+                <MapPin className="h-3.5 w-3.5 shrink-0" />
+                <span>Locanda Barber &amp; Dragons</span>
               </p>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </article>
       ))}
     </div>
   );

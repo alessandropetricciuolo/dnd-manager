@@ -27,7 +27,7 @@ type FormValues = {
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
-  return <p className="text-sm text-barber-red/90">{message}</p>;
+  return <p className="text-sm text-crimson-light">{message}</p>;
 }
 
 export function ScopriLanding() {
@@ -40,21 +40,18 @@ export function ScopriLanding() {
         description:
           "Crediamo nel rumore dei dadi sul tavolo e nelle risate in faccia. Da noi si gioca esclusivamente dal vivo. Lascia a casa il computer.",
         Icon: Dices,
-        iconClassName: "text-amber-500",
       },
       {
         title: "One-Shot, Quest o Campagne",
         description:
           "Hai solo una sera libera? Fai una One-Shot. Vuoi una mini-storia? Prova le Quest (3-4 sessioni). Cerchi la gloria eterna? Entra nelle nostre epiche Campagne Condivise.",
         Icon: Map,
-        iconClassName: "text-red-500",
       },
       {
         title: "Tu Gioca, Al Resto Pensiamo Noi",
         description:
           "Il tuo gruppo storico si è sciolto? Non trovi mai un Master? Entra in Gilda: siediti, apri la scheda e inizia a giocare. L'organizzazione è affar nostro.",
         Icon: Shield,
-        iconClassName: "text-amber-500",
       },
     ],
     []
@@ -100,215 +97,239 @@ export function ScopriLanding() {
   });
 
   return (
-    <main className="overflow-x-hidden bg-barber-dark text-barber-paper">
+    <main className="min-h-screen bg-guild-void text-parchment-100 font-sans">
       {/* HERO */}
-      <section className="relative flex min-h-[80vh] items-end overflow-hidden">
-        {/* Background (no image dependency): gradients + vignette */}
+      <section className="relative flex min-h-[70vh] items-center justify-center overflow-hidden border-b border-guild-border">
+        {/* Background ambience */}
         <div
           aria-hidden
-          className="absolute inset-0 bg-[radial-gradient(1200px_800px_at_50%_20%,rgba(251,191,36,0.16),transparent_60%),radial-gradient(900px_700px_at_20%_60%,rgba(153,27,27,0.20),transparent_55%),linear-gradient(to_bottom,#0b0a09,#14110f_55%,#000)]"
+          className="absolute inset-0 bg-cover bg-center opacity-15 mix-blend-luminosity filter blur-sm"
+          style={{ backgroundImage: `url(/hero-tabletop.jpg)` }}
         />
         <div
           aria-hidden
-          className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(0,0,0,0.35),rgba(0,0,0,0.9)_70%,#000)]"
+          className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_20%,rgba(200,157,73,0.18),transparent)]"
+        />
+        <div
+          aria-hidden
+          className="absolute inset-0 bg-gradient-to-b from-guild-void/70 via-guild-void/90 to-guild-void"
         />
 
-        <div className="relative mx-auto w-full max-w-2xl px-4 pb-10 pt-8 sm:px-6 sm:pb-14">
+        <div className="relative mx-auto w-full max-w-2xl px-4 py-16 text-center sm:px-6 sm:py-24">
           <div className="flex justify-center">
-            <Image
-              src="/logo.png"
-              alt="Barber & Dragons"
-              width={220}
-              height={80}
-              priority
-              className="h-12 w-auto object-contain sm:h-14"
-            />
+            <div className="inline-flex items-center gap-2 rounded-full border border-brass-base/40 bg-guild-oak/90 px-4 py-1 text-xs font-serif uppercase tracking-[0.2em] text-brass-light shadow-sm">
+              <span>✦ Bando di Reclutamento ✦</span>
+            </div>
           </div>
 
-          <h1 className="mt-8 text-balance font-serif text-4xl font-bold leading-tight tracking-tight text-barber-gold sm:text-5xl">
-            Il Gioco di Ruolo. Quello Vero.
+          <h1 className="mt-6 font-serif text-4xl font-extrabold tracking-tight text-gold-relief sm:text-5xl md:text-6xl">
+            Il Gioco di Ruolo.
+            <br />
+            <span className="font-normal italic text-brass-base">Quello Vero.</span>
           </h1>
-          <p className="mt-4 text-pretty text-base leading-relaxed text-barber-paper/80 sm:text-lg">
+
+          <p className="mt-5 text-balance text-base leading-relaxed text-parchment-300 sm:text-lg">
             Spegni lo schermo, afferra i tuoi dadi. Unisciti alla gilda di D&amp;D dal
             vivo, dove le avventure si vivono faccia a faccia e le birre non sono
             virtuali.
           </p>
 
-          <div className="mt-8 flex flex-col gap-3">
+          <div className="mt-8 flex flex-col items-center gap-3">
             <Button
               type="button"
               onClick={scrollToForm}
               size="lg"
-              className="h-12 w-full bg-barber-red text-barber-paper font-semibold hover:bg-barber-red/90"
+              variant="wax"
+              className="h-12 w-full max-w-sm text-base shadow-xl tracking-wider font-serif uppercase font-bold"
             >
-              Unisciti alla Gilda
+              Firma il Contratto di Gilda
             </Button>
-            <p className="text-xs leading-relaxed text-barber-paper/60">
-              Nessun muro di testo. Pochi tap e sei dentro.
+            <p className="text-xs text-parchment-500">
+              Nessun muro di testo. Pochi tap e il tuo nome è all&apos;albo.
             </p>
           </div>
         </div>
       </section>
 
       {/* 3 PROMESSE */}
-      <section className="mx-auto w-full max-w-2xl px-4 py-10 sm:px-6 sm:py-12">
-        <div className="mb-6">
-          <h2 className="font-serif text-2xl font-semibold tracking-tight text-barber-paper sm:text-3xl">
-            Perché unirti?
+      <section className="mx-auto w-full max-w-3xl px-4 py-14 sm:px-6 sm:py-16">
+        <div className="mb-8 text-center">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-brass-base/80 font-serif">
+            Il Nostro Credo
+          </p>
+          <h2 className="mt-2 font-serif text-2xl font-bold tracking-tight text-gold-relief sm:text-3xl">
+            Perché unirti alla Gilda?
           </h2>
-          <p className="mt-2 text-sm leading-relaxed text-barber-paper/70">
-            Tre promesse, zero fronzoli. Tutto pensato per giocare bene dal vivo.
+          <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-parchment-300">
+            Tre promesse scolpite nella pietra. Tutto pensato per giocare bene dal vivo.
           </p>
         </div>
 
         <div className="space-y-4">
-          {promises.map(({ title, description, Icon, iconClassName }) => (
-            <Card
+          {promises.map(({ title, description, Icon }) => (
+            <div
               key={title}
-              className="border-barber-gold/25 bg-barber-dark/90"
+              className="card-guild-stone rounded-xl p-6 transition-transform hover:-translate-y-0.5"
             >
-              <CardHeader className="pb-3">
-                <div className="flex items-start gap-3">
-                  <div className="mt-0.5 rounded-md border border-barber-gold/25 bg-barber-dark/70 p-2">
-                    <Icon className={`h-5 w-5 ${iconClassName}`} />
-                  </div>
-                  <div className="min-w-0">
-                    <CardTitle className="text-lg text-barber-paper">
-                      {title}
-                    </CardTitle>
-                    <CardDescription className="mt-1 text-barber-paper/70">
-                      {description}
-                    </CardDescription>
-                  </div>
+              <div className="flex items-start gap-4">
+                <div className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-brass-base/40 bg-guild-stone text-brass-light shadow-inner">
+                  <Icon className="h-5 w-5" />
                 </div>
-              </CardHeader>
-            </Card>
+                <div className="min-w-0">
+                  <h3 className="font-serif text-lg font-bold text-parchment-100">
+                    {title}
+                  </h3>
+                  <p className="mt-1 text-sm leading-relaxed text-parchment-300">
+                    {description}
+                  </p>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       </section>
 
-      {/* FORM */}
+      {/* FORM: CONTRATTO DI GILDA */}
       <section
         ref={recruitmentRef}
-        className="mx-auto w-full max-w-2xl px-4 pb-14 sm:px-6 sm:pb-16"
+        className="mx-auto w-full max-w-2xl px-4 pb-20 sm:px-6 sm:pb-24"
       >
-        <Card className="border-barber-gold/30 bg-card/90 shadow-[0_0_40px_rgba(251,191,36,0.08)]">
-          <CardHeader>
-            <CardTitle className="text-2xl text-barber-gold">
-              Unisciti alla Locanda
-            </CardTitle>
-            <CardDescription className="text-barber-paper/70">
-              Lascia i tuoi dati: ti contattiamo per la prossima avventura.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+        <div className="card-guild-stone rounded-2xl p-7 sm:p-9 shadow-2xl">
+          <div className="corner-ornament-tl" />
+          <div className="corner-ornament-tr" />
+          <div className="corner-ornament-bl" />
+          <div className="corner-ornament-br" />
+
+          <div className="text-center mb-6">
+            <span className="text-[11px] font-serif uppercase tracking-[0.25em] text-brass-base">
+              ✦ Registro dei Nuovi Arrivi ✦
+            </span>
+            <h2 className="mt-2 font-serif text-2xl font-extrabold text-gold-relief sm:text-3xl">
+              Firma il Bando di Locanda
+            </h2>
+            <p className="mt-1.5 text-xs text-parchment-300 sm:text-sm">
+              Lascia i tuoi dati: i corvi della Gilda ti contatteranno per la prossima avventura.
+            </p>
+          </div>
+
+          <div>
             {submitted ? (
-              <div className="rounded-lg border border-barber-gold/25 bg-barber-dark/70 p-6 text-center">
-                <p className="text-lg font-medium text-barber-gold">
-                  La Gilda ha ricevuto il tuo messaggio.
+              <div className="rounded-xl border border-brass-base/40 bg-guild-oak/80 p-8 text-center shadow-lg">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-brass-base bg-crimson-base text-brass-light">
+                  ✦
+                </div>
+                <p className="font-serif text-xl font-bold text-gold-relief">
+                  La Gilda ha registrato il tuo nome.
                 </p>
-                <p className="mt-2 text-barber-paper/80">
-                  Prepara i dadi, ti scriveremo presto.
+                <p className="mt-2 text-sm text-parchment-300">
+                  Lucidate i dadi e tenete pronta la spada. Ti scriveremo a breve.
                 </p>
               </div>
             ) : (
-            <form onSubmit={onSubmit} className="space-y-5" noValidate>
-              <div className="space-y-2">
-                <Label htmlFor="scopri-name" className="text-barber-paper">
-                  Nome / Nickname
-                </Label>
-                <Input
-                  id="scopri-name"
-                  inputMode="text"
-                  autoComplete="name"
-                  placeholder="Es. Sir Brancaleone"
-                  className="h-12 bg-barber-dark/70 text-barber-paper placeholder:text-barber-paper/50"
-                  disabled={isSubmitting}
-                  {...register("name", {
-                    required: "Inserisci un nome o nickname.",
-                    minLength: { value: 2, message: "Minimo 2 caratteri." },
-                  })}
-                />
-                <FieldError message={errors.name?.message} />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="scopri-email" className="text-barber-paper">
-                  Email
-                </Label>
-                <Input
-                  id="scopri-email"
-                  type="email"
-                  inputMode="email"
-                  autoComplete="email"
-                  placeholder="tua@email.com"
-                  className="h-12 bg-barber-dark/70 text-barber-paper placeholder:text-barber-paper/50"
-                  disabled={isSubmitting}
-                  {...register("email", {
-                    required: "Inserisci una email valida.",
-                    pattern: {
-                      value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                      message: "Email non valida.",
-                    },
-                  })}
-                />
-                <FieldError message={errors.email?.message} />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="scopri-experience" className="text-barber-paper">
-                  Esperienza
-                </Label>
-                <select
-                  id="scopri-experience"
-                  className="h-12 w-full rounded-md border border-barber-gold/25 bg-barber-dark/70 px-3 text-base text-barber-paper shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-barber-gold/40 disabled:opacity-60"
-                  disabled={isSubmitting}
-                  {...register("experience", { required: true })}
-                >
-                  <option value="first_time">Prima volta in assoluto</option>
-                  <option value="some">Ho giocato qualche volta</option>
-                  <option value="veteran">Veterano navigato</option>
-                </select>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <input
-                  id="scopri-consent"
-                  type="checkbox"
-                  className="mt-1 h-5 w-5 rounded border border-barber-gold/30 bg-barber-dark/70 text-barber-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-barber-gold/40"
-                  disabled={isSubmitting}
-                  {...register("consent", {
-                    validate: (v) =>
-                      v ? true : "Serve l'accettazione per essere ricontattato.",
-                  })}
-                />
-                <div className="min-w-0">
-                  <Label
-                    htmlFor="scopri-consent"
-                    className="text-sm leading-relaxed text-barber-paper"
-                  >
-                    Accetto di ricevere comunicazioni.
+              <form onSubmit={onSubmit} className="space-y-5" noValidate>
+                <div className="space-y-2">
+                  <Label htmlFor="scopri-name" className="text-xs font-serif uppercase tracking-wider text-brass-light">
+                    Nome / Nickname dell&apos;Eroe
                   </Label>
-                  <FieldError message={errors.consent?.message} />
+                  <Input
+                    id="scopri-name"
+                    inputMode="text"
+                    autoComplete="name"
+                    placeholder="Es. Sir Brancaleone"
+                    className="h-12 border-guild-border bg-guild-void/80 text-parchment-100 placeholder:text-parchment-500/50 focus:border-brass-base"
+                    disabled={isSubmitting}
+                    {...register("name", {
+                      required: "Inserisci un nome o nickname.",
+                      minLength: { value: 2, message: "Minimo 2 caratteri." },
+                    })}
+                  />
+                  <FieldError message={errors.name?.message} />
                 </div>
-              </div>
 
-              <Button
-                type="submit"
-                disabled={isSubmitting || !consent}
-                className="h-12 w-full bg-barber-red text-barber-paper hover:bg-barber-red/90 disabled:opacity-60"
-              >
-                {isSubmitting ? "Invio ai corvi..." : "Invia la tua Candidatura"}
-              </Button>
+                <div className="space-y-2">
+                  <Label htmlFor="scopri-email" className="text-xs font-serif uppercase tracking-wider text-brass-light">
+                    Indirizzo di Contatto (Email)
+                  </Label>
+                  <Input
+                    id="scopri-email"
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    placeholder="cavaliere@regno.it"
+                    className="h-12 border-guild-border bg-guild-void/80 text-parchment-100 placeholder:text-parchment-500/50 focus:border-brass-base"
+                    disabled={isSubmitting}
+                    {...register("email", {
+                      required: "Inserisci una email valida.",
+                      pattern: {
+                        value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                        message: "Email non valida.",
+                      },
+                    })}
+                  />
+                  <FieldError message={errors.email?.message} />
+                </div>
 
-              <p className="text-xs leading-relaxed text-barber-paper/60">
-                Tip: i campi sono grandi per essere tappati senza zoom. Niente spam,
-                solo aggiornamenti utili.
-              </p>
-            </form>
+                <div className="space-y-2">
+                  <Label htmlFor="scopri-experience" className="text-xs font-serif uppercase tracking-wider text-brass-light">
+                    Esperienza al Tavolo
+                  </Label>
+                  <select
+                    id="scopri-experience"
+                    className="h-12 w-full rounded-md border border-guild-border bg-guild-void/80 px-3 text-sm text-parchment-100 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-base/40 disabled:opacity-60"
+                    disabled={isSubmitting}
+                    {...register("experience", { required: true })}
+                  >
+                    <option value="first_time" className="bg-guild-stone text-parchment-100">
+                      Prima volta in assoluto (voglio imparare)
+                    </option>
+                    <option value="some" className="bg-guild-stone text-parchment-100">
+                      Ho giocato qualche volta (conosco le basi)
+                    </option>
+                    <option value="veteran" className="bg-guild-stone text-parchment-100">
+                      Veterano navigato (conosco la 5e a memoria)
+                    </option>
+                  </select>
+                </div>
+
+                <div className="flex items-start gap-3 pt-1">
+                  <input
+                    id="scopri-consent"
+                    type="checkbox"
+                    className="mt-1 h-4 w-4 rounded border-guild-border bg-guild-void text-brass-base focus:ring-brass-base"
+                    disabled={isSubmitting}
+                    {...register("consent", {
+                      validate: (v) =>
+                        v ? true : "Serve l'accettazione per essere ricontattato.",
+                    })}
+                  />
+                  <div className="min-w-0">
+                    <Label
+                      htmlFor="scopri-consent"
+                      className="text-xs leading-relaxed text-parchment-300"
+                    >
+                      Accetto di ricevere comunicazioni e missive dalla Gilda.
+                    </Label>
+                    <FieldError message={errors.consent?.message} />
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || !consent}
+                  size="lg"
+                  variant="wax"
+                  className="mt-2 h-12 w-full text-sm font-serif uppercase tracking-widest font-bold shadow-lg disabled:opacity-50"
+                >
+                  {isSubmitting ? "Invio missiva..." : "Sigilla e Invia"}
+                </Button>
+
+                <p className="text-center text-[11px] text-parchment-500">
+                  Niente spam, solo notifiche sui tavoli aperti e nuove quest.
+                </p>
+              </form>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </section>
     </main>
   );

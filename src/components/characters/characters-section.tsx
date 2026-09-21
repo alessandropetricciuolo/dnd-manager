@@ -85,8 +85,13 @@ export function CharactersSection({
     return (
       <div className="space-y-6">
         {!hideActions ? (
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <h2 className="text-lg font-semibold text-barber-paper">Personaggi</h2>
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-barber-gold/20 pb-4">
+            <div>
+              <h2 className="font-cinzel text-xl font-bold tracking-wider text-gold-relief">Registro Personaggi</h2>
+              <p className="text-xs text-barber-paper/65">
+                {characters.length} {characters.length === 1 ? "eroe registrato" : "eroi registrati"} nella gilda
+              </p>
+            </div>
             <div className="flex flex-wrap items-center gap-2">
               <DownloadCampaignSheetsButton campaignId={campaignId} characters={characters} />
               <ImportCharactersFromCatalogDialog campaignId={campaignId} />
@@ -95,16 +100,27 @@ export function CharactersSection({
           </div>
         ) : null}
         {characters.length === 0 ? (
-          <p className="rounded-xl border border-barber-gold/30 bg-barber-dark/80 px-6 py-8 text-center text-barber-paper/70">
-            Nessun personaggio creato. Clicca &quot;Nuovo personaggio&quot; per aggiungerne uno.
-          </p>
+          <div className="card-guild-stone relative rounded-xl p-8 text-center">
+            <span className="corner-ornament-tl" />
+            <span className="corner-ornament-tr" />
+            <span className="corner-ornament-bl" />
+            <span className="corner-ornament-br" />
+            <p className="font-cinzel text-lg font-medium text-barber-gold/90">Nessun eroe convocato al tavolo</p>
+            <p className="mt-2 text-sm text-barber-paper/70">
+              Nessun personaggio creato. Clicca &quot;Nuovo personaggio&quot; o importa dal catalogo per aggiungerne uno.
+            </p>
+          </div>
         ) : isLongCampaign ? (
           <div className="space-y-6">
             {groupedCharacters.map((group) => (
               <section key={group.label} className="space-y-3">
-                <h3 className="border-b border-barber-gold/20 pb-2 text-sm font-semibold uppercase tracking-wide text-barber-gold/90">
-                  {group.label}
-                </h3>
+                <div className="flex items-center gap-2 border-b border-barber-gold/25 pb-2">
+                  <span className="h-2 w-2 rotate-45 border border-barber-gold/70 bg-barber-gold/30" />
+                  <h3 className="font-cinzel text-sm font-semibold tracking-wider text-barber-gold/95">
+                    {group.label}
+                  </h3>
+                  <span className="text-xs text-barber-paper/50">({group.items.length})</span>
+                </div>
                 <div className="grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3 xl:grid-cols-4">
                   {group.items.map((char) => (
                     <CharacterCardGm
@@ -149,9 +165,16 @@ export function CharactersSection({
 
   if (!myCharacter) {
     return (
-      <div className="rounded-xl border border-barber-gold/40 bg-barber-dark/80 px-6 py-12 text-center">
-        <p className="text-barber-paper/90 text-lg">
-          Il Master sta ancora preparando i destini. Attendi l&apos;assegnazione del tuo eroe.
+      <div className="card-guild-stone relative rounded-xl p-10 text-center">
+        <span className="corner-ornament-tl" />
+        <span className="corner-ornament-tr" />
+        <span className="corner-ornament-bl" />
+        <span className="corner-ornament-br" />
+        <p className="font-cinzel text-xl font-semibold text-gold-relief">
+          I destini sono in preparazione
+        </p>
+        <p className="mt-2 text-sm text-barber-paper/75">
+          Il Dungeon Master sta forgiando la tua scheda. Attendi l&apos;assegnazione del tuo eroe per visualizzare il registro.
         </p>
       </div>
     );
@@ -159,7 +182,10 @@ export function CharactersSection({
 
   return (
     <div className="space-y-6">
-      <h2 className="text-lg font-semibold text-barber-paper">Il Mio Personaggio</h2>
+      <div className="border-b border-barber-gold/20 pb-3">
+        <h2 className="font-cinzel text-xl font-bold tracking-wider text-gold-relief">Il Mio Personaggio</h2>
+        <p className="text-xs text-barber-paper/60">Dossier araldico dell&apos;avventuriero</p>
+      </div>
       <CharacterCardPlayer
         character={myCharacter}
         isLongCampaign={isLongCampaign}

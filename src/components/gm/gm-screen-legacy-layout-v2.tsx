@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Calendar, Flag, MessageCircle, Images, Headphones } from "lucide-react";
+import { Calendar, Dices, Flag, MessageCircle, Images, Headphones, LayoutGrid, Swords } from "lucide-react";
 import { GmScreenMapRegia } from "./gm-screen-map-regia";
 import { SecretWhispersSheet } from "./secret-whispers-sheet";
 import { GmGallerySheet } from "./gm-gallery-sheet";
@@ -22,6 +22,8 @@ import { formatSessionInRome } from "@/lib/session-datetime";
 import { it } from "date-fns/locale";
 import { useGmAudioForge } from "@/lib/gm-audio-forge/use-gm-audio-forge";
 import { GmScreenBoard, getLegacyPreset } from "@/components/gm/screen-grid";
+import { GmTacticalScreen } from "./screen-tactical/gm-tactical-screen";
+import { cn } from "@/lib/utils";
 
 type GmScreenLegacyLayoutV2Props = {
   campaignId: string;
@@ -50,7 +52,24 @@ export function GmScreenLegacyLayoutV2({
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [audioForgeOpen, setAudioForgeOpen] = useState(false);
   const [spotifyEmbedPlaylistId, setSpotifyEmbedPlaylistId] = useState<string | null>(null);
+  const [screenView, setScreenView] = useState<"tactical" | "grid">("tactical");
   const audioForge = useGmAudioForge(campaignId);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`gm_screen_view_${campaignId}`);
+      if (saved === "grid" || saved === "tactical") {
+        setScreenView(saved);
+      }
+    } catch {}
+  }, [campaignId]);
+
+  const handleScreenViewChange = (view: "tactical" | "grid") => {
+    setScreenView(view);
+    try {
+      localStorage.setItem(`gm_screen_view_${campaignId}`, view);
+    } catch {}
+  };
 
   const loadSessions = useCallback(async () => {
     const result = await getCampaignSessionsForGm(campaignId);
@@ -116,31 +135,74 @@ export function GmScreenLegacyLayoutV2({
       </div>
 
       <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-amber-600/20 px-2 py-1">
-          <Calendar className="h-3 w-3 text-amber-400/80" />
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-300">GM 2.0</span>
-          <Select
-            value={selectedSessionId ?? "none"}
-            onValueChange={(value) => setSelectedSessionId(value === "none" ? null : value)}
-          >
-            <SelectTrigger className="h-6 max-w-[14rem] border-amber-600/30 bg-zinc-900 px-2 text-[10px] text-zinc-200">
-              <SelectValue placeholder="Sessione" />
-            </SelectTrigger>
-            <SelectContent className="border-amber-600/20 bg-zinc-900">
-              <SelectItem value="none" className="text-[11px] text-zinc-300 focus:bg-amber-600/20 focus:text-zinc-100">
-                Nessuna sessione
-              </SelectItem>
-              {sessions.map((session) => (
-                <SelectItem
-                  key={session.id}
-                  value={session.id}
-                  className="text-[11px] text-zinc-300 focus:bg-amber-600/20 focus:text-zinc-100"
-                >
-                  {formatSessionLabel(session)}
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-brass-base/20 bg-gradient-to-r from-[#140e09] via-[#1a120c] to-[#120d09] px-3 py-1.5 shadow-md">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Crest & Title */}
+            <div className="flex items-center gap-2 pr-2 border-r border-brass-base/25">
+              <div className="relative flex h-6 w-6 items-center justify-center rounded border border-brass-light/50 bg-gradient-to-br from-amber-600/30 to-amber-950/80 shadow-[0_0_8px_rgba(217,119,6,0.3)]">
+                <Dices className="h-3.5 w-3.5 text-brass-light" />
+              </div>
+              <h1 className="font-cinzel text-xs font-bold uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-brass-light via-amber-200 to-amber-400">
+                GM Screen 2.0
+              </h1>
+            </div>
+
+            {/* View Switcher: Tactical vs Grid */}
+            <div className="inline-flex items-center rounded border border-brass-base/30 bg-[#0e0906] p-0.5 shadow-inner">
+              <button
+                type="button"
+                onClick={() => handleScreenViewChange("tactical")}
+                className={cn(
+                  "flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-cinzel font-semibold transition-all",
+                  screenView === "tactical"
+                    ? "bg-gradient-to-r from-amber-700/90 to-amber-800/90 text-parchment-100 shadow-sm border border-brass-light/40"
+                    : "text-parchment-400 hover:text-parchment-100 hover:bg-brass-base/10"
+                )}
+                title="Plancia Tattica da Combattimento"
+              >
+                <Swords className="h-3 w-3 text-amber-300" />
+                <span>Plancia Tattica</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleScreenViewChange("grid")}
+                className={cn(
+                  "flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-cinzel font-semibold transition-all",
+                  screenView === "grid"
+                    ? "bg-gradient-to-r from-amber-700/90 to-amber-800/90 text-parchment-100 shadow-sm border border-brass-light/40"
+                    : "text-parchment-400 hover:text-parchment-100 hover:bg-brass-base/10"
+                )}
+                title="Griglia Modulare Personalizzabile"
+              >
+                <LayoutGrid className="h-3 w-3 text-amber-300" />
+                <span>Griglia Modulare</span>
+              </button>
+            </div>
+
+            <Select
+              value={selectedSessionId ?? "none"}
+              onValueChange={(value) => setSelectedSessionId(value === "none" ? null : value)}
+            >
+              <SelectTrigger className="h-6 max-w-[14rem] border-brass-base/30 bg-zinc-900 px-2 text-[10px] text-zinc-200">
+                <SelectValue placeholder="Sessione" />
+              </SelectTrigger>
+              <SelectContent className="border-amber-600/20 bg-zinc-900">
+                <SelectItem value="none" className="text-[11px] text-zinc-300 focus:bg-amber-600/20 focus:text-zinc-100">
+                  Nessuna sessione
                 </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+                {sessions.map((session) => (
+                  <SelectItem
+                    key={session.id}
+                    value={session.id}
+                    className="text-[11px] text-zinc-300 focus:bg-amber-600/20 focus:text-zinc-100"
+                  >
+                    {formatSessionLabel(session)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {selectedSessionId && (
             <Button
               type="button"
@@ -167,17 +229,26 @@ export function GmScreenLegacyLayoutV2({
         )}
 
         <div className="min-h-0 flex-1 overflow-hidden p-1">
-          <GmScreenBoard
-            campaignId={campaignId}
-            currentUserId={currentUserId}
-            campaignType={campaignType}
-            selectedSessionId={selectedSessionId}
-            mode="session"
-            onModeChange={() => {}}
-            lockMode
-            presetFactory={getLegacyPreset}
-            sheetOpeners={sheetOpeners}
-          />
+          {screenView === "tactical" ? (
+            <GmTacticalScreen
+              campaignId={campaignId}
+              currentUserId={currentUserId}
+              campaignType={campaignType}
+              selectedSessionId={selectedSessionId}
+            />
+          ) : (
+            <GmScreenBoard
+              campaignId={campaignId}
+              currentUserId={currentUserId}
+              campaignType={campaignType}
+              selectedSessionId={selectedSessionId}
+              mode="session"
+              onModeChange={() => {}}
+              lockMode
+              presetFactory={getLegacyPreset}
+              sheetOpeners={sheetOpeners}
+            />
+          )}
         </div>
 
         <SecretWhispersSheet

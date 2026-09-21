@@ -11,15 +11,17 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground hover:bg-primary/90",
+          "bg-crimson-base text-parchment-100 hover:bg-crimson-hover shadow-sm border border-crimson-base/80 active:scale-[0.98] transition-all",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         outline:
-          "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+          "border border-brass-base/40 text-brass-base bg-guild-stone/60 hover:bg-brass-base/15 hover:border-brass-base/70 transition-all",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
+          "bg-brass-base text-guild-void font-semibold hover:bg-brass-base/90 shadow-sm transition-all",
+        ghost: "hover:bg-guild-oak hover:text-brass-base text-parchment-300 transition-colors",
+        link: "text-brass-base underline-offset-4 hover:underline",
+        wax: "btn-wax-seal text-parchment-100 font-semibold tracking-wide",
+        stone: "bg-guild-oak border border-guild-border text-parchment-100 hover:bg-guild-oak-highlight hover:border-guild-border-light transition-all",
       },
       size: {
         default: "h-10 px-4 py-2",

@@ -134,19 +134,15 @@ function NavItem({ value, active, disabled, locked, onSelect, variant }: NavItem
         aria-label={meta.label}
         title={meta.label}
         className={cn(
-          "inline-flex shrink-0 flex-col items-center justify-center gap-1 rounded-lg border px-2.5 py-2 min-w-[3.5rem] transition-colors",
+          "inline-flex shrink-0 flex-col items-center justify-center gap-1 rounded-lg border px-2.5 py-2 min-w-[3.5rem] transition-colors font-serif uppercase tracking-wider",
           disabled && "cursor-not-allowed opacity-50",
-          isGm
-            ? active
-              ? "border-violet-400/50 bg-violet-500/20 text-violet-200"
-              : "border-transparent bg-barber-dark/40 text-violet-200/70 hover:bg-violet-500/10"
-            : active
-              ? "border-barber-gold/45 bg-barber-gold/20 text-barber-gold"
-              : "border-transparent bg-barber-dark/40 text-barber-paper/70 hover:bg-barber-gold/10 hover:text-barber-gold"
+          active
+            ? "border-brass-base/50 bg-brass-base/20 text-brass-light font-bold"
+            : "border-transparent bg-guild-void/40 text-parchment-300 hover:bg-brass-base/10 hover:text-brass-light"
         )}
       >
         <Icon className="h-[1.15rem] w-[1.15rem] shrink-0" />
-        <span className="max-w-[3.75rem] truncate text-[10.5px] font-medium leading-none">
+        <span className="max-w-[3.75rem] truncate text-[10px] font-semibold leading-none">
           {meta.shortLabel}
         </span>
       </button>
@@ -160,18 +156,14 @@ function NavItem({ value, active, disabled, locked, onSelect, variant }: NavItem
         disabled={disabled}
         onClick={() => !disabled && onSelect(value)}
         className={cn(
-          "inline-flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-colors",
+          "inline-flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-serif uppercase tracking-wider font-semibold transition-colors",
           disabled && "cursor-not-allowed opacity-50",
-          isGm
-            ? active
-              ? "border-violet-400/50 bg-violet-500/20 text-violet-200"
-              : "border-violet-500/30 bg-barber-dark/80 text-violet-200/80 hover:bg-violet-500/15"
-            : active
-              ? "border-barber-gold/50 bg-barber-gold/20 text-barber-gold"
-              : "border-barber-gold/25 bg-barber-dark/60 text-barber-paper/80 hover:border-barber-gold/40 hover:text-barber-gold"
+          active
+            ? "border-brass-base/60 bg-brass-base/25 text-brass-light font-bold"
+            : "border-brass-base/20 bg-guild-void/60 text-parchment-300 hover:border-brass-base/40 hover:text-brass-light"
         )}
       >
-        <Icon className="h-4 w-4 shrink-0" />
+        <Icon className="h-3.5 w-3.5 shrink-0 text-brass-base" />
         {meta.label}
       </button>
     );
@@ -183,29 +175,23 @@ function NavItem({ value, active, disabled, locked, onSelect, variant }: NavItem
       disabled={disabled}
       onClick={() => !disabled && onSelect(value)}
       className={cn(
-        "group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors",
+        "group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-xs font-serif uppercase tracking-wider font-semibold transition-colors",
         disabled && "cursor-not-allowed opacity-50",
-        isGm
-          ? active
-            ? "bg-violet-500/15 text-violet-200 ring-1 ring-inset ring-violet-400/30"
-            : "text-violet-200/75 hover:bg-violet-500/10 hover:text-violet-100"
-          : active
-            ? "bg-barber-gold/15 text-barber-gold ring-1 ring-inset ring-barber-gold/35"
-            : "text-barber-paper/75 hover:bg-barber-gold/10 hover:text-barber-gold"
+        active
+          ? "bg-brass-base/15 text-brass-light ring-1 ring-inset ring-brass-base/40 font-bold"
+          : "text-parchment-300 hover:bg-brass-base/10 hover:text-brass-light"
       )}
     >
       <Icon
         className={cn(
           "h-4 w-4 shrink-0",
           active
-            ? isGm
-              ? "text-violet-300"
-              : "text-barber-gold"
-            : "text-barber-paper/45 group-hover:text-barber-gold/80"
+            ? "text-brass-light"
+            : "text-parchment-500 group-hover:text-brass-light"
         )}
       />
       <span className="min-w-0 flex-1 truncate">{meta.label}</span>
-      {active ? <ChevronRight className="h-4 w-4 shrink-0 opacity-60" /> : null}
+      {active ? <ChevronRight className="h-4 w-4 shrink-0 opacity-80 text-brass-light" /> : null}
     </button>
   );
 }
@@ -237,15 +223,15 @@ function CampaignInfoSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="flex w-full flex-col border-barber-gold/25 bg-barber-dark text-barber-paper sm:max-w-md"
+        className="flex w-full flex-col border-brass-base/30 bg-guild-oak text-parchment-100 sm:max-w-md"
       >
-        <SheetHeader className="shrink-0 border-b border-barber-gold/15 pb-4 text-left">
-          <p className="text-xs font-medium uppercase tracking-[0.25em] text-barber-gold/70">
-            La campagna
+        <SheetHeader className="shrink-0 border-b border-brass-base/20 pb-4 text-left">
+          <p className="text-[10px] font-serif uppercase tracking-[0.25em] text-brass-base">
+            ✦ Cronache di Campagna ✦
           </p>
-          <SheetTitle className="font-serif text-xl text-barber-paper">{campaignName}</SheetTitle>
+          <SheetTitle className="font-serif text-xl font-bold text-gold-relief">{campaignName}</SheetTitle>
           {campaignTypeLabel ? (
-            <span className="mt-2 inline-flex w-fit rounded-full border border-barber-gold/40 bg-barber-gold/10 px-3 py-0.5 text-xs font-medium text-barber-gold">
+            <span className="mt-2 inline-flex w-fit rounded-full border border-brass-base/40 bg-guild-void px-3 py-0.5 text-[10px] font-mono uppercase tracking-wider text-brass-light">
               {campaignTypeLabel}
             </span>
           ) : null}
@@ -470,20 +456,20 @@ export function CampaignWorkspace({
           className="flex min-h-0 flex-1 flex-col lg:flex-row"
         >
           {/* Nav rail — desktop */}
-          <aside className="hidden min-h-0 w-52 shrink-0 flex-col border-b border-barber-gold/15 bg-barber-dark/40 lg:flex lg:w-56 lg:border-b-0 lg:border-r xl:w-60">
+          <aside className="hidden min-h-0 w-52 shrink-0 flex-col border-b border-guild-border bg-guild-stone/60 lg:flex lg:w-56 lg:border-b-0 lg:border-r xl:w-60">
             <nav className="flex flex-col gap-0.5 p-3">
-              <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-barber-paper/40">
-                Sezioni
+              <p className="mb-2 px-3 text-[10px] font-serif uppercase tracking-wider text-brass-base/80">
+                ✦ Sezioni di Gilda
               </p>
               {renderNav("rail")}
             </nav>
-            <div className="mt-auto border-t border-barber-gold/10 p-3">
+            <div className="mt-auto border-t border-guild-border/80 p-3">
               <button
                 type="button"
                 onClick={() => setInfoOpen(true)}
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-barber-paper/70 transition-colors hover:bg-barber-gold/10 hover:text-barber-gold"
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-xs font-serif uppercase tracking-wider text-parchment-300 transition-colors hover:bg-brass-base/10 hover:text-brass-light"
               >
-                <Info className="h-4 w-4 shrink-0" />
+                <Info className="h-4 w-4 shrink-0 text-brass-base" />
                 Sinossi e dettagli
               </button>
             </div>

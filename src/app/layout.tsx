@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display, UnifrakturMaguntia } from "next/font/google";
+import { Cinzel, JetBrains_Mono, Plus_Jakarta_Sans, UnifrakturMaguntia } from "next/font/google";
 import NextTopLoader from "nextjs-toploader";
 import Script from "next/script";
 import "./globals.css";
@@ -9,14 +9,22 @@ import { LayoutConditionalNavbar } from "@/components/layout-conditional-navbar"
 import { AuthHashErrorRedirect } from "@/components/auth/auth-hash-error-redirect";
 import { CampaignNavigationProvider } from "@/components/campaigns/campaign-navigation-context";
 
-const inter = Inter({
+const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-sans",
+  display: "swap",
 });
 
-const playfair = Playfair_Display({
+const cinzel = Cinzel({
   subsets: ["latin"],
-  variable: "--font-serif",
+  variable: "--font-cinzel",
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  display: "swap",
 });
 
 const unifrakturMissions = UnifrakturMaguntia({
@@ -38,7 +46,7 @@ export default function RootLayout({
   return (
     <html lang="it" className="dark">
       <body
-        className={`${inter.variable} ${playfair.variable} ${unifrakturMissions.variable} font-sans antialiased`}
+        className={`${plusJakarta.variable} ${cinzel.variable} ${jetbrainsMono.variable} ${unifrakturMissions.variable} font-sans antialiased selection:bg-brass-base/30 selection:text-parchment-100`}
       >
         <Script
           src="https://embeds.iubenda.com/widgets/e7d80735-aa56-4d5b-b82d-fe7ee6ce61d6.js"
@@ -61,7 +69,7 @@ export default function RootLayout({
   }, 200);
 })();`}
         </Script>
-        <NextTopLoader color="#D4AF37" showSpinner={false} />
+        <NextTopLoader color="#c89d49" showSpinner={false} />
         <CampaignNavigationProvider>
           <LayoutConditionalNavbar navbar={<Navbar />}>
             <AuthHashErrorRedirect />

@@ -18,12 +18,13 @@ import { FiveeStatblockView } from "@/components/gm/screen-grid/renderers/fivee-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { useGmScreenBoard } from "../gm-screen-board-context";
+import { useGmScreenBoardOptional } from "../gm-screen-board-context";
 
 type MonsterStatPanelProps = {
   entityId?: string;
   name?: string;
   bestiaryChunkId?: string;
+  campaignId?: string;
 };
 
 type WikiMonsterHit = { id: string; name: string; hp: number };
@@ -56,8 +57,14 @@ function wikiEntityToMarkdown(entity: {
   return lines.join("\n");
 }
 
-export function MonsterStatPanel({ entityId, name, bestiaryChunkId }: MonsterStatPanelProps) {
-  const { campaignId } = useGmScreenBoard();
+export function MonsterStatPanel({
+  entityId,
+  name,
+  bestiaryChunkId,
+  campaignId: propCampaignId,
+}: MonsterStatPanelProps) {
+  const board = useGmScreenBoardOptional();
+  const campaignId = propCampaignId ?? board?.campaignId ?? "";
   const [query, setQuery] = useState(name ?? "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

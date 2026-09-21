@@ -532,7 +532,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
   ) : undefined;
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-barber-dark">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-guild-void text-parchment-100 font-sans">
       <CampaignWorkspace
         campaignId={campaign.id}
         isAdmin={isAdmin}
@@ -565,20 +565,21 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
             renderSessioniTab ? (
               <>
               {isGmOrAdmin && preClosedSession && (
-                <div className="mb-4 rounded-lg border border-amber-500/70 bg-amber-950/40 px-4 py-3 text-sm text-amber-50">
+                <div className="card-guild-stone mb-4 rounded-xl border border-brass-base/40 p-4 text-sm text-parchment-100 shadow-lg">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <p className="font-semibold">
-                        C&apos;è una sessione in sospeso da chiudere.
+                      <p className="font-serif font-bold text-brass-light">
+                        ✦ C&apos;è una sessione in sospeso da chiudere.
                       </p>
-                      <p className="text-xs text-amber-200/80">
+                      <p className="text-xs text-parchment-300">
                         {preClosedSession.title ?? "Sessione senza titolo"}
                       </p>
                     </div>
                     <Button
                       asChild
                       size="sm"
-                      className="bg-amber-500 text-slate-900 hover:bg-amber-400"
+                      variant="wax"
+                      className="text-xs font-serif uppercase tracking-wider font-bold"
                     >
                       <Link
                         href={`/campaigns/${campaign.id}/gm-screen?sessionId=${preClosedSession.id}&resume=1`}
@@ -590,24 +591,24 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
                 </div>
               )}
               {isGmOrAdmin && !(campaign.is_public ?? false) && (
-                <div className="mb-4 rounded-lg border border-amber-500/50 bg-amber-950/30 px-4 py-3 text-sm text-amber-200">
-                  <strong>Campagna privata.</strong> I player non vedono le sessioni in calendario e non possono prenotarsi. Usa il pulsante &quot;Privata&quot; in alto per renderla pubblica e permettere le prenotazioni.
+                <div className="card-guild-stone mb-4 rounded-xl border border-brass-base/30 p-4 text-xs text-brass-light/90">
+                  <strong className="font-serif text-brass-light">✦ Campagna privata:</strong> I player non vedono le sessioni in calendario e non possono prenotarsi. Usa il pulsante &quot;Privata&quot; in alto per renderla pubblica.
                 </div>
               )}
               {!isGmOrAdmin && campaign.type === "long" && !isCampaignMember && (
-                <div className="mb-4 rounded-lg border border-barber-gold/40 bg-barber-gold/10 px-4 py-3">
-                  <p className="mb-2 text-sm text-barber-gold">
-                    Iscriviti prima alla campagna Long per poter prenotare le sessioni.
+                <div className="card-guild-stone mb-4 rounded-xl border border-brass-base/40 p-5 shadow-lg">
+                  <p className="mb-2 font-serif text-sm font-bold text-gold-relief">
+                    ✦ Iscriviti alla Campagna per prenotare le sessioni al tavolo
                   </p>
                   {!longRegistrationsOpen ? (
-                    <p className="mb-2 text-xs text-amber-200/90">
-                      Le iscrizioni sono chiuse in questo momento.
+                    <p className="mb-2 text-xs text-parchment-400">
+                      Le iscrizioni al bando sono momentaneamente chiuse.
                     </p>
                   ) : null}
                   <JoinLongCampaignButton
                     campaignId={campaign.id}
                     registrationsOpen={longRegistrationsOpen}
-                    className="h-8 bg-barber-red text-xs text-barber-paper hover:bg-barber-red/90"
+                    className="btn-wax-seal h-9 text-xs font-serif uppercase tracking-widest font-bold text-parchment-100 shadow-md"
                   />
                 </div>
               )}
@@ -659,21 +660,26 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
             renderMappeTab && hasPlayedCampaign ? (
               <>
                 {isGmOrAdmin && (
-                  <details className="group mb-10 overflow-hidden rounded-xl border border-barber-gold/30 bg-barber-dark/90 shadow-inner">
-                    <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-4 hover:bg-barber-gold/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-barber-gold md:px-6 [&::-webkit-details-marker]:hidden">
-                      <MapIcon className="h-5 w-5 shrink-0 text-barber-gold" aria-hidden />
-                      <span className="text-base font-semibold text-barber-paper md:text-lg">
-                        Mappa operativa
+                  <details className="card-guild-stone group relative mb-8 overflow-hidden rounded-2xl border-2 border-brass-base/40 shadow-2xl transition-all">
+                    <div className="corner-ornament-tl" />
+                    <div className="corner-ornament-tr" />
+                    <div className="corner-ornament-bl" />
+                    <div className="corner-ornament-br" />
+
+                    <summary className="flex cursor-pointer list-none items-center gap-2.5 px-5 py-4 hover:bg-brass-base/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brass-base md:px-6 [&::-webkit-details-marker]:hidden">
+                      <MapIcon className="h-5 w-5 shrink-0 text-brass-light" aria-hidden />
+                      <span className="font-serif text-base font-bold text-gold-relief md:text-lg">
+                        Plancia Tattica Operativa (Mappa Mondo)
                       </span>
-                      <span className="hidden text-xs text-barber-paper/55 sm:inline">
-                        Griglia mondo · portali · posizioni PG · solo GM / Admin
+                      <span className="hidden text-xs text-parchment-400 sm:inline">
+                        · Griglia tattica, portali dimensionali e posizioni pedine PG
                       </span>
                       <ChevronDown
-                        className="ml-auto h-5 w-5 shrink-0 text-barber-gold/70 transition-transform group-open:rotate-180"
+                        className="ml-auto h-5 w-5 shrink-0 text-brass-base transition-transform group-open:rotate-180"
                         aria-hidden
                       />
                     </summary>
-                    <div className="border-t border-barber-gold/20 px-4 pb-4 pt-4 md:px-6 md:pb-6">
+                    <div className="border-t border-brass-base/20 px-4 pb-4 pt-4 md:px-6 md:pb-6">
                       {worldOperationalMapUrl ? (
                         <InteractiveMap
                           campaignId={campaign.id}
@@ -683,14 +689,14 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
                           parties={eligibleParties}
                         />
                       ) : (
-                        <div className="rounded-lg border border-dashed border-barber-gold/35 bg-barber-dark/50 px-5 py-8 text-center text-sm text-barber-paper/70">
+                        <div className="rounded-xl border border-dashed border-brass-base/40 bg-guild-stone/50 px-5 py-8 text-center text-sm text-parchment-300">
                           <p>
-                            Carica una mappa con tipo{" "}
-                            <strong className="text-barber-gold">Mondo</strong> per usare la griglia,
-                            registrare i portali e spostare i personaggi.
+                            Carica una mappa contrassegnata come tipo{" "}
+                            <strong className="text-brass-light font-serif">Mondo</strong> per attivare la griglia operativa,
+                            registrare i portali e posizionare le pedine del party.
                           </p>
-                          <p className="mt-2 text-xs text-barber-paper/50">
-                            Usa il pulsante &quot;Carica mappa&quot; qui sopra e scegli categoria Mondo.
+                          <p className="mt-2 text-xs text-parchment-400">
+                            Usa il pulsante &quot;Carica mappa&quot; nella barra superiore e seleziona la categoria Mondo.
                           </p>
                         </div>
                       )}
