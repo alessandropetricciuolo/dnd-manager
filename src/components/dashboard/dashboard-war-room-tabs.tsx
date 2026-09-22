@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CalendarDays, Shield, Compass, ScrollText, Sparkles, Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +27,65 @@ export function DashboardWarRoomTabs({
   counts,
 }: DashboardWarRoomTabsProps) {
   const [activeTab, setActiveTab] = useState<WarRoomTabKey>("calendar");
+
+  // Ascolta click su elementi con data-switch-tab e sincronizza con hash/query params
+  useEffect(() => {
+    function resolveTab(key: string | null): WarRoomTabKey | null {
+      if (!key) return null;
+      const normalized = key.toLowerCase().replace("#", "").trim();
+      if (normalized === "calendar" || normalized === "calendario") return "calendar";
+      if (normalized === "my-campaigns" || normalized === "mie-saghe" || normalized === "saghe") return "my-campaigns";
+      if (normalized === "all-campaigns" || normalized === "bacheca" || normalized === "bandi" || normalized === "avventure") return "all-campaigns";
+      if (normalized === "sessions" || normalized === "sessioni" || normalized === "biglietti" || normalized === "prenotazioni") return "sessions";
+      return null;
+    }
+
+    function switchTabWithScroll(targetTab: WarRoomTabKey) {
+      setActiveTab(targetTab);
+      requestAnimationFrame(() => {
+        const el = document.getElementById("war-room-workspace");
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
+    }
+
+    // Check iniziale da query param o hash
+    if (typeof window !== "undefined") {
+      const searchTab = resolveTab(new URLSearchParams(window.location.search).get("tab"));
+      const hashTab = resolveTab(window.location.hash);
+      const initial = searchTab || hashTab;
+      if (initial) {
+        setActiveTab(initial);
+      }
+    }
+
+    function onHashChange() {
+      const target = resolveTab(window.location.hash);
+      if (target) {
+        switchTabWithScroll(target);
+      }
+    }
+
+    function onGlobalClick(e: MouseEvent) {
+      const trigger = (e.target as HTMLElement).closest("[data-switch-tab]") as HTMLElement | null;
+      if (trigger) {
+        const requested = trigger.getAttribute("data-switch-tab");
+        const resolved = resolveTab(requested);
+        if (resolved) {
+          e.preventDefault();
+          switchTabWithScroll(resolved);
+        }
+      }
+    }
+
+    window.addEventListener("hashchange", onHashChange);
+    document.addEventListener("click", onGlobalClick);
+    return () => {
+      window.removeEventListener("hashchange", onHashChange);
+      document.removeEventListener("click", onGlobalClick);
+    };
+  }, []);
 
   const tabs: {
     id: WarRoomTabKey;
@@ -58,14 +117,14 @@ export function DashboardWarRoomTabs({
     },
     {
       id: "sessions",
-      label: isGmOrAdmin ? "Registro Master" : "I Miei Biglietti",
-      sublabel: isGmOrAdmin ? "Storico & presenze" : "Pass di gioco confermati",
+      label: isGmOrAdmin ? "Registro Master" : "Le Mie Sessioni",
+      sublabel: isGmOrAdmin ? "Storico & presenze" : "Sessioni prenotate & storico",
       icon: ScrollText,
     },
   ];
 
   return (
-    <div className="w-full space-y-6">
+    <div id="war-room-workspace" className="w-full space-y-6">
       {/* Tabletop Segmented Controller / Brass Rail Switchboard */}
       <div className="card-guild-stone relative rounded-2xl border-2 border-brass-base/40 p-2 shadow-2xl backdrop-blur-md">
         <div className="corner-ornament-tl" />
@@ -185,12 +244,12 @@ export function DashboardWarRoomTabs({
             <div className="flex items-center justify-between border-b border-brass-base/20 pb-3">
               <div>
                 <h2 className="font-serif text-xl font-bold text-gold-relief sm:text-2xl">
-                  {isGmOrAdmin ? "Cronache e Storico del Master" : "I Tuoi Biglietti & Sigilli di Sessione"}
+                  {isGmOrAdmin ? "Cronache e Storico del Master" : "Le Tue Sessioni & Convocazioni"}
                 </h2>
                 <p className="mt-1 text-xs text-parchment-300">
                   {isGmOrAdmin
                     ? "Riepilogo delle sessioni svolte, presenze registrate e note di tavolo."
-                    : "Verifica lo stato delle tue prenotazioni, gli orari e le convocazioni."}
+                    : "Riepilogo delle sessioni a cui sei iscritto, prossimi appuntamenti al tavolo e storico presenze."}
                 </p>
               </div>
             </div>

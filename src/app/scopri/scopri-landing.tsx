@@ -1,10 +1,12 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { Dices, Map, Shield } from "lucide-react";
+import { ChevronRight, Dices, Map, Shield } from "lucide-react";
+import { useSupabaseUser } from "@/hooks/use-supabase-user";
 
 import { submitLeadAction } from "@/lib/actions/leads";
 import { Button } from "@/components/ui/button";
@@ -31,6 +33,7 @@ function FieldError({ message }: { message?: string }) {
 }
 
 export function ScopriLanding() {
+  const { user } = useSupabaseUser();
   const recruitmentRef = useRef<HTMLDivElement | null>(null);
 
   const promises = useMemo(
@@ -134,20 +137,35 @@ export function ScopriLanding() {
             virtuali.
           </p>
 
-          <div className="mt-8 flex flex-col items-center gap-3">
-            <Button
-              type="button"
-              onClick={scrollToForm}
-              size="lg"
-              variant="wax"
-              className="h-12 w-full max-w-sm text-base shadow-xl tracking-wider font-serif uppercase font-bold"
-            >
-              Firma il Contratto di Gilda
-            </Button>
-            <p className="text-xs text-parchment-500">
-              Nessun muro di testo. Pochi tap e il tuo nome è all&apos;albo.
-            </p>
-          </div>
+          {user ? (
+            <div className="mt-8 flex flex-col items-center gap-3">
+              <Link
+                href="/dashboard"
+                className="btn-wax-seal flex h-12 w-full max-w-sm items-center justify-center gap-2 rounded-xl text-base shadow-xl tracking-wider font-serif uppercase font-bold text-parchment-100 hover:scale-[1.02] transition-all"
+              >
+                <span>Vai alla tua Dashboard</span>
+                <ChevronRight className="h-4 w-4" />
+              </Link>
+              <p className="text-xs text-brass-base font-serif">
+                ✦ Fai già parte della Gilda Barber & Dragons
+              </p>
+            </div>
+          ) : (
+            <div className="mt-8 flex flex-col items-center gap-3">
+              <Button
+                type="button"
+                onClick={scrollToForm}
+                size="lg"
+                variant="wax"
+                className="h-12 w-full max-w-sm text-base shadow-xl tracking-wider font-serif uppercase font-bold"
+              >
+                Firma il Contratto di Gilda
+              </Button>
+              <p className="text-xs text-parchment-500">
+                Nessun muro di testo. Pochi tap e il tuo nome è all&apos;albo.
+              </p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -205,15 +223,38 @@ export function ScopriLanding() {
               ✦ Registro dei Nuovi Arrivi ✦
             </span>
             <h2 className="mt-2 font-serif text-2xl font-extrabold text-gold-relief sm:text-3xl">
-              Firma il Bando di Locanda
+              {user ? "Sei Già un Eroe di Gilda" : "Firma il Bando di Gilda"}
             </h2>
             <p className="mt-1.5 text-xs text-parchment-300 sm:text-sm">
-              Lascia i tuoi dati: i corvi della Gilda ti contatteranno per la prossima avventura.
+              {user
+                ? "Il tuo profilo è già registrato nei tomi di Barber & Dragons."
+                : "Lascia i tuoi dati: i corvi della Gilda ti contatteranno per la prossima avventura."}
             </p>
           </div>
 
           <div>
-            {submitted ? (
+            {user ? (
+              <div className="rounded-xl border border-brass-base/40 bg-guild-oak/80 p-8 text-center shadow-lg">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-brass-base bg-crimson-base text-brass-light font-bold">
+                  ⚔️
+                </div>
+                <p className="font-serif text-xl font-bold text-gold-relief">
+                  La tua spada è già schierata al tavolo
+                </p>
+                <p className="mt-2 text-sm text-parchment-300 max-w-md mx-auto">
+                  Sei autenticato con il tuo profilo. Puoi consultare le saghe attive, vedere il calendario dei tavoli o unirti a una sessione aperta direttamente dalla tua dashboard.
+                </p>
+                <div className="mt-6 flex justify-center">
+                  <Link
+                    href="/dashboard"
+                    className="btn-wax-seal inline-flex items-center gap-2 rounded-xl px-5 py-2.5 font-serif text-xs font-bold uppercase tracking-wider text-parchment-100 shadow-md hover:scale-[1.02] transition-all"
+                  >
+                    <span>Apri la tua Dashboard</span>
+                    <ChevronRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              </div>
+            ) : submitted ? (
               <div className="rounded-xl border border-brass-base/40 bg-guild-oak/80 p-8 text-center shadow-lg">
                 <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-brass-base bg-crimson-base text-brass-light">
                   ✦

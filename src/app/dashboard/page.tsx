@@ -235,7 +235,7 @@ export default async function DashboardPage() {
     ? "Veterano Leggendario"
     : (attendedCount ?? 0) >= 5
     ? "Guerriero Esperto"
-    : "Eroe della Locanda";
+    : "Avventuriero di Gilda";
 
   return (
     <div className="min-h-full w-full bg-guild-void text-parchment-100 font-sans p-4 md:p-8">
@@ -263,7 +263,7 @@ export default async function DashboardPage() {
                 </h1>
                 <p className="mt-1.5 text-sm text-parchment-300 max-w-xl leading-relaxed">
                   {isGmOrAdmin
-                    ? "La plancia di comando della locanda è pronta. Consulta i tavoli aperti, gestisci le cronache e guida gli avventurieri nella mischia."
+                    ? "La plancia di comando della Gilda è pronta. Consulta i tavoli aperti, gestisci le cronache e guida gli avventurieri nella mischia."
                     : "Benvenuto nel cuore operativo della gilda. Controlla le tue prossime sessioni, sfoglia le saghe in corso e rispondi alla chiamata alle armi."}
                 </p>
               </div>
@@ -353,16 +353,26 @@ export default async function DashboardPage() {
               ) : (
                 <div className="py-4 text-center space-y-2">
                   <p className="text-xs text-parchment-300 leading-relaxed">
-                    Nessuna convocazione imminente al tavolo. Consulta il calendario per unirti a una sessione aperta!
+                    Nessuna convocazione imminente al tavolo. Consulta il calendario o la bacheca per unirti a una sessione aperta!
                   </p>
-                  <div className="pt-2">
-                    <Link
-                      href="/scopri"
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-brass-base/50 bg-guild-stone px-3.5 py-1.5 text-xs font-serif font-bold text-brass-light hover:bg-brass-base/20 transition-all"
+                  <div className="pt-2 flex flex-wrap items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      data-switch-tab="all-campaigns"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-brass-base/50 bg-guild-stone px-3.5 py-1.5 text-xs font-serif font-bold text-brass-light hover:bg-brass-base/20 transition-all shadow-sm cursor-pointer"
                     >
+                      <Compass className="h-3.5 w-3.5 text-brass-base" />
                       <span>Esplora Bacheca Bandi</span>
                       <ChevronRight className="h-3 w-3" />
-                    </Link>
+                    </button>
+                    <button
+                      type="button"
+                      data-switch-tab="calendar"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-brass-base/30 bg-guild-stone/50 px-3 py-1.5 text-xs font-serif text-parchment-300 hover:text-parchment-100 hover:border-brass-base/60 transition-all cursor-pointer"
+                    >
+                      <Calendar className="h-3 w-3 text-brass-base" />
+                      <span>Calendario Tavoli</span>
+                    </button>
                   </div>
                 </div>
               )}
@@ -373,9 +383,10 @@ export default async function DashboardPage() {
 
         {/* QUICK TABLETOP UTILITIES DOCK: Rastrelliera di Gilda */}
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Link
-            href="/scopri"
-            className="card-guild-stone group relative rounded-xl border border-brass-base/30 p-4 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:border-brass-base/70"
+          <button
+            type="button"
+            data-switch-tab="all-campaigns"
+            className="card-guild-stone group relative rounded-xl border border-brass-base/30 p-4 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:border-brass-base/70 text-left w-full cursor-pointer"
           >
             <div className="flex items-center gap-2 text-brass-light">
               <Compass className="h-4 w-4" />
@@ -384,7 +395,7 @@ export default async function DashboardPage() {
             <p className="mt-1 text-[11px] text-parchment-400 group-hover:text-parchment-200 transition-colors">
               Iscrizioni & Nuove Saghe
             </p>
-          </Link>
+          </button>
 
           <Link
             href="/hall-of-fame"
@@ -532,7 +543,7 @@ export default async function DashboardPage() {
           <div className="flex items-center gap-2 border-b border-brass-base/20 pb-3">
             <ScrollText className="h-4 w-4 text-brass-light" />
             <h3 className="font-serif text-sm font-bold uppercase tracking-wider text-brass-light">
-              ✦ Statuto e Codice di Condotta della Locanda
+              ✦ Statuto e Codice di Condotta di Gilda
             </h3>
           </div>
 
