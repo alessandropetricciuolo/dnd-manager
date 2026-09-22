@@ -23,7 +23,7 @@ import { CampaignPartyMembersPanel } from "@/components/campaigns/campaign-party
 import { GmHomepage } from "@/components/gm/gm-homepage";
 import { GmScreenLauncher } from "@/components/gm/gm-screen-launcher";
 import Link from "next/link";
-import { ChevronDown, Map as MapIcon } from "lucide-react";
+import { ChevronDown, Map as MapIcon, Smartphone } from "lucide-react";
 import { InteractiveMap, type MapCharacterPin } from "@/components/map/InteractiveMap";
 import type { Portal } from "@/lib/nav/navigation-math";
 import { MissionBoardSection } from "@/components/missions/mission-board-section";
@@ -442,7 +442,17 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
     <CreateCharacterDialog campaignId={campaign.id} initialOpen={openCreateDialogOnLoad} />
   ) : undefined;
   const gmPrimaryAction = isGmOrAdmin ? (
-    <div className="flex items-center gap-1.5">
+    <div className="flex flex-wrap items-center justify-end gap-1.5">
+      <Button
+        asChild
+        variant="outline"
+        className="h-9 border-amber-500/50 text-amber-200 hover:bg-amber-500/20"
+      >
+        <Link href={`/campaigns/${campaign.id}/gm-exp-mobile`}>
+          <Smartphone className="mr-2 h-4 w-4" />
+          Mini GM · EXP
+        </Link>
+      </Button>
       <GmScreenLauncher
         campaignId={campaign.id}
         label="Apri Schermo GM"
