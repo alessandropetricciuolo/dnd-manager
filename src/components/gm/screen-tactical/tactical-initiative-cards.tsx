@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import {
+  ArrowDownUp,
+  Edit3,
   Heart,
   Shield,
   Skull,
@@ -27,8 +29,11 @@ type TacticalInitiativeCardsProps = {
   onSelectTurn: (index: number) => void;
   onNextTurn: () => void;
   onPrevTurn: () => void;
+  onSort?: () => void;
   onUpdateHp: (id: string, delta: number) => void;
   onSetHp: (id: string, hp: number) => void;
+  onSetInitiative?: (id: string, initiative: number) => void;
+  onSetAc?: (id: string, ac: number) => void;
   onToggleDead?: (id: string) => void;
   onToggleCondition: (id: string, conditionId: CombatConditionId) => void;
   onOpenMonsterStat?: (entry: { id: string; name: string; entityId?: string }) => void;
@@ -62,8 +67,11 @@ export function TacticalInitiativeCards({
   onSelectTurn,
   onNextTurn,
   onPrevTurn,
+  onSort,
   onUpdateHp,
   onSetHp,
+  onSetInitiative,
+  onSetAc,
   onToggleDead,
   onToggleCondition,
   onOpenMonsterStat,
@@ -72,6 +80,10 @@ export function TacticalInitiativeCards({
 }: TacticalInitiativeCardsProps) {
   const [editingHpId, setEditingHpId] = useState<string | null>(null);
   const [hpDraft, setHpDraft] = useState<string>("");
+  const [editingInitId, setEditingInitId] = useState<string | null>(null);
+  const [initDraft, setInitDraft] = useState<string>("");
+  const [editingAcId, setEditingAcId] = useState<string | null>(null);
+  const [acDraft, setAcDraft] = useState<string>("");
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-[#110d0a]/90 text-parchment-100">
@@ -87,6 +99,20 @@ export function TacticalInitiativeCards({
         </div>
 
         <div className="flex items-center gap-1">
+          {onSort && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onSort}
+              disabled={entries.length === 0}
+              className="h-6 border-amber-600/40 px-2 text-[10px] font-cinzel text-amber-200 hover:bg-amber-600/20"
+              title="Ordina combattenti per iniziativa (dal più alto al più basso)"
+            >
+              <ArrowDownUp className="mr-1 h-3 w-3" />
+              Ordina
+            </Button>
+          )}
           <Button
             type="button"
             variant="outline"
@@ -154,7 +180,7 @@ export function TacticalInitiativeCards({
                 <button
                   type="button"
                   onClick={() => onSelectTurn(index)}
-                  title={`Seleziona turno di ${entry.name}`}
+                  title={`Imposta come turno attivo (${entry.name})`}
                   className={cn(
                     "flex w-10 sm:w-11 shrink-0 flex-col items-center justify-center rounded-l-lg border-r border-brass-base/20 font-cinzel text-base sm:text-lg font-black transition-colors select-none",
                     isCurrent
@@ -165,7 +191,7 @@ export function TacticalInitiativeCards({
                   )}
                 >
                   <span>{index + 1}</span>
-                  <span className="text-[8px] font-mono tracking-tighter opacity-70">INIT</span>
+                  <span className="text-[8px] font-mono tracking-tighter opacity-70">TURNO</span>
                 </button>
 
                 {/* 2. Scheda Vitals (HP, AC, Condizioni, Barra Grafica) */}
@@ -183,6 +209,11 @@ export function TacticalInitiativeCards({
                               type="number"
                               value={hpDraft}
                               onChange={(e) => setHpDraft(e.target.value)}
+                              onBlur={() => {
+                                const val = parseInt(hpDraft, 10);
+                                if (!isNaN(val)) onSetHp(entry.id, val);
+                                setEditingHpId(null);
+                              }}
                               onKeyDown={(e) => {
                                 if (e.key === "Enter") {
                                   const val = parseInt(hpDraft, 10);
@@ -194,6 +225,7 @@ export function TacticalInitiativeCards({
                               }}
                               className="h-4 w-12 text-[9px] px-1 bg-black border-amber-600 text-white"
                               autoFocus
+                              onFocus={(e) => e.target.select()}
                             />
                           </div>
                         ) : (
@@ -268,11 +300,49 @@ export function TacticalInitiativeCards({
                       <span className="text-[9px] font-cinzel font-bold text-brass-light/80 uppercase tracking-wider mb-0.5">
                         AC
                       </span>
-                      <div className="tactical-ac-shield" title={`Classe Armatura: ${entry.armorClass}`}>
-                        <span className="font-cinzel text-xs font-black text-parchment-100">
-                          {entry.armorClass}
-                        </span>
-                      </div>
+                      {editingAcId === entry.id ? (
+                        <Input
+                          type="number"
+                          value={acDraft}
+                          onChange={(e) => setAcDraft(e.target.value)}
+                          onBlur={() => {
+                            const val = parseInt(acDraft, 10);
+                            if (!isNaN(val)) onSetAc?.(entry.id, val);
+                            setEditingAcId(null);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              const val = parseInt(acDraft, 10);
+                              if (!isNaN(val)) onSetAc?.(entry.id, val);
+                              setEditingAcId(null);
+                            } else if (e.key === "Escape") {
+                              setEditingAcId(null);
+                            }
+                          }}
+                          className="h-6 w-10 text-xs font-mono font-bold px-1 bg-black border-amber-600 text-amber-200 text-center"
+                          autoFocus
+                          onFocus={(e) => e.target.select()}
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (onSetAc) {
+                              setEditingAcId(entry.id);
+                              setAcDraft(String(entry.armorClass));
+                            }
+                          }}
+                          className={cn(
+                            "tactical-ac-shield transition-all",
+                            onSetAc && "hover:ring-1 hover:ring-amber-500/60 cursor-pointer"
+                          )}
+                          title={`Classe Armatura: ${entry.armorClass}${onSetAc ? " (Clicca per modificare)" : ""}`}
+                        >
+                          <span className="font-cinzel text-xs font-black text-parchment-100">
+                            {entry.armorClass}
+                          </span>
+                        </button>
+                      )}
                     </div>
 
                     {/* Vitals: Condizioni */}
@@ -343,8 +413,66 @@ export function TacticalInitiativeCards({
                     >
                       {entry.name}
                     </button>
-                    <div className="flex items-center justify-between text-[10px] text-parchment-400 mt-0.5">
-                      <span className="font-mono text-amber-300 font-semibold">{entry.initiative} init</span>
+                    <div className="flex items-center justify-between gap-1 text-[10px] text-parchment-400 mt-0.5">
+                      {editingInitId === entry.id ? (
+                        <div className="flex items-center gap-1">
+                          <Input
+                            type="number"
+                            value={initDraft}
+                            onChange={(e) => setInitDraft(e.target.value)}
+                            onBlur={() => {
+                              const val = parseInt(initDraft, 10);
+                              if (!isNaN(val)) onSetInitiative?.(entry.id, val);
+                              setEditingInitId(null);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                const val = parseInt(initDraft, 10);
+                                if (!isNaN(val)) onSetInitiative?.(entry.id, val);
+                                setEditingInitId(null);
+                              } else if (e.key === "Tab") {
+                                e.preventDefault();
+                                const val = parseInt(initDraft, 10);
+                                if (!isNaN(val)) onSetInitiative?.(entry.id, val);
+                                const targetIndex = e.shiftKey ? index - 1 : index + 1;
+                                if (targetIndex >= 0 && targetIndex < entries.length) {
+                                  setEditingInitId(entries[targetIndex].id);
+                                  setInitDraft(String(entries[targetIndex].initiative));
+                                } else {
+                                  setEditingInitId(null);
+                                }
+                              } else if (e.key === "Escape") {
+                                setEditingInitId(null);
+                              }
+                            }}
+                            className="h-5 w-14 text-xs font-mono font-bold px-1 py-0 bg-black border-amber-500 text-amber-300 text-center rounded focus:ring-1 focus:ring-amber-400"
+                            autoFocus
+                            onFocus={(e) => e.target.select()}
+                          />
+                          <span className="text-[9px] font-mono text-amber-400/80">init</span>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (onSetInitiative) {
+                              setEditingInitId(entry.id);
+                              setInitDraft(String(entry.initiative));
+                            }
+                          }}
+                          className={cn(
+                            "group/init flex items-center gap-1 rounded border border-amber-600/25 bg-amber-950/25 px-1.5 py-0.5 -ml-0.5 text-left font-mono text-[10px] font-semibold text-amber-300 transition-all",
+                            onSetInitiative && "hover:border-amber-500/60 hover:bg-amber-950/60 hover:text-amber-200 cursor-pointer shadow-sm"
+                          )}
+                          title="Clicca per inserire/modificare il valore di iniziativa"
+                        >
+                          <span className="font-bold">{entry.initiative}</span>
+                          <span className="text-[9px] text-amber-400/80 font-normal">init</span>
+                          {onSetInitiative && (
+                            <Edit3 className="h-2.5 w-2.5 text-amber-400/50 group-hover/init:text-amber-300 transition-colors ml-0.5" />
+                          )}
+                        </button>
+                      )}
                       <span className="truncate max-w-[70px] text-[9px] text-parchment-500 italic">
                         {entry.characterClass || (entry.type === "pc" ? "Eroe" : "Mostro")}
                       </span>

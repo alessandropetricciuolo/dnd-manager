@@ -1236,11 +1236,14 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
             onSelectTurn={(idx) => setCurrentTurnIndex(idx)}
             onNextTurn={nextTurn}
             onPrevTurn={prevTurn}
+            onSort={sortByInitiative}
             onUpdateHp={(id, delta) => {
               const e = entries.find((x) => x.id === id);
               if (e) void applyHpChange(id, e.hp + delta);
             }}
             onSetHp={(id, hp) => void applyHpChange(id, hp)}
+            onSetInitiative={(id, initiative) => updateEntry(id, { initiative })}
+            onSetAc={(id, armorClass) => updateEntry(id, { armorClass: Math.max(0, armorClass) })}
             onToggleDead={(id) => void toggleDead(id)}
             onToggleCondition={(id, cId) => {
               const e = entries.find((x) => x.id === id);
