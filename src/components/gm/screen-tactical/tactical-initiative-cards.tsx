@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import {
-  ArrowDownUp,
   Edit3,
   Heart,
   Shield,
@@ -27,8 +26,8 @@ type TacticalInitiativeCardsProps = {
   currentTurnIndex: number;
   currentRound?: number;
   onSelectTurn: (index: number) => void;
-  onNextTurn: () => void;
-  onPrevTurn: () => void;
+  onNextTurn?: () => void;
+  onPrevTurn?: () => void;
   onSort?: () => void;
   onUpdateHp: (id: string, delta: number) => void;
   onSetHp: (id: string, hp: number) => void;
@@ -63,11 +62,7 @@ const CONDITION_ICONS: Record<string, { icon: string; color: string }> = {
 export function TacticalInitiativeCards({
   entries,
   currentTurnIndex,
-  currentRound = 1,
   onSelectTurn,
-  onNextTurn,
-  onPrevTurn,
-  onSort,
   onUpdateHp,
   onSetHp,
   onSetInitiative,
@@ -76,7 +71,6 @@ export function TacticalInitiativeCards({
   onToggleCondition,
   onOpenMonsterStat,
   onDeleteEntry,
-  onOpenAddModal,
 }: TacticalInitiativeCardsProps) {
   const [editingHpId, setEditingHpId] = useState<string | null>(null);
   const [hpDraft, setHpDraft] = useState<string>("");
@@ -87,65 +81,6 @@ export function TacticalInitiativeCards({
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-[#110d0a]/90 text-parchment-100">
-      {/* Testata Combat Tracker */}
-      <div className="shrink-0 flex flex-wrap items-center justify-between gap-2 border-b border-brass-base/20 bg-[#17110c] px-3 py-2">
-        <div className="flex items-center gap-2">
-          <span className="font-cinzel text-xs sm:text-sm font-extrabold tracking-wider text-brass-light uppercase">
-            Combat & Initiative Tracker
-          </span>
-          <span className="rounded border border-amber-600/30 bg-amber-950/40 px-1.5 py-0.5 font-mono text-[10px] font-bold text-amber-300">
-            Round {currentRound}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-1">
-          {onSort && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onSort}
-              disabled={entries.length === 0}
-              className="h-6 border-amber-600/40 px-2 text-[10px] font-cinzel text-amber-200 hover:bg-amber-600/20"
-              title="Ordina combattenti per iniziativa (dal più alto al più basso)"
-            >
-              <ArrowDownUp className="mr-1 h-3 w-3" />
-              Ordina
-            </Button>
-          )}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onPrevTurn}
-            disabled={entries.length === 0}
-            className="h-6 border-brass-base/30 px-2 text-[10px] font-cinzel text-brass-light hover:bg-brass-base/15"
-          >
-            Indietro
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            onClick={onNextTurn}
-            disabled={entries.length === 0}
-            className="h-6 bg-guild-gold font-cinzel text-[10px] font-bold text-guild-black hover:bg-gold-light"
-          >
-            Turno Succ. ➔
-          </Button>
-          {onOpenAddModal && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onOpenAddModal}
-              className="h-6 border-amber-600/40 px-2 text-[10px] font-cinzel text-amber-200 hover:bg-amber-600/20"
-            >
-              + Combattente
-            </Button>
-          )}
-        </div>
-      </div>
-
       {/* Lista Tessere Combattenti */}
       <div className="flex-1 overflow-y-auto p-2 sm:p-3 space-y-2">
         {entries.length === 0 ? (

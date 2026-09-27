@@ -999,6 +999,8 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
             size="sm"
             className="h-7 border-amber-600/40 px-2 text-xs text-amber-200 hover:bg-amber-600/20"
             onClick={sortByInitiative}
+            disabled={entries.length === 0}
+            title="Ordina combattenti per iniziativa (dal punteggio più alto al più basso)"
           >
             <ArrowDownUp className="mr-1 h-3 w-3" />
             Ordina
@@ -1020,9 +1022,10 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
                 size="sm"
                 className="h-7 border-amber-600/40 px-2 text-xs text-amber-200 hover:bg-amber-600/20"
                 onClick={nextTurn}
+                title="Passa al turno successivo"
               >
                 <SkipForward className="mr-1 h-3 w-3" />
-                Turno
+                Turno Succ.
               </Button>
               <Button
                 variant="outline"
@@ -1232,11 +1235,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
           <TacticalInitiativeCards
             entries={entries}
             currentTurnIndex={currentTurnIndex}
-            currentRound={roundNumber}
             onSelectTurn={(idx) => setCurrentTurnIndex(idx)}
-            onNextTurn={nextTurn}
-            onPrevTurn={prevTurn}
-            onSort={sortByInitiative}
             onUpdateHp={(id, delta) => {
               const e = entries.find((x) => x.id === id);
               if (e) void applyHpChange(id, e.hp + delta);
@@ -1255,7 +1254,6 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
             }}
             onOpenMonsterStat={onOpenMonsterStat}
             onDeleteEntry={removeEntry}
-            onOpenAddModal={() => setAddMonsterOpen(true)}
           />
         </div>
       ) : (
