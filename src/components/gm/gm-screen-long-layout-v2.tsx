@@ -7,7 +7,6 @@ import { SecretWhispersSheet } from "./secret-whispers-sheet";
 import { GmGallerySheet } from "./gm-gallery-sheet";
 import { GmAudioForgeSheet } from "./gm-audio-forge-sheet";
 import { GmRemoteIntegration } from "./gm-remote-integration";
-import { GmSpotifyEmbedDock } from "./gm-spotify-embed-dock";
 import { GmScreenLongStateProvider, useGmScreenLongState } from "./gm-screen-long-state";
 import { EndSessionWizard } from "@/components/sessions/end-session-wizard";
 import { GmScreenBoard, type GmWorkspaceMode } from "@/components/gm/screen-grid";
@@ -505,7 +504,6 @@ function LongWorkspace({
           spotifyEmbedPlaylistId={spotifyEmbedPlaylistId}
           onSpotifyEmbedPlaylistIdChange={setSpotifyEmbedPlaylistId}
         />
-        <GmSpotifyEmbedDock playlistId={spotifyEmbedPlaylistId} audioSheetOpen={audioForgeOpen} />
       </main>
     </div>
   );

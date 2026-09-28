@@ -4,7 +4,7 @@ export const SPOTIFY_PKCE_VERIFIER_KEY = "gm-spotify-pkce-verifier";
 export const SPOTIFY_RETURN_PATH_KEY = "gm-spotify-return-path";
 export const SPOTIFY_TOKENS_KEY = "gm-spotify-tokens";
 
-export const SPOTIFY_SCOPES = "streaming user-read-email user-read-private";
+export const SPOTIFY_SCOPES = "streaming user-read-email user-read-private user-modify-playback-state";
 
 export type SpotifyTokenResponse = {
   access_token: string;

@@ -7,7 +7,6 @@ import { SecretWhispersSheet } from "./secret-whispers-sheet";
 import { GmGallerySheet } from "./gm-gallery-sheet";
 import { GmAudioForgeSheet } from "./gm-audio-forge-sheet";
 import { GmRemoteIntegration } from "./gm-remote-integration";
-import { GmSpotifyEmbedDock } from "./gm-spotify-embed-dock";
 import { Button } from "@/components/ui/button";
 import { getCampaignSessionsForGm, type CampaignSessionOption } from "@/app/campaigns/gm-actions";
 import { EndSessionWizard } from "@/components/sessions/end-session-wizard";
@@ -265,7 +264,6 @@ export function GmScreenLegacyLayoutV2({
           spotifyEmbedPlaylistId={spotifyEmbedPlaylistId}
           onSpotifyEmbedPlaylistIdChange={setSpotifyEmbedPlaylistId}
         />
-        <GmSpotifyEmbedDock playlistId={spotifyEmbedPlaylistId} audioSheetOpen={audioForgeOpen} />
       </main>
     </div>
   );

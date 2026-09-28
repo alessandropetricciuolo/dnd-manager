@@ -24,6 +24,8 @@ import type { GmAudioCategory, GmAudioCategoryKind, GmAudioPlaybackMode } from "
 import { normalizeAudioUrl } from "@/lib/gm-audio-forge/url-validation";
 import { GmGlobalAudioCatalog } from "./gm-global-audio-catalog";
 import { GmSpotifyPlayerPanel } from "./gm-spotify-player-panel";
+import { GmSpotifyEmbedDock } from "./gm-spotify-embed-dock";
+import { resumeGmSpotifyPlayer } from "@/lib/gm-audio-forge/audio-events";
 import { GmSfxPadPanel } from "./gm-sfx-pad-panel";
 
 type Props = {
@@ -237,6 +239,7 @@ export function GmAudioForgeSheet({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
+        forceMount
         side="right"
         className="flex w-full max-w-none flex-col border-l border-amber-600/25 bg-zinc-950 p-0 sm:max-w-2xl"
       >
@@ -372,10 +375,14 @@ export function GmAudioForgeSheet({
               )}
             </SectionCard>
 
-            <SectionCard title="Spotify" description="Scegli la playlist attiva. Il player è in basso a destra sul GM screen: collega il tuo account Premium per la musica completa.">
+            <SectionCard title="Spotify" description="Collega l’account, scegli una playlist e controlla la riproduzione qui.">
+              <GmSpotifyEmbedDock playlistId={spotifyEmbedPlaylistId} />
               <GmSpotifyPlayerPanel
                 spotifyEmbedPlaylistId={spotifyEmbedPlaylistId}
-                onSpotifyEmbedPlaylistIdChange={onSpotifyEmbedPlaylistIdChange}
+                onSpotifyEmbedPlaylistIdChange={(id) => {
+                  resumeGmSpotifyPlayer();
+                  onSpotifyEmbedPlaylistIdChange(id);
+                }}
               />
             </SectionCard>
 

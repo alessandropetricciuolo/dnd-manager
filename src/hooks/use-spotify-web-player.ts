@@ -122,6 +122,10 @@ export function useSpotifyWebPlayer() {
     await p.togglePlay();
   }, []);
 
+  const pause = useCallback(async () => {
+    await playerRef.current?.pause();
+  }, []);
+
   const markConnected = useCallback(() => {
     setConnected(true);
   }, []);
@@ -136,5 +140,6 @@ export function useSpotifyWebPlayer() {
     initPlayer,
     playPlaylist,
     togglePlay,
+    pause,
   };
 }

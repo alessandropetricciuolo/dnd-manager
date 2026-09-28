@@ -1,166 +1,96 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronDown, ChevronUp, LogIn, LogOut, Pause, Play } from "lucide-react";
+import { LogIn, LogOut, Pause, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SpotifyEmbedIframe } from "@/components/gm/spotify-embed-iframe";
+import { SpotifyEmbedIframe } from "./spotify-embed-iframe";
 import { useSpotifyWebPlayer } from "@/hooks/use-spotify-web-player";
-import { buildAuthorizeUrl, isSpotifyOAuthConfigured, readStoredTokens } from "@/lib/spotify/oauth-pkce";
-import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { buildAuthorizeUrl, isSpotifyOAuthConfigured } from "@/lib/spotify/oauth-pkce";
+import { GM_AUDIO_SPOTIFY_SELECTED_EVENT, GM_AUDIO_STOP_ALL_EVENT } from "@/lib/gm-audio-forge/audio-events";
 
-type Props = {
-  playlistId: string | null;
-  audioSheetOpen?: boolean;
-};
+type Props = { playlistId: string | null };
 
-/** Player Spotify sul GM screen (solo PC). OAuth opzionale per riproduzione completa Premium. */
-export function GmSpotifyEmbedDock({ playlistId, audioSheetOpen }: Props) {
-  const [open, setOpen] = useState(true);
+/** Resta montato nel foglio Audio anche quando il foglio viene chiuso. */
+export function GmSpotifyEmbedDock({ playlistId }: Props) {
   const [loginPending, setLoginPending] = useState(false);
+  const [loginError, setLoginError] = useState(false);
+  const [embedStopped, setEmbedStopped] = useState(false);
   const spotify = useSpotifyWebPlayer();
+  const { connected, status, playback, error, pause, playPlaylist, togglePlay, disconnect } = spotify;
+  const oauthConfigured = isSpotifyOAuthConfigured();
 
   useEffect(() => {
-    if (readStoredTokens()) spotify.markConnected();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- bootstrap sessione una volta
+    const stop = () => {
+      setEmbedStopped(true);
+      void pause().catch(() => {});
+    };
+    window.addEventListener(GM_AUDIO_STOP_ALL_EVENT, stop);
+    return () => window.removeEventListener(GM_AUDIO_STOP_ALL_EVENT, stop);
+  }, [pause]);
+
+  useEffect(() => { setEmbedStopped(false); }, [playlistId]);
+
+  useEffect(() => {
+    const resume = () => setEmbedStopped(false);
+    window.addEventListener(GM_AUDIO_SPOTIFY_SELECTED_EVENT, resume);
+    return () => window.removeEventListener(GM_AUDIO_SPOTIFY_SELECTED_EVENT, resume);
   }, []);
 
-  // spotify dall'hook ha identità instabile; dipendenze granulari evitano loop.
   useEffect(() => {
-    if (!playlistId || !spotify.connected || spotify.status !== "ready") return;
-    void spotify.playPlaylist(playlistId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- spotify
-  }, [playlistId, spotify.connected, spotify.status, spotify.playPlaylist]);
+    if (playlistId && connected && status === "ready" && !embedStopped) void playPlaylist(playlistId);
+  }, [playlistId, connected, status, embedStopped, playPlaylist]);
 
-  if (!playlistId) return null;
-
-  const oauthConfigured = isSpotifyOAuthConfigured();
-  const track = spotify.playback?.track_window?.current_track;
-  const trackLabel = track
-    ? `${track.name ?? "—"}${track.artists?.length ? ` · ${track.artists.map((a) => a.name).join(", ")}` : ""}`
-    : null;
-
-  const startLogin = () => {
-    if (!oauthConfigured) {
-      toast.message("Configura NEXT_PUBLIC_SPOTIFY_CLIENT_ID oppure accedi dal pulsante nel player embed.");
-      return;
-    }
+  const startLogin = async () => {
     setLoginPending(true);
-    void buildAuthorizeUrl()
-      .then((url) => {
-        window.location.href = url;
-      })
-      .catch(() => {
-        setLoginPending(false);
-        toast.error("Impossibile avviare l’accesso Spotify.");
-      });
+    setLoginError(false);
+    try {
+      window.location.assign(await buildAuthorizeUrl());
+    } catch {
+      setLoginPending(false);
+      setLoginError(true);
+    }
   };
 
-  return (
-    <div
-      className={cn(
-        "pointer-events-auto fixed bottom-3 right-3 flex max-w-[calc(100vw-1.5rem)] flex-col items-end gap-1",
-        audioSheetOpen ? "z-[60]" : "z-40"
-      )}
-    >
-      <Button
-        type="button"
-        size="sm"
-        variant="secondary"
-        className="h-7 border-amber-800/50 bg-zinc-900 text-[10px] text-amber-100"
-        onClick={() => setOpen((o) => !o)}
-      >
-        {open ? <ChevronDown className="mr-1 h-3 w-3" /> : <ChevronUp className="mr-1 h-3 w-3" />}
-        Spotify
-      </Button>
-      <div
-        className={cn(
-          "w-[min(100vw-24px,400px)] overflow-hidden rounded-xl border border-amber-800/50 bg-black/90 shadow-2xl",
-          open
-            ? "relative"
-            : "pointer-events-none fixed left-[-10000px] top-0 z-0 h-[380px] w-[400px] opacity-0"
-        )}
-        aria-hidden={!open}
-      >
-        <div className="space-y-2 border-b border-amber-900/40 bg-zinc-950/90 px-3 py-2">
-          {spotify.connected ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[10px] font-medium uppercase tracking-wide text-emerald-400/90">
-                Account collegato
-              </span>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="h-7 border-amber-800/50 px-2 text-[11px]"
-                disabled={spotify.status !== "ready"}
-                onClick={() => void spotify.togglePlay()}
-              >
-                {spotify.playback?.paused !== false ? (
-                  <Play className="mr-1 h-3 w-3" />
-                ) : (
-                  <Pause className="mr-1 h-3 w-3" />
-                )}
-                Play / Pause
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                className="h-7 px-2 text-[11px] text-zinc-400"
-                onClick={spotify.disconnect}
-              >
-                <LogOut className="mr-1 h-3 w-3" />
-                Esci
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <p className="text-[11px] leading-snug text-zinc-400">
-                Senza accesso senti solo anteprime. Collega il tuo account Spotify Premium per la musica completa.
-              </p>
-              {oauthConfigured ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  className="h-8 w-full bg-[#1DB954] text-xs font-medium text-black hover:bg-[#1ed760]"
-                  disabled={loginPending}
-                  onClick={startLogin}
-                >
-                  <LogIn className="mr-1.5 h-3.5 w-3.5" />
-                  Collega account Spotify
-                </Button>
-              ) : (
-                <p className="text-[10px] text-zinc-500">
-                  Oppure usa <strong className="text-zinc-400">Accedi</strong> nel player qui sotto (Premium).
-                </p>
-              )}
-            </div>
-          )}
-          {trackLabel ? <p className="truncate text-[11px] text-amber-100/80">{trackLabel}</p> : null}
-          {spotify.error ? <p className="text-[10px] text-red-400">{spotify.error}</p> : null}
-        </div>
+  const track = playback?.track_window?.current_track;
+  const trackLabel = track ? `${track.name ?? "Brano"}${track.artists?.length ? ` · ${track.artists.map((artist) => artist.name).join(", ")}` : ""}` : null;
 
-        {!spotify.connected || spotify.status !== "ready" ? (
-          <SpotifyEmbedIframe playlistId={playlistId} height={340} />
+  return (
+    <div className="space-y-3">
+      {connected ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="min-w-0 flex-1 text-sm text-zinc-200">{trackLabel ?? (status === "ready" ? "Account Spotify collegato" : "Connessione al player Spotify…")}</p>
+          <Button type="button" size="sm" variant="outline" disabled={status !== "ready"} onClick={() => void togglePlay()} aria-label={playback?.paused === false ? "Metti Spotify in pausa" : "Riprendi Spotify"}>
+            {playback?.paused === false ? <Pause className="mr-1.5 h-4 w-4" /> : <Play className="mr-1.5 h-4 w-4" />}
+            {playback?.paused === false ? "Pausa" : "Riprendi"}
+          </Button>
+          <Button type="button" size="sm" variant="ghost" onClick={disconnect}><LogOut className="mr-1.5 h-4 w-4" />Scollega</Button>
+        </div>
+      ) : oauthConfigured ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="min-w-0 flex-1 text-sm text-zinc-400">Collega Spotify per ascoltare le playlist dal PC del GM.</p>
+          <Button type="button" size="sm" disabled={loginPending} onClick={() => void startLogin()} className="bg-[#1DB954] text-black hover:bg-[#1ed760]">
+            <LogIn className="mr-1.5 h-4 w-4" />Collega Spotify
+          </Button>
+        </div>
+      ) : (
+        <p className="text-sm text-amber-200">Il collegamento account non è ancora configurato per questa installazione. Puoi usare Accedi nel player Spotify qui sotto.</p>
+      )}
+
+      {loginError ? <p role="alert" className="text-sm text-red-400">Impossibile avviare il collegamento. Riprova.</p> : null}
+      {error ? <p role="alert" className="text-sm text-red-400">{error}</p> : null}
+      {playlistId ? (
+        connected && status === "ready" ? (
+          <Button type="button" size="sm" variant="outline" onClick={() => { setEmbedStopped(false); void playPlaylist(playlistId); }}>
+            <Play className="mr-1.5 h-4 w-4" />Riproduci playlist selezionata
+          </Button>
+        ) : embedStopped ? (
+          <Button type="button" size="sm" variant="outline" onClick={() => setEmbedStopped(false)}>Apri player Spotify</Button>
         ) : (
-          <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 bg-zinc-950 px-4 py-8 text-center">
-            <p className="text-sm text-amber-100/90">Riproduzione dal tuo account Spotify</p>
-            <p className="text-[11px] text-zinc-500">
-              Cambia playlist dal foglio Audio. I controlli sono nella barra sopra.
-            </p>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="mt-2 border-amber-800/50"
-              onClick={() => void spotify.playPlaylist(playlistId)}
-            >
-              Riproduci playlist attiva
-            </Button>
-          </div>
-        )}
-      </div>
+          <SpotifyEmbedIframe playlistId={playlistId} height={352} className="rounded-lg" />
+        )
+      ) : (
+        <p className="text-sm text-zinc-500">Seleziona una playlist per iniziare.</p>
+      )}
     </div>
   );
 }

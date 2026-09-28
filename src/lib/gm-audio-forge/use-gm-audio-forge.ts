@@ -13,6 +13,7 @@ import { isAllowedAudioUrl, toAbsoluteMediaUrl } from "./url-validation";
 import { listGlobalAudioLibraryForGmAction } from "@/app/campaigns/gm-global-audio-actions";
 import { gmGlobalAudioPreviewPath } from "@/lib/gm-global-audio/preview-url";
 import { isUuidString } from "@/lib/gm-remote/protocol";
+import { GM_AUDIO_STOP_ALL_EVENT } from "./audio-events";
 
 /** Categoria sintetica: musica dal catalogo Gilda avviata dal telecomando (proxy). */
 const GM_GLOBAL_REMOTE_MUSIC_CATEGORY_ID = "__gm_global_remote_music__";
@@ -518,6 +519,7 @@ export function useGmAudioForge(campaignId: string) {
     stopMusicInternal();
     stopAllAtmospheresInternal();
     stopAllSfxBackground();
+    if (typeof window !== "undefined") window.dispatchEvent(new Event(GM_AUDIO_STOP_ALL_EVENT));
   }, [stopAllAtmospheresInternal, stopAllSfxBackground, stopMusicInternal]);
 
   const toggleMusicPlayback = useCallback(() => {

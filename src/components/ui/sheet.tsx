@@ -52,12 +52,13 @@ interface SheetContentProps
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   SheetContentProps
->(({ side = "right", className, children, ...props }, ref) => (
-  <SheetPortal>
-    <SheetOverlay />
+>(({ side = "right", className, children, forceMount, ...props }, ref) => (
+  <SheetPortal forceMount={forceMount}>
+    <SheetOverlay forceMount={forceMount} className={forceMount ? "data-[state=closed]:invisible data-[state=closed]:pointer-events-none" : undefined} />
     <DialogPrimitive.Content
       ref={ref}
-      className={cn(sheetVariants({ side }), className)}
+      forceMount={forceMount}
+      className={cn(sheetVariants({ side }), forceMount && "data-[state=closed]:invisible data-[state=closed]:pointer-events-none", className)}
       {...props}
     >
       {children}
