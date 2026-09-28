@@ -62,7 +62,11 @@ export function applyRemoteAudioCommand(forge: GmAudioForgeControls, type: strin
       const lib = forge.library;
       const s = lib.sfxPad.slots.find((x) => x.slotIndex === slot);
       const url = s?.trackUrl?.trim() ?? "";
-      if (url) forge.playSfxUrl(url);
+      if (!url) return;
+      if (s?.trackKind === "atmosphere" && s.libraryRef) {
+        const [categoryId, trackId] = s.libraryRef.split("|");
+        if (categoryId && trackId) forge.togglePadAtmosphere(categoryId, trackId);
+      } else forge.playSfxUrl(url);
       return;
     }
     case "audio.sfx_category_random": {

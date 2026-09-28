@@ -359,8 +359,8 @@ export function GmAudioForgeSheet({
               </div>
             </SectionCard>
 
-            <SectionCard title="Pad SFX" description="Tocca un tasto per lanciare un effetto. Assegna i suoni in Libreria.">
-              <GmSfxPadPanel library={library} setLibrary={setLibrary} playSfxUrl={playSfxUrl} isAllowedAudioUrl={isAllowedAudioUrl} editable={false} />
+            <SectionCard title="Pad audio" description="Tocca un tasto per avviare un SFX o attivare un'atmosfera. Assegna i suoni in Libreria.">
+              <GmSfxPadPanel library={library} setLibrary={setLibrary} playSfxUrl={playSfxUrl} togglePadAtmosphere={forge.togglePadAtmosphere} isAllowedAudioUrl={isAllowedAudioUrl} editable={false} />
             </SectionCard>
           </TabsContent>
 
@@ -489,8 +489,8 @@ export function GmAudioForgeSheet({
           </TabsContent>
 
           <TabsContent value="library" className="mt-0 min-h-0 flex-1 space-y-8 overflow-y-auto overflow-x-hidden pb-2 pr-0.5">
-            <SectionCard title="Configura pad SFX" description="Assegna un suono ai tasti usati nella Regia e sul telecomando.">
-              <GmSfxPadPanel library={library} setLibrary={setLibrary} playSfxUrl={playSfxUrl} isAllowedAudioUrl={isAllowedAudioUrl} />
+            <SectionCard title="Configura pad audio" description="Scegli SFX e atmosfere dalla libreria per i tasti della Regia e del telecomando.">
+              <GmSfxPadPanel library={library} setLibrary={setLibrary} playSfxUrl={playSfxUrl} togglePadAtmosphere={forge.togglePadAtmosphere} isAllowedAudioUrl={isAllowedAudioUrl} />
             </SectionCard>
             {forge.librarySync === "loading" ? (
               <p className="py-8 text-center text-sm text-zinc-400">Caricamento libreria della campagna…</p>
