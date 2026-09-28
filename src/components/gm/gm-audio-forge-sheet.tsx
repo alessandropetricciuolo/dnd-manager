@@ -268,7 +268,7 @@ export function GmAudioForgeSheet({
   const emptyCatsHint = "Crea categorie nella sezione Libreria qui accanto.";
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={onOpenChange} modal={false}>
       <SheetContent
         forceMount
         side="right"
