@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Headphones, Plus, Trash2, Square } from "lucide-react";
+import { Headphones, Plus, Trash2, Square, Play, Pause, SkipForward, SkipBack } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -25,15 +25,15 @@ import { normalizeAudioUrl } from "@/lib/gm-audio-forge/url-validation";
 import { GmGlobalAudioCatalog } from "./gm-global-audio-catalog";
 import { GmSpotifyPlayerPanel } from "./gm-spotify-player-panel";
 import { GmSpotifyEmbedDock } from "./gm-spotify-embed-dock";
-import { resumeGmSpotifyPlayer } from "@/lib/gm-audio-forge/audio-events";
 import { GmSfxPadPanel } from "./gm-sfx-pad-panel";
+import { GM_AUDIO_SPOTIFY_REMOTE_SELECT_EVENT, GM_AUDIO_SPOTIFY_REMOTE_TOGGLE_EVENT, GM_AUDIO_SPOTIFY_STATE_EVENT, GM_AUDIO_STOP_ALL_EVENT, resumeGmSpotifyPlayer, type GmSpotifyPlayerState } from "@/lib/gm-audio-forge/audio-events";
 
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   forge: GmAudioForgeControls;
   spotifyEmbedPlaylistId: string | null;
-  onSpotifyEmbedPlaylistIdChange: (spotifyPlaylistId: string) => void;
+  onSpotifyEmbedPlaylistIdChange: (spotifyPlaylistId: string | null) => void;
 };
 
 function createEmptyCategory(kind: GmAudioCategoryKind): GmAudioCategory {
@@ -139,11 +139,36 @@ export function GmAudioForgeSheet({
 
   const [newKind, setNewKind] = useState<GmAudioCategoryKind>("music");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [spotifyActive, setSpotifyActive] = useState(false);
+  const [spotifyState, setSpotifyState] = useState<GmSpotifyPlayerState>({ ready: false, playing: false, trackLabel: null });
   const [newTrackByCategory, setNewTrackByCategory] = useState<Record<string, { url: string; label: string }>>({});
 
   const musicCats = useMemo(() => library.categories.filter((c) => c.kind === "music"), [library.categories]);
   const atmosCats = useMemo(() => library.categories.filter((c) => c.kind === "atmosphere"), [library.categories]);
   const sfxCats = useMemo(() => library.categories.filter((c) => c.kind === "sfx"), [library.categories]);
+
+  useEffect(() => {
+    const select = (event: Event) => {
+      const id = (event as CustomEvent<string>).detail;
+      if (typeof id === "string") {
+        setSpotifyActive(true);
+        onSpotifyEmbedPlaylistIdChange(id);
+      }
+    };
+    window.addEventListener(GM_AUDIO_SPOTIFY_REMOTE_SELECT_EVENT, select);
+    return () => window.removeEventListener(GM_AUDIO_SPOTIFY_REMOTE_SELECT_EVENT, select);
+  }, [onSpotifyEmbedPlaylistIdChange]);
+
+  useEffect(() => {
+    const state = (event: Event) => setSpotifyState((event as CustomEvent<GmSpotifyPlayerState>).detail);
+    const stop = () => setSpotifyActive(false);
+    window.addEventListener(GM_AUDIO_SPOTIFY_STATE_EVENT, state);
+    window.addEventListener(GM_AUDIO_STOP_ALL_EVENT, stop);
+    return () => {
+      window.removeEventListener(GM_AUDIO_SPOTIFY_STATE_EVENT, state);
+      window.removeEventListener(GM_AUDIO_STOP_ALL_EVENT, stop);
+    };
+  }, []);
 
   const getNewTrackFields = useCallback(
     (categoryId: string) =>
@@ -171,6 +196,7 @@ export function GmAudioForgeSheet({
 
   const removeCategory = useCallback(
     (id: string) => {
+      if (!window.confirm("Eliminare questa categoria e tutte le sue tracce dalla campagna?")) return;
       setLibrary((lib) => ({
         ...lib,
         categories: lib.categories.filter((c) => c.id !== id),
@@ -182,6 +208,7 @@ export function GmAudioForgeSheet({
         delete next[id];
         return next;
       });
+      toast.message("Categoria rimossa.");
     },
     [setLibrary]
   );
@@ -205,13 +232,17 @@ export function GmAudioForgeSheet({
         toast.error("URL non valido. Usa https://… oppure un path assoluto che inizi con /.");
         return;
       }
+      if (library.categories.find((c) => c.id === categoryId)?.tracks.some((t) => t.url === url)) {
+        toast.message("Questa traccia è già nella categoria.");
+        return;
+      }
       setLibrary((lib) => ({
         ...lib,
         categories: lib.categories.map((c) =>
           c.id === categoryId
             ? {
                 ...c,
-                tracks: [...c.tracks, { id: newGmAudioEntityId(), label, url }],
+                tracks: c.tracks.some((t) => t.url === url) ? c.tracks : [...c.tracks, { id: newGmAudioEntityId(), label, url }],
               }
             : c
         ),
@@ -219,7 +250,7 @@ export function GmAudioForgeSheet({
       setNewTrackFields(categoryId, { url: "", label: "" });
       toast.success("Traccia aggiunta.");
     },
-    [getNewTrackFields, isAllowedAudioUrl, setLibrary, setNewTrackFields]
+    [getNewTrackFields, isAllowedAudioUrl, library.categories, setLibrary, setNewTrackFields]
   );
 
   const removeTrack = useCallback(
@@ -252,14 +283,31 @@ export function GmAudioForgeSheet({
           </SheetTitle>
         </SheetHeader>
 
+        <div className="shrink-0 border-b border-amber-900/30 bg-zinc-900/60 px-5 py-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <div className="min-w-0 basis-full sm:basis-auto sm:flex-1">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-400">Player musica · audio sul PC del GM</p>
+              <p className="truncate text-sm text-zinc-100" title={spotifyActive ? (spotifyState.trackLabel ?? "Spotify") : (forge.currentMusicLabel ?? undefined)}>{spotifyActive ? (spotifyState.trackLabel ?? "Spotify · playlist selezionata") : (forge.currentMusicLabel ?? "Nessun brano attivo")}</p>
+              <p className="text-[11px] text-zinc-500">{spotifyActive ? (spotifyState.ready ? (spotifyState.playing ? "Spotify in riproduzione" : "Spotify in pausa") : "Spotify: collega l’account in Sorgenti") : (forge.currentMusicLabel ? (forge.musicPlaying ? "In riproduzione" : "In pausa") : "Scegli musica in Sorgenti")} · Libreria {forge.librarySync === "saved" ? "salvata" : forge.librarySync === "local" ? "solo su questo browser" : forge.librarySync === "loading" ? "in caricamento" : "in salvataggio"}</p>
+            </div>
+            <Button type="button" size="icon" variant="outline" disabled={spotifyActive || !forge.activeMusicCategoryId} onClick={() => forge.skipMusicTrack(-1)} aria-label="Brano precedente"><SkipBack className="h-4 w-4" /></Button>
+            <Button type="button" size="icon" variant="outline" disabled={spotifyActive ? !spotifyState.ready : !forge.currentMusicLabel} onClick={() => spotifyActive ? window.dispatchEvent(new Event(GM_AUDIO_SPOTIFY_REMOTE_TOGGLE_EVENT)) : forge.toggleMusicPlayback()} aria-label={(spotifyActive ? spotifyState.playing : forge.musicPlaying) ? "Metti in pausa" : "Riprendi"}>
+              {(spotifyActive ? spotifyState.playing : forge.musicPlaying) ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+            </Button>
+            <Button type="button" size="icon" variant="outline" disabled={spotifyActive || !forge.activeMusicCategoryId} onClick={() => forge.skipMusicTrack(1)} aria-label="Brano successivo"><SkipForward className="h-4 w-4" /></Button>
+            <Button type="button" size="sm" variant="outline" className="border-red-800/50 text-red-300" onClick={stopAll}><Square className="mr-1.5 h-4 w-4" /> Stop tutto</Button>
+          </div>
+        </div>
+
         <Tabs defaultValue="mixer" className="flex min-h-0 flex-1 flex-col px-4 pb-5 pt-3 sm:px-5">
-          <TabsList className="mb-4 grid h-11 w-full shrink-0 grid-cols-2 gap-1 rounded-xl border border-amber-900/35 bg-zinc-900 p-1 shadow-inner">
+          <TabsList className="mb-4 grid h-11 w-full shrink-0 grid-cols-3 gap-1 rounded-xl border border-amber-900/35 bg-zinc-900 p-1 shadow-inner">
             <TabsTrigger
               value="mixer"
               className="rounded-lg text-sm font-medium text-zinc-400 transition-all data-[state=active]:bg-amber-600/25 data-[state=active]:text-amber-50 data-[state=active]:shadow-sm data-[state=inactive]:hover:text-zinc-300"
             >
-              Mixer
+              Regia
             </TabsTrigger>
+            <TabsTrigger value="sources" className="rounded-lg text-sm font-medium text-zinc-400 data-[state=active]:bg-amber-600/25 data-[state=active]:text-amber-50">Sorgenti</TabsTrigger>
             <TabsTrigger
               value="library"
               className="rounded-lg text-sm font-medium text-zinc-400 transition-all data-[state=active]:bg-amber-600/25 data-[state=active]:text-amber-50 data-[state=active]:shadow-sm data-[state=inactive]:hover:text-zinc-300"
@@ -273,23 +321,7 @@ export function GmAudioForgeSheet({
             forceMount
             className="mt-0 min-h-0 flex-1 space-y-5 overflow-y-auto overflow-x-hidden pb-2 pr-0.5 data-[state=inactive]:hidden"
           >
-            <div className="flex flex-wrap items-center gap-3">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="rounded-lg border-red-800/50 text-red-300 hover:bg-red-950/40"
-                onClick={() => {
-                  stopAll();
-                  toast.message("Tutto fermato.");
-                }}
-              >
-                <Square className="mr-2 h-4 w-4" />
-                Stop tutto
-              </Button>
-            </div>
-
-            <SectionCard title="Volume" description="Controlli master indipendenti per musica, atmosfere ed effetti.">
+            <SectionCard title="Mixer volumi" description="Regola i tre canali che suonano sul PC del GM.">
               <div className="grid gap-6 sm:grid-cols-3">
                 <div className="space-y-2">
                   <Label className="text-xs font-medium text-amber-200/90">Musica</Label>
@@ -326,6 +358,13 @@ export function GmAudioForgeSheet({
                 </div>
               </div>
             </SectionCard>
+
+            <SectionCard title="Pad SFX" description="Tocca un tasto per lanciare un effetto. Assegna i suoni in Libreria.">
+              <GmSfxPadPanel library={library} setLibrary={setLibrary} playSfxUrl={playSfxUrl} isAllowedAudioUrl={isAllowedAudioUrl} editable={false} />
+            </SectionCard>
+          </TabsContent>
+
+          <TabsContent value="sources" forceMount className="mt-0 min-h-0 flex-1 space-y-5 overflow-y-auto overflow-x-hidden pb-2 pr-0.5 data-[state=inactive]:hidden">
 
             <SectionCard title="Musica" description="Una sola categoria attiva. Tocco = play, stesso tocco = stop.">
               {musicCats.length === 0 ? (
@@ -380,18 +419,13 @@ export function GmAudioForgeSheet({
               <GmSpotifyPlayerPanel
                 spotifyEmbedPlaylistId={spotifyEmbedPlaylistId}
                 onSpotifyEmbedPlaylistIdChange={(id) => {
-                  resumeGmSpotifyPlayer();
+                  if (id) {
+                    forge.stopMusic();
+                    setSpotifyActive(true);
+                    resumeGmSpotifyPlayer();
+                  } else setSpotifyActive(false);
                   onSpotifyEmbedPlaylistIdChange(id);
                 }}
-              />
-            </SectionCard>
-
-            <SectionCard title="Pad SFX" description="Dodici slot rapidi. Assegna suoni nella Libreria.">
-              <GmSfxPadPanel
-                library={library}
-                setLibrary={setLibrary}
-                playSfxUrl={playSfxUrl}
-                isAllowedAudioUrl={isAllowedAudioUrl}
               />
             </SectionCard>
 
@@ -455,8 +489,14 @@ export function GmAudioForgeSheet({
           </TabsContent>
 
           <TabsContent value="library" className="mt-0 min-h-0 flex-1 space-y-8 overflow-y-auto overflow-x-hidden pb-2 pr-0.5">
+            <SectionCard title="Configura pad SFX" description="Assegna un suono ai tasti usati nella Regia e sul telecomando.">
+              <GmSfxPadPanel library={library} setLibrary={setLibrary} playSfxUrl={playSfxUrl} isAllowedAudioUrl={isAllowedAudioUrl} />
+            </SectionCard>
+            {forge.librarySync === "loading" ? (
+              <p className="py-8 text-center text-sm text-zinc-400">Caricamento libreria della campagna…</p>
+            ) : (<>
             <SectionCard title="Catalogo Gilda" description="Tracce condivise dagli admin: aggiungile alle tue categorie.">
-              <GmGlobalAudioCatalog library={library} setLibrary={setLibrary} />
+              <GmGlobalAudioCatalog library={library} setLibrary={setLibrary} onPlayMusic={forge.playGlobalCatalogMusicByTrackId} />
             </SectionCard>
 
             <SectionCard title="Categorie campagna" description="Musica, atmosfere ed SFX per questa campagna. URL manuali solo HTTPS.">
@@ -523,7 +563,7 @@ export function GmAudioForgeSheet({
                                   className="rounded-lg border-amber-800/40 bg-zinc-950 text-sm"
                                 />
                               </div>
-                              <div className="space-y-1.5">
+                              {c.kind !== "sfx" ? <div className="space-y-1.5">
                                 <Label className="text-xs text-zinc-400">Riproduzione brani</Label>
                                 <Select
                                   value={c.playbackMode}
@@ -539,7 +579,7 @@ export function GmAudioForgeSheet({
                                     <SelectItem value="loop_one">Loop singolo brano (casuale)</SelectItem>
                                   </SelectContent>
                                 </Select>
-                              </div>
+                              </div> : null}
                             </div>
 
                             {c.kind === "sfx" ? (
@@ -641,10 +681,7 @@ export function GmAudioForgeSheet({
                               size="sm"
                               variant="outline"
                               className="rounded-lg border-red-900/50 text-red-400 hover:bg-red-950/30"
-                              onClick={() => {
-                                removeCategory(c.id);
-                                toast.message("Categoria rimossa.");
-                              }}
+                              onClick={() => removeCategory(c.id)}
                             >
                               <Trash2 className="mr-2 h-3.5 w-3.5" />
                               Elimina categoria
@@ -657,6 +694,7 @@ export function GmAudioForgeSheet({
                 )}
               </div>
             </SectionCard>
+            </>)}
           </TabsContent>
         </Tabs>
       </SheetContent>

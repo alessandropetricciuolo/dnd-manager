@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { GripVertical, RotateCcw, Settings2 } from "lucide-react";
+import { GripVertical, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +24,7 @@ type Props = {
   setLibrary: React.Dispatch<React.SetStateAction<GmAudioForgeLibrary>>;
   playSfxUrl: (url: string) => void;
   isAllowedAudioUrl: (url: string) => boolean;
+  editable?: boolean;
 };
 
 function sortedSlots(lib: GmAudioForgeLibrary): SfxPadSlot[] {
@@ -61,7 +62,7 @@ function mapSlotIndexAfterReorder(from: number, to: number, selected: number): n
 
 const DND_MIME = "application/x-bd-sfx-pad-index";
 
-export function GmSfxPadPanel({ library, setLibrary, playSfxUrl, isAllowedAudioUrl }: Props) {
+export function GmSfxPadPanel({ library, setLibrary, playSfxUrl, isAllowedAudioUrl, editable = true }: Props) {
   const [customize, setCustomize] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const [manualUrlDraft, setManualUrlDraft] = useState("");
@@ -123,7 +124,7 @@ export function GmSfxPadPanel({ library, setLibrary, playSfxUrl, isAllowedAudioU
     }
     const u = slot.trackUrl.trim();
     if (!u) {
-      toast.message("Tasto vuoto. Attiva «Personalizza» per assegnare un suono.");
+      toast.message(editable ? "Tasto vuoto. Attiva «Personalizza» per assegnare un suono." : "Tasto vuoto. Assegna un suono nella scheda Libreria.");
       return;
     }
     playSfxUrl(u);
@@ -150,7 +151,7 @@ export function GmSfxPadPanel({ library, setLibrary, playSfxUrl, isAllowedAudioU
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      {editable ? <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <Switch
             id="sfx-pad-customize"
@@ -180,13 +181,14 @@ export function GmSfxPadPanel({ library, setLibrary, playSfxUrl, isAllowedAudioU
             Ripristina predefinito
           </Button>
         ) : null}
-      </div>
+      </div> : null}
 
-      <p className="text-[11px] leading-relaxed text-zinc-500">
+      {!editable ? <p className="text-xs text-zinc-400">{slots.filter((slot) => slot.trackUrl.trim()).length} di 12 tasti pronti</p> : null}
+      {editable ? <p className="text-[11px] leading-relaxed text-zinc-500">
         {customize
           ? "Tocca un tasto per modificarlo. Scegli un brano dalla libreria o incolla un URL. Trascina per riordinare."
           : "Tocca un’icona per riprodurre. Il volume master SFX è nel Mixer sopra."}
-      </p>
+      </p> : null}
 
       <div
         className={cn(
@@ -261,9 +263,9 @@ export function GmSfxPadPanel({ library, setLibrary, playSfxUrl, isAllowedAudioU
                   {slot.etichetta || `Slot ${idx + 1}`}
                 </span>
               ) : hasSound ? (
-                <span className="line-clamp-2 text-center text-[9px] text-zinc-500">{slot.etichetta}</span>
+                <span className="line-clamp-2 text-center text-[10px] text-zinc-300">{slot.etichetta}</span>
               ) : (
-                <Settings2 className="h-3 w-3 text-zinc-600" aria-hidden />
+                <span className="text-center text-[10px] text-zinc-500">Vuoto</span>
               )}
             </button>
           );

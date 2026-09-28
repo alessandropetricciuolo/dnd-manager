@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { SpotifyEmbedIframe } from "./spotify-embed-iframe";
 import { useSpotifyWebPlayer } from "@/hooks/use-spotify-web-player";
 import { buildAuthorizeUrl, isSpotifyOAuthConfigured } from "@/lib/spotify/oauth-pkce";
-import { GM_AUDIO_SPOTIFY_SELECTED_EVENT, GM_AUDIO_STOP_ALL_EVENT } from "@/lib/gm-audio-forge/audio-events";
+import { GM_AUDIO_SPOTIFY_REMOTE_TOGGLE_EVENT, GM_AUDIO_SPOTIFY_SELECTED_EVENT, GM_AUDIO_SPOTIFY_STATE_EVENT, GM_AUDIO_STOP_ALL_EVENT, type GmSpotifyPlayerState } from "@/lib/gm-audio-forge/audio-events";
 
 type Props = { playlistId: string | null };
 
@@ -37,6 +37,14 @@ export function GmSpotifyEmbedDock({ playlistId }: Props) {
   }, []);
 
   useEffect(() => {
+    const remoteToggle = () => {
+      if (connected && status === "ready") void togglePlay();
+    };
+    window.addEventListener(GM_AUDIO_SPOTIFY_REMOTE_TOGGLE_EVENT, remoteToggle);
+    return () => window.removeEventListener(GM_AUDIO_SPOTIFY_REMOTE_TOGGLE_EVENT, remoteToggle);
+  }, [connected, status, togglePlay]);
+
+  useEffect(() => {
     if (playlistId && connected && status === "ready" && !embedStopped) void playPlaylist(playlistId);
   }, [playlistId, connected, status, embedStopped, playPlaylist]);
 
@@ -53,6 +61,11 @@ export function GmSpotifyEmbedDock({ playlistId }: Props) {
 
   const track = playback?.track_window?.current_track;
   const trackLabel = track ? `${track.name ?? "Brano"}${track.artists?.length ? ` · ${track.artists.map((artist) => artist.name).join(", ")}` : ""}` : null;
+
+  useEffect(() => {
+    const detail: GmSpotifyPlayerState = { ready: connected && status === "ready", playing: playback?.paused === false, trackLabel };
+    window.dispatchEvent(new CustomEvent(GM_AUDIO_SPOTIFY_STATE_EVENT, { detail }));
+  }, [connected, status, playback?.paused, trackLabel]);
 
   return (
     <div className="space-y-3">

@@ -45,6 +45,21 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   const admin = createSupabaseAdminClient() as SupabaseClient<any>;
   const payloadJson = isRecord(envelope.payload) ? envelope.payload : {};
 
+  if (envelope.type === "audio.spotify_playlist_select") {
+    const playlistId = typeof payloadJson.playlist_id === "string" ? payloadJson.playlist_id.trim() : "";
+    if (!/^[a-zA-Z0-9]{10,50}$/.test(playlistId)) {
+      return NextResponse.json({ ok: false, error: "invalid_playlist" }, { status: 400 });
+    }
+    const { data: playlist } = await admin
+      .from("gm_spotify_playlists")
+      .select("id")
+      .eq("spotify_playlist_id", playlistId)
+      .maybeSingle();
+    if (!playlist) {
+      return NextResponse.json({ ok: false, error: "playlist_not_found" }, { status: 404 });
+    }
+  }
+
   if (envelope.type === "torneo.focus_match") {
     const matchId = typeof payloadJson.match_id === "string" ? payloadJson.match_id.trim() : null;
     await admin

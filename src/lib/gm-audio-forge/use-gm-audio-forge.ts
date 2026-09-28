@@ -13,7 +13,8 @@ import { isAllowedAudioUrl, toAbsoluteMediaUrl } from "./url-validation";
 import { listGlobalAudioLibraryForGmAction } from "@/app/campaigns/gm-global-audio-actions";
 import { gmGlobalAudioPreviewPath } from "@/lib/gm-global-audio/preview-url";
 import { isUuidString } from "@/lib/gm-remote/protocol";
-import { GM_AUDIO_STOP_ALL_EVENT } from "./audio-events";
+import { loadGmCampaignAudioLibraryAction, saveGmCampaignAudioLibraryAction } from "@/app/campaigns/gm-audio-library-actions";
+import { stopOtherGmAudioSources } from "./audio-events";
 
 /** Categoria sintetica: musica dal catalogo Gilda avviata dal telecomando (proxy). */
 const GM_GLOBAL_REMOTE_MUSIC_CATEGORY_ID = "__gm_global_remote_music__";
@@ -52,6 +53,12 @@ export function useGmAudioForge(campaignId: string) {
   libraryRef.current = library;
 
   const [activeMusicCategoryId, setActiveMusicCategoryId] = useState<string | null>(null);
+  const [currentMusicLabel, setCurrentMusicLabel] = useState<string | null>(null);
+  const [musicPlaying, setMusicPlaying] = useState(false);
+  const [librarySync, setLibrarySync] = useState<"loading" | "saved" | "local" | "saving">("loading");
+  const [hydratedCampaignId, setHydratedCampaignId] = useState<string | null>(null);
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const saveRevisionRef = useRef(0);
   const [activeAtmosphereIds, setActiveAtmosphereIds] = useState<Record<string, boolean>>({});
   const [musicMaster, setMusicMaster] = useState(0.75);
   const [atmosMaster, setAtmosMaster] = useState(0.65);
@@ -91,6 +98,8 @@ export function useGmAudioForge(campaignId: string) {
     }
     musicStateRef.current = null;
     setActiveMusicCategoryId(null);
+    setCurrentMusicLabel(null);
+    setMusicPlaying(false);
   }, []);
 
   const stopAtmosphereInternal = useCallback((categoryId: string) => {
@@ -173,6 +182,8 @@ export function useGmAudioForge(campaignId: string) {
             return;
           }
           musicStateRef.current = { categoryId: st.categoryId, trackUrl: next.url };
+          setCurrentMusicLabel(next.label);
+          setMusicPlaying(true);
           el.loop = false;
           el.volume = clampVolume(musicMasterRef.current);
           el.src = toAbsoluteMediaUrl(next.url);
@@ -181,11 +192,18 @@ export function useGmAudioForge(campaignId: string) {
         a.addEventListener("ended", onEnded);
       }
       const resolved = toAbsoluteMediaUrl(url);
+      stopOtherGmAudioSources();
       musicStateRef.current = { categoryId, trackUrl: url };
+      setCurrentMusicLabel(track.label || "Brano dal catalogo Gilda");
+      setMusicPlaying(true);
       const catNow = getCategory(libraryRef.current, categoryId);
       a.loop = catNow?.playbackMode === "loop_one";
       a.volume = clampVolume(musicMasterRef.current);
       const onDecodeErr = () => {
+        musicStateRef.current = null;
+        setMusicPlaying(false);
+        setCurrentMusicLabel(null);
+        setActiveMusicCategoryId(null);
         const code = a.error?.code;
         if (code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED) {
           toast.error(
@@ -201,12 +219,16 @@ export function useGmAudioForge(campaignId: string) {
       a.src = resolved;
       void a.play().catch((err: unknown) => {
         const name = err instanceof DOMException ? err.name : "";
+        if (name === "AbortError") return;
+        setMusicPlaying(false);
+        setCurrentMusicLabel(null);
+        musicStateRef.current = null;
+        setActiveMusicCategoryId(null);
         if (name === "NotAllowedError") {
           toast.error("Riproduzione bloccata: interagisci di nuovo con la pagina (clic) e riprova.");
           a.removeEventListener("error", onDecodeErr);
           return;
         }
-        if (name === "AbortError") return;
         if (!a.error) {
           toast.error("Impossibile avviare la musica (rete, formato o permessi del browser).");
         }
@@ -276,10 +298,31 @@ export function useGmAudioForge(campaignId: string) {
   );
 
   useEffect(() => {
-    setLibrary(loadGmAudioForgeLibrary(campaignId));
+    let cancelled = false;
+    saveRevisionRef.current += 1;
+    setHydratedCampaignId(null);
+    setLibrarySync("loading");
+    const local = loadGmAudioForgeLibrary(campaignId);
+    setLibrary(local);
     stopMusicInternal();
     stopAllAtmospheresInternal();
     stopAllSfxBackground();
+    void loadGmCampaignAudioLibraryAction(campaignId).then((result) => {
+      if (cancelled) return;
+      if (result.success) {
+        if (result.library) setLibrary(result.library);
+        setLibrarySync("saved");
+      } else {
+        setLibrarySync("local");
+      }
+      setHydratedCampaignId(campaignId);
+    }).catch(() => {
+      if (!cancelled) {
+        setLibrarySync("local");
+        setHydratedCampaignId(campaignId);
+      }
+    });
+    return () => { cancelled = true; };
   }, [campaignId, stopAllAtmospheresInternal, stopAllSfxBackground, stopMusicInternal]);
 
   /** Tracce salvate con `public_url` R2 (es. incollate dall’admin) → path proxy same-origin. */
@@ -333,7 +376,19 @@ export function useGmAudioForge(campaignId: string) {
 
   useEffect(() => {
     saveGmAudioForgeLibrary(campaignId, library);
-  }, [campaignId, library]);
+    if (hydratedCampaignId !== campaignId) return;
+    setLibrarySync((s) => s === "local" ? "local" : "saving");
+    const revision = ++saveRevisionRef.current;
+    const timer = window.setTimeout(() => {
+      saveQueueRef.current = saveQueueRef.current.then(async () => {
+        const result = await saveGmCampaignAudioLibraryAction(campaignId, library);
+        if (revision === saveRevisionRef.current) setLibrarySync(result.success ? "saved" : "local");
+      }).catch(() => {
+        if (revision === saveRevisionRef.current) setLibrarySync("local");
+      });
+    }, 700);
+    return () => window.clearTimeout(timer);
+  }, [campaignId, library, hydratedCampaignId]);
 
   useEffect(() => {
     return () => {
@@ -395,10 +450,12 @@ export function useGmAudioForge(campaignId: string) {
       if (cat.tracks.length === 0) return;
       const track = pickRandomTrack(cat.tracks, null);
       if (!track) return;
+      if (!isAllowedAudioUrl(track.url)) { toast.error("URL effetto non valido."); return; }
       const a = new Audio(toAbsoluteMediaUrl(track.url));
       a.volume = clampVolume(sfxMasterRef.current);
       sfxPlayingRef.current.add(a);
-      void a.play().catch(() => {});
+      void a.play().catch(() => { sfxPlayingRef.current.delete(a); toast.error("Effetto non riproducibile."); });
+      a.addEventListener("error", () => sfxPlayingRef.current.delete(a), { once: true });
       a.addEventListener(
         "ended",
         () => {
@@ -417,7 +474,8 @@ export function useGmAudioForge(campaignId: string) {
       const a = new Audio(toAbsoluteMediaUrl(u));
       a.volume = clampVolume(sfxMasterRef.current);
       sfxPlayingRef.current.add(a);
-      void a.play().catch(() => {});
+      void a.play().catch(() => { sfxPlayingRef.current.delete(a); toast.error("Effetto non riproducibile."); });
+      a.addEventListener("error", () => sfxPlayingRef.current.delete(a), { once: true });
       a.addEventListener(
         "ended",
         () => {
@@ -454,10 +512,16 @@ export function useGmAudioForge(campaignId: string) {
           return;
         const track = pickRandomTrack(c2.tracks, null);
         if (!track) return;
+        if (!isAllowedAudioUrl(track.url)) { sfxBackgroundArmedRef.current.delete(categoryId); setSfxBackgroundUiTick((n) => n + 1); return; }
         const a = new Audio(toAbsoluteMediaUrl(track.url));
         a.volume = clampVolume(sfxMasterRef.current);
         sfxPlayingRef.current.add(a);
-        void a.play().catch(() => {});
+        void a.play().catch(() => {
+          sfxPlayingRef.current.delete(a);
+          sfxBackgroundArmedRef.current.delete(categoryId);
+          setSfxBackgroundUiTick((n) => n + 1);
+          toast.error("Ripetizione SFX interrotta: suono non riproducibile.");
+        });
         a.addEventListener(
           "ended",
           () => {
@@ -497,10 +561,16 @@ export function useGmAudioForge(campaignId: string) {
         sfxBackgroundArmedRef.current.delete(categoryId);
         return;
       }
+      if (!isAllowedAudioUrl(track.url)) { sfxBackgroundArmedRef.current.delete(categoryId); setSfxBackgroundUiTick((n) => n + 1); return; }
       const a = new Audio(toAbsoluteMediaUrl(track.url));
       a.volume = clampVolume(sfxMasterRef.current);
       sfxPlayingRef.current.add(a);
-      void a.play().catch(() => {});
+      void a.play().catch(() => {
+        sfxPlayingRef.current.delete(a);
+        sfxBackgroundArmedRef.current.delete(categoryId);
+        setSfxBackgroundUiTick((n) => n + 1);
+        toast.error("Ripetizione SFX interrotta: suono non riproducibile.");
+      });
       a.addEventListener(
         "ended",
         () => {
@@ -519,7 +589,7 @@ export function useGmAudioForge(campaignId: string) {
     stopMusicInternal();
     stopAllAtmospheresInternal();
     stopAllSfxBackground();
-    if (typeof window !== "undefined") window.dispatchEvent(new Event(GM_AUDIO_STOP_ALL_EVENT));
+    stopOtherGmAudioSources();
   }, [stopAllAtmospheresInternal, stopAllSfxBackground, stopMusicInternal]);
 
   const toggleMusicPlayback = useCallback(() => {
@@ -528,8 +598,8 @@ export function useGmAudioForge(campaignId: string) {
     if (!a || !st) return;
     if (a.paused) {
       a.volume = clampVolume(musicMasterRef.current);
-      void a.play().catch(() => {});
-    } else a.pause();
+      void a.play().then(() => setMusicPlaying(true)).catch(() => setMusicPlaying(false));
+    } else { a.pause(); setMusicPlaying(false); }
   }, []);
 
   const skipMusicTrack = useCallback(
@@ -566,7 +636,7 @@ export function useGmAudioForge(campaignId: string) {
   );
 
   const playGlobalCatalogMusicByTrackId = useCallback(
-    (globalTrackId: string) => {
+    (globalTrackId: string, label?: string) => {
       const id = globalTrackId.trim();
       if (!isUuidString(id)) return;
       const path = gmGlobalAudioPreviewPath(id);
@@ -576,7 +646,7 @@ export function useGmAudioForge(campaignId: string) {
       }
       const track: GmAudioTrack = {
         id,
-        label: "",
+        label: label?.trim() || "Brano dal catalogo Gilda",
         url: path,
       };
       setActiveMusicCategoryId(null);
@@ -641,8 +711,11 @@ export function useGmAudioForge(campaignId: string) {
 
   return {
     library,
+    librarySync,
     setLibrary,
     activeMusicCategoryId,
+    currentMusicLabel,
+    musicPlaying,
     activeAtmosphereIds,
     musicMaster,
     setMusicMaster,
@@ -656,6 +729,7 @@ export function useGmAudioForge(campaignId: string) {
     playSfxUrl,
     toggleSfxBackground,
     stopAll,
+    stopMusic: stopMusicInternal,
     toggleMusicPlayback,
     skipMusicTrack,
     playMusicByTrackId,

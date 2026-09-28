@@ -108,31 +108,21 @@ export function loadGmAudioForgeLibrary(campaignId: string): GmAudioForgeLibrary
   try {
     const raw = window.localStorage.getItem(storageKey(campaignId));
     if (!raw) return createDefaultLibrary();
-    const parsed: unknown = JSON.parse(raw);
-    if (!isRecord(parsed)) return createDefaultLibrary();
-
-    const ver = parsed.version;
-    const categories = parseCategories(parsed);
-
-    if (ver === 1) {
-      return {
-        version: GM_AUDIO_FORGE_LIBRARY_VERSION,
-        categories,
-        sfxPad: createDefaultSfxPad(),
-      };
-    }
-
-    if (ver !== 2) return createDefaultLibrary();
-
-    const sfxPad = parseSfxPad(parsed.sfxPad) ?? createDefaultSfxPad();
-    return {
-      version: GM_AUDIO_FORGE_LIBRARY_VERSION,
-      categories,
-      sfxPad,
-    };
+    return parseGmAudioForgeLibrary(JSON.parse(raw)) ?? createDefaultLibrary();
   } catch {
     return createDefaultLibrary();
   }
+}
+
+export function parseGmAudioForgeLibrary(parsed: unknown): GmAudioForgeLibrary | null {
+  if (!isRecord(parsed)) return null;
+  if (parsed.version !== 1 && parsed.version !== 2) return null;
+  const categories = parseCategories(parsed);
+  return {
+    version: GM_AUDIO_FORGE_LIBRARY_VERSION,
+    categories,
+    sfxPad: parsed.version === 2 ? parseSfxPad(parsed.sfxPad) ?? createDefaultSfxPad() : createDefaultSfxPad(),
+  };
 }
 
 export function saveGmAudioForgeLibrary(campaignId: string, library: GmAudioForgeLibrary): void {

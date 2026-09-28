@@ -5,6 +5,7 @@ export type SfxPadRemoteSlot = {
   slotIndex: number;
   iconKey: string;
   etichetta: string;
+  configured: boolean;
 };
 
 export type SfxPadRemoteSnapshot = {
@@ -24,6 +25,7 @@ export function toSfxPadRemoteSnapshot(sfxPad: SfxPadConfig): SfxPadRemoteSnapsh
       slotIndex: i,
       iconKey: s.iconKey,
       etichetta: s.etichetta,
+      configured: Boolean(s.trackUrl.trim()),
     });
   }
   return { slots };
@@ -51,12 +53,14 @@ export function parseSfxPadRemoteSnapshot(raw: unknown): SfxPadRemoteSnapshot | 
         slotIndex: i,
         iconKey,
         etichetta: typeof fromRaw.etichetta === "string" ? fromRaw.etichetta : fallback.etichetta,
+        configured: fromRaw.configured === true,
       });
     } else {
       slots.push({
         slotIndex: i,
         iconKey: fallback.iconKey,
         etichetta: fallback.etichetta,
+        configured: false,
       });
     }
   }

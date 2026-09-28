@@ -44,6 +44,8 @@ type GlobalMusicOpt = {
   mood: string | null;
 };
 
+type SpotifyPlaylistOpt = { id: string; title: string; mood: string | null; spotify_playlist_id: string };
+
 function remoteErrorMessage(code: string | undefined): string {
   switch (code) {
     case "session_expired":
@@ -66,9 +68,14 @@ export function GmRemoteJoinClient({ publicId }: Props) {
   const [linkState, setLinkState] = useState<"loading" | "bad" | "ok">("loading");
   const [token, setToken] = useState<string | null>(null);
   const [musicVolPct, setMusicVolPct] = useState(75);
+  const [atmosVolPct, setAtmosVolPct] = useState(65);
+  const [sfxVolPct, setSfxVolPct] = useState(75);
   const [muted, setMuted] = useState(false);
   const [sending, setSending] = useState(false);
   const [catalogRows, setCatalogRows] = useState<GlobalMusicOpt[]>([]);
+  const [spotifyRows, setSpotifyRows] = useState<SpotifyPlaylistOpt[]>([]);
+  const [spotifyLoadError, setSpotifyLoadError] = useState(false);
+  const [spotifyLoading, setSpotifyLoading] = useState(true);
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [catalogLoadError, setCatalogLoadError] = useState<string | null>(null);
   const [isTorneoRemote, setIsTorneoRemote] = useState<boolean | null>(null);
@@ -86,6 +93,8 @@ export function GmRemoteJoinClient({ publicId }: Props) {
   useEffect(() => {
     if (linkState !== "ok" || !token || isTorneoRemote !== false) return;
     let cancelled = false;
+    setSpotifyLoadError(false);
+    setSpotifyLoading(true);
     setCatalogLoadError(null);
     (async () => {
       setCatalogLoading(true);
@@ -113,7 +122,24 @@ export function GmRemoteJoinClient({ publicId }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [linkState, token, publicId]);
+  }, [linkState, token, publicId, isTorneoRemote]);
+
+  useEffect(() => {
+    if (linkState !== "ok" || !token || isTorneoRemote !== false) return;
+    let cancelled = false;
+    void fetch(`/api/gm-remote/${publicId}/spotify-playlists`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
+    }).then(async (res) => {
+      const data = (await res.json()) as { ok?: boolean; playlists?: SpotifyPlaylistOpt[] };
+      if (cancelled) return;
+      setSpotifyLoading(false);
+      if (res.ok && data.ok && Array.isArray(data.playlists)) setSpotifyRows(data.playlists);
+      else setSpotifyLoadError(true);
+    }).catch(() => { if (!cancelled) { setSpotifyLoading(false); setSpotifyLoadError(true); } });
+    return () => { cancelled = true; };
+  }, [linkState, token, publicId, isTorneoRemote]);
 
   useEffect(() => {
     if (linkState !== "ok" || !token) return;
@@ -216,7 +242,7 @@ export function GmRemoteJoinClient({ publicId }: Props) {
                   variant="outline"
                   className="h-auto min-h-11 w-full touch-manipulation flex-col items-start gap-0 border-emerald-800/35 py-2 text-left"
                   disabled={sending}
-                  onClick={() => void send("audio.music_play_global_catalog", { global_track_id: r.id })}
+                  onClick={() => void send("audio.music_play_global_catalog", { global_track_id: r.id, title: r.title })}
                 >
                   <span className="w-full truncate text-sm text-zinc-100">{r.title}</span>
                   {r.mood ? <span className="w-full truncate text-[10px] text-zinc-500">{r.mood}</span> : null}
@@ -254,6 +280,15 @@ export function GmRemoteJoinClient({ publicId }: Props) {
           </Button>
         </div>
 
+        <div className="rounded-xl border border-amber-900/40 bg-zinc-900/50 p-4">
+          <h2 className="mb-2 text-sm font-semibold text-amber-100">Spotify sul PC del GM</h2>
+          <p className="mb-3 text-xs text-zinc-400">Richiede un account Spotify collegato nel GM Screen.</p>
+          {spotifyLoading ? <p className="text-xs text-zinc-400">Caricamento playlist…</p> : spotifyLoadError ? <p className="text-xs text-red-400">Playlist non disponibili ora.</p> : spotifyRows.length === 0 ? <p className="text-xs text-zinc-500">Nessuna playlist Spotify configurata.</p> : <><div className="max-h-40 space-y-1 overflow-y-auto">
+            {spotifyRows.map((row) => <Button key={row.id} type="button" variant="outline" className="h-auto min-h-10 w-full justify-start text-left" disabled={sending} onClick={() => void send("audio.spotify_playlist_select", { playlist_id: row.spotify_playlist_id })}>{row.title}</Button>)}
+          </div>
+          <Button type="button" variant="secondary" className="mt-3 w-full" disabled={sending} onClick={() => void send("audio.spotify_play_pause")}>Play / Pausa Spotify</Button></>}
+        </div>
+
         <div className="grid grid-cols-2 gap-2">
           <Button
             type="button"
@@ -285,6 +320,7 @@ export function GmRemoteJoinClient({ publicId }: Props) {
         </p>
 
         <div className="rounded-xl border border-amber-900/40 bg-zinc-900/50 p-4">
+          <h2 className="mb-3 text-sm font-semibold text-amber-100">Mixer volumi · PC del GM</h2>
           <div className="mb-2 flex items-center justify-between text-sm text-amber-100/90">
             <span className="flex items-center gap-2">
               <Volume2 className="h-4 w-4" />
@@ -325,6 +361,10 @@ export function GmRemoteJoinClient({ publicId }: Props) {
             {muted ? <Volume2 className="mr-2 h-4 w-4" /> : <VolumeX className="mr-2 h-4 w-4" />}
             {muted ? "Ripristina volume (unmute)" : "Mute musica"}
           </Button>
+          <div className="mt-5 flex items-center justify-between text-sm text-amber-100/90"><span>Atmosfere</span><span>{atmosVolPct}%</span></div>
+          <Slider value={[atmosVolPct]} max={100} step={1} disabled={sending} onValueChange={(v) => setAtmosVolPct(v[0] ?? 0)} onValueCommit={(v) => void send("audio.atmos_master_volume", { value: (v[0] ?? 0) / 100 })} className="py-3" />
+          <div className="mt-3 flex items-center justify-between text-sm text-amber-100/90"><span>SFX</span><span>{sfxVolPct}%</span></div>
+          <Slider value={[sfxVolPct]} max={100} step={1} disabled={sending} onValueChange={(v) => setSfxVolPct(v[0] ?? 0)} onValueCommit={(v) => void send("audio.sfx_master_volume", { value: (v[0] ?? 0) / 100 })} className="py-3" />
         </div>
 
         <GmRemoteSfxPadPanel publicId={publicId} token={token} sending={sending} onSend={send} />

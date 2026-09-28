@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 type Props = {
   /** ID playlist Spotify (non UUID riga DB): controlla l’embed sul GM screen. */
   spotifyEmbedPlaylistId: string | null;
-  onSpotifyEmbedPlaylistIdChange: (spotifyPlaylistId: string) => void;
+  onSpotifyEmbedPlaylistIdChange: (spotifyPlaylistId: string | null) => void;
 };
 
 export function GmSpotifyPlayerPanel({ spotifyEmbedPlaylistId, onSpotifyEmbedPlaylistIdChange }: Props) {
@@ -39,16 +39,12 @@ export function GmSpotifyPlayerPanel({ spotifyEmbedPlaylistId, onSpotifyEmbedPla
     void load();
   }, [load]);
 
-  /** Allinea embed a una playlist valida dopo caricamento o se l’ID non è più in elenco. */
+  /** Se una playlist viene rimossa, chiude il player invece di avviarne un'altra. */
   useEffect(() => {
-    if (rows.length === 0) return;
-    const ok =
-      spotifyEmbedPlaylistId &&
-      rows.some((r) => r.spotify_playlist_id === spotifyEmbedPlaylistId);
-    if (ok) return;
-    const first = rows[0]?.spotify_playlist_id;
-    if (first) onSpotifyEmbedPlaylistIdChange(first);
-  }, [rows, spotifyEmbedPlaylistId, onSpotifyEmbedPlaylistIdChange]);
+    if (!loading && !err && spotifyEmbedPlaylistId && !rows.some((r) => r.spotify_playlist_id === spotifyEmbedPlaylistId)) {
+      onSpotifyEmbedPlaylistIdChange(null);
+    }
+  }, [rows, loading, err, spotifyEmbedPlaylistId, onSpotifyEmbedPlaylistIdChange]);
 
   const filtered = useMemo(() => {
     const q = filter.trim().toLowerCase();
@@ -112,7 +108,7 @@ export function GmSpotifyPlayerPanel({ spotifyEmbedPlaylistId, onSpotifyEmbedPla
         </div>
       </div>
       <p className="text-xs text-zinc-500">
-        Nuove playlist:{" "}
+        Seleziona una playlist per aprire il player sul GM Screen. Nuove playlist:{" "}
         <Link href="/admin/audio-library" className="text-amber-400 underline-offset-2 hover:underline">
           Admin → Libreria audio
         </Link>

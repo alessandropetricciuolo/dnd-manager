@@ -20,6 +20,7 @@ import type { GmAudioForgeLibrary } from "@/lib/gm-audio-forge/types";
 import { newGmAudioEntityId } from "@/lib/gm-audio-forge/use-gm-audio-forge";
 import { toAbsoluteMediaUrl } from "@/lib/gm-audio-forge/url-validation";
 import { gmGlobalAudioPreviewPath } from "@/lib/gm-global-audio/preview-url";
+import { GM_AUDIO_STOP_ALL_EVENT } from "@/lib/gm-audio-forge/audio-events";
 
 const TYPE_LABEL: Record<GmGlobalAudioType, string> = {
   music: "Musica",
@@ -30,9 +31,10 @@ const TYPE_LABEL: Record<GmGlobalAudioType, string> = {
 type Props = {
   library: GmAudioForgeLibrary;
   setLibrary: React.Dispatch<React.SetStateAction<GmAudioForgeLibrary>>;
+  onPlayMusic: (id: string, label?: string) => void;
 };
 
-export function GmGlobalAudioCatalog({ library, setLibrary }: Props) {
+export function GmGlobalAudioCatalog({ library, setLibrary, onPlayMusic }: Props) {
   const [rows, setRows] = useState<GmGlobalAudioRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -54,6 +56,21 @@ export function GmGlobalAudioCatalog({ library, setLibrary }: Props) {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => () => {
+    previewAudioRef.current?.pause();
+    previewAudioRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    const stop = () => {
+      previewAudioRef.current?.pause();
+      previewAudioRef.current = null;
+      setPreviewingId(null);
+    };
+    window.addEventListener(GM_AUDIO_STOP_ALL_EVENT, stop);
+    return () => window.removeEventListener(GM_AUDIO_STOP_ALL_EVENT, stop);
+  }, []);
 
   const categoryOptions = useMemo(
     () =>
@@ -79,43 +96,39 @@ export function GmGlobalAudioCatalog({ library, setLibrary }: Props) {
   }, [rows, filterType, filterText]);
 
   function addToLocalCategory(track: GmGlobalAudioRow) {
-    if (!targetCategoryId) {
-      toast.error("Scegli una categoria nel menu in alto.");
-      return;
-    }
-    const cat = library.categories.find((c) => c.id === targetCategoryId);
-    if (!cat) {
-      toast.error("Categoria non trovata.");
-      return;
-    }
-    if (cat.kind === "music" && track.audio_type !== "music") {
-      toast.error("Per categorie Musica usa tracce catalogate come Musica.");
-      return;
-    }
-    if (cat.kind === "atmosphere" && track.audio_type !== "atmosphere") {
-      toast.error("Per Atmosfera usa tracce catalogate come Atmosfera.");
-      return;
-    }
-    if (cat.kind === "sfx" && track.audio_type !== "sfx") {
-      toast.error("Per SFX usa tracce catalogate come SFX.");
+    const selected = library.categories.find((c) => c.id === targetCategoryId);
+    const cat = selected ?? library.categories.find((c) => c.kind === track.audio_type);
+    const newId = cat?.id ?? newGmAudioEntityId();
+    if (cat && cat.kind !== track.audio_type) {
+      toast.error("La categoria scelta ha un tipo diverso dalla traccia.");
       return;
     }
     const proxyUrl = gmGlobalAudioPreviewPath(track.id);
+    if (cat?.tracks.some((t) => t.url === proxyUrl)) {
+      toast.message("La traccia è già in questa categoria.");
+      return;
+    }
     setLibrary((lib) => ({
       ...lib,
-      categories: lib.categories.map((c) =>
-        c.id === targetCategoryId
+      categories: (cat ? lib.categories : [...lib.categories, {
+        id: newId,
+        name: TYPE_LABEL[track.audio_type],
+        kind: track.audio_type,
+        playbackMode: "shuffle" as const,
+        sfxBackgroundRepeat: false,
+        sfxRepeatGapMinMs: 2500,
+        sfxRepeatGapMaxMs: 9000,
+        tracks: [],
+      }]).map((c) =>
+        c.id === newId
           ? {
               ...c,
-              tracks: [
-                ...c.tracks,
-                { id: newGmAudioEntityId(), label: track.title, url: proxyUrl },
-              ],
+              tracks: c.tracks.some((t) => t.url === proxyUrl) ? c.tracks : [...c.tracks, { id: newGmAudioEntityId(), label: track.title, url: proxyUrl }],
             }
           : c
       ),
     }));
-    toast.success(`Aggiunto a «${cat.name}». Nel Mixer tocca la categoria per avviare.`);
+    toast.success(`Disponibile in «${cat?.name ?? TYPE_LABEL[track.audio_type]}».`);
   }
 
   const togglePreview = useCallback((rowId: string) => {
@@ -152,8 +165,7 @@ export function GmGlobalAudioCatalog({ library, setLibrary }: Props) {
   return (
     <div className="space-y-4">
       <p className="text-xs leading-relaxed text-zinc-500">
-        Scegli la categoria di destinazione, poi <strong className="font-medium text-zinc-400">Aggiungi</strong> per
-        importare nel Mixer. L&apos;anteprima usa il proxy del sito.
+        Riproduci subito la musica oppure aggiungi una traccia alla campagna. Se non scegli una categoria, viene usata o creata quella del tipo corretto.
       </p>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
         <Button
@@ -167,14 +179,14 @@ export function GmGlobalAudioCatalog({ library, setLibrary }: Props) {
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Aggiorna elenco"}
         </Button>
         <div className="min-w-0 flex-1 space-y-1">
-          <Label className="text-[11px] text-zinc-500">Aggiungi a categoria locale</Label>
+          <Label className="text-[11px] text-zinc-500">Categoria di destinazione (facoltativa)</Label>
           <Select value={targetCategoryId || "none"} onValueChange={(v) => setTargetCategoryId(v === "none" ? "" : v)}>
             <SelectTrigger className="border-amber-800/40 bg-zinc-950 text-sm text-zinc-200">
               <SelectValue placeholder="Scegli categoria…" />
             </SelectTrigger>
             <SelectContent className="border-amber-800/40 bg-zinc-950">
               <SelectItem value="none" className="text-zinc-400">
-                — Nessuna —
+                Automatica
               </SelectItem>
               {categoryOptions.map((o) => (
                 <SelectItem key={o.id} value={o.id} className="text-zinc-200">
@@ -237,6 +249,14 @@ export function GmGlobalAudioCatalog({ library, setLibrary }: Props) {
                 </p>
               </div>
               <div className="flex shrink-0 gap-1.5">
+                {r.audio_type === "music" ? <Button type="button" size="sm" variant="outline" className="h-8 border-emerald-700/50 text-emerald-200" onClick={() => {
+                  previewAudioRef.current?.pause();
+                  previewAudioRef.current = null;
+                  setPreviewingId(null);
+                  onPlayMusic(r.id, r.title);
+                }}>
+                  <Play className="mr-1 h-3.5 w-3.5" /> Riproduci
+                </Button> : null}
                 <Button
                   type="button"
                   size="sm"
@@ -251,12 +271,12 @@ export function GmGlobalAudioCatalog({ library, setLibrary }: Props) {
                   {previewingId === r.id ? (
                     <>
                       <Square className="mr-1 h-3.5 w-3.5" />
-                      Stop
+                      Ferma anteprima
                     </>
                   ) : (
                     <>
                       <Play className="mr-1 h-3.5 w-3.5" />
-                      Play
+                      Ascolta
                     </>
                   )}
                 </Button>

@@ -1,4 +1,5 @@
 import type { GmAudioForgeControls } from "@/lib/gm-audio-forge/use-gm-audio-forge";
+import { GM_AUDIO_SPOTIFY_REMOTE_SELECT_EVENT, GM_AUDIO_SPOTIFY_REMOTE_TOGGLE_EVENT } from "@/lib/gm-audio-forge/audio-events";
 
 function num01(v: unknown): number | null {
   if (typeof v !== "number" || !Number.isFinite(v)) return null;
@@ -71,9 +72,19 @@ export function applyRemoteAudioCommand(forge: GmAudioForgeControls, type: strin
     }
     case "audio.music_play_global_catalog": {
       const globalTrackId = str(payload.global_track_id);
-      if (globalTrackId) forge.playGlobalCatalogMusicByTrackId(globalTrackId);
+      if (globalTrackId) forge.playGlobalCatalogMusicByTrackId(globalTrackId, str(payload.title) ?? undefined);
       return;
     }
+    case "audio.spotify_playlist_select": {
+      const playlistId = str(payload.playlist_id);
+      if (!playlistId || !/^[a-zA-Z0-9]{10,50}$/.test(playlistId)) return;
+      forge.stopMusic();
+      window.dispatchEvent(new CustomEvent(GM_AUDIO_SPOTIFY_REMOTE_SELECT_EVENT, { detail: playlistId }));
+      return;
+    }
+    case "audio.spotify_play_pause":
+      window.dispatchEvent(new Event(GM_AUDIO_SPOTIFY_REMOTE_TOGGLE_EVENT));
+      return;
     case "audio.stop_all":
       forge.stopAll();
       return;

@@ -71,13 +71,13 @@ export function GmRemoteSfxPadPanel({ publicId, token, sending, onSend }: Props)
                 key={slot.slotIndex}
                 type="button"
                 variant="outline"
-                title={slot.etichetta || `Tasto ${slot.slotIndex + 1}`}
-                aria-label={slot.etichetta || `Effetto sonoro ${slot.slotIndex + 1}`}
+                title={slot.configured ? (slot.etichetta || `Tasto ${slot.slotIndex + 1}`) : "Tasto senza suono: configuralo sul GM Screen"}
+                aria-label={slot.configured ? (slot.etichetta || `Effetto sonoro ${slot.slotIndex + 1}`) : `Tasto ${slot.slotIndex + 1} vuoto`}
                 className={cn(
                   "h-14 min-w-0 touch-manipulation border-amber-800/45 bg-zinc-900/70 px-0 text-amber-100/90",
                   "hover:border-amber-600/50 hover:bg-zinc-800/80"
                 )}
-                disabled={sending}
+                disabled={sending || !slot.configured}
                 onClick={() => void onSend("audio.sfx_pad_slot", { slot_index: slot.slotIndex })}
               >
                 <Icon className="h-7 w-7 shrink-0 text-amber-400" />
