@@ -7,6 +7,8 @@ CREATE TABLE public.gm_campaign_audio_libraries (
 
 ALTER TABLE public.gm_campaign_audio_libraries ENABLE ROW LEVEL SECURITY;
 
+GRANT SELECT, INSERT, UPDATE ON public.gm_campaign_audio_libraries TO authenticated;
+
 CREATE POLICY gm_campaign_audio_libraries_gm_read ON public.gm_campaign_audio_libraries
   FOR SELECT TO authenticated USING (
     public.can_manage_campaign_as_gm(campaign_id)
