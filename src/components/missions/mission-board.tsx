@@ -32,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ExternalLink, LayoutGrid, List, Pencil, Plus, RefreshCw, Swords, Trash2 } from "lucide-react";
+import { Coins, ExternalLink, LayoutGrid, List, Pencil, Plus, RefreshCw, Shield, Swords, Trash2 } from "lucide-react";
 import { NameGeneratorField } from "@/components/name-generator/name-generator-field";
 import { cn } from "@/lib/utils";
 
@@ -149,6 +149,43 @@ function missionStatusBadgeClass(status: string | null | undefined): string {
   return "border border-zinc-600/40 bg-zinc-900/60 text-zinc-400";
 }
 
+function parchmentRankTheme(grade: string | null | undefined) {
+  const g = (grade ?? "D").trim().toUpperCase();
+  switch (g) {
+    case "S":
+      return {
+        badge: "bg-gradient-to-r from-[#4a2603] via-[#6a3705] to-[#4a2603] text-[#fff4cc] border-[#f59e0b] shadow-md ring-1 ring-[#f59e0b]/50",
+        iconColor: "text-[#fde047]",
+        label: "Leggendario",
+      };
+    case "A":
+      return {
+        badge: "bg-gradient-to-r from-[#500717] via-[#750a22] to-[#500717] text-[#ffe4e6] border-[#f43f5e] shadow-md ring-1 ring-[#f43f5e]/40",
+        iconColor: "text-[#fda4af]",
+        label: "Elite",
+      };
+    case "B":
+      return {
+        badge: "bg-gradient-to-r from-[#0c2444] via-[#153e73] to-[#0c2444] text-[#eff6ff] border-[#3b82f6] shadow-md ring-1 ring-[#3b82f6]/40",
+        iconColor: "text-[#93c5fd]",
+        label: "Esperto",
+      };
+    case "C":
+      return {
+        badge: "bg-gradient-to-r from-[#3b2006] via-[#522c09] to-[#3b2006] text-[#fed7aa] border-[#d97706] shadow-sm",
+        iconColor: "text-[#fcd34d]",
+        label: "Avanzato",
+      };
+    case "D":
+    default:
+      return {
+        badge: "bg-gradient-to-r from-[#262626] via-[#383838] to-[#262626] text-[#f5f5f4] border-[#78716c] shadow-sm",
+        iconColor: "text-[#d6d3d1]",
+        label: "Base",
+      };
+  }
+}
+
 function ParchmentQuestCard({
   mission,
   onOpen,
@@ -158,6 +195,7 @@ function ParchmentQuestCard({
 }) {
   const status = normalizeMissionStatus(mission.status);
   const grade = (mission.grade ?? "D").trim().toUpperCase();
+  const rankTheme = parchmentRankTheme(grade);
 
   // Rotazione organica impercettibile basata sull'ID per simulare fogli appesi naturalmente
   const rotation = useMemo(() => {
@@ -168,11 +206,6 @@ function ParchmentQuestCard({
     const angles = [-1.2, 0.9, -0.6, 1.2, -1.0, 0.6, -0.8, 1.0];
     return angles[Math.abs(hash) % angles.length];
   }, [mission.id]);
-
-  // Calcolo teschi di difficoltà in base al grado
-  const skullsCount =
-    grade === "S" ? 5 : grade === "A" ? 4 : grade === "B" ? 3 : grade === "C" ? 2 : 1;
-  const skulls = "💀".repeat(skullsCount);
 
   return (
     <div
@@ -189,15 +222,28 @@ function ParchmentQuestCard({
       {/* Testata della Pergamena */}
       <div>
         {/* Rango & Punti Gloria */}
-        <div className="flex items-center justify-between gap-1 text-[10px] font-cinzel font-bold text-[#734f2d] uppercase tracking-wider mb-2 border-b border-[#a88457]/30 pb-1.5">
-          <span className="inline-flex items-center gap-1 font-extrabold">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#8c2d19]" />
-            Rango {grade}
-          </span>
+        <div className="flex items-center justify-between gap-2 mb-2.5 border-b border-[#a88457]/35 pb-2">
+          {/* Rango in forte evidenza araldica */}
+          <div
+            className={cn(
+              "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border font-cinzel select-none transition-transform group-hover:scale-105",
+              rankTheme.badge
+            )}
+            title={`Rango di Gilda: ${grade} (${rankTheme.label})`}
+          >
+            <Shield className={cn("h-3.5 w-3.5 shrink-0", rankTheme.iconColor)} />
+            <span className="text-[10px] font-bold uppercase tracking-widest opacity-90">Rango</span>
+            <span className="text-sm font-black tracking-wide leading-none">{grade}</span>
+          </div>
+
           {(mission.points_reward ?? 0) > 0 ? (
-            <span className="text-[#8c2d19] font-mono font-bold">+{mission.points_reward} Gloria</span>
+            <span className="inline-flex items-center gap-1 text-[#8c2d19] font-mono font-bold text-xs bg-[#8c2d19]/10 px-2 py-0.5 rounded border border-[#8c2d19]/25 shadow-xs">
+              +{mission.points_reward} Gloria
+            </span>
           ) : (
-            <span className="text-[#734f2d]/80">Taglia Gilda</span>
+            <span className="text-[#734f2d]/80 text-[11px] font-cinzel italic tracking-wider">
+              Taglia Gilda
+            </span>
           )}
         </div>
 
@@ -233,31 +279,30 @@ function ParchmentQuestCard({
         ) : null}
       </div>
 
-      {/* Parte Inferiore: Ricompensa Monete, Difficoltà e Sigillo Fisico */}
-      <div className="mt-4 pt-3 border-t border-[#a88457]/40 flex items-end justify-between gap-2">
-        {/* Moneta d'oro e Difficoltà */}
-        <div className="space-y-1.5 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="parchment-gold-coin" title="Ricompensa ufficiale">
-              🪙
+      {/* Parte Inferiore: Ricompensa Paga e Sigillo Fisico */}
+      <div className="mt-4 pt-3 border-t border-[#a88457]/40 flex items-center justify-between gap-2">
+        {/* Ricompensa / Paga */}
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+          <span className="parchment-gold-coin shadow-sm shrink-0" title="Ricompensa pattuita">
+            <Coins className="h-3.5 w-3.5 text-[#4a2802]" />
+          </span>
+          <div className="min-w-0">
+            <span className="block text-[9px] font-cinzel uppercase tracking-wider text-[#734f2d] font-bold leading-none mb-0.5">
+              Ricompensa
             </span>
-            <div className="min-w-0">
-              <span className="block text-[10px] font-serif uppercase tracking-wider text-[#734f2d]/90 font-semibold leading-none">
-                Difficoltà:
-              </span>
-              <span className="text-xs tracking-tighter" title={`Grado ${grade}`}>
-                {skulls}
-              </span>
-            </div>
+            {mission.paga?.trim() ? (
+              <div
+                className="font-cinzel text-xs sm:text-[13px] font-extrabold text-[#5c3209] truncate"
+                title={mission.paga}
+              >
+                {mission.paga}
+              </div>
+            ) : (
+              <div className="text-[11px] font-serif italic text-[#734f2d]">
+                Ricompensa d&apos;onore
+              </div>
+            )}
           </div>
-
-          {mission.paga?.trim() ? (
-            <div className="font-cinzel text-xs font-extrabold text-[#6d3e0c] truncate">
-              Paga: <span className="tabular-nums font-bold">{mission.paga}</span>
-            </div>
-          ) : (
-            <div className="text-[11px] font-serif italic text-[#6d3e0c]">Ricompensa d&apos;onore</div>
-          )}
         </div>
 
         {/* Sigillo Fisico (Ceralacca o Timbro ad Inchiostro) */}
@@ -845,7 +890,7 @@ export function MissionBoard({
                     <TableHeader>
                       <TableRow className="border-b border-brass-base/20 bg-guild-oak/80 hover:bg-guild-oak/80">
                         <TableHead className="text-[11px] font-serif uppercase tracking-wider text-brass-light">Stato</TableHead>
-                        <TableHead className="text-[11px] font-serif uppercase tracking-wider text-brass-light">Grado</TableHead>
+                        <TableHead className="text-[11px] font-serif uppercase tracking-wider text-brass-light">Rango</TableHead>
                         <TableHead className="text-[11px] font-serif uppercase tracking-wider text-brass-light">Titolo</TableHead>
                         <TableHead className="text-[11px] font-serif uppercase tracking-wider text-brass-light">Committente</TableHead>
                         <TableHead className="text-[11px] font-serif uppercase tracking-wider text-brass-light">Ubicazione</TableHead>
@@ -1136,8 +1181,16 @@ export function MissionBoard({
 
               <div className="grid gap-3 sm:grid-cols-2 rounded-lg border border-brass-base/20 bg-[#0c0906]/60 p-3.5">
                 <div>
-                  <p className="text-[11px] font-cinzel font-semibold text-brass-light/80 uppercase">Grado</p>
-                  <p className="font-serif font-bold text-parchment-100">{detailsMission.grade}</p>
+                  <p className="text-[11px] font-cinzel font-semibold text-brass-light/80 uppercase mb-1">Rango</p>
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md font-cinzel text-xs font-black border shadow-inner",
+                      gradeBadgeClass(detailsMission.grade)
+                    )}
+                  >
+                    <Shield className="h-3.5 w-3.5 shrink-0" />
+                    Rango {detailsMission.grade ? detailsMission.grade.toUpperCase() : "D"}
+                  </span>
                 </div>
                 <div>
                   <p className="text-[11px] font-cinzel font-semibold text-brass-light/80 uppercase">Titolo</p>
@@ -1358,14 +1411,26 @@ export function MissionBoard({
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1">
                 <Label htmlFor="m-grade" className="text-zinc-200">
-                  Grado (testo libero, es. difficoltà)
+                  Rango di Gilda
                 </Label>
-                <Input
-                  id="m-grade"
-                  value={missionDraft.grade}
-                  onChange={(e) => setMissionDraft((d) => ({ ...d, grade: e.target.value }))}
-                  className="border-amber-600/30 bg-zinc-950"
-                />
+                <Select
+                  value={missionDraft.grade ? missionDraft.grade.toUpperCase() : "D"}
+                  onValueChange={(val) => setMissionDraft((d) => ({ ...d, grade: val }))}
+                >
+                  <SelectTrigger id="m-grade" className="border-amber-600/30 bg-zinc-950">
+                    <SelectValue placeholder="Seleziona rango" />
+                  </SelectTrigger>
+                  <SelectContent className="border-brass-base/40 bg-zinc-950 text-parchment-100">
+                    <SelectItem value="D">Rango D (Ferro / Base)</SelectItem>
+                    <SelectItem value="C">Rango C (Bronzo / Avanzato)</SelectItem>
+                    <SelectItem value="B">Rango B (Argento / Esperto)</SelectItem>
+                    <SelectItem value="A">Rango A (Rubino / Elite)</SelectItem>
+                    <SelectItem value="S">Rango S (Oro / Leggendario)</SelectItem>
+                    {missionDraft.grade && !["D", "C", "B", "A", "S"].includes(missionDraft.grade.toUpperCase()) && (
+                      <SelectItem value={missionDraft.grade}>Rango {missionDraft.grade}</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1">
                 <Label htmlFor="m-pts" className="text-zinc-200">
