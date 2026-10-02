@@ -24,6 +24,8 @@ import {
 } from "@/lib/campaign-memory-indexer";
 import type { Json } from "@/types/database.types";
 import { formatXpConfirmationLabel } from "@/lib/character-xp";
+import { sendFeedbackRequestEmailsForSession } from "@/lib/session-close-feedback";
+import { buildSessionHourPlan } from "@/lib/session-close-hours";
 import {
   DEFAULT_FANTASY_BASE_DATE,
   DEFAULT_FANTASY_CALENDAR_CONFIG,
@@ -852,11 +854,13 @@ async function isGmOrAdminByRole(
     error: userError,
   } = await supabase.auth.getUser();
   if (userError || !user) return false;
-  const { data: profile } = await supabase
+  const admin = createSupabaseAdminClient();
+  const { data: profileData } = await admin
     .from("profiles")
     .select("role")
     .eq("id", user.id)
     .single();
+  const profile = profileData as { role?: string | null } | null;
   return profile?.role === "gm" || profile?.role === "admin";
 }
 
@@ -883,50 +887,6 @@ async function canManageSessionByCampaign(
   _campaignId: string | null
 ): Promise<boolean> {
   return isGmOrAdminByRole(supabase);
-}
-
-async function sendFeedbackRequestEmailsForSession(
-  admin: ReturnType<typeof createSupabaseAdminClient>,
-  campaignId: string,
-  sessionId: string
-): Promise<void> {
-  try {
-    const [{ data: campaignRow }, { data: sessionRow }, { data: signupsRows }] = await Promise.all([
-      admin.from("campaigns").select("name").eq("id", campaignId).maybeSingle(),
-      admin.from("sessions").select("title, scheduled_at").eq("id", sessionId).maybeSingle(),
-      admin.from("session_signups").select("player_id").eq("session_id", sessionId).eq("status", "attended"),
-    ]);
-
-    const campaignName = ((campaignRow as { name?: string | null } | null)?.name ?? "").trim() || "Campagna";
-    const sessionTitle = ((sessionRow as { title?: string | null } | null)?.title ?? "").trim() || "Sessione";
-    const sessionDateRaw = (sessionRow as { scheduled_at?: string | null } | null)?.scheduled_at ?? null;
-    const sessionDate = sessionDateRaw
-      ? formatSessionInRome(sessionDateRaw, "EEEE d MMMM yyyy, HH:mm", { locale: it })
-      : "data non disponibile";
-    const appUrl = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://barberanddragons.com").replace(/\/$/, "");
-    const feedbackUrl = `${appUrl}/campaigns/${campaignId}?tab=sessioni`;
-
-    const signups = (signupsRows ?? []) as { player_id: string }[];
-    const playerIds = [...new Set(signups.map((s) => s.player_id))];
-    if (playerIds.length === 0) return;
-
-    for (const playerId of playerIds) {
-      const { data: authUser } = await admin.auth.admin.getUserById(playerId);
-      const toEmail = authUser?.user?.email;
-      if (!toEmail) continue;
-      void sendEmail({
-        to: toEmail,
-        subject: `Lascia il tuo feedback: ${campaignName}`,
-        html: wrapInTemplate(
-          `<p>La sessione <strong>${escapeHtml(sessionTitle)}</strong> (${escapeHtml(sessionDate)}) è stata chiusa.</p>` +
-            `<p>Il tuo feedback è prezioso: valuta l'esperienza della sessione e della campagna.</p>` +
-            `<p><a href="${escapeHtml(feedbackUrl)}" style="color:#fbbf24;text-decoration:underline;">Apri la pagina campagna e lascia il feedback</a></p>`
-        ),
-      });
-    }
-  } catch (err) {
-    console.error("[sendFeedbackRequestEmailsForSession]", err);
-  }
 }
 
 export type JoinSessionResult = { success: boolean; message: string };
@@ -2164,6 +2124,78 @@ async function closeSessionWithXpRpc(
   return { success: true, data: result };
 }
 
+async function closeSessionWithXpAndHoursRpc(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  sessionId: string,
+  campaignId: string,
+  actorId: string,
+  payload: CloseSessionActionPayload,
+  persisted: { xpGained?: number | null; perPlayerXpAwards?: unknown }
+): Promise<{ success: true } | { success: false; error: string }> {
+  const persistedAwards = Array.isArray(persisted.perPlayerXpAwards) ? persisted.perPlayerXpAwards : [];
+  const xpGained = persisted.xpGained != null && payload.xpGained <= 0
+    ? persisted.xpGained
+    : Math.max(0, Math.floor(payload.xpGained));
+  const perPlayerXpAwards = payload.perPlayerXpAwards?.length
+    ? payload.perPlayerXpAwards
+    : persistedAwards;
+  let plan: Awaited<ReturnType<typeof buildSessionHourPlan>>;
+  try {
+    plan = await buildSessionHourPlan(admin, campaignId, payload.attendance, payload.elapsedHours);
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : "Ore dei personaggi non leggibili." };
+  }
+  const { error } = await admin.rpc((payload.resetOneshotAssignments
+    ? "close_oneshot_session_and_reset_assignments"
+    : "close_session_with_xp_and_hours") as never, {
+    p_session_id: sessionId,
+    p_actor_id: actorId,
+    p_attendance: payload.attendance as unknown as Json,
+    p_xp_gained: xpGained,
+    p_per_player_xp_awards: perPlayerXpAwards as unknown as Json,
+    p_summary: payload.summary?.trim() || null,
+    p_gm_private_notes: payload.gm_private_notes?.trim() || null,
+    p_elapsed_hours: Math.max(0, Math.floor(payload.elapsedHours)),
+    p_hour_updates: plan.updates as unknown as Json,
+    p_calendar_config: plan.calendarConfig,
+    p_calendar_base_date: plan.calendarBaseDate,
+  } as never);
+  if (error) return { success: false, error: error.message ?? "Chiusura atomica non riuscita." };
+  const { data: closedSession, error: sessionReadError } = await admin
+    .from("sessions")
+    .select("status,elapsed_hours")
+    .eq("id", sessionId)
+    .single();
+  const confirmedSession = closedSession as unknown as { status: string; elapsed_hours: number | null } | null;
+  if (sessionReadError || confirmedSession?.status !== "completed" || confirmedSession.elapsed_hours !== payload.elapsedHours) {
+    return { success: false, error: "Sessione chiusa, ma la conferma delle ore di sessione non coincide." };
+  }
+  const { data: hourRows, error: hoursError } = await admin
+    .from("session_hour_awards")
+    .select("character_id,hours_awarded,hours_before,hours_after")
+    .eq("session_id", sessionId);
+  if (hoursError) return { success: false, error: "Sessione chiusa, ma la conferma delle ore non è leggibile." };
+  const byCharacter = new Map((hourRows ?? []).map((row: any) => [row.character_id, row]));
+  if (byCharacter.size !== plan.updates.length || plan.updates.some((update) => {
+    const row = byCharacter.get(update.character_id);
+    return !row || row.hours_awarded !== payload.elapsedHours
+      || row.hours_before !== update.expected_hours || row.hours_after !== update.next_hours;
+  })) {
+    return { success: false, error: "Sessione chiusa, ma la conferma delle ore non coincide." };
+  }
+  if (payload.resetOneshotAssignments) {
+    const { count, error: assignmentError } = await admin
+      .from("campaign_characters")
+      .select("id", { count: "exact", head: true })
+      .eq("campaign_id", campaignId)
+      .not("assigned_to", "is", null);
+    if (assignmentError || count !== 0) {
+      return { success: false, error: "Sessione chiusa, ma la rimozione delle assegnazioni non è confermata." };
+    }
+  }
+  return { success: true };
+}
+
 async function readPersistedSessionXpConfirmation(
   admin: ReturnType<typeof createSupabaseAdminClient>,
   sessionId: string
@@ -2275,6 +2307,8 @@ export type CloseSessionActionPayload = {
   elapsedHours: number;
   /** Solo campagne long: tesoretto missione e aggiustamenti monete PG. */
   economy?: SessionEconomyPayload;
+  /** Solo oneshot: libera i personaggi nella stessa transazione della chiusura. */
+  resetOneshotAssignments?: boolean;
 };
 
 /** Chiusura sessione unificata: sessioni, presenze, XP, summary, note GM, mondo (global_status), sblocco contenuti. */
@@ -2296,18 +2330,26 @@ export async function closeSessionAction(
       return { success: false, message: "Solo GM o Admin possono chiudere sessioni." };
     }
 
-    const { data: session, error: sessionError } = await supabase
+    const admin = createSupabaseAdminClient();
+    const { data: sessionData, error: sessionError } = await admin
       .from("sessions")
       .select("id, campaign_id, status, is_pre_closed, pre_closed_xp_gained, pre_closed_xp_awards")
       .eq("id", sessionId)
       .single();
+    const session = sessionData as {
+      id: string;
+      campaign_id: string;
+      status: string;
+      is_pre_closed?: boolean | null;
+      pre_closed_xp_gained?: number | null;
+      pre_closed_xp_awards?: unknown;
+    } | null;
     if (sessionError || !session) {
       return { success: false, message: "Sessione non trovata." };
     }
     if (session.status !== "scheduled") {
       if (session.status === "completed") {
-        const retryAdmin = createSupabaseAdminClient();
-        const retryConfirmation = await readPersistedSessionXpConfirmation(retryAdmin, sessionId);
+        const retryConfirmation = await readPersistedSessionXpConfirmation(admin, sessionId);
         if (retryConfirmation.success) {
           return {
             success: true,
@@ -2320,18 +2362,21 @@ export async function closeSessionAction(
       return { success: false, message: "La sessione è già chiusa." };
     }
 
-    const { data: campaign } = await supabase
+    const { data: campaignData } = await admin
       .from("campaigns")
       .select("type")
       .eq("id", session.campaign_id)
       .single();
+    const campaign = campaignData as { type?: string | null } | null;
     const isLongCampaign = campaign?.type === "long";
+    if (payload.resetOneshotAssignments && campaign?.type !== "oneshot") {
+      return { success: false, message: "La rimozione delle assegnazioni è disponibile solo per le oneshot." };
+    }
 
-    const admin = createSupabaseAdminClient();
-
-    const xpApplyResult = await closeSessionWithXpRpc(
+    const xpApplyResult = await closeSessionWithXpAndHoursRpc(
       admin,
       sessionId,
+      session.campaign_id,
       user.id,
       payload,
       {
@@ -2340,8 +2385,8 @@ export async function closeSessionAction(
       }
     );
     if (!xpApplyResult.success) {
-      console.error("[closeSessionAction] xp", xpApplyResult.error);
-      return { success: false, message: xpApplyResult.error ?? "Errore durante l'assegnazione XP." };
+      console.error("[closeSessionAction] atomic close", xpApplyResult.error);
+      return { success: false, message: xpApplyResult.error ?? "Chiusura non riuscita; nessun EXP o ora applicati." };
     }
     const xpConfirmation = await readPersistedSessionXpConfirmation(admin, sessionId);
     if (!xpConfirmation.success) {
@@ -2375,56 +2420,6 @@ export async function closeSessionAction(
       const batchRes = await batchUnlockContent(session.campaign_id, presentUserIds, payload.unlockContentIds);
       if (!batchRes.success) {
         console.warn("[closeSessionAction] batchUnlockContent", batchRes.message);
-      }
-    }
-
-    const elapsedHours = Math.max(0, Math.floor(Number(payload.elapsedHours ?? 0)));
-    if (elapsedHours > 0 && presentUserIds.length > 0) {
-      const { data: calendarCampaignRow } = await admin
-        .from("campaigns")
-        .select("long_calendar_config, long_calendar_base_date")
-        .eq("id", session.campaign_id)
-        .maybeSingle();
-      const calendarState = buildLongCampaignCalendarState(
-        calendarCampaignRow as { long_calendar_config?: Json | null; long_calendar_base_date?: Json | null } | null
-      );
-      const { data: epochChars, error: epochFetchErr } = await admin
-        .from("campaign_characters")
-        .select("id, time_offset_hours, calendar_anchor_date, calendar_anchor_hours")
-        .eq("campaign_id", session.campaign_id)
-        .in("assigned_to", presentUserIds);
-      if (epochFetchErr) {
-        console.error("[closeSessionAction] epoch fetch campaign_characters", epochFetchErr);
-      } else {
-        for (const row of (epochChars ?? []) as {
-          id: string;
-          time_offset_hours: number | null;
-          calendar_anchor_date: Json | null;
-          calendar_anchor_hours: number | null;
-        }[]) {
-          const cur = typeof row.time_offset_hours === "number" ? row.time_offset_hours : 0;
-          const nextHours = cur + elapsedHours;
-          const anchorDate = row.calendar_anchor_date
-            ? normalizeFantasyCalendarDate(row.calendar_anchor_date, calendarState.config)
-            : null;
-          const nextCalendarDate = deriveCharacterCalendarDate({
-            campaignBaseDate: calendarState.baseDate,
-            characterHours: nextHours,
-            config: calendarState.config,
-            anchorDate,
-            anchorHours: row.calendar_anchor_hours,
-          });
-          const { error: epochUpdErr } = await admin
-            .from("campaign_characters")
-            .update({
-              time_offset_hours: nextHours,
-              calendar_current_date: toCalendarDateJson(nextCalendarDate),
-            } as never)
-            .eq("id", row.id);
-          if (epochUpdErr) {
-            console.error("[closeSessionAction] epoch update", row.id, epochUpdErr);
-          }
-        }
       }
     }
 
@@ -2479,7 +2474,7 @@ export async function closeSessionAction(
     revalidatePath("/dashboard");
     return {
       success: true,
-      message: `Sessione chiusa. Appello, diario e mondo aggiornati. ${formatSessionXpConfirmation(xpConfirmation.data)}`,
+      message: `Sessione chiusa. Appello, diario e mondo aggiornati.${payload.resetOneshotAssignments ? " Assegnazioni dei personaggi rimosse." : ""} ${formatSessionXpConfirmation(xpConfirmation.data)}`,
       campaignId: session.campaign_id,
       xpAwards: xpConfirmation.data,
     };
@@ -2510,19 +2505,19 @@ export async function preCloseSessionAction(
       return { success: false, message: "Solo GM o Admin possono chiudere sessioni." };
     }
 
-    const { data: session, error: sessionError } = await supabase
+    const admin = createSupabaseAdminClient();
+    const { data: sessionData, error: sessionError } = await admin
       .from("sessions")
       .select("id, campaign_id, status, is_pre_closed")
       .eq("id", sessionId)
       .single();
+    const session = sessionData as { id: string; campaign_id: string; status: string; is_pre_closed?: boolean | null } | null;
     if (sessionError || !session) {
       return { success: false, message: "Sessione non trovata." };
     }
     if (session.status !== "scheduled") {
       return { success: false, message: "La sessione è già chiusa." };
     }
-
-    const admin = createSupabaseAdminClient();
 
     const preCloseResult = await saveSessionPrecloseWithRpc(
       admin,
@@ -2573,7 +2568,8 @@ export async function getSessionWizardMeta(
     if (!allowed) {
       return { success: false, error: "Solo GM o Admin possono vedere le sessioni." };
     }
-    const { data, error } = await supabase
+    const admin = createSupabaseAdminClient();
+    const { data, error } = await admin
       .from("sessions")
       .select("id, campaign_id, is_pre_closed, pre_closed_xp_gained, pre_closed_xp_awards, status")
       .eq("id", sessionId)
@@ -2636,18 +2632,19 @@ export async function closeSession(
       return { success: false, message: "Solo GM o Admin possono chiudere sessioni." };
     }
 
-    const { data: session, error: sessionError } = await supabase
+    const admin = createSupabaseAdminClient();
+    const { data: sessionData, error: sessionError } = await admin
       .from("sessions")
       .select("id, campaign_id, status")
       .eq("id", sessionId)
       .single();
+    const session = sessionData as { id: string; campaign_id: string; status: string } | null;
     if (sessionError || !session) {
       return { success: false, message: "Sessione non trovata." };
     }
     if (session.status !== "scheduled") {
       if (session.status === "completed") {
-        const retryAdmin = createSupabaseAdminClient();
-        const retryConfirmation = await readPersistedSessionXpConfirmation(retryAdmin, sessionId);
+        const retryConfirmation = await readPersistedSessionXpConfirmation(admin, sessionId);
         if (retryConfirmation.success) {
           return {
             success: true,
@@ -2659,8 +2656,6 @@ export async function closeSession(
       }
       return { success: false, message: "La sessione è già chiusa." };
     }
-
-    const admin = createSupabaseAdminClient();
     const closeResult = await closeSessionWithXpRpc(admin, sessionId, user.id, {
       attendance: attendanceData,
       xpGained: 0,
@@ -2716,18 +2711,19 @@ export async function closeSessionQuestOrOneshot(
       return { success: false, message: "Solo GM o Admin possono chiudere sessioni." };
     }
 
-    const { data: session, error: sessionError } = await supabase
+    const admin = createSupabaseAdminClient();
+    const { data: sessionData, error: sessionError } = await admin
       .from("sessions")
       .select("id, campaign_id, status")
       .eq("id", sessionId)
       .single();
+    const session = sessionData as { id: string; campaign_id: string; status: string } | null;
     if (sessionError || !session) {
       return { success: false, message: "Sessione non trovata." };
     }
     if (session.status !== "scheduled") {
       if (session.status === "completed") {
-        const retryAdmin = createSupabaseAdminClient();
-        const retryConfirmation = await readPersistedSessionXpConfirmation(retryAdmin, sessionId);
+        const retryConfirmation = await readPersistedSessionXpConfirmation(admin, sessionId);
         if (retryConfirmation.success) {
           return {
             success: true,
@@ -2740,11 +2736,12 @@ export async function closeSessionQuestOrOneshot(
       return { success: false, message: "La sessione è già chiusa." };
     }
 
-    const { data: campaign } = await supabase
+    const { data: campaignData } = await admin
       .from("campaigns")
       .select("type")
       .eq("id", session.campaign_id)
       .single();
+    const campaign = campaignData as { type?: string | null } | null;
     const campaignType = (campaign as { type?: string } | null)?.type;
     if (campaignType !== "quest" && campaignType !== "oneshot" && campaignType !== "torneo") {
       return {
@@ -2753,12 +2750,10 @@ export async function closeSessionQuestOrOneshot(
       };
     }
 
-    const { data: signups } = await supabase
+    const { data: signups } = await admin
       .from("session_signups")
       .select("id, player_id, status")
       .eq("session_id", sessionId);
-
-    const admin = createSupabaseAdminClient();
     const list = (signups ?? []) as { id: string; player_id: string; status: string }[];
     if (list.length === 0) {
       // Permettiamo la chiusura anche senza iscritti; la RPC gestisce comunque

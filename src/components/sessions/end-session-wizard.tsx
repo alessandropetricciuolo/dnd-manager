@@ -162,6 +162,7 @@ export function EndSessionWizard({
 
   const [summary, setSummary] = useState("");
   const [gmPrivateNotes, setGmPrivateNotes] = useState("");
+  const [resetOneshotAssignments, setResetOneshotAssignments] = useState(false);
 
   const [coreEntities, setCoreEntities] = useState<CoreEntityForDebrief[]>([]);
   const [loadingEntities, setLoadingEntities] = useState(false);
@@ -248,6 +249,7 @@ export function EndSessionWizard({
     setIsPreClosed(false);
     setSummary("");
     setGmPrivateNotes("");
+    setResetOneshotAssignments(false);
     setSelectedContentKeys(new Set());
     setContentSearch("");
     setStatusByEntityId({});
@@ -557,6 +559,7 @@ export function EndSessionWizard({
       awardedAchievements: awardedAchievements.length > 0 ? awardedAchievements : undefined,
       elapsedHours: Math.max(0, Math.floor(elapsedHours)),
       economy,
+      resetOneshotAssignments: isOneshot && resetOneshotAssignments,
     };
     const res = await closeSessionAction(sessionId, payload);
     setSubmitting(false);
@@ -1232,6 +1235,20 @@ export function EndSessionWizard({
           {/* Conferma */}
           {step === confirmStep && (
             <div className="space-y-3 text-sm">
+              {isOneshot && (
+                <fieldset className="rounded-lg border border-barber-gold/30 p-3">
+                  <legend className="px-1 font-medium text-barber-paper">Rimuovere le assegnazioni dei personaggi?</legend>
+                  <p className="mb-2 text-xs text-barber-paper/70">Le schede e l’EXP restano salvate. I personaggi della oneshot non saranno più assegnati ai giocatori.</p>
+                  <label className="mr-5 inline-flex items-center gap-2">
+                    <input type="radio" name="reset-oneshot-assignments" checked={!resetOneshotAssignments} onChange={() => setResetOneshotAssignments(false)} />
+                    No, mantienile
+                  </label>
+                  <label className="inline-flex items-center gap-2">
+                    <input type="radio" name="reset-oneshot-assignments" checked={resetOneshotAssignments} onChange={() => setResetOneshotAssignments(true)} />
+                    Sì, rimuovile
+                  </label>
+                </fieldset>
+              )}
               <p className="text-barber-paper/80">
                 <strong>Presenze:</strong> {presentCount} presenti su {signups.length} iscritti.
                 {resolvedPerPlayerXpAwards?.length

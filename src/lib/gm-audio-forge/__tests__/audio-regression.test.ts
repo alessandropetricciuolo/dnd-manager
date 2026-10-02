@@ -28,24 +28,3 @@ test("il telecomando mantiene titolo del brano e stop globale sul PC", () => {
   applyRemoteAudioCommand(forge, "audio.stop_all", {});
   assert.deepEqual(calls, ["track-1:Scontro", "stop"]);
 });
-
-test("il pad conserva atmosfere e SFX e il telecomando usa il canale corretto", () => {
-  const parsed = parseGmAudioForgeLibrary({
-    version: 2,
-    categories: [],
-    sfxPad: { slots: [
-      { slotIndex: 0, iconKey: "Wind", etichetta: "Pioggia", trackUrl: "/pioggia.mp3", trackKind: "atmosphere", libraryRef: "cat-1|track-1" },
-      { slotIndex: 1, iconKey: "Zap", etichetta: "Tuono", trackUrl: "/tuono.mp3" },
-    ] },
-  });
-  assert.equal(parsed?.sfxPad.slots[0]?.trackKind, "atmosphere");
-  const calls: string[] = [];
-  const forge = {
-    library: parsed,
-    togglePadAtmosphere: (categoryId: string, trackId: string) => calls.push(`atmos:${categoryId}:${trackId}`),
-    playSfxUrl: (url: string) => calls.push(`sfx:${url}`),
-  } as unknown as GmAudioForgeControls;
-  applyRemoteAudioCommand(forge, "audio.sfx_pad_slot", { slot_index: 0 });
-  applyRemoteAudioCommand(forge, "audio.sfx_pad_slot", { slot_index: 1 });
-  assert.deepEqual(calls, ["atmos:cat-1:track-1", "sfx:/tuono.mp3"]);
-});

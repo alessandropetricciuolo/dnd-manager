@@ -18,16 +18,11 @@ import { cn } from "@/lib/utils";
 import { createDefaultSfxPad, type GmAudioForgeLibrary, type SfxPadSlot } from "@/lib/gm-audio-forge/types";
 import { getSfxPadIconComponent, SFX_PAD_ICON_OPTIONS } from "@/lib/gm-audio-forge/sfx-pad-icons";
 import { normalizeAudioUrl } from "@/lib/gm-audio-forge/url-validation";
-import { listGlobalAudioLibraryForGmAction } from "@/app/campaigns/gm-global-audio-actions";
-import type { GmGlobalAudioRow } from "@/lib/gm-global-audio/types";
-import { gmGlobalAudioPreviewPath } from "@/lib/gm-global-audio/preview-url";
-import { newGmAudioEntityId } from "@/lib/gm-audio-forge/use-gm-audio-forge";
 
 type Props = {
   library: GmAudioForgeLibrary;
   setLibrary: React.Dispatch<React.SetStateAction<GmAudioForgeLibrary>>;
   playSfxUrl: (url: string) => void;
-  togglePadAtmosphere: (categoryId: string, trackId: string) => void;
   isAllowedAudioUrl: (url: string) => boolean;
   editable?: boolean;
 };
@@ -67,44 +62,30 @@ function mapSlotIndexAfterReorder(from: number, to: number, selected: number): n
 
 const DND_MIME = "application/x-bd-sfx-pad-index";
 
-export function GmSfxPadPanel({ library, setLibrary, playSfxUrl, togglePadAtmosphere, isAllowedAudioUrl, editable = true }: Props) {
+export function GmSfxPadPanel({ library, setLibrary, playSfxUrl, isAllowedAudioUrl, editable = true }: Props) {
   const [customize, setCustomize] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const [manualUrlDraft, setManualUrlDraft] = useState("");
-  const [globalTracks, setGlobalTracks] = useState<GmGlobalAudioRow[]>([]);
-  const [catalogError, setCatalogError] = useState(false);
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const suppressPadClickUntilRef = useRef(0);
 
   const slots = useMemo(() => sortedSlots(library), [library]);
 
-  const trackOptions = useMemo(() => {
-    const out: { ref: string; url: string; label: string; kind: "atmosphere" | "sfx" }[] = [];
+  const sfxTrackOptions = useMemo(() => {
+    const out: { ref: string; url: string; label: string }[] = [];
     for (const c of library.categories) {
-      if (c.kind !== "sfx" && c.kind !== "atmosphere") continue;
+      if (c.kind !== "sfx") continue;
       for (const t of c.tracks) {
         out.push({
           ref: sfxPadLibraryRef(c.id, t.id),
           url: t.url,
           label: `${c.name} — ${t.label}`,
-          kind: c.kind,
         });
       }
     }
     return out;
   }, [library.categories]);
-
-  useEffect(() => {
-    if (!editable) return;
-    let cancelled = false;
-    void listGlobalAudioLibraryForGmAction().then((result) => {
-      if (cancelled) return;
-      if (result.success) setGlobalTracks(result.data.filter((track) => track.audio_type === "sfx" || track.audio_type === "atmosphere"));
-      else setCatalogError(true);
-    });
-    return () => { cancelled = true; };
-  }, [editable]);
 
   const editing = selectedSlot !== null ? slots.find((s) => s.slotIndex === selectedSlot) : null;
 
@@ -146,10 +127,7 @@ export function GmSfxPadPanel({ library, setLibrary, playSfxUrl, togglePadAtmosp
       toast.message(editable ? "Tasto vuoto. Attiva «Personalizza» per assegnare un suono." : "Tasto vuoto. Assegna un suono nella scheda Libreria.");
       return;
     }
-    if (slot.trackKind === "atmosphere" && slot.libraryRef) {
-      const [categoryId, trackId] = slot.libraryRef.split("|");
-      if (categoryId && trackId) togglePadAtmosphere(categoryId, trackId);
-    } else playSfxUrl(u);
+    playSfxUrl(u);
   }
 
   function applyManualUrl() {
@@ -159,7 +137,7 @@ export function GmSfxPadPanel({ library, setLibrary, playSfxUrl, togglePadAtmosp
       toast.error("URL non valido (solo HTTPS o path /…).");
       return;
     }
-    updateSlot(selectedSlot, { trackUrl: u, trackKind: "sfx", libraryRef: undefined });
+    updateSlot(selectedSlot, { trackUrl: u, libraryRef: undefined });
     toast.success("URL salvato sul tasto.");
   }
 
@@ -208,8 +186,8 @@ export function GmSfxPadPanel({ library, setLibrary, playSfxUrl, togglePadAtmosp
       {!editable ? <p className="text-xs text-zinc-400">{slots.filter((slot) => slot.trackUrl.trim()).length} di 12 tasti pronti</p> : null}
       {editable ? <p className="text-[11px] leading-relaxed text-zinc-500">
         {customize
-          ? "Tocca un tasto, poi scegli un'atmosfera o un SFX dalla lista. Trascina per riordinare."
-          : "Tocca un’icona per riprodurre. SFX e atmosfere usano i rispettivi volumi nel Mixer."}
+          ? "Tocca un tasto per modificarlo. Scegli un brano dalla libreria o incolla un URL. Trascina per riordinare."
+          : "Tocca un’icona per riprodurre. Il volume master SFX è nel Mixer sopra."}
       </p> : null}
 
       <div
@@ -337,19 +315,19 @@ export function GmSfxPadPanel({ library, setLibrary, playSfxUrl, togglePadAtmosp
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-[11px] text-zinc-500">Suono dalla libreria</Label>
+            <Label className="text-[11px] text-zinc-500">Brano dalla libreria (SFX)</Label>
             <Select
               value={(() => {
                 if (!editing) return "__none__";
                 if (
                   editing.libraryRef &&
-                  trackOptions.some((o) => o.ref === editing.libraryRef)
+                  sfxTrackOptions.some((o) => o.ref === editing.libraryRef)
                 ) {
                   return editing.libraryRef;
                 }
                 const u = editing.trackUrl.trim();
                 if (u) {
-                  const hit = trackOptions.find((o) => o.url === u && o.kind === (editing.trackKind ?? "sfx"));
+                  const hit = sfxTrackOptions.find((o) => o.url === u);
                   if (hit) return hit.ref;
                 }
                 return "__none__";
@@ -358,40 +336,15 @@ export function GmSfxPadPanel({ library, setLibrary, playSfxUrl, togglePadAtmosp
                 const idx = selectedSlot;
                 if (idx === null) return;
                 if (v === "__none__") {
-                  updateSlot(idx, { trackUrl: "", trackKind: undefined, libraryRef: undefined });
+                  updateSlot(idx, { trackUrl: "", libraryRef: undefined });
                   setManualUrlDraft("");
                   return;
                 }
-                const opt = trackOptions.find((o) => o.ref === v);
+                const opt = sfxTrackOptions.find((o) => o.ref === v);
                 if (opt) {
-                  updateSlot(idx, { trackUrl: opt.url, trackKind: opt.kind, libraryRef: opt.ref, etichetta: editing.etichetta === `Tasto ${idx + 1}` ? opt.label.split(" — ").at(-1) ?? opt.label : editing.etichetta });
+                  updateSlot(idx, { trackUrl: opt.url, libraryRef: opt.ref });
                   setManualUrlDraft(opt.url);
-                  return;
                 }
-                const global = globalTracks.find((track) => `global|${track.id}` === v);
-                if (!global || (global.audio_type !== "sfx" && global.audio_type !== "atmosphere")) return;
-                const kind = global.audio_type;
-                const url = gmGlobalAudioPreviewPath(global.id);
-                setLibrary((lib) => {
-                  const existing = lib.categories.flatMap((category) => category.tracks.map((track) => ({ category, track }))).find(({ category, track }) => category.kind === kind && track.url === url);
-                  const categoryId = existing?.category.id ?? newGmAudioEntityId();
-                  const trackId = existing?.track.id ?? newGmAudioEntityId();
-                  return {
-                    ...lib,
-                    categories: existing ? lib.categories : [...lib.categories, {
-                      id: categoryId, name: global.title, kind,
-                      playbackMode: "loop_one", sfxBackgroundRepeat: false,
-                      sfxRepeatGapMinMs: 2500, sfxRepeatGapMaxMs: 9000,
-                      tracks: [{ id: trackId, label: global.title, url }],
-                    }],
-                    sfxPad: { slots: lib.sfxPad.slots.map((slot) => slot.slotIndex === idx ? {
-                      ...slot, trackUrl: url, trackKind: kind,
-                      libraryRef: sfxPadLibraryRef(categoryId, trackId),
-                      etichetta: slot.etichetta === `Tasto ${idx + 1}` ? global.title : slot.etichetta,
-                    } : slot) },
-                  };
-                });
-                setManualUrlDraft(url);
               }}
             >
               <SelectTrigger className="border-amber-800/40 bg-zinc-950 text-sm">
@@ -399,20 +352,15 @@ export function GmSfxPadPanel({ library, setLibrary, playSfxUrl, togglePadAtmosp
               </SelectTrigger>
               <SelectContent className="max-h-60 border-amber-800/40 bg-zinc-950">
                 <SelectItem value="__none__">Nessuno</SelectItem>
-                {trackOptions.map((o) => (
+                {sfxTrackOptions.map((o) => (
                   <SelectItem key={o.ref} value={o.ref} className="text-xs">
-                    {o.kind === "atmosphere" ? "Atmosfera" : "SFX"} · {o.label}
-                  </SelectItem>
-                ))}
-                {globalTracks.filter((track) => !trackOptions.some((option) => option.url === gmGlobalAudioPreviewPath(track.id) && option.kind === track.audio_type)).map((track) => (
-                  <SelectItem key={`global|${track.id}`} value={`global|${track.id}`} className="text-xs">
-                    {track.audio_type === "atmosphere" ? "Atmosfera" : "SFX"} · {track.title} (Catalogo Gilda)
+                    {o.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {trackOptions.length === 0 && globalTracks.length === 0 ? (
-              <p className="text-[11px] text-zinc-500">{catalogError ? "Catalogo non disponibile. Riprova ricaricando la pagina." : "Caricamento catalogo…"}</p>
+            {sfxTrackOptions.length === 0 ? (
+              <p className="text-[11px] text-zinc-600">Aggiungi categorie SFX e tracce in Libreria.</p>
             ) : null}
           </div>
 

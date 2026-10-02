@@ -12,7 +12,7 @@ const create = {
   campaign_id: campaignId,
   name: z.string().trim().min(1).max(200),
   body: z.string().max(100_000),
-  attributes: z.record(z.unknown()).optional(),
+  attributes: z.record(z.string(), z.unknown()).optional(),
   admin_only: adminOnly,
 };
 const createMonster = {
@@ -162,6 +162,17 @@ export function createBdMcpServer(auth: McpAuthContext) {
   register("delete_mission_encounter", "Permanently delete an encounter.", { campaign_id: campaignId, encounter_id: entityId }, false);
   register("replace_encounter_monsters", "Replace an encounter monster lineup with campaign monster entities.", { campaign_id: campaignId, encounter_id: entityId, monsters: z.array(z.object({ wiki_entity_id: entityId, quantity: z.number().int().min(1) }).strict()).max(100) }, false);
   register("link_mission_resource", "Link a Wiki entity, exploration map, or scene document to a mission.", { campaign_id: campaignId, mission_id: entityId, resource_type: z.enum(["wiki", "exploration_map", "scene"]), resource_id: entityId }, false);
+
+  const attendance = z.record(entityId, z.enum(["attended", "absent"]));
+  const closeFields = {
+    campaign_id: campaignId, session_id: entityId, attendance, xp_gained: z.number().int().min(0),
+    per_player_xp_awards: z.array(z.object({ playerId: entityId, xp: z.number().int().min(0) }).strict()).max(100).optional(),
+    elapsed_hours: z.number().int().min(0).max(10000), summary: z.string().trim().min(1).max(10000),
+    gm_private_notes: z.string().max(20000).nullable().optional(),
+  };
+  register("list_sessions", "List scheduled and completed sessions in the configured campaign, or read one session with its signups and stored close state.", { campaign_id: campaignId, session_id: entityId.optional(), limit: z.number().int().min(1).max(50).optional(), offset: z.number().int().min(0).max(10000).optional() }, true);
+  register("prepare_session_close", "Save attendance and XP as a recoverable pre-close draft, and return a reviewable proposal. Public summary and GM notes are supplied by the caller; no text is generated here.", closeFields, false);
+  register("close_session", "Close a scheduled session using the token and timestamp returned for the exact reviewed proposal. Applies attendance, XP, public summary, private GM notes, and elapsed hours, then reads persisted state back.", { ...closeFields, confirm_close: z.literal(true), proposal_token: z.string().regex(/^[a-f0-9]{64}$/), proposal_updated_at: z.string().datetime() }, false);
 
   return server;
 }

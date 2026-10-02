@@ -471,6 +471,8 @@ function LongWorkspace({
         <div className="min-h-0 flex-1 overflow-hidden p-1">
           {screenView === "tactical" ? (
             <GmTacticalScreen
+              audioForge={audioForge}
+              onOpenAudio={() => setAudioForgeOpen(true)}
               campaignId={campaignId}
               currentUserId={currentUserId}
               campaignType="long"

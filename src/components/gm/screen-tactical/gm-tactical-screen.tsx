@@ -17,12 +17,15 @@ import { InitiativeTracker, type InitiativeEntry } from "@/components/gm/initiat
 import { MonsterStatPanel } from "@/components/gm/screen-grid/panels/monster-stat-panel";
 import { TacticalRulesLookup } from "./tactical-rules-lookup";
 import { TacticalSoundboard } from "./tactical-soundboard";
+import type { GmAudioForgeControls } from "@/lib/gm-audio-forge/use-gm-audio-forge";
 import { useGmScreenLongStateOptional } from "@/components/gm/gm-screen-long-state";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 type GmTacticalScreenProps = {
+  audioForge?: GmAudioForgeControls;
+  onOpenAudio?: () => void;
   campaignId: string;
   currentUserId: string;
   campaignType?: "oneshot" | "quest" | "long" | "torneo" | null;
@@ -36,6 +39,8 @@ type MonsterSelection = {
 };
 
 export function GmTacticalScreen({
+  audioForge,
+  onOpenAudio,
   campaignId,
   currentUserId,
   campaignType = null,
@@ -423,7 +428,7 @@ export function GmTacticalScreen({
 
         {/* Widget 3: Ambient Soundboard */}
         <div className="shrink-0">
-          <TacticalSoundboard />
+          <TacticalSoundboard forge={audioForge} onOpenAudio={onOpenAudio} />
         </div>
       </div>
     </div>

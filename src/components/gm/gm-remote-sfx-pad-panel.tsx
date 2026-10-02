@@ -57,7 +57,7 @@ export function GmRemoteSfxPadPanel({ publicId, token, sending, onSend }: Props)
 
   return (
     <div>
-      <p className="mb-2 text-center text-xs font-medium uppercase tracking-wide text-zinc-500">Pad audio</p>
+      <p className="mb-2 text-center text-xs font-medium uppercase tracking-wide text-zinc-500">Pad SFX</p>
       {loading && !snapshot ? (
         <div className="flex justify-center py-6 text-zinc-400">
           <Loader2 className="h-6 w-6 animate-spin" />

@@ -57,7 +57,9 @@ async function isGmOrAdminByRole(
     error: userError,
   } = await supabase.auth.getUser();
   if (userError || !user) return false;
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  const admin = createSupabaseAdminClient();
+  const { data: profileData } = await admin.from("profiles").select("role").eq("id", user.id).single();
+  const profile = profileData as { role?: string | null } | null;
   return profile?.role === "gm" || profile?.role === "admin";
 }
 

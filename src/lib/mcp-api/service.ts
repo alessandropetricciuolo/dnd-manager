@@ -1,8 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ApiError, validate, type EntityEnvelope } from "./contracts";
 import type { McpAuthContext } from "./auth";
+import { createHmac, timingSafeEqual } from "node:crypto";
+import { revalidatePath } from "next/cache";
 import { uploadImageToTelegram } from "@/lib/telegram-storage";
 import { executeMissionOperation, isMissionOperation } from "./missions";
+import { createSupabaseAdminClient } from "@/utils/supabase/admin";
+import { buildSessionHourPlan } from "@/lib/session-close-hours";
+import { syncSessionToCampaignMemory } from "@/lib/campaign-memory-indexer";
+import { sendFeedbackRequestEmailsForSession } from "@/lib/session-close-feedback";
 
 const columns = "id,campaign_id,type,name,content,attributes,image_url,admin_only,mcp_status,mcp_revision,xp_value,is_core,global_status,updated_at";
 const mapColumns = "id,campaign_id,name,description,map_type,image_url,visibility,parent_map_id,wiki_entity_id,admin_only,created_at,updated_at";
@@ -29,14 +35,160 @@ function assertMcpScope(auth: McpAuthContext, campaignId: string): void {
   if (!auth.isAdmin || !process.env.MCP_CAMPAIGN_ID || process.env.MCP_CAMPAIGN_ID !== campaignId) throw notFound();
 }
 
+async function authorizeSessionMcp(auth: McpAuthContext, campaignId: string) {
+  if (!process.env.MCP_CAMPAIGN_ID || process.env.MCP_CAMPAIGN_ID !== campaignId) throw notFound();
+  const profile = checked(await auth.db.from("profiles").select("role").eq("id", auth.userId).maybeSingle());
+  const campaign = checked(await auth.db.from("campaigns").select("id,gm_id,admin_drafts_enabled").eq("id", campaignId).maybeSingle());
+  if (!campaign || campaign.admin_drafts_enabled !== true || !(profile?.role === "gm" || profile?.role === "admin" || campaign.gm_id === auth.userId)) throw notFound();
+  return campaign;
+}
+
+const eligibleSignup = (status: string) => ["approved", "confirmed", "attended", "absent"].includes(status.toLowerCase());
+
+function sessionClosePayload(a: Record<string, any>) {
+  return {
+    campaign_id: a.campaign_id, session_id: a.session_id,
+    attendance: Object.fromEntries(Object.entries(a.attendance).sort(([left], [right]) => left.localeCompare(right))),
+    xp_gained: a.xp_gained,
+    per_player_xp_awards: [...(a.per_player_xp_awards ?? [])].sort((left: any, right: any) => left.playerId.localeCompare(right.playerId)),
+    elapsed_hours: a.elapsed_hours, summary: a.summary.trim(), gm_private_notes: a.gm_private_notes?.trim() || null,
+  };
+}
+
+function makeSessionCloseToken(payload: unknown, updatedAt: string) {
+  const secret = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!secret) throw new ApiError(503, "Session close signing is not configured");
+  return createHmac("sha256", secret).update(JSON.stringify({ payload, updatedAt })).digest("hex");
+}
+
+async function executeSessionOperation(auth: McpAuthContext, operation: string, a: Record<string, any>, createAdmin = createSupabaseAdminClient) {
+  const campaign = await authorizeSessionMcp(auth, a.campaign_id);
+  const admin: any = createAdmin();
+  if (operation === "list_sessions" && !a.session_id) {
+    const { data, error } = await admin.from("sessions").select("id,campaign_id,title,scheduled_at,status,session_summary,gm_private_notes,elapsed_hours,is_pre_closed,pre_closed_xp_gained,pre_closed_xp_awards").eq("campaign_id", a.campaign_id).order("scheduled_at", { ascending: false }).range(a.offset ?? 0, (a.offset ?? 0) + (a.limit ?? 20) - 1);
+    if (error) throw new ApiError(503, "Session list lookup failed");
+    return { sessions: data ?? [] };
+  }
+  const sessionQuery = admin.from("sessions").select("id,campaign_id,title,scheduled_at,status,location,session_summary,gm_private_notes,elapsed_hours,is_pre_closed,pre_closed_xp_gained,pre_closed_xp_awards,updated_at").eq("campaign_id", a.campaign_id);
+  const { data: session, error: sessionError } = await sessionQuery.eq("id", a.session_id).maybeSingle();
+  if (sessionError) throw new ApiError(503, "Session lookup failed");
+  if (!session) throw notFound();
+  const signupResult = await admin.from("session_signups").select("player_id,status").eq("session_id", a.session_id).order("signed_up_at");
+  if (signupResult.error) throw new ApiError(503, "Session signup lookup failed");
+  const signups = (signupResult.data ?? []).filter((row: any) => eligibleSignup(row.status));
+  const playerIds: string[] = signups.map((row: any) => String(row.player_id));
+  const [profilesResult, charactersResult] = await Promise.all([
+    playerIds.length ? admin.from("profiles").select("id,display_name,first_name,last_name").in("id", playerIds) : Promise.resolve({ data: [], error: null }),
+    playerIds.length ? admin.from("campaign_characters").select("id,name,assigned_to,current_xp,time_offset_hours").eq("campaign_id", a.campaign_id).in("assigned_to", playerIds) : Promise.resolve({ data: [], error: null }),
+  ]);
+  if (profilesResult.error || charactersResult.error) throw new ApiError(503, "Session participant lookup failed");
+  const profileMap = new Map((profilesResult.data ?? []).map((row: any) => [row.id, row]));
+  const charactersByPlayer = new Map<string, any[]>();
+  for (const character of charactersResult.data ?? []) charactersByPlayer.set(character.assigned_to, [...(charactersByPlayer.get(character.assigned_to) ?? []), character]);
+  const participants = signups.map((row: any) => {
+    const profile: any = profileMap.get(row.player_id);
+    return { player_id: row.player_id, status: row.status, name: [profile?.first_name, profile?.last_name].filter(Boolean).join(" ").trim() || profile?.display_name || row.player_id, characters: charactersByPlayer.get(row.player_id) ?? [] };
+  });
+  if (operation === "list_sessions") return { session, participants };
+  if (operation === "close_session" && session.status === "completed") {
+    const [ledger, hourRows] = await Promise.all([
+      admin.from("session_xp_awards").select("campaign_id,player_id,character_id,xp_awarded,xp_after").eq("session_id", a.session_id).order("created_at"),
+      admin.from("session_hour_awards").select("character_id,hours_awarded,hours_before,hours_after,calendar_date_after").eq("session_id", a.session_id),
+    ]);
+    if (ledger.error || hourRows.error) throw new ApiError(503, "Completed session readback failed");
+    return { success: true, already_closed: true, session, xp_ledger: ledger.data ?? [], hours: { characters: hourRows.data ?? [], reapplied: false } };
+  }
+  if (session.status !== "scheduled") throw new ApiError(409, "Session is not scheduled; no changes applied");
+  if (operation === "close_session") {
+    const expectedToken = makeSessionCloseToken(sessionClosePayload(a), a.proposal_updated_at);
+    const suppliedToken = Buffer.from(a.proposal_token, "hex");
+    if (session.updated_at !== a.proposal_updated_at || suppliedToken.length !== 32 || !timingSafeEqual(Buffer.from(expectedToken, "hex"), suppliedToken)) throw new ApiError(409, "Reviewed proposal is stale or does not match this close request; prepare it again");
+  }
+
+  const candidateIds = new Set(playerIds);
+  const attendanceEntries = Object.entries(a.attendance) as [string, string][];
+  if (attendanceEntries.some(([playerId]) => !candidateIds.has(playerId)) || attendanceEntries.length !== candidateIds.size || [...candidateIds].some((playerId) => !(playerId in a.attendance))) throw new ApiError(400, "Attendance must include every eligible session signup exactly once");
+  const perPlayerAwards = a.per_player_xp_awards ?? [];
+  if (perPlayerAwards.some((award: any) => !candidateIds.has(award.playerId) || a.attendance[award.playerId] !== "attended")) throw new ApiError(400, "Per-player XP awards must target attending signups");
+
+  if (operation === "prepare_session_close") {
+    const { error } = await admin.rpc("save_session_preclose" as never, {
+      p_session_id: a.session_id, p_actor_id: auth.userId, p_attendance: a.attendance,
+      p_xp_gained: a.xp_gained, p_per_player_xp_awards: perPlayerAwards,
+    } as never);
+    if (error) throw new ApiError(503, "Session pre-close draft could not be saved");
+    const { data: draft } = await admin.from("sessions").select("id,status,is_pre_closed,pre_closed_xp_gained,pre_closed_xp_awards,updated_at").eq("id", a.session_id).maybeSingle();
+    if (!draft?.is_pre_closed) throw new ApiError(503, "Session pre-close draft readback failed");
+    const payload = sessionClosePayload(a);
+    const proposalToken = makeSessionCloseToken(payload, draft.updated_at);
+    return { proposal: { ...payload, proposal_token: proposalToken, proposal_updated_at: draft.updated_at }, draft_persisted: { is_pre_closed: draft.is_pre_closed, xp_gained: draft.pre_closed_xp_gained, per_player_xp_awards: draft.pre_closed_xp_awards }, ready_to_close: true };
+  }
+
+
+  const hours = Math.max(0, Math.floor(a.elapsed_hours));
+  let hourPlan: Awaited<ReturnType<typeof buildSessionHourPlan>>;
+  try {
+    hourPlan = await buildSessionHourPlan(admin, a.campaign_id, a.attendance, hours);
+  } catch (error) {
+    throw new ApiError(503, error instanceof Error ? error.message : "Session hour plan failed");
+  }
+
+  const { error: closeError } = await admin.rpc("close_session_with_xp_and_hours" as never, {
+    p_session_id: a.session_id, p_actor_id: auth.userId, p_attendance: a.attendance, p_xp_gained: a.xp_gained,
+    p_per_player_xp_awards: perPlayerAwards, p_summary: a.summary.trim(), p_gm_private_notes: a.gm_private_notes?.trim() || null,
+    p_elapsed_hours: hours, p_hour_updates: hourPlan.updates,
+    p_calendar_config: hourPlan.calendarConfig, p_calendar_base_date: hourPlan.calendarBaseDate,
+  } as never);
+  if (closeError) throw new ApiError(503, "Session close failed");
+
+  const [sessionRead, awardsRead, hoursRead] = await Promise.all([
+    admin.from("sessions").select("id,campaign_id,status,session_summary,gm_private_notes,elapsed_hours,is_pre_closed").eq("id", a.session_id).maybeSingle(),
+    admin.from("session_xp_awards").select("campaign_id,player_id,character_id,xp_awarded,xp_after").eq("session_id", a.session_id).order("created_at"),
+    admin.from("session_hour_awards").select("character_id,hours_awarded,hours_before,hours_after,calendar_date_after").eq("session_id", a.session_id),
+  ]);
+  if (sessionRead.error || awardsRead.error || hoursRead.error || sessionRead.data?.campaign_id !== a.campaign_id || sessionRead.data?.status !== "completed" || sessionRead.data?.session_summary !== a.summary.trim() || sessionRead.data?.elapsed_hours !== hours || (sessionRead.data?.gm_private_notes ?? null) !== (a.gm_private_notes?.trim() || null)) throw new ApiError(503, "Session closed, but readback failed");
+  const expectedXp = new Map(perPlayerAwards.map((award: any) => [award.playerId, award.xp]));
+  const expectedPlayers = attendanceEntries.filter(([, status]) => status === "attended").map(([playerId]) => playerId);
+  const ledgerByPlayer = new Map((awardsRead.data ?? []).map((award: any) => [award.player_id, award]));
+  const xpLedgerVerified = ledgerByPlayer.size === expectedPlayers.length && expectedPlayers.every((playerId) => {
+    const award: any = ledgerByPlayer.get(playerId);
+    return !!award && award.campaign_id === a.campaign_id && award.xp_awarded === (expectedXp.has(playerId) ? expectedXp.get(playerId) : a.xp_gained);
+  });
+  if (!xpLedgerVerified) throw new ApiError(503, "Session closed, but XP ledger does not match the approved awards");
+  const hourLedger = (hoursRead.data ?? []) as any[];
+  const hourByCharacter = new Map(hourLedger.map((row) => [row.character_id, row]));
+  const hoursVerified = hourByCharacter.size === hourPlan.updates.length && hourPlan.updates.every((update) => {
+    const row = hourByCharacter.get(update.character_id);
+    return row && row.hours_awarded === hours && row.hours_before === update.expected_hours
+      && row.hours_after === update.next_hours
+      && Number(row.calendar_date_after?.year) === Number((update.calendar_current_date as any).year)
+      && Number(row.calendar_date_after?.month) === Number((update.calendar_current_date as any).month)
+      && Number(row.calendar_date_after?.day) === Number((update.calendar_current_date as any).day);
+  });
+  if (!hoursVerified) throw new ApiError(503, "Session closed, but hour ledger does not match the approved plan");
+  try { await syncSessionToCampaignMemory(admin, a.session_id, { campaignId: a.campaign_id }); } catch { /* Closure is already persisted; memory indexing is best effort. */ }
+  void sendFeedbackRequestEmailsForSession(admin, a.campaign_id, a.session_id);
+  try {
+    revalidatePath(`/campaigns/${a.campaign_id}`);
+    revalidatePath("/dashboard");
+  } catch { /* The API can run outside a Next request cache context. */ }
+  return { success: true, session: sessionRead.data, xp_ledger: awardsRead.data ?? [], hours: { requested: hours, characters: hourLedger, verified: true }, message: "Session, XP and character hours closed atomically and verified." };
+}
+
 async function getEnabledCampaign(db: SupabaseClient, campaignId: string): Promise<{ id: string; type: string }> {
   const campaign = checked(await db.from("campaigns").select("id,type,admin_drafts_enabled").eq("id", campaignId).maybeSingle());
   if (!campaign || campaign.admin_drafts_enabled !== true) throw notFound();
   return campaign;
 }
 
-export async function executeContent(auth: McpAuthContext, raw: unknown, deps = { uploadImage: uploadImageToTelegram }) {
+export async function executeContent(
+  auth: McpAuthContext,
+  raw: unknown,
+  deps: { uploadImage?: typeof uploadImageToTelegram; createAdmin?: typeof createSupabaseAdminClient } = {}
+) {
   const { operation, args: a } = validate(raw);
+  if (["list_sessions", "prepare_session_close", "close_session"].includes(operation)) return executeSessionOperation(auth, operation, a, deps.createAdmin ?? createSupabaseAdminClient);
+  const uploadImage = deps.uploadImage ?? uploadImageToTelegram;
   assertMcpScope(auth, a.campaign_id);
   const campaign = await getEnabledCampaign(auth.db, a.campaign_id);
   const adminOnlyRequested = a.admin_only === true;
@@ -188,7 +340,7 @@ export async function executeContent(auth: McpAuthContext, raw: unknown, deps = 
     let imageUrl = a.image_url;
     if (a.data_base64) {
       const file = new File([Buffer.from(a.data_base64, "base64")], a.filename, { type: a.mime_type });
-      try { imageUrl = `/api/tg-image/${await deps.uploadImage(file, `Mappa: ${a.name.trim()}`)}`; }
+      try { imageUrl = `/api/tg-image/${await uploadImage(file, `Mappa: ${a.name.trim()}`)}`; }
       catch { throw new ApiError(503, "Map image upload failed"); }
     }
     const payload: Record<string, unknown> = {
@@ -224,7 +376,7 @@ export async function executeContent(auth: McpAuthContext, raw: unknown, deps = 
     if (entity.mcp_revision !== a.revision) throw new ApiError(409, "Revision conflict: read entity again");
     const file = new File([Buffer.from(a.data_base64, "base64")], a.filename, { type: a.mime_type });
     let imageUrl: string;
-    try { imageUrl = `/api/tg-image/${encodeURIComponent(await deps.uploadImage(file, `Wiki: ${entity.name}`))}`; }
+    try { imageUrl = `/api/tg-image/${encodeURIComponent(await uploadImage(file, `Wiki: ${entity.name}`))}`; }
     catch { throw new ApiError(503, "Wiki image upload failed"); }
     const result = await auth.db.from("wiki_entities").update({ image_url: imageUrl }).eq("id", a.entity_id).eq("campaign_id", a.campaign_id).eq("mcp_revision", a.revision).select(columns).maybeSingle();
     if (result.error) throw new ApiError(503, "Wiki image update failed");

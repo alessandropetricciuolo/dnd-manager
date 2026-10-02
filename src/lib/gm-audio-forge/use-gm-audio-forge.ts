@@ -443,24 +443,6 @@ export function useGmAudioForge(campaignId: string) {
     [playAtmosphereTrack, stopAtmosphereInternal]
   );
 
-  const togglePadAtmosphere = useCallback(
-    (categoryId: string, trackId: string) => {
-      const cat = getCategory(libraryRef.current, categoryId);
-      const track = cat?.kind === "atmosphere" ? cat.tracks.find((t) => t.id === trackId) : undefined;
-      if (!track) return;
-      const current = atmosStateRef.current.get(categoryId);
-      if (activeAtmosphereIdsRef.current[categoryId] && current?.trackUrl === track.url) {
-        stopAtmosphereInternal(categoryId);
-        return;
-      }
-      setActiveAtmosphereIds((prev) => ({ ...prev, [categoryId]: true }));
-      playAtmosphereTrack(categoryId, track);
-      const audio = atmosAudiosRef.current.get(categoryId);
-      if (audio) audio.loop = true;
-    },
-    [playAtmosphereTrack, stopAtmosphereInternal]
-  );
-
   const playSfxRandom = useCallback(
     (categoryId: string) => {
       const cat = getCategory(libraryRef.current, categoryId);
@@ -743,7 +725,6 @@ export function useGmAudioForge(campaignId: string) {
     setSfxMaster,
     toggleMusicCategory,
     toggleAtmosphereCategory,
-    togglePadAtmosphere,
     playSfxRandom,
     playSfxUrl,
     toggleSfxBackground,

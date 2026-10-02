@@ -2,7 +2,8 @@ export const entityKinds = ["campaign", "npc", "location", "faction", "quest", "
 export const statuses = ["draft", "proposed", "canonical", "deprecated"] as const;
 export const operations = ["search_lore", "get_entity", "list_wiki_relationships", "upsert_wiki_relationship", "search_maps", "get_map", "create_lore", "create_npc", "create_location", "create_item", "create_monster", "update_entity", "upload_asset", "attach_asset", "upload_entity_image", "upload_map", "set_status",
   "search_missions", "get_mission", "create_mission", "update_mission", "set_mission_status", "complete_mission", "reopen_mission", "delete_mission",
-  "list_mission_encounters", "create_mission_encounter", "update_mission_encounter", "delete_mission_encounter", "replace_encounter_monsters", "link_mission_resource"] as const;
+  "list_mission_encounters", "create_mission_encounter", "update_mission_encounter", "delete_mission_encounter", "replace_encounter_monsters", "link_mission_resource",
+  "list_sessions", "prepare_session_close", "close_session"] as const;
 export type Operation = typeof operations[number];
 
 export interface EntityEnvelope {
@@ -54,6 +55,9 @@ const fields: Record<Operation, string[]> = {
   list_mission_encounters: ["mission_id"], create_mission_encounter: ["mission_id", "name", "notes"],
   update_mission_encounter: ["encounter_id", "name", "notes"], delete_mission_encounter: ["encounter_id"],
   replace_encounter_monsters: ["encounter_id", "monsters"], link_mission_resource: ["mission_id", "resource_type", "resource_id"],
+  list_sessions: ["session_id", "limit", "offset"],
+  prepare_session_close: ["session_id", "attendance", "xp_gained", "per_player_xp_awards", "elapsed_hours", "summary", "gm_private_notes"],
+  close_session: ["session_id", "attendance", "xp_gained", "per_player_xp_awards", "elapsed_hours", "summary", "gm_private_notes", "confirm_close", "proposal_token", "proposal_updated_at"],
 };
 
 export function validate(raw: unknown): { operation: Operation; args: Record<string, any> } {
@@ -66,6 +70,19 @@ export function validate(raw: unknown): { operation: Operation; args: Record<str
   const operation = r.operation as Operation;
   if (Object.keys(args).some((key) => key !== "campaign_id" && !fields[operation].includes(key))) return fail();
   for (const key of ["entity_id", "asset_id", "map_id", "source_id", "target_id", "target_map_id", "mission_id", "guild_id", "encounter_id", "resource_id"]) if (args[key] !== undefined && (typeof args[key] !== "string" || !uuid.test(args[key]))) return fail();
+  if (["prepare_session_close", "close_session"].includes(operation) && (typeof args.session_id !== "string" || !uuid.test(args.session_id))) return fail();
+  if (operation === "list_sessions" && args.session_id !== undefined && (typeof args.session_id !== "string" || !uuid.test(args.session_id))) return fail();
+  if (operation === "list_sessions" && ((args.limit !== undefined && (!Number.isInteger(args.limit) || args.limit < 1 || args.limit > 50)) || (args.offset !== undefined && (!Number.isInteger(args.offset) || args.offset < 0 || args.offset > 10000)))) return fail();
+  if (["prepare_session_close", "close_session"].includes(operation)) {
+    if (typeof args.summary !== "string" || !args.summary.trim() || args.summary.length > 10000) return fail();
+    if (args.gm_private_notes !== undefined && args.gm_private_notes !== null && (typeof args.gm_private_notes !== "string" || args.gm_private_notes.length > 20000)) return fail();
+    if (!Number.isInteger(args.xp_gained) || args.xp_gained < 0 || !Number.isInteger(args.elapsed_hours) || args.elapsed_hours < 0 || args.elapsed_hours > 10000) return fail();
+    if (!args.attendance || typeof args.attendance !== "object" || Array.isArray(args.attendance) || Object.values(args.attendance).some((value) => value !== "attended" && value !== "absent")) return fail();
+    if (args.per_player_xp_awards !== undefined && (!Array.isArray(args.per_player_xp_awards) || args.per_player_xp_awards.length > 100 || args.per_player_xp_awards.some((award: any) => !award || typeof award !== "object" || !uuid.test(award.playerId) || !Number.isInteger(award.xp) || award.xp < 0) || new Set(args.per_player_xp_awards.map((award: any) => award.playerId)).size !== args.per_player_xp_awards.length)) return fail();
+  }
+  if (operation === "close_session" && args.confirm_close !== true) return fail();
+  if (operation === "close_session" && (typeof args.proposal_token !== "string" || !/^[a-f0-9]{64}$/.test(args.proposal_token))) return fail();
+  if (operation === "close_session" && (typeof args.proposal_updated_at !== "string" || !Number.isFinite(Date.parse(args.proposal_updated_at)))) return fail();
   if (["update_entity", "upload_entity_image", "set_status"].includes(operation) && (!Number.isSafeInteger(args.revision) || args.revision < 1)) return fail();
   if (["create_lore", "create_npc", "create_location", "create_item", "create_monster"].includes(operation) && (args.name === undefined || args.body === undefined)) return fail();
   for (const [key, max] of [["name", 200], ["body", 100000], ["query", 200]] as const) {

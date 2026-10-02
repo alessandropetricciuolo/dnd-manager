@@ -33,6 +33,107 @@ test("M6 contract carries admin_only only on scoped Wiki operations", () => {
   assert.throws(() => validate({ operation: "set_status", args: { campaign_id: campaign, entity_id: entityId, revision: 1, status: "draft", admin_only: true } }), ApiError);
 });
 
+test("session close contract separates preparation from explicit token-bound confirmation", () => {
+  const attendance = { ["aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"]: "attended" };
+  const prepared = { campaign_id: campaign, session_id: entityId, attendance, xp_gained: 120, elapsed_hours: 4, summary: "Il gruppo torna al villaggio.", gm_private_notes: "Il messaggero mente." };
+  assert.equal(validate({ operation: "prepare_session_close", args: prepared }).operation, "prepare_session_close");
+  assert.equal(validate({ operation: "list_sessions", args: { campaign_id: campaign, limit: 10 } }).operation, "list_sessions");
+  assert.throws(() => validate({ operation: "close_session", args: { ...prepared, confirm_close: true, proposal_token: "not-a-token" } }), ApiError);
+  assert.throws(() => validate({ operation: "close_session", args: { ...prepared, confirm_close: true, proposal_token: "a".repeat(64) } }), ApiError);
+  assert.throws(() => validate({ operation: "close_session", args: { ...prepared, confirm_close: false, proposal_token: "a".repeat(64) } }), ApiError);
+});
+
+test("session pre-close returns a signed proposal; close rejects stale input and reads back XP and hours", async () => {
+  const playerId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+  const characterId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+  const actorId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  process.env.MCP_CAMPAIGN_ID = campaign;
+  process.env.SUPABASE_SERVICE_ROLE_KEY = "test-signing-key";
+  const state: any = {
+    session: { id: entityId, campaign_id: campaign, title: "Sessione 1", scheduled_at: "2026-09-20T18:00:00Z", status: "scheduled", session_summary: null, gm_private_notes: null, is_pre_closed: false, updated_at: "2026-09-20T18:00:00Z" },
+    signups: [{ player_id: playerId, status: "confirmed" }],
+    character: { id: characterId, name: "Eroe", assigned_to: playerId, current_xp: 100, time_offset_hours: 10, calendar_anchor_date: null, calendar_anchor_hours: null },
+    ledger: [], hourLedger: [], closeCalls: 0, failAtomicClose: false,
+  };
+  const makeDb = (isAdminDb: boolean): any => ({
+    from(table: string) {
+      const q: any = { filters: {}, mode: "read", payload: null };
+      q.select = () => q;
+      q.eq = (key: string, value: any) => { q.filters[key] = value; return q; };
+      q.in = (key: string, value: any[]) => { q.filters[key] = value; return q; };
+      q.order = () => q;
+      q.range = () => q;
+      q.update = (payload: any) => { q.mode = "update"; q.payload = payload; return q; };
+      const read = () => {
+        if (q.mode === "update") {
+          if (table === "campaign_characters" && q.filters.id === characterId) Object.assign(state.character, q.payload);
+          return { data: null, error: null };
+        }
+        if (table === "profiles") return q.filters.id === actorId ? { data: { role: "gm" }, error: null } : { data: [{ id: playerId, display_name: "Giocatore" }], error: null };
+        if (table === "campaigns") return { data: q.filters.id ? { id: campaign, gm_id: actorId, admin_drafts_enabled: true, long_calendar_config: null, long_calendar_base_date: null } : null, error: null };
+        if (table === "sessions") return q.filters.id ? { data: { ...state.session }, error: null } : { data: [state.session], error: null };
+        if (table === "session_signups") return { data: state.signups, error: null };
+        if (table === "campaign_characters") return q.filters.id ? { data: { ...state.character }, error: null } : { data: [state.character], error: null };
+        if (table === "session_xp_awards") return { data: state.ledger, error: null };
+        if (table === "session_hour_awards") return { data: state.hourLedger, error: null };
+        return { data: [], error: null };
+      };
+      q.maybeSingle = async () => read(); q.single = async () => read();
+      q.then = (resolve: any, reject: any) => Promise.resolve(read()).then(resolve, reject);
+      return q;
+    },
+    async rpc(name: string, args: any) {
+      if (name === "save_session_preclose") {
+        state.session = { ...state.session, is_pre_closed: true, pre_closed_xp_gained: args.p_xp_gained, pre_closed_xp_awards: args.p_per_player_xp_awards, updated_at: "2026-09-25T10:00:00Z" };
+        state.signups = state.signups.map((row: any) => ({ ...row, status: args.p_attendance[row.player_id] }));
+        return { data: true, error: null };
+      }
+      if (name === "close_session_with_xp_and_hours") {
+        state.closeCalls++;
+        if (state.failAtomicClose) return { data: null, error: { message: "session_character_hours_changed" } };
+        state.session = { ...state.session, status: "completed", session_summary: args.p_summary, gm_private_notes: args.p_gm_private_notes, elapsed_hours: args.p_elapsed_hours };
+        state.ledger = [{ campaign_id: campaign, player_id: playerId, character_id: characterId, xp_awarded: args.p_per_player_xp_awards[0].xp, xp_after: 175 }];
+        state.character.current_xp = 175;
+        state.hourLedger = args.p_hour_updates.map((update: any) => ({
+          character_id: update.character_id,
+          hours_awarded: args.p_elapsed_hours,
+          hours_before: update.expected_hours,
+          hours_after: update.next_hours,
+          calendar_date_after: update.calendar_current_date,
+        }));
+        state.character.time_offset_hours = args.p_hour_updates[0].next_hours;
+        return { data: [{ applied_awards: 1, skipped_awards: 0 }], error: null };
+      }
+      return { data: null, error: { message: "unexpected rpc" } };
+    },
+    auth: { admin: { getUserById: async () => ({ data: { user: { email: null } } }) } },
+  });
+  const authDb = makeDb(false);
+  const adminDb = makeDb(true);
+  const auth = { db: authDb, userId: actorId, isAdmin: false };
+  const draftArgs = { campaign_id: campaign, session_id: entityId, attendance: { [playerId]: "attended" }, xp_gained: 0, per_player_xp_awards: [{ playerId, xp: 75 }], elapsed_hours: 3, summary: "Il gruppo torna al villaggio.", gm_private_notes: "Il messaggero mente." };
+  const prepared: any = await executeContent(auth as any, { operation: "prepare_session_close", args: draftArgs } as any, { uploadImage: async () => "", createAdmin: () => adminDb });
+  assert.equal(prepared.ready_to_close, true);
+  assert.equal(prepared.draft_persisted.is_pre_closed, true);
+  const proposal = prepared.proposal;
+  const closeArgs = { ...draftArgs, ...proposal, confirm_close: true };
+  await assert.rejects(executeContent(auth as any, { operation: "close_session", args: { ...closeArgs, summary: "Testo cambiato" } } as any, { uploadImage: async () => "", createAdmin: () => adminDb }), (error: any) => error.status === 409);
+  await assert.rejects(executeContent(auth as any, { operation: "close_session", args: { ...closeArgs, proposal_updated_at: "2026-09-25T10:01:00Z" } } as any, { uploadImage: async () => "", createAdmin: () => adminDb }), (error: any) => error.status === 409);
+  state.failAtomicClose = true;
+  await assert.rejects(executeContent(auth as any, { operation: "close_session", args: closeArgs } as any, { uploadImage: async () => "", createAdmin: () => adminDb }), (error: any) => error.status === 503);
+  assert.equal(state.session.status, "scheduled");
+  assert.equal(state.ledger.length, 0);
+  assert.equal(state.hourLedger.length, 0);
+  state.failAtomicClose = false;
+  const closed: any = await executeContent(auth as any, { operation: "close_session", args: closeArgs } as any, { uploadImage: async () => "", createAdmin: () => adminDb });
+  assert.equal(closed.success, true);
+  assert.equal(closed.session.status, "completed");
+  assert.equal(closed.session.elapsed_hours, 3);
+  assert.equal(closed.xp_ledger[0].xp_awarded, 75);
+  assert.equal(closed.hours.characters[0].hours_after, 13);
+  assert.equal(state.closeCalls, 2);
+});
+
 test("item and monster creation contracts mirror the manual Wiki persistence fields", async () => {
   process.env.MCP_CAMPAIGN_ID = campaign;
   assert.equal(validate({ operation: "create_item", args: { campaign_id: campaign, name: "Lama", body: "Antica" } }).operation, "create_item");

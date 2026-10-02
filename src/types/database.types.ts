@@ -358,6 +358,7 @@ export interface Database {
           dm_id: string | null;
           session_summary: string | null;
           gm_private_notes: string | null;
+          elapsed_hours: number | null;
           is_pre_closed: boolean;
           pre_closed_xp_gained: number | null;
           pre_closed_xp_awards: Json | null;
@@ -366,10 +367,11 @@ export interface Database {
         };
         Insert: Omit<
           Database["public"]["Tables"]["sessions"]["Row"],
-          "created_at" | "updated_at" | "session_summary" | "gm_private_notes" | "is_pre_closed" | "pre_closed_xp_gained" | "pre_closed_xp_awards"
+          "created_at" | "updated_at" | "session_summary" | "gm_private_notes" | "elapsed_hours" | "is_pre_closed" | "pre_closed_xp_gained" | "pre_closed_xp_awards"
         > & {
           session_summary?: string | null;
           gm_private_notes?: string | null;
+          elapsed_hours?: number | null;
           is_pre_closed?: boolean;
           pre_closed_xp_gained?: number | null;
           pre_closed_xp_awards?: Json | null;
@@ -400,6 +402,23 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["session_xp_awards"]["Insert"]>;
+        Relationships: [];
+      };
+      session_hour_awards: {
+        Row: {
+          session_id: string;
+          campaign_id: string;
+          character_id: string;
+          hours_awarded: number;
+          hours_before: number;
+          hours_after: number;
+          calendar_date_after: Json;
+          created_at: string;
+        };
+        Insert: Omit<Database["public"]["Tables"]["session_hour_awards"]["Row"], "created_at"> & {
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["session_hour_awards"]["Insert"]>;
         Relationships: [];
       };
       wiki_entities: {

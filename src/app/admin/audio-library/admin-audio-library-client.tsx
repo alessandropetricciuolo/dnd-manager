@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Loader2, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -69,6 +69,38 @@ export function AdminAudioLibraryClient() {
   const [file, setFile] = useState<File | null>(null);
   const [filterType, setFilterType] = useState<string>("all");
   const [filterMood, setFilterMood] = useState("");
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [previewingId, setPreviewingId] = useState<string | null>(null);
+
+  useEffect(() => () => {
+    previewAudioRef.current?.pause();
+    previewAudioRef.current = null;
+  }, []);
+
+  function togglePreview(id: string) {
+    previewAudioRef.current?.pause();
+    if (previewingId === id) {
+      previewAudioRef.current = null;
+      setPreviewingId(null);
+      return;
+    }
+    const audio = new Audio(toAbsoluteMediaUrl(gmGlobalAudioPreviewPath(id)));
+    previewAudioRef.current = audio;
+    setPreviewingId(id);
+    audio.addEventListener("ended", () => {
+      if (previewAudioRef.current === audio) {
+        previewAudioRef.current = null;
+        setPreviewingId(null);
+      }
+    }, { once: true });
+    void audio.play().catch(() => {
+      toast.error("Anteprima non disponibile (rete o permessi).");
+      if (previewAudioRef.current === audio) {
+        previewAudioRef.current = null;
+        setPreviewingId(null);
+      }
+    });
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -176,7 +208,7 @@ export function AdminAudioLibraryClient() {
       <div>
         <h1 className="font-serif text-2xl text-barber-paper">Libreria audio globale</h1>
         <p className="mt-1 text-sm text-barber-paper/70">
-          File su Cloudflare R2 e playlist Spotify curate qui. I master le usano dal GM Screen (tab Catalogo / Spotify).
+          File su Cloudflare R2 e playlist Spotify curate qui. I master le usano dal GM Screen nella sezione Audio.
         </p>
       </div>
 
@@ -316,12 +348,9 @@ export function AdminAudioLibraryClient() {
                     size="sm"
                     variant="outline"
                     className="border-barber-gold/40 text-barber-paper"
-                    onClick={() => {
-                      const a = new Audio(toAbsoluteMediaUrl(gmGlobalAudioPreviewPath(r.id)));
-                      void a.play().catch(() => toast.error("Anteprima non disponibile (rete o permessi)."));
-                    }}
+                    onClick={() => togglePreview(r.id)}
                   >
-                    Anteprima
+                    {previewingId === r.id ? "Ferma anteprima" : "Anteprima"}
                   </Button>
                   <Button
                     type="button"

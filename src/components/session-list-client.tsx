@@ -397,9 +397,7 @@ export function SessionListClient({
                 {/* GM/Admin: Chiudi Sessione (solo se data passata e ancora scheduled) */}
                 {isGmOrAdmin && isTodayOrPast && session.status === "scheduled" && (
                   <div className="space-y-1.5">
-                    {(campaignType === "quest" ||
-                      campaignType === "oneshot" ||
-                      campaignType === "torneo") &&
+                    {(campaignType === "quest" || campaignType === "torneo") &&
                       session.signups.length > 0 &&
                       session.signups.every((s) => normalizeStatus(s.status) === "attended") && (
                         <Button
