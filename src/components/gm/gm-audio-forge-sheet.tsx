@@ -268,7 +268,9 @@ export function GmAudioForgeSheet({
   const emptyCatsHint = "Crea categorie nella sezione Libreria qui accanto.";
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    // The audio player stays mounted while hidden. A modal force-mounted sheet
+    // would keep Radix's body pointer lock active even when closed.
+    <Sheet modal={false} open={open} onOpenChange={onOpenChange}>
       <SheetContent
         forceMount
         side="right"
