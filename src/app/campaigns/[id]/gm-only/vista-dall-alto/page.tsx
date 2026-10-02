@@ -69,6 +69,12 @@ export default async function VistaDallAltoPage({ params }: PageProps) {
       <header className="shrink-0 border-b border-white/[0.06] bg-barber-dark/50 px-4 py-3 backdrop-blur-sm md:px-6">
         <div className="flex flex-wrap items-center gap-3">
           <Button variant="ghost" size="sm" asChild className="h-8 text-barber-gold hover:bg-barber-gold/10">
+            <Link href={`/campaigns/${campaignId}`}>
+              <ChevronLeft className="mr-1 h-4 w-4" aria-hidden />
+              Torna alla campagna
+            </Link>
+          </Button>
+          <Button variant="ghost" size="sm" asChild className="h-8 text-barber-gold hover:bg-barber-gold/10">
             <Link href={`/campaigns/${campaignId}/gm-screen`}>
               <ChevronLeft className="mr-1 h-4 w-4" />
               GM Screen
