@@ -20,7 +20,6 @@ import { CampaignWorkspace } from "@/components/campaigns/campaign-workspace";
 import { JoinLongCampaignButton } from "@/components/campaigns/join-long-campaign-button";
 import { LongRegistrationsToggle } from "@/components/campaigns/long-registrations-toggle";
 import { CampaignPartyMembersPanel } from "@/components/campaigns/campaign-party-members-panel";
-import { GmHomepage } from "@/components/gm/gm-homepage";
 import { GmScreenLauncher } from "@/components/gm/gm-screen-launcher";
 import Link from "next/link";
 import { ChevronDown, Map as MapIcon, Smartphone } from "lucide-react";
@@ -37,12 +36,6 @@ import { getPreClosedSessionForCampaign, type PreClosedSessionRow } from "@/app/
 import { Button } from "@/components/ui/button";
 import { SectionHeader } from "@/components/ui/section-header";
 import { CalendarDays } from "lucide-react";
-import {
-  parseCampaignAiContextFromDb,
-  readExcludedManualBookKeysFromAiContextJson,
-  type CampaignAiContext,
-} from "@/lib/campaign-ai-context";
-import type { Json } from "@/types/database.types";
 import {
   CAMPAIGN_TYPE_LABELS,
   isLongCampaignType,
@@ -145,20 +138,6 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
   const wantsMappeTab = requestedTab === "mappe";
   const wantsPgTab = requestedTab === "pg" || openCreateDialogOnLoad || openEditCharacterId != null;
   const wantsGmTab = requestedTab === "gm";
-
-  /** Contesto AI: solo GM/Admin (non esposto ai player nel payload). */
-  let aiContextParsed: CampaignAiContext | null = null;
-  let excludedManualBookKeys: string[] = [];
-  if (isGmOrAdmin && wantsGmTab) {
-    const { data: aiRow } = await supabase
-      .from("campaigns")
-      .select("ai_context")
-      .eq("id", id)
-      .single();
-    const rawAi = (aiRow as { ai_context: Json | null } | null)?.ai_context ?? null;
-    aiContextParsed = parseCampaignAiContextFromDb(rawAi);
-    excludedManualBookKeys = readExcludedManualBookKeysFromAiContextJson(rawAi);
-  }
 
   /** Lista GM/Admin per la select DM nel form Nuova Sessione (solo se isGmOrAdmin). */
   let gmAdminUsers: { id: string; label: string }[] = [];
@@ -303,29 +282,6 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
     }
   }
 
-  let joinEmailSettings:
-    | { join_enabled: boolean; join_subject: string; join_body_html: string }
-    | null = null;
-  let bulkEmailTemplates: Array<{ id: string; subject: string; body_html: string; created_at: string }> = [];
-  if (isGmOrAdmin && campaign.type === "long" && wantsGmTab) {
-    const [joinRes, bulkRes] = await Promise.all([
-      supabase
-        .from("campaign_email_settings")
-        .select("join_enabled, join_subject, join_body_html")
-        .eq("campaign_id", campaign.id)
-        .maybeSingle(),
-      supabase
-        .from("campaign_bulk_email_templates")
-        .select("id, subject, body_html, created_at")
-        .eq("campaign_id", campaign.id)
-        .order("created_at", { ascending: false }),
-    ]);
-    joinEmailSettings =
-      (joinRes.data as { join_enabled: boolean; join_subject: string; join_body_html: string } | null) ?? null;
-    bulkEmailTemplates =
-      (bulkRes.data as Array<{ id: string; subject: string; body_html: string; created_at: string }> | null) ?? [];
-  }
-
   /** Tab iniziale: player con PG assegnato → PG, player senza PG o GM → Sessioni */
   const defaultTab =
     isGmOrAdmin || characters.length === 0 ? "sessioni" : "pg";
@@ -455,16 +411,9 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
       </Button>
       <GmScreenLauncher
         campaignId={campaign.id}
-        label="Apri Schermo GM"
-        className="h-9 border-violet-500/50 text-violet-200 hover:bg-violet-500/20"
+        variant="v2"
+        className="h-9 border-cyan-500/50 text-cyan-200 hover:bg-cyan-500/20"
       />
-      {!isTorneo ? (
-        <GmScreenLauncher
-          campaignId={campaign.id}
-          variant="v2"
-          className="h-9 border-cyan-500/50 text-cyan-200 hover:bg-cyan-500/20"
-        />
-      ) : null}
     </div>
   ) : undefined;
   const campaignSectionActions = isGmOrAdmin ? {
@@ -491,38 +440,6 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
           <Link href={`/campaigns/${campaign.id}/gm-only/missioni/proiezione`}>Apri proiezione</Link>
         </Button>
         {isAdmin ? <BulkImportMissionsDialog campaignId={campaign.id} /> : null}
-      </div>
-    ),
-    gm: (
-      <div className="flex flex-wrap gap-1.5 px-1 py-1">
-        <Button asChild size="sm" variant="ghost" className="h-9 text-barber-paper/85 hover:bg-barber-gold/10 hover:text-barber-gold">
-          <Link href={`/command-center?campaignId=${campaign.id}`}>Command Center</Link>
-        </Button>
-        {!isTorneo ? (
-          <Button asChild size="sm" variant="ghost" className="h-9 text-barber-paper/85 hover:bg-barber-gold/10 hover:text-barber-gold">
-            <Link href={`/campaigns/${campaign.id}/gm-only/vista-dall-alto`}>Esplorazione e FOW</Link>
-          </Button>
-        ) : null}
-        {!isTorneo ? (
-          <>
-            <Button asChild size="sm" variant="ghost" className="h-9 text-barber-paper/85 hover:bg-barber-gold/10 hover:text-barber-gold">
-              <Link href={`/campaigns/${campaign.id}?tab=mappe`}>Mappe</Link>
-            </Button>
-            <Button asChild size="sm" variant="ghost" className="h-9 text-barber-paper/85 hover:bg-barber-gold/10 hover:text-barber-gold">
-              <Link href={`/campaigns/${campaign.id}/gm-only/scene-workspace`}>Scene tattiche V2</Link>
-            </Button>
-            <Button asChild size="sm" variant="ghost" className="h-9 text-barber-paper/85 hover:bg-barber-gold/10 hover:text-barber-gold">
-              <Link href={`/campaigns/${campaign.id}/gm-only/concept-map`}>Mappa concettuale</Link>
-            </Button>
-            <Button asChild size="sm" variant="ghost" className="h-9 text-barber-paper/85 hover:bg-barber-gold/10 hover:text-barber-gold">
-              <Link href={`/compendium?campaignId=${campaign.id}`}>Compendio</Link>
-            </Button>
-          </>
-        ) : (
-          <Button asChild size="sm" variant="ghost" className="h-9 text-barber-paper/85 hover:bg-barber-gold/10 hover:text-barber-gold">
-            <Link href={`/campaigns/${campaign.id}/torneo2`}>Torneo 2.0</Link>
-          </Button>
-        )}
       </div>
     ),
   } : undefined;
@@ -568,7 +485,6 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
           mappe: mapUploadAction,
           missioni: missionCreateAction,
           pg: characterCreateAction,
-          gm: gmPrimaryAction,
         }}
         sectionActions={campaignSectionActions}
         sessioniContent={
@@ -753,18 +669,14 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
           }
           gmAreaContent={
             renderGmTab && isGmOrAdmin ? (
-              <GmHomepage
-                campaignId={campaign.id}
-                campaignType={campaign.type ?? null}
-                aiContextParsed={aiContextParsed}
-                excludedManualBookKeys={excludedManualBookKeys}
-                joinEmailSettings={joinEmailSettings}
-                bulkEmailTemplates={bulkEmailTemplates}
-                initialPlayerPrimer={campaign.player_primer ?? null}
-                initialTypography={campaign.primer_typography ?? null}
-                isAdmin={isAdmin}
-                hideQuickActions
-              />
+              <div className="card-guild-stone rounded-2xl border border-[#3b322b] p-5 sm:p-7">
+                <h2 className="font-cinzel text-xl font-bold tracking-wider text-gold-relief">
+                  Strumenti del Dungeon Master
+                </h2>
+                <div className="mt-5 flex flex-wrap gap-3">
+                  {gmPrimaryAction}
+                </div>
+              </div>
             ) : undefined
           }
           showGmTab={isGmOrAdmin}
