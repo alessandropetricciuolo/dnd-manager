@@ -5,6 +5,7 @@ import { ApiError } from "@/lib/mcp-api/contracts";
 import { createBdMcpServer } from "@/lib/mcp-server";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 const MCP_ORIGIN = "https://barberanddragons.com";

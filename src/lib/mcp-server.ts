@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
 import type { McpAuthContext } from "@/lib/mcp-api/auth";
+import { imageToolResult, type readSiteImages } from "@/lib/mcp-api/images";
 import { executeContent } from "@/lib/mcp-api/service";
 
 const campaignId = z.string().uuid();
@@ -42,6 +43,7 @@ export function createBdMcpServer(auth: McpAuthContext) {
     }, async (args) => {
       try {
         const result = await executeContent(auth, { operation: name, args } as ContentOperation);
+        if (name === "read_entity_images" || name === "read_map_image") return imageToolResult(result as Awaited<ReturnType<typeof readSiteImages>>);
         return {
           content: [{ type: "text" as const, text: JSON.stringify(result) }],
           structuredContent: result,
@@ -67,6 +69,8 @@ export function createBdMcpServer(auth: McpAuthContext) {
     entity_id: entityId,
     admin_only: adminOnly,
   }, true);
+  register("read_entity_images", "See actual primary and attached Wiki images before generating coherent artwork. Returns native image blocks plus source metadata; pass received images as visual references to the image generator. Paginate up to 3 images per call. PDFs are excluded. Admin-only content requires explicit opt-in.", { campaign_id: campaignId, entity_id: entityId, admin_only: adminOnly, offset: z.number().int().min(0).max(10000).optional(), limit: z.number().int().min(1).max(3).optional() }, true);
+  register("read_map_image", "See the actual scoped Atlas map as a visual reference for coherent artwork. Admin-only content requires explicit opt-in.", { campaign_id: campaignId, map_id: entityId, admin_only: adminOnly }, true);
   register("list_wiki_relationships", "List real Wiki-to-Wiki and Wiki-to-map relationship rows with endpoint metadata. Admin-only endpoints require explicit opt-in.", {
     campaign_id: campaignId,
     limit: z.number().int().min(1).max(100).optional(),

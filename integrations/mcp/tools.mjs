@@ -10,6 +10,8 @@ const createMonster = { ...create, xp_value: z.number().int().min(0).optional(),
 
 export const definitions = {
   search_lore: { description: "Search the scoped campaign Wiki. Admin-only rows require the verified personal Admin scope.", schema: { campaign_id, query: z.string().min(1).max(200), limit: z.number().int().min(1).max(50).optional(), offset: z.number().int().min(0).max(10000).optional(), admin_only }, read: true },
+  read_entity_images: { description: "See actual primary and attached Wiki images before generating coherent artwork. Pass returned images as visual references to the generator. Paginate up to 3 images; PDFs excluded. Admin-only content requires explicit opt-in.", schema: { campaign_id, entity_id, admin_only, offset: z.number().int().min(0).max(10000).optional(), limit: z.number().int().min(1).max(3).optional() }, read: true },
+  read_map_image: { description: "See the actual scoped Atlas map as a visual reference for coherent artwork.", schema: { campaign_id, map_id: entity_id, admin_only }, read: true },
   get_entity: { description: "Read a scoped Wiki entity and its revision. Admin-only rows require the verified personal Admin scope.", schema: { campaign_id, entity_id, admin_only }, read: true },
   list_wiki_relationships: { description: "List real Wiki-to-Wiki and Wiki-to-map relationship rows with endpoint metadata. Admin-only endpoints require explicit opt-in.", schema: { campaign_id, limit: z.number().int().min(1).max(100).optional(), offset: z.number().int().min(0).max(10000).optional(), admin_only }, read: true },
   upsert_wiki_relationship: { description: "Idempotently create one real Wiki-to-Wiki or Wiki-to-map relationship and return its database readback. Call twice for a bidirectional Wiki pair.", schema: { campaign_id, source_id: entity_id, target_id: entity_id.optional(), target_map_id: entity_id.optional(), label: z.string().trim().min(1).max(200), admin_only } },
@@ -54,6 +56,10 @@ export function createServer(callBackend) {
   }, async (args) => {
     try {
       const data = await callBackend(name, args);
+      if (name === "read_entity_images" || name === "read_map_image") {
+        const { images, ...metadata } = data;
+        return { content: [{ type: "text", text: JSON.stringify(metadata) }, ...images], structuredContent: metadata, ...(metadata.references.length && metadata.references.every(ref => ref.status === "unavailable") ? { isError: true } : {}) };
+      }
       return { content: [{ type: "text", text: JSON.stringify(data) }] };
     } catch (error) {
       return { isError: true, content: [{ type: "text", text: error.message || "Backend request failed" }] };
@@ -70,7 +76,7 @@ export function backendClient(baseUrl, token, fetcher = fetch) {
   return async (operation, args) => {
     const response = await fetcher(new URL("/api/integrations/content", url), {
       method: "POST", redirect: "error", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ operation, args }), signal: AbortSignal.timeout(20000),
+      body: JSON.stringify({ operation, args }), signal: AbortSignal.timeout(["read_entity_images", "read_map_image"].includes(operation) ? 45000 : 20000),
     });
     if (!response.ok) throw new Error(`B&D API ${response.status}: ${(await response.json().catch(() => ({}))).error ?? "Request failed"}`);
     return response.json();

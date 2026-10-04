@@ -15,7 +15,7 @@ test("MCP exposes one personal Admin surface with admin_only contracts", async (
   await server.connect(serverTransport); await client.connect(clientTransport);
   try {
     const listed = await client.listTools();
-    assert.equal(listed.tools.length, 34);
+    assert.equal(listed.tools.length, 36);
     assert.ok(listed.tools.some((tool) => tool.name === "prepare_session_close"));
     assert.equal(listed.tools.find((tool) => tool.name === "close_session").inputSchema.properties.confirm_close.const, true);
     assert.equal(listed.tools.find((tool) => tool.name === "search_lore").inputSchema.properties.admin_only.type, "boolean");
@@ -40,5 +40,21 @@ test("MCP transport contains no database or service-role path", async () => {
   assert.doesNotMatch(source, /supabase|service_role|postgres|database/i);
   assert.match(source, /api\/integrations\/content\/auth/);
   assert.match(source, /sessionIdGenerator:\s*undefined/);
-  assert.deepEqual(Object.keys(definitions).sort(), ["attach_asset", "close_session", "complete_mission", "create_item", "create_location", "create_lore", "create_mission", "create_mission_encounter", "create_monster", "create_npc", "delete_mission", "delete_mission_encounter", "get_entity", "get_map", "get_mission", "link_mission_resource", "list_mission_encounters", "list_sessions", "list_wiki_relationships", "prepare_session_close", "reopen_mission", "replace_encounter_monsters", "search_lore", "search_maps", "search_missions", "set_mission_status", "set_status", "update_entity", "update_mission", "update_mission_encounter", "upload_asset", "upload_entity_image", "upload_map", "upsert_wiki_relationship"]);
+  assert.deepEqual(Object.keys(definitions).sort(), ["read_entity_images", "read_map_image", "attach_asset", "close_session", "complete_mission", "create_item", "create_location", "create_lore", "create_mission", "create_mission_encounter", "create_monster", "create_npc", "delete_mission", "delete_mission_encounter", "get_entity", "get_map", "get_mission", "link_mission_resource", "list_mission_encounters", "list_sessions", "list_wiki_relationships", "prepare_session_close", "reopen_mission", "replace_encounter_monsters", "search_lore", "search_maps", "search_missions", "set_mission_status", "set_status", "update_entity", "update_mission", "update_mission_encounter", "upload_asset", "upload_entity_image", "upload_map", "upsert_wiki_relationship"].sort());
+});
+
+
+test("bridge delivers native images without duplicating base64 in metadata", async () => {
+  const data = "iVBORw0KGgo=";
+  const server = createServer(async () => ({ source: { name: "Rudolf" }, references: [{ status: "available", image_index: 0 }], images: [{ type: "image", data, mimeType: "image/png" }] }));
+  const client = new Client({ name: "image-test", version: "1" });
+  const [st, ct] = InMemoryTransport.createLinkedPair();
+  await server.connect(st); await client.connect(ct);
+  try {
+    const result = await client.callTool({ name: "read_entity_images", arguments: { campaign_id: campaign, entity_id: "22222222-2222-4222-8222-222222222222" } });
+    assert.equal(result.content[1].type, "image");
+    assert.equal(result.content[1].data, data);
+    assert.ok(!result.content[0].text.includes(data));
+    assert.equal(result.structuredContent.source.name, "Rudolf");
+  } finally { await client.close(); await server.close(); }
 });

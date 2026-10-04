@@ -10,6 +10,8 @@ import { buildSessionHourPlan } from "@/lib/session-close-hours";
 import { syncSessionToCampaignMemory } from "@/lib/campaign-memory-indexer";
 import { sendFeedbackRequestEmailsForSession } from "@/lib/session-close-feedback";
 
+import { readSiteImages } from "./images";
+
 const columns = "id,campaign_id,type,name,content,attributes,image_url,admin_only,mcp_status,mcp_revision,xp_value,is_core,global_status,updated_at";
 const mapColumns = "id,campaign_id,name,description,map_type,image_url,visibility,parent_map_id,wiki_entity_id,admin_only,created_at,updated_at";
 const notFound = () => new ApiError(404, "Entity not found");
@@ -184,10 +186,13 @@ async function getEnabledCampaign(db: SupabaseClient, campaignId: string): Promi
 export async function executeContent(
   auth: McpAuthContext,
   raw: unknown,
-  deps: { uploadImage?: typeof uploadImageToTelegram; createAdmin?: typeof createSupabaseAdminClient } = {}
+  deps: { uploadImage?: typeof uploadImageToTelegram; createAdmin?: typeof createSupabaseAdminClient; fetchImage?: import("./images").ImageFetcher } = {}
 ) {
   const { operation, args: a } = validate(raw);
   if (["list_sessions", "prepare_session_close", "close_session"].includes(operation)) return executeSessionOperation(auth, operation, a, deps.createAdmin ?? createSupabaseAdminClient);
+  if (operation === "read_entity_images" || operation === "read_map_image") {
+    return readSiteImages(auth, operation, a, (request): Promise<any> => executeContent(auth, request, deps), deps.fetchImage);
+  }
   const uploadImage = deps.uploadImage ?? uploadImageToTelegram;
   assertMcpScope(auth, a.campaign_id);
   const campaign = await getEnabledCampaign(auth.db, a.campaign_id);
