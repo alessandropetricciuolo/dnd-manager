@@ -7,7 +7,7 @@ import {
   clampOpenRouterImagePrompt,
   extractReferenceUrlsFromMultimodal,
   extractUnifiedImageFromResponse,
-  isOpenRouterClientError,
+  formatOpenRouterImageError,
 } from "@/lib/ai/openrouter-image-request";
 import type { ImageGenerationInput, ImageGenerationOutput } from "../types";
 import type { ImageGenerationProvider } from "./types";
@@ -167,9 +167,7 @@ async function postOpenRouterJson(
     }
 
     if (!res.ok) {
-      const errObj = data && typeof data === "object" ? (data as { error?: { message?: string } }).error : null;
-      const msg = errObj?.message ?? bodyText.slice(0, 500);
-      throw new Error(`OpenRouter HTTP ${res.status}: ${msg}`);
+      throw new Error(formatOpenRouterImageError(res.status, data));
     }
 
     return { data, durationMs: Date.now() - started };
@@ -252,6 +250,7 @@ export async function generateImageWithOpenRouter(input: ImageGenerationInput): 
 
   const attempts = buildImageAttempts(input);
   let lastError: Error | null = null;
+  const attemptErrors: string[] = [];
 
   for (const attempt of attempts) {
     for (let retry = 1; retry <= 2; retry++) {
@@ -273,28 +272,26 @@ export async function generateImageWithOpenRouter(input: ImageGenerationInput): 
         }
 
         const retryable =
-          (lastError.message.includes("HTTP 5") && retry < 2) ||
-          (isOpenRouterClientError(lastError.message) && retry < 2);
+          lastError.message.includes("HTTP 5") && retry < 2;
 
         if (retryable) {
           await sleep(400 * retry);
           continue;
         }
+        attemptErrors.push(`${attempt.label}: ${lastError.message}`);
         break;
       }
     }
   }
 
   const friendly = lastError?.message ?? "Errore sconosciuto OpenRouter.";
-  const hint = isOpenRouterClientError(friendly)
-    ? " Parametri immagine non accettati dal modello — riprova con una descrizione più breve o senza riferimento visivo."
-    : "";
+  console.error("[openrouter-image] Generazione fallita", { model: input.model, attempts: attemptErrors });
 
   return {
     success: false,
     rawResponse: null,
     durationMs: 0,
-    errorMessage: `${friendly}${hint}`,
+    errorMessage: friendly,
   };
 }
 

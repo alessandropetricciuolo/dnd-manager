@@ -31,6 +31,27 @@ export function isOpenRouterClientError(message: string): boolean {
   return /OpenRouter HTTP 400/i.test(message);
 }
 
+/** Keep diagnostic fields only: provider payloads can also contain prompts and credentials. */
+export function formatOpenRouterImageError(status: number, data: unknown): string {
+  const root = data && typeof data === "object" ? data as Record<string, unknown> : {};
+  const error = root.error && typeof root.error === "object" ? root.error as Record<string, unknown> : {};
+  const metadata = error.metadata && typeof error.metadata === "object" ? error.metadata as Record<string, unknown> : {};
+  let raw: unknown = metadata.raw;
+  if (typeof raw === "string") {
+    try { raw = JSON.parse(raw); } catch { raw = null; }
+  }
+  const provider = raw && typeof raw === "object" ? raw as Record<string, unknown> : {};
+  const detail = provider.error && typeof provider.error === "object" ? provider.error as Record<string, unknown> : provider;
+  const clean = (value: unknown): string => typeof value === "string"
+    ? value.replace(/https?:\/\/[^\s"'<>]+/gi, "[URL]")
+      .replace(/data:image\/[^\s"'<>]+/gi, "[image]")
+      .replace(/Bearer\s+\S+|sk-[A-Za-z0-9_-]+/gi, "[redacted]").slice(0, 600)
+    : "";
+  const message = clean(error.message) || "Richiesta rifiutata da OpenRouter.";
+  const fields = [clean(metadata.provider_name), clean(detail.message), clean(detail.code), clean(detail.param)].filter(Boolean);
+  return `OpenRouter HTTP ${status}: ${message}${fields.length ? ` (${fields.join("; ")})` : ""}`;
+}
+
 export type UnifiedImageResponseItem = {
   b64_json?: string;
   url?: string;

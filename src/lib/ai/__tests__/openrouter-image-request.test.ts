@@ -5,6 +5,7 @@ import {
   aspectRatioFallbackChain,
   clampOpenRouterImagePrompt,
   extractUnifiedImageFromResponse,
+  formatOpenRouterImageError,
   isOpenRouterClientError,
   normalizeOpenRouterAspectRatio,
 } from "../openrouter-image-request";
@@ -34,4 +35,29 @@ test("extractUnifiedImageFromResponse reads b64_json", () => {
 test("isOpenRouterClientError detects HTTP 400", () => {
   assert.equal(isOpenRouterClientError("OpenRouter HTTP 400: bad aspect_ratio"), true);
   assert.equal(isOpenRouterClientError("OpenRouter HTTP 500"), false);
+});
+
+test("provider errors retain the cause from metadata.raw", () => {
+  const message = formatOpenRouterImageError(400, { error: {
+    message: "Provider returned error",
+    metadata: { provider_name: "OpenAI", raw: JSON.stringify({ error: {
+      message: "Invalid image URL https://example.com/private?token=secret",
+      code: "invalid_image_url", param: "messages[0].content[0].image_url",
+    }, prompt: "private prompt" }) },
+  } });
+  assert.match(message, /OpenAI; Invalid image URL \[URL\]; invalid_image_url/);
+  assert.doesNotMatch(message, /token=secret|private prompt|Parametri immagine/);
+});
+
+test("provider error objects are supported and credentials redacted", () => {
+  const message = formatOpenRouterImageError(400, { error: {
+    message: "Provider returned error", metadata: { raw: { error: { message: "Rejected Bearer secret and sk-or-v1-secret" } } },
+  } });
+  assert.match(message, /Rejected \[redacted\] and \[redacted\]/);
+  assert.doesNotMatch(message, /secret/);
+});
+
+test("malformed provider payloads are not exposed", () => {
+  const message = formatOpenRouterImageError(400, { error: { message: "Provider returned error", metadata: { raw: "private prompt" } } });
+  assert.equal(message, "OpenRouter HTTP 400: Provider returned error");
 });
