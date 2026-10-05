@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { WikiGalleryUpload } from "./wiki-gallery-upload";
 import { ImageSourceField } from "@/components/ui/image-source-field";
 import { TagsInput } from "@/components/wiki/tags-input";
 import {
@@ -569,7 +570,7 @@ export function EditEntityDialog({
             )}
             <div className="space-y-3 rounded-md border border-barber-gold/30 p-3">
               <Label htmlFor="wiki-extra-images">Aggiungi immagini alla galleria</Label>
-              <Input id="wiki-extra-images" type="file" name="gallery_images" multiple accept="image/jpeg,image/png,image/webp,image/gif" disabled={isLoading} />
+              <WikiGalleryUpload id="wiki-extra-images" disabled={isLoading} />
               <p className="text-xs text-barber-paper/70">Puoi selezionare più file. Saranno aggiunti quando salvi la voce.</p>
               {getWikiImages(attributes).map(image => <div key={image.id} className="flex items-center gap-2">
                 {/* eslint-disable-next-line @next/next/no-img-element */}

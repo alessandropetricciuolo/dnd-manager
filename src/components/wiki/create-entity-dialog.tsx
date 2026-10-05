@@ -37,6 +37,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { validateWikiImageUpload } from "@/lib/wiki/images";
+import { WikiGalleryUpload } from "./wiki-gallery-upload";
 import { ImageSourceField } from "@/components/ui/image-source-field";
 import { Textarea } from "@/components/ui/textarea";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -1646,7 +1647,7 @@ export function CreateEntityDialog({
                 />
                 <div className="mt-3 space-y-2">
                   <Label htmlFor="create-wiki-gallery">Immagini aggiuntive</Label>
-                  <Input id="create-wiki-gallery" type="file" name="gallery_images" multiple accept="image/jpeg,image/png,image/webp,image/gif" disabled={isLoading} />
+                  <WikiGalleryUpload id="create-wiki-gallery" disabled={isLoading} />
                   <p className="text-xs text-barber-paper/70">Seleziona più immagini da aggiungere alla voce.</p>
                 </div>
               </FormSection>
