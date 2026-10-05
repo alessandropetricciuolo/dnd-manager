@@ -1,3 +1,4 @@
+import { getWikiImages, parseWikiImageKey } from "@/lib/wiki/images";
 import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { DualSourceImage } from "@/components/dual-source-image";
@@ -55,11 +56,11 @@ export default async function MultiImageProjectionPage({
     .map((s) => s.trim())
     .filter(
       (s) =>
-        UUID_REGEX.test(s) ||
+        parseWikiImageKey(s) !== null ||
         (s.startsWith("pg-") && UUID_REGEX.test(s.slice(3))),
     );
 
-  const wikiIds = orderedIds.filter((s) => !s.startsWith("pg-"));
+  const wikiIds = [...new Set(orderedIds.filter((s) => !s.startsWith("pg-")).map(s => parseWikiImageKey(s)!.entityId))];
   const characterIds = orderedIds
     .filter((s) => s.startsWith("pg-"))
     .map((s) => s.slice(3));
@@ -68,7 +69,7 @@ export default async function MultiImageProjectionPage({
     wikiIds.length > 0
       ? supabase
           .from("wiki_entities")
-          .select("id, name, image_url, telegram_fallback_id")
+          .select("id, name, image_url, attributes, telegram_fallback_id")
           .eq("campaign_id", campaignId)
           .in("id", wikiIds)
       : null;
@@ -92,6 +93,7 @@ export default async function MultiImageProjectionPage({
         name: string;
         image_url: string | null;
         telegram_fallback_id: string | null;
+        attributes: Record<string, unknown> | null;
       }[]
     ).map((r) => [r.id, r]),
   );
@@ -119,13 +121,15 @@ export default async function MultiImageProjectionPage({
         });
       }
     } else {
-      const row = wikiById.get(rawId);
-      if (row && (row.image_url || row.telegram_fallback_id)) {
+      const parsed = parseWikiImageKey(rawId)!;
+      const row = wikiById.get(parsed.entityId);
+      const extraImage = parsed.imageId ? getWikiImages(row?.attributes).find(image => image.id === parsed.imageId) : null;
+      if (row && (parsed.imageId ? extraImage : row.image_url || row.telegram_fallback_id)) {
         images.push({
           key: rawId,
-          name: row.name,
-          image_url: row.image_url,
-          telegram_fallback_id: row.telegram_fallback_id,
+          name: extraImage?.title ? `${row.name} · ${extraImage.title}` : row.name,
+          image_url: extraImage?.url ?? row.image_url,
+          telegram_fallback_id: extraImage ? null : row.telegram_fallback_id,
         });
       }
     }

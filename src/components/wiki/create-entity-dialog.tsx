@@ -36,6 +36,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { validateWikiImageUpload } from "@/lib/wiki/images";
 import { ImageSourceField } from "@/components/ui/image-source-field";
 import { Textarea } from "@/components/ui/textarea";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -393,6 +394,8 @@ export function CreateEntityDialog({
 
     const form = event.currentTarget;
     const formData = new FormData(form);
+    const uploadError = validateWikiImageUpload(formData);
+    if (uploadError) { toast.error(uploadError); return; }
     formData.set("campaign_id", campaignId);
     formData.set("title", titleValue.trim());
     formData.set("content", contentValue);
@@ -1641,6 +1644,11 @@ export function CreateEntityDialog({
                   disabled={isLoading}
                   presetUrl={wikiImageUrlPreset}
                 />
+                <div className="mt-3 space-y-2">
+                  <Label htmlFor="create-wiki-gallery">Immagini aggiuntive</Label>
+                  <Input id="create-wiki-gallery" type="file" name="gallery_images" multiple accept="image/jpeg,image/png,image/webp,image/gif" disabled={isLoading} />
+                  <p className="text-xs text-barber-paper/70">Seleziona più immagini da aggiungere alla voce.</p>
+                </div>
               </FormSection>
 
               {/* ============================================================ */}

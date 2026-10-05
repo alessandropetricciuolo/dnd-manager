@@ -25,6 +25,7 @@ import {
   updateEntity,
 } from "@/app/campaigns/wiki-actions";
 import { getWikiEntitiesForCampaign, getMapsForCampaign, getWikiRelationshipsForEntity } from "@/app/campaigns/entity-graph-actions";
+import { getWikiImages, validateWikiImageUpload } from "@/lib/wiki/images";
 import { getEmptyAttributes } from "@/types/wiki";
 import type { WikiEntity } from "@/app/campaigns/wiki-actions";
 import { CHALLENGE_RATING_OPTIONS } from "@/lib/dnd-constants";
@@ -202,6 +203,7 @@ export function EditEntityDialog({
     const next = defaultAttributes(t) as Record<string, unknown>;
     const currentGmNotes = attributes.gm_notes ?? "";
     if (typeof currentGmNotes === "string") next.gm_notes = currentGmNotes;
+    next.images = attributes.images ?? [];
     setAttributes(next);
     setSortOrder("");
   }
@@ -233,6 +235,8 @@ export function EditEntityDialog({
 
     const form = event.currentTarget;
     const formData = new FormData(form);
+    const uploadError = validateWikiImageUpload(formData);
+    if (uploadError) { toast.error(uploadError); return; }
     formData.set("attributes", JSON.stringify(attributes));
     formData.set("visibility", visibility);
     if (isAdmin && adminDraftsEnabled && adminOnly && !Boolean((entity as WikiEntity & { admin_only?: boolean }).admin_only)) formData.set("admin_only", "true");
@@ -543,7 +547,7 @@ export function EditEntityDialog({
             <ImageSourceField
               fileInputName="image"
               urlFieldName="image_url"
-              label="Immagine"
+              label="Immagine di copertina"
               previewUrl={removeImage ? undefined : entity.image_url}
               disabled={isLoading}
               previewClassName="max-w-xs"
@@ -563,6 +567,17 @@ export function EditEntityDialog({
                 </Label>
               </div>
             )}
+            <div className="space-y-3 rounded-md border border-barber-gold/30 p-3">
+              <Label htmlFor="wiki-extra-images">Aggiungi immagini alla galleria</Label>
+              <Input id="wiki-extra-images" type="file" name="gallery_images" multiple accept="image/jpeg,image/png,image/webp,image/gif" disabled={isLoading} />
+              <p className="text-xs text-barber-paper/70">Puoi selezionare più file. Saranno aggiunti quando salvi la voce.</p>
+              {getWikiImages(attributes).map(image => <div key={image.id} className="flex items-center gap-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={image.url} alt={image.title || "Immagine aggiuntiva"} className="h-16 w-16 rounded object-contain" />
+                <Input aria-label="Titolo immagine" value={image.title} disabled={isLoading} onChange={event => setAttr("images", getWikiImages(attributes).map(row => row.id === image.id ? { ...row, title: event.target.value } : row))} />
+                <Button type="button" variant="outline" disabled={isLoading} aria-label={`Rimuovi ${image.title || "immagine"}`} onClick={() => setAttr("images", getWikiImages(attributes).filter(row => row.id !== image.id))}><Trash2 className="h-4 w-4" /></Button>
+              </div>)}
+            </div>
             {(type === "npc" ||
               type === "monster" ||
               type === "location" ||

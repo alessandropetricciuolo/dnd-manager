@@ -208,7 +208,7 @@ export function GmGallerySheet({
       setRelatedLinks([]);
       setRelatedError(null);
       setRelatedLoading(true);
-      void getRelatedEntityLinks(campaignId, item.id)
+      void getRelatedEntityLinks(campaignId, item.entity_id ?? item.id)
         .then((res) => {
           if (requestId !== relatedRequestRef.current) return;
           if (res.success) setRelatedLinks(res.data);

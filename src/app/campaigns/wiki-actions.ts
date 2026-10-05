@@ -1,5 +1,7 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
+import { getWikiImages, validateWikiImageUpload } from "@/lib/wiki/images";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
@@ -28,6 +30,25 @@ import { assertCanManageAdminContent, isGlobalAdmin, logAdminContentTransition, 
 import { resolveAdminOnlyTransition } from "@/lib/admin-content/transitions";
 
 export type { WikiGeneratorEntityType, WikiAiTextGeneration } from "@/lib/ai/generator";
+
+async function appendWikiGalleryFiles(formData: FormData, attributes: Record<string, unknown>) {
+  const uploadError = validateWikiImageUpload(formData);
+  if (uploadError) throw new Error(uploadError);
+  const galleryFiles = formData.getAll("gallery_images").filter((value): value is File => value instanceof File && value.size > 0);
+  const images = getWikiImages(attributes);
+  if (images.length + galleryFiles.length > 50) throw new Error("Massimo 50 immagini aggiuntive per voce.");
+  for (const file of galleryFiles) {
+    if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type) || file.size > 4 * 1024 * 1024) {
+    throw new Error("Usa immagini JPG, PNG, WebP o GIF fino a 4 MB.");
+    }
+  }
+  for (const file of galleryFiles) {
+    const fileId = await uploadFileToTelegram(file);
+    images.push({ id: randomUUID(), url: `/api/tg-image/${fileId}`, title: file.name.replace(/\.[^.]+$/, "") });
+  }
+  attributes.images = images;
+
+}
 
 const VISIBILITY_VALUES = ["public", "secret", "selective"] as const;
 type Visibility = (typeof VISIBILITY_VALUES)[number];
@@ -260,6 +281,9 @@ export async function createEntity(
       }
     }
 
+    try { await appendWikiGalleryFiles(formData, attributes); }
+    catch (error) { return { success: false, message: error instanceof Error ? error.message : "Errore nel caricamento della galleria." }; }
+
     const insertPayload: Record<string, unknown> = {
       campaign_id: campaignId,
       name: title,
@@ -453,7 +477,7 @@ export async function updateEntity(
       catch { return { success: false, message: "Solo un Admin può cambiare lo stato Solo Admin in una campagna abilitata." }; }
     }
     if (releaseAdminOnly && !isGlobalAdmin(accessResult.access)) return { success: false, message: "Solo un Admin può rilasciare questo contenuto." };
-    const { data: currentEntity, error: currentEntityError } = await supabase.from("wiki_entities").select("admin_only").eq("id", entityId).eq("campaign_id", campaignId).maybeSingle();
+    const { data: currentEntity, error: currentEntityError } = await supabase.from("wiki_entities").select("admin_only, attributes").eq("id", entityId).eq("campaign_id", campaignId).maybeSingle();
     if (currentEntityError || !currentEntity) return { success: false, message: "Impossibile verificare lo stato della voce Wiki." };
     const transition = resolveAdminOnlyTransition({ currentAdminOnly: Boolean((currentEntity as { admin_only?: boolean } | null)?.admin_only), protect: adminOnlyRequested, release: releaseAdminOnly });
     if (!transition.ok) return { success: false, message: transition.reason === "release_requires_protected" ? "Il contenuto non è Solo Admin: nessun rilascio eseguito." : "Intenti Solo Admin conflittuali." };
@@ -523,6 +547,10 @@ export async function updateEntity(
     if (imageUrlFromFormRaw && imageUrlFromFormRaw.startsWith("http") && !imageUrlFromForm) {
       return { success: false, message: "URL immagine non valido o non consentito." };
     }
+
+    if (!("images" in attributes)) attributes.images = getWikiImages((currentEntity as { attributes?: Record<string, unknown> }).attributes);
+    try { await appendWikiGalleryFiles(formData, attributes); }
+    catch (error) { return { success: false, message: error instanceof Error ? error.message : "Errore nel caricamento della galleria." }; }
 
     const updatePayload: Record<string, unknown> = {
       name: title,
@@ -1065,6 +1093,7 @@ export async function getMonstersXpForIds(
 export type GmGalleryItem = {
   id: string;
   title: string;
+  entity_id?: string;
   category: "pg" | "npc" | "monster" | "location" | "item" | "lore";
   image_url: string | null;
   telegram_fallback_id?: string | null;
@@ -1152,22 +1181,20 @@ export async function getGmGalleryItems(
       ])
     );
 
-    let wikiSelect = "id, name, type, image_url, telegram_fallback_id, linked_mission_id, admin_only";
+    let wikiSelect = "id, name, type, image_url, attributes, telegram_fallback_id, linked_mission_id, admin_only";
     let wikiQuery = supabase
       .from("wiki_entities")
       .select(wikiSelect)
-      .eq("campaign_id", campaignId)
-      .not("image_url", "is", null);
+      .eq("campaign_id", campaignId);
     if (!isAdmin) wikiQuery = wikiQuery.eq("admin_only", false);
     let { data: wikiRows, error: wikiErr } = await wikiQuery;
 
     if (wikiErr && isMissingWikiLinkedMissionColumnError(wikiErr)) {
-      wikiSelect = "id, name, type, image_url, telegram_fallback_id, admin_only";
+      wikiSelect = "id, name, type, image_url, attributes, telegram_fallback_id, admin_only";
       let retryQuery = supabase
         .from("wiki_entities")
         .select(wikiSelect)
-        .eq("campaign_id", campaignId)
-        .not("image_url", "is", null);
+        .eq("campaign_id", campaignId);
       if (!isAdmin) retryQuery = retryQuery.eq("admin_only", false);
       const retry = await retryQuery;
       wikiRows = retry.data;
@@ -1183,6 +1210,7 @@ export async function getGmGalleryItems(
     }
 
     type WikiRow = {
+      attributes?: Record<string, unknown> | null;
       id: string;
       name: string;
       type: string;
@@ -1198,12 +1226,19 @@ export async function getGmGalleryItems(
       filteredWiki = filteredWiki.filter((r) => r.linked_mission_id === wikiMissionFilter);
     }
 
-    const wikiItems: GmGalleryItem[] = filteredWiki.map((r) => {
+    const wikiItems: GmGalleryItem[] = filteredWiki.flatMap((r) => {
       const t = r.type as "npc" | "monster" | "location" | "item" | "lore";
       const safeType: GmGalleryItem["category"] =
         t === "npc" || t === "monster" || t === "location" || t === "item" || t === "lore" ? t : "lore";
       const mid = r.linked_mission_id ?? null;
-      return {
+      const base = {
+        entity_id: r.id,
+        category: safeType,
+        linked_mission_id: mid,
+        mission_title: mid ? missionTitleById.get(mid) ?? null : null,
+      };
+      return [
+        ...(r.image_url || r.telegram_fallback_id ? [{ ...base,
         id: r.id,
         title: r.name,
         category: safeType,
@@ -1211,7 +1246,9 @@ export async function getGmGalleryItems(
         telegram_fallback_id: r.telegram_fallback_id ?? null,
         linked_mission_id: mid,
         mission_title: mid ? missionTitleById.get(mid) ?? null : null,
-      };
+      }] : []),
+      ...getWikiImages(r.attributes).map(image => ({ ...base, id: `${r.id}:${image.id}`, title: image.title ? `${r.name} · ${image.title}` : r.name, image_url: image.url, telegram_fallback_id: null })),
+      ];
     });
 
     // Personaggi della campagna con immagine
@@ -1252,6 +1289,7 @@ export async function getGmGalleryItems(
 /** Campi opzionali per mostri/NPC: hp (Punti vita), ac (Classe Armatura), gs (Grado di Sfida), exp (Punti Esperienza). */
 export type BulkImportWikiItem = {
   title: string;
+  entity_id?: string;
   category: WikiEntityType;
   description?: string;
   content: string;
