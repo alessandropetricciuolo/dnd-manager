@@ -129,7 +129,7 @@ export default async function MultiImageProjectionPage({
           key: rawId,
           name: extraImage?.title ? `${row.name} · ${extraImage.title}` : row.name,
           image_url: extraImage?.url ?? row.image_url,
-          telegram_fallback_id: extraImage ? null : row.telegram_fallback_id,
+          telegram_fallback_id: extraImage ? extraImage.telegram_fallback_id ?? null : row.telegram_fallback_id,
         });
       }
     }

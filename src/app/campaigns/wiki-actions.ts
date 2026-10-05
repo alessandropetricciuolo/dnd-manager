@@ -1,7 +1,7 @@
 "use server";
 
 import { randomUUID } from "node:crypto";
-import { getWikiImages, validateWikiImageUpload } from "@/lib/wiki/images";
+import { getWikiImages, validateWikiImageUpload, promoteWikiImage } from "@/lib/wiki/images";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
@@ -1247,7 +1247,7 @@ export async function getGmGalleryItems(
         linked_mission_id: mid,
         mission_title: mid ? missionTitleById.get(mid) ?? null : null,
       }] : []),
-      ...getWikiImages(r.attributes).map(image => ({ ...base, id: `${r.id}:${image.id}`, title: image.title ? `${r.name} · ${image.title}` : r.name, image_url: image.url, telegram_fallback_id: null })),
+      ...getWikiImages(r.attributes).map(image => ({ ...base, id: `${r.id}:${image.id}`, title: image.title ? `${r.name} · ${image.title}` : r.name, image_url: image.url, telegram_fallback_id: image.telegram_fallback_id ?? null })),
       ];
     });
 
@@ -1494,5 +1494,28 @@ export async function generateWikiQuickAiAction(
   } catch (err) {
     console.error("[generateWikiQuickAiAction]", err);
     return { success: false, message: "Si è verificato un errore imprevisto. Riprova." };
+  }
+}
+
+/** Promote an existing gallery image without changing other wiki fields. */
+export async function setWikiPrimaryImage(entityId: string, campaignId: string, imageId: string): Promise<UpdateEntityResult> {
+  try {
+    const entity = await getEntity(entityId, campaignId);
+    if (!entity) return { success: false, message: "Voce wiki non accessibile." };
+    const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, message: "Non autenticato." };
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    if (profile?.role !== "gm" && profile?.role !== "admin") return { success: false, message: "Solo GM e Admin possono scegliere l’immagine principale." };
+    const payload = promoteWikiImage(entity, imageId);
+    // Avoid overwriting a gallery edited while this request was in flight.
+    const { data, error } = await supabase.from("wiki_entities").update(payload).eq("id", entityId).eq("campaign_id", campaignId).eq("updated_at", entity.updated_at).select("id").maybeSingle();
+    if (error) return { success: false, message: "Impossibile salvare l’immagine principale." };
+    if (!data) return { success: false, message: "La voce è stata modificata. Aggiorna la pagina e riprova." };
+    revalidatePath(`/campaigns/${campaignId}`);
+    revalidatePath(`/campaigns/${campaignId}/wiki/${entityId}`);
+    return { success: true, message: "Immagine principale aggiornata." };
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : "Errore imprevisto." };
   }
 }
