@@ -25,8 +25,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DualSourceImage } from "@/components/dual-source-image";
-import { ImageMediaActions } from "@/components/media/image-media-actions";
+import { WikiCodexImageCarousel } from "./wiki-codex-image-carousel";
 import { EntityContent } from "./entity-content";
 import { WikiEntityDeleteButton } from "./wiki-entity-delete-button";
 import type { WikiEntityListItem } from "./wiki-list-client";
@@ -266,24 +265,7 @@ export function WikiCodexReader({
         <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
           {/* Ritratto Framed con Cornice Dorata Cesellata (Col 4) */}
           <div className="md:col-span-4 flex flex-col items-center">
-            <div className="relative aspect-[3/4] w-full max-w-[260px] overflow-hidden rounded-xl border-4 border-brass-base/60 bg-gradient-to-b from-amber-950/40 to-black p-1 shadow-[0_0_20px_rgba(217,119,6,0.25)]">
-              <DualSourceImage
-                driveUrl={entity.imageUrl ?? defaultPlaceholder}
-                telegramFallbackId={entity.telegramFallbackId ?? null}
-                alt={entity.name}
-                className="h-full w-full rounded-lg object-cover"
-              />
-              <div className="pointer-events-none absolute inset-0 rounded-lg shadow-[inset_0_0_15px_rgba(0,0,0,0.85)]" />
-            </div>
-            {entity.imageUrl && (
-              <div className="mt-2 w-full max-w-[260px]">
-                <ImageMediaActions
-                  driveUrl={entity.imageUrl}
-                  telegramFallbackId={entity.telegramFallbackId}
-                  title={entity.name}
-                />
-              </div>
-            )}
+            <WikiCodexImageCarousel key={entity.id} entity={entity} campaignId={campaignId} placeholder={defaultPlaceholder} canProject={isGmOrAdmin} />
           </div>
 
           {/* Scheda Attributi Specifici (Col 8) */}
