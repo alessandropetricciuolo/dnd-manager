@@ -602,12 +602,13 @@ export function EditEntityDialog({
                 </Button>
                 {aiImagePreviewUrl ? (
                   <WikiImageRefineChat
-                    key={`edit-image-refine-${aiImagePreviewUrl}`}
+                    key={`edit-image-refine-${entity.id}`}
                     campaignId={campaignId}
                     entityType={wikiTypeToImageEntityKind(type)}
                     baseDescription={contentValue.trim()}
                     imageUrl={aiImagePreviewUrl}
                     onImageChange={handleEditImageRefined}
+                    onImageAdd={(url) => setAttributes((prev) => ({ ...prev, images: [...getWikiImages(prev), { id: crypto.randomUUID(), url, title: "" }] }))}
                     disabled={isLoading || aiImageLoading}
                   />
                 ) : null}

@@ -23,6 +23,7 @@ type WikiImageRefineChatProps = {
   baseDescription: string;
   imageUrl: string;
   onImageChange: (url: string) => void | Promise<void>;
+  onImageAdd?: (url: string) => void | Promise<void>;
   disabled?: boolean;
   className?: string;
 };
@@ -37,13 +38,17 @@ export function WikiImageRefineChat({
   baseDescription,
   imageUrl,
   onImageChange,
+  onImageAdd,
   disabled = false,
   className,
 }: WikiImageRefineChatProps) {
   const [messages, setMessages] = useState<WikiImageRefineChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pendingImageUrl, setPendingImageUrl] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [currentImageUrl, setCurrentImageUrl] = useState(imageUrl);
+  const originalImageUrlRef = useRef(imageUrl);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -56,7 +61,7 @@ export function WikiImageRefineChat({
 
   async function handleSend() {
     const text = input.trim();
-    if (!text || loading || disabled) return;
+    if (!text || loading || saving || pendingImageUrl || disabled) return;
 
     const userMessage: WikiImageRefineChatMessage = {
       id: newMessageId(),
@@ -75,7 +80,8 @@ export function WikiImageRefineChat({
         entityType,
         currentImageUrl,
         baseDescription,
-        turns
+        turns,
+        originalImageUrlRef.current
       );
       if (!result.success) {
         toast.error(result.message);
@@ -89,12 +95,27 @@ export function WikiImageRefineChat({
       };
       setMessages((prev) => [...prev, assistantMessage]);
       setCurrentImageUrl(result.publicUrl);
-      await onImageChange(result.publicUrl);
-      toast.success("Immagine aggiornata.");
+      setPendingImageUrl(result.publicUrl);
+      toast.success("Immagine generata. Scegli come conservarla.");
     } catch {
       toast.error("Errore durante la modifica immagine.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function applyImage(mode: "replace" | "add") {
+    if (!pendingImageUrl || saving || disabled) return;
+    setSaving(true);
+    try {
+      if (mode === "add") await onImageAdd?.(pendingImageUrl);
+      else await onImageChange(pendingImageUrl);
+      setPendingImageUrl(null);
+      toast.success("Immagine aggiunta alla bozza. Premi Salva per confermare la voce.");
+    } catch {
+      toast.error("Impossibile applicare l'immagine. Puoi riprovare.");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -111,6 +132,17 @@ export function WikiImageRefineChat({
         <Wand2 className="h-4 w-4 text-barber-gold" />
         Modifica immagine via prompt
       </div>
+
+      {pendingImageUrl ? (
+        <div className="space-y-2">
+          <p className="text-xs text-barber-paper/70">Scegli come salvare questa immagine nella voce Wiki.</p>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" disabled={disabled || saving} onClick={() => void applyImage("replace")}>Sostituisci copertina</Button>
+            {onImageAdd ? <Button type="button" disabled={disabled || saving} onClick={() => void applyImage("add")}>Aggiungi alla galleria</Button> : null}
+            <Button type="button" variant="ghost" disabled={disabled || saving} onClick={() => { setPendingImageUrl(null); setCurrentImageUrl(imageUrl); setMessages([]); }}>Scarta</Button>
+          </div>
+        </div>
+      ) : null}
       <p className="text-xs text-barber-paper/60">
         La prima generazione resta ancorata al testo wiki. Qui puoi chiedere aggiustamenti visivi
         («più luce calda», «aggiungi una cicatrice», «sfondo più cupo»…).
@@ -162,13 +194,13 @@ export function WikiImageRefineChat({
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Es: aggiungi una cicatrice sul viso, luce più calda, mantieni la stessa posa…"
-          disabled={disabled || loading}
+          disabled={disabled || loading || saving || !!pendingImageUrl}
           className="min-h-[64px] flex-1 resize-y border-barber-gold/30 bg-barber-dark text-barber-paper text-sm"
         />
         <Button
           type="button"
           className="h-auto shrink-0 self-end bg-barber-gold text-barber-dark hover:bg-barber-gold/90"
-          disabled={disabled || loading || !input.trim()}
+          disabled={disabled || loading || saving || !!pendingImageUrl || !input.trim()}
           onClick={() => void handleSend()}
         >
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}

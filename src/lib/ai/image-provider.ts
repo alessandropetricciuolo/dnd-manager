@@ -42,13 +42,14 @@ export async function generateSiteImageRefinement(
   instructionText: string,
   referenceImageDataUrl: string,
   entityType: WikiImageEntityKind,
-  options?: { model?: string }
+  options?: { model?: string; aspectRatio?: string; originalReferenceDataUrl?: string }
 ): Promise<Buffer> {
   const result = await generateImageWithOpenRouter({
     model: options?.model ?? getSiteImageModel(),
     prompt: instructionText,
-    aspectRatio: getDefaultImageAspectRatioForEntity(entityType),
+    aspectRatio: options?.aspectRatio ?? getDefaultImageAspectRatioForEntity(entityType),
     multimodalContent: [
+      ...(options?.originalReferenceDataUrl ? [{ type: "image_url" as const, image_url: { url: options.originalReferenceDataUrl } }] : []),
       { type: "image_url", image_url: { url: referenceImageDataUrl } },
       { type: "text", text: instructionText },
     ],

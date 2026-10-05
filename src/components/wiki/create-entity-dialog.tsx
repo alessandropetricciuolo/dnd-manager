@@ -1615,7 +1615,7 @@ export function CreateEntityDialog({
                     </Button>
                   {aiImagePreview ? (
                     <WikiImageRefineChat
-                      key={`assist-image-refine-${aiImagePreview}`}
+                      key="assist-image-refine"
                       campaignId={campaignId}
                       entityType={wikiTypeToImageEntityKind(type)}
                       baseDescription={contentValue.trim()}
@@ -1997,7 +1997,7 @@ export function CreateEntityDialog({
                 {magicPortraitPreview ? (
                   <>
                     <WikiImageRefineChat
-                      key={`magic-image-refine-${magicPortraitPreview}`}
+                      key="magic-image-refine"
                       campaignId={campaignId}
                       entityType={wikiTypeToImageEntityKind(magicEntityType)}
                       baseDescription={magicDraft.content}

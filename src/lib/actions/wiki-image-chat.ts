@@ -6,6 +6,7 @@ import type { WikiImageEntityKind } from "@/lib/ai/image-prompt-builder";
 import { resolveImageReferenceForOpenRouter } from "@/lib/ai/image-reference-fetch";
 import {
   buildImageRefineInstructionText,
+  getImageRefineAspectRatio,
   type WikiImageChatTurn,
 } from "@/lib/ai/image-refine-prompt";
 import { generateSiteImageRefinement } from "@/lib/ai/image-provider";
@@ -46,7 +47,8 @@ export async function refineWikiImageAction(
   entityType: WikiImageEntityKind,
   referenceImageUrl: string,
   baseDescription: string,
-  messages: WikiImageChatTurn[]
+  messages: WikiImageChatTurn[],
+  originalImageUrl?: string
 ): Promise<WikiImageRefineResult> {
   if (!campaignId) {
     return { success: false, message: "Campagna non valida." };
@@ -69,11 +71,17 @@ export async function refineWikiImageAction(
   if (!auth.ok) return { success: false, message: auth.message };
 
   try {
-    const referenceForApi = await resolveImageReferenceForOpenRouter(referenceImageUrl);
-    const instruction = buildImageRefineInstructionText(entityType, baseDescription, messages);
+    const hasOriginal = !!originalImageUrl?.trim() && originalImageUrl.trim() !== referenceImageUrl.trim();
+    const [referenceForApi, originalForApi] = await Promise.all([
+      resolveImageReferenceForOpenRouter(referenceImageUrl),
+      hasOriginal ? resolveImageReferenceForOpenRouter(originalImageUrl!.trim()) : Promise.resolve(undefined),
+    ]);
+    const instruction = buildImageRefineInstructionText(entityType, baseDescription, messages, hasOriginal);
     const model = getSiteImageModel();
     const buffer = await generateSiteImageRefinement(instruction, referenceForApi, entityType, {
       model,
+      aspectRatio: getImageRefineAspectRatio(entityType, messages),
+      originalReferenceDataUrl: originalForApi,
     });
 
     const file = new File([new Uint8Array(buffer)], `${entityType}-refine.png`, { type: "image/png" });
