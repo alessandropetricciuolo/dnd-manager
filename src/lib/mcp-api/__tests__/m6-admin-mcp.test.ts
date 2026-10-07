@@ -295,3 +295,22 @@ test("API rejects absent bearer before any content operation", async () => {
   const response = await handleContent(new Request("http://localhost/api/integrations/content", { method: "POST", body: "{}" }));
   assert.equal(response.status, 401);
 });
+
+
+test("gallery upload preserves the cover, existing gallery and unrelated attributes", async () => {
+  process.env.MCP_CAMPAIGN_ID = campaign;
+  const previous = { id: entityId, url: "/api/tg-image/previous", title: "Previous" };
+  const original = { ...row, image_url: "/api/tg-image/cover", attributes: { secret: "keep", images: [previous] } };
+  const success = fakeDb([{ id: campaign, admin_drafts_enabled: true }, original, { ...original, mcp_revision: 3 }]);
+  const result: any = await executeContent(admin(success.db), { operation: "upload_entity_image", args: { campaign_id: campaign, entity_id: entityId, revision: 2, filename: "extra.png", mime_type: "image/png", data_base64: Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]).toString("base64"), mode: "gallery", title: "Extra" } }, { uploadImage: async () => "extra" });
+  const patch: any = success.calls.find(call => call[0] === "update")?.[1];
+  assert.equal(patch.image_url, undefined);
+  assert.equal(patch.attributes.secret, "keep");
+  assert.deepEqual(patch.attributes.images[0], previous);
+  assert.equal(patch.attributes.images.length, 2);
+  assert.deepEqual(patch.attributes.images[1], result.image);
+  assert.equal(result.image.url, "/api/tg-image/extra");
+  assert.equal(result.image.title, "Extra");
+  assert.equal(result.entity.image_url, original.image_url);
+  assert.ok(success.calls.some(call => call[0] === "eq" && call[1] === "mcp_revision" && call[2] === 2));
+});

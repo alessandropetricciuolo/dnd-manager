@@ -3,6 +3,7 @@ import { request } from "node:https";
 import { isIP } from "node:net";
 import type { McpAuthContext } from "./auth";
 import { ApiError } from "./contracts";
+import { getWikiImages } from "@/lib/wiki/images";
 import { normalizeImageUrl } from "@/lib/image-url";
 
 const MAX_BYTES = 3 * 1024 * 1024;
@@ -107,8 +108,11 @@ export async function readSiteImages(auth: McpAuthContext, operation: string, ar
   const isMap = operation === "read_map_image";
   const result = await read({ operation: isMap ? "get_map" : "get_entity", args: { campaign_id: args.campaign_id, ...(isMap ? { map_id: args.map_id } : { entity_id: args.entity_id }), ...(args.admin_only !== undefined ? { admin_only: args.admin_only } : {}) } });
   const parent = isMap ? result.map : result.entity;
-  const sources: { kind: string; url: string | null; asset_id?: string }[] = [];
+  const sources: { kind: string; url: string | null; asset_id?: string; image_id?: string; title?: string }[] = [];
   if (parent.image_url) sources.push({ kind: "primary", url: parent.image_url });
+  if (!isMap) {
+    for (const image of getWikiImages(parent.attributes)) sources.push({ kind: "gallery", url: image.url, image_id: image.id, title: image.title });
+  }
   if (!isMap && result.assets.length) {
     const ids = result.assets.map((asset: { asset_id: string }) => asset.asset_id);
     const { data, error } = await auth.db.from("mcp_assets").select("id,mime_type").eq("campaign_id", args.campaign_id).in("id", ids);

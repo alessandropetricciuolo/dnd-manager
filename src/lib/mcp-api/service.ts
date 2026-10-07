@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ApiError, validate, type EntityEnvelope } from "./contracts";
 import type { McpAuthContext } from "./auth";
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual, randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { uploadImageToTelegram } from "@/lib/telegram-storage";
 import { executeMissionOperation, isMissionOperation } from "./missions";
@@ -383,10 +383,14 @@ export async function executeContent(
     let imageUrl: string;
     try { imageUrl = `/api/tg-image/${encodeURIComponent(await uploadImage(file, `Wiki: ${entity.name}`))}`; }
     catch { throw new ApiError(503, "Wiki image upload failed"); }
-    const result = await auth.db.from("wiki_entities").update({ image_url: imageUrl }).eq("id", a.entity_id).eq("campaign_id", a.campaign_id).eq("mcp_revision", a.revision).select(columns).maybeSingle();
+    const galleryImage = a.mode === "gallery" ? { id: randomUUID(), url: imageUrl, title: a.title?.trim() || a.filename } : null;
+    const patch = galleryImage
+      ? { attributes: { ...(entity.attributes ?? {}), images: [...(Array.isArray(entity.attributes?.images) ? entity.attributes.images : []), galleryImage] } }
+      : { image_url: imageUrl };
+    const result = await auth.db.from("wiki_entities").update(patch).eq("id", a.entity_id).eq("campaign_id", a.campaign_id).eq("mcp_revision", a.revision).select(columns).maybeSingle();
     if (result.error) throw new ApiError(503, "Wiki image update failed");
     if (!result.data) throw new ApiError(409, "Revision conflict: read entity again");
-    return { entity: envelope(result.data) };
+    return { entity: envelope(result.data), ...(galleryImage ? { image: galleryImage } : {}) };
   }
   if (operation === "set_status") {
     if (entity.mcp_revision !== a.revision) throw new ApiError(409, "Revision conflict: read entity again");

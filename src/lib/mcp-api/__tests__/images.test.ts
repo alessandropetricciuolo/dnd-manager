@@ -104,6 +104,9 @@ test("native MCP server delivers an authorized attached image and hides protecte
   try {
     const listed = await client.listTools();
     assert.equal(listed.tools.find(tool => tool.name === "read_entity_images")?.annotations?.readOnlyHint, true);
+    const upload = listed.tools.find(tool => tool.name === "upload_entity_image");
+    assert.deepEqual((upload?.inputSchema.properties?.mode as any)?.enum, ["primary", "gallery"]);
+    assert.match(upload?.description ?? "", /preserving the cover/);
     const hidden = await client.callTool({ name: "read_entity_images", arguments: { campaign_id: campaign, entity_id: id } });
     assert.equal(hidden.isError, true);
     assert.ok(Array.isArray(hidden.content));
@@ -114,4 +117,21 @@ test("native MCP server delivers an authorized attached image and hides protecte
     assert.equal((visible.content[1] as any).data, png.toString("base64"));
     assert.ok(calls.some(call => JSON.stringify(call) === JSON.stringify(["admin_only", false])));
   } finally { await client.close(); await server.close(); }
+});
+
+
+test("gallery reads preserve saved order and paginate independently of the cover", async () => {
+  const fetched: string[] = [];
+  const result = await readSiteImages(auth, "read_entity_images", { offset: 1, limit: 1 }, async () => ({ entity: { id, name: "X", image_url: "/api/tg-image/cover", attributes: { images: [{ id, url: "/api/tg-image/extra", title: "Extra" }] } }, assets: [] }), async url => { fetched.push(url); return png; });
+  assert.equal(result.total, 2);
+  assert.deepEqual(fetched, ["/api/tg-image/extra"]);
+  assert.equal(result.references[0].kind, "gallery");
+  assert.equal(result.references[0].image_id, id);
+  assert.equal(result.images.length, 1);
+});
+
+test("upload contracts accept gallery mode and reject invalid modes and titles", () => {
+  const args = { campaign_id: campaign, entity_id: id, revision: 1, filename: "extra.png", mime_type: "image/png", data_base64: png.toString("base64"), mode: "gallery", title: "Extra" };
+  assert.equal(validate({ operation: "upload_entity_image", args }).args.mode, "gallery");
+  for (const extra of [{ mode: "append" }, { title: 1 }, { title: "x".repeat(201) }]) assert.throws(() => validate({ operation: "upload_entity_image", args: { ...args, ...extra } }));
 });

@@ -1,6 +1,6 @@
 # Riferimenti visivi tramite MCP
 
-`read_entity_images(campaign_id, entity_id, admin_only?, offset?, limit?)` restituisce l'immagine principale Wiki e gli allegati MCP PNG/JPEG/WebP della voce. Non esiste una galleria Wiki separata in questo contratto. Gli allegati PDF sono esclusi. L'immagine principale precede gli allegati, ordinati per ID. `limit` vale 1 per default, massimo 3; `next_offset` consente di continuare.
+`read_entity_images(campaign_id, entity_id, admin_only?, offset?, limit?)` restituisce l'immagine principale Wiki, le immagini aggiuntive in `attributes.images` e gli allegati MCP PNG/JPEG/WebP della voce. Gli allegati PDF sono esclusi. L'immagine principale precede la galleria nel suo ordine salvato, poi gli allegati ordinati per ID. `limit` vale 1 per default, massimo 3; `next_offset` consente di continuare.
 
 `read_map_image(campaign_id, map_id, admin_only?)` restituisce l'immagine della mappa Atlas.
 
@@ -22,3 +22,7 @@ La lettura MCP non genera né salva automaticamente immagini. Il flusso del sito
 Pubblicare la modifica del sito; aggiornare anche il bridge se utilizzato. Aggiornare il catalogo del connettore (può essere necessaria una nuova chat/riconnessione). Confermare con una chiamata autenticata che la chat riceva un'immagine reale e quindi provare una generazione con quel riferimento. I test locali di trasporto non confermano questo ultimo passaggio sul connettore in produzione.
 
 Verifiche locali: `npx tsx --test src/lib/mcp-api/__tests__/*.test.ts` e `node --test integrations/mcp/test.mjs`.
+
+## Caricamento nella galleria Wiki
+
+`upload_entity_image(..., mode: "gallery", title?)` aggiunge un’immagine visibile al carosello senza modificare copertina, immagini precedenti o altri attributi. Restituisce la voce aggiornata e `image` con ID, URL e titolo. Per più immagini, ripetere usando la revisione restituita dal caricamento precedente. Rileggere con `get_entity` o `read_entity_images` per verificare. Omettere `mode` mantiene il comportamento precedente di sostituzione copertina; usare `mode: "primary"` solo per una sostituzione richiesta.

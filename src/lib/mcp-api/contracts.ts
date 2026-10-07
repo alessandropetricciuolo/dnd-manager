@@ -46,7 +46,7 @@ const fields: Record<Operation, string[]> = {
   update_entity: ["entity_id", "revision", "name", "body", "attributes", "admin_only"],
   upload_asset: ["filename", "mime_type", "data_base64"],
   attach_asset: ["entity_id", "asset_id"],
-  upload_entity_image: ["entity_id", "revision", "filename", "mime_type", "data_base64"],
+  upload_entity_image: ["entity_id", "revision", "filename", "mime_type", "data_base64", "mode", "title"],
   upload_map: ["name", "description", "map_type", "visibility", "parent_map_id", "admin_only", "image_url", "filename", "mime_type", "data_base64"],
   set_status: ["entity_id", "revision", "status"],
   search_missions: ["query", "status", "limit", "offset"], get_mission: ["mission_id"],
@@ -151,6 +151,8 @@ export function validate(raw: unknown): { operation: Operation; args: Record<str
     if (!validSignature) return fail();
   }
   if (operation === "upload_entity_image") {
+    if (args.mode !== undefined && !["primary", "gallery"].includes(args.mode)) return fail();
+    if (args.title !== undefined && (typeof args.title !== "string" || args.title.length > 200)) return fail();
     if (typeof args.filename !== "string" || args.filename.length > 120 || !/^[\w .-]+$/.test(args.filename) || args.filename.includes("..")) return fail();
     if (!["image/png", "image/jpeg", "image/webp"].includes(args.mime_type)) return fail();
     if (typeof args.data_base64 !== "string" || args.data_base64.length > 4194304 || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(args.data_base64)) return fail();

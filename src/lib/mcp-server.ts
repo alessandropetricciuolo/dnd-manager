@@ -69,7 +69,7 @@ export function createBdMcpServer(auth: McpAuthContext) {
     entity_id: entityId,
     admin_only: adminOnly,
   }, true);
-  register("read_entity_images", "See actual primary and attached Wiki images before generating coherent artwork. Returns native image blocks plus source metadata; pass received images as visual references to the image generator. Paginate up to 3 images per call. PDFs are excluded. Admin-only content requires explicit opt-in.", { campaign_id: campaignId, entity_id: entityId, admin_only: adminOnly, offset: z.number().int().min(0).max(10000).optional(), limit: z.number().int().min(1).max(3).optional() }, true);
+  register("read_entity_images", "See actual primary, gallery and attached Wiki images before generating coherent artwork. Returns native image blocks plus source metadata; pass received images as visual references to the image generator. Paginate up to 3 images per call. PDFs are excluded. Admin-only content requires explicit opt-in.", { campaign_id: campaignId, entity_id: entityId, admin_only: adminOnly, offset: z.number().int().min(0).max(10000).optional(), limit: z.number().int().min(1).max(3).optional() }, true);
   register("read_map_image", "See the actual scoped Atlas map as a visual reference for coherent artwork. Admin-only content requires explicit opt-in.", { campaign_id: campaignId, map_id: entityId, admin_only: adminOnly }, true);
   register("list_wiki_relationships", "List real Wiki-to-Wiki and Wiki-to-map relationship rows with endpoint metadata. Admin-only endpoints require explicit opt-in.", {
     campaign_id: campaignId,
@@ -123,13 +123,15 @@ export function createBdMcpServer(auth: McpAuthContext) {
     entity_id: entityId,
     asset_id: entityId,
   }, false);
-  register("upload_entity_image", "Upload and set the primary image of a scoped Wiki entity using its current revision. Supports PNG, JPEG, or WebP up to 3 MiB.", {
+  register("upload_entity_image", "Upload a Wiki image using its current revision. Use mode gallery to ADD an additional visible image, preserving the cover and all existing gallery images. Mode primary (default for compatibility) REPLACES the cover. For multiple images, upload one at a time using each returned revision. Supports PNG, JPEG, or WebP up to 3 MiB.", {
     campaign_id: campaignId,
     entity_id: entityId,
     revision,
     filename: z.string().min(1).max(120),
     mime_type: z.enum(["image/png", "image/jpeg", "image/webp"]),
     data_base64: z.string().max(4_194_304),
+    mode: z.enum(["primary", "gallery"]).optional(),
+    title: z.string().max(200).optional(),
   }, false);
   register("upload_map", "Create a scoped Atlas map from an HTTPS image URL or upload a PNG, JPEG, or WebP up to 3 MiB. Maps default to secret.", {
     campaign_id: campaignId,

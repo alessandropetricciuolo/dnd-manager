@@ -58,3 +58,13 @@ test("bridge delivers native images without duplicating base64 in metadata", asy
     assert.equal(result.structuredContent.source.name, "Rudolf");
   } finally { await client.close(); await server.close(); }
 });
+
+
+test("bridge accepts additional Wiki images with an explicit gallery mode", () => {
+  const args = definitions.upload_entity_image.schema;
+  assert.equal(args.mode.parse("gallery"), "gallery");
+  assert.equal(args.mode.parse(undefined), undefined);
+  assert.throws(() => args.mode.parse("invalid"));
+  assert.equal(args.title.parse("Extra"), "Extra");
+  assert.match(definitions.upload_entity_image.description, /preserving the cover/);
+});
