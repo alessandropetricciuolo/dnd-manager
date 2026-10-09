@@ -1,4 +1,5 @@
 import type { CommandCenterSupabase, TenantAdapter } from "./types";
+import { getRequestAuthContextForClient } from "@/utils/supabase/request-auth-context";
 
 export const barberDragonsAdapter: TenantAdapter = {
   resolveWorkspaceId() {
@@ -6,19 +7,11 @@ export const barberDragonsAdapter: TenantAdapter = {
   },
 
   async assertCanAccessCommandCenter(supabase) {
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-    if (userError || !user) {
+    const { user, profile } = await getRequestAuthContextForClient(supabase);
+    if (!user) {
       return { ok: false, error: "Non autenticato." };
     }
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-    const role = (profile as { role?: string } | null)?.role;
+    const role = profile?.role;
     if (role !== "gm" && role !== "admin") {
       return { ok: false, error: "Solo GM e Admin possono usare il Command Center." };
     }

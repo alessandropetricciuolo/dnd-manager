@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { WikiCodexReader } from "./wiki-codex-reader";
 import { WikiCodexIndex } from "./wiki-codex-index";
 import { WikiColumnBoard } from "./wiki-column-board";
+import { getWikiReaderDetail, type WikiReaderDetail } from "@/app/campaigns/wiki-actions";
 import {
   WIKI_ENTITY_TYPES,
   WIKI_FILTER_LABELS_IT,
@@ -22,11 +23,11 @@ export type WikiEntityListItem = {
   selectiveAudienceLabel?: string | null;
   sortOrder: number | null;
   tags?: string[];
-  description?: string;
-  contentBody?: string;
+  searchText?: string;
   imageUrl?: string | null;
   telegramFallbackId?: string | null;
-  attributes?: Record<string, unknown> | null;
+  detailVersion?: string | null;
+  quickDetail?: string;
   linkedMissionId?: string | null;
   missionTitle?: string | null;
 };
@@ -142,7 +143,7 @@ export function WikiListClient({
     if (!q) return byMission;
     return byMission.filter((e) => {
       if (e.name.toLowerCase().includes(q)) return true;
-      if (e.description && e.description.toLowerCase().includes(q)) return true;
+      if (e.searchText && e.searchText.toLowerCase().includes(q)) return true;
       if (e.tags?.some((t) => t.toLowerCase().includes(q))) return true;
       if (e.missionTitle && e.missionTitle.toLowerCase().includes(q))
         return true;
@@ -181,6 +182,12 @@ export function WikiListClient({
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(() => {
     return entities.length > 0 ? entities[0].id : null;
   });
+  const [readerDetail, setReaderDetail] = useState<{
+    entityId: string;
+    detail: WikiReaderDetail | null;
+    detailVersion: string | null;
+  } | null>(null);
+  const [readerDetailLoading, setReaderDetailLoading] = useState(false);
 
   const [mobilePane, setMobilePane] = useState<"index" | "reader">("index");
 
@@ -197,6 +204,46 @@ export function WikiListClient({
   const selectedEntity = useMemo(() => {
     return sorted.find((e) => e.id === selectedEntityId) ?? sorted[0] ?? null;
   }, [sorted, selectedEntityId]);
+
+  const selectedEntityIdForReader = selectedEntity?.id ?? null;
+  const selectedEntityDetailVersion = selectedEntity?.detailVersion ?? null;
+  useEffect(() => {
+    if (displayMode !== "codex") {
+      setReaderDetailLoading(false);
+      return;
+    }
+    if (!selectedEntityIdForReader) {
+      setReaderDetail(null);
+      setReaderDetailLoading(false);
+      return;
+    }
+
+    let active = true;
+    setReaderDetailLoading(true);
+    getWikiReaderDetail(selectedEntityIdForReader, campaignId)
+      .then((detail) => {
+        if (!active) return;
+        setReaderDetail({ entityId: selectedEntityIdForReader, detail, detailVersion: selectedEntityDetailVersion });
+        setReaderDetailLoading(false);
+      })
+      .catch(() => {
+        if (!active) return;
+        setReaderDetail({ entityId: selectedEntityIdForReader, detail: null, detailVersion: selectedEntityDetailVersion });
+        setReaderDetailLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [campaignId, displayMode, selectedEntityIdForReader, selectedEntityDetailVersion]);
+
+  const selectedReaderEntity =
+    selectedEntity &&
+    readerDetail?.entityId === selectedEntity.id &&
+    readerDetail.detailVersion === selectedEntityDetailVersion &&
+    readerDetail.detail
+      ? { ...selectedEntity, ...readerDetail.detail }
+      : null;
 
   if (!entities.length) {
     return (
@@ -306,9 +353,10 @@ export function WikiListClient({
             )}
           >
             <WikiCodexReader
-              entity={selectedEntity}
+              entity={selectedReaderEntity}
               campaignId={campaignId}
               isGmOrAdmin={isGmOrAdmin}
+              loading={readerDetailLoading}
               onBackToIndex={() => setMobilePane("index")}
             />
           </div>

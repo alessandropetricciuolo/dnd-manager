@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { getRequestAuthContext } from "@/utils/supabase/request-auth-context";
 import {
   Card,
   CardContent,
@@ -23,22 +23,13 @@ export async function WikiList({
   eligiblePlayers = [],
   eligibleParties = [],
 }: WikiListProps) {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user, profile } = await getRequestAuthContext();
 
   if (!user) {
     return (
       <p className="text-sm text-barber-paper/70">Accedi per vedere il wiki.</p>
     );
   }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
 
   const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
   const isAdmin = profile?.role === "admin";
@@ -51,6 +42,7 @@ export async function WikiList({
     visibility?: string;
     sort_order?: number | null;
     tags?: string[] | null;
+    updated_at?: string | null;
     content?: { body?: string; description?: string } | null;
     linked_mission_id?: string | null;
     admin_only?: boolean;
@@ -62,7 +54,7 @@ export async function WikiList({
   let error: { message?: string } | null = null;
   let entityQuery = supabase
     .from("wiki_entities")
-    .select("id, name, type, is_secret, visibility, sort_order, tags, content, linked_mission_id, admin_only, image_url, telegram_fallback_id, attributes")
+    .select("id, name, type, is_secret, visibility, sort_order, tags, updated_at, content, linked_mission_id, admin_only, image_url, telegram_fallback_id, attributes")
     .eq("campaign_id", campaignId)
     .order("name");
   if (!isAdmin) entityQuery = entityQuery.eq("admin_only", false);
@@ -70,7 +62,7 @@ export async function WikiList({
   if (res.error?.message?.includes("linked_mission_id")) {
     let fallbackQuery = supabase
       .from("wiki_entities")
-      .select("id, name, type, is_secret, visibility, sort_order, tags, content, admin_only, image_url, telegram_fallback_id, attributes")
+      .select("id, name, type, is_secret, visibility, sort_order, tags, updated_at, content, admin_only, image_url, telegram_fallback_id, attributes")
       .eq("campaign_id", campaignId)
       .order("name");
     if (!isAdmin) fallbackQuery = fallbackQuery.eq("admin_only", false);
@@ -203,7 +195,23 @@ export async function WikiList({
   }
   const missionTitleById = new Map(missionsForLong.map((m) => [m.id, m.title]));
 
-  const list = visibleEntities.map((e) => ({
+  const list = visibleEntities.map((e) => {
+    const attributes = e.attributes ?? {};
+    const combat = (attributes.combat_stats ?? {}) as Record<string, unknown>;
+    let quickDetail = "";
+    if (e.type === "npc") {
+      const race = typeof attributes.race === "string" ? attributes.race.trim() : "";
+      const characterClass = typeof attributes.class === "string" ? attributes.class.trim() : "";
+      quickDetail = [race, characterClass].filter(Boolean).join(" • ");
+    } else if (e.type === "monster" && isGmOrAdmin) {
+      const cr = combat.cr || attributes.cr;
+      const ac = combat.ac || attributes.ac;
+      if (cr) quickDetail = `GS ${cr}${ac ? ` • CA ${ac}` : ""}`;
+    } else if (e.type === "lore" && e.sort_order) {
+      quickDetail = `Cap. ${e.sort_order}`;
+    }
+
+    return {
     id: e.id,
     name: e.name,
     type: e.type,
@@ -211,15 +219,16 @@ export async function WikiList({
     visibility: e.visibility ?? (e.is_secret ? "secret" : "public"),
     sortOrder: e.sort_order ?? null,
     tags: e.tags ?? [],
-    description: getWikiContentDescription(e.content) || getWikiContentBody(e.content),
-    contentBody: getWikiContentBody(e.content),
+    searchText: getWikiContentDescription(e.content) || getWikiContentBody(e.content),
     imageUrl: e.image_url ?? null,
     telegramFallbackId: e.telegram_fallback_id ?? null,
-    attributes: (e.attributes ?? {}) as Record<string, unknown>,
+    detailVersion: e.updated_at ?? null,
+    quickDetail,
     selectiveAudienceLabel: selectiveAudienceByEntityId[e.id] ?? null,
     linkedMissionId: e.linked_mission_id ?? null,
     missionTitle: e.linked_mission_id ? missionTitleById.get(e.linked_mission_id) ?? null : null,
-  }));
+    };
+  });
 
   const emptyMessage = !isGmOrAdmin
     ? "Nessuna conoscenza acquisita ancora. Gioca per scoprire il mondo."

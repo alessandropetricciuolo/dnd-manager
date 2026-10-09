@@ -179,6 +179,7 @@ export default async function MultiImageProjectionPage({
               driveUrl={img.image_url ?? undefined}
               telegramFallbackId={img.telegram_fallback_id ?? undefined}
               alt={img.name}
+              preserveOriginal
               className="max-h-full max-w-full object-contain"
             />}
             {!img.video_url && <figcaption className="absolute bottom-1 left-1/2 -translate-x-1/2 rounded bg-black/70 px-2 py-0.5 text-xs font-medium text-amber-100">

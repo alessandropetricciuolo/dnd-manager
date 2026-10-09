@@ -6,7 +6,6 @@ import {
   ChevronRight,
   Dices,
   Flame,
-  LayoutDashboard,
   MapPinned,
   Scroll,
   Shield,
@@ -17,45 +16,14 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CampaignMiniCarousel } from "@/components/home/campaign-mini-carousel";
-import { createSupabaseServerClient } from "@/utils/supabase/server";
-import { getUserDisplayName } from "@/lib/user-display-name";
+import { HomeClosingCallToAction, HomeHeroActions, HomeJoinButton, HomeWelcome } from "@/components/home/home-personalization";
 
 export const revalidate = 300;
 
 export default async function HomePage() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const isLoggedIn = Boolean(user);
-  const displayName = user ? getUserDisplayName(user) : null;
-  const joinHref = "/login";
-  const primaryHref = isLoggedIn ? "/dashboard" : joinHref;
-  const primaryLabel = isLoggedIn ? "Le mie avventure" : "Unisciti alla Gilda";
-
   return (
     <main className="min-h-screen bg-guild-void text-parchment-100 font-sans">
-      {isLoggedIn ? (
-        <div className="border-b border-brass-base/20 bg-gradient-to-r from-brass-base/15 via-brass-base/5 to-transparent">
-          <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-            <p className="text-sm text-parchment-100/90 sm:text-base">
-              <span className="font-semibold text-brass-light font-serif">Bentornato, {displayName}.</span>{" "}
-              Le prossime serate al tavolo e le tue iscrizioni ti aspettano.
-            </p>
-            <Button
-              asChild
-              size="sm"
-              variant="secondary"
-              className="shrink-0"
-            >
-              <Link href="/dashboard" className="inline-flex items-center gap-2">
-                <LayoutDashboard className="h-4 w-4" />
-                Area personale
-              </Link>
-            </Button>
-          </div>
-        </div>
-      ) : null}
+      <HomeWelcome />
 
       {/* HERO SECTION: The Tavern Portal (Showcase a 2 Colonne con Foto Reale) */}
       <section className="relative overflow-hidden border-b border-guild-border">
@@ -103,29 +71,7 @@ export default async function HomePage() {
                 <strong className="text-brass-light font-semibold">birre artigianali</strong> con i compagni di gilda.
               </p>
 
-              <div className="flex flex-wrap items-center gap-4 pt-1">
-                <Button
-                  asChild
-                  size="lg"
-                  variant="wax"
-                  className="h-12 px-8 text-base shadow-xl tracking-wider font-serif uppercase font-bold"
-                >
-                  <Link href={primaryHref} className="inline-flex items-center gap-2.5">
-                    <Dices className="h-5 w-5 text-brass-light" />
-                    <span>{primaryLabel}</span>
-                  </Link>
-                </Button>
-                <Button
-                  asChild
-                  variant="outline"
-                  size="lg"
-                  className="h-12 px-7 text-sm font-semibold tracking-wide border-brass-base/50 text-brass-light hover:bg-brass-base/15"
-                >
-                  <Link href={isLoggedIn ? "/profile" : "/scopri"}>
-                    {isLoggedIn ? "Il mio profilo" : "Scopri le Avventure"}
-                  </Link>
-                </Button>
-              </div>
+              <HomeHeroActions />
 
               {/* 3 Pillar di Fiducia */}
               <div className="mt-4 grid grid-cols-3 gap-3 border-t border-guild-border/70 pt-6">
@@ -209,7 +155,7 @@ export default async function HomePage() {
                 <ChevronRight className="h-3.5 w-3.5" />
               </Link>
             </div>
-            <CampaignMiniCarousel isLoggedIn={isLoggedIn} />
+            <CampaignMiniCarousel />
           </div>
         </div>
       </section>
@@ -506,13 +452,7 @@ export default async function HomePage() {
                   <span>Ambiente accogliente: compagni di gilda, snack e divertimento.</span>
                 </li>
               </ul>
-              {!isLoggedIn ? (
-                <div className="mt-8">
-                  <Button asChild variant="wax" size="default" className="h-11 px-6 font-serif uppercase tracking-wider">
-                    <Link href={joinHref}>Unisciti alla Gilda</Link>
-                  </Button>
-                </div>
-              ) : null}
+              <HomeJoinButton />
             </div>
           </div>
         </div>
@@ -526,34 +466,7 @@ export default async function HomePage() {
           <p className="text-xs font-mono uppercase tracking-[0.25em] text-brass-base font-semibold">
             ✦ Il Dado è Tratto ✦
           </p>
-          <h2 className="mt-3 font-serif text-3xl font-extrabold tracking-tight text-gold-relief sm:text-5xl leading-tight">
-            {isLoggedIn
-              ? "Pronto per la prossima serata al tavolo?"
-              : "Pronto a vivere D&D come non l'hai mai giocato?"}
-          </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-parchment-300 sm:text-lg">
-            {isLoggedIn
-              ? "Controlla le date disponibili, prepara il personaggio e vieni a giocare dal vivo con i tuoi compagni."
-              : "Unisciti alla community Barber & Dragons. Scegli la tua avventura, prenota il tuo posto al tavolo e tira il tuo primo d20."}
-          </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-4">
-            <Button
-              asChild
-              size="lg"
-              variant="wax"
-              className="h-13 px-9 text-base font-serif uppercase tracking-wider font-bold shadow-2xl"
-            >
-              <Link href={primaryHref}>{primaryLabel}</Link>
-            </Button>
-            <Button
-              asChild
-              variant="outline"
-              size="lg"
-              className="h-13 px-7 text-sm font-semibold border-brass-base/50 text-brass-light hover:bg-brass-base/15"
-            >
-              <Link href="/masters">Esplora l&apos;Albo Master</Link>
-            </Button>
-          </div>
+          <HomeClosingCallToAction />
         </div>
       </section>
     </main>

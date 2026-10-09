@@ -198,6 +198,7 @@ function MapTreeRow({
             <DualSourceImage
               driveUrl={map.image_url}
               alt={map.name}
+              sizes="44px"
               className="h-full w-full object-cover transition-transform group-hover/btn:scale-110"
             />
           </div>
@@ -676,6 +677,7 @@ export function MapGalleryTree({
                         <DualSourceImage
                           driveUrl={map.image_url}
                           alt={map.name}
+                          sizes="(max-width: 768px) 100vw, 22vw"
                           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-guild-void/90 via-guild-void/30 to-transparent" />
@@ -830,6 +832,7 @@ export function MapGalleryTree({
                           <DualSourceImage
                             driveUrl={child.map.image_url}
                             alt={child.map.name}
+                            sizes="44px"
                             className="h-full w-full object-cover group-hover:scale-105 transition-transform"
                           />
                         </div>

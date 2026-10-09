@@ -31,6 +31,7 @@ import { EntityContent } from "./entity-content";
 import { WikiEntityDeleteButton } from "./wiki-entity-delete-button";
 import type { WikiEntityListItem } from "./wiki-list-client";
 import { cn } from "@/lib/utils";
+import type { WikiReaderDetail } from "@/app/campaigns/wiki-actions";
 
 const PLACEHOLDER_IMAGES: Record<string, string> = {
   npc: "https://placehold.co/400x500/18120c/d4af37/png?text=PNG",
@@ -94,9 +95,10 @@ const TYPE_CONFIG: Record<
 };
 
 type WikiCodexReaderProps = {
-  entity: WikiEntityListItem | null;
+  entity: (WikiEntityListItem & WikiReaderDetail) | null;
   campaignId: string;
   isGmOrAdmin: boolean;
+  loading?: boolean;
   onBackToIndex?: () => void;
 };
 
@@ -104,11 +106,19 @@ export function WikiCodexReader({
   entity,
   campaignId,
   isGmOrAdmin,
+  loading = false,
   onBackToIndex,
 }: WikiCodexReaderProps) {
   const [secretsOpen, setSecretsOpen] = useState(false);
 
   if (!entity) {
+    if (loading) {
+      return (
+        <div className="flex h-full min-h-[420px] items-center justify-center rounded-2xl border border-brass-base/20 bg-[#120d09]/90 text-sm font-serif text-parchment-400">
+          Caricamento della voce…
+        </div>
+      );
+    }
     return (
       <div className="flex h-full min-h-[420px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-brass-base/30 bg-[#120d09]/90 p-8 text-center text-parchment-300 shadow-xl">
         <div className="relative mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-brass-base/40 bg-guild-stone shadow-lg">

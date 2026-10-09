@@ -19,7 +19,7 @@ import {
 import { it } from "date-fns/locale";
 import { formatSessionInRome } from "@/lib/session-datetime";
 
-import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { getRequestAuthContext } from "@/utils/supabase/request-auth-context";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { CampaignList } from "@/components/campaign-list";
 import { MySessionsList } from "@/components/my-sessions-list";
@@ -28,6 +28,7 @@ import { GmAdminSessionHistorySection } from "@/components/dashboard/gm-admin-se
 import { CreateOpenCalendarEventDialog } from "@/components/dashboard/create-open-calendar-event-dialog";
 import { OpenCalendarSessionsGmPanel } from "@/components/dashboard/open-calendar-sessions-gm-panel";
 import { DashboardWarRoomTabs } from "@/components/dashboard/dashboard-war-room-tabs";
+import { resolveWarRoomTab, type WarRoomTabKey } from "@/lib/dashboard-war-room-tabs";
 
 export const dynamic = "force-dynamic";
 
@@ -51,21 +52,19 @@ function CampaignListFallback() {
   );
 }
 
-export default async function DashboardPage() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ tab?: string | string[] }>;
+}) {
+  const params = await searchParams;
+  const requestedTab = Array.isArray(params?.tab) ? params.tab[0] : params?.tab;
+  const initialTab: WarRoomTabKey = resolveWarRoomTab(requestedTab) ?? "calendar";
+  const { supabase, user, profile } = await getRequestAuthContext();
 
   if (!user) {
     redirect("/login");
   }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, first_name, last_name, nickname, avatar_url")
-    .eq("id", user.id)
-    .single();
 
   const displayName =
     [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") ||
@@ -77,30 +76,17 @@ export default async function DashboardPage() {
   const isAdmin = profile?.role === "admin";
 
   // Vitals & Stats
-  const { count: attendedCount } = await supabase
-    .from("session_signups")
-    .select("id", { count: "exact", head: true })
-    .eq("player_id", user.id)
-    .eq("status", "attended");
-
-  let myCampaignsCount = 0;
-  if (isGmOrAdmin) {
-    const { count } = await supabase
-      .from("campaigns")
-      .select("id", { count: "exact", head: true })
-      .eq("gm_id", user.id);
-    myCampaignsCount = count ?? 0;
-  } else {
-    const { count } = await supabase
-      .from("campaign_members")
-      .select("id", { count: "exact", head: true })
-      .eq("player_id", user.id);
-    myCampaignsCount = count ?? 0;
-  }
-
-  const { count: totalCampaignsCount } = await supabase
-    .from("campaigns")
-    .select("id", { count: "exact", head: true });
+  const myCampaignCountQuery = isGmOrAdmin
+    ? supabase.from("campaigns").select("id", { count: "exact", head: true }).eq("gm_id", user.id)
+    : supabase.from("campaign_members").select("id", { count: "exact", head: true }).eq("player_id", user.id);
+  const [attendedResult, myCampaignsResult, totalCampaignsResult] = await Promise.all([
+    supabase.from("session_signups").select("id", { count: "exact", head: true }).eq("player_id", user.id).eq("status", "attended"),
+    myCampaignCountQuery,
+    supabase.from("campaigns").select("id", { count: "exact", head: true }),
+  ]);
+  const attendedCount = attendedResult.count;
+  const myCampaignsCount = myCampaignsResult.count ?? 0;
+  const totalCampaignsCount = totalCampaignsResult.count;
 
   // Spotlight Next Session
   let nextSession: {
@@ -115,7 +101,7 @@ export default async function DashboardPage() {
 
   const nowIso = new Date(Date.now() - 2 * 3600 * 1000).toISOString();
 
-  if (isGmOrAdmin) {
+  if (isGmOrAdmin && initialTab === "calendar") {
     const { data: gmSessions } = await supabase
       .from("sessions")
       .select(`
@@ -454,12 +440,13 @@ export default async function DashboardPage() {
 
         {/* THE WAR ROOM WORKSPACE: Segmented Controller & Live Displays */}
         <DashboardWarRoomTabs
+          initialTab={initialTab}
           isGmOrAdmin={isGmOrAdmin}
           counts={{
             myCampaigns: myCampaignsCount,
             allCampaigns: totalCampaignsCount ?? 0,
           }}
-          calendarSlot={
+          calendarSlot={initialTab === "calendar" ? (
             <div className="space-y-4">
               {isGmOrAdmin ? (
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brass-base/30 bg-guild-stone/50 p-4">
@@ -501,18 +488,18 @@ export default async function DashboardPage() {
                 </Suspense>
               ) : null}
             </div>
-          }
-          myCampaignsSlot={
+          ) : null}
+          myCampaignsSlot={initialTab === "my-campaigns" ? (
             <Suspense fallback={<CampaignListFallback />}>
               <CampaignList variant="yours" />
             </Suspense>
-          }
-          allCampaignsSlot={
+          ) : null}
+          allCampaignsSlot={initialTab === "all-campaigns" ? (
             <Suspense fallback={<CampaignListFallback />}>
               <CampaignList variant="all" />
             </Suspense>
-          }
-          sessionsHistorySlot={
+          ) : null}
+          sessionsHistorySlot={initialTab === "sessions" ? (
             isGmOrAdmin ? (
               <Suspense
                 fallback={
@@ -530,7 +517,7 @@ export default async function DashboardPage() {
                 <MySessionsList />
               </Suspense>
             )
-          }
+          ) : null}
         />
 
         {/* STATUTO & CODICE DELLA LOCANDA */}

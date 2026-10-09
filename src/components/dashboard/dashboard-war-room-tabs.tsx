@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { CalendarDays, Shield, Compass, ScrollText, Sparkles, Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { resolveWarRoomTab, type WarRoomTabKey } from "@/lib/dashboard-war-room-tabs";
 
 interface DashboardWarRoomTabsProps {
   calendarSlot: React.ReactNode;
@@ -10,13 +12,12 @@ interface DashboardWarRoomTabsProps {
   allCampaignsSlot: React.ReactNode;
   sessionsHistorySlot: React.ReactNode;
   isGmOrAdmin: boolean;
+  initialTab: WarRoomTabKey;
   counts: {
     myCampaigns: number;
     allCampaigns: number;
   };
 }
-
-export type WarRoomTabKey = "calendar" | "my-campaigns" | "all-campaigns" | "sessions";
 
 export function DashboardWarRoomTabs({
   calendarSlot,
@@ -24,24 +25,25 @@ export function DashboardWarRoomTabs({
   allCampaignsSlot,
   sessionsHistorySlot,
   isGmOrAdmin,
+  initialTab,
   counts,
 }: DashboardWarRoomTabsProps) {
-  const [activeTab, setActiveTab] = useState<WarRoomTabKey>("calendar");
+  const router = useRouter();
+  const pathname = usePathname();
+  const [activeTab, setActiveTab] = useState<WarRoomTabKey>(initialTab);
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
 
   // Ascolta click su elementi con data-switch-tab e sincronizza con hash/query params
   useEffect(() => {
-    function resolveTab(key: string | null): WarRoomTabKey | null {
-      if (!key) return null;
-      const normalized = key.toLowerCase().replace("#", "").trim();
-      if (normalized === "calendar" || normalized === "calendario") return "calendar";
-      if (normalized === "my-campaigns" || normalized === "mie-saghe" || normalized === "saghe") return "my-campaigns";
-      if (normalized === "all-campaigns" || normalized === "bacheca" || normalized === "bandi" || normalized === "avventure") return "all-campaigns";
-      if (normalized === "sessions" || normalized === "sessioni" || normalized === "biglietti" || normalized === "prenotazioni") return "sessions";
-      return null;
-    }
-
     function switchTabWithScroll(targetTab: WarRoomTabKey) {
       setActiveTab(targetTab);
+      const params = new URLSearchParams(window.location.search);
+      params.set("tab", targetTab);
+      const query = params.toString();
+      router.push(`${pathname}${query ? `?${query}` : ""}${window.location.hash}`, { scroll: false });
       requestAnimationFrame(() => {
         const el = document.getElementById("war-room-workspace");
         if (el) {
@@ -52,16 +54,17 @@ export function DashboardWarRoomTabs({
 
     // Check iniziale da query param o hash
     if (typeof window !== "undefined") {
-      const searchTab = resolveTab(new URLSearchParams(window.location.search).get("tab"));
-      const hashTab = resolveTab(window.location.hash);
-      const initial = searchTab || hashTab;
-      if (initial) {
-        setActiveTab(initial);
+      const searchTab = resolveWarRoomTab(new URLSearchParams(window.location.search).get("tab"));
+      const hashTab = resolveWarRoomTab(window.location.hash);
+      if (!searchTab && hashTab) {
+        switchTabWithScroll(hashTab);
+      } else if (searchTab) {
+        setActiveTab(searchTab);
       }
     }
 
     function onHashChange() {
-      const target = resolveTab(window.location.hash);
+      const target = resolveWarRoomTab(window.location.hash);
       if (target) {
         switchTabWithScroll(target);
       }
@@ -71,7 +74,7 @@ export function DashboardWarRoomTabs({
       const trigger = (e.target as HTMLElement).closest("[data-switch-tab]") as HTMLElement | null;
       if (trigger) {
         const requested = trigger.getAttribute("data-switch-tab");
-        const resolved = resolveTab(requested);
+        const resolved = resolveWarRoomTab(requested);
         if (resolved) {
           e.preventDefault();
           switchTabWithScroll(resolved);
@@ -85,7 +88,7 @@ export function DashboardWarRoomTabs({
       window.removeEventListener("hashchange", onHashChange);
       document.removeEventListener("click", onGlobalClick);
     };
-  }, []);
+  }, [pathname, router]);
 
   const tabs: {
     id: WarRoomTabKey;
@@ -140,7 +143,13 @@ export function DashboardWarRoomTabs({
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  const params = new URLSearchParams(window.location.search);
+                  params.set("tab", tab.id);
+                  const query = params.toString();
+                  router.push(`${pathname}${query ? `?${query}` : ""}${window.location.hash}`, { scroll: false });
+                }}
                 className={cn(
                   "group relative flex flex-col items-start rounded-xl p-3 text-left transition-all duration-300",
                   isActive
@@ -199,6 +208,13 @@ export function DashboardWarRoomTabs({
 
       {/* Tab Panels */}
       <div className="transition-opacity duration-300">
+        {activeTab !== initialTab ? (
+          <div className="flex min-h-40 items-center justify-center rounded-2xl border border-brass-base/20 bg-guild-stone/60 text-sm text-parchment-300" aria-live="polite">
+            Caricamento sezione…
+          </div>
+        ) : null}
+        {activeTab === initialTab && (
+          <>
         {activeTab === "calendar" && (
           <div className="space-y-6 animate-in fade-in-50 duration-200">
             {calendarSlot}
@@ -255,6 +271,8 @@ export function DashboardWarRoomTabs({
             </div>
             {sessionsHistorySlot}
           </div>
+        )}
+          </>
         )}
       </div>
     </div>

@@ -46,6 +46,7 @@ import { forceCharacterTimeSync, setCharacterCalendarOverride } from "@/app/camp
 import { formatSpellSlotsLabel, parseRulesSnapshot } from "@/lib/character-rules-snapshot";
 import { backgroundBySlug, backgroundRulesTooltipPrefix, raceBySlug } from "@/lib/character-build-catalog";
 import { sanitizeRaceTraitsMarkdown } from "@/lib/race-traits-sanitizer";
+import { isImageSourceOptimizable } from "@/lib/is-image-optimizable";
 
 const PLACEHOLDER_AVATAR = "https://placehold.co/200x280/1c1917/fbbf24/png?text=PG";
 
@@ -280,7 +281,13 @@ export function CharacterCardGm({
   const [contentAccessOpen, setContentAccessOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [imgError, setImgError] = useState(false);
+  const [forceImagesUnoptimized, setForceImagesUnoptimized] = useState(false);
   const [sheetImgError, setSheetImgError] = useState(false);
+  useEffect(() => {
+    setImgError(false);
+    setSheetImgError(false);
+    setForceImagesUnoptimized(false);
+  }, [character.image_url]);
   const [isLeveling, startTransition] = useTransition();
   const [isSavingXp, startXpTransition] = useTransition();
   const [epochOpen, setEpochOpen] = useState(false);
@@ -564,8 +571,11 @@ export function CharacterCardGm({
                   fill
                   className="object-cover"
                   sizes="64px"
-                  unoptimized={!!character.image_url}
-                  onError={() => setImgError(true)}
+                  unoptimized={forceImagesUnoptimized || (!!character.image_url && !isImageSourceOptimizable(character.image_url))}
+                  onError={() => {
+                    if (!forceImagesUnoptimized && character.image_url && isImageSourceOptimizable(character.image_url)) setForceImagesUnoptimized(true);
+                    else setImgError(true);
+                  }}
                 />
               </div>
               <div className="min-w-0 flex-1 pr-14">
@@ -614,8 +624,11 @@ export function CharacterCardGm({
                     fill
                     className="object-cover"
                     sizes="220px"
-                    unoptimized={!!character.image_url}
-                    onError={() => setSheetImgError(true)}
+                    unoptimized={forceImagesUnoptimized || (!!character.image_url && !isImageSourceOptimizable(character.image_url))}
+                    onError={() => {
+                      if (!forceImagesUnoptimized && character.image_url && isImageSourceOptimizable(character.image_url)) setForceImagesUnoptimized(true);
+                      else setSheetImgError(true);
+                    }}
                   />
                 </div>
                 <div>
@@ -835,8 +848,11 @@ export function CharacterCardGm({
                 fill
                 className="object-cover"
                 sizes="80px"
-                unoptimized={!!character.image_url}
-                onError={() => setImgError(true)}
+                unoptimized={forceImagesUnoptimized || (!!character.image_url && !isImageSourceOptimizable(character.image_url))}
+                onError={() => {
+                  if (!forceImagesUnoptimized && character.image_url && isImageSourceOptimizable(character.image_url)) setForceImagesUnoptimized(true);
+                  else setImgError(true);
+                }}
               />
             </div>
             <div className="min-w-0 flex-1 pr-10">
@@ -1091,8 +1107,11 @@ export function CharacterCardGm({
                 fill
                 className="object-cover"
                 sizes="220px"
-                unoptimized={!!character.image_url}
-                onError={() => setSheetImgError(true)}
+                unoptimized={forceImagesUnoptimized || (!!character.image_url && !isImageSourceOptimizable(character.image_url))}
+                onError={() => {
+                  if (!forceImagesUnoptimized && character.image_url && isImageSourceOptimizable(character.image_url)) setForceImagesUnoptimized(true);
+                  else setSheetImgError(true);
+                }}
               />
             </div>
             <div>

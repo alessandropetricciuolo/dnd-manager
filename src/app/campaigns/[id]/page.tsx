@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { getRequestAuthContext } from "@/utils/supabase/request-auth-context";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { SessionList } from "@/components/session-list";
 import { SessionHistoryManager } from "@/components/sessions/session-history-manager";
@@ -50,6 +50,7 @@ import {
   type CampaignType,
 } from "@/lib/campaign-type";
 import { cn } from "@/lib/utils";
+import { getCampaignDefaultTab, shouldResolvePlayerDefaultTab } from "@/lib/campaign-default-tab";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -75,17 +76,15 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
       ? sp.openEditCharacter.trim()
       : null;
 
-  let supabase;
+  let authContext: Awaited<ReturnType<typeof getRequestAuthContext>>;
   try {
-    supabase = await createSupabaseServerClient();
+    authContext = await getRequestAuthContext();
   } catch (e) {
     console.error("[campaigns/[id]] createSupabaseServerClient", e);
     redirect("/dashboard");
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user, profile } = authContext;
 
   if (!user) {
     console.log("[campaigns/[id]] debug (no user)", {
@@ -130,12 +129,6 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
       gmDisplayName = full || (gmProfile.display_name ?? "").trim() || null;
     }
   }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
 
   /** Solo ruoli globali GM/Admin possono gestire PG/schede in tutte le campagne. */
   const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
@@ -208,8 +201,22 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
     }
   }
 
-  const charsResult = await getCampaignCharacters(id);
-  const characters = charsResult.success ? charsResult.data ?? [] : [];
+  const isLongCampaign = isLongCampaignType(campaign.type);
+  const isTorneo = isTorneoCampaignType(campaign.type);
+  const showMissionsTab = isLongCampaign && (isGmOrAdmin || isCampaignMember);
+  const showMappeTab = !isTorneo;
+
+  let hasAssignedCharacter = false;
+  if (shouldResolvePlayerDefaultTab(requestedTab, isGmOrAdmin, showMissionsTab, showMappeTab)) {
+    const { data: assignedCharacter } = await supabase
+      .from("campaign_characters")
+      .select("id")
+      .eq("campaign_id", id)
+      .eq("assigned_to", user.id)
+      .limit(1)
+      .maybeSingle();
+    hasAssignedCharacter = Boolean(assignedCharacter);
+  }
 
   let eligiblePlayers: { id: string; label: string }[] = [];
   let eligibleParties: { id: string; label: string; memberIds: string[] }[] = [];
@@ -244,10 +251,6 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
     }
   }
   const isViewerLockedOut = !isGmOrAdmin && isLongCampaignType(campaign.type) && !isCampaignMember;
-  const isLongCampaign = isLongCampaignType(campaign.type);
-  const isTorneo = isTorneoCampaignType(campaign.type);
-  const showMissionsTab = isLongCampaign && (isGmOrAdmin || isCampaignMember);
-  const showMappeTab = !isTorneo;
   const longRegistrationsOpen =
     (campaign as { long_registrations_open?: boolean }).long_registrations_open !== false;
 
@@ -327,8 +330,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
   }
 
   /** Tab iniziale: player con PG assegnato → PG, player senza PG o GM → Sessioni */
-  const defaultTab =
-    isGmOrAdmin || characters.length === 0 ? "sessioni" : "pg";
+  const defaultTab = getCampaignDefaultTab(isGmOrAdmin, hasAssignedCharacter);
   let initialContentTab: CampaignTabValue = requestedTab ?? defaultTab;
   if (initialContentTab === "gm" && !isGmOrAdmin) initialContentTab = defaultTab;
   if (initialContentTab === "missioni" && !showMissionsTab) initialContentTab = defaultTab;
@@ -347,6 +349,11 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
   const renderMissioniTab = initialContentTab === "missioni";
   const renderPgTab = initialContentTab === "pg";
   const renderGmTab = initialContentTab === "gm";
+
+  const charsResult = renderPgTab
+    ? await getCampaignCharacters(id)
+    : { success: true as const, data: [] };
+  const characters = charsResult.success ? charsResult.data ?? [] : [];
 
   const campaignInfoFooter = (
     <>

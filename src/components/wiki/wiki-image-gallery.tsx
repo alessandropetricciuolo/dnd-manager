@@ -48,7 +48,7 @@ export function WikiImageGallery({ entity, canProject }: { entity: GalleryEntity
     <Carousel setApi={setApi} opts={{ loop: all.length > 1 }} aria-label={`Immagini di ${entity.name}`} className="overflow-hidden rounded-lg border border-barber-gold/30 bg-black/30">
       <CarouselContent>
         {all.map((image, position) => <CarouselItem key={image.key} aria-label={`${position + 1} di ${all.length}`}>
-          <DualSourceImage driveUrl={image.url ?? undefined} telegramFallbackId={image.fallback ?? undefined} alt={image.title} draggable={false} loading={position === 0 ? "eager" : "lazy"} className="aspect-square max-h-[65vh] w-full object-contain" />
+          <DualSourceImage driveUrl={image.url ?? undefined} telegramFallbackId={image.fallback ?? undefined} alt={image.title} preserveOriginal draggable={false} loading={position === 0 ? "eager" : "lazy"} className="aspect-square max-h-[65vh] w-full object-contain" />
         </CarouselItem>)}
       </CarouselContent>
       <span className="absolute right-3 top-3 rounded-full bg-black/70 px-3 py-1 text-xs text-white">{Math.min(index + 1, all.length)} / {all.length}</span>

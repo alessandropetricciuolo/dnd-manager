@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { getRequestAuthContext } from "@/utils/supabase/request-auth-context";
 import { getTenantAdapter } from "@/modules/command-center/adapters";
 import {
   listCampaignsForCommandCenterAction,
@@ -17,7 +17,7 @@ type PageProps = {
 };
 
 export default async function CommandCenterPage({ searchParams }: PageProps) {
-  const supabase = await createSupabaseServerClient();
+  const { supabase } = await getRequestAuthContext();
   const adapter = getTenantAdapter();
   const access = await adapter.assertCanAccessCommandCenter(supabase);
   if (!access.ok) {

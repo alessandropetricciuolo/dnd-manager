@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/carousel";
 import { Card, CardContent } from "@/components/ui/card";
 import { IMAGE_BLUR_PLACEHOLDER, cn } from "@/lib/utils";
+import { useSupabaseUser } from "@/hooks/use-supabase-user";
 
 const PLACEHOLDER_IMAGE =
   "https://placehold.co/800x450/1c1917/fbbf24/png?text=Campagna";
@@ -32,6 +33,8 @@ export function CampaignMiniCarouselClient({
   isLoggedIn = false,
 }: CampaignMiniCarouselClientProps) {
   const [api, setApi] = useState<CarouselApi | null>(null);
+  const { user } = useSupabaseUser();
+  const loggedIn = isLoggedIn || Boolean(user);
 
   useEffect(() => {
     if (!api) return;
@@ -57,7 +60,7 @@ export function CampaignMiniCarouselClient({
                 )}
               >
                 <Link
-                  href={isLoggedIn ? `/campaigns/${campaign.id}` : "/login"}
+                  href={loggedIn ? `/campaigns/${campaign.id}` : "/login"}
                   className="block h-full"
                 >
                   <Card className="h-full overflow-hidden border-barber-gold/25 bg-[#140f1f]/90 transition-colors hover:border-barber-gold/50">
@@ -79,7 +82,7 @@ export function CampaignMiniCarouselClient({
                       </h3>
                       <p className="mt-1 line-clamp-2 text-xs text-barber-paper/75">
                         {campaign.description ||
-                          (isLoggedIn
+                          (loggedIn
                             ? "Apri la campagna e iscriviti alle prossime date dal vivo."
                             : "Scopri la sinossi e le prossime serate disponibili.")}
                       </p>
@@ -93,7 +96,7 @@ export function CampaignMiniCarouselClient({
       </Carousel>
 
       <p className="text-xs text-barber-paper/70">
-        {isLoggedIn
+        {loggedIn
           ? "Le avventure in corso della Gilda. Scegli una campagna e iscriviti alla prossima serata al tavolo."
           : "Anteprima delle campagne dal vivo. Accedi per iscriverti alle sessioni e unirti alla community."}
       </p>

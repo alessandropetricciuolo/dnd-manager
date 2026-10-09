@@ -535,6 +535,7 @@ export function GmGallerySheet({
                               driveUrl={link.image_url ?? undefined}
                               telegramFallbackId={link.telegram_fallback_id ?? undefined}
                               alt={link.name}
+                              sizes="64px"
                               className="h-full w-full object-cover"
                             />
                           ) : (
@@ -720,6 +721,7 @@ function GalleryCard({
             driveUrl={item.image_url ?? undefined}
             telegramFallbackId={item.telegram_fallback_id ?? undefined}
             alt={item.title}
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 180px"
             className="h-full w-full object-cover"
           />}
           {isProjected && (

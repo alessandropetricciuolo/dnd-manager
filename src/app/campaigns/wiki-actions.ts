@@ -29,6 +29,8 @@ import { mergeRelationsWithTextReferences } from "@/lib/wiki/wiki-relationship-s
 import { normalizeImageUrl } from "@/lib/image-url";
 import { assertCanManageAdminContent, isGlobalAdmin, logAdminContentTransition, resolveAdminContentAccess } from "@/lib/admin-content";
 import { resolveAdminOnlyTransition } from "@/lib/admin-content/transitions";
+import { getWikiContentBody, getWikiContentDescription } from "@/lib/wiki/content";
+import { getRequestAuthContext } from "@/utils/supabase/request-auth-context";
 
 export type { WikiGeneratorEntityType, WikiAiTextGeneration } from "@/lib/ai/generator";
 
@@ -907,6 +909,14 @@ export type WikiEntity = {
   updated_at: string;
 };
 
+export type WikiReaderDetail = {
+  description: string;
+  contentBody: string;
+  attributes: Record<string, unknown> | null;
+  imageUrl: string | null;
+  telegramFallbackId: string | null;
+};
+
 /** Chiavi negli attributes che i Player non devono mai ricevere (né in UI né in risposta di rete). */
 const SENSITIVE_ATTRIBUTE_KEYS = ["loot", "combat_stats", "relationships", "gm_notes"] as const;
 
@@ -930,19 +940,8 @@ export async function getEntity(
   campaignId: string
 ): Promise<WikiEntity | null> {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) return null;
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
+    const { supabase, user, profile } = await getRequestAuthContext();
+    if (!user) return null;
 
     const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
     const isAdmin = profile?.role === "admin";
@@ -987,6 +986,22 @@ export async function getEntity(
   } catch {
     return null;
   }
+}
+
+/** Fetch full reader data only after the user selects an entry in the Wiki index. */
+export async function getWikiReaderDetail(
+  entityId: string,
+  campaignId: string
+): Promise<WikiReaderDetail | null> {
+  const entity = await getEntity(entityId, campaignId);
+  if (!entity) return null;
+  return {
+    description: getWikiContentDescription(entity.content),
+    contentBody: getWikiContentBody(entity.content),
+    attributes: entity.attributes ?? {},
+    imageUrl: entity.image_url ?? null,
+    telegramFallbackId: entity.telegram_fallback_id ?? null,
+  };
 }
 
 /** Per GM Screen Initiative Tracker: lista mostri della campagna con nome e HP (da combat_stats). Solo GM/Admin. Restituisce anche is_core e global_status per campagne Long. */

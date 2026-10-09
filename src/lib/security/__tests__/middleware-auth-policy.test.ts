@@ -4,6 +4,7 @@ import {
   isAuthRoute,
   isProtectedRoute,
   isPublicPath,
+  isPublicMediaProxyPath,
   shouldRedirectUnauthenticated,
 } from "@/lib/supabase/middleware";
 
@@ -20,6 +21,13 @@ test("rotte protette: dashboard, campaigns, profile, admin", () => {
   assert.equal(isProtectedRoute("/profile"), true);
   assert.equal(isProtectedRoute("/admin"), true);
   assert.equal(isProtectedRoute("/api/sheet-pdf"), false);
+});
+
+test("solo il proxy immagini Telegram pubblico salta il middleware auth", () => {
+  assert.equal(isPublicMediaProxyPath("/api/tg-image/file-id"), true);
+  assert.equal(isPublicMediaProxyPath("/api/tg-image"), true);
+  assert.equal(isPublicMediaProxyPath("/api/sheet-pdf"), false);
+  assert.equal(isPublicMediaProxyPath("/dashboard"), false);
 });
 
 test("rotte auth: login, signup, forgot-password", () => {

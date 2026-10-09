@@ -7,7 +7,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext
 import { getWikiImages } from "@/lib/wiki/images";
 import type { WikiEntityListItem } from "./wiki-list-client";
 
-export function WikiCodexImageCarousel({ entity, campaignId, placeholder, canProject }: { entity: WikiEntityListItem; campaignId: string; placeholder: string; canProject: boolean }) {
+export function WikiCodexImageCarousel({ entity, campaignId, placeholder, canProject }: { entity: WikiEntityListItem & { attributes: Record<string, unknown> | null }; campaignId: string; placeholder: string; canProject: boolean }) {
   const [api, setApi] = useState<CarouselApi>();
   const [index, setIndex] = useState(0);
   const images = [
@@ -28,7 +28,7 @@ export function WikiCodexImageCarousel({ entity, campaignId, placeholder, canPro
       <CarouselContent>
         {(images.length ? images : [{ key: "placeholder", url: placeholder, fallback: null, title: entity.name }]).map((image, position) => <CarouselItem key={image.key} aria-label={`${position + 1} di ${Math.max(1, images.length)}`}>
           <div className="relative aspect-[3/4] w-full">
-            <DualSourceImage driveUrl={image.url ?? placeholder} telegramFallbackId={image.fallback} alt={image.title} draggable={false} className="h-full w-full rounded-lg object-contain" />
+            <DualSourceImage driveUrl={image.url ?? placeholder} telegramFallbackId={image.fallback} alt={image.title} sizes="260px" draggable={false} className="h-full w-full rounded-lg object-contain" />
             <div className="pointer-events-none absolute inset-0 rounded-lg shadow-[inset_0_0_15px_rgba(0,0,0,0.85)]" />
           </div>
         </CarouselItem>)}

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "nextjs-toploader/app";
 import { toast } from "sonner";
 import { ImageIcon, Trash2, ExternalLink, MapPin, Pencil } from "lucide-react";
@@ -13,6 +13,7 @@ import { deleteMap } from "@/app/campaigns/map-actions";
 import { EditMapDialog } from "./edit-map-dialog";
 import { cn } from "@/lib/utils";
 import { openProjectionWindow } from "@/lib/browser/projection-window";
+import { isImageSourceOptimizable } from "@/lib/is-image-optimizable";
 
 const MAP_TYPE_LABELS: Record<string, string> = {
   world: "Mondo",
@@ -61,6 +62,10 @@ export function MapCard({
 }: MapCardProps) {
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
+  const [forceImageUnoptimized, setForceImageUnoptimized] = useState(false);
+  useEffect(() => {
+    setForceImageUnoptimized(false);
+  }, [map.image_url]);
   const inferredPartyIds = eligibleParties
     .filter((party) => party.memberIds.length > 0 && party.memberIds.every((id) => permittedUserIds.includes(id)))
     .map((party) => party.id);
@@ -189,6 +194,12 @@ export function MapCard({
           fill
           className="object-cover transition-transform duration-500 group-hover:scale-105"
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          unoptimized={forceImageUnoptimized || !isImageSourceOptimizable(map.image_url)}
+          onError={() => {
+            if (!forceImageUnoptimized && isImageSourceOptimizable(map.image_url)) {
+              setForceImageUnoptimized(true);
+            }
+          }}
         />
         <div
           className={cn(

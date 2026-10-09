@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { getRequestAuthContext } from "@/utils/supabase/request-auth-context";
 import { Button } from "@/components/ui/button";
 import { ProfileForm } from "@/components/profile/profile-form";
 import { ProfileUnifiedForm } from "@/components/profile/profile-unified-form";
@@ -14,39 +14,21 @@ import { ArrowLeft, User, UserCheck, UserX } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 export default async function ProfilePage() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getRequestAuthContext();
 
   if (!user) {
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select(
-      "role, first_name, last_name, date_of_birth, phone, whatsapp_opt_in, notifications_disabled, nickname, avatar_url, is_player_public"
-    )
-    .eq("id", user.id)
-    .single();
-
-  const { count: attendedCount } = await supabase
-    .from("session_signups")
-    .select("id", { count: "exact", head: true })
-    .eq("player_id", user.id)
-    .eq("status", "attended");
-  const { count: absentCount } = await supabase
-    .from("session_signups")
-    .select("id", { count: "exact", head: true })
-    .eq("player_id", user.id)
-    .eq("status", "absent");
-
-  const { data: memberRows } = await supabase
-    .from("campaign_members")
-    .select("campaign_id, joined_at")
-    .eq("player_id", user.id)
-    .order("joined_at", { ascending: false });
+  const [{ data: profile }, attendedResult, absentResult, memberResult] = await Promise.all([
+    supabase.from("profiles").select("role, first_name, last_name, date_of_birth, phone, whatsapp_opt_in, notifications_disabled, nickname, avatar_url, is_player_public").eq("id", user.id).single(),
+    supabase.from("session_signups").select("id", { count: "exact", head: true }).eq("player_id", user.id).eq("status", "attended"),
+    supabase.from("session_signups").select("id", { count: "exact", head: true }).eq("player_id", user.id).eq("status", "absent"),
+    supabase.from("campaign_members").select("campaign_id, joined_at").eq("player_id", user.id).order("joined_at", { ascending: false }),
+  ]);
+  const attendedCount = attendedResult.count;
+  const absentCount = absentResult.count;
+  const memberRows = memberResult.data;
   const membershipRows = (memberRows ?? []) as { campaign_id: string; joined_at: string }[];
   const playedCampaignIds = [...new Set(membershipRows.map((r) => r.campaign_id))];
   let playedCampaigns: Array<{ id: string; name: string; type: "oneshot" | "quest" | "long" | null }> = [];

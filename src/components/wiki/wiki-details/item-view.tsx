@@ -21,6 +21,7 @@ export function ItemView({ name, body, imageUrl, telegramFallbackId }: ItemViewP
             driveUrl={imageUrl ?? PLACEHOLDER}
             telegramFallbackId={telegramFallbackId ?? null}
             alt={name}
+            sizes="(max-width: 768px) 192px, 256px"
             className="h-full w-full object-cover"
           />
         </div>

@@ -1,5 +1,5 @@
-import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
+import { getRequestAuthContext } from "@/utils/supabase/request-auth-context";
 import type { Database } from "@/types/database.types";
 
 type VaultAccessRow = Database["public"]["Tables"]["vault_access"]["Row"];
@@ -17,17 +17,8 @@ export type VaultAuthContext = {
 };
 
 export async function getVaultAuthContext(): Promise<VaultAuthContext | null> {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user, profile } = await getRequestAuthContext();
   if (!user) return null;
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
 
   const isAdmin = profile?.role === "admin";
   const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";

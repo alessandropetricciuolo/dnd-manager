@@ -30,6 +30,11 @@ export function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.includes(normalized);
 }
 
+/** Public, immutable media proxy: it has no user-dependent access policy. */
+export function isPublicMediaProxyPath(pathname: string): boolean {
+  return pathname === "/api/tg-image" || pathname.startsWith("/api/tg-image/");
+}
+
 /**
  * Un errore del servizio Auth non equivale a una sessione assente.
  * Le rotte protette ripetono comunque il controllo sul server: il middleware
@@ -51,6 +56,10 @@ function redirectWithSupabaseCookies(redirectUrl: URL, supabaseResponse: NextRes
 
 export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+
+  if (isPublicMediaProxyPath(pathname)) {
+    return NextResponse.next({ request });
+  }
 
   // Le pagine pubbliche non devono leggere la sessione: evita set-cookie inutili
   // e permette alla CDN di cacheare HTML marketing/statico.

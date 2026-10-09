@@ -1,16 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { resolveImageSrc } from "@/lib/resolve-image-src";
+import { isImageSourceOptimizable } from "@/lib/is-image-optimizable";
 import { cn } from "@/lib/utils";
 
-type DualSourceImageProps = Omit<
-  React.ImgHTMLAttributes<HTMLImageElement>,
-  "src"
-> & {
+type DualSourceImageProps = Omit<React.ImgHTMLAttributes<HTMLImageElement>, "src"> & {
   driveUrl?: string | null;
   telegramFallbackId?: string | null;
   className?: string;
+  preserveOriginal?: boolean;
 };
 
 export function DualSourceImage({
@@ -18,36 +18,57 @@ export function DualSourceImage({
   telegramFallbackId,
   alt,
   className,
+  preserveOriginal = false,
   ...imgProps
 }: DualSourceImageProps) {
-  const [currentSrc, setCurrentSrc] = useState<string>("");
-  const [hasError, setHasError] = useState(false);
+  const { width, height, sizes, ...restImgProps } = imgProps;
+  const resolvedSource = resolveImageSrc(driveUrl, telegramFallbackId);
+  const [currentSrc, setCurrentSrc] = useState<string>(resolvedSource);
+  const [forceUnoptimized, setForceUnoptimized] = useState(preserveOriginal);
+  const [usingTelegramFallback, setUsingTelegramFallback] = useState(
+    !driveUrl?.trim() && Boolean(telegramFallbackId?.trim())
+  );
 
   useEffect(() => {
-    setHasError(false);
     setCurrentSrc(resolveImageSrc(driveUrl, telegramFallbackId));
-  }, [driveUrl, telegramFallbackId]);
+    setForceUnoptimized(preserveOriginal);
+    setUsingTelegramFallback(!driveUrl?.trim() && Boolean(telegramFallbackId?.trim()));
+  }, [driveUrl, telegramFallbackId, preserveOriginal]);
 
   if (!currentSrc) {
     return null;
   }
 
-  return (
+  function handleError() {
+    if (!forceUnoptimized && !preserveOriginal && isImageSourceOptimizable(currentSrc)) {
+      setForceUnoptimized(true);
+      return;
+    }
+
+    if (!usingTelegramFallback && telegramFallbackId?.trim()) {
+      setUsingTelegramFallback(true);
+      setForceUnoptimized(preserveOriginal);
+      setCurrentSrc(`/api/tg-image/${encodeURIComponent(telegramFallbackId.trim())}`);
+    }
+  }
+
+  if (preserveOriginal) {
+    // Projection/zoom must keep the source's natural dimensions and aspect ratio.
     // eslint-disable-next-line @next/next/no-img-element
-    <img
+    return <img {...imgProps} src={currentSrc} alt={alt} className={cn(className)} onError={handleError} />;
+  }
+
+  return (
+    <Image
       src={currentSrc}
-      alt={alt}
+      width={typeof width === "number" ? width : 1200}
+      height={typeof height === "number" ? height : 800}
+      sizes={sizes ?? "50vw"}
+      unoptimized={forceUnoptimized || !isImageSourceOptimizable(currentSrc)}
+      {...restImgProps}
+      alt={alt ?? ""}
       className={cn(className)}
-      onError={() => {
-        if (!hasError && telegramFallbackId) {
-          setHasError(true);
-          setCurrentSrc(
-            `/api/tg-image/${encodeURIComponent(telegramFallbackId)}`
-          );
-        }
-      }}
-      {...imgProps}
+      onError={handleError}
     />
   );
 }
-

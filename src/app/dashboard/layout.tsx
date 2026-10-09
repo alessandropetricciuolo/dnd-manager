@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { getForgeAuthContext } from "@/lib/forge/access";
 import { getVaultAuthContext } from "@/lib/vault/access";
@@ -11,19 +10,14 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const forgeCtx = await getForgeAuthContext();
-  const vaultCtx = await getVaultAuthContext();
+  const [forgeCtx, vaultCtx] = await Promise.all([
+    getForgeAuthContext(),
+    getVaultAuthContext(),
+  ]);
   if (!forgeCtx) redirect("/login");
 
-  const supabase = await createSupabaseServerClient();
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", forgeCtx.userId)
-    .single();
-
-  const isAdmin = profile?.role === "admin";
-  const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
+  const isAdmin = forgeCtx.isAdmin;
+  const isGmOrAdmin = forgeCtx.isGmOrAdmin;
 
   return (
     <DashboardShell

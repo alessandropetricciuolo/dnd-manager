@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { getRequestAuthContext } from "@/utils/supabase/request-auth-context";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { sendEmail, wrapInTemplate, escapeHtml } from "@/lib/email";
 import { getNotificationsPaused, hasNotificationsDisabled } from "@/lib/player-emails";
@@ -144,17 +145,8 @@ function normalizeSubraceForRace(raceSlug: string | null, subclassSlug: string |
 async function getCurrentUserAndRole(): Promise<
   { userId: string; isGmOrAdmin: boolean; supabase: Awaited<ReturnType<typeof createSupabaseServerClient>> } | null
 > {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-  if (userError || !user) return null;
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
+  const { supabase, user, profile } = await getRequestAuthContext();
+  if (!user) return null;
   const isGmOrAdmin = profile?.role === "gm" || profile?.role === "admin";
   return { userId: user.id, isGmOrAdmin, supabase };
 }
@@ -229,9 +221,7 @@ export async function getCampaignCharacters(
         );
       }
     }
-    const withUrls: CampaignCharacterRow[] = [];
-
-    for (const row of list) {
+    const withUrls = await Promise.all(list.map(async (row): Promise<CampaignCharacterRow> => {
       let sheet_url: string | null = null;
       if (row.sheet_file_path) {
         const normalizedPath = normalizeCharacterSheetStoragePath(row.sheet_file_path);
@@ -249,7 +239,7 @@ export async function getCampaignCharacters(
         memberXp: rest.assigned_to ? xpByPlayerId.get(rest.assigned_to) : null,
         assignedTo: rest.assigned_to,
       });
-      withUrls.push({
+      return {
         ...rest,
         current_xp: xpResolution.currentXp,
         member_xp: xpResolution.memberXp,
@@ -261,8 +251,8 @@ export async function getCampaignCharacters(
         coins_gp: typeof (rest as { coins_gp?: number }).coins_gp === "number" ? (rest as { coins_gp: number }).coins_gp : 0,
         coins_sp: typeof (rest as { coins_sp?: number }).coins_sp === "number" ? (rest as { coins_sp: number }).coins_sp : 0,
         coins_cp: typeof (rest as { coins_cp?: number }).coins_cp === "number" ? (rest as { coins_cp: number }).coins_cp : 0,
-      });
-    }
+      };
+    }));
 
     return { success: true, data: withUrls };
   }

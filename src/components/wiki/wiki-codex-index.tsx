@@ -184,6 +184,7 @@ export function WikiCodexIndex({
                       driveUrl={entity.imageUrl}
                       telegramFallbackId={entity.telegramFallbackId ?? null}
                       alt={entity.name}
+                      sizes="36px"
                       className="h-full w-full object-cover"
                     />
                   ) : (

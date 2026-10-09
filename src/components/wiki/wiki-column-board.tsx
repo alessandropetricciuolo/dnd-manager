@@ -218,22 +218,7 @@ export function WikiColumnBoard({
   function renderColumnItem(entity: WikiEntityListItem) {
     const entityUrl = `/campaigns/${campaignId}/wiki/${entity.id}`;
     const editUrl = `${entityUrl}?edit=1`;
-    const attrs = (entity.attributes ?? {}) as Record<string, unknown>;
-    const combat = (attrs.combat_stats ?? {}) as Record<string, unknown>;
-
-    // Dettaglio veloce in base al tipo
-    let quickDetail = "";
-    if (entity.type === "npc") {
-      const r = typeof attrs.race === "string" ? attrs.race.trim() : "";
-      const c = typeof attrs.class === "string" ? attrs.class.trim() : "";
-      quickDetail = [r, c].filter(Boolean).join(" • ");
-    } else if (entity.type === "monster") {
-      const cr = combat.cr || attrs.cr;
-      const ac = combat.ac || attrs.ac;
-      if (cr) quickDetail = `GS ${cr}${ac ? ` • CA ${ac}` : ""}`;
-    } else if (entity.type === "lore" && entity.sortOrder) {
-      quickDetail = `Cap. ${entity.sortOrder}`;
-    }
+    const quickDetail = entity.quickDetail ?? "";
 
     return (
       <div
@@ -248,6 +233,7 @@ export function WikiColumnBoard({
                 driveUrl={entity.imageUrl}
                 telegramFallbackId={entity.telegramFallbackId ?? null}
                 alt={entity.name}
+                sizes="24px"
                 className="h-full w-full object-cover"
               />
             ) : (

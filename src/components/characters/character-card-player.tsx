@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { CampaignCharacterRow } from "@/app/campaigns/character-actions";
 import { ImageMediaActions } from "@/components/media/image-media-actions";
@@ -10,6 +10,7 @@ import { formatSpellSlotsLabel, parseRulesSnapshot } from "@/lib/character-rules
 import type { CharacterRulesSnapshotV1 } from "@/lib/character-rules-snapshot";
 import { backgroundBySlug, backgroundRulesTooltipPrefix, raceBySlug } from "@/lib/character-build-catalog";
 import { sanitizeRaceTraitsMarkdown } from "@/lib/race-traits-sanitizer";
+import { isImageSourceOptimizable } from "@/lib/is-image-optimizable";
 
 const PLACEHOLDER_AVATAR = "https://placehold.co/400x560/1c1917/fbbf24/png?text=PG";
 
@@ -253,6 +254,11 @@ export function CharacterCardPlayer({
   isTorneoCampaign = false,
 }: CharacterCardPlayerProps) {
   const [imgError, setImgError] = useState(false);
+  const [forceImageUnoptimized, setForceImageUnoptimized] = useState(false);
+  useEffect(() => {
+    setImgError(false);
+    setForceImageUnoptimized(false);
+  }, [character.image_url]);
   const imageSrc = imgError ? PLACEHOLDER_AVATAR : (character.image_url ?? PLACEHOLDER_AVATAR);
   const storedLevel = character.level ?? 1;
   const classLabel = character.character_class?.trim() || "Classe non specificata";
@@ -312,8 +318,11 @@ export function CharacterCardPlayer({
               className="object-cover"
               sizes="(max-width: 768px) 100vw, 400px"
               priority
-              unoptimized={!!character.image_url}
-              onError={() => setImgError(true)}
+              unoptimized={forceImageUnoptimized || (!!character.image_url && !isImageSourceOptimizable(character.image_url))}
+              onError={() => {
+                if (!forceImageUnoptimized && character.image_url && isImageSourceOptimizable(character.image_url)) setForceImageUnoptimized(true);
+                else setImgError(true);
+              }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 pointer-events-none" />
             

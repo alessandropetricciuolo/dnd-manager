@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { getRequestAuthContext } from "@/utils/supabase/request-auth-context";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { getForgeAuthContext } from "@/lib/forge/access";
 import { getVaultAuthContext } from "@/lib/vault/access";
@@ -16,7 +16,7 @@ export default async function CommandCenterLayout({
   const vaultCtx = await getVaultAuthContext();
   if (!forgeCtx) redirect("/login");
 
-  const supabase = await createSupabaseServerClient();
+  const { supabase } = await getRequestAuthContext();
   const adapter = getTenantAdapter();
   const access = await adapter.assertCanAccessCommandCenter(supabase);
   if (!access.ok) redirect("/dashboard");

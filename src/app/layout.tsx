@@ -8,6 +8,7 @@ import { Navbar } from "@/components/navbar";
 import { LayoutConditionalNavbar } from "@/components/layout-conditional-navbar";
 import { AuthHashErrorRedirect } from "@/components/auth/auth-hash-error-redirect";
 import { CampaignNavigationProvider } from "@/components/campaigns/campaign-navigation-context";
+import { SupabaseUserProvider } from "@/hooks/use-supabase-user";
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -70,12 +71,14 @@ export default function RootLayout({
 })();`}
         </Script>
         <NextTopLoader color="#c89d49" showSpinner={false} />
-        <CampaignNavigationProvider>
-          <LayoutConditionalNavbar navbar={<Navbar />}>
-            <AuthHashErrorRedirect />
-            {children}
-          </LayoutConditionalNavbar>
-        </CampaignNavigationProvider>
+        <SupabaseUserProvider>
+          <CampaignNavigationProvider>
+            <LayoutConditionalNavbar navbar={<Navbar />}>
+              <AuthHashErrorRedirect />
+              {children}
+            </LayoutConditionalNavbar>
+          </CampaignNavigationProvider>
+        </SupabaseUserProvider>
         <Toaster richColors closeButton />
         <Script src="https://cdn.iubenda.com/iubenda.js" strategy="lazyOnload" />
       </body>

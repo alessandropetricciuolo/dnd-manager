@@ -47,6 +47,7 @@ export function MonsterView({
               driveUrl={imageUrl ?? PLACEHOLDER}
               telegramFallbackId={telegramFallbackId ?? null}
               alt={name}
+              sizes="(max-width: 768px) 100vw, 280px"
               className="h-full w-full object-cover"
             />
           </div>

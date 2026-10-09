@@ -36,6 +36,7 @@ export function LocationView({
             driveUrl={imageUrl ?? PLACEHOLDER}
             telegramFallbackId={telegramFallbackId ?? null}
             alt={name}
+            sizes="(max-width: 768px) 100vw, 50vw"
             className="h-full w-full object-cover"
           />
         </div>
