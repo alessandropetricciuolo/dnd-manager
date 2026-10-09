@@ -816,6 +816,52 @@ export async function deleteEntity(
   }
 }
 
+export async function setWikiEntityArchived(
+  entityId: string,
+  campaignId: string,
+  archived: boolean,
+): Promise<{ success: boolean; message: string }> {
+  if (!entityId || !campaignId) {
+    return { success: false, message: "Voce o campagna non valida." };
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data: access, error: accessError } = await supabase.rpc(
+      "can_manage_campaign_as_gm",
+      { p_campaign_id: campaignId },
+    );
+    if (accessError || !access) {
+      return { success: false, message: "Solo GM e Admin possono archiviare le voci Wiki." };
+    }
+
+    let query = supabase
+      .from("wiki_entities")
+      .update({ archived_at: archived ? new Date().toISOString() : null })
+      .eq("id", entityId)
+      .eq("campaign_id", campaignId);
+    query = archived
+      ? query.is("archived_at", null)
+      : query.not("archived_at", "is", null);
+
+    const { data, error } = await query.select("id").maybeSingle();
+    if (error) {
+      console.error("[setWikiEntityArchived]", error);
+      return { success: false, message: "Impossibile aggiornare l'archivio della voce." };
+    }
+    if (!data) {
+      return { success: false, message: "La voce è già in questo stato o non è più disponibile." };
+    }
+
+    revalidatePath(`/campaigns/${campaignId}`);
+    revalidatePath(`/campaigns/${campaignId}/wiki/${entityId}`);
+    return { success: true, message: archived ? "Voce archiviata." : "Voce ripristinata." };
+  } catch (err) {
+    console.error("[setWikiEntityArchived]", err);
+    return { success: false, message: "Si è verificato un errore imprevisto. Riprova." };
+  }
+}
+
 /** Imposta lo stato globale (alive/dead) di un NPC/Mostro core. Solo campagne Long, solo entità con is_core = true. */
 export async function setWikiEntityGlobalStatus(
   entityId: string,
@@ -905,6 +951,7 @@ export type WikiEntity = {
   include_in_campaign_ai_memory?: boolean;
   /** Campagne long: missione di riferimento (filtraggi GM screen / wiki). */
   linked_mission_id?: string | null;
+  archived_at?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -959,6 +1006,7 @@ export async function getEntity(
     const wikiEntity = entity as WikiEntity;
 
     if (isGmOrAdmin) return wikiEntity;
+    if (wikiEntity.archived_at) return null;
 
     const visibility = wikiEntity.visibility ?? (wikiEntity.is_secret ? "secret" : "public");
     if (visibility === "public") return sanitizeEntityForPlayer(wikiEntity);

@@ -45,6 +45,7 @@ export async function WikiList({
     updated_at?: string | null;
     content?: { body?: string; description?: string } | null;
     linked_mission_id?: string | null;
+    archived_at?: string | null;
     admin_only?: boolean;
     image_url?: string | null;
     telegram_fallback_id?: string | null;
@@ -54,12 +55,22 @@ export async function WikiList({
   let error: { message?: string } | null = null;
   let entityQuery = supabase
     .from("wiki_entities")
-    .select("id, name, type, is_secret, visibility, sort_order, tags, updated_at, content, linked_mission_id, admin_only, image_url, telegram_fallback_id, attributes")
+    .select("id, name, type, is_secret, visibility, sort_order, tags, updated_at, content, linked_mission_id, admin_only, image_url, telegram_fallback_id, attributes, archived_at")
     .eq("campaign_id", campaignId)
     .order("name");
   if (!isAdmin) entityQuery = entityQuery.eq("admin_only", false);
   const res = await entityQuery;
-  if (res.error?.message?.includes("linked_mission_id")) {
+  if (res.error?.message?.includes("archived_at")) {
+    let fallbackQuery = supabase
+      .from("wiki_entities")
+      .select("id, name, type, is_secret, visibility, sort_order, tags, updated_at, content, linked_mission_id, admin_only, image_url, telegram_fallback_id, attributes")
+      .eq("campaign_id", campaignId)
+      .order("name");
+    if (!isAdmin) fallbackQuery = fallbackQuery.eq("admin_only", false);
+    const fallback = await fallbackQuery;
+    entities = (fallback.data ?? []).map((e) => ({ ...e, archived_at: null }));
+    error = fallback.error;
+  } else if (res.error?.message?.includes("linked_mission_id")) {
     let fallbackQuery = supabase
       .from("wiki_entities")
       .select("id, name, type, is_secret, visibility, sort_order, tags, updated_at, content, admin_only, image_url, telegram_fallback_id, attributes")
@@ -127,6 +138,7 @@ export async function WikiList({
   const visibleEntities = isGmOrAdmin
     ? entities ?? []
     : (entities ?? []).filter((e) => {
+        if (e.archived_at) return false;
         const vis = e.visibility ?? (e.is_secret ? "secret" : "public");
         if (vis === "public") return true;
         if (vis === "selective") return permittedEntityIds.has(e.id);
@@ -227,6 +239,7 @@ export async function WikiList({
     selectiveAudienceLabel: selectiveAudienceByEntityId[e.id] ?? null,
     linkedMissionId: e.linked_mission_id ?? null,
     missionTitle: e.linked_mission_id ? missionTitleById.get(e.linked_mission_id) ?? null : null,
+    archivedAt: e.archived_at ?? null,
     };
   });
 

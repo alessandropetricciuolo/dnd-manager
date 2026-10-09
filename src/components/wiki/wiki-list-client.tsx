@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useRouter } from "nextjs-toploader/app";
-import { BookOpen, Columns3 } from "lucide-react";
+import { Archive, BookOpen, Columns3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WikiCodexReader } from "./wiki-codex-reader";
 import { WikiCodexIndex } from "./wiki-codex-index";
@@ -30,6 +30,7 @@ export type WikiEntityListItem = {
   quickDetail?: string;
   linkedMissionId?: string | null;
   missionTitle?: string | null;
+  archivedAt?: string | null;
 };
 
 type WikiListClientProps = {
@@ -48,6 +49,7 @@ type WikiFilterValue = (typeof WIKI_FILTER_VALUES)[number];
 
 const MISSION_FILTER_ALL = "all";
 const MISSION_FILTER_NONE = "none";
+type ArchiveFilter = "active" | "archived" | "all";
 
 function isWikiFilterValue(value: string): value is WikiFilterValue {
   return WIKI_FILTER_VALUES.includes(value as WikiFilterValue);
@@ -96,6 +98,9 @@ export function WikiListClient({
       : ALL_TYPES;
 
   const wikiMissionParam = searchParams.get("wiki_mission");
+  const archiveParam = searchParams.get("wiki_archive");
+  const archiveFilter: ArchiveFilter =
+    archiveParam === "archived" || archiveParam === "all" ? archiveParam : "active";
   const missionIds = useMemo(
     () => new Set(missions.map((m) => m.id)),
     [missions],
@@ -125,10 +130,21 @@ export function WikiListClient({
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
   }
 
+  function setArchiveFilter(value: ArchiveFilter) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", "wiki");
+    if (value === "active") params.delete("wiki_archive");
+    else params.set("wiki_archive", value);
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  }
+
   const byType = useMemo(() => {
-    if (typeFilter === ALL_TYPES) return entities;
-    return entities.filter((e) => e.type === typeFilter);
-  }, [entities, typeFilter]);
+    const byArchive = !isGmOrAdmin || archiveFilter === "all"
+      ? entities
+      : entities.filter((e) => archiveFilter === "archived" ? Boolean(e.archivedAt) : !e.archivedAt);
+    if (typeFilter === ALL_TYPES) return byArchive;
+    return byArchive.filter((e) => e.type === typeFilter);
+  }, [archiveFilter, entities, isGmOrAdmin, typeFilter]);
 
   const byMission = useMemo(() => {
     if (campaignType !== "long") return byType;
@@ -310,6 +326,34 @@ export function WikiListClient({
           </button>
         </div>
       </div>
+
+      {isGmOrAdmin && (
+        <div className="flex flex-wrap items-center gap-2" aria-label="Filtro stato archivio Wiki">
+          <span className="flex items-center gap-1 text-xs font-serif text-parchment-400">
+            <Archive className="h-3.5 w-3.5" /> Stato
+          </span>
+          {([
+            ["active", "Attive"],
+            ["archived", "Archiviate"],
+            ["all", "Tutte"],
+          ] as const).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={archiveFilter === value}
+              onClick={() => setArchiveFilter(value)}
+              className={cn(
+                "rounded-md border px-2.5 py-1 text-xs font-serif transition-colors",
+                archiveFilter === value
+                  ? "border-brass-light/50 bg-brass-base/20 text-gold-relief"
+                  : "border-brass-base/25 text-parchment-400 hover:border-brass-base/50 hover:text-parchment-100",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* =========================================================================
           CORPO PRINCIPALE: SPLIT-CODEX OPPURE BACHECA A COLONNE

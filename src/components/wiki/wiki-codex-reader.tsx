@@ -29,6 +29,7 @@ import { WikiCodexImageCarousel } from "./wiki-codex-image-carousel";
 import { WikiVideoGallery } from "./wiki-video-gallery";
 import { EntityContent } from "./entity-content";
 import { WikiEntityDeleteButton } from "./wiki-entity-delete-button";
+import { WikiEntityArchiveButton } from "./wiki-entity-archive-button";
 import type { WikiEntityListItem } from "./wiki-list-client";
 import { cn } from "@/lib/utils";
 import type { WikiReaderDetail } from "@/app/campaigns/wiki-actions";
@@ -238,6 +239,14 @@ export function WikiCodexReader({
           </Button>
 
           {isGmOrAdmin && (
+            <WikiEntityArchiveButton
+              campaignId={campaignId}
+              entityId={entity.id}
+              archived={Boolean(entity.archivedAt)}
+            />
+          )}
+
+          {isGmOrAdmin && (
             <WikiEntityDeleteButton
               compact
               campaignId={campaignId}
@@ -257,6 +266,11 @@ export function WikiCodexReader({
           <h1 className="font-cinzel text-2xl sm:text-3xl font-bold tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-brass-light via-amber-200 to-amber-400">
             {entity.name}
           </h1>
+          {isGmOrAdmin && entity.archivedAt && (
+            <Badge variant="outline" className="mt-2 border-amber-500/40 bg-amber-950/40 text-amber-200">
+              Voce archiviata
+            </Badge>
+          )}
           {entity.tags && entity.tags.length > 0 && (
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
               {entity.tags.map((tag) => (

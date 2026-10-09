@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DualSourceImage } from "@/components/dual-source-image";
 import { WikiEntityDeleteButton } from "./wiki-entity-delete-button";
+import { WikiEntityArchiveButton } from "./wiki-entity-archive-button";
 import type { WikiEntityListItem } from "./wiki-list-client";
 import { cn } from "@/lib/utils";
 
@@ -290,6 +291,14 @@ export function WikiColumnBoard({
             </Link>
           </Button>
           {isGmOrAdmin && (
+            <WikiEntityArchiveButton
+              compact
+              campaignId={campaignId}
+              entityId={entity.id}
+              archived={Boolean(entity.archivedAt)}
+            />
+          )}
+          {isGmOrAdmin && (
             <WikiEntityDeleteButton
               compact
               campaignId={campaignId}
@@ -468,7 +477,7 @@ export function WikiColumnBoard({
                   </h3>
                 </div>
                 <span className="font-mono text-xs font-semibold text-brass-light bg-guild-void/90 px-2.5 py-0.5 rounded-full border border-brass-base/25">
-                  {section.count} {section.count === 1 ? "voce archiviata" : "voci archiviate"}
+                  {section.count} {section.count === 1 ? "voce" : "voci"}
                 </span>
               </button>
 
