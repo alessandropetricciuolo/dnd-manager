@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useRouter } from "nextjs-toploader/app";
-import { Archive, BookOpen, Columns3 } from "lucide-react";
+import { Archive, BookOpen, Columns3, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WikiCodexReader } from "./wiki-codex-reader";
 import { WikiCodexIndex } from "./wiki-codex-index";
@@ -31,6 +31,7 @@ export type WikiEntityListItem = {
   linkedMissionId?: string | null;
   missionTitle?: string | null;
   archivedAt?: string | null;
+  adminOnly?: boolean;
 };
 
 type WikiListClientProps = {
@@ -39,6 +40,7 @@ type WikiListClientProps = {
   missions?: { id: string; title: string }[];
   entities: WikiEntityListItem[];
   isGmOrAdmin: boolean;
+  isAdmin?: boolean;
   typeLabels: Record<string, string>;
   emptyMessage?: string;
 };
@@ -82,6 +84,7 @@ export function WikiListClient({
   missions = [],
   entities,
   isGmOrAdmin,
+  isAdmin = false,
   typeLabels,
   emptyMessage,
 }: WikiListClientProps) {
@@ -98,6 +101,7 @@ export function WikiListClient({
       : ALL_TYPES;
 
   const wikiMissionParam = searchParams.get("wiki_mission");
+  const adminOnlyFilter = isAdmin && searchParams.get("wiki_admin_only") === "true";
   const archiveParam = searchParams.get("wiki_archive");
   const archiveFilter: ArchiveFilter =
     archiveParam === "archived" || archiveParam === "all" ? archiveParam : "active";
@@ -138,13 +142,24 @@ export function WikiListClient({
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
   }
 
+  function setAdminOnlyFilter(enabled: boolean) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", "wiki");
+    if (enabled) params.set("wiki_admin_only", "true");
+    else params.delete("wiki_admin_only");
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  }
+
   const byType = useMemo(() => {
     const byArchive = !isGmOrAdmin || archiveFilter === "all"
       ? entities
       : entities.filter((e) => archiveFilter === "archived" ? Boolean(e.archivedAt) : !e.archivedAt);
-    if (typeFilter === ALL_TYPES) return byArchive;
-    return byArchive.filter((e) => e.type === typeFilter);
-  }, [archiveFilter, entities, isGmOrAdmin, typeFilter]);
+    const byAccess = adminOnlyFilter
+      ? byArchive.filter((e) => e.adminOnly)
+      : byArchive;
+    if (typeFilter === ALL_TYPES) return byAccess;
+    return byAccess.filter((e) => e.type === typeFilter);
+  }, [adminOnlyFilter, archiveFilter, entities, isGmOrAdmin, typeFilter]);
 
   const byMission = useMemo(() => {
     if (campaignType !== "long") return byType;
@@ -353,6 +368,23 @@ export function WikiListClient({
             </button>
           ))}
         </div>
+      )}
+
+      {isAdmin && (
+        <button
+          type="button"
+          aria-pressed={adminOnlyFilter}
+          onClick={() => setAdminOnlyFilter(!adminOnlyFilter)}
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-serif transition-colors",
+            adminOnlyFilter
+              ? "border-brass-light/50 bg-brass-base/20 text-gold-relief"
+              : "border-brass-base/25 text-parchment-400 hover:border-brass-base/50 hover:text-parchment-100",
+          )}
+        >
+          <ShieldCheck className="h-3.5 w-3.5" />
+          Admin-only
+        </button>
       )}
 
       {/* =========================================================================

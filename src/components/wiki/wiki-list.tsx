@@ -240,6 +240,7 @@ export async function WikiList({
     linkedMissionId: e.linked_mission_id ?? null,
     missionTitle: e.linked_mission_id ? missionTitleById.get(e.linked_mission_id) ?? null : null,
     archivedAt: e.archived_at ?? null,
+    adminOnly: Boolean(e.admin_only),
     };
   });
 
@@ -254,6 +255,7 @@ export async function WikiList({
       missions={missionsForLong}
       entities={list}
       isGmOrAdmin={isGmOrAdmin ?? false}
+      isAdmin={isAdmin}
       typeLabels={WIKI_ENTITY_LABELS_IT}
       emptyMessage={emptyMessage}
     />
