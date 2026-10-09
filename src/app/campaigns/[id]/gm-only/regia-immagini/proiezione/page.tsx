@@ -1,4 +1,6 @@
 import { getWikiImages, parseWikiImageKey } from "@/lib/wiki/images";
+import { getWikiVideos, parseWikiVideoKey } from "@/lib/wiki/videos";
+import { ProjectedVideo } from "@/components/gm/projected-video";
 import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { DualSourceImage } from "@/components/dual-source-image";
@@ -14,6 +16,7 @@ type ProjectedImage = {
   name: string;
   image_url: string | null;
   telegram_fallback_id: string | null;
+  video_url?: string;
 };
 
 const UUID_REGEX =
@@ -57,10 +60,11 @@ export default async function MultiImageProjectionPage({
     .filter(
       (s) =>
         parseWikiImageKey(s) !== null ||
+        parseWikiVideoKey(s) !== null ||
         (s.startsWith("pg-") && UUID_REGEX.test(s.slice(3))),
     );
 
-  const wikiIds = [...new Set(orderedIds.filter((s) => !s.startsWith("pg-")).map(s => parseWikiImageKey(s)!.entityId))];
+  const wikiIds = [...new Set(orderedIds.filter((s) => !s.startsWith("pg-")).map(s => (parseWikiImageKey(s) ?? parseWikiVideoKey(s))!.entityId))];
   const characterIds = orderedIds
     .filter((s) => s.startsWith("pg-"))
     .map((s) => s.slice(3));
@@ -120,6 +124,13 @@ export default async function MultiImageProjectionPage({
           telegram_fallback_id: null,
         });
       }
+    } else if (parseWikiVideoKey(rawId)) {
+      const parsed = parseWikiVideoKey(rawId)!;
+      const row = wikiById.get(parsed.entityId);
+      const video = getWikiVideos(row?.attributes).find(video => video.id === parsed.videoId);
+      if (row && video) {
+        images.push({ key: rawId, name: `${row.name} · ${video.title}`, image_url: null, telegram_fallback_id: null, video_url: video.url });
+      }
     } else {
       const parsed = parseWikiImageKey(rawId)!;
       const row = wikiById.get(parsed.entityId);
@@ -164,15 +175,15 @@ export default async function MultiImageProjectionPage({
             key={img.key}
             className="relative flex min-h-0 min-w-0 items-center justify-center overflow-hidden"
           >
-            <DualSourceImage
+            {img.video_url ? <ProjectedVideo src={img.video_url} title={img.name} /> : <DualSourceImage
               driveUrl={img.image_url ?? undefined}
               telegramFallbackId={img.telegram_fallback_id ?? undefined}
               alt={img.name}
               className="max-h-full max-w-full object-contain"
-            />
-            <figcaption className="absolute bottom-1 left-1/2 -translate-x-1/2 rounded bg-black/70 px-2 py-0.5 text-xs font-medium text-amber-100">
+            />}
+            {!img.video_url && <figcaption className="absolute bottom-1 left-1/2 -translate-x-1/2 rounded bg-black/70 px-2 py-0.5 text-xs font-medium text-amber-100">
               {img.name}
-            </figcaption>
+            </figcaption>}
           </figure>
         ))}
       </div>

@@ -1,4 +1,5 @@
 import { WikiImageGallery } from "@/components/wiki/wiki-image-gallery";
+import { WikiVideoGallery } from "@/components/wiki/wiki-video-gallery";
 import type { WikiEntity } from "@/app/campaigns/wiki-actions";
 import { NpcView } from "./npc-view";
 import { MonsterView } from "./monster-view";
@@ -69,6 +70,7 @@ export function WikiDetails({ entity, contentBody, isGmOrAdmin = false }: WikiDe
     <div className="space-y-8">
       {typeView}
       <WikiImageGallery entity={{ id: entity.id, campaign_id: entity.campaign_id, name: entity.name, image_url: entity.image_url, telegram_fallback_id: entity.telegram_fallback_id, attributes: { images: attrs.images } }} canProject={isGmOrAdmin} />
+      <WikiVideoGallery key={entity.id} campaignId={entity.campaign_id} entityId={entity.id} attributes={{ videos: attrs.videos }} canManage={isGmOrAdmin} />
       {gmNotes && (
         <GmOnlySection isGmOrAdmin={isGmOrAdmin}>
           <Card className="border-barber-gold/40 bg-barber-dark/80">

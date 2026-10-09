@@ -26,6 +26,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { WikiCodexImageCarousel } from "./wiki-codex-image-carousel";
+import { WikiVideoGallery } from "./wiki-video-gallery";
 import { EntityContent } from "./entity-content";
 import { WikiEntityDeleteButton } from "./wiki-entity-delete-button";
 import type { WikiEntityListItem } from "./wiki-list-client";
@@ -261,6 +262,7 @@ export function WikiCodexReader({
           )}
         </div>
 
+        <WikiVideoGallery key={entity.id} campaignId={campaignId} entityId={entity.id} attributes={{ videos: attrs.videos }} canManage={isGmOrAdmin} />
         {/* Griglia Superiore: Ritratto Inquadrato & Dossier Rapido */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
           {/* Ritratto Framed con Cornice Dorata Cesellata (Col 4) */}

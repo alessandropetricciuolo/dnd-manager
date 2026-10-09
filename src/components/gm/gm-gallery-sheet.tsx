@@ -184,7 +184,7 @@ export function GmGallerySheet({
   const handleClickImage = useCallback(
     async (item: GmGalleryItem) => {
       const url = resolveImageUrl(item);
-      if (!url) return;
+      if (!url && !item.video_url) return;
       const next = [
         item.id,
         ...readRecent(campaignId).filter((id) => id !== item.id),
@@ -422,7 +422,7 @@ export function GmGallerySheet({
           <main className="min-h-0 min-w-0 flex-1 overflow-y-auto px-4 pb-5 pt-5 md:px-6">
             {filtered.length === 0 ? (
               <div className="flex min-h-64 items-center justify-center text-sm text-zinc-500">
-                Nessuna immagine trovata per questa campagna.
+                Nessuna immagine o video trovato per questa campagna.
               </div>
             ) : (
               <>
@@ -716,12 +716,12 @@ function GalleryCard({
         className="flex min-w-0 flex-col text-left"
       >
         <div className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-800">
-          <DualSourceImage
+          {item.media_type === "video" ? <div className="flex h-full w-full items-center justify-center bg-black text-amber-200"><MonitorPlay className="h-10 w-10" /><span className="absolute bottom-2 left-2 rounded bg-black/80 px-2 py-1 text-xs">Video</span></div> : <DualSourceImage
             driveUrl={item.image_url ?? undefined}
             telegramFallbackId={item.telegram_fallback_id ?? undefined}
             alt={item.title}
             className="h-full w-full object-cover"
-          />
+          />}
           {isProjected && (
             <span
               title="Mostrata sul secondo schermo"
@@ -777,7 +777,7 @@ function GalleryCard({
           ) : (
             <span />
           )}
-          {!selectionMode && (
+          {!selectionMode && item.media_type !== "video" && (
             <DownloadImageButton
               driveUrl={item.image_url}
               telegramFallbackId={item.telegram_fallback_id}

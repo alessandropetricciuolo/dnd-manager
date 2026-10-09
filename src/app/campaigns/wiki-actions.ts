@@ -2,6 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { getWikiImages, validateWikiImageUpload, promoteWikiImage } from "@/lib/wiki/images";
+import { getWikiVideos } from "@/lib/wiki/videos";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
@@ -281,6 +282,7 @@ export async function createEntity(
       }
     }
 
+    delete attributes.videos;
     try { await appendWikiGalleryFiles(formData, attributes); }
     catch (error) { return { success: false, message: error instanceof Error ? error.message : "Errore nel caricamento della galleria." }; }
 
@@ -477,7 +479,7 @@ export async function updateEntity(
       catch { return { success: false, message: "Solo un Admin può cambiare lo stato Solo Admin in una campagna abilitata." }; }
     }
     if (releaseAdminOnly && !isGlobalAdmin(accessResult.access)) return { success: false, message: "Solo un Admin può rilasciare questo contenuto." };
-    const { data: currentEntity, error: currentEntityError } = await supabase.from("wiki_entities").select("admin_only, attributes").eq("id", entityId).eq("campaign_id", campaignId).maybeSingle();
+    const { data: currentEntity, error: currentEntityError } = await supabase.from("wiki_entities").select("admin_only, attributes, updated_at").eq("id", entityId).eq("campaign_id", campaignId).maybeSingle();
     if (currentEntityError || !currentEntity) return { success: false, message: "Impossibile verificare lo stato della voce Wiki." };
     const transition = resolveAdminOnlyTransition({ currentAdminOnly: Boolean((currentEntity as { admin_only?: boolean } | null)?.admin_only), protect: adminOnlyRequested, release: releaseAdminOnly });
     if (!transition.ok) return { success: false, message: transition.reason === "release_requires_protected" ? "Il contenuto non è Solo Admin: nessun rilascio eseguito." : "Intenti Solo Admin conflittuali." };
@@ -548,6 +550,8 @@ export async function updateEntity(
       return { success: false, message: "URL immagine non valido o non consentito." };
     }
 
+    // Video attachments are managed independently by the verified R2 upload actions.
+    attributes.videos = getWikiVideos((currentEntity as { attributes?: Record<string, unknown> }).attributes);
     if (!("images" in attributes)) attributes.images = getWikiImages((currentEntity as { attributes?: Record<string, unknown> }).attributes);
     try { await appendWikiGalleryFiles(formData, attributes); }
     catch (error) { return { success: false, message: error instanceof Error ? error.message : "Errore nel caricamento della galleria." }; }
@@ -610,7 +614,9 @@ export async function updateEntity(
       .from("wiki_entities")
       .update(updatePayloadMutable)
       .eq("id", entityId)
-      .eq("campaign_id", campaignId);
+      .eq("campaign_id", campaignId)
+      .eq("updated_at", currentEntity.updated_at)
+      .select("id");
 
     if (
       updateRes.error &&
@@ -623,7 +629,9 @@ export async function updateEntity(
         .from("wiki_entities")
         .update(updatePayloadMutable)
         .eq("id", entityId)
-        .eq("campaign_id", campaignId);
+        .eq("campaign_id", campaignId)
+      .eq("updated_at", currentEntity.updated_at)
+      .select("id");
     }
     if (
       updateRes.error &&
@@ -636,7 +644,9 @@ export async function updateEntity(
         .from("wiki_entities")
         .update(updatePayloadMutable)
         .eq("id", entityId)
-        .eq("campaign_id", campaignId);
+        .eq("campaign_id", campaignId)
+      .eq("updated_at", currentEntity.updated_at)
+      .select("id");
     }
 
     const { error } = updateRes;
@@ -648,6 +658,7 @@ export async function updateEntity(
         message: error.message ?? "Errore durante l'aggiornamento.",
       };
     }
+    if (!updateRes.data?.length) return { success: false, message: "La voce è stata modificata. Aggiorna la pagina e riprova." };
     if (transition.intent !== "none") logAdminContentTransition({ action: transition.intent, access: accessResult.access, campaignId, entityType: "wiki", entityId });
 
     if (visibility !== null) {
@@ -1096,6 +1107,8 @@ export type GmGalleryItem = {
   entity_id?: string;
   category: "pg" | "npc" | "monster" | "location" | "item" | "lore";
   image_url: string | null;
+  media_type?: "image" | "video";
+  video_url?: string;
   telegram_fallback_id?: string | null;
   linked_mission_id?: string | null;
   mission_title?: string | null;
@@ -1248,6 +1261,7 @@ export async function getGmGalleryItems(
         mission_title: mid ? missionTitleById.get(mid) ?? null : null,
       }] : []),
       ...getWikiImages(r.attributes).map(image => ({ ...base, id: `${r.id}:${image.id}`, title: image.title ? `${r.name} · ${image.title}` : r.name, image_url: image.url, telegram_fallback_id: image.telegram_fallback_id ?? null })),
+      ...getWikiVideos(r.attributes).map(video => ({ ...base, id: `video:${r.id}:${video.id}`, title: `${r.name} · ${video.title}`, image_url: null, media_type: "video" as const, video_url: video.url })),
       ];
     });
 

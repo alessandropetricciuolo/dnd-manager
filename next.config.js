@@ -7,6 +7,7 @@ const csp = [
   "frame-ancestors 'none'",
   "object-src 'none'",
   "img-src 'self' data: blob: https:",
+  "media-src 'self' blob: https:",
   "font-src 'self' data: https:",
   `script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval' " : ""}https://embeds.iubenda.com https://cdn.iubenda.com`,
   "style-src 'self' 'unsafe-inline' https:",
