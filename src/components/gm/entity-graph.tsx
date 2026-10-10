@@ -471,7 +471,7 @@ function EntityGraphInner({ campaignId }: EntityGraphProps) {
   // Chiudi ricerca se si clicca fuori
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as globalThis.Node)) {
         setSearchOpen(false);
       }
     }
