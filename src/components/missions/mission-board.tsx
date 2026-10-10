@@ -32,9 +32,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Coins, ExternalLink, LayoutGrid, List, Pencil, Plus, RefreshCw, Shield, Swords, Trash2 } from "lucide-react";
+import { Coins, ExternalLink, LayoutGrid, List, MonitorPlay, Pencil, Plus, RefreshCw, Shield, Swords, Trash2 } from "lucide-react";
 import { NameGeneratorField } from "@/components/name-generator/name-generator-field";
 import { cn } from "@/lib/utils";
+import { openProjectionWindow } from "@/lib/browser/projection-window";
+import { createSupabaseBrowserClient } from "@/utils/supabase/client";
 
 import {
   applyGuildRankFromPointsAction,
@@ -88,6 +90,7 @@ type MissionBoardProps = {
   isGmOrAdmin: boolean;
   isAdmin: boolean;
   hideHeaderActions?: boolean;
+  isProjection?: boolean;
 };
 
 const EMPTY_MISSION_DRAFT = {
@@ -394,6 +397,7 @@ export function MissionBoard({
   isGmOrAdmin,
   isAdmin,
   hideHeaderActions = false,
+  isProjection = false,
 }: MissionBoardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -490,10 +494,65 @@ export function MissionBoard({
     setEncounterEditorOpen(true);
   };
 
-  const openProjectionTab = () => {
+  const openProjectionWindowHandler = async () => {
     const projectionUrl = `/campaigns/${campaignId}/gm-only/missioni/proiezione`;
-    window.open(projectionUrl, "_blank", "noopener,noreferrer");
+    try {
+      const popup = await openProjectionWindow(
+        projectionUrl,
+        "MissionProjectionWindow",
+        { fallbackWidth: 1440, fallbackHeight: 900 }
+      );
+      if (!popup) {
+        toast.error("Impossibile aprire la proiezione. Consenti i popup per questo sito.");
+      }
+    } catch {
+      toast.error("Impossibile aprire la proiezione. Consenti i popup per questo sito.");
+    }
   };
+
+  useEffect(() => {
+    if (!isProjection) return;
+    const supabase = createSupabaseBrowserClient();
+    const channel = supabase
+      .channel(`mission-proj-${campaignId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "campaign_missions",
+          filter: `campaign_id=eq.${campaignId}`,
+        },
+        () => {
+          router.refresh();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "campaign_guilds",
+          filter: `campaign_id=eq.${campaignId}`,
+        },
+        () => {
+          router.refresh();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [campaignId, isProjection, router]);
+
+  useEffect(() => {
+    if (!detailsMission) return;
+    const updated = missions.find((m) => m.id === detailsMission.id);
+    if (updated) {
+      setDetailsMission(updated);
+    }
+  }, [missions]);
 
   useEffect(() => {
     if (!detailsMission || detailsMission.status !== "completed") return;
@@ -782,22 +841,28 @@ export function MissionBoard({
               Consulta le missioni disponibili nel regno, graduate dal rango D (ferro) al rango leggendario S (oro). I punti gloria ottenuti accrescono il prestigio della tua gilda.
             </p>
           </div>
-          {isGmOrAdmin && !hideHeaderActions && (
-            <div className="flex flex-wrap gap-2">
+          {isGmOrAdmin && !isProjection && (
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 type="button"
                 variant="outline"
-                onClick={openProjectionTab}
-                className="border border-brass-base/40 bg-guild-stone text-parchment-200 hover:bg-brass-base/20 hover:text-brass-light font-serif text-xs"
+                onClick={openProjectionWindowHandler}
+                className="border border-brass-base/40 bg-guild-stone text-parchment-200 hover:bg-brass-base/20 hover:text-brass-light font-serif text-xs shadow-sm"
+                title="Apri la bacheca in un'altra finestra su un secondo schermo per i giocatori"
               >
-                <ExternalLink className="mr-1.5 h-3.5 w-3.5 text-brass-base" />
-                Proiezione Tavolo
+                <MonitorPlay className="mr-1.5 h-3.5 w-3.5 text-brass-base" />
+                <span className="hidden sm:inline">Proietta bacheca</span>
+                <span className="sm:hidden">Proietta</span>
               </Button>
-              {isAdmin ? <BulkImportMissionsDialog campaignId={campaignId} /> : null}
-              <Button onClick={openAddMission} disabled={isPending} className="btn-wax-seal text-xs font-serif font-bold uppercase tracking-wider shadow-md">
-                <Plus className="mr-1.5 h-4 w-4" />
-                Nuova Missione
-              </Button>
+              {!hideHeaderActions && (
+                <>
+                  {isAdmin ? <BulkImportMissionsDialog campaignId={campaignId} /> : null}
+                  <Button onClick={openAddMission} disabled={isPending} className="btn-wax-seal text-xs font-serif font-bold uppercase tracking-wider shadow-md">
+                    <Plus className="mr-1.5 h-4 w-4" />
+                    Nuova Missione
+                  </Button>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -1084,11 +1149,58 @@ export function MissionBoard({
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
         <DialogContent className="border-brass-base/40 bg-[#140f0c] text-parchment-100 shadow-2xl backdrop-blur-md sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="font-cinzel text-xl font-extrabold text-gold-relief">Dettagli Bando di Taglia</DialogTitle>
+            <DialogTitle className="font-cinzel text-xl font-extrabold text-gold-relief">
+              {isProjection ? (detailsMission?.title || "Dettagli Missione") : "Dettagli Bando di Taglia"}
+            </DialogTitle>
           </DialogHeader>
 
           {detailsMission ? (
-            <div className="space-y-4">
+            isProjection ? (
+              <div className="space-y-4">
+                <div className="grid gap-3 sm:grid-cols-2 rounded-lg border border-brass-base/20 bg-[#0c0906]/60 p-3.5">
+                  <div>
+                    <p className="text-[11px] font-cinzel font-semibold text-brass-light/80 uppercase mb-1">Grado</p>
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md font-cinzel text-xs font-black border shadow-inner",
+                        gradeBadgeClass(detailsMission.grade)
+                      )}
+                    >
+                      <Shield className="h-3.5 w-3.5 shrink-0" />
+                      Rango {detailsMission.grade ? detailsMission.grade.toUpperCase() : "D"}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-cinzel font-semibold text-brass-light/80 uppercase">Titolo</p>
+                    <p className="font-serif font-bold text-parchment-100">{detailsMission.title}</p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-cinzel font-semibold text-brass-light/80 uppercase">Committente</p>
+                    <p className="font-serif text-parchment-200">{detailsMission.committente || "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-cinzel font-semibold text-brass-light/80 uppercase">Ubicazione</p>
+                    <p className="font-serif text-parchment-200">{detailsMission.ubicazione || "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-cinzel font-semibold text-brass-light/80 uppercase">Paga</p>
+                    <p className="font-serif font-semibold text-brass-light">{detailsMission.paga || "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-cinzel font-semibold text-brass-light/80 uppercase">Urgenza</p>
+                    <p className="font-serif text-parchment-200">{detailsMission.urgenza || "—"}</p>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-amber-800/30 bg-[#120d09]/80 p-4">
+                  <p className="mb-2 text-[11px] font-cinzel font-semibold text-brass-light/80 uppercase">Descrizione</p>
+                  <p className="whitespace-pre-wrap font-serif text-sm leading-relaxed text-parchment-100">
+                    {detailsMission.description || "Nessuna descrizione specificata."}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
               {(() => {
                 const status = normalizeMissionStatus(detailsMission.status);
                 return (
@@ -1393,6 +1505,7 @@ export function MissionBoard({
                 </div>
               )}
             </div>
+            )
           ) : (
             <DialogDescription>Nessuna missione selezionata.</DialogDescription>
           )}

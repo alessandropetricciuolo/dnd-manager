@@ -488,7 +488,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
     missioni: (
       <div className="flex flex-wrap gap-1.5 px-1 py-1">
         <Button asChild size="sm" variant="ghost" className="h-9 text-barber-paper/85 hover:bg-barber-gold/10 hover:text-barber-gold">
-          <Link href={`/campaigns/${campaign.id}/gm-only/missioni/proiezione`}>Apri proiezione</Link>
+          <Link href={`/campaigns/${campaign.id}/gm-only/missioni/proiezione`} target="_blank" rel="noopener noreferrer">Proietta bacheca</Link>
         </Button>
         {isAdmin ? <BulkImportMissionsDialog campaignId={campaign.id} /> : null}
       </div>

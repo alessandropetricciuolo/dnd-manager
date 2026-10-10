@@ -34,6 +34,7 @@ type MissionBoardSectionProps = {
   isGmOrAdmin: boolean;
   isAdmin: boolean;
   hideHeaderActions?: boolean;
+  isProjection?: boolean;
 };
 
 export async function MissionBoardSection({
@@ -41,6 +42,7 @@ export async function MissionBoardSection({
   isGmOrAdmin,
   isAdmin,
   hideHeaderActions = false,
+  isProjection = false,
 }: MissionBoardSectionProps) {
   const supabase = await createSupabaseServerClient();
 
@@ -96,6 +98,7 @@ export async function MissionBoardSection({
       isGmOrAdmin={isGmOrAdmin}
       isAdmin={isAdmin}
       hideHeaderActions={hideHeaderActions}
+      isProjection={isProjection}
     />
   );
 }

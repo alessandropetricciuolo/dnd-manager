@@ -1,8 +1,7 @@
 import { notFound, redirect } from "next/navigation";
-import { ScrollText } from "lucide-react";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { MissionBoardSection } from "@/components/missions/mission-board-section";
-import { CAMPAIGN_CONTENT_SHELL } from "@/lib/layout/shell-classes";
+import { MissionProjectionShell } from "@/components/missions/mission-projection-shell";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -22,20 +21,13 @@ export default async function MissionProjectionPage({ params }: PageProps) {
   if (!isGmOrAdmin) notFound();
 
   return (
-    <div className={`min-h-screen bg-zinc-950 ${CAMPAIGN_CONTENT_SHELL}`}>
-      <div className="w-full space-y-4">
-        <header className="rounded-xl border border-amber-600/25 bg-zinc-900/60 p-4">
-          <h1 className="flex items-center gap-2 text-lg font-semibold text-amber-200 md:text-xl">
-            <ScrollText className="h-5 w-5" />
-            Proiezione Missioni
-          </h1>
-          <p className="mt-1 text-sm text-zinc-300">
-            Vista read-only pensata per il secondo schermo dei giocatori.
-          </p>
-        </header>
-
-        <MissionBoardSection campaignId={campaignId} isGmOrAdmin={false} isAdmin={false} />
-      </div>
-    </div>
+    <MissionProjectionShell>
+      <MissionBoardSection
+        campaignId={campaignId}
+        isGmOrAdmin={false}
+        isAdmin={false}
+        isProjection={true}
+      />
+    </MissionProjectionShell>
   );
 }

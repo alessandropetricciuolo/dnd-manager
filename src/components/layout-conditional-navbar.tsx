@@ -11,11 +11,11 @@ type Props = {
 export function LayoutConditionalNavbar({ navbar, children }: Props) {
   const pathname = usePathname();
   const isGmScreen = pathname?.includes("/gm-screen");
-  const isVistaProiezione = pathname?.includes("/vista-dall-alto/proiezione");
+  const isProjection = pathname?.includes("/proiezione");
   const isAdmin = pathname?.startsWith("/admin");
   const isOAuthConsent = pathname?.startsWith("/oauth/");
 
-  if (isGmScreen || isVistaProiezione || isAdmin || isOAuthConsent) {
+  if (isGmScreen || isProjection || isAdmin || isOAuthConsent) {
     return <>{children}</>;
   }
   return (
