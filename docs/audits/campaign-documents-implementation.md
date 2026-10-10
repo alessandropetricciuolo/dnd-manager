@@ -15,7 +15,7 @@ Migrazione applicata e verificata su Supabase produzione il 10 ottobre 2026; pub
 
 ## Attivazione successiva
 
-Applicare la migrazione `20261010192905_campaign_documents.sql` prima del codice. Come per gli altri contenuti Admin-only, la campagna deve avere `admin_drafts_enabled=true` per convertire una voce attualmente non protetta. Nessuna classificazione automatica per titolo o tipo: le voci vengono spostate solo dopo decisione del proprietario.
+Applicare le migrazioni `20261010192905_campaign_documents.sql` e `20261010194933_campaign_documents_function_grants.sql` prima del codice. La seconda revoca i grant EXECUTE espliciti di default Supabase sulle funzioni trigger interne. Come per gli altri contenuti Admin-only, la campagna deve avere `admin_drafts_enabled=true` per convertire una voce attualmente non protetta. Nessuna classificazione automatica per titolo o tipo: le voci vengono spostate solo dopo decisione del proprietario.
 
 Il dettaglio mantiene la route Wiki per conservare link e strumenti; la navigazione indietro conduce ai documenti quando pertinente. L'archivio delle voci Wiki continua a funzionare separatamente.
 

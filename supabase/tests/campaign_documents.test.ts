@@ -20,6 +20,9 @@ test("campaign documents enforce Admin writes, hide GM/player reads and protect 
       INSERT INTO campaign_memory_chunks VALUES ('${campaign}', 'wiki', '${entity}', false);
     `);
     await db.exec(await readFile("supabase/migrations/20261010192905_campaign_documents.sql", "utf8"));
+    await db.exec(await readFile("supabase/migrations/20261010194933_campaign_documents_function_grants.sql", "utf8"));
+    assert.equal((await db.query("SELECT has_function_privilege('anon', 'public.protect_campaign_document_memory()', 'EXECUTE') AS allowed")).rows[0].allowed, false);
+    assert.equal((await db.query("SELECT has_function_privilege('authenticated', 'public.enforce_campaign_document_location()', 'EXECUTE') AS allowed")).rows[0].allowed, false);
     await db.exec("SET ROLE authenticated; SELECT set_config('test.actor', 'gm', false);");
     await assert.rejects(db.exec(`UPDATE wiki_entities SET is_campaign_document=true, admin_only=true WHERE id='${entity}'`), /campaign_document_requires_admin/);
     await db.exec("SELECT set_config('test.actor', 'admin', false);");
