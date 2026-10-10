@@ -272,14 +272,14 @@ export function WikiCodexReader({
             </Badge>
           )}
           {entity.tags && entity.tags.length > 0 && (
-            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            <div className="mt-3 flex flex-wrap items-center gap-2">
               {entity.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="inline-flex items-center gap-1 rounded-md border border-brass-base/25 bg-[#120d09] px-2 py-0.5 text-[10px] font-serif text-parchment-300"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-brass-base/40 bg-gradient-to-r from-amber-950/40 via-[#1c120a] to-[#140c06] px-2.5 py-1 text-xs font-semibold text-amber-100 shadow-sm transition-all hover:border-brass-light/60 hover:text-gold-relief"
                 >
-                  <Tag className="h-2.5 w-2.5 text-brass-base" />
-                  {tag}
+                  <Tag className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                  <span>{tag}</span>
                 </span>
               ))}
             </div>

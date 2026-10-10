@@ -171,14 +171,14 @@ export function WikiCodexIndex({
                 type="button"
                 onClick={() => onSelectEntity(entity.id)}
                 className={cn(
-                  "group relative w-full flex items-center gap-2.5 rounded-xl p-2 text-left transition-all",
+                  "group relative w-full flex items-start gap-2.5 rounded-xl p-2.5 text-left transition-all",
                   isSelected
                     ? "border border-amber-500/70 bg-gradient-to-r from-amber-950/70 via-amber-900/40 to-[#1e140d] text-parchment-100 shadow-md"
                     : "border border-brass-base/15 bg-[#140e08]/60 hover:border-brass-base/40 hover:bg-[#1a120b] text-parchment-300"
                 )}
               >
                 {/* Mini-Avatar con anello in ottone */}
-                <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full border border-brass-base/40 bg-guild-void shadow-inner">
+                <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full border border-brass-base/40 bg-guild-void shadow-inner mt-0.5">
                   {entity.imageUrl ? (
                     <DualSourceImage
                       driveUrl={entity.imageUrl}
@@ -213,16 +213,54 @@ export function WikiCodexIndex({
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between text-[10px] text-parchment-400 mt-0.5">
-                    <span className="truncate max-w-[130px] font-serif text-[9px] text-parchment-500">
+                  <div className="flex items-center gap-1.5 text-[10px] text-parchment-400 mt-0.5">
+                    <span className="truncate font-serif text-[9.5px] text-parchment-400/90">
                       {entity.missionTitle ? `📜 ${entity.missionTitle}` : typeLabels[entity.type] ?? entity.type}
                     </span>
-                    {entity.tags && entity.tags.length > 0 && (
-                      <span className="font-mono text-[8px] text-brass-base/80 truncate max-w-[60px]">
-                        #{entity.tags[0]}
-                      </span>
-                    )}
                   </div>
+
+                  {entity.tags && entity.tags.length > 0 && (
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                      {(() => {
+                        const maxVisible = entity.tags.length === 4 ? 4 : 3;
+                        const visibleTags = entity.tags.slice(0, maxVisible);
+                        const remainingCount = entity.tags.length - maxVisible;
+
+                        return (
+                          <>
+                            {visibleTags.map((tag) => (
+                              <span
+                                key={tag}
+                                title={`#${tag}`}
+                                className={cn(
+                                  "inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 font-mono text-[9px] font-semibold leading-tight transition-colors",
+                                  isSelected
+                                    ? "border border-amber-400/60 bg-amber-900/70 text-amber-100 shadow-xs"
+                                    : "border border-brass-base/35 bg-[#120a06]/95 text-amber-200/95 group-hover:border-brass-base/60 group-hover:text-amber-100"
+                                )}
+                              >
+                                <span className="text-amber-400/80 select-none">#</span>
+                                <span className="truncate max-w-[85px]">{tag}</span>
+                              </span>
+                            ))}
+                            {remainingCount > 0 && (
+                              <span
+                                className={cn(
+                                  "inline-flex items-center rounded px-1.5 py-0.5 font-mono text-[8.5px] font-semibold leading-tight transition-colors",
+                                  isSelected
+                                    ? "border border-amber-500/40 bg-amber-950/90 text-amber-200"
+                                    : "border border-brass-base/25 bg-[#120a06]/90 text-brass-base/90"
+                                )}
+                                title={entity.tags.slice(maxVisible).map((t) => `#${t}`).join(", ")}
+                              >
+                                +{remainingCount}
+                              </span>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </div>
 
                 {/* Indicatore Visivo di selezione sul lato destro */}
