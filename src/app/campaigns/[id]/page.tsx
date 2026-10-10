@@ -657,6 +657,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
           wikiContent={
             renderWikiTab && hasPlayedCampaign ? (
               <>
+                {isAdmin && <Link href={`/campaigns/${campaign.id}/documenti`} className="mb-4 inline-block text-sm underline">Documenti di campagna · Solo Admin</Link>}
                 <WikiList
                   campaignId={campaign.id}
                   campaignType={campaign.type ?? null}

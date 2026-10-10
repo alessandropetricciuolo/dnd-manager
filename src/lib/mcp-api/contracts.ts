@@ -15,6 +15,7 @@ export interface EntityEnvelope {
   body: string;
   attributes: Record<string, unknown>;
   admin_only: boolean;
+  is_campaign_document?: boolean;
   status: typeof statuses[number];
   revision: number;
   image_url: string | null;
@@ -30,7 +31,7 @@ export class ApiError extends Error {
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const fields: Record<Operation, string[]> = {
-  search_lore: ["query", "limit", "offset", "admin_only"],
+  search_lore: ["query", "limit", "offset", "admin_only", "collection"],
   get_entity: ["entity_id", "admin_only"],
   read_entity_images: ["entity_id", "admin_only", "offset", "limit"],
   read_map_image: ["map_id", "admin_only"],
@@ -43,7 +44,7 @@ const fields: Record<Operation, string[]> = {
   create_location: ["name", "body", "attributes", "admin_only"],
   create_item: ["name", "body", "attributes", "admin_only"],
   create_monster: ["name", "body", "attributes", "admin_only", "xp_value", "is_core"],
-  update_entity: ["entity_id", "revision", "name", "body", "attributes", "admin_only"],
+  update_entity: ["entity_id", "revision", "name", "body", "attributes", "admin_only", "is_campaign_document"],
   upload_asset: ["filename", "mime_type", "data_base64"],
   attach_asset: ["entity_id", "asset_id"],
   upload_entity_image: ["entity_id", "revision", "filename", "mime_type", "data_base64", "mode", "title"],
@@ -90,11 +91,12 @@ export function validate(raw: unknown): { operation: Operation; args: Record<str
   for (const [key, max] of [["name", 200], ["body", 100000], ["query", 200]] as const) {
     if (args[key] !== undefined && (typeof args[key] !== "string" || args[key].length > max || (key !== "body" && !args[key].trim()))) return fail();
   }
-  for (const key of ["admin_only"]) if (args[key] !== undefined && typeof args[key] !== "boolean") return fail();
+  if (args.collection !== undefined && !["wiki", "documents", "all"].includes(args.collection)) return fail();
+  for (const key of ["admin_only", "is_campaign_document"]) if (args[key] !== undefined && typeof args[key] !== "boolean") return fail();
   if (args.is_core !== undefined && typeof args.is_core !== "boolean") return fail();
   if (args.xp_value !== undefined && (!Number.isInteger(args.xp_value) || args.xp_value < 0)) return fail();
   if (args.attributes !== undefined && (!args.attributes || typeof args.attributes !== "object" || Array.isArray(args.attributes) || JSON.stringify(args.attributes).length > 20000)) return fail();
-  if (operation === "update_entity" && !["name", "body", "attributes", "admin_only"].some((key) => args[key] !== undefined)) return fail();
+  if (operation === "update_entity" && !["name", "body", "attributes", "admin_only", "is_campaign_document"].some((key) => args[key] !== undefined)) return fail();
   if (operation === "set_status" && !statuses.includes(args.status)) return fail();
   if (["read_entity_images", "read_map_image"].includes(operation)) {
     if (args[operation === "read_entity_images" ? "entity_id" : "map_id"] === undefined) return fail();

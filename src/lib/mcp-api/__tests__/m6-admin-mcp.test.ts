@@ -314,3 +314,32 @@ test("gallery upload preserves the cover, existing gallery and unrelated attribu
   assert.equal(result.entity.image_url, original.image_url);
   assert.ok(success.calls.some(call => call[0] === "eq" && call[1] === "mcp_revision" && call[2] === 2));
 });
+
+
+test("campaign documents are excluded by default and require explicit protected collection", async () => {
+  process.env.MCP_CAMPAIGN_ID = campaign;
+  const standard = fakeDb([{ id: campaign, admin_drafts_enabled: true }, []]);
+  await executeContent(admin(standard.db), { operation: "search_lore", args: { campaign_id: campaign, query: "Frondargento", admin_only: true } });
+  assert(standard.calls.some(call => call[0] === "eq" && call[1] === "is_campaign_document" && call[2] === false));
+  const documents = fakeDb([{ id: campaign, admin_drafts_enabled: true }, [{ ...row, is_campaign_document: true }]]);
+  const result: any = await executeContent(admin(documents.db), { operation: "search_lore", args: { campaign_id: campaign, query: "Frondargento", collection: "documents", admin_only: true } });
+  assert(documents.calls.some(call => call[0] === "eq" && call[1] === "is_campaign_document" && call[2] === true));
+  assert.equal(result.entities[0].is_campaign_document, true);
+  const unprotected = fakeDb([{ id: campaign, admin_drafts_enabled: true }]);
+  await assert.rejects(executeContent(admin(unprotected.db), { operation: "search_lore", args: { campaign_id: campaign, query: "Frondargento", collection: "documents" } }), (error: any) => error.status === 404);
+  assert.throws(() => validate({ operation: "search_lore", args: { campaign_id: campaign, query: "x", collection: "gm_notes" } }), ApiError);
+});
+
+
+test("MCP moves campaign documents with revision lock and never releases Admin protection", async () => {
+  process.env.MCP_CAMPAIGN_ID = campaign;
+  const moved = { ...row, is_campaign_document: true, mcp_revision: 3 };
+  const move = fakeDb([{ id: campaign, admin_drafts_enabled: true }, row, moved]);
+  const result: any = await executeContent(admin(move.db), { operation: "update_entity", args: { campaign_id: campaign, entity_id: entityId, revision: 2, admin_only: true, is_campaign_document: true } });
+  assert.deepEqual(move.calls.find(call => call[0] === "update")?.[1], { admin_only: true, is_campaign_document: true });
+  assert.equal(result.entity.is_campaign_document, true);
+  const restore = fakeDb([{ id: campaign, admin_drafts_enabled: true }, moved, { ...moved, is_campaign_document: false, mcp_revision: 4 }]);
+  await executeContent(admin(restore.db), { operation: "update_entity", args: { campaign_id: campaign, entity_id: entityId, revision: 3, admin_only: true, is_campaign_document: false } });
+  assert.deepEqual(restore.calls.find(call => call[0] === "update")?.[1], { admin_only: true, is_campaign_document: false });
+  assert.throws(() => validate({ operation: "update_entity", args: { campaign_id: campaign, entity_id: entityId, revision: 2, is_campaign_document: "yes" } }), ApiError);
+});

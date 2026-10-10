@@ -57,9 +57,10 @@ export function createBdMcpServer(auth: McpAuthContext) {
     });
   };
 
-  register("search_lore", "Search the scoped campaign Wiki. Admin-only rows require explicit opt-in.", {
+  register("search_lore", "Search campaign content. Defaults to Wiki; collection=documents reads Admin-only campaign documents; collection=all includes both. Protected rows require admin_only=true.", {
     campaign_id: campaignId,
     query: z.string().min(1).max(200),
+    collection: z.enum(["wiki", "documents", "all"]).optional(),
     limit: z.number().int().min(1).max(50).optional(),
     offset: z.number().int().min(0).max(10_000).optional(),
     admin_only: adminOnly,
@@ -103,7 +104,7 @@ export function createBdMcpServer(auth: McpAuthContext) {
   register("create_location", "Create a private draft location.", create, false);
   register("create_item", "Create a private draft item.", create, false);
   register("create_monster", "Create a private draft monster, including combat attributes and XP.", createMonster, false);
-  register("update_entity", "Patch an entity using its current revision; protected content cannot be downgraded.", {
+  register("update_entity", "Patch an entity using its current revision; is_campaign_document moves to/from Admin-only campaign documents preserving identity. Moving back preserves Admin-only. Protected content cannot be downgraded.", {
     campaign_id: campaignId,
     entity_id: entityId,
     revision,
@@ -111,6 +112,7 @@ export function createBdMcpServer(auth: McpAuthContext) {
     body: create.body.optional(),
     attributes: create.attributes,
     admin_only: adminOnly,
+    is_campaign_document: z.boolean().optional(),
   }, false);
   register("upload_asset", "Store a private PNG, JPEG, WebP, or PDF supplied as base64.", {
     campaign_id: campaignId,

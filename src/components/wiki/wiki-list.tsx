@@ -56,7 +56,7 @@ export async function WikiList({
   let entityQuery = supabase
     .from("wiki_entities")
     .select("id, name, type, is_secret, visibility, sort_order, tags, updated_at, content, linked_mission_id, admin_only, image_url, telegram_fallback_id, attributes, archived_at")
-    .eq("campaign_id", campaignId)
+    .eq("campaign_id", campaignId).eq("is_campaign_document", false)
     .order("name");
   if (!isAdmin) entityQuery = entityQuery.eq("admin_only", false);
   const res = await entityQuery;
@@ -64,7 +64,7 @@ export async function WikiList({
     let fallbackQuery = supabase
       .from("wiki_entities")
       .select("id, name, type, is_secret, visibility, sort_order, tags, updated_at, content, linked_mission_id, admin_only, image_url, telegram_fallback_id, attributes")
-      .eq("campaign_id", campaignId)
+      .eq("campaign_id", campaignId).eq("is_campaign_document", false)
       .order("name");
     if (!isAdmin) fallbackQuery = fallbackQuery.eq("admin_only", false);
     const fallback = await fallbackQuery;
@@ -74,7 +74,7 @@ export async function WikiList({
     let fallbackQuery = supabase
       .from("wiki_entities")
       .select("id, name, type, is_secret, visibility, sort_order, tags, updated_at, content, admin_only, image_url, telegram_fallback_id, attributes")
-      .eq("campaign_id", campaignId)
+      .eq("campaign_id", campaignId).eq("is_campaign_document", false)
       .order("name");
     if (!isAdmin) fallbackQuery = fallbackQuery.eq("admin_only", false);
     const fallback = await fallbackQuery;
@@ -84,7 +84,7 @@ export async function WikiList({
     let fallbackQuery = supabase
       .from("wiki_entities")
       .select("id, name, type, is_secret, visibility, tags, content, admin_only")
-      .eq("campaign_id", campaignId)
+      .eq("campaign_id", campaignId).eq("is_campaign_document", false)
       .order("name");
     if (!isAdmin) fallbackQuery = fallbackQuery.eq("admin_only", false);
     const fallback = await fallbackQuery;
@@ -94,7 +94,7 @@ export async function WikiList({
     let fallbackQuery = supabase
       .from("wiki_entities")
       .select("id, name, type, is_secret, sort_order, tags, content, admin_only")
-      .eq("campaign_id", campaignId)
+      .eq("campaign_id", campaignId).eq("is_campaign_document", false)
       .order("name");
     if (!isAdmin) fallbackQuery = fallbackQuery.eq("admin_only", false);
     const fallback = await fallbackQuery;
@@ -104,7 +104,7 @@ export async function WikiList({
     let fallbackQuery = supabase
       .from("wiki_entities")
       .select("id, name, type, is_secret, visibility, sort_order, content, admin_only")
-      .eq("campaign_id", campaignId)
+      .eq("campaign_id", campaignId).eq("is_campaign_document", false)
       .order("name");
     if (!isAdmin) fallbackQuery = fallbackQuery.eq("admin_only", false);
     const fallback = await fallbackQuery;

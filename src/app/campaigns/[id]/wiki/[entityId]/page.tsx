@@ -1,3 +1,4 @@
+import { CampaignDocumentButton } from "@/components/wiki/campaign-document-button";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
@@ -123,7 +124,7 @@ export default async function WikiEntityPage({ params, searchParams }: PageProps
       <div className="min-w-0 w-full">
         <div className="mb-4 md:mb-6 flex flex-wrap items-center gap-2 min-w-0">
           <Link
-            href={`/campaigns/${campaignId}?tab=wiki&wiki_filter=${encodeURIComponent(entity.type)}`}
+            href={entity.is_campaign_document ? `/campaigns/${campaignId}/documenti` : `/campaigns/${campaignId}?tab=wiki&wiki_filter=${encodeURIComponent(entity.type)}`}
           >
             <Button
               variant="ghost"
@@ -150,6 +151,7 @@ export default async function WikiEntityPage({ params, searchParams }: PageProps
                 initialAllowedPartyIds={permittedPartyIds}
                 autoOpenEditDialog={autoOpenEditDialog}
               />
+              {profile?.role === "admin" && <CampaignDocumentButton campaignId={campaignId} entityId={entity.id} document={Boolean(entity.is_campaign_document)} updatedAt={entity.updated_at ?? ""} />}
               <WikiEntityDeleteButton
                 campaignId={campaignId}
                 entityId={entity.id}

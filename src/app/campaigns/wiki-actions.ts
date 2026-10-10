@@ -952,6 +952,7 @@ export type WikiEntity = {
   /** Campagne long: missione di riferimento (filtraggi GM screen / wiki). */
   linked_mission_id?: string | null;
   archived_at?: string | null;
+  is_campaign_document?: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -1005,6 +1006,7 @@ export async function getEntity(
 
     const wikiEntity = entity as WikiEntity;
 
+    if (wikiEntity.is_campaign_document && !isAdmin) return null;
     if (isGmOrAdmin) return wikiEntity;
     if (wikiEntity.archived_at) return null;
 
@@ -1079,6 +1081,7 @@ export async function getMonstersForInitiative(
       .from("wiki_entities")
       .select("id, name, attributes, is_core, global_status")
       .eq("campaign_id", campaignId)
+      .eq("is_campaign_document", false)
       .eq("type", "monster")
       .order("name");
     if (!isAdmin) monsterQuery = monsterQuery.eq("admin_only", false);
@@ -1141,6 +1144,7 @@ export async function getMonstersXpForIds(
       .from("wiki_entities")
       .select("id, xp_value")
       .eq("campaign_id", campaignId)
+      .eq("is_campaign_document", false)
       .eq("type", "monster")
       .in("id", entityIds);
     if (!isAdmin) monsterXpQuery = monsterXpQuery.eq("admin_only", false);

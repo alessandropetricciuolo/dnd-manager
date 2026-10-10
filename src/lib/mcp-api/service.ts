@@ -12,7 +12,7 @@ import { sendFeedbackRequestEmailsForSession } from "@/lib/session-close-feedbac
 
 import { readSiteImages } from "./images";
 
-const columns = "id,campaign_id,type,name,content,attributes,image_url,admin_only,mcp_status,mcp_revision,xp_value,is_core,global_status,updated_at";
+const columns = "id,campaign_id,type,name,content,attributes,image_url,admin_only,is_campaign_document,mcp_status,mcp_revision,xp_value,is_core,global_status,updated_at";
 const mapColumns = "id,campaign_id,name,description,map_type,image_url,visibility,parent_map_id,wiki_entity_id,admin_only,created_at,updated_at";
 const notFound = () => new ApiError(404, "Entity not found");
 
@@ -21,6 +21,7 @@ function envelope(row: Record<string, any> | null): EntityEnvelope {
   return {
     schema_version: 1, id: row.id, campaign_id: row.campaign_id, kind: row.type,
     name: row.name, body: row.content?.body ?? "", attributes: row.attributes ?? {},
+    is_campaign_document: row.is_campaign_document === true,
     image_url: row.image_url ?? null, admin_only: row.admin_only === true, status: row.mcp_status, revision: row.mcp_revision,
     xp_value: row.xp_value ?? 0, is_core: row.is_core === true, global_status: row.global_status ?? null,
     source: { domain: "wiki", id: row.id },
@@ -205,6 +206,9 @@ export async function executeContent(
     if (!query) throw new ApiError(400, "Search requires letters or numbers");
     const offset = a.offset ?? 0, limit = a.limit ?? 20;
     let request = auth.db.from("wiki_entities").select(columns).eq("campaign_id", a.campaign_id).or(`name.ilike.%${query}%,content->>body.ilike.%${query}%`);
+    const collection = a.collection ?? "wiki";
+    if (collection !== "wiki" && (!auth.isAdmin || !adminOnlyRequested)) throw notFound();
+    if (collection !== "all") request = request.eq("is_campaign_document", collection === "documents");
     // Never trust a requested flag: only a verified Admin may opt into protected rows.
     if (!auth.isAdmin || !adminOnlyRequested) request = request.eq("admin_only", false);
     const rows = checked(await request.order("id").range(offset, offset + limit - 1)) ?? [];
@@ -405,6 +409,10 @@ export async function executeContent(
   if (a.body !== undefined) patch.content = { ...(entity.content ?? {}), body: a.body };
   if (a.attributes !== undefined) patch.attributes = { ...(entity.attributes ?? {}), ...a.attributes };
   if (a.admin_only !== undefined) patch.admin_only = a.admin_only;
+  if (a.is_campaign_document !== undefined) {
+    patch.is_campaign_document = a.is_campaign_document;
+    if (a.is_campaign_document) patch.admin_only = true;
+  }
   if (a.admin_only === false && entity.admin_only === true) throw new ApiError(400, "Protected content cannot be downgraded by MCP");
   const updated = checked(await auth.db.from("wiki_entities").update(patch).eq("id", a.entity_id).eq("campaign_id", a.campaign_id).eq("mcp_revision", a.revision).select(columns).maybeSingle());
   if (!updated) throw new ApiError(409, "Revision conflict: read entity again");
