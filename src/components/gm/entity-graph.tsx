@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, createContext, useContext } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
@@ -116,33 +116,47 @@ function entityDiskClasses(type: string): string {
   );
 }
 
+interface GraphFocusContextValue {
+  selectedNodeId: string | null;
+  neighborNodeIds: Set<string>;
+  focusedEdgeIds: Set<string>;
+  showAllLabels: boolean;
+  linkSourceNodeId: string | null;
+}
+
+const GraphFocusContext = createContext<GraphFocusContextValue>({
+  selectedNodeId: null,
+  neighborNodeIds: new Set(),
+  focusedEdgeIds: new Set(),
+  showAllLabels: false,
+  linkSourceNodeId: null,
+});
+
 export type EntityNodeData = {
   label: string;
   type: string;
   entityId: string;
   degree?: number;
-  isFocused?: boolean;
-  isNeighbor?: boolean;
-  isDimmed?: boolean;
-  isLinkSource?: boolean;
 };
 
 export type MapNodeData = {
   label: string;
   mapId: string;
   degree?: number;
-  isFocused?: boolean;
-  isNeighbor?: boolean;
-  isDimmed?: boolean;
-  isLinkSource?: boolean;
 };
 
 export type GraphNodeData = EntityNodeData | MapNodeData;
 
-function EntityNode({ data, selected }: NodeProps<Node<EntityNodeData>>) {
+function EntityNode({ id, data, selected }: NodeProps<Node<EntityNodeData>>) {
+  const { selectedNodeId, neighborNodeIds, linkSourceNodeId } = useContext(GraphFocusContext);
   const d = data as EntityNodeData;
   const Icon = TYPE_ICONS[d.type] ?? BookOpen;
   const degree = d.degree ?? 0;
+
+  const isFocused = id === selectedNodeId || !!selected;
+  const isNeighbor = neighborNodeIds.has(id);
+  const isDimmed = selectedNodeId !== null && !isFocused && !isNeighbor;
+  const isLinkSource = id === linkSourceNodeId;
 
   // Scala visiva basata sul grado: gli hub risaltano naturalmente
   const isMajorHub = degree >= 6;
@@ -162,9 +176,9 @@ function EntityNode({ data, selected }: NodeProps<Node<EntityNodeData>>) {
     <div
       className={cn(
         "group relative flex flex-col items-center gap-1.5 select-none transition-all duration-200",
-        d.isDimmed && "opacity-20 grayscale hover:opacity-75 hover:grayscale-0",
-        d.isFocused && "scale-110 z-30",
-        d.isNeighbor && "scale-105 z-20"
+        isDimmed && "opacity-20 grayscale hover:opacity-75 hover:grayscale-0",
+        isFocused && "scale-110 z-30",
+        isNeighbor && "scale-105 z-20"
       )}
     >
       {/* 4 Handles cardinali per collegamenti puliti senza curve a U */}
@@ -195,11 +209,11 @@ function EntityNode({ data, selected }: NodeProps<Node<EntityNodeData>>) {
 
       <div className="relative flex items-center justify-center">
         {/* Glow ambient per hub e nodi attivi */}
-        {(isMajorHub || d.isFocused || selected) && (
+        {(isMajorHub || isFocused) && (
           <div
             className={cn(
               "absolute -inset-1.5 rounded-full blur-md transition-all duration-300",
-              d.isFocused || selected
+              isFocused
                 ? "bg-amber-400/80 scale-110 opacity-90 animate-pulse"
                 : "bg-white/30 opacity-60"
             )}
@@ -211,10 +225,10 @@ function EntityNode({ data, selected }: NodeProps<Node<EntityNodeData>>) {
             "relative flex shrink-0 cursor-pointer items-center justify-center rounded-full transition-transform duration-150 shadow-md",
             diskSizeClass,
             entityDiskClasses(d.type),
-            (selected || d.isFocused) &&
+            isFocused &&
               "ring-2 ring-amber-300 shadow-[0_0_24px_rgba(251,191,36,0.7)] scale-[1.08]",
-            d.isNeighbor && "ring-1.5 ring-zinc-200/90 shadow-[0_0_18px_rgba(255,255,255,0.4)]",
-            d.isLinkSource && "ring-4 ring-amber-400 animate-bounce"
+            isNeighbor && "ring-1.5 ring-zinc-200/90 shadow-[0_0_18px_rgba(255,255,255,0.4)]",
+            isLinkSource && "ring-4 ring-amber-400 animate-bounce"
           )}
         >
           <Icon className={cn(iconSizeClass, "relative z-[1] text-white/95 drop-shadow-sm")} aria-hidden />
@@ -232,9 +246,9 @@ function EntityNode({ data, selected }: NodeProps<Node<EntityNodeData>>) {
       <div
         className={cn(
           "max-w-[8.5rem] rounded-md border border-zinc-700/75 bg-[#121215]/92 px-2 py-0.5 text-center shadow-lg backdrop-blur-md transition-all",
-          (d.isFocused || selected) &&
+          isFocused &&
             "border-amber-400 bg-amber-950/80 text-amber-200 ring-2 ring-amber-400/35 scale-105 shadow-[0_0_12px_rgba(251,191,36,0.3)]",
-          d.isNeighbor && "border-zinc-400/80 bg-zinc-900/95 text-zinc-100"
+          isNeighbor && "border-zinc-400/80 bg-zinc-900/95 text-zinc-100"
         )}
       >
         <span className="line-clamp-2 font-sans text-[11px] font-semibold tracking-wide text-zinc-100">
@@ -245,18 +259,24 @@ function EntityNode({ data, selected }: NodeProps<Node<EntityNodeData>>) {
   );
 }
 
-function MapNode({ data, selected }: NodeProps<Node<MapNodeData>>) {
+function MapNode({ id, data, selected }: NodeProps<Node<MapNodeData>>) {
+  const { selectedNodeId, neighborNodeIds, linkSourceNodeId } = useContext(GraphFocusContext);
   const d = data as MapNodeData;
   const degree = d.degree ?? 0;
   const isMajorHub = degree >= 4;
+
+  const isFocused = id === selectedNodeId || !!selected;
+  const isNeighbor = neighborNodeIds.has(id);
+  const isDimmed = selectedNodeId !== null && !isFocused && !isNeighbor;
+  const isLinkSource = id === linkSourceNodeId;
 
   return (
     <div
       className={cn(
         "group relative flex flex-col items-center gap-1.5 select-none transition-all duration-200",
-        d.isDimmed && "opacity-20 grayscale hover:opacity-75 hover:grayscale-0",
-        d.isFocused && "scale-110 z-30",
-        d.isNeighbor && "scale-105 z-20"
+        isDimmed && "opacity-20 grayscale hover:opacity-75 hover:grayscale-0",
+        isFocused && "scale-110 z-30",
+        isNeighbor && "scale-105 z-20"
       )}
     >
       <Handle
@@ -285,11 +305,11 @@ function MapNode({ data, selected }: NodeProps<Node<MapNodeData>>) {
       />
 
       <div className="relative flex items-center justify-center">
-        {(isMajorHub || d.isFocused || selected) && (
+        {(isMajorHub || isFocused) && (
           <div
             className={cn(
               "absolute -inset-1.5 rounded-xl blur-md transition-all duration-300",
-              d.isFocused || selected ? "bg-orange-400/80 scale-110 opacity-90 animate-pulse" : "bg-orange-500/25 opacity-60"
+              isFocused ? "bg-orange-400/80 scale-110 opacity-90 animate-pulse" : "bg-orange-500/25 opacity-60"
             )}
           />
         )}
@@ -297,10 +317,10 @@ function MapNode({ data, selected }: NodeProps<Node<MapNodeData>>) {
         <div
           className={cn(
             "relative flex h-[50px] w-[50px] shrink-0 cursor-pointer items-center justify-center rounded-xl border border-orange-400/50 bg-gradient-to-br from-orange-500 via-amber-700 to-zinc-900 shadow-[0_0_20px_-2px_rgba(251,146,60,0.55)] transition-transform duration-150",
-            (selected || d.isFocused) &&
+            isFocused &&
               "ring-2 ring-orange-300 shadow-[0_0_24px_rgba(251,146,60,0.8)] scale-[1.08]",
-            d.isNeighbor && "ring-1.5 ring-zinc-200/90 shadow-[0_0_18px_rgba(255,255,255,0.4)]",
-            d.isLinkSource && "ring-4 ring-orange-400 animate-bounce"
+            isNeighbor && "ring-1.5 ring-zinc-200/90 shadow-[0_0_18px_rgba(255,255,255,0.4)]",
+            isLinkSource && "ring-4 ring-orange-400 animate-bounce"
           )}
         >
           <Map className="h-[22px] w-[22px] text-white/95 drop-shadow-sm" aria-hidden />
@@ -316,9 +336,9 @@ function MapNode({ data, selected }: NodeProps<Node<MapNodeData>>) {
       <div
         className={cn(
           "max-w-[8.5rem] rounded-md border border-orange-500/50 bg-[#15120e]/92 px-2 py-0.5 text-center shadow-lg backdrop-blur-md transition-all",
-          (d.isFocused || selected) &&
+          isFocused &&
             "border-orange-400 bg-orange-950/85 text-orange-200 ring-2 ring-orange-400/40 scale-105 shadow-[0_0_12px_rgba(251,146,60,0.3)]",
-          d.isNeighbor && "border-orange-400/70 text-orange-100"
+          isNeighbor && "border-orange-400/70 text-orange-100"
         )}
       >
         <span className="line-clamp-2 font-sans text-[11px] font-semibold tracking-wide text-orange-200">
@@ -331,9 +351,6 @@ function MapNode({ data, selected }: NodeProps<Node<MapNodeData>>) {
 
 export type CustomEdgeData = {
   label?: string;
-  isFocused?: boolean;
-  isDimmed?: boolean;
-  showAllLabels?: boolean;
 };
 
 function LabeledEdge({
@@ -347,6 +364,8 @@ function LabeledEdge({
   data,
   selected,
 }: EdgeProps<Edge<CustomEdgeData>>) {
+  const { selectedNodeId, focusedEdgeIds, showAllLabels } = useContext(GraphFocusContext);
+
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
@@ -359,9 +378,9 @@ function LabeledEdge({
   const [hovered, setHovered] = useState(false);
   const label = data?.label?.trim() ?? "";
   const hasValidLabel = label !== "" && label !== "—";
-  const isFocused = data?.isFocused ?? false;
-  const isDimmed = data?.isDimmed ?? false;
-  const showLabel = (data?.showAllLabels || isFocused || hovered || selected) && hasValidLabel;
+  const isFocused = focusedEdgeIds.has(id) || !!selected;
+  const isDimmed = selectedNodeId !== null && !isFocused;
+  const showLabel = (showAllLabels || isFocused || hovered || selected) && hasValidLabel;
 
   return (
     <g
@@ -625,7 +644,6 @@ function EntityGraphInner({ campaignId }: EntityGraphProps) {
         targetPosition: le.targetPosition,
         data: {
           label: le.label,
-          showAllLabels,
         },
       }));
 
@@ -636,7 +654,7 @@ function EntityGraphInner({ campaignId }: EntityGraphProps) {
         fitView({ padding: 0.18, duration: 600 });
       }, 50);
     },
-    [activeTypeFilters, showAllLabels, setNodes, setEdges, fitView]
+    [activeTypeFilters, setNodes, setEdges, fitView]
   );
 
   const loadData = useCallback(async () => {
@@ -658,56 +676,27 @@ function EntityGraphInner({ campaignId }: EntityGraphProps) {
     loadData();
   }, [loadData]);
 
-  // Aggiorna lo stato di Focus e Neighborhood Highlighting
-  useEffect(() => {
-    const directNeighbors = new Set<string>();
-    if (selectedNodeId) {
-      edges.forEach((e) => {
-        if (e.source === selectedNodeId) directNeighbors.add(e.target);
-        if (e.target === selectedNodeId) directNeighbors.add(e.source);
-      });
+  // Calcolo vicini diretti ed archi attivi per il focus mode (puro useMemo senza cicli di setState!)
+  const neighborNodeIds = useMemo(() => {
+    const set = new Set<string>();
+    if (!selectedNodeId) return set;
+    for (const e of edges) {
+      if (e.source === selectedNodeId) set.add(e.target);
+      else if (e.target === selectedNodeId) set.add(e.source);
     }
+    return set;
+  }, [selectedNodeId, edges]);
 
-    setNodes((nds) =>
-      nds.map((n) => {
-        const isFocused = n.id === selectedNodeId;
-        const isNeighbor = directNeighbors.has(n.id);
-        const isDimmed = selectedNodeId !== null && !isFocused && !isNeighbor;
-        const isLinkSource = n.id === linkSourceNodeId;
-
-        return {
-          ...n,
-          selected: isFocused,
-          data: {
-            ...n.data,
-            isFocused,
-            isNeighbor,
-            isDimmed,
-            isLinkSource,
-          },
-        };
-      })
-    );
-
-    setEdges((eds) =>
-      eds.map((e) => {
-        const isFocused =
-          selectedNodeId !== null &&
-          (e.source === selectedNodeId || e.target === selectedNodeId);
-        const isDimmed = selectedNodeId !== null && !isFocused;
-
-        return {
-          ...e,
-          data: {
-            ...e.data,
-            isFocused,
-            isDimmed,
-            showAllLabels,
-          },
-        };
-      })
-    );
-  }, [selectedNodeId, linkSourceNodeId, showAllLabels, edges, setNodes, setEdges]);
+  const focusedEdgeIds = useMemo(() => {
+    const set = new Set<string>();
+    if (!selectedNodeId) return set;
+    for (const e of edges) {
+      if (e.source === selectedNodeId || e.target === selectedNodeId) {
+        set.add(e.id);
+      }
+    }
+    return set;
+  }, [selectedNodeId, edges]);
 
   const onConnect = useCallback(
     (connection: Connection) => {
@@ -1055,7 +1044,16 @@ function EntityGraphInner({ campaignId }: EntityGraphProps) {
   }
 
   return (
-    <div className="relative flex h-full w-full overflow-hidden bg-[#0c0c0e]">
+    <GraphFocusContext.Provider
+      value={{
+        selectedNodeId,
+        neighborNodeIds,
+        focusedEdgeIds,
+        showAllLabels,
+        linkSourceNodeId,
+      }}
+    >
+      <div className="relative flex h-full w-full overflow-hidden bg-[#0c0c0e]">
       {/* Sidebar Non Collegate */}
       <div
         className={cn(
@@ -1793,6 +1791,7 @@ function EntityGraphInner({ campaignId }: EntityGraphProps) {
         </DialogContent>
       </Dialog>
     </div>
+    </GraphFocusContext.Provider>
   );
 }
 
