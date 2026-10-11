@@ -27,8 +27,8 @@ export function publishFightProjection(state: FightProjectionState): void {
   }
 }
 
-export function readFightProjection(campaignId: string): FightProjectionState | null {
-  if (typeof window === "undefined") return null;
+export function readFightProjection(campaignId?: string | null): FightProjectionState | null {
+  if (typeof window === "undefined" || !campaignId) return null;
   try {
     const raw = localStorage.getItem(`${STORAGE_PREFIX}${campaignId}`);
     if (!raw) return null;
@@ -38,7 +38,7 @@ export function readFightProjection(campaignId: string): FightProjectionState | 
   }
 }
 
-export function useFightProjectionSync(campaignId: string): FightProjectionState | null {
+export function useFightProjectionSync(campaignId?: string | null): FightProjectionState | null {
   const [state, setState] = useState<FightProjectionState | null>(() => readFightProjection(campaignId));
 
   useEffect(() => {

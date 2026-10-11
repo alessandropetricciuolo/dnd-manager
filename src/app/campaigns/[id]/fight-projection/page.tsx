@@ -1,6 +1,7 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import Image from "next/image";
 import { Maximize2, Minimize2, Shield, Sparkles, Swords, Timer, User } from "lucide-react";
 import { useFightProjectionSync } from "@/lib/fight-mode/broadcast";
@@ -32,13 +33,9 @@ const CONDITION_ICONS: Record<string, string> = {
   trattenuto: "⛓️",
 };
 
-export default function FightProjectionPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const resolvedParams = use(params);
-  const campaignId = resolvedParams.id;
+export default function FightProjectionPage() {
+  const routeParams = useParams<{ id: string }>();
+  const campaignId = (routeParams?.id as string) || "";
   const state = useFightProjectionSync(campaignId);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
