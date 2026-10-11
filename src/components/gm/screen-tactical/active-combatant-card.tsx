@@ -18,11 +18,10 @@ import {
 import type { InitiativeEntry } from "@/components/gm/initiative-tracker";
 import { SpellSlotsCell } from "@/components/gm/spell-slots-cell";
 import { ConditionsCell } from "@/components/gm/conditions-cell";
-import { getDefaultPcWeapons, extractSpellStats } from "@/lib/fight-mode/stats-helper";
+import { getDefaultPcWeapons, extractSpellStats, isCompleteMonsterStatblock } from "@/lib/fight-mode/stats-helper";
 import { parseDenseStatblock } from "@/lib/manuals/dense-statblock-parser";
 import { FiveeStatblockView } from "@/components/gm/screen-grid/renderers/fivee-statblock-view";
-import { getEntity } from "@/app/campaigns/wiki-actions";
-import { getWikiContentBody } from "@/lib/wiki/content";
+import { resolveMonsterFullStatblockAction } from "@/lib/actions/wiki-bestiary-search-actions";
 import type { CombatConditionId } from "@/lib/combat-conditions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +41,7 @@ type ActiveCombatantCardProps = {
   onOpenWikiStatblock?: (entityId?: string, name?: string) => void;
   onUpdateNote?: (id: string, note: string) => void;
   onUpdateConditions?: (id: string, conditions: CombatConditionId[]) => void;
+  onEnrichMonster?: (id: string, fullStatblock: string) => void;
 };
 
 const STAT_LABELS: Record<string, string> = {
@@ -52,6 +52,8 @@ const STAT_LABELS: Record<string, string> = {
   sag: "SAG",
   car: "CAR",
 };
+
+const MONSTER_STATBLOCK_CACHE = new Map<string, string>();
 
 export function ActiveCombatantCard({
   entry,
@@ -66,6 +68,7 @@ export function ActiveCombatantCard({
   onToggleDeathSaveFail,
   onUpdateNote,
   onUpdateConditions,
+  onEnrichMonster,
 }: ActiveCombatantCardProps) {
   // Input stato per PF
   const [editingExactHp, setEditingExactHp] = useState(false);
@@ -74,30 +77,72 @@ export function ActiveCombatantCard({
 
   // Cache del body markdown in memoria
   const [cachedBody, setCachedBody] = useState<string | null>(null);
-  const fetchedEntityIdRef = useRef<string | null>(null);
+  const [isLoadingStatblock, setIsLoadingStatblock] = useState(false);
+  const fetchedKeyRef = useRef<string | null>(null);
 
-  // Caricamento immediato markdown da wiki se mancante nell'entry
+  // Caricamento immediato markdown completo da cache in memoria o manuali
   useEffect(() => {
-    if (!entry) return;
-    if (entry.contentBody) {
-      setCachedBody(entry.contentBody);
+    if (!entry) {
+      setCachedBody(null);
+      setIsLoadingStatblock(false);
       return;
     }
-    if (entry.entityId && fetchedEntityIdRef.current !== entry.entityId) {
-      fetchedEntityIdRef.current = entry.entityId;
+
+    const isMonster = entry.type === "monster" || entry.type === "custom";
+    const cleanName = entry.name.replace(/\s+\d+$/, "").trim();
+    const cacheKey = `${campaignId}:${cleanName.toLowerCase()}`;
+
+    // 1. Se entry ha già un blocco completo con caratteristiche e azioni, usalo
+    if (entry.contentBody && isCompleteMonsterStatblock(entry.contentBody)) {
+      setCachedBody(entry.contentBody);
+      MONSTER_STATBLOCK_CACHE.set(cacheKey, entry.contentBody);
+      setIsLoadingStatblock(false);
+      return;
+    }
+
+    // 2. Se è in cache in memoria, usalo all'istante
+    const inCache = MONSTER_STATBLOCK_CACHE.get(cacheKey);
+    if (inCache) {
+      setCachedBody(inCache);
+      if (entry.contentBody !== inCache) {
+        entry.contentBody = inCache;
+        onEnrichMonster?.(entry.id, inCache);
+      }
+      setIsLoadingStatblock(false);
+      return;
+    }
+
+    // 3. Risolvi da DB / Manuali Bestiario se è mostro o ha entityId
+    if (isMonster || entry.entityId) {
+      if (fetchedKeyRef.current === cacheKey) return;
+      fetchedKeyRef.current = cacheKey;
+      setIsLoadingStatblock(true);
+
       void (async () => {
         try {
-          const res = await getEntity(entry.entityId!, campaignId);
-          if (res) {
-            const body = getWikiContentBody(res.content);
-            setCachedBody(body);
+          const res = await resolveMonsterFullStatblockAction(campaignId, cleanName, entry.entityId);
+          if (res.success && res.text) {
+            MONSTER_STATBLOCK_CACHE.set(cacheKey, res.text);
+            setCachedBody(res.text);
+            entry.contentBody = res.text;
+            onEnrichMonster?.(entry.id, res.text);
+          } else if (entry.contentBody) {
+            setCachedBody(entry.contentBody);
           }
-        } catch {
-          // ignora errori silenziosamente
+        } catch (err) {
+          console.warn("[ActiveCombatantCard] Errore risoluzione statblock:", err);
+          if (entry.contentBody) {
+            setCachedBody(entry.contentBody);
+          }
+        } finally {
+          setIsLoadingStatblock(false);
         }
       })();
+    } else {
+      setCachedBody(entry.contentBody || null);
+      setIsLoadingStatblock(false);
     }
-  }, [entry, campaignId]);
+  }, [entry, campaignId, onEnrichMonster]);
 
   const rawMarkdown = entry?.contentBody || cachedBody || "";
 
@@ -465,10 +510,23 @@ export function ActiveCombatantCard({
                 <BookOpen className="h-4 w-4 text-amber-400" />
                 <span>Statblock Creatura (D&amp;D 5e)</span>
               </div>
-              <span className="text-[10px] font-mono text-zinc-500">Istantaneo · Zero Attese</span>
+              <div className="flex items-center gap-2">
+                {isLoadingStatblock ? (
+                  <span className="flex items-center gap-1 font-mono text-[10px] text-amber-400 animate-pulse">
+                    <Sparkles className="h-3 w-3 animate-spin" /> Caricamento manuale...
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-mono text-emerald-400/90">Ufficiale 5e · Pronto</span>
+                )}
+              </div>
             </div>
 
-            {parsedStatblock ? (
+            {isLoadingStatblock && !parsedStatblock ? (
+              <div className="flex flex-col items-center justify-center p-8 text-center text-xs text-amber-300 font-cinzel">
+                <Sparkles className="h-6 w-6 animate-spin text-amber-400 mb-2" />
+                <span>Caricamento Statblock dal Bestiario Ufficiale...</span>
+              </div>
+            ) : parsedStatblock ? (
               <FiveeStatblockView data={parsedStatblock} />
             ) : (
               <div className="p-4 text-center text-xs text-parchment-400 font-serif">

@@ -67,8 +67,21 @@ import { formatTimerMmSs } from "@/lib/torneo/match-timer";
 import { TacticalInitiativeCards } from "./screen-tactical/tactical-initiative-cards";
 import { publishFightProjection } from "@/lib/fight-mode/broadcast";
 import type { SavingThrowsMap, CombatReaction } from "@/lib/fight-mode/types";
-import { estimatePcSaves, parseMonsterStatsFromMarkdown, DEFAULT_OPPORTUNITY_ATTACK } from "@/lib/fight-mode/stats-helper";
+import {
+  estimatePcSaves,
+  parseMonsterStatsFromMarkdown,
+  DEFAULT_OPPORTUNITY_ATTACK,
+  isCompleteMonsterStatblock,
+} from "@/lib/fight-mode/stats-helper";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
+function isDeadMonster(e: InitiativeEntry | undefined | null): boolean {
+  if (!e) return false;
+  if (e.type === "monster" || e.type === "custom") {
+    return Boolean(e.isDead) || (typeof e.hp === "number" && e.hp <= 0);
+  }
+  return Boolean(e.isDead);
+}
 
 export type TorneoMegatimerControls = {
   enabled: boolean;
@@ -339,6 +352,7 @@ export type InitiativeTrackerHandle = InitiativeRemoteCommandHandlers & {
   toggleDeathSaveFail: (entryId: string) => void;
   updateNote: (entryId: string, noteText: string) => void;
   updateConditions: (entryId: string, conditions: CombatConditionId[]) => void;
+  enrichMonster?: (entryId: string, fullStatblock: string) => void;
 };
 
 export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeTrackerProps>(
@@ -644,10 +658,12 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     }> = [];
 
     const total = entries.length;
-    for (let step = 1; step <= Math.min(5, total - 1); step++) {
-      const nextIdx = (currentTurnIndex + step) % total;
+    let stepCount = 0;
+    for (let offset = 1; offset < total && stepCount < 5; offset++) {
+      const nextIdx = (currentTurnIndex + offset) % total;
       const item = entries[nextIdx];
-      if (item) {
+      if (item && !isDeadMonster(item)) {
+        stepCount++;
         upcoming.push({
           id: item.id,
           name: item.name,
@@ -655,7 +671,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
           characterClass: item.characterClass,
           portraitUrl: item.portraitUrl,
           conditions: normalizeCombatConditions(item.conditions),
-          order: step,
+          order: stepCount,
         });
       }
     }
@@ -689,9 +705,19 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       prev.map((e) => (e.usedReaction ? { ...e, usedReaction: false } : e))
     );
     setCurrentTurnIndex((i) => {
-      const next = (i + 1) % entries.length;
-      if (next === 0) {
-        setRoundNumber((r) => r + 1);
+      let next = i;
+      let roundsToAdd = 0;
+      let attempts = 0;
+      do {
+        next = (next + 1) % entries.length;
+        if (next === 0) {
+          roundsToAdd++;
+        }
+        attempts++;
+      } while (isDeadMonster(entries[next]) && attempts < entries.length);
+
+      if (roundsToAdd > 0) {
+        setRoundNumber((r) => r + roundsToAdd);
       }
       return next;
     });
@@ -699,7 +725,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       setTurnElapsedSeconds(turnDurationSeconds);
       setIsTurnTimerRunning(true);
     }
-  }, [entries.length, megatimerActive, turnDurationSeconds]);
+  }, [entries, megatimerActive, turnDurationSeconds]);
 
   const prevTurn = useCallback(() => {
     if (entries.length === 0) return;
@@ -707,9 +733,20 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       prev.map((e) => (e.usedReaction ? { ...e, usedReaction: false } : e))
     );
     setCurrentTurnIndex((i) => {
-      const prev = i === 0 ? entries.length - 1 : i - 1;
-      if (i === 0) {
-        setRoundNumber((r) => Math.max(1, r - 1));
+      let prev = i;
+      let roundsToSub = 0;
+      let attempts = 0;
+      do {
+        const wasZero = prev === 0;
+        prev = prev === 0 ? entries.length - 1 : prev - 1;
+        if (wasZero) {
+          roundsToSub++;
+        }
+        attempts++;
+      } while (isDeadMonster(entries[prev]) && attempts < entries.length);
+
+      if (roundsToSub > 0) {
+        setRoundNumber((r) => Math.max(1, r - roundsToSub));
       }
       return prev;
     });
@@ -717,7 +754,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       setTurnElapsedSeconds(turnDurationSeconds);
       setIsTurnTimerRunning(true);
     }
-  }, [entries.length, megatimerActive, turnDurationSeconds]);
+  }, [entries, megatimerActive, turnDurationSeconds]);
 
   const handleSelectTurn = useCallback(
     (idx: number) => {
@@ -958,6 +995,38 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     );
   }, []);
 
+  const enrichMonster = useCallback((entryId: string, fullStatblock: string) => {
+    if (!fullStatblock?.trim()) return;
+    const parsedStats = parseMonsterStatsFromMarkdown(fullStatblock);
+    setEntries((prev) =>
+      prev.map((e) => {
+        const cleanCurrent = e.name.replace(/\s+\d+$/, "").trim().toLowerCase();
+        const targetEntry = prev.find((x) => x.id === entryId);
+        const targetClean = targetEntry?.name.replace(/\s+\d+$/, "").trim().toLowerCase();
+        const isTarget =
+          e.id === entryId ||
+          (targetClean && cleanCurrent === targetClean && (!e.contentBody || !isCompleteMonsterStatblock(e.contentBody)));
+        if (!isTarget) return e;
+
+        const newSaves =
+          parsedStats?.savingThrows && Object.values(parsedStats.savingThrows).some((v) => v !== 0)
+            ? parsedStats.savingThrows
+            : e.savingThrows;
+        const newReactions =
+          parsedStats?.reactions && parsedStats.reactions.length > 0
+            ? parsedStats.reactions
+            : e.availableReactions;
+
+        return {
+          ...e,
+          contentBody: fullStatblock,
+          savingThrows: newSaves,
+          availableReactions: newReactions,
+        };
+      })
+    );
+  }, []);
+
   useImperativeHandle(
     ref,
     () => ({
@@ -980,6 +1049,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       toggleDeathSaveFail,
       updateNote,
       updateConditions,
+      enrichMonster,
     }),
     [
       adjustDamageDealt,
@@ -987,6 +1057,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       adjustHp,
       applyHpChange,
       buildTrackerState,
+      enrichMonster,
       handleCloseFight,
       nextTurn,
       prevTurn,

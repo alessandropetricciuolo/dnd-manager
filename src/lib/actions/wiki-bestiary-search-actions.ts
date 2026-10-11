@@ -15,6 +15,7 @@ import {
   parseStatblocksFromBestiaryContent,
   resolveStatblockFromRowContents,
 } from "@/lib/manuals/bestiary-statblock-parser";
+import { getWikiContentBody } from "@/lib/wiki/content";
 
 const BESTIARY_ALLOWED_BOOK_KEYS = ["monster_manual", "mordenkainen_multiverse"] as const;
 const BESTIARY_ALLOWED_BOOK_KEY_SET = new Set<string>(BESTIARY_ALLOWED_BOOK_KEYS);
@@ -756,5 +757,139 @@ export async function listBestiaryMonstersByCrAction(
       success: false,
       message: e instanceof Error ? e.message : "Errore nel caricamento lista bestiario.",
     };
+  }
+}
+
+/**
+ * Verifica se un testo markdown contiene uno statblock 5e completo (caratteristiche FOR/DES o tratti/azioni).
+ */
+function isCompleteMonsterStatblock(text: string | null | undefined): boolean {
+  if (!text) return false;
+  const s = text.trim();
+  if (s.length < 40) return false;
+  const hasAbilities =
+    /\|\s*(?:FOR|STR)\s*\|/i.test(s) ||
+    /\b(?:FOR|STR)\b\s*[:\s]?\s*\d+/i.test(s) ||
+    /\b(?:FOR|STR)\b[\s\S]{0,120}\b(?:DES|DEX)\b/i.test(s);
+  const hasActionsOrTraits =
+    /(?:###?\s*(?:Azioni|Actions|Reazioni|Reactions|Tratti|Traits)|Multiattacco|Multiattack|\*\*\*.*?\*\*\*)/i.test(s);
+  return Boolean(hasAbilities || hasActionsOrTraits);
+}
+
+/**
+ * Risolve lo statblock D&D 5e completo per un mostro.
+ * Prima verifica wiki_entities (attributes.statblock o content.body), poi interroga i manuali ufficiali (Manuale dei Mostri, Mordenkainen).
+ */
+export async function resolveMonsterFullStatblockAction(
+  campaignId: string,
+  monsterName: string,
+  entityId?: string
+): Promise<{ success: boolean; text: string | null; message?: string }> {
+  const safeCampaignId = String(campaignId ?? "").trim();
+  const cleanName = monsterName.replace(/\s+\d+$/, "").trim();
+  if (!cleanName) return { success: false, text: null, message: "Nome mostro mancante." };
+
+  try {
+    const supabaseUser = await createSupabaseServerClient();
+
+    // 1. Controlla la voce wiki se presente e se contiene già uno statblock completo
+    if (entityId) {
+      const { data: entity } = await supabaseUser
+        .from("wiki_entities")
+        .select("id, name, content, attributes")
+        .eq("id", entityId)
+        .maybeSingle();
+
+      if (entity) {
+        const attrs = (entity.attributes ?? {}) as Record<string, unknown>;
+        const statblock = typeof attrs.statblock === "string" ? attrs.statblock.trim() : "";
+        if (statblock && isCompleteMonsterStatblock(statblock)) {
+          const hasHeading = /^#{1,3}\s+/m.test(statblock);
+          const full = hasHeading ? statblock : `# ${entity.name}\n\n${statblock}`;
+          return { success: true, text: full };
+        }
+
+        const body = getWikiContentBody(entity.content);
+        if (body && isCompleteMonsterStatblock(body)) {
+          const hasHeading = /^#{1,3}\s+/m.test(body);
+          const full = hasHeading ? body : `# ${entity.name}\n\n${body}`;
+          return { success: true, text: full };
+        }
+      }
+    }
+
+    // 2. Se non ha uno statblock completo nei dati wiki, cerca nei manuali bestiario ufficiali
+    const searchRes = await searchBestiaryChunksAction(safeCampaignId, cleanName);
+    if (searchRes.success && searchRes.hits.length > 0) {
+      const exactHit =
+        searchRes.hits.find(
+          (h) =>
+            h.section_heading?.toLowerCase() === cleanName.toLowerCase() ||
+            h.chapter?.toLowerCase() === cleanName.toLowerCase()
+        ) ?? searchRes.hits[0];
+
+      const chunkRes = await fetchExpandedBestiaryChunkAction(safeCampaignId, exactHit.id);
+      if (chunkRes.success && chunkRes.text && isCompleteMonsterStatblock(chunkRes.text)) {
+        return { success: true, text: chunkRes.text };
+      }
+      if (chunkRes.success && chunkRes.text) {
+        return { success: true, text: chunkRes.text };
+      }
+    }
+
+    // 3. Fallback: Ricerca diretta senza filtri restrittivi in manuals_knowledge
+    try {
+      const admin = createSupabaseAdminClient();
+      const safeName = escapeLikePattern(cleanName);
+      const { data: directRows } = await admin
+        .from("manuals_knowledge")
+        .select("id, content, metadata")
+        .or(`content.ilike.%## ${safeName}%,content.ilike.%# ${safeName}%,metadata->>section_heading.ilike.${cleanName}`)
+        .limit(6);
+
+      const list = (directRows ?? []) as Row[];
+      if (list.length > 0) {
+        for (const row of list) {
+          const text = typeof row.content === "string" ? row.content : "";
+          if (text && isCompleteMonsterStatblock(text)) {
+            return { success: true, text: sanitizeBestiaryStatblock(text) };
+          }
+        }
+        const firstText = typeof list[0].content === "string" ? list[0].content : "";
+        if (firstText) {
+          return { success: true, text: sanitizeBestiaryStatblock(firstText) };
+        }
+      }
+    } catch (directErr) {
+      console.warn("[resolveMonsterFullStatblockAction] direct fallback error", directErr);
+    }
+
+    // 4. Fallback wiki: se entityId esiste, restituisci comunque il markdown base
+    if (entityId) {
+      const { data: entity } = await supabaseUser
+        .from("wiki_entities")
+        .select("name, content, attributes")
+        .eq("id", entityId)
+        .maybeSingle();
+
+      if (entity) {
+        const attrs = (entity.attributes ?? {}) as Record<string, unknown>;
+        const combat = (attrs.combat_stats ?? {}) as Record<string, unknown>;
+        const statblock = typeof attrs.statblock === "string" ? attrs.statblock.trim() : "";
+        const body = getWikiContentBody(entity.content);
+        const lines: string[] = [`# ${entity.name}`];
+        if (combat.ac) lines.push(`**Classe Armatura** ${combat.ac}`);
+        if (combat.hp) lines.push(`**Punti Ferita** ${combat.hp}`);
+        if (combat.cr) lines.push(`**Sfida** ${combat.cr}`);
+        if (statblock) lines.push("", statblock);
+        else if (body) lines.push("", body);
+        return { success: true, text: lines.join("\n") };
+      }
+    }
+
+    return { success: false, text: null, message: "Statblock non trovato nei manuali." };
+  } catch (err) {
+    console.error("[resolveMonsterFullStatblockAction]", err);
+    return { success: false, text: null, message: "Errore durante la ricerca dello statblock." };
   }
 }

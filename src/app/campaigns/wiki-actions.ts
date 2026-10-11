@@ -1105,12 +1105,13 @@ export async function getMonstersForInitiative(
     }
 
     const list = (rows ?? []).map((r: { id: string; name: string; attributes: unknown; is_core?: boolean; global_status?: string; image_url?: string | null; content?: unknown }) => {
-      const attrs = (r.attributes as { combat_stats?: { hp?: string; ac?: string } } | null) ?? {};
+      const attrs = (r.attributes as { statblock?: string; combat_stats?: { hp?: string; ac?: string } } | null) ?? {};
       const hpStr = attrs.combat_stats?.hp;
       const acStr = attrs.combat_stats?.ac;
       const hp = hpStr != null && hpStr !== "" ? parseInt(String(hpStr), 10) : 0;
       const ac = acStr != null && acStr !== "" ? parseInt(String(acStr), 10) : 0;
-      const contentBody = getWikiContentBody(r.content);
+      const statblock = typeof attrs.statblock === "string" ? attrs.statblock.trim() : "";
+      const contentBody = statblock || getWikiContentBody(r.content);
       return {
         id: r.id,
         name: r.name,

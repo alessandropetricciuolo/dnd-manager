@@ -7,6 +7,22 @@ export const DEFAULT_OPPORTUNITY_ATTACK: CombatReaction = {
     "Puoi effettuare un attacco di opportunità in mischia quando una creatura ostile esce dalla tua portata.",
 };
 
+/**
+ * Verifica se un testo markdown contiene uno statblock 5e completo (caratteristiche FOR/DES o tratti/azioni).
+ */
+export function isCompleteMonsterStatblock(text: string | null | undefined): boolean {
+  if (!text) return false;
+  const s = text.trim();
+  if (s.length < 40) return false;
+  const hasAbilities =
+    /\|\s*(?:FOR|STR)\s*\|/i.test(s) ||
+    /\b(?:FOR|STR)\b\s*[:\s]?\s*\d+/i.test(s) ||
+    /\b(?:FOR|STR)\b[\s\S]{0,120}\b(?:DES|DEX)\b/i.test(s);
+  const hasActionsOrTraits =
+    /(?:###?\s*(?:Azioni|Actions|Reazioni|Reactions|Tratti|Traits)|Multiattacco|Multiattack|\*\*\*.*?\*\*\*)/i.test(s);
+  return Boolean(hasAbilities || hasActionsOrTraits);
+}
+
 const CLASS_SAVING_THROWS: Record<string, Array<keyof SavingThrowsMap>> = {
   barbaro: ["for", "cos"],
   bardo: ["des", "car"],
