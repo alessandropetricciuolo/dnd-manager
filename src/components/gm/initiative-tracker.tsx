@@ -866,6 +866,22 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     window.open(url, "_blank", "width=1280,height=720,menubar=no,toolbar=no");
   }, [campaignId]);
 
+  const resetTracker = useCallback(() => {
+    if (entries.length > 0) {
+      setLastResetState({ ...buildTrackerState(), at: Date.now() });
+    }
+    setEntries([]);
+    setCurrentTurnIndex(0);
+    setRoundNumber(1);
+    setTurnElapsedSeconds(0);
+    setIsTurnTimerRunning(false);
+    try {
+      localStorage.removeItem(storageKey);
+    } catch {
+      // ignore
+    }
+  }, [buildTrackerState, storageKey, entries.length]);
+
   const handleCloseFight = useCallback(async () => {
     if (entries.length === 0) {
       toast.error("Nessun combattimento attivo da chiudere.");
@@ -892,7 +908,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     }
 
     resetTracker();
-  }, [entries, campaignType, onBankExp]);
+  }, [entries, campaignType, onBankExp, resetTracker]);
 
   const updateConditions = useCallback((entryId: string, conditions: CombatConditionId[]) => {
     setEntries((prev) =>
@@ -945,22 +961,6 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       updateNote,
     ]
   );
-
-  const resetTracker = useCallback(() => {
-    if (entries.length > 0) {
-      setLastResetState({ ...buildTrackerState(), at: Date.now() });
-    }
-    setEntries([]);
-    setCurrentTurnIndex(0);
-    setRoundNumber(1);
-    setTurnElapsedSeconds(0);
-    setIsTurnTimerRunning(false);
-    try {
-      localStorage.removeItem(storageKey);
-    } catch {
-      // ignore
-    }
-  }, [buildTrackerState, storageKey, entries.length]);
 
   const undoReset = useCallback(() => {
     if (!lastResetState) return;

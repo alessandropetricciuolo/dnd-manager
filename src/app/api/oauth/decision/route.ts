@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  const formData = await request.formData();
+  const formData = (await request.formData()) as unknown as { get: (name: string) => unknown };
   const rawAuthorizationId = formData.get("authorization_id");
   const authorizationId = typeof rawAuthorizationId === "string" ? rawAuthorizationId.trim() : "";
   const decision = formData.get("decision");

@@ -13,7 +13,11 @@ export async function POST(
     const campaignId = context.params.campaignId;
     const formData = await request.formData();
     const supabase = await createSupabaseServerClient();
-    const result = await createExplorationMapFromFormData(supabase, campaignId, formData);
+    const result = await createExplorationMapFromFormData(
+      supabase,
+      campaignId,
+      formData as unknown as Parameters<typeof createExplorationMapFromFormData>[2]
+    );
     if (result.success) {
       revalidatePath(`/campaigns/${campaignId}`);
     }

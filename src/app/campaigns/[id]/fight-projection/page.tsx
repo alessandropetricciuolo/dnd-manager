@@ -35,10 +35,10 @@ const CONDITION_ICONS: Record<string, string> = {
 export default function FightProjectionPage({
   params,
 }: {
-  params: Promise<{ campaignId: string }>;
+  params: Promise<{ id: string }>;
 }) {
   const resolvedParams = use(params);
-  const campaignId = resolvedParams.campaignId;
+  const campaignId = resolvedParams.id;
   const state = useFightProjectionSync(campaignId);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
