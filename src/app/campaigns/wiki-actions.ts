@@ -1058,7 +1058,19 @@ export async function getWikiReaderDetail(
 export async function getMonstersForInitiative(
   campaignId: string
 ): Promise<
-  | { success: true; data: { id: string; name: string; hp: number; is_core?: boolean; global_status?: "alive" | "dead" }[] }
+  | {
+      success: true;
+      data: {
+        id: string;
+        name: string;
+        hp: number;
+        armorClass?: number;
+        imageUrl?: string | null;
+        contentBody?: string;
+        is_core?: boolean;
+        global_status?: "alive" | "dead";
+      }[];
+    }
   | { success: false; error: string }
 > {
   try {
@@ -1079,7 +1091,7 @@ export async function getMonstersForInitiative(
 
     let monsterQuery = supabase
       .from("wiki_entities")
-      .select("id, name, attributes, is_core, global_status")
+      .select("id, name, attributes, is_core, global_status, image_url, content")
       .eq("campaign_id", campaignId)
       .eq("is_campaign_document", false)
       .eq("type", "monster")
@@ -1092,14 +1104,20 @@ export async function getMonstersForInitiative(
       return { success: false, error: error.message ?? "Errore nel caricamento." };
     }
 
-    const list = (rows ?? []).map((r: { id: string; name: string; attributes: unknown; is_core?: boolean; global_status?: string }) => {
-      const attrs = (r.attributes as { combat_stats?: { hp?: string } } | null) ?? {};
+    const list = (rows ?? []).map((r: { id: string; name: string; attributes: unknown; is_core?: boolean; global_status?: string; image_url?: string | null; content?: unknown }) => {
+      const attrs = (r.attributes as { combat_stats?: { hp?: string; ac?: string } } | null) ?? {};
       const hpStr = attrs.combat_stats?.hp;
+      const acStr = attrs.combat_stats?.ac;
       const hp = hpStr != null && hpStr !== "" ? parseInt(String(hpStr), 10) : 0;
+      const ac = acStr != null && acStr !== "" ? parseInt(String(acStr), 10) : 0;
+      const contentBody = getWikiContentBody(r.content);
       return {
         id: r.id,
         name: r.name,
         hp: Number.isNaN(hp) ? 0 : hp,
+        armorClass: Number.isNaN(ac) ? 0 : ac,
+        imageUrl: r.image_url ?? null,
+        contentBody,
         ...(r.is_core != null && { is_core: r.is_core }),
         ...(r.global_status === "alive" || r.global_status === "dead" ? { global_status: r.global_status as "alive" | "dead" } : {}),
       };

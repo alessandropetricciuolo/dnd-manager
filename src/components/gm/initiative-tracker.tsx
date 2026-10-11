@@ -42,6 +42,10 @@ import {
   Pause,
   Timer,
   BookOpen,
+  Monitor,
+  Zap,
+  CheckCircle2,
+  Info,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -61,6 +65,10 @@ import { SpellSlotsCell } from "@/components/gm/spell-slots-cell";
 import type { Json } from "@/types/database.types";
 import { formatTimerMmSs } from "@/lib/torneo/match-timer";
 import { TacticalInitiativeCards } from "./screen-tactical/tactical-initiative-cards";
+import { publishFightProjection } from "@/lib/fight-mode/broadcast";
+import type { SavingThrowsMap, CombatReaction } from "@/lib/fight-mode/types";
+import { estimatePcSaves, parseMonsterStatsFromMarkdown, DEFAULT_OPPORTUNITY_ATTACK } from "@/lib/fight-mode/stats-helper";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export type TorneoMegatimerControls = {
   enabled: boolean;
@@ -105,6 +113,16 @@ export type InitiativeEntry = {
   /** Slot incantesimo in combattimento (caster). */
   spellSlots?: CombatSpellSlots;
   conditions?: CombatConditionId[];
+  /** FIGHT MODE: tracciamento reazione usata in questo round */
+  usedReaction?: boolean;
+  /** FIGHT MODE: catalogo reazioni note/disponibili (es. da statblock o Attacco di Opportunità) */
+  availableReactions?: CombatReaction[];
+  /** FIGHT MODE: tiri salvezza D&D 5e (FOR, DES, COS, INT, SAG, CAR) */
+  savingThrows?: SavingThrowsMap;
+  /** FIGHT MODE: tiri salvezza contro la morte per PG a 0 PF */
+  deathSaves?: { success: number; fail: number };
+  /** FIGHT MODE: annotazione rapida inline */
+  noteText?: string;
 };
 
 export type InitiativeTrackerState = {
@@ -134,6 +152,22 @@ function normalizeInitiativeEntry(entry: InitiativeEntry): InitiativeEntry {
     conditions: normalizeCombatConditions(entry.conditions),
     damageDealt: Math.max(0, Math.trunc(entry.damageDealt ?? 0)),
     damageTaken: Math.max(0, Math.trunc(entry.damageTaken ?? 0)),
+    usedReaction: Boolean(entry.usedReaction),
+    availableReactions: Array.isArray(entry.availableReactions)
+      ? entry.availableReactions
+      : [{ ...DEFAULT_OPPORTUNITY_ATTACK }],
+    savingThrows: entry.savingThrows
+      ? { ...entry.savingThrows }
+      : entry.type === "pc"
+      ? estimatePcSaves(entry.characterClass)
+      : { for: 0, des: 0, cos: 0, int: 0, sag: 0, car: 0 },
+    deathSaves: entry.deathSaves
+      ? {
+          success: Math.min(3, Math.max(0, Math.trunc(entry.deathSaves.success ?? 0))),
+          fail: Math.min(3, Math.max(0, Math.trunc(entry.deathSaves.fail ?? 0))),
+        }
+      : { success: 0, fail: 0 },
+    noteText: typeof entry.noteText === "string" ? entry.noteText : "",
     ...(spellSlots ? { spellSlots } : { spellSlots: undefined }),
   };
 }
@@ -175,6 +209,9 @@ export function initiativeStateSyncSignature(state: InitiativeTrackerState): str
       damageDealt: e.damageDealt ?? 0,
       damageTaken: e.damageTaken ?? 0,
       isDead: e.isDead,
+      usedReaction: e.usedReaction ? 1 : 0,
+      deathSaves: e.deathSaves ? `${e.deathSaves.success}/${e.deathSaves.fail}` : "0/0",
+      noteText: e.noteText ?? "",
       spellSlots: e.spellSlots?.remaining,
       conditions: normalizeCombatConditions(e.conditions),
     })),
@@ -211,6 +248,10 @@ function areInitiativeEntriesEqual(a: InitiativeEntry[], b: InitiativeEntry[]) {
       left.gs !== right.gs ||
       left.exp !== right.exp ||
       left.isDead !== right.isDead ||
+      left.usedReaction !== right.usedReaction ||
+      (left.noteText ?? "") !== (right.noteText ?? "") ||
+      left.deathSaves?.success !== right.deathSaves?.success ||
+      left.deathSaves?.fail !== right.deathSaves?.fail ||
       (left.damageDealt ?? 0) !== (right.damageDealt ?? 0) ||
       (left.damageTaken ?? 0) !== (right.damageTaken ?? 0) ||
       left.teamId !== right.teamId ||
@@ -233,6 +274,9 @@ type MonsterForInitiative = {
   id: string;
   name: string;
   hp: number;
+  armorClass?: number;
+  imageUrl?: string | null;
+  contentBody?: string;
   is_core?: boolean;
   global_status?: "alive" | "dead";
   xp_value?: number;
@@ -271,10 +315,27 @@ type InitiativeTrackerProps = {
   torneoMegatimer?: TorneoMegatimerControls | null;
   /** Apri lo statblock mostro come pannello (GM Screen griglia). */
   onOpenMonsterStat?: (entry: { id: string; name: string; entityId?: string }) => void;
+  /** FIGHT MODE: accredito automatico EXP al click di 'Chiudi Fight' (campagne long). */
+  onBankExp?: (exp: number) => void | Promise<void>;
+  /** FIGHT MODE: notifica al parent del combattente attivo per la card spotlight */
+  onActiveCombatantChange?: (entry: InitiativeEntry | null) => void;
+  /** FIGHT MODE: display di default ('table' o 'tactical') */
+  defaultDisplay?: "tactical" | "table";
 };
 
 export type InitiativeTrackerHandle = InitiativeRemoteCommandHandlers & {
   getState: () => InitiativeTrackerState;
+  toggleReaction: (entryId: string) => void;
+  closeFight: () => void;
+  updateHp: (entryId: string, hp: number) => void;
+  adjustHp: (entryId: string, delta: number) => void;
+  spendSlot: (entryId: string, level: number) => void;
+  restoreSlot: (entryId: string, level: number) => void;
+  resetSlots: (entryId: string) => void;
+  toggleDeathSaveSuccess: (entryId: string) => void;
+  toggleDeathSaveFail: (entryId: string) => void;
+  updateNote: (entryId: string, noteText: string) => void;
+  updateConditions: (entryId: string, conditions: CombatConditionId[]) => void;
 };
 
 export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeTrackerProps>(
@@ -292,6 +353,9 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       torneoScoreboard = null,
       torneoMegatimer = null,
       onOpenMonsterStat,
+      onBankExp,
+      onActiveCombatantChange,
+      defaultDisplay = "tactical",
     },
     ref
   ) {
@@ -301,7 +365,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
   const isControlled = typeof onChange === "function" && value != null;
 
   const [entries, setEntries] = useState<InitiativeEntry[]>([]);
-  const [trackerDisplay, setTrackerDisplay] = useState<"tactical" | "table">("tactical");
+  const [trackerDisplay, setTrackerDisplay] = useState<"tactical" | "table">(defaultDisplay);
   const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
   const [roundNumber, setRoundNumber] = useState(1);
   const [turnElapsedSeconds, setTurnElapsedSeconds] = useState(0);
@@ -515,8 +579,84 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     setTurnElapsedSeconds(0);
   }, []);
 
+  const [fastDmgInputs, setFastDmgInputs] = useState<Record<string, string>>({});
+
+  // Notifica combattente attivo alla plancia tattica
+  useEffect(() => {
+    const active = entries[currentTurnIndex] ?? null;
+    onActiveCombatantChange?.(active);
+  }, [entries, currentTurnIndex, onActiveCombatantChange]);
+
+  // Proiezione in tempo reale su secondo monitor via BroadcastChannel
+  useEffect(() => {
+    if (entries.length === 0) {
+      publishFightProjection({
+        campaignId,
+        roundNumber,
+        turnElapsedSeconds,
+        isTurnTimerRunning,
+        activeCombatant: null,
+        upcomingTurns: [],
+        updatedAt: Date.now(),
+      });
+      return;
+    }
+    const active = entries[currentTurnIndex] ?? null;
+    const upcoming: Array<{
+      id: string;
+      name: string;
+      type: "pc" | "monster" | "custom";
+      characterClass?: string | null;
+      portraitUrl?: string | null;
+      conditions: CombatConditionId[];
+      order: number;
+    }> = [];
+
+    const total = entries.length;
+    for (let step = 1; step <= Math.min(5, total - 1); step++) {
+      const nextIdx = (currentTurnIndex + step) % total;
+      const item = entries[nextIdx];
+      if (item) {
+        upcoming.push({
+          id: item.id,
+          name: item.name,
+          type: item.type,
+          characterClass: item.characterClass,
+          portraitUrl: item.portraitUrl,
+          conditions: normalizeCombatConditions(item.conditions),
+          order: step,
+        });
+      }
+    }
+
+    publishFightProjection({
+      campaignId,
+      roundNumber,
+      turnElapsedSeconds,
+      isTurnTimerRunning,
+      activeCombatant: active
+        ? {
+            id: active.id,
+            name: active.name,
+            type: active.type,
+            characterClass: active.characterClass,
+            portraitUrl: active.portraitUrl,
+            conditions: normalizeCombatConditions(active.conditions),
+            noteText: active.noteText,
+            usedReaction: active.usedReaction,
+          }
+        : null,
+      upcomingTurns: upcoming,
+      updatedAt: Date.now(),
+    });
+  }, [campaignId, currentTurnIndex, entries, isTurnTimerRunning, roundNumber, turnElapsedSeconds]);
+
   const nextTurn = useCallback(() => {
     if (entries.length === 0) return;
+    // Auto-reset reazioni ad ogni cambio turno
+    setEntries((prev) =>
+      prev.map((e) => (e.usedReaction ? { ...e, usedReaction: false } : e))
+    );
     setCurrentTurnIndex((i) => {
       const next = (i + 1) % entries.length;
       if (next === 0) {
@@ -532,6 +672,9 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
 
   const prevTurn = useCallback(() => {
     if (entries.length === 0) return;
+    setEntries((prev) =>
+      prev.map((e) => (e.usedReaction ? { ...e, usedReaction: false } : e))
+    );
     setCurrentTurnIndex((i) => {
       const prev = i === 0 ? entries.length - 1 : i - 1;
       if (i === 0) {
@@ -588,6 +731,105 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     );
   }, []);
 
+  const toggleReaction = useCallback((entryId: string) => {
+    setEntries((prev) =>
+      prev.map((e) =>
+        e.id === entryId ? { ...e, usedReaction: !e.usedReaction } : e
+      )
+    );
+  }, []);
+
+  const toggleDeathSaveSuccess = useCallback((entryId: string) => {
+    setEntries((prev) =>
+      prev.map((e) => {
+        if (e.id !== entryId) return e;
+        const cur = e.deathSaves?.success ?? 0;
+        const next = cur >= 3 ? 0 : cur + 1;
+        return {
+          ...e,
+          deathSaves: {
+            success: next,
+            fail: e.deathSaves?.fail ?? 0,
+          },
+        };
+      })
+    );
+  }, []);
+
+  const toggleDeathSaveFail = useCallback((entryId: string) => {
+    setEntries((prev) =>
+      prev.map((e) => {
+        if (e.id !== entryId) return e;
+        const cur = e.deathSaves?.fail ?? 0;
+        const next = cur >= 3 ? 0 : cur + 1;
+        const nextDead = next >= 3;
+        return {
+          ...e,
+          isDead: nextDead ? true : e.isDead,
+          deathSaves: {
+            success: e.deathSaves?.success ?? 0,
+            fail: next,
+          },
+        };
+      })
+    );
+  }, []);
+
+  const updateNote = useCallback((entryId: string, noteText: string) => {
+    setEntries((prev) =>
+      prev.map((e) => (e.id === entryId ? { ...e, noteText } : e))
+    );
+  }, []);
+
+  const applyHpChange = useCallback(
+    async (entryId: string, nextHp: number) => {
+      const entry = entries.find((e) => e.id === entryId);
+      if (!entry) return;
+      const clamped = Math.max(0, Math.min(nextHp, entry.maxHp > 0 ? entry.maxHp : nextHp));
+      setEntries((prev) =>
+        prev.map((e) => {
+          if (e.id !== entryId) return e;
+          const maxHp = e.maxHp > 0 ? e.maxHp : Math.max(e.maxHp, clamped);
+          const nextDead =
+            e.type === "monster" || e.type === "custom" ? clamped === 0 : e.isDead;
+          return { ...e, hp: clamped, maxHp, isDead: nextDead };
+        })
+      );
+      if (isLongCampaign && entry.entityId && entry.isCore) {
+        const res = await setWikiEntityGlobalStatus(
+          entry.entityId,
+          campaignId,
+          clamped === 0 ? "dead" : "alive"
+        );
+        if (res.success) toast.success(res.message);
+      }
+    },
+    [entries, isLongCampaign, campaignId]
+  );
+
+  const adjustHp = useCallback(
+    async (entryId: string, delta: number) => {
+      const entry = entries.find((e) => e.id === entryId);
+      if (!entry) return;
+      await applyHpChange(entryId, entry.hp + delta);
+    },
+    [entries, applyHpChange]
+  );
+
+  const handleFastDmgSubmit = useCallback(
+    async (entry: InitiativeEntry, valStr: string) => {
+      const amount = parseInt(valStr.trim(), 10);
+      if (Number.isNaN(amount) || amount === 0) return;
+      const nextHp = entry.hp - amount;
+      await applyHpChange(entry.id, nextHp);
+      if (amount > 0) {
+        adjustDamageTaken(entry.id, amount);
+      }
+      setFastDmgInputs((prev) => ({ ...prev, [entry.id]: "" }));
+    },
+    [applyHpChange, adjustDamageTaken]
+  );
+
   const spendSpellSlot = useCallback((entryId: string, level: number) => {
     setEntries((prev) =>
       prev.map((e) => {
@@ -618,6 +860,46 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     );
   }, []);
 
+  const openProjectionWindow = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const url = `/campaigns/${campaignId}/fight-projection`;
+    window.open(url, "_blank", "width=1280,height=720,menubar=no,toolbar=no");
+  }, [campaignId]);
+
+  const handleCloseFight = useCallback(async () => {
+    if (entries.length === 0) {
+      toast.error("Nessun combattimento attivo da chiudere.");
+      return;
+    }
+
+    // Calcola l'EXP dei mostri con isDead: true o hp <= 0
+    const deadMonsters = entries.filter(
+      (e) => (e.type === "monster" || e.type === "custom") && (e.isDead || e.hp <= 0)
+    );
+    const totalExp = deadMonsters.reduce((acc, m) => acc + (m.exp ?? 0), 0);
+
+    if (campaignType === "long" && onBankExp) {
+      await onBankExp(totalExp);
+      if (totalExp > 0) {
+        toast.success(`Combattimento chiuso! ${totalExp} EXP bancati per la sessione.`);
+      } else {
+        toast.info("Combattimento chiuso! Nessun mostro sconfitto con valore EXP.");
+      }
+    } else if (totalExp > 0) {
+      toast.success(`Combattimento chiuso! Totale mostri sconfitti: ${totalExp} EXP.`);
+    } else {
+      toast.info("Combattimento chiuso!");
+    }
+
+    resetTracker();
+  }, [entries, campaignType, onBankExp]);
+
+  const updateConditions = useCallback((entryId: string, conditions: CombatConditionId[]) => {
+    setEntries((prev) =>
+      prev.map((e) => (e.id === entryId ? { ...e, conditions } : e))
+    );
+  }, []);
+
   useImperativeHandle(
     ref,
     () => ({
@@ -629,16 +911,38 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       adjustDamage: adjustDamageDealt,
       adjustDamageTaken,
       getState: () => buildTrackerState(),
+      toggleReaction,
+      closeFight: handleCloseFight,
+      updateHp: (id: string, hp: number) => void applyHpChange(id, hp),
+      adjustHp: (id: string, delta: number) => void adjustHp(id, delta),
+      spendSlot: spendSpellSlot,
+      restoreSlot: restoreSpellSlot,
+      resetSlots: resetEntrySpellSlots,
+      toggleDeathSaveSuccess,
+      toggleDeathSaveFail,
+      updateNote,
+      updateConditions,
     }),
     [
       adjustDamageDealt,
       adjustDamageTaken,
+      adjustHp,
+      applyHpChange,
       buildTrackerState,
+      handleCloseFight,
       nextTurn,
       prevTurn,
+      resetEntrySpellSlots,
       resetRoundCounter,
       resetTurnTimer,
+      restoreSpellSlot,
+      spendSpellSlot,
+      toggleDeathSaveFail,
+      toggleDeathSaveSuccess,
+      toggleReaction,
       toggleTurnTimer,
+      updateConditions,
+      updateNote,
     ]
   );
 
@@ -737,6 +1041,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
         class_subclass: spellSlotInput?.class_subclass ?? null,
         level: spellSlotInput?.level ?? 1,
       });
+      const saves = estimatePcSaves(characterClass, spellSlotInput?.level ?? 1);
       setEntries((prev) => [
         ...prev,
         {
@@ -751,6 +1056,12 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
           playerId: characterId,
           portraitUrl: spellSlotInput?.portrait_url ?? null,
           damageDealt: 0,
+          damageTaken: 0,
+          usedReaction: false,
+          availableReactions: [{ ...DEFAULT_OPPORTUNITY_ATTACK }],
+          savingThrows: saves,
+          deathSaves: { success: 0, fail: 0 },
+          noteText: "",
           ...(spellSlots ? { spellSlots } : {}),
           ...(team
             ? { teamId: team.teamId, teamName: team.teamName, teamColor: team.teamColor }
@@ -810,18 +1121,41 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
 
   const addMonsterEntry = useCallback(
     (monster: MonsterForInitiative, count: number) => {
+      const parsedStats = monster.contentBody
+        ? parseMonsterStatsFromMarkdown(monster.contentBody)
+        : null;
+      const monsterSaves: SavingThrowsMap = parsedStats?.savingThrows ?? {
+        for: 0,
+        des: 0,
+        cos: 0,
+        int: 0,
+        sag: 0,
+        car: 0,
+      };
+      const monsterReactions: CombatReaction[] =
+        parsedStats?.reactions && parsedStats.reactions.length > 0
+          ? parsedStats.reactions
+          : [{ ...DEFAULT_OPPORTUNITY_ATTACK }];
+
       const newEntries: InitiativeEntry[] = [];
       for (let i = 0; i < count; i++) {
         newEntries.push({
           id: generateId(),
           name: count > 1 ? `${monster.name} ${i + 1}` : monster.name,
           type: "monster",
-          armorClass: 0,
+          armorClass: monster.armorClass ?? 0,
           hp: monster.hp,
           maxHp: monster.hp,
           initiative: 0,
           isDead: false,
+          portraitUrl: monster.imageUrl ?? null,
           damageDealt: 0,
+          damageTaken: 0,
+          usedReaction: false,
+          availableReactions: monsterReactions,
+          savingThrows: monsterSaves,
+          deathSaves: { success: 0, fail: 0 },
+          noteText: "",
           ...(typeof monster.xp_value === "number" && monster.xp_value > 0
             ? { exp: monster.xp_value }
             : {}),
@@ -849,41 +1183,6 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     }
     setAddMonsterOpen(false);
   }, [selectedMonsterIds, monsterList, addMonsterEntry, monsterQuantity, isLongCampaign]);
-
-  const applyHpChange = useCallback(
-    async (entryId: string, nextHp: number) => {
-      const entry = entries.find((e) => e.id === entryId);
-      if (!entry) return;
-      const clamped = Math.max(0, Math.min(nextHp, entry.maxHp > 0 ? entry.maxHp : nextHp));
-      setEntries((prev) =>
-        prev.map((e) => {
-          if (e.id !== entryId) return e;
-          const maxHp = e.maxHp > 0 ? e.maxHp : Math.max(e.maxHp, clamped);
-          const nextDead =
-            e.type === "monster" || e.type === "custom" ? clamped === 0 : e.isDead;
-          return { ...e, hp: clamped, maxHp, isDead: nextDead };
-        })
-      );
-      if (isLongCampaign && entry.entityId && entry.isCore) {
-        const res = await setWikiEntityGlobalStatus(
-          entry.entityId,
-          campaignId,
-          clamped === 0 ? "dead" : "alive"
-        );
-        if (res.success) toast.success(res.message);
-      }
-    },
-    [entries, isLongCampaign, campaignId]
-  );
-
-  const adjustHp = useCallback(
-    async (entryId: string, delta: number) => {
-      const entry = entries.find((e) => e.id === entryId);
-      if (!entry) return;
-      await applyHpChange(entryId, entry.hp + delta);
-    },
-    [entries, applyHpChange]
-  );
 
   const toggleDead = useCallback(
     async (entryId: string) => {
@@ -946,6 +1245,12 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
         initiative,
         isDead: false,
         damageDealt: 0,
+        damageTaken: 0,
+        usedReaction: false,
+        availableReactions: [{ ...DEFAULT_OPPORTUNITY_ATTACK }],
+        savingThrows: { for: 0, des: 0, cos: 0, int: 0, sag: 0, car: 0 },
+        deathSaves: { success: 0, fail: 0 },
+        noteText: "",
         ...(customGs && { gs: customGs }),
         ...(customExp > 0 && { exp: customExp }),
       },
@@ -984,7 +1289,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
 
   const showSpellSlotsColumn = entries.some((e) => (e.spellSlots?.max.length ?? 0) > 0);
   const tableColSpan =
-    8 + (showTeamColumn ? 1 : 0) + (showSpellSlotsColumn ? 1 : 0);
+    11 + (showTeamColumn ? 1 : 0) + (showSpellSlotsColumn ? 1 : 0);
 
   return (
     <div className="flex h-full w-full flex-col p-3 text-zinc-100">
@@ -1074,6 +1379,28 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
           >
             <Edit3 className="mr-1 h-3 w-3" />
             Manuale
+          </Button>
+          <span className="mx-0.5 h-4 w-px bg-amber-600/30" aria-hidden />
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 border-emerald-500/40 px-2 text-xs text-emerald-300 hover:bg-emerald-500/20"
+            onClick={() => void handleCloseFight()}
+            disabled={entries.length === 0}
+            title="Chiudi scontro e accredita l'esperienza dei mostri sconfitti (campagne Long)"
+          >
+            <CheckCircle2 className="mr-1 h-3 w-3" />
+            Chiudi Fight
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 border-cyan-500/40 px-2 text-xs text-cyan-300 hover:bg-cyan-500/20"
+            onClick={openProjectionWindow}
+            title="Apri finestra di proiezione per il secondo monitor (giocatori)"
+          >
+            <Monitor className="mr-1 h-3 w-3" />
+            Proietta
           </Button>
 
           <div className="ml-auto flex items-center rounded border border-brass-base/30 bg-[#160f0b] p-0.5">
@@ -1270,20 +1597,29 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
               <TableHead className="h-8 px-2 text-xs font-semibold text-amber-400">
                 Classe
               </TableHead>
-              <TableHead className="h-8 px-2 text-xs font-semibold text-amber-400">
+              <TableHead className="h-8 min-w-[130px] px-2 text-xs font-semibold text-amber-400">
                 HP
               </TableHead>
-              <TableHead className="h-8 px-2 text-xs font-semibold text-amber-400">
+              <TableHead className="h-8 w-12 px-2 text-xs font-semibold text-amber-400">
                 CA
               </TableHead>
-              <TableHead className="h-8 px-2 text-xs font-semibold text-amber-400">
+              <TableHead className="h-8 w-12 px-2 text-xs font-semibold text-amber-400">
                 Init
+              </TableHead>
+              <TableHead className="h-8 min-w-[110px] px-2 text-xs font-semibold text-amber-400">
+                TS
+              </TableHead>
+              <TableHead className="h-8 w-24 px-2 text-xs font-semibold text-amber-400">
+                Reazione
               </TableHead>
               <TableHead className="h-8 px-2 text-xs font-semibold text-amber-400">
                 Stati
               </TableHead>
               <TableHead className="h-8 px-2 text-xs font-semibold text-amber-400">
                 Danni
+              </TableHead>
+              <TableHead className="h-8 min-w-[100px] px-2 text-xs font-semibold text-amber-400">
+                Note
               </TableHead>
               {showSpellSlotsColumn ? (
                 <TableHead className="h-8 min-w-[7rem] px-2 text-xs font-semibold text-violet-300">
@@ -1440,6 +1776,67 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
                             +
                           </Button>
                         </div>
+                        <form
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            const val = fastDmgInputs[entry.id] ?? "";
+                            if (val) void handleFastDmgSubmit(entry, val);
+                          }}
+                          className="flex items-center gap-1 mt-0.5"
+                        >
+                          <Input
+                            type="text"
+                            placeholder="±danno"
+                            value={fastDmgInputs[entry.id] ?? ""}
+                            onChange={(e) =>
+                              setFastDmgInputs((prev) => ({ ...prev, [entry.id]: e.target.value }))
+                            }
+                            className="h-6 w-20 bg-zinc-800/90 px-1 py-0 text-center font-mono text-[10px] text-zinc-200 border-zinc-700 placeholder:text-zinc-500"
+                            title="Inserisci danni subiti (es. 12) o cura (es. -5) e premi Invio"
+                          />
+                        </form>
+                        {entry.type === "pc" && entry.hp <= 0 && (
+                          <div className="flex flex-col gap-0.5 rounded bg-zinc-950/80 p-1 border border-red-900/40 text-[10px]">
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="text-emerald-400 font-bold text-[9px]">S:</span>
+                              <div className="flex gap-0.5">
+                                {[1, 2, 3].map((num) => (
+                                  <button
+                                    key={`succ-${num}`}
+                                    type="button"
+                                    onClick={() => toggleDeathSaveSuccess(entry.id)}
+                                    className={cn(
+                                      "h-3 w-3 rounded-full border text-[8px]",
+                                      (entry.deathSaves?.success ?? 0) >= num
+                                        ? "bg-emerald-500 border-emerald-400"
+                                        : "border-zinc-700 hover:border-emerald-500"
+                                    )}
+                                    title={`TS Morte Successo ${num}`}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="text-red-400 font-bold text-[9px]">F:</span>
+                              <div className="flex gap-0.5">
+                                {[1, 2, 3].map((num) => (
+                                  <button
+                                    key={`fail-${num}`}
+                                    type="button"
+                                    onClick={() => toggleDeathSaveFail(entry.id)}
+                                    className={cn(
+                                      "h-3 w-3 rounded-full border text-[8px]",
+                                      (entry.deathSaves?.fail ?? 0) >= num
+                                        ? "bg-red-500 border-red-400"
+                                        : "border-zinc-700 hover:border-red-500"
+                                    )}
+                                    title={`TS Morte Fallimento ${num}`}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
                         {typeof entry.exp === "number" && entry.exp > 0 && (
                           <span className="mt-0.5 text-[10px] font-medium text-amber-300/90">
                             EXP: {entry.exp}
@@ -1527,6 +1924,80 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
                       </button>
                     )}
                   </TableCell>
+                  <TableCell className="px-2 py-1.5 align-middle">
+                    {entry.savingThrows ? (
+                      <div className="grid grid-cols-3 gap-x-1.5 gap-y-0.5 text-[10px] font-mono leading-tight max-w-[120px]">
+                        <span className="truncate text-zinc-400" title={`FOR ${entry.savingThrows.for >= 0 ? `+${entry.savingThrows.for}` : entry.savingThrows.for}`}>
+                          FOR <span className={entry.savingThrows.for > 0 ? "text-amber-300 font-semibold" : "text-zinc-300"}>{entry.savingThrows.for >= 0 ? `+${entry.savingThrows.for}` : entry.savingThrows.for}</span>
+                        </span>
+                        <span className="truncate text-zinc-400" title={`DES ${entry.savingThrows.des >= 0 ? `+${entry.savingThrows.des}` : entry.savingThrows.des}`}>
+                          DES <span className={entry.savingThrows.des > 0 ? "text-amber-300 font-semibold" : "text-zinc-300"}>{entry.savingThrows.des >= 0 ? `+${entry.savingThrows.des}` : entry.savingThrows.des}</span>
+                        </span>
+                        <span className="truncate text-zinc-400" title={`COS ${entry.savingThrows.cos >= 0 ? `+${entry.savingThrows.cos}` : entry.savingThrows.cos}`}>
+                          COS <span className={entry.savingThrows.cos > 0 ? "text-amber-300 font-semibold" : "text-zinc-300"}>{entry.savingThrows.cos >= 0 ? `+${entry.savingThrows.cos}` : entry.savingThrows.cos}</span>
+                        </span>
+                        <span className="truncate text-zinc-400" title={`INT ${entry.savingThrows.int >= 0 ? `+${entry.savingThrows.int}` : entry.savingThrows.int}`}>
+                          INT <span className={entry.savingThrows.int > 0 ? "text-amber-300 font-semibold" : "text-zinc-300"}>{entry.savingThrows.int >= 0 ? `+${entry.savingThrows.int}` : entry.savingThrows.int}</span>
+                        </span>
+                        <span className="truncate text-zinc-400" title={`SAG ${entry.savingThrows.sag >= 0 ? `+${entry.savingThrows.sag}` : entry.savingThrows.sag}`}>
+                          SAG <span className={entry.savingThrows.sag > 0 ? "text-amber-300 font-semibold" : "text-zinc-300"}>{entry.savingThrows.sag >= 0 ? `+${entry.savingThrows.sag}` : entry.savingThrows.sag}</span>
+                        </span>
+                        <span className="truncate text-zinc-400" title={`CAR ${entry.savingThrows.car >= 0 ? `+${entry.savingThrows.car}` : entry.savingThrows.car}`}>
+                          CAR <span className={entry.savingThrows.car > 0 ? "text-amber-300 font-semibold" : "text-zinc-300"}>{entry.savingThrows.car >= 0 ? `+${entry.savingThrows.car}` : entry.savingThrows.car}</span>
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-zinc-600">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="px-2 py-1.5 align-middle">
+                    <div className="flex flex-col gap-1 items-start">
+                      <button
+                        type="button"
+                        onClick={() => toggleReaction(entry.id)}
+                        className={cn(
+                          "flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold font-mono transition-colors",
+                          entry.usedReaction
+                            ? "bg-red-950/70 text-red-400 border border-red-800/60 line-through"
+                            : "bg-emerald-950/70 text-emerald-300 border border-emerald-800/60 hover:bg-emerald-900/80"
+                        )}
+                        title="Clicca per invertire stato reazione (usata / pronta). Si resetta automaticamente al cambio turno."
+                      >
+                        <Zap className="h-3 w-3" />
+                        {entry.usedReaction ? "Usata" : "Pronta"}
+                      </button>
+
+                      {entry.availableReactions && entry.availableReactions.length > 0 && (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              className="flex items-center gap-1 text-[9px] text-zinc-400 hover:text-amber-300 underline underline-offset-2"
+                            >
+                              <Info className="h-2.5 w-2.5" />
+                              <span>{entry.availableReactions.length} {entry.availableReactions.length === 1 ? "reazione" : "reazioni"}</span>
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-64 border-brass-base/40 bg-[#140e0a] p-2.5 text-xs text-parchment-200 shadow-xl">
+                            <div className="space-y-2">
+                              <h4 className="font-cinzel text-xs font-bold text-amber-300 border-b border-brass-base/20 pb-1">
+                                Reazioni di {entry.name}
+                              </h4>
+                              <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                                {entry.availableReactions.map((r, i) => (
+                                  <div key={i} className="rounded bg-[#1d140e] p-1.5 border border-brass-base/10">
+                                    <div className="font-bold text-[11px] text-brass-light">{r.name}</div>
+                                    {r.trigger && <div className="text-[10px] text-amber-400/80 italic">Innesco: {r.trigger}</div>}
+                                    {r.description && <div className="text-[10px] text-zinc-400 mt-0.5">{r.description}</div>}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell className="px-2 py-1.5">
                     <ConditionsCell name={entry.name} value={entry.conditions} onChange={(conditions) => updateEntry(entry.id, { conditions })} />
                   </TableCell>
@@ -1593,6 +2064,16 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
                         </button>
                       ) : null}
                     </div>
+                  </TableCell>
+                  <TableCell className="px-2 py-1.5 align-middle">
+                    <Input
+                      type="text"
+                      placeholder="Nota..."
+                      value={entry.noteText ?? ""}
+                      onChange={(e) => updateNote(entry.id, e.target.value)}
+                      className="h-7 w-28 bg-zinc-800/80 px-1.5 text-[11px] text-zinc-200 border-zinc-700/60 focus:border-amber-500/80 placeholder:text-zinc-600"
+                      title="Nota rapida combattente"
+                    />
                   </TableCell>
                   {showSpellSlotsColumn ? (
                     <TableCell className="px-2 py-1.5 align-top">
