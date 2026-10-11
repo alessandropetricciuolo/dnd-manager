@@ -258,30 +258,47 @@ export function ActiveCombatantCard({
 
           {/* Badge CA, CD Magia e Tasto Reazione */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            {/* Scudo CA Gigante */}
+            {/* Badge CA Harmonizzato */}
             <div className="flex flex-col items-center">
               <span className="text-[10px] font-cinzel font-bold text-brass-light/90 uppercase tracking-wider mb-0.5">
                 CA
               </span>
-              <div className="tactical-ac-shield w-11 h-12 sm:w-12 sm:h-13 flex items-center justify-center font-cinzel text-base sm:text-lg font-black text-white shadow-md">
-                {entry.armorClass}
+              <div
+                className="flex h-11 sm:h-12 min-w-[58px] sm:min-w-[64px] flex-col items-center justify-center rounded-lg border border-amber-600/50 bg-gradient-to-b from-[#2a170a] to-[#140b05] px-2.5 shadow-md"
+                title={`Classe Armatura: ${entry.armorClass}`}
+              >
+                <div className="flex items-center gap-1">
+                  <Shield className="h-3.5 w-3.5 text-amber-400/90 shrink-0" />
+                  <span className="font-cinzel text-base sm:text-lg font-black text-amber-100 leading-none">
+                    {entry.armorClass}
+                  </span>
+                </div>
+                <span className="text-[9px] font-mono text-amber-400/70 leading-tight mt-0.5">
+                  Armatura
+                </span>
               </div>
             </div>
 
-            {/* Badge CD Magia (se presente) */}
+            {/* Badge CD Magia Harmonizzato (se presente) */}
             {spellStats.cd ? (
-              <div className="flex flex-col items-center rounded-lg border border-purple-500/40 bg-purple-950/50 px-2.5 py-1 text-center shadow-md">
-                <span className="text-[9px] font-cinzel font-bold text-purple-300 uppercase tracking-wider">
+              <div className="flex flex-col items-center">
+                <span className="text-[10px] font-cinzel font-bold text-purple-300 uppercase tracking-wider mb-0.5">
                   CD MAGIA
                 </span>
-                <span className="font-mono text-base font-black text-purple-100 leading-tight">
-                  {spellStats.cd}
-                </span>
-                {spellStats.txc ? (
-                  <span className="text-[9px] font-mono text-purple-300/90">
-                    TxC {spellStats.txc}
+                <div
+                  className="flex h-11 sm:h-12 min-w-[58px] sm:min-w-[64px] flex-col items-center justify-center rounded-lg border border-purple-500/50 bg-gradient-to-b from-purple-950/70 to-[#180922] px-2.5 shadow-md"
+                  title={`Difficoltà Tiro Salvezza Incantesimi: ${spellStats.cd}${spellStats.txc ? ` (TxC ${spellStats.txc})` : ""}`}
+                >
+                  <div className="flex items-center gap-1">
+                    <Sparkles className="h-3.5 w-3.5 text-purple-400/90 shrink-0" />
+                    <span className="font-cinzel text-base sm:text-lg font-black text-purple-100 leading-none">
+                      {spellStats.cd}
+                    </span>
+                  </div>
+                  <span className="text-[9px] font-mono text-purple-300 font-semibold leading-tight mt-0.5">
+                    {spellStats.txc ? `TxC ${spellStats.txc}` : "Incanti"}
                   </span>
-                ) : null}
+                </div>
               </div>
             ) : null}
 
@@ -294,7 +311,7 @@ export function ActiveCombatantCard({
                 type="button"
                 onClick={() => onToggleReaction(entry.id)}
                 className={cn(
-                  "flex h-11 sm:h-12 flex-col items-center justify-center rounded-lg border px-2.5 transition-all shadow-md",
+                  "flex h-11 sm:h-12 min-w-[64px] flex-col items-center justify-center rounded-lg border px-2.5 transition-all shadow-md",
                   entry.usedReaction
                     ? "border-amber-600 bg-amber-950/80 text-amber-200 ring-1 ring-amber-500/50"
                     : "border-emerald-600/60 bg-emerald-950/50 text-emerald-300 hover:border-emerald-500 hover:bg-emerald-900/60"
@@ -305,7 +322,7 @@ export function ActiveCombatantCard({
                     : "Reazione PRONTA (clicca per segnarla come usata)"
                 }
               >
-                <Zap className={cn("h-4 w-4", entry.usedReaction ? "text-amber-400 fill-amber-400" : "text-emerald-400")} />
+                <Zap className={cn("h-3.5 w-3.5", entry.usedReaction ? "text-amber-400 fill-amber-400" : "text-emerald-400")} />
                 <span className="text-[9px] font-mono font-bold mt-0.5 uppercase">
                   {entry.usedReaction ? "Spesa" : "Pronta"}
                 </span>

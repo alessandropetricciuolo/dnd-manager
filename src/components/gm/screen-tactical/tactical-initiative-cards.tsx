@@ -432,7 +432,7 @@ export function TacticalInitiativeCards({
                 </div>
 
                 {/* 3. Blocco Destro: Nome Entità, Iniziativa & Stat Block Trigger */}
-                <div className="flex w-36 sm:w-44 shrink-0 flex-col justify-between border-l border-brass-base/20 bg-[#18110c] p-2">
+                <div className="flex w-40 sm:w-48 shrink-0 flex-col justify-between border-l border-brass-base/20 bg-[#18110c] p-2">
                   <div className="min-w-0">
                     <button
                       type="button"
@@ -442,9 +442,9 @@ export function TacticalInitiativeCards({
                     >
                       {entry.name}
                     </button>
-                    <div className="flex items-center justify-between gap-1 text-[10px] text-parchment-400 mt-0.5">
+                    <div className="flex items-center justify-between gap-1 text-[10px] text-parchment-400 mt-1">
                       {editingInitId === entry.id ? (
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1.5">
                           <Input
                             type="number"
                             value={initDraft}
@@ -474,11 +474,11 @@ export function TacticalInitiativeCards({
                                 setEditingInitId(null);
                               }
                             }}
-                            className="h-5 w-14 text-xs font-mono font-bold px-1 py-0 bg-black border-amber-500 text-amber-300 text-center rounded focus:ring-1 focus:ring-amber-400"
+                            className="h-7 w-20 text-sm font-mono font-bold px-2 py-0.5 bg-black border-amber-500 text-amber-300 text-center rounded focus:ring-1 focus:ring-amber-400"
                             autoFocus
                             onFocus={(e) => e.target.select()}
                           />
-                          <span className="text-[9px] font-mono text-amber-400/80">init</span>
+                          <span className="text-[10px] font-mono text-amber-400/80 font-semibold">init</span>
                         </div>
                       ) : (
                         <button
@@ -490,19 +490,19 @@ export function TacticalInitiativeCards({
                             }
                           }}
                           className={cn(
-                            "group/init flex items-center gap-1 rounded border border-amber-600/25 bg-amber-950/25 px-1.5 py-0.5 -ml-0.5 text-left font-mono text-[10px] font-semibold text-amber-300 transition-all",
-                            onSetInitiative && "hover:border-amber-500/60 hover:bg-amber-950/60 hover:text-amber-200 cursor-pointer shadow-sm"
+                            "group/init flex items-center gap-1.5 rounded border border-amber-600/30 bg-amber-950/30 px-2.5 py-1 -ml-0.5 text-left font-mono text-xs font-semibold text-amber-300 transition-all shadow-sm",
+                            onSetInitiative && "hover:border-amber-500/70 hover:bg-amber-950/70 hover:text-amber-200 cursor-pointer"
                           )}
                           title="Clicca per inserire/modificare il valore di iniziativa"
                         >
-                          <span className="font-bold">{entry.initiative}</span>
-                          <span className="text-[9px] text-amber-400/80 font-normal">init</span>
+                          <span className="font-bold text-sm text-amber-200">{entry.initiative}</span>
+                          <span className="text-[10px] text-amber-400/80 font-normal">init</span>
                           {onSetInitiative && (
-                            <Edit3 className="h-2.5 w-2.5 text-amber-400/50 group-hover/init:text-amber-300 transition-colors ml-0.5" />
+                            <Edit3 className="h-3 w-3 text-amber-400/50 group-hover/init:text-amber-300 transition-colors ml-0.5" />
                           )}
                         </button>
                       )}
-                      <span className="truncate max-w-[70px] text-[9px] text-parchment-500 italic">
+                      <span className="truncate max-w-[70px] text-[10px] text-parchment-500 italic">
                         {entry.characterClass || (entry.type === "pc" ? "Eroe" : "Mostro")}
                       </span>
                     </div>
