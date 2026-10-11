@@ -8,6 +8,7 @@ import {
   Skull,
   Swords,
   Trash2,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { COMBAT_CONDITIONS, type CombatConditionId } from "@/lib/combat-conditions";
 import type { InitiativeEntry } from "@/components/gm/initiative-tracker";
@@ -38,6 +44,7 @@ type TacticalInitiativeCardsProps = {
   onOpenMonsterStat?: (entry: { id: string; name: string; entityId?: string }) => void;
   onDeleteEntry?: (id: string) => void;
   onOpenAddModal?: () => void;
+  onToggleReaction?: (id: string) => void;
 };
 
 // Mappatura icone simboliche per le condizioni fantasy
@@ -71,6 +78,7 @@ export function TacticalInitiativeCards({
   onToggleCondition,
   onOpenMonsterStat,
   onDeleteEntry,
+  onToggleReaction,
 }: TacticalInitiativeCardsProps) {
   const [editingHpId, setEditingHpId] = useState<string | null>(null);
   const [hpDraft, setHpDraft] = useState<string>("");
@@ -129,8 +137,9 @@ export function TacticalInitiativeCards({
                   <span className="text-[8px] font-mono tracking-tighter opacity-70">TURNO</span>
                 </button>
 
-                {/* 2. Scheda Vitals (HP, AC, Condizioni, Barra Grafica) */}
-                <div className="flex flex-1 min-w-0 flex-col justify-between p-2 sm:p-2.5">
+                {/* 2. Scheda Vitals (HP, AC, Reazione, TS, Condizioni) */}
+                <div className="flex flex-1 min-w-0 flex-col justify-between p-2 sm:p-2.5 gap-2">
+                  {/* Riga Superiore: HP, Barra, Scudo AC, Tracker Reazione */}
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     {/* Vitals: HP & Barra */}
                     <div className="flex-1 min-w-[120px] max-w-[180px]">
@@ -280,59 +289,144 @@ export function TacticalInitiativeCards({
                       )}
                     </div>
 
-                    {/* Vitals: Condizioni */}
-                    <div className="flex-1 min-w-[90px] flex flex-col justify-start">
-                      <span className="text-[9px] font-cinzel font-bold text-brass-light/80 uppercase tracking-wider mb-1">
-                        Condizioni
+                    {/* Vitals: Tracker Reazione */}
+                    <div className="flex flex-col items-center">
+                      <span className="text-[9px] font-cinzel font-bold text-brass-light/80 uppercase tracking-wider mb-0.5">
+                        REAZIONE
                       </span>
-                      <div className="flex flex-wrap gap-1 items-center">
-                        {entry.conditions && entry.conditions.length > 0 ? (
-                          entry.conditions.map((cond) => {
-                            const meta = CONDITION_ICONS[cond] ?? { icon: "•", color: "text-amber-200" };
-                            return (
-                              <button
-                                key={cond}
-                                type="button"
-                                onClick={() => onToggleCondition(entry.id, cond as CombatConditionId)}
-                                className={cn(
-                                  "flex h-5 items-center gap-0.5 rounded border border-amber-700/30 bg-[#1d140d] px-1 text-[10px] hover:bg-red-950/40",
-                                  meta.color
-                                )}
-                                title={`Rimuovi condizione: ${cond}`}
-                              >
-                                <span>{meta.icon}</span>
-                                <span className="text-[9px] capitalize">{cond.slice(0, 4)}</span>
-                              </button>
-                            );
-                          })
-                        ) : (
-                          <span className="text-[10px] font-serif text-zinc-600 italic">—</span>
-                        )}
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => onToggleReaction?.(entry.id)}
+                          className={cn(
+                            "flex h-6 items-center gap-1 rounded border px-2 text-[10px] font-mono font-bold transition-all shadow-sm",
+                            entry.usedReaction
+                              ? "border-amber-600/70 bg-amber-950/70 text-amber-300 ring-1 ring-amber-500/40"
+                              : "border-emerald-700/60 bg-emerald-950/50 text-emerald-300 hover:bg-emerald-900/60"
+                          )}
+                          title={
+                            entry.usedReaction
+                              ? "Reazione USATA in questo round (clicca per ripristinare)"
+                              : "Reazione PRONTA (clicca per segnare come usata)"
+                          }
+                        >
+                          <Zap className={cn("h-3 w-3", entry.usedReaction ? "text-amber-400 fill-amber-400" : "text-emerald-400")} />
+                          <span>{entry.usedReaction ? "Usata" : "Pronta"}</span>
+                        </button>
 
-                        {/* Dropdown Aggiungi Condizione */}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button
-                              type="button"
-                              className="h-4 w-4 rounded-full border border-brass-base/30 bg-[#22160d] text-[10px] text-brass-light hover:bg-brass-base/20 flex items-center justify-center"
-                              title="Aggiungi condizione"
-                            >
-                              +
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent className="max-h-56 overflow-y-auto border-brass-base/40 bg-[#140f0c] text-parchment-100">
-                            {COMBAT_CONDITIONS.map((c) => (
-                              <DropdownMenuItem
-                                key={c.id}
-                                onClick={() => onToggleCondition(entry.id, c.id as CombatConditionId)}
-                                className="text-xs cursor-pointer hover:bg-brass-base/20 hover:text-brass-light"
+                        {entry.availableReactions && entry.availableReactions.length > 0 ? (
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button
+                                type="button"
+                                className="flex h-6 w-6 items-center justify-center rounded border border-brass-base/30 bg-[#1e140d] text-[10px] text-brass-light hover:bg-brass-base/20 font-mono"
+                                title={`Reazioni disponibili (${entry.availableReactions.length})`}
                               >
-                                {c.label}
-                              </DropdownMenuItem>
-                            ))}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                                {entry.availableReactions.length}
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-64 border-brass-base/40 bg-[#160f0a] p-2.5 text-parchment-100 shadow-xl text-xs">
+                              <div className="font-cinzel font-bold text-amber-300 border-b border-brass-base/20 pb-1 mb-1.5 flex items-center justify-between">
+                                <span>Reazioni ({entry.name})</span>
+                                <span className="text-[10px] font-mono text-zinc-400">{entry.availableReactions.length} note</span>
+                              </div>
+                              <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                                {entry.availableReactions.map((r, ri) => (
+                                  <div key={ri} className="rounded bg-[#1f150c] p-1.5 border border-brass-base/15">
+                                    <div className="font-semibold text-amber-200 text-[11px]">{r.name}</div>
+                                    {r.description ? (
+                                      <p className="text-[10px] text-zinc-300 font-sans mt-0.5 leading-snug">{r.description}</p>
+                                    ) : null}
+                                  </div>
+                                ))}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        ) : null}
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Riga Inferiore: Tiri Salvezza (TS) & Condizioni */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-brass-base/10">
+                    {/* Tiri Salvezza TS: FOR, DES, COS, INT, SAG, CAR */}
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <span className="text-[9px] font-cinzel font-bold text-brass-light/70 mr-0.5">
+                        TS:
+                      </span>
+                      {(["for", "des", "cos", "int", "sag", "car"] as const).map((stat) => {
+                        const val = entry.savingThrows?.[stat] ?? 0;
+                        const sign = val >= 0 ? `+${val}` : `${val}`;
+                        const isProf = val >= 3;
+                        return (
+                          <span
+                            key={stat}
+                            className={cn(
+                              "inline-flex items-center gap-0.5 rounded px-1 py-0.5 font-mono text-[9px] border",
+                              isProf
+                                ? "border-amber-600/50 bg-amber-950/40 text-amber-300 font-bold"
+                                : "border-brass-base/20 bg-[#120d09] text-zinc-400"
+                            )}
+                            title={`Tiro Salvezza ${stat.toUpperCase()}: ${sign}`}
+                          >
+                            <span className="text-[8px] uppercase font-cinzel opacity-75">{stat}</span>
+                            <span>{sign}</span>
+                          </span>
+                        );
+                      })}
+                    </div>
+
+                    {/* Vitals: Condizioni */}
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <span className="text-[9px] font-cinzel font-bold text-brass-light/80 uppercase tracking-wider mr-0.5">
+                        Condizioni:
+                      </span>
+                      {entry.conditions && entry.conditions.length > 0 ? (
+                        entry.conditions.map((cond) => {
+                          const meta = CONDITION_ICONS[cond] ?? { icon: "•", color: "text-amber-200" };
+                          return (
+                            <button
+                              key={cond}
+                              type="button"
+                              onClick={() => onToggleCondition(entry.id, cond as CombatConditionId)}
+                              className={cn(
+                                "flex h-4 items-center gap-0.5 rounded border border-amber-700/30 bg-[#1d140d] px-1 text-[9px] hover:bg-red-950/40",
+                                meta.color
+                              )}
+                              title={`Rimuovi condizione: ${cond}`}
+                            >
+                              <span>{meta.icon}</span>
+                              <span className="text-[8px] capitalize">{cond.slice(0, 4)}</span>
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <span className="text-[10px] font-serif text-zinc-600 italic mr-1">—</span>
+                      )}
+
+                      {/* Dropdown Aggiungi Condizione */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            className="h-4 w-4 rounded-full border border-brass-base/30 bg-[#22160d] text-[10px] text-brass-light hover:bg-brass-base/20 flex items-center justify-center"
+                            title="Aggiungi condizione"
+                          >
+                            +
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="max-h-56 overflow-y-auto border-brass-base/40 bg-[#140f0c] text-parchment-100">
+                          {COMBAT_CONDITIONS.map((c) => (
+                            <DropdownMenuItem
+                              key={c.id}
+                              onClick={() => onToggleCondition(entry.id, c.id as CombatConditionId)}
+                              className="text-xs cursor-pointer hover:bg-brass-base/20 hover:text-brass-light"
+                            >
+                              {c.label}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                 </div>

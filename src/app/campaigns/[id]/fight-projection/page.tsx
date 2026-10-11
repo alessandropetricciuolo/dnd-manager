@@ -160,21 +160,39 @@ export default function FightProjectionPage() {
                     </p>
                   </div>
 
-                  {/* Timer Turno Digitale */}
-                  <div className="flex items-center gap-3 rounded-xl border border-amber-600/40 bg-[#0e0804] px-5 py-2.5 shadow-inner">
+                  {/* Timer Turno Digitale Countdown */}
+                  <div
+                    className={cn(
+                      "flex items-center gap-3 rounded-xl border px-5 py-2.5 shadow-inner transition-colors",
+                      state.turnElapsedSeconds === 0
+                        ? "border-red-600 bg-red-950/60 text-red-300"
+                        : state.turnElapsedSeconds <= 30
+                        ? "border-amber-500 bg-amber-950/50 text-amber-200"
+                        : "border-amber-600/40 bg-[#0e0804] text-amber-200"
+                    )}
+                  >
                     <Timer
                       className={cn(
                         "h-6 w-6",
-                        state.isTurnTimerRunning
+                        state.turnElapsedSeconds === 0
+                          ? "text-red-400 animate-bounce"
+                          : state.turnElapsedSeconds <= 30 && state.isTurnTimerRunning
                           ? "text-amber-400 animate-pulse"
+                          : state.isTurnTimerRunning
+                          ? "text-amber-400"
                           : "text-zinc-500"
                       )}
                     />
                     <div className="flex flex-col">
                       <span className="font-sans text-[10px] uppercase tracking-wider text-zinc-400">
-                        Tempo Turno
+                        {state.turnElapsedSeconds === 0 ? "Tempo Scaduto" : "Countdown Turno"}
                       </span>
-                      <span className="font-mono text-2xl font-bold tabular-nums text-amber-200">
+                      <span
+                        className={cn(
+                          "font-mono text-2xl font-bold tabular-nums",
+                          state.turnElapsedSeconds === 0 ? "text-red-400 font-black animate-pulse" : "text-amber-200"
+                        )}
+                      >
                         {formatSeconds(state.turnElapsedSeconds)}
                       </span>
                     </div>

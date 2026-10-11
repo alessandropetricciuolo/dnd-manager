@@ -123,6 +123,8 @@ export type InitiativeEntry = {
   deathSaves?: { success: number; fail: number };
   /** FIGHT MODE: annotazione rapida inline */
   noteText?: string;
+  /** FIGHT MODE: Statblock markdown memorizzato per rendering istantaneo */
+  contentBody?: string;
 };
 
 export type InitiativeTrackerState = {
@@ -140,7 +142,7 @@ export function emptyInitiativeTrackerState(): InitiativeTrackerState {
     entries: [],
     currentTurnIndex: 0,
     roundNumber: 1,
-    turnElapsedSeconds: 0,
+    turnElapsedSeconds: 120,
     isTurnTimerRunning: false,
   };
 }
@@ -168,6 +170,7 @@ function normalizeInitiativeEntry(entry: InitiativeEntry): InitiativeEntry {
         }
       : { success: 0, fail: 0 },
     noteText: typeof entry.noteText === "string" ? entry.noteText : "",
+    contentBody: typeof entry.contentBody === "string" ? entry.contentBody : undefined,
     ...(spellSlots ? { spellSlots } : { spellSlots: undefined }),
   };
 }
@@ -368,8 +371,36 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
   const [trackerDisplay, setTrackerDisplay] = useState<"tactical" | "table">(defaultDisplay);
   const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
   const [roundNumber, setRoundNumber] = useState(1);
-  const [turnElapsedSeconds, setTurnElapsedSeconds] = useState(0);
+  const [turnElapsedSeconds, setTurnElapsedSeconds] = useState(120);
   const [isTurnTimerRunning, setIsTurnTimerRunning] = useState(false);
+  const [turnDurationSeconds, setTurnDurationSeconds] = useState(120);
+
+  // Carica durata timer personalizzata da localStorage
+  useEffect(() => {
+    try {
+      const savedDuration = localStorage.getItem("gm-screen-turn-timer-duration");
+      if (savedDuration) {
+        const val = parseInt(savedDuration, 10);
+        if (!isNaN(val) && val > 0) {
+          setTurnDurationSeconds(val);
+          setTurnElapsedSeconds((cur) => (cur === 0 || cur === 120 ? val : cur));
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleSetTurnDuration = useCallback((sec: number) => {
+    const valid = Math.max(10, Math.min(1800, sec));
+    setTurnDurationSeconds(valid);
+    setTurnElapsedSeconds(valid);
+    try {
+      localStorage.setItem("gm-screen-turn-timer-duration", String(valid));
+    } catch {
+      // ignore
+    }
+  }, []);
   const [editingCell, setEditingCell] = useState<{ id: string; field: "name" | "hp" | "initiative" | "armorClass" } | null>(null);
   const [addPcOpen, setAddPcOpen] = useState(false);
   const [addMonsterOpen, setAddMonsterOpen] = useState(false);
@@ -519,7 +550,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
   useEffect(() => {
     if (megatimerActive || !isTurnTimerRunning || entries.length === 0) return;
     const id = window.setInterval(() => {
-      setTurnElapsedSeconds((s) => s + 1);
+      setTurnElapsedSeconds((s) => (s <= 1 ? 0 : s - 1));
     }, 1000);
     return () => window.clearInterval(id);
   }, [entries.length, isTurnTimerRunning, megatimerActive]);
@@ -576,8 +607,8 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     );
     setCurrentTurnIndex(0);
     setRoundNumber(1);
-    setTurnElapsedSeconds(0);
-  }, []);
+    setTurnElapsedSeconds(turnDurationSeconds);
+  }, [turnDurationSeconds]);
 
   const [fastDmgInputs, setFastDmgInputs] = useState<Record<string, string>>({});
 
@@ -665,10 +696,10 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       return next;
     });
     if (!megatimerActive) {
-      setTurnElapsedSeconds(0);
+      setTurnElapsedSeconds(turnDurationSeconds);
       setIsTurnTimerRunning(true);
     }
-  }, [entries.length, megatimerActive]);
+  }, [entries.length, megatimerActive, turnDurationSeconds]);
 
   const prevTurn = useCallback(() => {
     if (entries.length === 0) return;
@@ -683,10 +714,21 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       return prev;
     });
     if (!megatimerActive) {
-      setTurnElapsedSeconds(0);
+      setTurnElapsedSeconds(turnDurationSeconds);
       setIsTurnTimerRunning(true);
     }
-  }, [entries.length, megatimerActive]);
+  }, [entries.length, megatimerActive, turnDurationSeconds]);
+
+  const handleSelectTurn = useCallback(
+    (idx: number) => {
+      setCurrentTurnIndex(idx);
+      if (!megatimerActive) {
+        setTurnElapsedSeconds(turnDurationSeconds);
+        setIsTurnTimerRunning(true);
+      }
+    },
+    [megatimerActive, turnDurationSeconds]
+  );
 
   const toggleTurnTimer = useCallback(() => {
     if (entries.length === 0) return;
@@ -702,14 +744,14 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       void torneoMegatimer.onRestartTurn();
       return;
     }
-    setTurnElapsedSeconds(0);
-  }, [megatimerActive, torneoMegatimer]);
+    setTurnElapsedSeconds(turnDurationSeconds);
+  }, [megatimerActive, torneoMegatimer, turnDurationSeconds]);
 
   const resetRoundCounter = useCallback(() => {
     setRoundNumber(1);
     setCurrentTurnIndex(0);
-    setTurnElapsedSeconds(0);
-  }, []);
+    setTurnElapsedSeconds(turnDurationSeconds);
+  }, [turnDurationSeconds]);
 
   const adjustDamageDealt = useCallback((entryId: string, delta: number) => {
     setEntries((prev) =>
@@ -1156,10 +1198,12 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
           savingThrows: monsterSaves,
           deathSaves: { success: 0, fail: 0 },
           noteText: "",
+          entityId: monster.id,
+          contentBody: monster.contentBody ?? undefined,
           ...(typeof monster.xp_value === "number" && monster.xp_value > 0
             ? { exp: monster.xp_value }
             : {}),
-          ...(isLongCampaign && monster.is_core && { entityId: monster.id, isCore: true }),
+          ...(isLongCampaign && monster.is_core && { isCore: true }),
         });
       }
       setEntries((prev) => [...prev, ...newEntries]);
@@ -1440,13 +1484,17 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
                   Giro <span className="tabular-nums text-amber-100">{roundNumber}</span>
                 </span>
                 <span className="h-4 w-px bg-amber-600/30" aria-hidden />
-                <span className="inline-flex items-center gap-1 text-xs text-zinc-300">
+                <span className="inline-flex items-center gap-1.5 text-xs text-zinc-300">
                   <Timer className="h-3.5 w-3.5 text-amber-400/80" />
                   <span
                     className={cn(
-                      "font-mono tabular-nums text-sm",
+                      "font-mono tabular-nums text-sm font-bold",
                       megatimerActive && torneoMegatimer?.isExpired
                         ? "text-red-400"
+                        : !megatimerActive && turnElapsedSeconds === 0
+                        ? "text-red-400 font-black animate-pulse"
+                        : !megatimerActive && turnElapsedSeconds <= 30
+                        ? "text-amber-400"
                         : "text-amber-100"
                     )}
                   >
@@ -1454,6 +1502,52 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
                       ? formatTimerMmSs(torneoMegatimer.remainingSec)
                       : formatTurnElapsed(turnElapsedSeconds)}
                   </span>
+                  {!megatimerActive && (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button
+                          type="button"
+                          className="text-[10px] font-mono text-zinc-400 hover:text-amber-300 rounded border border-amber-700/30 bg-[#160f0a] px-1.5 py-0.5 ml-0.5 flex items-center gap-1"
+                          title="Imposta durata countdown turno (default 2 min)"
+                        >
+                          <span>{Math.floor(turnDurationSeconds / 60)}:{String(turnDurationSeconds % 60).padStart(2, "0")}</span>
+                          <span className="text-[8px] opacity-70">▾</span>
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-56 border-brass-base/40 bg-[#160f0a] p-3 text-parchment-100 shadow-2xl text-xs space-y-2">
+                        <div className="font-cinzel font-bold text-amber-300 border-b border-brass-base/20 pb-1">
+                          Durata Countdown Turno
+                        </div>
+                        <p className="text-[10px] text-zinc-400 font-sans">
+                          Il timer riparte da questo valore ad ogni cambio di turno.
+                        </p>
+                        <div className="grid grid-cols-3 gap-1.5 pt-1">
+                          {[
+                            { label: "30s", val: 30 },
+                            { label: "1 min", val: 60 },
+                            { label: "1m 30s", val: 90 },
+                            { label: "2 min", val: 120 },
+                            { label: "3 min", val: 180 },
+                            { label: "5 min", val: 300 },
+                          ].map((item) => (
+                            <button
+                              key={item.val}
+                              type="button"
+                              onClick={() => handleSetTurnDuration(item.val)}
+                              className={cn(
+                                "rounded px-2 py-1 text-[11px] font-mono font-bold transition-all border",
+                                turnDurationSeconds === item.val
+                                  ? "border-amber-500 bg-amber-950/80 text-amber-200 ring-1 ring-amber-500/50"
+                                  : "border-brass-base/20 bg-[#1c130b] text-zinc-300 hover:border-amber-600/60"
+                              )}
+                            >
+                              {item.label}
+                            </button>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  )}
                   {megatimerActive && torneoMegatimer?.roundLabel ? (
                     <span className="hidden text-[10px] text-zinc-500 sm:inline">
                       · {torneoMegatimer.roundLabel}
@@ -1562,7 +1656,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
           <TacticalInitiativeCards
             entries={entries}
             currentTurnIndex={currentTurnIndex}
-            onSelectTurn={(idx) => setCurrentTurnIndex(idx)}
+            onSelectTurn={handleSelectTurn}
             onUpdateHp={(id, delta) => {
               const e = entries.find((x) => x.id === id);
               if (e) void applyHpChange(id, e.hp + delta);
@@ -1581,6 +1675,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
             }}
             onOpenMonsterStat={onOpenMonsterStat}
             onDeleteEntry={removeEntry}
+            onToggleReaction={toggleReaction}
           />
         </div>
       ) : (

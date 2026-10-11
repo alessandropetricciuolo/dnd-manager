@@ -68,6 +68,8 @@ export function parseMonsterStatsFromMarkdown(markdown: string): {
   passivePerception?: number;
   speed?: string;
   senses?: string;
+  spellSaveDc?: number;
+  spellAttackBonus?: string;
 } {
   const reactions: CombatReaction[] = [{ ...DEFAULT_OPPORTUNITY_ATTACK }];
   if (!markdown?.trim()) {
@@ -142,6 +144,21 @@ export function parseMonsterStatsFromMarkdown(markdown: string): {
     if (m) passivePerception = parseInt(m[1], 10);
   }
 
+  // Estrai CD Incantesimi e Bonus Attacco con incantesimi
+  let spellSaveDc: number | undefined;
+  let spellAttackBonus: string | undefined;
+
+  const dcMatch = markdown.match(/(?:CD|DC)\s*(?:del\s*tiro\s*salvezza\s*sugli?\s*incantesimi|degli?\s*incantesimi|tiro\s*salvezza)?[:\s]*(\d{1,2})/i);
+  if (dcMatch) {
+    const dc = parseInt(dcMatch[1], 10);
+    if (!Number.isNaN(dc)) spellSaveDc = dc;
+  }
+
+  const txcMatch = markdown.match(/(?:tiro\s*per\s*colpire\s*con\s*incantesimi|bonus\s*di\s*attacco\s*con\s*incantesimi|attacco\s*con\s*incantesimi)[:\s]*([+-]\d+)/i);
+  if (txcMatch) {
+    spellAttackBonus = txcMatch[1].startsWith("+") ? txcMatch[1] : `+${txcMatch[1]}`;
+  }
+
   return {
     savingThrows,
     reactions,
@@ -150,7 +167,55 @@ export function parseMonsterStatsFromMarkdown(markdown: string): {
     passivePerception,
     speed: dense.speed ?? undefined,
     senses: dense.senses ?? undefined,
+    spellSaveDc,
+    spellAttackBonus,
   };
+}
+
+/**
+ * Estrae o stima CD Incantesimi e Bonus Attacco Magico sia per Mostri che per PG.
+ */
+export function extractSpellStats(
+  entry: {
+    type: "pc" | "monster" | "custom";
+    characterClass?: string | null;
+    savingThrows?: SavingThrowsMap;
+    contentBody?: string;
+  },
+  rawMarkdown?: string
+): { cd: number | null; txc: string | null } {
+  const md = rawMarkdown || entry.contentBody || "";
+  if (md) {
+    const dcMatch = md.match(/(?:CD|DC)\s*(?:del\s*tiro\s*salvezza\s*sugli?\s*incantesimi|degli?\s*incantesimi|tiro\s*salvezza)?[:\s]*(\d{1,2})/i);
+    const txcMatch = md.match(/(?:tiro\s*per\s*colpire\s*con\s*incantesimi|bonus\s*di\s*attacco\s*con\s*incantesimi|attacco\s*con\s*incantesimi)[:\s]*([+-]\d+)/i);
+    if (dcMatch) {
+      const dc = parseInt(dcMatch[1], 10);
+      const txc = txcMatch ? (txcMatch[1].startsWith("+") ? txcMatch[1] : `+${txcMatch[1]}`) : null;
+      return { cd: dc, txc };
+    }
+  }
+
+  if (entry.type === "pc" && entry.characterClass) {
+    const c = entry.characterClass.toLowerCase();
+    const pb = 2; // base PB at level 1-4
+    if (c.includes("mago") || c.includes("artefice")) {
+      const mod = Math.max(0, (entry.savingThrows?.int ?? 0) - (entry.savingThrows?.int ? pb : 0));
+      const cd = 8 + pb + (mod || 3);
+      return { cd, txc: `+${pb + (mod || 3)}` };
+    }
+    if (c.includes("chierico") || c.includes("druido") || c.includes("ranger")) {
+      const mod = Math.max(0, (entry.savingThrows?.sag ?? 0) - (entry.savingThrows?.sag ? pb : 0));
+      const cd = 8 + pb + (mod || 3);
+      return { cd, txc: `+${pb + (mod || 3)}` };
+    }
+    if (c.includes("bardo") || c.includes("stregone") || c.includes("warlock") || c.includes("paladino")) {
+      const mod = Math.max(0, (entry.savingThrows?.car ?? 0) - (entry.savingThrows?.car ? pb : 0));
+      const cd = 8 + pb + (mod || 3);
+      return { cd, txc: `+${pb + (mod || 3)}` };
+    }
+  }
+
+  return { cd: null, txc: null };
 }
 
 /**
