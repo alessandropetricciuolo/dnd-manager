@@ -75,6 +75,7 @@ import {
   isCompleteMonsterStatblock,
 } from "@/lib/fight-mode/stats-helper";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useTurnTimer } from "@/lib/fight-mode/turn-timer";
 
 function isDeadMonster(e: InitiativeEntry | undefined | null): boolean {
   if (!e) return false;
@@ -201,7 +202,10 @@ export function sanitizeInitiativeTrackerState(
         ? Math.max(0, Math.min(Math.trunc(input.currentTurnIndex ?? 0), entries.length - 1))
         : 0,
     roundNumber: Math.max(1, Math.trunc(input.roundNumber ?? 1)),
-    turnElapsedSeconds: Math.max(0, Math.trunc(input.turnElapsedSeconds ?? 0)),
+    turnElapsedSeconds:
+      typeof input.turnElapsedSeconds === "number" && input.turnElapsedSeconds >= 0
+        ? Math.trunc(input.turnElapsedSeconds)
+        : 120,
     isTurnTimerRunning: Boolean(input.isTurnTimerRunning),
   };
 }
@@ -386,36 +390,17 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
   const [trackerDisplay, setTrackerDisplay] = useState<"tactical" | "table">(defaultDisplay);
   const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
   const [roundNumber, setRoundNumber] = useState(1);
-  const [turnElapsedSeconds, setTurnElapsedSeconds] = useState(120);
-  const [isTurnTimerRunning, setIsTurnTimerRunning] = useState(false);
-  const [turnDurationSeconds, setTurnDurationSeconds] = useState(120);
+  const turnTimer = useTurnTimer(campaignId);
+  const turnElapsedSeconds = turnTimer.remainingSeconds;
+  const isTurnTimerRunning = turnTimer.isRunning;
+  const turnDurationSeconds = turnTimer.durationSeconds;
 
-  // Carica durata timer personalizzata da localStorage
-  useEffect(() => {
-    try {
-      const savedDuration = localStorage.getItem("gm-screen-turn-timer-duration");
-      if (savedDuration) {
-        const val = parseInt(savedDuration, 10);
-        if (!isNaN(val) && val > 0) {
-          setTurnDurationSeconds(val);
-          setTurnElapsedSeconds((cur) => (cur === 0 || cur === 120 ? val : cur));
-        }
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
-
-  const handleSetTurnDuration = useCallback((sec: number) => {
-    const valid = Math.max(10, Math.min(1800, sec));
-    setTurnDurationSeconds(valid);
-    setTurnElapsedSeconds(valid);
-    try {
-      localStorage.setItem("gm-screen-turn-timer-duration", String(valid));
-    } catch {
-      // ignore
-    }
-  }, []);
+  const handleSetTurnDuration = useCallback(
+    (sec: number) => {
+      turnTimer.setDuration(sec);
+    },
+    [turnTimer]
+  );
   const [editingCell, setEditingCell] = useState<{ id: string; field: "name" | "hp" | "initiative" | "armorClass" } | null>(null);
   const [addPcOpen, setAddPcOpen] = useState(false);
   const [addMonsterOpen, setAddMonsterOpen] = useState(false);
@@ -472,9 +457,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     const entriesChanged = !areInitiativeEntriesEqual(prev.entries, next.entries);
     const metaChanged =
       prev.currentTurnIndex !== next.currentTurnIndex ||
-      prev.roundNumber !== next.roundNumber ||
-      prev.turnElapsedSeconds !== next.turnElapsedSeconds ||
-      prev.isTurnTimerRunning !== next.isTurnTimerRunning;
+      prev.roundNumber !== next.roundNumber;
     if (!entriesChanged && !metaChanged) return;
     skipControlledEchoRef.current = true;
     lastControlledParentSigRef.current = initiativeStateSyncSignature(next);
@@ -482,8 +465,6 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     if (metaChanged || entriesChanged) {
       setCurrentTurnIndex(next.currentTurnIndex);
       setRoundNumber(next.roundNumber);
-      setTurnElapsedSeconds(next.turnElapsedSeconds);
-      setIsTurnTimerRunning(next.isTurnTimerRunning);
     }
   }, [isControlled, value]);
 
@@ -499,8 +480,6 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
           setEntries(restored.entries);
           setCurrentTurnIndex(restored.currentTurnIndex);
           setRoundNumber(restored.roundNumber);
-          setTurnElapsedSeconds(restored.turnElapsedSeconds);
-          setIsTurnTimerRunning(restored.isTurnTimerRunning);
         }
       }
     } catch {
@@ -562,13 +541,6 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     onTrackerStateChange?.(buildTrackerState());
   }, [buildTrackerState, onTrackerStateChange, isControlled]);
 
-  useEffect(() => {
-    if (megatimerActive || !isTurnTimerRunning || entries.length === 0) return;
-    const id = window.setInterval(() => {
-      setTurnElapsedSeconds((s) => (s <= 1 ? 0 : s - 1));
-    }, 1000);
-    return () => window.clearInterval(id);
-  }, [entries.length, isTurnTimerRunning, megatimerActive]);
 
   const updateEntry = useCallback(
     (id: string, updates: Partial<InitiativeEntry>) => {
@@ -622,8 +594,8 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     );
     setCurrentTurnIndex(0);
     setRoundNumber(1);
-    setTurnElapsedSeconds(turnDurationSeconds);
-  }, [turnDurationSeconds]);
+    turnTimer.reset(false);
+  }, [turnTimer]);
 
   const [fastDmgInputs, setFastDmgInputs] = useState<Record<string, string>>({});
 
@@ -723,10 +695,9 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       return next;
     });
     if (!megatimerActive) {
-      setTurnElapsedSeconds(turnDurationSeconds);
-      setIsTurnTimerRunning(true);
+      turnTimer.reset(true);
     }
-  }, [entries, megatimerActive, turnDurationSeconds]);
+  }, [entries, megatimerActive, turnTimer]);
 
   const prevTurn = useCallback(() => {
     if (entries.length === 0) return;
@@ -752,20 +723,18 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       return prev;
     });
     if (!megatimerActive) {
-      setTurnElapsedSeconds(turnDurationSeconds);
-      setIsTurnTimerRunning(true);
+      turnTimer.reset(true);
     }
-  }, [entries, megatimerActive, turnDurationSeconds]);
+  }, [entries, megatimerActive, turnTimer]);
 
   const handleSelectTurn = useCallback(
     (idx: number) => {
       setCurrentTurnIndex(idx);
       if (!megatimerActive) {
-        setTurnElapsedSeconds(turnDurationSeconds);
-        setIsTurnTimerRunning(true);
+        turnTimer.reset(true);
       }
     },
-    [megatimerActive, turnDurationSeconds]
+    [megatimerActive, turnTimer]
   );
 
   const toggleTurnTimer = useCallback(() => {
@@ -774,22 +743,22 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       void torneoMegatimer.onTogglePause();
       return;
     }
-    setIsTurnTimerRunning((running) => !running);
-  }, [entries.length, megatimerActive, torneoMegatimer]);
+    turnTimer.toggle();
+  }, [entries.length, megatimerActive, torneoMegatimer, turnTimer]);
 
   const resetTurnTimer = useCallback(() => {
     if (megatimerActive && torneoMegatimer) {
       void torneoMegatimer.onRestartTurn();
       return;
     }
-    setTurnElapsedSeconds(turnDurationSeconds);
-  }, [megatimerActive, torneoMegatimer, turnDurationSeconds]);
+    turnTimer.reset(false);
+  }, [megatimerActive, torneoMegatimer, turnTimer]);
 
   const resetRoundCounter = useCallback(() => {
     setRoundNumber(1);
     setCurrentTurnIndex(0);
-    setTurnElapsedSeconds(turnDurationSeconds);
-  }, [turnDurationSeconds]);
+    turnTimer.reset(false);
+  }, [turnTimer]);
 
   const adjustDamageDealt = useCallback((entryId: string, delta: number) => {
     setEntries((prev) =>
@@ -959,14 +928,14 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     setEntries([]);
     setCurrentTurnIndex(0);
     setRoundNumber(1);
-    setTurnElapsedSeconds(0);
-    setIsTurnTimerRunning(false);
+    turnTimer.reset(false);
+    turnTimer.pause();
     try {
       localStorage.removeItem(storageKey);
     } catch {
       // ignore
     }
-  }, [buildTrackerState, storageKey, entries.length]);
+  }, [buildTrackerState, storageKey, entries.length, turnTimer]);
 
   const handleCloseFight = useCallback(async () => {
     if (entries.length === 0) {
@@ -1089,8 +1058,11 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     setEntries(sanitized.entries);
     setCurrentTurnIndex(sanitized.currentTurnIndex);
     setRoundNumber(sanitized.roundNumber);
-    setTurnElapsedSeconds(sanitized.turnElapsedSeconds);
-    setIsTurnTimerRunning(sanitized.isTurnTimerRunning);
+    if (sanitized.isTurnTimerRunning) {
+      turnTimer.start();
+    } else {
+      turnTimer.pause();
+    }
     setLastResetState(null);
     try {
       localStorage.setItem(storageKey, JSON.stringify(sanitized));
@@ -1098,7 +1070,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       // ignore
     }
     toast.success("Reset annullato.");
-  }, [lastResetState, storageKey]);
+  }, [lastResetState, storageKey, turnTimer]);
 
   const openAddPc = useCallback(async () => {
     setAddPcOpen(true);

@@ -227,8 +227,8 @@ export function GmScreenLegacyLayoutV2({
           />
         )}
 
-        <div className="min-h-0 flex-1 overflow-hidden p-1">
-          {screenView === "tactical" ? (
+        <div className="relative min-h-0 flex-1 overflow-hidden p-1">
+          <div className={cn("h-full w-full", screenView === "tactical" ? "block" : "hidden")}>
             <GmTacticalScreen
               audioForge={audioForge}
               onOpenAudio={() => setAudioForgeOpen(true)}
@@ -237,7 +237,8 @@ export function GmScreenLegacyLayoutV2({
               campaignType={campaignType}
               selectedSessionId={selectedSessionId}
             />
-          ) : (
+          </div>
+          <div className={cn("h-full w-full", screenView === "grid" ? "block" : "hidden")}>
             <GmScreenBoard
               campaignId={campaignId}
               currentUserId={currentUserId}
@@ -249,7 +250,7 @@ export function GmScreenLegacyLayoutV2({
               presetFactory={getLegacyPreset}
               sheetOpeners={sheetOpeners}
             />
-          )}
+          </div>
         </div>
 
         <SecretWhispersSheet

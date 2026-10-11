@@ -468,8 +468,8 @@ function LongWorkspace({
           />
         )}
 
-        <div className="min-h-0 flex-1 overflow-hidden p-1">
-          {screenView === "tactical" ? (
+        <div className="relative min-h-0 flex-1 overflow-hidden p-1">
+          <div className={cn("h-full w-full", screenView === "tactical" ? "block" : "hidden")}>
             <GmTacticalScreen
               audioForge={audioForge}
               onOpenAudio={() => setAudioForgeOpen(true)}
@@ -478,7 +478,8 @@ function LongWorkspace({
               campaignType="long"
               selectedSessionId={selectedSessionId}
             />
-          ) : (
+          </div>
+          <div className={cn("h-full w-full", screenView === "grid" ? "block" : "hidden")}>
             <GmScreenBoard
               campaignId={campaignId}
               currentUserId={currentUserId}
@@ -489,7 +490,7 @@ function LongWorkspace({
               sheetOpeners={sheetOpeners}
               toolbarExtra={closureToolbar}
             />
-          )}
+          </div>
         </div>
 
         <SecretWhispersSheet
