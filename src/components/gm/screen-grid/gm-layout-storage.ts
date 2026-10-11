@@ -3,7 +3,10 @@ import { isGmPanelType, type GmLayoutItem, type GmStoredLayout, type GmWorkspace
 export const GM_SCREEN_LAYOUT_KEY_PREFIX = "gm-screen-layout-v2:";
 export const GM_SCREEN_LAYOUT_VERSION = 2 as const;
 
-export function gmScreenLayoutStorageKey(campaignId: string): string {
+export function gmScreenLayoutStorageKey(campaignId: string, slotId?: string): string {
+  if (slotId && slotId !== "grid1" && slotId !== "default") {
+    return `${GM_SCREEN_LAYOUT_KEY_PREFIX}${campaignId}:${slotId}`;
+  }
   return `${GM_SCREEN_LAYOUT_KEY_PREFIX}${campaignId}`;
 }
 
@@ -46,10 +49,14 @@ export function sanitizeStoredLayout(raw: unknown): GmStoredLayout | null {
   return { version: GM_SCREEN_LAYOUT_VERSION, mode, items };
 }
 
-export function loadGmScreenLayout(campaignId: string): GmStoredLayout | null {
+export function loadGmScreenLayout(campaignId: string, slotId?: string): GmStoredLayout | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = localStorage.getItem(gmScreenLayoutStorageKey(campaignId));
+    const key = gmScreenLayoutStorageKey(campaignId, slotId);
+    let raw = localStorage.getItem(key);
+    if (!raw && (slotId === "grid1" || slotId === "default")) {
+      raw = localStorage.getItem(`${GM_SCREEN_LAYOUT_KEY_PREFIX}${campaignId}`);
+    }
     if (!raw) return null;
     return sanitizeStoredLayout(JSON.parse(raw));
   } catch {
@@ -57,19 +64,19 @@ export function loadGmScreenLayout(campaignId: string): GmStoredLayout | null {
   }
 }
 
-export function saveGmScreenLayout(campaignId: string, layout: GmStoredLayout): void {
+export function saveGmScreenLayout(campaignId: string, layout: GmStoredLayout, slotId?: string): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(gmScreenLayoutStorageKey(campaignId), JSON.stringify(layout));
+    localStorage.setItem(gmScreenLayoutStorageKey(campaignId, slotId), JSON.stringify(layout));
   } catch {
     // ignore quota / private mode
   }
 }
 
-export function clearGmScreenLayout(campaignId: string): void {
+export function clearGmScreenLayout(campaignId: string, slotId?: string): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.removeItem(gmScreenLayoutStorageKey(campaignId));
+    localStorage.removeItem(gmScreenLayoutStorageKey(campaignId, slotId));
   } catch {
     // ignore
   }

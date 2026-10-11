@@ -44,6 +44,8 @@ type GmScreenBoardProps = {
   presetFactory?: () => GmLayoutItem[];
   /** Hide Durante/Chiusura-driven preset swaps when parent doesn't use mode toggle. */
   lockMode?: boolean;
+  /** Slot identificativo per griglie multiple indipendenti (es. "grid1", "grid2"). */
+  slotId?: string;
 };
 
 function newPanelId(type: GmPanelType): string {
@@ -105,6 +107,7 @@ export function GmScreenBoard({
   toolbarExtra,
   presetFactory,
   lockMode = false,
+  slotId,
 }: GmScreenBoardProps) {
   const { width, containerRef, mounted } = useContainerWidth({ measureBeforeMount: true });
   const [items, setItems] = useState<GmLayoutItem[]>([]);
@@ -118,7 +121,7 @@ export function GmScreenBoard({
 
   // Initial load from localStorage or preset.
   useEffect(() => {
-    const stored = loadGmScreenLayout(campaignId);
+    const stored = loadGmScreenLayout(campaignId, slotId);
     if (stored) {
       skipNextModePreset.current = true;
       setItems(stored.items);
@@ -127,20 +130,20 @@ export function GmScreenBoard({
       setItems(resolvePreset());
     }
     setHydrated(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once per campaign
-  }, [campaignId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once per campaign and slot
+  }, [campaignId, slotId]);
 
   // Persist layout (debounced).
   useEffect(() => {
     if (!hydrated) return;
     if (persistTimer.current) clearTimeout(persistTimer.current);
     persistTimer.current = setTimeout(() => {
-      saveGmScreenLayout(campaignId, toStoredLayout(mode, items));
+      saveGmScreenLayout(campaignId, toStoredLayout(mode, items), slotId);
     }, 250);
     return () => {
       if (persistTimer.current) clearTimeout(persistTimer.current);
     };
-  }, [campaignId, hydrated, items, mode]);
+  }, [campaignId, hydrated, items, mode, slotId]);
 
   // Swap presets when mode changes (unless restoring from storage or locked).
   useEffect(() => {

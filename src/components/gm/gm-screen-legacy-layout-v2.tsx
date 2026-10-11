@@ -51,19 +51,23 @@ export function GmScreenLegacyLayoutV2({
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [audioForgeOpen, setAudioForgeOpen] = useState(false);
   const [spotifyEmbedPlaylistId, setSpotifyEmbedPlaylistId] = useState<string | null>(null);
-  const [screenView, setScreenView] = useState<"tactical" | "grid">("tactical");
+  const [screenView, setScreenView] = useState<"tactical" | "grid1" | "grid2">("tactical");
   const audioForge = useGmAudioForge(campaignId);
 
   useEffect(() => {
     try {
       const saved = localStorage.getItem(`gm_screen_view_${campaignId}`);
-      if (saved === "grid" || saved === "tactical") {
-        setScreenView(saved);
+      if (saved === "grid" || saved === "grid1") {
+        setScreenView("grid1");
+      } else if (saved === "grid2") {
+        setScreenView("grid2");
+      } else if (saved === "tactical") {
+        setScreenView("tactical");
       }
     } catch {}
   }, [campaignId]);
 
-  const handleScreenViewChange = (view: "tactical" | "grid") => {
+  const handleScreenViewChange = (view: "tactical" | "grid1" | "grid2") => {
     setScreenView(view);
     try {
       localStorage.setItem(`gm_screen_view_${campaignId}`, view);
@@ -164,17 +168,31 @@ export function GmScreenLegacyLayoutV2({
               </button>
               <button
                 type="button"
-                onClick={() => handleScreenViewChange("grid")}
+                onClick={() => handleScreenViewChange("grid1")}
                 className={cn(
                   "flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-cinzel font-semibold transition-all",
-                  screenView === "grid"
+                  screenView === "grid1"
                     ? "bg-gradient-to-r from-amber-700/90 to-amber-800/90 text-parchment-100 shadow-sm border border-brass-light/40"
                     : "text-parchment-400 hover:text-parchment-100 hover:bg-brass-base/10"
                 )}
-                title="Griglia Modulare Personalizzabile"
+                title="Griglia Modulare 1 Personalizzabile"
               >
                 <LayoutGrid className="h-3 w-3 text-amber-300" />
-                <span>Griglia Modulare</span>
+                <span>Griglia 1</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleScreenViewChange("grid2")}
+                className={cn(
+                  "flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-cinzel font-semibold transition-all",
+                  screenView === "grid2"
+                    ? "bg-gradient-to-r from-amber-700/90 to-amber-800/90 text-parchment-100 shadow-sm border border-brass-light/40"
+                    : "text-parchment-400 hover:text-parchment-100 hover:bg-brass-base/10"
+                )}
+                title="Griglia Modulare 2 Personalizzabile"
+              >
+                <LayoutGrid className="h-3 w-3 text-amber-300" />
+                <span>Griglia 2</span>
               </button>
             </div>
 
@@ -238,7 +256,7 @@ export function GmScreenLegacyLayoutV2({
               selectedSessionId={selectedSessionId}
             />
           </div>
-          <div className={cn("h-full w-full", screenView === "grid" ? "block" : "hidden")}>
+          <div className={cn("h-full w-full", screenView === "grid1" ? "block" : "hidden")}>
             <GmScreenBoard
               campaignId={campaignId}
               currentUserId={currentUserId}
@@ -249,6 +267,21 @@ export function GmScreenLegacyLayoutV2({
               lockMode
               presetFactory={getLegacyPreset}
               sheetOpeners={sheetOpeners}
+              slotId="grid1"
+            />
+          </div>
+          <div className={cn("h-full w-full", screenView === "grid2" ? "block" : "hidden")}>
+            <GmScreenBoard
+              campaignId={campaignId}
+              currentUserId={currentUserId}
+              campaignType={campaignType}
+              selectedSessionId={selectedSessionId}
+              mode="session"
+              onModeChange={() => {}}
+              lockMode
+              presetFactory={getLegacyPreset}
+              sheetOpeners={sheetOpeners}
+              slotId="grid2"
             />
           </div>
         </div>
