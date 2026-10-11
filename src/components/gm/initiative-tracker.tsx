@@ -66,6 +66,7 @@ import type { Json } from "@/types/database.types";
 import { formatTimerMmSs } from "@/lib/torneo/match-timer";
 import { TacticalInitiativeCards } from "./screen-tactical/tactical-initiative-cards";
 import { publishFightProjection } from "@/lib/fight-mode/broadcast";
+import { openProjectionWindow as openPopoutProjection } from "@/lib/browser/projection-window";
 import type { SavingThrowsMap, CombatReaction } from "@/lib/fight-mode/types";
 import {
   estimatePcSaves,
@@ -939,10 +940,16 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     );
   }, []);
 
-  const openProjectionWindow = useCallback(() => {
+  const openProjectionWindow = useCallback(async () => {
     if (typeof window === "undefined") return;
     const url = `/campaigns/${campaignId}/fight-projection`;
-    window.open(url, "_blank", "width=1280,height=720,menubar=no,toolbar=no");
+    const availW = window.screen.availWidth || window.screen.width || 1920;
+    const availH = window.screen.availHeight || window.screen.height || 1080;
+    await openPopoutProjection(url, "FightProjectionWindow", {
+      fitCurrentScreen: true,
+      fallbackWidth: availW,
+      fallbackHeight: availH,
+    });
   }, [campaignId]);
 
   const resetTracker = useCallback(() => {
