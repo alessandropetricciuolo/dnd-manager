@@ -11,7 +11,7 @@ type Props = {
 export function LayoutConditionalNavbar({ navbar, children }: Props) {
   const pathname = usePathname();
   const isGmScreen = pathname?.includes("/gm-screen");
-  const isProjection = pathname?.includes("/proiezione");
+  const isProjection = pathname?.includes("/proiezione") || pathname?.includes("/fight-projection");
   const isAdmin = pathname?.startsWith("/admin");
   const isOAuthConsent = pathname?.startsWith("/oauth/");
 

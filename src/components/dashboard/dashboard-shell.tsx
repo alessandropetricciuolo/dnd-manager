@@ -166,7 +166,7 @@ export function DashboardShell({ children, isAdmin, isGmOrAdmin, hasForgeAccess 
   const isCampaignPage = pathname?.startsWith("/campaigns");
   const isCampaignDetail = Boolean(pathname?.match(/^\/campaigns\/[^/]+$/));
   const isGmScreen = pathname?.includes("/gm-screen");
-  const isProjection = pathname?.includes("/proiezione");
+  const isProjection = pathname?.includes("/proiezione") || pathname?.includes("/fight-projection");
 
   if (isGmScreen || isProjection) {
     return <div className="min-h-screen w-full">{children}</div>;
