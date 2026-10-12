@@ -64,7 +64,7 @@ export function loadTurnTimerState(campaignId: string): TurnTimerState {
         const isRunning = Boolean(parsed.isRunning);
         const endsAt = typeof parsed.endsAt === "number" ? parsed.endsAt : null;
         let rem =
-          typeof parsed.remainingSeconds === "number" && parsed.remainingSeconds > 0
+          typeof parsed.remainingSeconds === "number" && parsed.remainingSeconds >= 0
             ? parsed.remainingSeconds
             : duration;
 
@@ -229,15 +229,16 @@ export function setTurnTimerDuration(campaignId: string, durationSec: number): v
  * Garantisce che una volta avviato il countdown, NIENTE nel GM screen (cambio vista, modali, unmount)
  * possa fermarlo se non il tasto pausa esplicito.
  */
-export function useTurnTimer(campaignId?: string | null) {
+export function useTurnTimer(campaignId?: string | null, active = true) {
   const [timerState, setTimerState] = useState<TurnTimerState>(() =>
     loadTurnTimerState(campaignId ?? "")
   );
 
   useEffect(() => {
-    if (!campaignId) return;
+    if (!campaignId || !active) return;
 
-    // Carica stato corrente
+    // A retained view may have missed writes from another window while inactive.
+    timerCache.delete(campaignId);
     setTimerState(loadTurnTimerState(campaignId));
 
     const onUpdate = () => {
@@ -252,6 +253,7 @@ export function useTurnTimer(campaignId?: string | null) {
     // Ascolta eventi storage per sincronizzazione tra finestre/tab
     const onStorage = (e: StorageEvent) => {
       if (e.key === getStorageKey(campaignId)) {
+        timerCache.delete(campaignId);
         onUpdate();
       }
     };
@@ -276,11 +278,11 @@ export function useTurnTimer(campaignId?: string | null) {
       window.removeEventListener("storage", onStorage);
       if (ch) ch.close();
     };
-  }, [campaignId]);
+  }, [campaignId, active]);
 
   // Tick costante ad alta precisione durante l'esecuzione
   useEffect(() => {
-    if (!campaignId || !timerState.isRunning || !timerState.endsAt) return;
+    if (!campaignId || !active || !timerState.isRunning || !timerState.endsAt) return;
 
     const intervalId = window.setInterval(() => {
       const now = Date.now();
@@ -292,7 +294,7 @@ export function useTurnTimer(campaignId?: string | null) {
     }, 500);
 
     return () => window.clearInterval(intervalId);
-  }, [campaignId, timerState.isRunning, timerState.endsAt]);
+  }, [campaignId, active, timerState.isRunning, timerState.endsAt]);
 
   const start = useCallback(() => {
     if (campaignId) startTurnTimer(campaignId);

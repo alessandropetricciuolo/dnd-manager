@@ -9,8 +9,12 @@ import { GmAudioForgeSheet } from "./gm-audio-forge-sheet";
 import { GmRemoteIntegration } from "./gm-remote-integration";
 import { GmScreenLongStateProvider, useGmScreenLongState } from "./gm-screen-long-state";
 import { EndSessionWizard } from "@/components/sessions/end-session-wizard";
-import { GmScreenBoard, type GmWorkspaceMode } from "@/components/gm/screen-grid";
-import { GmTacticalScreen } from "./screen-tactical/gm-tactical-screen";
+import type { GmWorkspaceMode } from "./screen-grid/types";
+import dynamic from "next/dynamic";
+import { GmScreenView } from "./gm-screen-view";
+
+const GmTacticalScreen = dynamic(() => import("./screen-tactical/gm-tactical-screen").then((m) => m.GmTacticalScreen));
+const GmScreenBoard = dynamic(() => import("./screen-grid/gm-screen-board").then((m) => m.GmScreenBoard));
 import { computeSessionXpAwards } from "./player-session-tracker";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -487,7 +491,7 @@ function LongWorkspace({
         )}
 
         <div className="relative min-h-0 flex-1 overflow-hidden p-1">
-          <div className={cn("h-full w-full", screenView === "tactical" ? "block" : "hidden")}>
+          <GmScreenView active={screenView === "tactical"}>
             <GmTacticalScreen
               audioForge={audioForge}
               onOpenAudio={() => setAudioForgeOpen(true)}
@@ -496,8 +500,8 @@ function LongWorkspace({
               campaignType="long"
               selectedSessionId={selectedSessionId}
             />
-          </div>
-          <div className={cn("h-full w-full", screenView === "grid1" ? "block" : "hidden")}>
+          </GmScreenView>
+          <GmScreenView active={screenView === "grid1"}>
             <GmScreenBoard
               campaignId={campaignId}
               currentUserId={currentUserId}
@@ -509,8 +513,8 @@ function LongWorkspace({
               toolbarExtra={closureToolbar}
               slotId="grid1"
             />
-          </div>
-          <div className={cn("h-full w-full", screenView === "grid2" ? "block" : "hidden")}>
+          </GmScreenView>
+          <GmScreenView active={screenView === "grid2"}>
             <GmScreenBoard
               campaignId={campaignId}
               currentUserId={currentUserId}
@@ -522,7 +526,7 @@ function LongWorkspace({
               toolbarExtra={closureToolbar}
               slotId="grid2"
             />
-          </div>
+          </GmScreenView>
         </div>
 
         <SecretWhispersSheet

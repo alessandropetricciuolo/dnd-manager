@@ -65,6 +65,7 @@ import { SpellSlotsCell } from "@/components/gm/spell-slots-cell";
 import type { Json } from "@/types/database.types";
 import { formatTimerMmSs } from "@/lib/torneo/match-timer";
 import { TacticalInitiativeCards } from "./screen-tactical/tactical-initiative-cards";
+import { useGmScreenViewActive } from "./gm-screen-view";
 import { publishFightProjection } from "@/lib/fight-mode/broadcast";
 import { openProjectionWindow as openPopoutProjection } from "@/lib/browser/projection-window";
 import type { SavingThrowsMap, CombatReaction } from "@/lib/fight-mode/types";
@@ -390,7 +391,8 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
   const [trackerDisplay, setTrackerDisplay] = useState<"tactical" | "table">(defaultDisplay);
   const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
   const [roundNumber, setRoundNumber] = useState(1);
-  const turnTimer = useTurnTimer(campaignId);
+  const viewActive = useGmScreenViewActive();
+  const turnTimer = useTurnTimer(campaignId, viewActive);
   const turnElapsedSeconds = turnTimer.remainingSeconds;
   const isTurnTimerRunning = turnTimer.isRunning;
   const turnDurationSeconds = turnTimer.durationSeconds;
@@ -451,7 +453,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
   }, [buildTrackerState]);
 
   useEffect(() => {
-    if (!isControlled) return;
+    if (!isControlled || !viewActive) return;
     const next = sanitizeInitiativeTrackerState(value ?? undefined);
     const prev = trackerRef.current;
     const entriesChanged = !areInitiativeEntriesEqual(prev.entries, next.entries);
@@ -466,29 +468,36 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       setCurrentTurnIndex(next.currentTurnIndex);
       setRoundNumber(next.roundNumber);
     }
-  }, [isControlled, value]);
+  }, [isControlled, value, viewActive]);
 
-  // Restore from localStorage on mount
+  const restoringStorageRef = useRef(false);
+  const restoringProjectionRef = useRef(false);
+
+  // Restore from localStorage on mount and when returning to a retained view
   useEffect(() => {
-    if (isControlled) return;
+    if (isControlled || !viewActive) return;
     try {
       const raw = localStorage.getItem(storageKey);
-      if (raw) {
-        const parsed = JSON.parse(raw) as Partial<InitiativeTrackerState>;
-        const restored = sanitizeInitiativeTrackerState(parsed);
-        if (restored.entries.length > 0) {
-          setEntries(restored.entries);
-          setCurrentTurnIndex(restored.currentTurnIndex);
-          setRoundNumber(restored.roundNumber);
-        }
-      }
+      const restored = raw
+        ? sanitizeInitiativeTrackerState(JSON.parse(raw) as Partial<InitiativeTrackerState>)
+        : emptyInitiativeTrackerState();
+      restoringStorageRef.current = true;
+      restoringProjectionRef.current = true;
+      setEntries(restored.entries);
+      setCurrentTurnIndex(restored.currentTurnIndex);
+      setRoundNumber(restored.roundNumber);
     } catch {
       // ignore
     }
-  }, [isControlled, storageKey]);
+  }, [isControlled, storageKey, viewActive]);
 
   // Persist tracker state
   useEffect(() => {
+    if (!viewActive) return;
+    if (restoringStorageRef.current) {
+      restoringStorageRef.current = false;
+      return;
+    }
     const state = buildTrackerState();
     if (isControlled) {
       if (skipControlledEchoRef.current) {
@@ -524,6 +533,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       // ignore
     }
   }, [
+    viewActive,
     buildTrackerState,
     currentTurnIndex,
     entries,
@@ -605,8 +615,13 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     onActiveCombatantChange?.(active);
   }, [entries, currentTurnIndex, onActiveCombatantChange]);
 
-  // Proiezione in tempo reale su secondo monitor via BroadcastChannel
+  // Only the visible tracker publishes; hidden copies must not overwrite it.
   useEffect(() => {
+    if (!viewActive) return;
+    if (restoringProjectionRef.current) {
+      restoringProjectionRef.current = false;
+      return;
+    }
     if (entries.length === 0) {
       publishFightProjection({
         campaignId,
@@ -669,7 +684,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       upcomingTurns: upcoming,
       updatedAt: Date.now(),
     });
-  }, [campaignId, currentTurnIndex, entries, isTurnTimerRunning, roundNumber, turnElapsedSeconds]);
+  }, [viewActive, campaignId, currentTurnIndex, entries, isTurnTimerRunning, roundNumber, turnElapsedSeconds]);
 
   const nextTurn = useCallback(() => {
     if (entries.length === 0) return;

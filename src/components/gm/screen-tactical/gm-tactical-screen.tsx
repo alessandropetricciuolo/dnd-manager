@@ -47,6 +47,10 @@ export function GmTacticalScreen({
     [long]
   );
 
+  const handleEnrichMonster = useCallback((id: string, body: string) => {
+    initiativeRef.current?.enrichMonster?.(id, body);
+  }, []);
+
   return (
     <div
       className={cn(
@@ -101,7 +105,7 @@ export function GmTacticalScreen({
           onToggleDeathSaveFail={(id) => initiativeRef.current?.toggleDeathSaveFail(id)}
           onUpdateNote={(id, note) => initiativeRef.current?.updateNote(id, note)}
           onUpdateConditions={(id, conds) => initiativeRef.current?.updateConditions(id, conds)}
-          onEnrichMonster={(id, fullStatblock) => initiativeRef.current?.enrichMonster?.(id, fullStatblock)}
+          onEnrichMonster={handleEnrichMonster}
           onOpenWikiStatblock={(entityId) => {
             if (entityId && typeof window !== "undefined") {
               window.open(`/campaigns/${campaignId}/wiki/${entityId}`, "_blank");

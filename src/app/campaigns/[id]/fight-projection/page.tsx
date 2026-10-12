@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import { Maximize2, Minimize2, Shield, Sparkles, Swords, Timer, User, Volume2 } from "lucide-react";
+import { useTurnTimer } from "@/lib/fight-mode/turn-timer";
 import { useFightProjectionSync } from "@/lib/fight-mode/broadcast";
 import { COMBAT_CONDITIONS } from "@/lib/combat-conditions";
 import { playDeepBellSound } from "@/lib/fight-mode/bell";
@@ -37,7 +38,9 @@ const CONDITION_ICONS: Record<string, string> = {
 export default function FightProjectionPage() {
   const routeParams = useParams<{ id: string }>();
   const campaignId = (routeParams?.id as string) || "";
-  const state = useFightProjectionSync(campaignId);
+  const projection = useFightProjectionSync(campaignId);
+  const timer = useTurnTimer(campaignId);
+  const state = projection ? { ...projection, turnElapsedSeconds: timer.remainingSeconds, isTurnTimerRunning: timer.isRunning } : null;
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Monitora lo stato effettivo di schermo intero
@@ -64,10 +67,11 @@ export default function FightProjectionPage() {
   }, []);
 
   // Rintocco di campana molto grave quando il countdown arriva a 0
+  const hasProjection = Boolean(projection);
   const prevSecondsRef = useRef<number | null>(null);
   useEffect(() => {
-    if (!state) return;
-    const current = state.turnElapsedSeconds;
+    if (!hasProjection) return;
+    const current = timer.remainingSeconds;
     const prev = prevSecondsRef.current;
     prevSecondsRef.current = current;
 
@@ -75,7 +79,7 @@ export default function FightProjectionPage() {
     if (prev !== null && prev > 0 && current === 0) {
       playDeepBellSound();
     }
-  }, [state?.turnElapsedSeconds]);
+  }, [hasProjection, timer.remainingSeconds]);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import {
   BookOpen,
@@ -78,71 +78,55 @@ export function ActiveCombatantCard({
   // Cache del body markdown in memoria
   const [cachedBody, setCachedBody] = useState<string | null>(null);
   const [isLoadingStatblock, setIsLoadingStatblock] = useState(false);
-  const fetchedKeyRef = useRef<string | null>(null);
+  const entryId = entry?.id;
+  const entryName = entry?.name;
+  const entryType = entry?.type;
+  const entityId = entry?.entityId;
+  const contentBody = entry?.contentBody;
 
-  // Caricamento immediato markdown completo da cache in memoria o manuali
   useEffect(() => {
-    if (!entry) {
-      setCachedBody(null);
-      setIsLoadingStatblock(false);
+    let cancelled = false;
+    setCachedBody(null);
+    setIsLoadingStatblock(false);
+    if (!entryId || !entryName) return;
+    const isMonster = entryType === "monster" || entryType === "custom";
+    if (!isMonster && !entityId) {
+      setCachedBody(contentBody || null);
       return;
     }
-
-    const isMonster = entry.type === "monster" || entry.type === "custom";
-    const cleanName = entry.name.replace(/\s+\d+$/, "").trim();
-    const cacheKey = `${campaignId}:${cleanName.toLowerCase()}`;
-
-    // 1. Se entry ha già un blocco completo con caratteristiche e azioni, usalo
-    if (entry.contentBody && isCompleteMonsterStatblock(entry.contentBody)) {
-      setCachedBody(entry.contentBody);
-      MONSTER_STATBLOCK_CACHE.set(cacheKey, entry.contentBody);
-      setIsLoadingStatblock(false);
+    const cleanName = entryName.replace(/\s+\d+$/, "").trim();
+    const cacheKey = `${campaignId}:${entityId ?? cleanName.toLowerCase()}`;
+    if (contentBody && isCompleteMonsterStatblock(contentBody)) {
+      setCachedBody(contentBody);
+      MONSTER_STATBLOCK_CACHE.set(cacheKey, contentBody);
       return;
     }
-
-    // 2. Se è in cache in memoria, usalo all'istante
-    const inCache = MONSTER_STATBLOCK_CACHE.get(cacheKey);
-    if (inCache) {
-      setCachedBody(inCache);
-      if (entry.contentBody !== inCache) {
-        entry.contentBody = inCache;
-        onEnrichMonster?.(entry.id, inCache);
-      }
-      setIsLoadingStatblock(false);
+    const cached = MONSTER_STATBLOCK_CACHE.get(cacheKey);
+    if (cached) {
+      setCachedBody(cached);
+      if (contentBody !== cached) onEnrichMonster?.(entryId, cached);
       return;
     }
-
-    // 3. Risolvi da DB / Manuali Bestiario se è mostro o ha entityId
-    if (isMonster || entry.entityId) {
-      if (fetchedKeyRef.current === cacheKey) return;
-      fetchedKeyRef.current = cacheKey;
-      setIsLoadingStatblock(true);
-
-      void (async () => {
-        try {
-          const res = await resolveMonsterFullStatblockAction(campaignId, cleanName, entry.entityId);
-          if (res.success && res.text) {
-            MONSTER_STATBLOCK_CACHE.set(cacheKey, res.text);
-            setCachedBody(res.text);
-            entry.contentBody = res.text;
-            onEnrichMonster?.(entry.id, res.text);
-          } else if (entry.contentBody) {
-            setCachedBody(entry.contentBody);
-          }
-        } catch (err) {
-          console.warn("[ActiveCombatantCard] Errore risoluzione statblock:", err);
-          if (entry.contentBody) {
-            setCachedBody(entry.contentBody);
-          }
-        } finally {
-          setIsLoadingStatblock(false);
+    setIsLoadingStatblock(true);
+    void resolveMonsterFullStatblockAction(campaignId, cleanName, entityId)
+      .then((result) => {
+        if (result.success && result.text) {
+          MONSTER_STATBLOCK_CACHE.set(cacheKey, result.text);
+          if (cancelled) return;
+          setCachedBody(result.text);
+          onEnrichMonster?.(entryId, result.text);
+        } else if (!cancelled) {
+          setCachedBody(contentBody || null);
         }
-      })();
-    } else {
-      setCachedBody(entry.contentBody || null);
-      setIsLoadingStatblock(false);
-    }
-  }, [entry, campaignId, onEnrichMonster]);
+      })
+      .catch(() => {
+        if (!cancelled) setCachedBody(contentBody || null);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingStatblock(false);
+      });
+    return () => { cancelled = true; };
+  }, [entryId, entryName, entryType, entityId, contentBody, campaignId, onEnrichMonster]);
 
   const rawMarkdown = entry?.contentBody || cachedBody || "";
 

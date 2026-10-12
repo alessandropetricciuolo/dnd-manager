@@ -20,8 +20,12 @@ import {
 import { formatSessionInRome } from "@/lib/session-datetime";
 import { it } from "date-fns/locale";
 import { useGmAudioForge } from "@/lib/gm-audio-forge/use-gm-audio-forge";
-import { GmScreenBoard, getLegacyPreset } from "@/components/gm/screen-grid";
-import { GmTacticalScreen } from "./screen-tactical/gm-tactical-screen";
+import { getLegacyPreset } from "./screen-grid/gm-presets";
+import dynamic from "next/dynamic";
+import { GmScreenView } from "./gm-screen-view";
+
+const GmTacticalScreen = dynamic(() => import("./screen-tactical/gm-tactical-screen").then((m) => m.GmTacticalScreen));
+const GmScreenBoard = dynamic(() => import("./screen-grid/gm-screen-board").then((m) => m.GmScreenBoard));
 import { cn } from "@/lib/utils";
 
 type GmScreenLegacyLayoutV2Props = {
@@ -246,7 +250,7 @@ export function GmScreenLegacyLayoutV2({
         )}
 
         <div className="relative min-h-0 flex-1 overflow-hidden p-1">
-          <div className={cn("h-full w-full", screenView === "tactical" ? "block" : "hidden")}>
+          <GmScreenView active={screenView === "tactical"}>
             <GmTacticalScreen
               audioForge={audioForge}
               onOpenAudio={() => setAudioForgeOpen(true)}
@@ -255,8 +259,8 @@ export function GmScreenLegacyLayoutV2({
               campaignType={campaignType}
               selectedSessionId={selectedSessionId}
             />
-          </div>
-          <div className={cn("h-full w-full", screenView === "grid1" ? "block" : "hidden")}>
+          </GmScreenView>
+          <GmScreenView active={screenView === "grid1"}>
             <GmScreenBoard
               campaignId={campaignId}
               currentUserId={currentUserId}
@@ -269,8 +273,8 @@ export function GmScreenLegacyLayoutV2({
               sheetOpeners={sheetOpeners}
               slotId="grid1"
             />
-          </div>
-          <div className={cn("h-full w-full", screenView === "grid2" ? "block" : "hidden")}>
+          </GmScreenView>
+          <GmScreenView active={screenView === "grid2"}>
             <GmScreenBoard
               campaignId={campaignId}
               currentUserId={currentUserId}
@@ -283,7 +287,7 @@ export function GmScreenLegacyLayoutV2({
               sheetOpeners={sheetOpeners}
               slotId="grid2"
             />
-          </div>
+          </GmScreenView>
         </div>
 
         <SecretWhispersSheet

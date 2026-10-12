@@ -16,6 +16,7 @@ import {
   type GmScreenBoardActions,
   type OpenMonsterStatOptions,
 } from "./gm-screen-board-context";
+import { applyGridLayout } from "./gm-grid-layout";
 import type { GmLayoutItem, GmPanelType, GmWorkspaceMode } from "./types";
 
 const COLS = 12;
@@ -64,20 +65,6 @@ function itemsToGridLayout(items: GmLayoutItem[]): Layout {
   }));
 }
 
-function applyGridLayout(items: GmLayoutItem[], layout: Layout): GmLayoutItem[] {
-  const byId = new Map(layout.map((l) => [l.i, l]));
-  return items.map((item) => {
-    const next = byId.get(item.i);
-    if (!next) return item;
-    return {
-      ...item,
-      x: next.x,
-      y: next.y,
-      w: next.w,
-      h: next.h,
-    };
-  });
-}
 
 function findNextSlot(items: GmLayoutItem[], w: number, h: number): { x: number; y: number } {
   // Pack left-to-right, top-to-bottom into the first free rect.
